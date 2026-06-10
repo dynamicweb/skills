@@ -1,0 +1,4 @@
+interface:
+  display_name: "Analysis - PIM Setup from Attribute Excel V2"
+  short_description: "Validate attribute/group Excel issues"
+  default_prompt: "Use $Analysis - PIM Setup from Attribute Excel V2 to validate an uploaded or referenced PIMConfiguration_*.xlsx workbook, apply only approved deterministic auto-fixes, and generate the fixed workbook plus validation overview outputs."
