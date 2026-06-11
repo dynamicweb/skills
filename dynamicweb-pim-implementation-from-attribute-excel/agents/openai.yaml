@@ -1,4 +1,0 @@
-interface:
-  display_name: "Implementation - PIM Setup from Attribute Excel V2"
-  short_description: "Build DW10 PIM setup from standardized attribute and group Excel"
-  default_prompt: "Use $Implementation - PIM Setup from Attribute Excel V2 to validate a standardized attribute/group workbook, assemble one complete intended payload, and implement the Dynamicweb 10 PIM provisioning flow in code."
