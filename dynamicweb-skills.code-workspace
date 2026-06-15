@@ -1,0 +1,28 @@
+{
+  "folders": [
+    {
+      "name": "skills",
+      "path": "."
+    },
+    {
+      "name": "Dynamicweb10",
+      "path": "../Dynamicweb10"
+    },
+    {
+      "name": "Dynamicweb10-Docs",
+      "path": "../Dynamicweb10-Docs"
+    },
+    {
+      "name": "CLI",
+      "path": "../CLI"
+    },
+    {
+      "name": "Swift",
+      "path": "../Swift"
+    },
+    {
+      "name": "mcp",
+      "path": "../mcp"
+    }
+  ]
+}
