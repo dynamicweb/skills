@@ -1,6 +1,6 @@
 # localization.md
 
-> PIM-side localization in Dynamicweb 10 — translating products, product groups, and the eight other ecommerce objects that can carry translations. Loaded from `~/.claude/skills/truvio-pim-demo/SKILL.md` "Where to find things". Sister doc to `truvio-swift-demo/references/language-layers.md` (content/area side).
+> PIM-side localization in Dynamicweb 10 — translating products, product groups, and the eight other ecommerce objects that can carry translations. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things". Sister doc to `dynamicweb-swift-demo/references/language-layers.md` (content/area side).
 >
 > **TL;DR:** PIM languages live in `EcomLanguages` (the PRODUCT-side language table) and are completely separate from CONTENT-side area language layers (`Area.AreaMasterAreaId`). Translating a product is a write-per-language to `EcomProductTranslation` (and friends) keyed by (ProductId, LanguageId, VariantId). Everything else (variant options, attribute fields, RMA states, countries, currencies, VAT, units, asset categories, custom-field labels) **falls back to the default language** if no row exists — translations are additive. Products + product groups are the only objects that **must** be translated to appear in non-default-language frontends.
 
@@ -10,7 +10,7 @@
 - A customer's pitch includes "we sell into <country>" and the storefront should switch into that language with native field values.
 - You need to demo the side-by-side translation UI in PIM.
 
-If the question is "add another **website** in another language," that's [`truvio-swift-demo/references/language-layers.md`](../../truvio-swift-demo/references/language-layers.md) (content side). The two surfaces are independent — you can have area=da-DK but product values still in en-US (just with a different culture-derived UI chrome) and vice versa.
+If the question is "add another **website** in another language," that's [`dynamicweb-swift-demo/references/language-layers.md`](../../dynamicweb-swift-demo/references/language-layers.md) (content side). The two surfaces are independent — you can have area=da-DK but product values still in en-US (just with a different culture-derived UI chrome) and vice versa.
 
 ## The two-table mental model
 
@@ -79,7 +79,7 @@ Group translation row:
 
 ## Surfaces — which MCP tools do what
 
-Vendor MCP tool naming used here matches `mcp__truvio-commerce-mcp__*` (rename in your demo if the alias differs):
+Vendor MCP tool naming used here matches `mcp__dynamicweb-commerce-mcp__*` (rename in your demo if the alias differs):
 
 | Want to... | MCP tool (preferred) | SQL fallback |
 |---|---|---|
@@ -92,7 +92,7 @@ Vendor MCP tool naming used here matches `mcp__truvio-commerce-mcp__*` (rename i
 
 **Important MCP gotcha:** `update_products` accepts a `languageId` parameter. Pass the language string ID (e.g. `LANG2`) to write to that language version. Omitting it writes to the default (master) language. **First call must be against `LANG1` (master)** before `LANG2` can exist — DW10 forbids creating language versions of a product whose master row is missing.
 
-**Cache invalidation:** After bulk-translating products, run `mcp__truvio-commerce-mcp__build_assortments` + a full Products `BuildIndex` (`POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`). The catalog frontend pulls names + facets from the index; without a rebuild, the storefront still renders the master language strings even when the storefront context switches.
+**Cache invalidation:** After bulk-translating products, run `mcp__dynamicweb-commerce-mcp__build_assortments` + a full Products `BuildIndex` (`POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`). The catalog frontend pulls names + facets from the index; without a rebuild, the storefront still renders the master language strings even when the storefront context switches.
 
 ## Enable per-language editing on standard fields (one-time seed)
 
@@ -154,7 +154,7 @@ VALUES
 4. **Translate group names** first (groups must be translated so the navigation tree localizes). Use `update_groups` MCP with `languageId=<new>` OR direct SQL `INSERT INTO EcomGroupTranslation`. **This step is load-bearing, not cosmetic (validated DW 10.25.x, 2026-06-10):** `Services.ProductGroups.GetGroup(id)` resolves against the CURRENT language context, and with no group rows for the new language it returns null — group-driven frontend components (`Swift-v2_ProductGroupGrid`, group-name surfaces) render **empty**, not English-fallback. The proven shape on 10.25 is a per-language `EcomGroups` row per group (clone the default-language rows overriding `GroupLanguageId` + `GroupName` via a dynamic column-list INSERT that excludes identity columns). A blank category grid on a language layer is this gap, every time.
 5. **Translate the hero products' name + short description** via `update_products`/`patch_products_safe` with `languageId=<new>`. Skip custom-field translation in a first pass; the fallback handles it.
 6. **Rebuild the index** + run `build_assortments` if assortments are in play.
-7. **Wire the area** to the new language as a SECOND language layer — see [`truvio-swift-demo/references/language-layers.md`](../../truvio-swift-demo/references/language-layers.md). On the area side you need a sibling `Area` row with `AreaEcomLanguageId=<langId>` so the storefront actually serves the translated values.
+7. **Wire the area** to the new language as a SECOND language layer — see [`dynamicweb-swift-demo/references/language-layers.md`](../../dynamicweb-swift-demo/references/language-layers.md). On the area side you need a sibling `Area` row with `AreaEcomLanguageId=<langId>` so the storefront actually serves the translated values.
 
 ## Demo philosophy
 
@@ -167,6 +167,6 @@ PIM localization sells the "single product master, multiple market storefronts" 
 
 ## Cross-references
 
-- [`truvio-swift-demo/references/language-layers.md`](../../truvio-swift-demo/references/language-layers.md) — the area / content side of the same picture; how to add a website language layer + wire the Swift `LanguageSelector` paragraph type so the frontend can actually switch.
-- [`truvio-pim-demo/references/canonical-setup-order.md`](canonical-setup-order.md) — fits between Step 3 (languages) and Step 4 (manufacturers); the first EcomLanguage row is set up there, additional languages follow this doc.
+- [`dynamicweb-swift-demo/references/language-layers.md`](../../dynamicweb-swift-demo/references/language-layers.md) — the area / content side of the same picture; how to add a website language layer + wire the Swift `LanguageSelector` paragraph type so the frontend can actually switch.
+- [`dynamicweb-pim-demo/references/canonical-setup-order.md`](canonical-setup-order.md) — fits between Step 3 (languages) and Step 4 (manufacturers); the first EcomLanguage row is set up there, additional languages follow this doc.
 - Official Dynamicweb doc: `https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/localization.html`

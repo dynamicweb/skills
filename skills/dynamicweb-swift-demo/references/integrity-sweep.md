@@ -51,11 +51,11 @@ WHERE CategoryId = 'reference_category' AND CategoryType = 2
 "@
 $result = sqlcmd -S "localhost\SQLEXPRESS" -E -d $db -Q $query -h -1
 if ([int]$result.Trim() -lt 1) {
-  throw "reference_category parent row missing. See ../../truvio-pim-demo/references/governance.md 'Completeness rules' for the seed pattern."
+  throw "reference_category parent row missing. See ../../dynamicweb-pim-demo/references/governance.md 'Completeness rules' for the seed pattern."
 }
 ```
 
-**Scope note:** Check 2 only **detects** the missing row. The seed-rule context (the four-rows-per-field SQL pattern) lives in the PIM skill — see [`../../truvio-pim-demo/references/governance.md`](../../truvio-pim-demo/references/governance.md) "Completeness rules — why they sometimes don't show" for the seed pattern.
+**Scope note:** Check 2 only **detects** the missing row. The seed-rule context (the four-rows-per-field SQL pattern) lives in the PIM skill — see [`../../dynamicweb-pim-demo/references/governance.md`](../../dynamicweb-pim-demo/references/governance.md) "Completeness rules — why they sometimes don't show" for the seed pattern.
 
 ## Check 3: Query GUID dedup across `Repositories/` and `SmartSearches/Shared/`
 

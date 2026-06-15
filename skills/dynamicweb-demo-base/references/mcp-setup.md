@@ -1,6 +1,6 @@
 # MCP Setup — `.mcp.json` + admin-UI walkthrough + verification gate
 
-Wire MCP for the Truvio MCP server (`truvio-commerce-mcp`) bundled with `Dynamicweb.Suite` 10.x. The canonical flow is **API-Key auth with a static bearer in `.mcp.json`** — five steps in **strict order**:
+Wire MCP for the Dynamicweb MCP server (`dynamicweb-commerce-mcp`) bundled with `Dynamicweb.Suite` 10.x. The canonical flow is **API-Key auth with a static bearer in `.mcp.json`** — five steps in **strict order**:
 
 1. Write `.mcp.json` with the discovered HTTPS port (bearer placeholder filled in Step 3b).
 2. Verify the two-layer TLS bypass is in place (see `references/tls-bypass.md`).
@@ -8,7 +8,7 @@ Wire MCP for the Truvio MCP server (`truvio-commerce-mcp`) bundled with `Dynamic
 3b. Paste the plaintext API key into `.mcp.json` as the `Authorization: Bearer …` header and save it to per-demo Claude memory.
 4. Verification gate.
 
-The verification gate (Step 4) refuses to declare 'setup complete' until BOTH `claude mcp list` shows `truvio-commerce-mcp ✓ Connected` AND tool discovery returns > 200 dynamicweb tools.
+The verification gate (Step 4) refuses to declare 'setup complete' until BOTH `claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND tool discovery returns > 200 dynamicweb tools.
 
 ## Why API Key by default (not Claude.ai OAuth)
 
@@ -51,7 +51,7 @@ Continuing from the snippet above (`$mcpUrl` is in scope). Write `.mcp.json` wit
 ```powershell
 $mcpJson = @{
   mcpServers = @{
-    "truvio-commerce-mcp" = @{
+    "dynamicweb-commerce-mcp" = @{
       type    = "http"
       url     = $mcpUrl  # from Step 1
       headers = @{
@@ -68,7 +68,7 @@ The skill's `assets/mcp.json.template` is the parametric source (with literal `<
 ```json
 {
   "mcpServers": {
-    "truvio-commerce-mcp": {
+    "dynamicweb-commerce-mcp": {
       "type": "http",
       "url": "https://localhost:44312/admin/mcp",
       "headers": {
@@ -129,12 +129,12 @@ The skill **refuses to declare setup complete** until BOTH conditions pass:
 
 ```powershell
 $mcpList = claude mcp list 2>&1
-if ($mcpList -notmatch 'truvio-commerce-mcp.*✓.*Connected') {
-  Write-Host "FAILED: claude mcp list does not show truvio-commerce-mcp Connected."
+if ($mcpList -notmatch 'dynamicweb-commerce-mcp.*✓.*Connected') {
+  Write-Host "FAILED: claude mcp list does not show dynamicweb-commerce-mcp Connected."
   Write-Host "Work the 'Triage table — when verification fails' at the bottom of mcp-setup.md."
   throw "MCP not connected. Fix and retry."
 }
-Write-Host "OK: truvio-commerce-mcp ✓ Connected"
+Write-Host "OK: dynamicweb-commerce-mcp ✓ Connected"
 ```
 
 ### 4b. Tool count check (in-conversation)
@@ -146,7 +146,7 @@ Triage rules for tool-count outcomes:
 - **`count == 0`** → admin-UI MCP config (Step 3) was not created, or `.mcp.json` still has the literal `<MCP_API_KEY>` placeholder (Step 3b not done). Check both.
 - **`count < 50`** (small) → admin-UI config has restrictive scope (not Full access). Re-create with `Access = Full access`.
 - **`50 <= count < 200`** → unusual; likely a DW10 version where the MCP catalogue is partial. Compare against another known-good machine using `compare-vault.md`'s output as a sanity check on `serialized-data/` baseline drift; consult the team.
-- **`count > 200`** → gate passes; proceed to step 4 (drop guardrails) and then to the demo-type-specific path (PIM modelling via `truvio-pim-demo`, or Swift baseline deserialize via [`../../truvio-swift-demo/references/deserialize-flow.md`](../../truvio-swift-demo/references/deserialize-flow.md)).
+- **`count > 200`** → gate passes; proceed to step 4 (drop guardrails) and then to the demo-type-specific path (PIM modelling via `dynamicweb-pim-demo`, or Swift baseline deserialize via [`../../dynamicweb-swift-demo/references/deserialize-flow.md`](../../dynamicweb-swift-demo/references/deserialize-flow.md)).
 
 The conjunction (Connected AND > 200 tools) catches all three failure shapes: TLS bypass missing (Step 4a fails with "Failed to connect"), admin-UI MCP config missing (Step 4a fails with `401 Unauthorized` once the bearer is in place), and the bearer placeholder not substituted (Step 4a fails with `401 Unauthorized` even with a config in place).
 
@@ -154,7 +154,7 @@ The conjunction (Connected AND > 200 tools) catches all three failure shapes: TL
 
 ## Step 5 — Install Browser MCP (machine-level, do once per Windows account)
 
-The Browser MCP (`@playwright/mcp`) gives Claude first-class browser tooling — log in, navigate, click, screenshot, inspect DOM — so verification flows after PIM seeding / template edits / customer-center wiring don't require the user to manually drive a tab. Unlike the Backend MCP (Steps 1–4 above, **per-demo**), the Browser MCP is **per-machine**: install once at user scope, every Truvio demo on this account inherits it.
+The Browser MCP (`@playwright/mcp`) gives Claude first-class browser tooling — log in, navigate, click, screenshot, inspect DOM — so verification flows after PIM seeding / template edits / customer-center wiring don't require the user to manually drive a tab. Unlike the Backend MCP (Steps 1–4 above, **per-demo**), the Browser MCP is **per-machine**: install once at user scope, every Dynamicweb demo on this account inherits it.
 
 The full recipe + flag rationale + verification gate lives in [`references/browser-automation.md`](browser-automation.md). One-line install:
 
@@ -170,12 +170,12 @@ This step is idempotent — safe to skip if `claude mcp list` already shows `pla
 
 ## Step 6 — Discover bearer tokens (the discover-from-project-files rule)
 
-A Truvio demo has **two** bearer tokens, both `CLAUDE.<hex>`-shaped rows in `AccessUserToken`:
+A Dynamicweb demo has **two** bearer tokens, both `CLAUDE.<hex>`-shaped rows in `AccessUserToken`:
 
 | Token | Issued from | Used for |
 |---|---|---|
 | **MCP API key** | Admin UI → Settings → Integration → MCP configurations → New (Authentication method = API Key). Captured in Step 3 of this file. | `Authorization: Bearer …` header in `.mcp.json` (Step 3b). Validated against `AccessUserTokenHash` by `McpAuthMiddleware`. |
-| **Management API token** | Admin UI → Settings → System → Developer → API keys → New. Captured here in Step 6 via `AskUserQuestion`. | `Authorization: Bearer …` header on `/admin/api/...` calls. Used by Swift's [`../../truvio-swift-demo/references/deserialize-flow.md`](../../truvio-swift-demo/references/deserialize-flow.md) and [`../../truvio-swift-demo/references/integrity-sweep.md`](../../truvio-swift-demo/references/integrity-sweep.md), and by PIM admin-API calls. |
+| **Management API token** | Admin UI → Settings → System → Developer → API keys → New. Captured here in Step 6 via `AskUserQuestion`. | `Authorization: Bearer …` header on `/admin/api/...` calls. Used by Swift's [`../../dynamicweb-swift-demo/references/deserialize-flow.md`](../../dynamicweb-swift-demo/references/deserialize-flow.md) and [`../../dynamicweb-swift-demo/references/integrity-sweep.md`](../../dynamicweb-swift-demo/references/integrity-sweep.md), and by PIM admin-API calls. |
 
 These are distinct rows. The MCP API key is bound to the MCP configuration via `McpConfigurationTokenId`; the Management API token is the unconstrained admin-API key. Don't try to reuse one for the other unless you've verified empirically — the validation paths differ.
 
@@ -189,7 +189,7 @@ If you don't have a Management API token in conversation state or memory, captur
 |---|---|---|
 | Conversation state | ✅ Always | Default scope; cleared at session end. |
 | Per-demo Claude memory (`~/.claude/projects/<encoded-cwd-of-demo>/memory/`) | ✅ Canonical for local dev hosts | Survives across sessions; user-machine-only; naturally scoped to one demo (the encoded cwd is the demo solution folder); never shared via git or commits. Save **two** `reference` memories — one for the MCP API key, one for the Management API token — each with the host URL, the token, and a how-to-use note. |
-| Env vars (User or Machine scope, e.g. `TRUVIO_MGMT_API_TOKEN`) | ❌ Never | The tokens are per-demo, but env vars are machine-global — a second demo on the same machine would clobber the first. Use per-demo Claude memory instead, which is the only storage location that gives one slot per demo. |
+| Env vars (User or Machine scope, e.g. `DYNAMICWEB_MGMT_API_TOKEN`) | ❌ Never | The tokens are per-demo, but env vars are machine-global — a second demo on the same machine would clobber the first. Use per-demo Claude memory instead, which is the only storage location that gives one slot per demo. |
 | Project-tracked files (`.mcp.json` with substituted bearer, `Files/Serializer.config.json`, csproj, `settings.local.json`, anything inside the demo solution folder that git tracks) | ❌ Never commit | A local-only `.mcp.json` with the real bearer is fine to live on disk — but the source-controlled copy keeps the `<MCP_API_KEY>` placeholder. Don't `git add` after substitution. |
 | Production hosts | ❌ Never persist outside conversation state | Different threat model — out of scope for this skill. |
 
@@ -205,5 +205,5 @@ If a token isn't in conversation state and no memory entry exists, capture again
 | `claude mcp list` shows the server but requests fail `401 Unauthorized` despite a substituted bearer | The bearer in `.mcp.json` is not the EXACT plaintext key the admin UI displayed — check for extra whitespace or a trailing newline introduced when pasting. |
 | `claude mcp list` shows the server but `ToolSearch +dynamicweb` returns 0 / 401 Unauthorized on `/admin/mcp` requests | **Three distinct causes — check in order.** (1) `.mcp.json` still has the literal `<MCP_API_KEY>` placeholder — substitute the plaintext key from the admin UI (Step 3b). (2) No MCP configuration exists on the DW side — admin UI → Settings → Integration → MCP configurations → New, set **Access = Full access**, **Authentication method = API Key**, save, copy the displayed plaintext key (shown once), and paste into `.mcp.json`. (3) Stale bearer (config was deleted/regenerated since the key was last captured) — the configuration row in the admin UI is now linked to a different `AccessUserTokenId`; capture the new key and update `.mcp.json` + per-demo memory. |
 | AppStore install of "Backend MCP" appears to do nothing — no UI confirmation, the MCP configurations menu the app is supposed to add never appears, `/admin/mcp` returns 404 | **Two distinct causes, in order of likelihood.** (1) **Host TFM is net8.** The MCP AddIn loader requires .NET 10 even though the package ships net6/net8 lib binaries. Symptom: install POST returns 200, files drop to `wwwroot/Files/System/AddIns/Installed/Dynamicweb.MCP.<ver>/lib/`, but AddIn never registers. Fix: pin csproj `<TargetFramework>net10.0</TargetFramework>` and restart the host (verify in startup log: `Dynamicweb is running on .NET 10 or greater`). See `references/scaffold.md` Section 2.1. (2) **Stuck DB update queue** (or buggy CREATE in update queue). Check `wwwroot/Files/System/Log/EventViewer/*.log` for `Update failed:.*Cannot find the object`. Recovery: `references/db-update-recovery.md` (Mode A or B depending on triage). |
-| Mid-run MCP call fails with `401 Unauthorized` after a host restart | Should be rare with API-Key auth (the bearer is DB-backed, stateless, and the host revalidates against `AccessUserToken` on every request). If it happens: the admin UI's MCP config was likely deleted/recreated, which generates a new `AccessUserTokenId` and invalidates the old plaintext key. Open the admin UI, confirm the MCP configuration still exists, and capture a fresh key if the link is broken. **Do NOT silently pivot to direct-SQL fallbacks** for create/update operations — that bypasses MCP cache invalidation AND leaves required columns unset (e.g. `EcomDetails.DetailLanguageId` defaulting to empty string, see `truvio-pim-demo/references/structural-model.md` §2.10). The MCP-plugin tools (e.g. `import_product_images_from_urls`, `add_product_image`) have NO Management API endpoint backing — there is no plain-HTTP fallback that preserves their column-population guarantees. |
+| Mid-run MCP call fails with `401 Unauthorized` after a host restart | Should be rare with API-Key auth (the bearer is DB-backed, stateless, and the host revalidates against `AccessUserToken` on every request). If it happens: the admin UI's MCP config was likely deleted/recreated, which generates a new `AccessUserTokenId` and invalidates the old plaintext key. Open the admin UI, confirm the MCP configuration still exists, and capture a fresh key if the link is broken. **Do NOT silently pivot to direct-SQL fallbacks** for create/update operations — that bypasses MCP cache invalidation AND leaves required columns unset (e.g. `EcomDetails.DetailLanguageId` defaulting to empty string, see `dynamicweb-pim-demo/references/structural-model.md` §2.10). The MCP-plugin tools (e.g. `import_product_images_from_urls`, `add_product_image`) have NO Management API endpoint backing — there is no plain-HTTP fallback that preserves their column-population guarantees. |
 | Mid-run MCP call fails with `MCP server "..." requires re-authorization (token expired)` | You're on the legacy Claude.ai OAuth auth method, not API Key — that's exactly the failure mode the API-Key default exists to avoid. Switch the admin UI's MCP configuration to `Authentication method = API Key`, capture the plaintext key, and update `.mcp.json` per Step 3b. After that, host restarts and Claude Code restarts no longer trigger re-auth. |

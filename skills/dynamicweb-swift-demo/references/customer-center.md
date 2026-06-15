@@ -1,6 +1,6 @@
 # customer-center.md
 
-> The Swift 2.2 customer-center frontend playbook for Truvio (Dynamicweb 10) demos. Covers the page-tree map (Account vs CSR vs legacy nav vs Overview), the stock-CSR rule rationale (inoculation against the rebuild-the-CSR-section trap in sales-on-behalf demos), and where impersonation, mixed-source order rendering, and exit-impersonation live in the stock paragraph wiring. The top-level rule lifts a one-paragraph summary into SKILL.md body; this file is the deeper playbook.
+> The Swift 2.2 customer-center frontend playbook for Dynamicweb 10 demos. Covers the page-tree map (Account vs CSR vs legacy nav vs Overview), the stock-CSR rule rationale (inoculation against the rebuild-the-CSR-section trap in sales-on-behalf demos), and where impersonation, mixed-source order rendering, and exit-impersonation live in the stock paragraph wiring. The top-level rule lifts a one-paragraph summary into SKILL.md body; this file is the deeper playbook.
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -72,7 +72,7 @@ Cause is almost always one of:
 1. **No orders / users seeded** -- the customer-flavoured baseline (`<demo>-base/`) hasn't been deserialized yet, or only the generic `Swift2.2` baseline has been loaded. Run [`deserialize-flow.md`](deserialize-flow.md) first against the appropriate baseline.
 2. **Logged-in user is not in a CSR group** -- `EcomCustomers.GroupId` doesn't include a CSR-permission UserGroup row. The customer-flavoured baseline is expected to seed a CSR sample user; the stock `AdminUser` default has admin perms but isn't in a customer-facing CSR group.
 3. **CSR ↔ customer grants not wired** -- `AccessUserSecondaryRelation` is empty for this CSR. See §5 below.
-4. **Index not built or cache stale after wiring §5** -- see §5 for the rebuild + cache-clear step that *must* follow any change to `AccessUserSecondaryRelation`. For Products-index rebuilds, see [truvio-pim-demo/references/governance.md "Recovery recipe: Rebuild Products index"](../truvio-pim-demo/references/governance.md).
+4. **Index not built or cache stale after wiring §5** -- see §5 for the rebuild + cache-clear step that *must* follow any change to `AccessUserSecondaryRelation`. For Products-index rebuilds, see [dynamicweb-pim-demo/references/governance.md "Recovery recipe: Rebuild Products index"](../../dynamicweb-pim-demo/references/governance.md).
 
 What is NOT the cause: missing paragraphs / broken templates / Swift 2.3 incompatibility. The Swift2.2 baseline is verified working by [`deserialize-flow.md`](deserialize-flow.md); if the page renders at all, the structure is intact and the issue is data-side.
 
@@ -180,7 +180,7 @@ Practical use in a Swift Order detail layout — a one-line Razor expression ren
 
 **Where the button belongs:** `Customer center/Account/Orders/` order-detail (the buyer's own order history). The CSR section under `Customer center/CSR/Orders/` also benefits — copying a previous order while impersonating a customer is a high-impact sales-on-behalf beat ("repeat last month's pallet order in one click").
 
-**This is a stock DW10 mechanic, not a Truvio-specific add-on.** Works in DW10 1.26.0 and reachable on every Swift baseline this skill loads. Adding a Reorder button is one-line of Razor in a custom content-layout for an Order-detail paragraph — it does NOT trigger base's customisations-ledger preflight because no `.cs` or controller is involved (see [`re-skin.md`](re-skin.md) §Pixel-perfect escalation for what a new content-layout `.cshtml` is and is not allowed to do).
+**This is a stock DW10 mechanic, not a dynamicweb-specific add-on.** Works in DW10 1.26.0 and reachable on every Swift baseline this skill loads. Adding a Reorder button is one-line of Razor in a custom content-layout for an Order-detail paragraph — it does NOT trigger base's customisations-ledger preflight because no `.cs` or controller is involved (see [`re-skin.md`](re-skin.md) §Pixel-perfect escalation for what a new content-layout `.cshtml` is and is not allowed to do).
 
 **Related cart commands (the family `cartcmd=` belongs to).** `cartcmd=add` / `cartcmd=remove` / `cartcmd=delete` / `cartcmd=empty` / `cartcmd=update` all flow through the same handler. The Swift product-detail and cart paragraphs use these directly — meaning any `cartcmd=` URL you'd construct for a custom button is structurally identical to what Swift already emits, just with different parameters. Don't reinvent.
 

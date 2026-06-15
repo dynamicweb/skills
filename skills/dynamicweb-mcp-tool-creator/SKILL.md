@@ -1,6 +1,6 @@
-﻿---
+---
 name: dynamicweb-mcp-tool-creator
-description: Step-by-step guide for adding new MCP tools to the Dynamicweb.MCP project. Use when creating new tool classes, services, models, or route handlers for a new or existing Dynamicweb domain area.
+description: Step-by-step guide for adding new MCP tools to the Dynamicweb.MCP project -- tool classes, services, models, and route handlers. Triggers: create a new MCP tool or domain area, add services/models/route handlers to Dynamicweb.MCP, expose a new operation over MCP. Non-triggers: understanding existing Dynamicweb APIs before coding -> dynamicweb-source-explorer; using existing MCP tools to query products -> dynamicweb-pim-query.
 ---
 
 # MCP Tool Creator
@@ -188,9 +188,10 @@ Location: `{Domain}/RouteHandlers/`
 
 Register in the domain's `IServiceApi` implementation (e.g., `ProductsServiceApi.cs`).
 
-### 7. Update the Tool Picker
+### 7. Document the new tools
 
-Add the new tools to `skills/dynamicweb-tool-picker/SKILL.md`:
+Record the new tools in the Dynamicweb.MCP project's own tool catalog/README so they are
+discoverable by consumers:
 - Find the matching group table (or create a new group section if none fits)
 - Add a row per tool: `| \`tool_name\` | Short "use when" phrase |`
 - Keep entries alphabetical within each group
@@ -213,5 +214,5 @@ After creating all files:
 - [ ] Permission level matches the operation type
 - [ ] Method parameters have `[Description]` attributes
 - [ ] `dotnet build` passes
-- [ ] New tools added to `skills/dynamicweb-tool-picker/SKILL.md`
+- [ ] New tools documented in the Dynamicweb.MCP project tool catalog/README
 

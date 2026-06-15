@@ -1,6 +1,6 @@
 # governance.md
 
-> PIM governance gotchas + recovery recipes. Loaded from `~/.claude/skills/truvio-pim-demo/SKILL.md` "Where to find things" table. Mirrors the shape of `truvio-demo-base/references/integrity-sweep.md` — sequential sections, fenced PowerShell recipes inline next to their cause-explanation. The recovery recipes (seed `reference_category`, rebuild Products index) live in this file rather than as standalone `.ps1` files under `scripts/` — recipes always run inside Claude with port + DB in conversation state from base's discover-from-project-files rule.
+> PIM governance gotchas + recovery recipes. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Mirrors the shape of `dynamicweb-demo-base/references/integrity-sweep.md` — sequential sections, fenced PowerShell recipes inline next to their cause-explanation. The recovery recipes (seed `reference_category`, rebuild Products index) live in this file rather than as standalone `.ps1` files under `scripts/` — recipes always run inside Claude with port + DB in conversation state from base's discover-from-project-files rule.
 
 ## Dashboards — only 7 real areas, don't invent
 

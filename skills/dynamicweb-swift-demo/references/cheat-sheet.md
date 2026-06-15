@@ -1,6 +1,6 @@
 # cheat-sheet.md — the hidden demo info page
 
-> Owns the canonical recipe for the hidden-from-nav demo info page at `/<area-url>/demo` (typical URL slug `demo`) that the presenter keeps on a side screen during the live demo, plus the customer-safety rules for its content. Driven end-to-end by the `/truvio-cheatsheet` command.
+> Owns the canonical recipe for the hidden-from-nav demo info page at `/<area-url>/demo` (typical URL slug `demo`) that the presenter keeps on a side screen during the live demo, plus the customer-safety rules for its content. Driven end-to-end by the `/dynamicweb-cheatsheet` command.
 
 ## What the page contains
 
@@ -34,7 +34,7 @@ The naive `save_paragraphs` create-with-`itemType=Swift-v2_Text` path does NOT a
 
 **Caveat:** `active=false` on `save_paragraphs` does NOT reliably persist for already-existing paragraphs — if you need to retire an obsolete paragraph on the page, clear its `text`/`header` fields and let it render empty rather than expecting `active=false` to hide it. (The same no-op applies to `ShowParagraph` via the Management API — there, hide via `ParagraphDelete` instead.)
 
-**Hosted/API-only installs:** the same clone-then-rewrite chain maps onto the Management API — copy a simple page as the carrier (`PageCopy`; clear the inherited `shortCut`), `ParagraphCopy` an existing Swift-v2_Text paragraph onto it, `GridRowCopy` a 1-column row, then `ParagraphSave` round-trips for content and row attachment. Endpoint shapes in [`truvio-demo-base/references/online-mode.md`](../../truvio-demo-base/references/online-mode.md) (validated DW 10.25.x, 2026-06-10).
+**Hosted/API-only installs:** the same clone-then-rewrite chain maps onto the Management API — copy a simple page as the carrier (`PageCopy`; clear the inherited `shortCut`), `ParagraphCopy` an existing Swift-v2_Text paragraph onto it, `GridRowCopy` a 1-column row, then `ParagraphSave` round-trips for content and row attachment. Endpoint shapes in [`dynamicweb-demo-base/references/online-mode.md`](../../dynamicweb-demo-base/references/online-mode.md) (validated DW 10.25.x, 2026-06-10).
 
 ## Reality-check role
 

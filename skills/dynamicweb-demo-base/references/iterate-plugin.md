@@ -1,8 +1,8 @@
-# Folding demo-build learnings back into the truvio-commerce-demo plugin
+# Folding demo-build learnings back into the dynamicweb-commerce-demo plugin
 
 When a demo build surfaces a non-trivial learning — a workaround, a gotcha, a corrected surface order, a missing prereq — that should be captured into a skill, follow this workflow. The goal is to fold it back **while the demo's context is still fresh in the conversation**, not from notes a week later.
 
-This workflow is **maintainer-only** — it requires write access to the `justdynamics/truvio-commerce-demo` repo and a local clone of it. Consumers of the plugin can ignore this reference (or open a PR with their learning instead).
+This workflow is **maintainer-only** — it requires write access to the `justdynamics/dynamicweb-commerce-demo` repo and a local clone of it. Consumers of the plugin can ignore this reference (or open a PR with their learning instead).
 
 ## When to invoke
 
@@ -19,11 +19,11 @@ The conversation should already contain the actual learning content (the gotcha,
 
 ## Step 0 — Resolve the local plugin repo path
 
-The workflow needs the absolute path to your local clone of `justdynamics/truvio-commerce-demo`. Resolution order:
+The workflow needs the absolute path to your local clone of `justdynamics/dynamicweb-commerce-demo`. Resolution order:
 
-1. **Env var.** Check `$env:TRUVIO_PLUGIN_REPO`. If set and the path exists, use it.
-2. **User-scope memory.** Look for a `reference` memory with name `truvio-plugin-repo` (or similar). If found and the path exists, use it.
-3. **Ask.** Use `AskUserQuestion`: *"Path to your local clone of `justdynamics/truvio-commerce-demo`? (e.g. `C:\VibeCode\truvio-commerce-demo`)"*. Once the user answers, verify the path exists and contains `.claude-plugin/plugin.json`, then **save it as a user-scope `reference` memory** so future invocations skip this step. Optionally suggest the user `setx TRUVIO_PLUGIN_REPO "<path>"` for a more permanent fix.
+1. **Env var.** Check `$env:DYNAMICWEB_PLUGIN_REPO`. If set and the path exists, use it.
+2. **User-scope memory.** Look for a `reference` memory with name `dynamicweb-plugin-repo` (or similar). If found and the path exists, use it.
+3. **Ask.** Use `AskUserQuestion`: *"Path to your local clone of `justdynamics/dynamicweb-commerce-demo`? (e.g. `C:\VibeCode\dynamicweb-commerce-demo`)"*. Once the user answers, verify the path exists and contains `.claude-plugin/plugin.json`, then **save it as a user-scope `reference` memory** so future invocations skip this step. Optionally suggest the user `setx DYNAMICWEB_PLUGIN_REPO "<path>"` for a more permanent fix.
 
 If the path doesn't pass the `.claude-plugin/plugin.json` sanity check, abort — the user gave the wrong directory.
 
@@ -31,7 +31,7 @@ If the path doesn't pass the `.claude-plugin/plugin.json` sanity check, abort �
 
 From the conversation context, decide:
 
-- **Which skill** owns the learning (`truvio-demo-base`, `truvio-pim-demo`, `truvio-pim-for-bc`, or `truvio-swift-demo`)?
+- **Which skill** owns the learning (`dynamicweb-demo-base`, `dynamicweb-pim-demo`, `dynamicweb-pim-for-bc`, or `dynamicweb-swift-demo`)?
 - **Which reference** within that skill is the right home? Read the skill's SKILL.md "Where to find things" table to map the learning's topic to a `references/<topic>.md` file. If the learning genuinely doesn't fit any existing reference, propose a new `references/<topic>.md` and check with the user before creating.
 - **Where in the file** does the new content slot in? Read enough surrounding context to make the insertion feel like it belongs (correct heading depth, consistent voice, no duplicate content).
 
@@ -39,7 +39,7 @@ If you're not sure, ask the user one focused question — don't guess at structu
 
 ## Step 1a — Sanitize the candidate content BEFORE drafting the edit (load-bearing)
 
-**Hard rule: zero customer identifiers, zero named individuals, zero session-relative time markers in plugin content.** The plugin is public. Every blob and every commit message is visible at `github.com/justdynamics/truvio-commerce-demo`. Once a name lands in a commit it persists in tags + release-tarball downloads even after subsequent scrubs — historical leaks are forever unless you rewrite git history and force-push (a destructive, project-wide operation that this workflow exists to prevent). A 2026-05-21 sweep had to do exactly that: rewrite all messages + blobs across 14 commits and 11 tags because several customer engagement names AND one vendor employee's personal name had leaked into release prose and worked examples. **Don't make that sweep necessary again.**
+**Hard rule: zero customer identifiers, zero named individuals, zero session-relative time markers in plugin content.** The plugin is public. Every blob and every commit message is visible at `github.com/justdynamics/dynamicweb-commerce-demo`. Once a name lands in a commit it persists in tags + release-tarball downloads even after subsequent scrubs — historical leaks are forever unless you rewrite git history and force-push (a destructive, project-wide operation that this workflow exists to prevent). A 2026-05-21 sweep had to do exactly that: rewrite all messages + blobs across 14 commits and 11 tags because several customer engagement names AND one vendor employee's personal name had leaked into release prose and worked examples. **Don't make that sweep necessary again.**
 
 ### What to scrub before the edit ever reaches the plugin tree
 
@@ -56,13 +56,13 @@ If you're not sure, ask the user one focused question — don't guess at structu
 
 A learning's drafted text often sits in `./notes/skill-learnings-*.md` first; that's where to scrub. The same grep runs against the staged edit before commit. The pack ships in a per-engagement scrub-list file, NOT committed into the plugin repo — keeping the actual tokens out of plugin blobs.
 
-**Location of the scrub-list file:** `$TRUVIO_PLUGIN_REPO\..\..\scrub-list.txt` (one level above the local clone, gitignored by construction since it lives outside the repo). One token per line; blank lines and `#` comments allowed. The file ships seeded with the known historical leaks from prior engagements + the current engagement's slug.
+**Location of the scrub-list file:** `$DYNAMICWEB_PLUGIN_REPO\..\..\scrub-list.txt` (one level above the local clone, gitignored by construction since it lives outside the repo). One token per line; blank lines and `#` comments allowed. The file ships seeded with the known historical leaks from prior engagements + the current engagement's slug.
 
 If the file doesn't exist, the fold-back command creates a stub on first run and asks the user to add the current engagement's tokens before proceeding.
 
 ```powershell
 # Build the regex pack from the external list (paths shown — adapt to where you cloned).
-$scrubList = "$env:TRUVIO_PLUGIN_REPO\..\..\scrub-list.txt"
+$scrubList = "$env:DYNAMICWEB_PLUGIN_REPO\..\..\scrub-list.txt"
 if (-not (Test-Path $scrubList)) {
     Write-Error "Scrub-list missing at $scrubList — create it (one token per line) before folding."
     return
@@ -72,7 +72,7 @@ $nameRx = ($tokens | ForEach-Object { [regex]::Escape($_) }) -join '|'
 
 # 1. Source notes
 Select-String -Path .\notes\skill-learnings-*.md -Pattern $nameRx
-# Staged edit (run from $TRUVIO_PLUGIN_REPO before commit)
+# Staged edit (run from $DYNAMICWEB_PLUGIN_REPO before commit)
 git diff --staged | Select-String -Pattern $nameRx
 
 # 2. Session-relative time (constant — not engagement-specific, lives inline)
@@ -87,7 +87,7 @@ git diff --staged | Select-String -Pattern 'C:\\Projects\\Solutions\\[a-z0-9-]+'
 
 **Any hit in any of those three packs blocks the fold.** Sanitize the source `notes/skill-learnings-*.md` first (so the demo's own notes can stay concrete) into a derivative learning that's vendor-generic — then carry only the vendor-generic version into the plugin edit. Two paragraphs side-by-side in the conversation is fine: "what happened (named)" → "what's the durable lesson (generic)". Only the generic side gets committed.
 
-**Why the scrub-list lives outside the repo.** If the token list itself were committed, every customer / personal name would appear in `git log -p` of the plugin — exactly the leak the policy exists to prevent. Keeping the list one directory level up (or in `$env:USERPROFILE\.truvio\scrub-list.txt`, or wherever the maintainer prefers off-repo) means the policy ships in the plugin (this file) while the concrete tokens stay private to the maintainer's machine.
+**Why the scrub-list lives outside the repo.** If the token list itself were committed, every customer / personal name would appear in `git log -p` of the plugin — exactly the leak the policy exists to prevent. Keeping the list one directory level up (or in `$env:USERPROFILE\.dynamicweb\scrub-list.txt`, or wherever the maintainer prefers off-repo) means the policy ships in the plugin (this file) while the concrete tokens stay private to the maintainer's machine.
 
 ### When the structural learning seems to depend on the customer's name
 
@@ -97,7 +97,7 @@ The same rule applies to vendor / partner / customer **individuals**. Architectu
 
 ### When to expand the known-names list
 
-When a new customer engagement opens, add the customer slug (and any personal names in play) to the off-repo scrub-list file BEFORE the first fold for that demo. The truvio-fold-back command should ask once per session: *"Any new customer/personal names to add to the scrub pack for this engagement?"* — additions go to the scrub-list file, never into the plugin repo. Future folds inherit the expanded pack.
+When a new customer engagement opens, add the customer slug (and any personal names in play) to the off-repo scrub-list file BEFORE the first fold for that demo. The dynamicweb-fold-back command should ask once per session: *"Any new customer/personal names to add to the scrub pack for this engagement?"* — additions go to the scrub-list file, never into the plugin repo. Future folds inherit the expanded pack.
 
 ## Step 1b — Content-hygiene gate (load-bearing — this is how the corpus stays correct)
 
@@ -136,7 +136,7 @@ The default move for a fold-back is to **rewrite the existing sentence or sectio
 
 ## Step 2 — Make the edit
 
-Edit the file at `$TRUVIO_PLUGIN_REPO/skills/<skill>/references/<topic>.md` (or the SKILL.md if the learning is orchestrator-level, not topic-level).
+Edit the file at `$DYNAMICWEB_PLUGIN_REPO/skills/<skill>/references/<topic>.md` (or the SKILL.md if the learning is orchestrator-level, not topic-level).
 
 Voice + structure rules (match what's already there):
 
@@ -149,7 +149,7 @@ Voice + structure rules (match what's already there):
 ## Step 3 — Validate
 
 ```powershell
-cd $env:TRUVIO_PLUGIN_REPO
+cd $env:DYNAMICWEB_PLUGIN_REPO
 python scripts/validate.py
 ```
 
@@ -166,18 +166,18 @@ Read the current version from `.claude-plugin/plugin.json` and bump per semver:
 Update **both** files with the same new version:
 
 - `.claude-plugin/plugin.json` → `"version": "X.Y.Z"`
-- `.claude-plugin/marketplace.json` → the `plugins[].version` field for `truvio-commerce-demo` (currently `"version": "X.Y.Z"` inside the plugin entry; the top-level `metadata.version` should also be bumped to match)
+- `.claude-plugin/marketplace.json` → the `plugins[].version` field for `dynamicweb-commerce-demo` (currently `"version": "X.Y.Z"` inside the plugin entry; the top-level `metadata.version` should also be bumped to match)
 
 Keeping them in lockstep matters: Claude Code keys its install cache by the plugin's version, and a marketplace listing that disagrees with the plugin manifest will surface "available version" mismatches in `/plugin` UI later.
 
 ## Step 4a — Update README.md (mandatory on every version bump)
 
-**This step is non-optional.** Stale README is the difference between partners installing from the marketplace and seeing the current plugin contents vs. an outdated picture. Justin caught a v0.3.0 push that shipped without a README update — the README still listed only the original four skills and made no mention of the `commands/` directory or the new `truvio-erp-demo` sibling. That gap is what this step exists to prevent.
+**This step is non-optional.** Stale README is the difference between partners installing from the marketplace and seeing the current plugin contents vs. an outdated picture. Justin caught a v0.3.0 push that shipped without a README update — the README still listed only the original four skills and made no mention of the `commands/` directory or the new `dynamicweb-erp-demo` sibling. That gap is what this step exists to prevent.
 
 Sections that must stay current on every push:
 
 - **"What's in this plugin"** table — add a row for any new skill; revise descriptions if a skill's scope materially expanded.
-- **"Slash commands"** section (add it if it doesn't exist yet) — list each `/truvio-*` command with a one-line description matching the command's frontmatter `description:` field.
+- **"Slash commands"** section (add it if it doesn't exist yet) — list each `/dynamicweb-*` command with a one-line description matching the command's frontmatter `description:` field.
 - **Repository layout** tree — add `commands/` if not yet listed; add any new skill directory under `skills/`.
 - **Prerequisites** table — only if a new skill / new command introduces a fresh prereq (e.g. a new Node package, a new env var).
 - **Versioning** note — if this push is a milestone (first 1.0.0, first deprecation), update the narrative. For routine bumps, no change needed.
@@ -205,7 +205,7 @@ Co-Authored-By: <the attribution line the harness specifies for the current mode
 
 ```powershell
 # Rebuild $nameRx from the external scrub-list (see Step 1a "Location of the scrub-list file").
-$tokens = Get-Content "$env:TRUVIO_PLUGIN_REPO\..\..\scrub-list.txt" |
+$tokens = Get-Content "$env:DYNAMICWEB_PLUGIN_REPO\..\..\scrub-list.txt" |
           Where-Object { $_ -and -not $_.StartsWith('#') }
 $nameRx = ($tokens | ForEach-Object { [regex]::Escape($_) }) -join '|'
 $timeRx = "Today's |today's |This morning|this morning|Yesterday[^\s]"
@@ -223,7 +223,7 @@ Any hit blocks the commit. Sanitize and re-stage / re-edit `COMMIT_EDITMSG`. **I
 Then:
 
 ```powershell
-cd $env:TRUVIO_PLUGIN_REPO
+cd $env:DYNAMICWEB_PLUGIN_REPO
 git add .claude-plugin README.md skills/<skill>/<file>
 git commit -m "<the message above>"
 git push
@@ -236,7 +236,7 @@ Skip the tag step only if explicitly told to (rare — tags are how rollback lat
 ## Step 6 — Refresh the local marketplace clone
 
 ```powershell
-cd $env:USERPROFILE\.claude\plugins\marketplaces\truvio-commerce-demo
+cd $env:USERPROFILE\.claude\plugins\marketplaces\dynamicweb-commerce-demo
 git pull origin main
 ```
 
@@ -249,7 +249,7 @@ Claude cannot issue slash commands. Output a clear final-step message for the us
 > Pushed `v<X.Y.Z>` and refreshed the marketplace clone. To activate the new content in this (and other) Claude Code sessions, run:
 >
 > ```
-> /plugin update truvio-commerce-demo
+> /plugin update dynamicweb-commerce-demo
 > /reload-plugins
 > ```
 >
@@ -257,7 +257,7 @@ Claude cannot issue slash commands. Output a clear final-step message for the us
 
 **`update`, not `install`.** When the plugin is already installed (which it always is, in the iterate-plugin workflow — you have to have it installed to be folding learnings back), `/plugin install` is a no-op that prints *"Plugin '...' is already installed globally"* and leaves the active install at the old version. `/plugin update` is what actually swings the `installPath` in `~/.claude/plugins/installed_plugins.json` to the new cached version. The old workflow text said `install` and it silently did nothing; verified on Claude Code 2026-05-11.
 
-If you ever need a true fresh install (different machine, plugin not yet installed): then `/plugin install truvio-commerce-demo@truvio-commerce-demo` is the right call. That's a different audience than this workflow's.
+If you ever need a true fresh install (different machine, plugin not yet installed): then `/plugin install dynamicweb-commerce-demo@dynamicweb-commerce-demo` is the right call. That's a different audience than this workflow's.
 
 ## Verification gate — this workflow is NOT complete until
 
@@ -267,7 +267,7 @@ If you ever need a true fresh install (different machine, plugin not yet install
 4. **Sanitization grep packs (Step 1a + final pre-commit) both returned zero hits** — across the source notes, the staged diff, AND the commit message body
 5. **Content-hygiene gate passed (Step 1b)** — supersede sweep run over `skills/` + `commands/` if the learning corrects anything; no second copy of an existing lesson introduced; owning SKILL.md routing row updated if scope changed
 6. `git push` succeeded for both the commit and the tag
-7. The marketplace clone at `~/.claude/plugins/marketplaces/truvio-commerce-demo` is at the new commit (`git log -1 --oneline`)
+7. The marketplace clone at `~/.claude/plugins/marketplaces/dynamicweb-commerce-demo` is at the new commit (`git log -1 --oneline`)
 8. **Post-push verification grep against `origin/main`** — confirm the leak pack returns zero against the just-pushed commit (`git fetch && git log origin/main -1 --format=%B | Select-String -Pattern $nameRx`). If a hit shows up here, jump immediately to "Recovery from a leak that made it to origin" below — do not announce success to the user.
 9. The user has the slash-command pair to run
 
@@ -296,9 +296,9 @@ The cost of this dance is high enough that the Step 1a + final pre-commit grep p
 - **Skipping the Step 1a sanitization grep.** Customer-name leaks in a public plugin are a "capital sin" per the project's standing rule. The grep takes seconds; the recovery (full history rewrite + force-push, see above) takes the rest of an afternoon and costs every collaborator a clone reset.
 - **Letting a personal name through because "they're a vendor employee, not a customer".** The standing rule covers vendor / partner / individual names too — provenance is "the Dynamicweb vendor architect (`<date>`)", never `<Person Name>`. A 2026-05-21 sweep had to retroactively scrub a vendor architect's personal name from blobs and messages for exactly this reason.
 - **Using "Today's …" / "this morning …" / "yesterday …" in commit prose.** The dates are already in `git log`'s commit metadata. Repeating relative timestamps in the message body rots immediately and reads as session noise. Use absolute dates inside prose when the date is structurally important; otherwise drop the temporal prefix.
-- **Folding a learning that's actually demo-specific.** If the gotcha only applies to one customer's quirky data, it belongs in that demo's `.planning/`, not in the plugin. Ask: "would this help every Truvio demo, or only this one?" If only this one, skip the fold. (A learning that *requires* the customer's name to be coherent is a strong signal it's demo-specific.)
+- **Folding a learning that's actually demo-specific.** If the gotcha only applies to one customer's quirky data, it belongs in that demo's `.planning/`, not in the plugin. Ask: "would this help every Dynamicweb demo, or only this one?" If only this one, skip the fold. (A learning that *requires* the customer's name to be coherent is a strong signal it's demo-specific.)
 - **Folding without context.** If the user says "save that thing we just figured out" and you're not sure exactly which thing, ask. Don't fold a paraphrase.
-- **Touching `truvio-pim-for-bc` for non-BC learnings.** Each skill has a tight scope; cross-skill learnings usually live in `truvio-demo-base` (foundation rules), `truvio-erp-demo` (integration concerns), or get split.
+- **Touching `dynamicweb-pim-for-bc` for non-BC learnings.** Each skill has a tight scope; cross-skill learnings usually live in `dynamicweb-demo-base` (foundation rules), `dynamicweb-erp-demo` (integration concerns), or get split.
 - **Appending a warning next to a claim it contradicts.** If the learning shows an existing sentence is wrong or over-confident, rewrite that sentence (Step 1b §3). A ⚠ block stacked under an unqualified claim leaves the file disagreeing with itself.
 - **Folding a correction into one file and calling it done.** A pivot or retraction must sweep `skills/` AND `commands/` (Step 1b §1). The v0.6.0 ERP pivot updated one reference and left the retracted model live in five other files — including a command that actively scaffolded it.
 - **Recording the same lesson in a second home.** If a grep finds the lesson already exists, sharpen the canonical copy and pointer to it (Step 1b §2). Duplicates drift into contradictions.
@@ -306,19 +306,19 @@ The cost of this dance is high enough that the Step 1a + final pre-commit grep p
 ## Reference: file layout
 
 ```
-$TRUVIO_PLUGIN_REPO/
+$DYNAMICWEB_PLUGIN_REPO/
 ├── .claude-plugin/
 │   ├── plugin.json                  ← version field here
 │   └── marketplace.json             ← plugins[].version AND metadata.version here
 ├── README.md                        ← updated on EVERY version bump (Step 4a)
-├── commands/                        ← /truvio-* slash commands
+├── commands/                        ← /dynamicweb-* slash commands
 ├── skills/
-│   ├── truvio-demo-base/
+│   ├── dynamicweb-demo-base/
 │   │   ├── SKILL.md
 │   │   └── references/<topic>.md    ← most additive learnings land here
-│   ├── truvio-pim-demo/
-│   ├── truvio-erp-demo/             ← ERP integration (mock + cross-link to live BC)
-│   ├── truvio-pim-for-bc/           ← live BC connector via ngrok
-│   └── truvio-swift-demo/
+│   ├── dynamicweb-pim-demo/
+│   ├── dynamicweb-erp-demo/             ← ERP integration (mock + cross-link to live BC)
+│   ├── dynamicweb-pim-for-bc/           ← live BC connector via ngrok
+│   └── dynamicweb-swift-demo/
 └── scripts/validate.py              ← run before commit
 ```

@@ -1,12 +1,12 @@
 # permissions-recipes.md
 
-> Operational SQL recipes for seeding the role/permission grants behind demo personas in Dynamicweb 10 — abstract role matrix, functional-view grant checklist, action-button level bump, field-editability dual-gate, per-role field-level differentiation, UI-section hides, dashboard pinning, and the plaintext-password escape hatch. **Concept → [permissions-model.md](permissions-model.md)** (three-layer model, storage tables, `CapabilityControlFeature` flag, entity registry, admin bypass, cache/enforcement); **seeding grants for personas → this file.** Loaded from `~/.claude/skills/truvio-pim-demo/SKILL.md` "Where to find things" table.
+> Operational SQL recipes for seeding the role/permission grants behind demo personas in Dynamicweb 10 — abstract role matrix, functional-view grant checklist, action-button level bump, field-editability dual-gate, per-role field-level differentiation, UI-section hides, dashboard pinning, and the plaintext-password escape hatch. **Concept → [permissions-model.md](permissions-model.md)** (three-layer model, storage tables, `CapabilityControlFeature` flag, entity registry, admin bypass, cache/enforcement); **seeding grants for personas → this file.** Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table.
 >
 > All recipes assume direct SQL on the permission tables — the admin UI does not expose them for the resources these recipes touch ([permissions-model.md](permissions-model.md) §4c). After any insert/update, flush caches per the "Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission`" / "…on `CapabilityLimitation`" / "…on `CapabilitySetLimitation`" rows in [cache-invalidation.md](cache-invalidation.md); `DashboardAccessUserRelation` reads bypass the cache (no flush needed). Never verify a recipe logged in as Angel / BuiltInAdmin / Administrator — those user classes bypass every check ([permissions-model.md](permissions-model.md) §7); always test as a Default-type user in the target group.
 
 ## 1. Role matrix — abstract roles only
 
-A PIM demo's role roster is project-specific. This ref does NOT prescribe role names — use customer-specific roles only after the customer-context PDF has been read (per the [`truvio-demo-base/references/customer-context.md`](../../truvio-demo-base/references/customer-context.md) read-only contract). For demo-skill purposes use abstract roles:
+A PIM demo's role roster is project-specific. This ref does NOT prescribe role names — use customer-specific roles only after the customer-context PDF has been read (per the [`dynamicweb-demo-base/references/customer-context.md`](../../dynamicweb-demo-base/references/customer-context.md) read-only contract). For demo-skill purposes use abstract roles:
 
 | Role | Layer B (capabilities — UI visibility) | Layer C (entity — actions) | Notes |
 |---|---|---|---|

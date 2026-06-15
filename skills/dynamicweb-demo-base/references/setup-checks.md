@@ -33,7 +33,7 @@ Each check follows the same shape: **Why** → **Probe** → **Expected** → **
 
 ### Check: DW_VAULT env var (User scope)
 
-**Why this matters:** Every reference in this skill (and every sister skill) resolves vault content via `$env:DW_VAULT`. If the var is unset, `compare-vault.md`, the slot-inventory probe in Check 6, and Swift's [`../../truvio-swift-demo/references/deserialize-flow.md`](../../truvio-swift-demo/references/deserialize-flow.md) all fail.
+**Why this matters:** Every reference in this skill (and every sister skill) resolves vault content via `$env:DW_VAULT`. If the var is unset, `compare-vault.md`, the slot-inventory probe in Check 6, and Swift's [`../../dynamicweb-swift-demo/references/deserialize-flow.md`](../../dynamicweb-swift-demo/references/deserialize-flow.md) all fail.
 
 **Probe:**
 

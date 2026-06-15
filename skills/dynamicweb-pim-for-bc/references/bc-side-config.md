@@ -1,17 +1,17 @@
 # bc-side-config.md
 
-> Configure the **Business Central** side of the integration -- the BC tenant that's calling our public ngrok URL. Loaded from `~/.claude/skills/truvio-pim-for-bc/SKILL.md` "Where to find things" table.
+> Configure the **Business Central** side of the integration -- the BC tenant that's calling our public ngrok URL. Loaded from `~/.claude/skills/dynamicweb-pim-for-bc/SKILL.md` "Where to find things" table.
 
 ## Scope
 
-This reference covers what BC needs configured to talk to a Truvio host. It does NOT cover BC tenant provisioning or licencing -- assumes you have a BC environment (sandbox or production) where you can install extensions and edit setup pages.
+This reference covers what BC needs configured to talk to a Dynamicweb host. It does NOT cover BC tenant provisioning or licencing -- assumes you have a BC environment (sandbox or production) where you can install extensions and edit setup pages.
 
 ## Prerequisites on the BC side
 
 - A BC environment (Cloud SaaS, on-prem, or sandbox) with admin rights.
-- The "Dynamicweb PIM Connector" extension installed in BC. Available in the BC AppStore (Microsoft AppSource) -- search for "Dynamicweb". This is the BC-side counterpart to the Truvio-side "PIM for Business Central connector" AppStore app.
-- The Truvio-side app installed and `BCSettings` corrected (see [truvio-connector-settings.md](truvio-connector-settings.md)).
-- Truvio host running; tunnel up at the reserved domain (see [tunnel.md](tunnel.md)).
+- The "Dynamicweb PIM Connector" extension installed in BC. Available in the BC AppStore (Microsoft AppSource) -- search for "Dynamicweb". This is the BC-side counterpart to the dynamicweb-side "PIM for Business Central connector" AppStore app.
+- The dynamicweb-side app installed and `BCSettings` corrected (see [dynamicweb-connector-settings.md](dynamicweb-connector-settings.md)).
+- Dynamicweb host running; tunnel up at the reserved domain (see [tunnel.md](tunnel.md)).
 
 ## Two configuration values BC needs
 
@@ -26,7 +26,7 @@ Set:
 
 ### 2. The bearer token
 
-Issue or reuse a Truvio Management API token:
+Issue or reuse a Dynamicweb Management API token:
 
 - **Issue dedicated**: in DW admin -> Settings -> Integration -> Management API tokens, create a new token labelled "BC Connector" with full-access permissions. Copy the token string immediately (DW only shows it once).
 - **Reuse existing**: paste the same token from `.claude/settings.local.json -> env.DW_API_TOKEN`. Simpler for a one-off demo; revocation isn't independent.
@@ -43,7 +43,7 @@ The BC connector extension typically exposes a **Test Connection** button on the
 |---|---|---|
 | "Connected -- PIM v2 (PIM:true, Ecom:true)" | Public URL + token + ngrok tunnel + ForwardedHeaders all working | None, you're done |
 | "Connection failed: 401 Unauthorized" | Token is wrong, expired, or BC is sending it in a non-Bearer format | Re-issue token; double-check BC's auth-header format setting |
-| "Connection failed: 400 Unknown query" | URL is reaching DW but BC is hitting a non-existent endpoint | Check the BC extension's expected endpoint version vs what's installed on the Truvio side |
+| "Connection failed: 400 Unknown query" | URL is reaching DW but BC is hitting a non-existent endpoint | Check the BC extension's expected endpoint version vs what's installed on the Dynamicweb side |
 | "Connection failed: timeout / DNS error" | ngrok tunnel down, or BC's outbound HTTP is blocked | `ngrok config check` + retry tunnel; check BC tenant outbound firewall |
 | "HTML received instead of JSON" | ngrok interstitial fired (free tier) OR Host header issue routing to a non-API page | Confirm paid plan is in use; inspect via `127.0.0.1:4040` to see what BC's request looks like |
 
@@ -92,7 +92,7 @@ Three crisp beats once everything is up:
 
 1. **"This is a real BC tenant"** -- show the BC web client, the Dynamicweb PIM Setup page with the ngrok URL filled in.
 2. **"Click Test Connection"** -- the green checkmark, response shows `PIM:true, Ecom:true` from a real running PIM instance.
-3. **"Push an item from BC"** -- create or modify an item in BC, watch it appear in the Truvio admin UI within seconds. Switch to the dashboard, point out the "New Product From BC" workflow state -- governance baked into the integration.
+3. **"Push an item from BC"** -- create or modify an item in BC, watch it appear in the Dynamicweb admin UI within seconds. Switch to the dashboard, point out the "New Product From BC" workflow state -- governance baked into the integration.
 
 If the demo audience is the BC team specifically, also show: BC pulling the PIM field schema, mapping a BC item category to a PIM data model. This is where BC's role as the operational system meets PIM's role as the master data system -- the demo's punchline.
 
@@ -104,8 +104,8 @@ The BC connector supports both directions, but the choice is configured BC-side:
 - **PIM -> BC** (PIM is master): BC pulls via `BCProductBy*` queries on a schedule. PIM is canonical; BC consumes. Common for orgs where the PIM team owns the master data and BC is purely operational.
 - **Mixed**: most orgs run mixed -- BC owns some fields (price, stock), PIM owns others (descriptions, hero images, category attributes). The connector supports field-level direction via BC-side mapping config.
 
-The Truvio-side endpoints support both directions transparently -- the API surface is the same.
+The dynamicweb-side endpoints support both directions transparently -- the API surface is the same.
 
 ## Token rotation
 
-When the demo is over and the reserved domain is no longer needed, revoke the BC's Truvio token in DW admin -> Settings -> Integration -> Management API tokens. The BC tenant's stored token becomes invalid; subsequent calls return 401. This is the right cleanup for shared-account demos -- prevents stale credentials lingering in BC tenants.
+When the demo is over and the reserved domain is no longer needed, revoke the BC's Dynamicweb token in DW admin -> Settings -> Integration -> Management API tokens. The BC tenant's stored token becomes invalid; subsequent calls return 401. This is the right cleanup for shared-account demos -- prevents stale credentials lingering in BC tenants.

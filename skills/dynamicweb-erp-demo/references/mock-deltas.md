@@ -1,6 +1,6 @@
 # mock-deltas.md
 
-> Canonical recipe for mocking an ERP without a live tenant: the demo data starts in the **post-delta state**, staged directly in the database, with a single scheduled task to reset between demos. Loaded from `truvio-erp-demo/SKILL.md` "Where to find things". Use when the demo handover doesn't include BC tenant access.
+> Canonical recipe for mocking an ERP without a live tenant: the demo data starts in the **post-delta state**, staged directly in the database, with a single scheduled task to reset between demos. Loaded from `dynamicweb-erp-demo/SKILL.md` "Where to find things". Use when the demo handover doesn't include BC tenant access.
 
 ## The mental model
 
@@ -14,7 +14,7 @@ The model is intentionally one-direction (BC → PIM). The PIM → BC enrichment
 
 ## When to use this flavor
 
-| Constraint | DB-staged mock (this file) | Live BC ([`truvio-pim-for-bc`](../../truvio-pim-for-bc/SKILL.md)) |
+| Constraint | DB-staged mock (this file) | Live BC ([`dynamicweb-pim-for-bc`](../../dynamicweb-pim-for-bc/SKILL.md)) |
 |---|---|---|
 | Demo handed off to a partner with no BC credentials | **Yes** (only viable option) | No |
 | Demo laptop has no internet | **Yes** | No (ngrok needs internet) |
@@ -131,5 +131,5 @@ No live fire. No JSON file open. Data + rule + template tell the story.
 - [integration-framework.md](integration-framework.md) — the always-on "ERP is source/target, not channel/feed" rule.
 - [erp-data-shape.md](erp-data-shape.md) — generic ERP↔PIM field-ownership table for authoring the post-sync state in Step 1.
 - [scenarios-first-planning.md](scenarios-first-planning.md) — design the BC-driven scenarios before staging the DB.
-- Live BC alternative: [`truvio-pim-for-bc`](../../truvio-pim-for-bc/SKILL.md).
+- Live BC alternative: [`dynamicweb-pim-for-bc`](../../dynamicweb-pim-for-bc/SKILL.md).
 - Reference implementation: `<demo>/.planning/stage-and-reset.ps1` (2026-05-21 pivot from JSON-files to DB-staged).

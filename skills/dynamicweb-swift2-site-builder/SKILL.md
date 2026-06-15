@@ -1,10 +1,6 @@
 ---
 name: dynamicweb-swift2-site-builder
-description: >
-  Customize an existing Swift 2 Dynamicweb site for a specific business. Use when the agent must
-  inspect the current Swift 2 installation, preserve the working page shell, and then update the
-  area, page metadata, navigation tags, category pages, and item values for the new business
-  without rebuilding the site from scratch.
+description: Customize an existing Swift 2 Dynamicweb site for a specific business without rebuilding it -- inspects the current installation, preserves the working page shell, and updates the area, page metadata, navigation tags, category pages, and item values. Triggers: rebrand or repurpose an existing Swift 2 site, update area/page settings and navigation for a new business, adjust category pages and item values. Non-triggers: installing Swift 2 from scratch -> dynamicweb-solution-installer; orchestrating a full solution from a plain-language request -> dynamicweb-business-solution-agent; configuring catalog/PIM/commerce data -> dynamicweb-business-setup-agent.
 ---
 
 # Dynamicweb Swift 2 Site Builder

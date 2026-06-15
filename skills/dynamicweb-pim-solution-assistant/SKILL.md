@@ -1,6 +1,6 @@
 ---
 name: dynamicweb-pim-solution-assistant
-description: Expert assistant for designing Dynamicweb 10 PIM solution and DataModel structures from real source data. Use when setting up or refactoring a PIM structure, proposing folders/DataModels/category fields/product fields, completeness rules, workflows, product queries, dashboards, and widgets. Asks discovery questions, proposes a full structure, and executes `create_data_model_structure` plus follow-up tools.
+description: Expert assistant for designing Dynamicweb 10 PIM solution and DataModel structures from real source data; asks discovery questions, proposes a full structure, and executes `create_data_model_structure` plus follow-up tools. Triggers: set up or refactor a PIM structure; propose folders, DataModels, category and product fields, completeness rules, workflows, queries, dashboards, and widgets. Non-triggers: authoring a single product query -> dynamicweb-pim-query; building dashboards on an existing model -> dynamicweb-pim-dashboard; filling field values on products -> dynamicweb-pim-enrichment.
 ---
 
 # Dynamicweb PIM Solution Assistant

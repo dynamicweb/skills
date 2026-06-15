@@ -1,12 +1,12 @@
 # access-surfaces.md
 
-> Four-surface decision matrix for Dynamicweb 10 instance access (MCP / Management API / direct SQL / filesystem). Use this to pick the fastest surface for any given PIM task. Loaded from `~/.claude/skills/truvio-pim-demo/SKILL.md` "Where to find things" table.
+> Four-surface decision matrix for Dynamicweb 10 instance access (MCP / Management API / direct SQL / filesystem). Use this to pick the fastest surface for any given PIM task. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table.
 
 ## Access surfaces
 
 You have FOUR independent surfaces into a Dynamicweb 10 instance. Use whichever is fastest for the task — they're not redundant:
 
-1. **MCP (`truvio-commerce-mcp`)** — ~260 tools, rich schemas, slow to auth but convenient for create/update. Tokens expire mid-session; re-auth with `/mcp`.
+1. **MCP (`dynamicweb-commerce-mcp`)** — ~260 tools, rich schemas, slow to auth but convenient for create/update. Tokens expire mid-session; re-auth with `/mcp`.
 
 2. **Management API** — `https://localhost:<PORT>/admin/api/` with `Authorization: Bearer CLAUDE.xxx` tokens. **Spec UI at `/admin/api/docs/`**. The OpenAPI JSON path is not officially documented and varies by Swashbuckle version — discover at runtime via the probe in §OpenAPI Discovery below. Best for admin operations the MCP doesn't expose: **BuildIndex**, ProductCombine, IndexStatus, **cache invalidation** (clear specific service cache: `POST /admin/api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Ecommerce.Shops.ShopService"}`; enumerate all caches via `GET /admin/api/GetServiceCaches`), **feature flags** (`POST /admin/api/FeatureManagementToggle {"FeatureTypeName":"..."}`), and **rule-usage inspection** (`GET /admin/api/CompletionSettingsSourceById?Id=<ruleId>`). Always reach for the API before restarting the host when you need a cache flush.
 

@@ -2,7 +2,7 @@
   "marketplace": {
     "name": "Dynamicweb Skills",
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "2.0.0"
+    "version": "2.1.0"
   },
   "plugins": [
     {
@@ -23,6 +23,7 @@
         "skills/dynamicweb-pim-enrichment",
         "skills/dynamicweb-pim-solution-assistant",
         "skills/dynamicweb-business-setup-agent",
+        "skills/dynamicweb-business-solution-agent",
         "skills/dynamicweb-swift2-site-builder"
       ]
     },
@@ -31,8 +32,7 @@
       "description": "Skills for end-users and business users working with product data and business solutions.",
       "skills": [
         "skills/dynamicweb-pim-enrichment",
-        "skills/dynamicweb-pim-query",
-        "skills/dynamicweb-business-solution-agent"
+        "skills/dynamicweb-pim-query"
       ]
     },
     {

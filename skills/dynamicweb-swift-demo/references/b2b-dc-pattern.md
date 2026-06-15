@@ -11,7 +11,7 @@
 1. **Assortments** scoped to DC user-group membership — DC-specific catalogs (a buyer assigned to `DC-OMA` sees only what that DC stocks).
 2. **Shipping methods** filterable by user group — e.g. "Fast delivery" shipping method only offered to members of `DC-OMA` (where it's actually feasible).
 3. **Shipping fees** with per-user-group price matrices — a `ShippingMethodFee` row keyed on `(method, user-group)` gives DC-specific freight.
-4. **Cart-time price resolution** scoped by the same user-group — already covered by the stock `EcomPrices` resolver when `PriceCustomerGroup` matches a group the user is a member of. (Note: this is base-row resolution; `PriceQuantity > 0` tier rows are still ignored by the stock cart — see [`truvio-pim-demo/references/structural-model.md` §2.11](../../truvio-pim-demo/references/structural-model.md). The vendor-recommended pattern for qty-aware DC pricing is ERP-imported pre-graduated rows, one per (product, user-group, qty-band).)
+4. **Cart-time price resolution** scoped by the same user-group — already covered by the stock `EcomPrices` resolver when `PriceCustomerGroup` matches a group the user is a member of. (Note: this is base-row resolution; `PriceQuantity > 0` tier rows are still ignored by the stock cart — see [`dynamicweb-pim-demo/references/structural-model.md` §2.11](../../dynamicweb-pim-demo/references/structural-model.md). The vendor-recommended pattern for qty-aware DC pricing is ERP-imported pre-graduated rows, one per (product, user-group, qty-band).)
 
 This is *not* a custom architecture. Each of the four features is a stock DW10 surface that scopes by user-group; "DC = user group" is the convention that makes them compose.
 
@@ -46,13 +46,13 @@ When MCP is connected and the budget is small (a handful of DCs + a few demo per
 
 ### SQL fallback (for bulk seeding only)
 
-When seeding tens of users across many DCs — typical for "make this demo feel real" data volume — bulk SQL is appropriate. Use the surface-priority escalation rule from [`truvio-demo-base/SKILL.md` "Surface priority for CREATES"](../../truvio-demo-base/SKILL.md): try MCP, escalate to SQL only for bulk cases where MCP-tool round-trips become prohibitive.
+When seeding tens of users across many DCs — typical for "make this demo feel real" data volume — bulk SQL is appropriate. Use the surface-priority escalation rule from [`dynamicweb-demo-base/SKILL.md` "Surface priority for CREATES"](../../dynamicweb-demo-base/SKILL.md): try MCP, escalate to SQL only for bulk cases where MCP-tool round-trips become prohibitive.
 
 Schema notes for SQL fallback:
 
 - **`AccessUser`** rows for groups: `AccessUserType = 1` (group), `AccessUserUserName` = `AccessUserCustomerNumber` = the DC code (e.g. `'DC-OMA'`), `AccessUserUserAndGroupType` = NULL (so the group remains visible in admin tree), `AccessUserExternalID` = NULL or your ERP key. `AccessUserActive = 1`.
 - **`AccessUserGroupRelation`** rows: one per `(AccessUserUserID, AccessUserGroupID)` pair. The user-to-group relations.
-- After bulk INSERT, **restart the host** to flush user/group caches — per [`truvio-pim-demo/references/cache-invalidation.md`](../../truvio-pim-demo/references/cache-invalidation.md) the user-resolution caches don't observe direct SQL writes. **Doesn't apply when** the rows came via MCP / admin UI; those invalidate inline.
+- After bulk INSERT, **restart the host** to flush user/group caches — per [`dynamicweb-pim-demo/references/cache-invalidation.md`](../../dynamicweb-pim-demo/references/cache-invalidation.md) the user-resolution caches don't observe direct SQL writes. **Doesn't apply when** the rows came via MCP / admin UI; those invalidate inline.
 
 **`AccessUser` NOT NULL columns that easily get skipped.** Bulk-INSERTs that pattern-copy from a partial INSERT example abort with a confusing `Cannot insert the value NULL into column '<X>'` on the first row. The columns DW10 requires NOT NULL on `AccessUser` (in addition to the obvious `AccessUserType` / `AccessUserUserName` / `AccessUserActive` you'd write anyway):
 
@@ -109,7 +109,7 @@ For everything in between (multi-DC B2B with named buyer accounts), this is the 
 
 ## Cross-references
 
-- [`truvio-pim-demo/references/structural-model.md` §2.9](../../truvio-pim-demo/references/structural-model.md) — Assortments structural model (customer access ≠ Channels).
-- [`truvio-pim-demo/references/structural-model.md` §2.11](../../truvio-pim-demo/references/structural-model.md) — Pricing: cart ignores `PriceQuantity > 0`; ERP-pre-graduated rows are the production pattern for qty-aware DC pricing.
+- [`dynamicweb-pim-demo/references/structural-model.md` §2.9](../../dynamicweb-pim-demo/references/structural-model.md) — Assortments structural model (customer access ≠ Channels).
+- [`dynamicweb-pim-demo/references/structural-model.md` §2.11](../../dynamicweb-pim-demo/references/structural-model.md) — Pricing: cart ignores `PriceQuantity > 0`; ERP-pre-graduated rows are the production pattern for qty-aware DC pricing.
 - [`customer-center.md`](customer-center.md) — Stock Swift CSR section for sales-on-behalf; layered on top of the DC pattern when the CSR persona impersonates DC buyers.
-- [`truvio-demo-base/references/vendor-patterns.md`](../../truvio-demo-base/references/vendor-patterns.md) — vendor-positioning context, including the DW vs ours skill-design differences.
+- [`dynamicweb-demo-base/references/vendor-patterns.md`](../../dynamicweb-demo-base/references/vendor-patterns.md) — vendor-positioning context, including the DW vs ours skill-design differences.

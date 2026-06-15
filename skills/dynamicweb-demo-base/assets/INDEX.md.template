@@ -13,4 +13,4 @@
 
 ## Resolution rule
 
-Every Truvio skill resolves vault content via `$env:DW_VAULT` joined with a slot name from this table. Hardcoded literal-path fallbacks (e.g., `C:\VibeCode\dw-vault\dw10source\`) are documented as bootstrap-only / emergency-only. See `truvio-demo-base/references/setup-checks.md` for the verify-and-fix walkthrough; see `truvio-demo-base/references/compare-vault.md` for cross-machine drift detection.
+Every Dynamicweb skill resolves vault content via `$env:DW_VAULT` joined with a slot name from this table. Hardcoded literal-path fallbacks (e.g., `C:\VibeCode\dw-vault\dw10source\`) are documented as bootstrap-only / emergency-only. See `dynamicweb-demo-base/references/setup-checks.md` for the verify-and-fix walkthrough; see `dynamicweb-demo-base/references/compare-vault.md` for cross-machine drift detection.

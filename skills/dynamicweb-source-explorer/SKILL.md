@@ -1,6 +1,6 @@
 ---
 name: dynamicweb-source-explorer
-description: Browse Dynamicweb source code from GitHub repositories to understand internal APIs, classes, and patterns. Use when you need to understand how a Dynamicweb API works internally, find the right classes/methods to use, or discover extension points before building MCP tools.
+description: Browse Dynamicweb source code on GitHub to understand internal APIs, classes, extension points, and patterns. Triggers: understand how a Dynamicweb API works internally, find the right classes or methods to use, discover extension points before building MCP tools or add-ins. Non-triggers: actually adding a new MCP tool -> dynamicweb-mcp-tool-creator; running product queries against a live install -> dynamicweb-pim-query.
 ---
 
 # Dynamicweb Source Explorer

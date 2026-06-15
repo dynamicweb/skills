@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "truvio-commerce-mcp": {
+    "dynamicweb-commerce-mcp": {
       "type": "http",
       "url": "https://localhost:<PORT>/admin/mcp",
       "headers": {

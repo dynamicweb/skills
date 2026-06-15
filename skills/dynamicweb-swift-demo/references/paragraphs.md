@@ -38,7 +38,7 @@ A few paragraph types are stock-load-bearing for typical B2B-distributor demo di
 
 - **Customer center / CSR / Orders paragraph** — the stock paragraph already supports impersonation + mixed-source order viewing + the `OrderSource` discriminator badge; rebuilding loses that wiring. See [customer-center.md](customer-center.md).
 - **Cart summary / Checkout step paragraphs** — high regression risk; touching these triggers the customisations-ledger preflight in base. See [re-skin.md](re-skin.md) "What NOT to touch".
-- **Product detail paragraph** — relies on the Lucene index + the PIM completeness rules; modifying it can mask "rules don't show" symptoms. See [truvio-pim-demo/references/governance.md](../truvio-pim-demo/references/governance.md).
+- **Product detail paragraph** — relies on the Lucene index + the PIM completeness rules; modifying it can mask "rules don't show" symptoms. See [dynamicweb-pim-demo/references/governance.md](../../dynamicweb-pim-demo/references/governance.md).
 
 ## Empty `ParagraphTemplate` resolves to the first cshtml alphabetically (silent footgun)
 
@@ -75,7 +75,7 @@ WHERE ParagraphItemType = 'Swift-v2_Text'
   AND (ParagraphTemplate IS NULL OR ParagraphTemplate = '');
 ```
 
-This is an UPDATE on an existing `Paragraph` row — per [`truvio-pim-demo/references/cache-invalidation.md`](../../truvio-pim-demo/references/cache-invalidation.md) "edit-vs-insert rule", **field UPDATEs on existing rows are live, no host restart required.** Confirmed by browsing to the affected pages — `ParagraphTemplate` is read live on the next render. Choose a stock variant that produces the right default (`TextLeft.cshtml` is the conventional full-width-left for Swift `Swift-v2_Text`).
+This is an UPDATE on an existing `Paragraph` row — per [`dynamicweb-pim-demo/references/cache-invalidation.md`](../../dynamicweb-pim-demo/references/cache-invalidation.md) "edit-vs-insert rule", **field UPDATEs on existing rows are live, no host restart required.** Confirmed by browsing to the affected pages — `ParagraphTemplate` is read live on the next render. Choose a stock variant that produces the right default (`TextLeft.cshtml` is the conventional full-width-left for Swift `Swift-v2_Text`).
 
 Run this BEFORE introducing any `<Brand>*`-prefixed custom variant under that item type's folder; once the backfill is in, the alphabetical fallback no longer fires.
 
@@ -170,11 +170,11 @@ This pitfall composes with `SelectedGroups` above: SQL/JSON-seeded `ProductGroup
 
 ### Field-system-name format
 
-Display-group field links use the pipe-delimited form `ProductCategory|<CategoryId>|<fieldSystemName>` (e.g. `ProductCategory|HeadsetsAttributes|audio_driver_size`). This matches the `id` returned by `mcp__truvio-commerce-mcp__get_product_by_id` in `customFields[].id`. Underlying storage in `EcomProductCategoryFieldValue` splits the parts (`FieldValueFieldCategoryId` + `FieldValueFieldId`); the rendering code synthesises the pipe form when matching against the display group, so the stored `FieldDisplayGroupFieldSystemName` MUST be the full pipe form.
+Display-group field links use the pipe-delimited form `ProductCategory|<CategoryId>|<fieldSystemName>` (e.g. `ProductCategory|HeadsetsAttributes|audio_driver_size`). This matches the `id` returned by `mcp__dynamicweb-commerce-mcp__get_product_by_id` in `customFields[].id`. Underlying storage in `EcomProductCategoryFieldValue` splits the parts (`FieldValueFieldCategoryId` + `FieldValueFieldId`); the rendering code synthesises the pipe form when matching against the display group, so the stored `FieldDisplayGroupFieldSystemName` MUST be the full pipe form.
 
 ### `Swift-v2_Row` has no item-type fields
 
-The row item type ships with zero custom fields — its layout knobs (column definition, container, color scheme, background image) live on the row entity itself and are written via `mcp__truvio-commerce-mcp__save_grid_rows`, not via `set_item_field_values`. Useful row knobs: `definitionId` (1Column / 2Columns / 3Columns / etc.), `colorSchemeId`, `backgroundImage`, `container`. Alternating `colorSchemeId` between adjacent rows on a long PDP gives visual rhythm without touching templates.
+The row item type ships with zero custom fields — its layout knobs (column definition, container, color scheme, background image) live on the row entity itself and are written via `mcp__dynamicweb-commerce-mcp__save_grid_rows`, not via `set_item_field_values`. Useful row knobs: `definitionId` (1Column / 2Columns / 3Columns / etc.), `colorSchemeId`, `backgroundImage`, `container`. Alternating `colorSchemeId` between adjacent rows on a long PDP gives visual rhythm without touching templates.
 
 ### Where the PDP page is sourced from
 
@@ -229,7 +229,7 @@ The canonical surface is Swift's PLP dual-page pattern: a wrapper page hosts a `
 
 **The "two ProductListInfo paragraphs" anatomy.** Swift's stock catalog setup ships a PLP wrapper page (e.g. PageId 71) that hosts `Breadcrumb + ProductListInfo (h3, large title) + ProductListComponentSelector + ProductListNavigation`, plus an inner component-source page (e.g. PageId 57) that the selector renders via `@RenderGrid`. The inner page carries `ProductListFacets + ProductListItemRepeater + a second ProductListInfo (h6, small title)`. The small h6 ProductListInfo lands *under* the product grid + counter — visually identical to an orphan category title floating at the bottom of the PLP. SQL `ParagraphDeleted=1` / `ParagraphShowParagraph=0` on the inner paragraph does not hide it (per the cache rule above). CSS-hide the bottom variant explicitly (2026-05-13):
 
-This inverts the [`cache-invalidation.md`](../../truvio-pim-demo/references/cache-invalidation.md) "edit-vs-insert rule": UPDATEs on existing rows are normally live, but a `ParagraphDeleted` / `ParagraphShowParagraph` flip on a paragraph rendered through `RenderGrid` is *not*. The `RenderGrid` HTML cache is keyed by the source page id, not by individual paragraph row state.
+This inverts the [`cache-invalidation.md`](../../dynamicweb-pim-demo/references/cache-invalidation.md) "edit-vs-insert rule": UPDATEs on existing rows are normally live, but a `ParagraphDeleted` / `ParagraphShowParagraph` flip on a paragraph rendered through `RenderGrid` is *not*. The `RenderGrid` HTML cache is keyed by the source page id, not by individual paragraph row state.
 
 **The only reliable lever is CSS-hide — and it must be cache-proof.** Prefer an inline `<style>` block in `Custom/<customer>HeadInclude.cshtml` over `<customer>_custom.css`: on some builds the CSS file is served under a static version token that browsers never re-fetch (see [`re-skin.md`](re-skin.md) §"Wiring up project-scoped custom.css"), so a hide that only lives in the CSS file can silently fail to reach the page. The rule itself:
 

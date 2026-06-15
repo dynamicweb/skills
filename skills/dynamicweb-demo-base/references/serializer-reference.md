@@ -1,8 +1,8 @@
 # serializer-reference.md
 
-> Install + failure-triage reference for `DynamicWeb.Serializer`. Owns: the **fact the Serializer exists** for any Truvio demo, **how to install it in the demo host** (one-time-per-host DLL drop + config staging), **common failure patterns**, and **versioning / baseline compatibility**.
+> Install + failure-triage reference for `DynamicWeb.Serializer`. Owns: the **fact the Serializer exists** for any Dynamicweb demo, **how to install it in the demo host** (one-time-per-host DLL drop + config staging), **common failure patterns**, and **versioning / baseline compatibility**.
 >
-> **Operational baseline-deserialize steps** (POST `/Admin/Api/SerializerDeserialize`, integrity sweep, schema-drift workarounds) are owned by [`../../truvio-swift-demo/references/deserialize-flow.md`](../../truvio-swift-demo/references/deserialize-flow.md). Only Swift demos need that flow — PIM demos start from a blank/fresh DB.
+> **Operational baseline-deserialize steps** (POST `/Admin/Api/SerializerDeserialize`, integrity sweep, schema-drift workarounds) are owned by [`../../dynamicweb-swift-demo/references/deserialize-flow.md`](../../dynamicweb-swift-demo/references/deserialize-flow.md). Only Swift demos need that flow — PIM demos start from a blank/fresh DB.
 >
 > **Tool internals live upstream.** The Serializer ships its own canonical docs at `C:\VibeCode\DynamicWeb.Serializer\docs\` — when this reference disagrees with upstream, upstream wins (the baseline-drift self-diagnosis rule: skill text is the second source of truth). See "Internals — upstream pointer block" below.
 
@@ -42,7 +42,7 @@ The shipped config uses the current schema: a single flat `predicates: [...]` li
 
 ### Verification
 
-After steps 1–3, restart the host. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST with no payload typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../truvio-swift-demo/references/deserialize-flow.md`](../../truvio-swift-demo/references/deserialize-flow.md).
+After steps 1–3, restart the host. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST with no payload typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dynamicweb-swift-demo/references/deserialize-flow.md`](../../dynamicweb-swift-demo/references/deserialize-flow.md).
 
 ### Deploy vs Seed
 
@@ -53,13 +53,13 @@ Two **conflict strategies** for the same deserialize pipeline, set per predicate
 | **Deploy** | Source-wins. Re-deserialize overwrites target. | Developer-owned deployment data: shop structure, item types, VAT rates, country list, payment method definitions. Identical across envs. |
 | **Seed** | Field-level merge. YAML fills only fields the target has not set; customer edits preserved across re-deploys. | First-run content: Customer Center welcome copy, FAQ body text, newsletter templates. Bootstrap data that transitions to customer ownership. |
 
-For Swift baseline restore ([`../../truvio-swift-demo/references/deserialize-flow.md`](../../truvio-swift-demo/references/deserialize-flow.md)), only Deploy mode is used. Seed mode is out of scope for the canonical Swift baseline-load flow.
+For Swift baseline restore ([`../../dynamicweb-swift-demo/references/deserialize-flow.md`](../../dynamicweb-swift-demo/references/deserialize-flow.md)), only Deploy mode is used. Seed mode is out of scope for the canonical Swift baseline-load flow.
 
 Upstream long-form: `C:\VibeCode\DynamicWeb.Serializer\docs\concepts.md` — "Deploy and Seed modes", "The three-bucket split".
 
 ## Vault baseline shape
 
-The vault baseline at `$env:DW_VAULT\serialized-data\Swift2.2\` is **content-only** (as of 2026-05-08 — the historical `_sql/` framework rows were deliberately removed: they silently overwrote framework data hosts had already built via the PIM-skill flow). One top-level subfolder: `_content/`, a mirror tree of the DW area→page→gridRow→paragraph hierarchy, one YAML file per node (folder = page; files = `area.yml`, `page.yml`, `grid-row.yml`, `paragraph-<col>-<n>.yml`). Hosts that need a baseline framework should run [`../../truvio-pim-demo/references/canonical-setup-order.md`](../../truvio-pim-demo/references/canonical-setup-order.md) Steps 1-4 before this deserialize. The runtime contract is [`../../truvio-swift-demo/references/deserialize-flow.md`](../../truvio-swift-demo/references/deserialize-flow.md) §3 "Baseline shape".
+The vault baseline at `$env:DW_VAULT\serialized-data\Swift2.2\` is **content-only** (as of 2026-05-08 — the historical `_sql/` framework rows were deliberately removed: they silently overwrote framework data hosts had already built via the PIM-skill flow). One top-level subfolder: `_content/`, a mirror tree of the DW area→page→gridRow→paragraph hierarchy, one YAML file per node (folder = page; files = `area.yml`, `page.yml`, `grid-row.yml`, `paragraph-<col>-<n>.yml`). Hosts that need a baseline framework should run [`../../dynamicweb-pim-demo/references/canonical-setup-order.md`](../../dynamicweb-pim-demo/references/canonical-setup-order.md) Steps 1-4 before this deserialize. The runtime contract is [`../../dynamicweb-swift-demo/references/deserialize-flow.md`](../../dynamicweb-swift-demo/references/deserialize-flow.md) §3 "Baseline shape".
 
 ## Internals — upstream pointer block
 
@@ -166,7 +166,7 @@ Baseline rolls (the vault's `Swift2.2/` content) happen out-of-band — when Dyn
 | If you need... | Read |
 |---|---|
 | Install the Serializer in the demo host (build DLL, copy to bin, stage config) | "Installation" section above |
-| Run a baseline content deserialize (Swift demos only) | [`../../truvio-swift-demo/references/deserialize-flow.md`](../../truvio-swift-demo/references/deserialize-flow.md) |
-| Post-deserialize integrity checks | [`../../truvio-swift-demo/references/integrity-sweep.md`](../../truvio-swift-demo/references/integrity-sweep.md) |
+| Run a baseline content deserialize (Swift demos only) | [`../../dynamicweb-swift-demo/references/deserialize-flow.md`](../../dynamicweb-swift-demo/references/deserialize-flow.md) |
+| Post-deserialize integrity checks | [`../../dynamicweb-swift-demo/references/integrity-sweep.md`](../../dynamicweb-swift-demo/references/integrity-sweep.md) |
 | Recover from DW10 update-queue bugs (independent of Serializer) | `references/db-update-recovery.md` |
 | Serializer internals — architecture, YAML schema, strict mode, link resolution, tools (canonical) | `C:\VibeCode\DynamicWeb.Serializer\docs\` + source ("Internals — upstream pointer block" above) |

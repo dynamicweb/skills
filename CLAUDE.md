@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A Claude plugin containing 15 skills for Dynamicweb 10. There is no build system, no tests, and no code to run — the entire repo is markdown and configuration files.
+A Claude plugin containing 15 skills for Dynamicweb 10. The repo is markdown and
+configuration files — no build system and no runtime code. The one piece of tooling is
+`scripts/validate-skills.py`, a structural linter (see "Validation" below).
 
 ## Key files
 
@@ -29,7 +31,20 @@ description: <one to three sentences. First sentence states what the skill does.
 ---
 ```
 
-The `description` field is the activation signal — it is matched against the user's request at runtime. Write it in the third person, be explicit about triggers and non-triggers, and include the "Use when…" / "Non-triggers:" pattern used by the existing skills.
+The `description` field is the activation signal — it is matched against the user's request at runtime. Write it in the third person using this shape:
+
+1. **First sentence** — what the skill does.
+2. **`Triggers:`** — the phrases / conditions / error symptoms that should activate it.
+3. **`Non-triggers:`** — adjacent cases that belong to a sibling skill, each routed with `-> dynamicweb-<other-skill>`.
+
+Example (`dynamicweb-pim-dashboard`):
+
+```
+description: Create and configure Dynamicweb 10 dashboards and widgets using MCP tools. Triggers: create a dashboard, add or configure widgets, build query-backed count widgets. Non-triggers: building the underlying product query -> dynamicweb-pim-query; designing the PIM data model -> dynamicweb-pim-solution-assistant.
+```
+
+Demo skills additionally carry a `Use AFTER dynamicweb-demo-base` marker (see below). Keep
+descriptions on a single line.
 
 ### Adding a new skill
 
@@ -37,6 +52,7 @@ The `description` field is the activation signal — it is matched against the u
 2. Add `references/`, `assets/`, or `scripts/` subdirectories as needed.
 3. Register the skill path in the relevant plugin(s) in `.claude-plugin/marketplace.json`.
 4. Add an entry to the README skills table and skills section.
+5. Run `python3 scripts/validate-skills.py` and fix any errors before committing.
 
 ### Updating marketplace.json
 
@@ -45,6 +61,36 @@ Skills can appear in more than one plugin. Paths are relative from the repo root
 ### Demo skills dependency order
 
 The `dynamicweb-presales` skills have a hard dependency chain — `dynamicweb-demo-base` must run before any sister skill (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`, `dynamicweb-erp-demo`, `dynamicweb-pim-for-bc`). Sister skill descriptions carry a "Use AFTER dynamicweb-demo-base" marker; preserve this on any edits.
+
+## Validation
+
+`scripts/validate-skills.py` (Python 3, no dependencies) is the structural linter. It checks
+that `marketplace.json` parses and every referenced skill path exists; that each skill's
+folder name, `name:` frontmatter, and marketplace path agree; that every relative link in
+`SKILL.md`/`references` resolves; and that the retired "truvio" codename appears nowhere. It
+warns (without failing) when a description lacks a trigger signal.
+
+Run it before committing:
+
+```
+python3 scripts/validate-skills.py
+```
+
+To run it automatically at the start of every Claude Code session (so structural breakage
+surfaces immediately), add this `SessionStart` hook to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/validate-skills.py\"" } ] }
+    ]
+  }
+}
+```
+
+Record notable changes (skills added/renamed, role-bundle moves, structural changes) in
+`CHANGELOG.md`, and bump `marketplace.json`'s `version` accordingly.
 
 ## No PRs
 

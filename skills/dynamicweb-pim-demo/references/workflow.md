@@ -1,8 +1,8 @@
 # workflow.md
 
-> Dynamicweb 10 has a real product-workflow engine. Tables, state graph, the email-firing subscriber, the verified gap (no native per-state role gating), and three workaround patterns for role-based transitions. Read this BEFORE building any "approve / publish" demo story — most of the moving parts are already wired and you only need data, not C#. Loaded from `~/.claude/skills/truvio-pim-demo/SKILL.md` "Where to find things" table.
+> Dynamicweb 10 has a real product-workflow engine. Tables, state graph, the email-firing subscriber, the verified gap (no native per-state role gating), and three workaround patterns for role-based transitions. Read this BEFORE building any "approve / publish" demo story — most of the moving parts are already wired and you only need data, not C#. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table.
 >
-> **Cross-cutting placement note.** Same placement note as [`permissions-model.md`](permissions-model.md): this ref sits at PIM-skill level. Workflow concerns touch PIM and the Swift frontend (the approver UI is a CMS surface; the audit log can drive content) and integrations (ERP push fires off state changes). If cross-cutting use materialises across more than two sibling skills, consider promoting to a future `truvio-platform-demo` sibling. For now: here.
+> **Cross-cutting placement note.** Same placement note as [`permissions-model.md`](permissions-model.md): this ref sits at PIM-skill level. Workflow concerns touch PIM and the Swift frontend (the approver UI is a CMS surface; the audit log can drive content) and integrations (ERP push fires off state changes). If cross-cutting use materialises across more than two sibling skills, consider promoting to a future `dynamicweb-platform-demo` sibling. For now: here.
 
 ## 1. Schema — five tables, two foreign-key columns
 
@@ -98,7 +98,7 @@ A custom `NotificationSubscriber` on `Product.BeforeSave` (or on `ProductWorkflo
 2. Looks up which AccessUserGroup is allowed to move INTO that state (config lives in a small custom table OR a JSON config file under `Files/System/` — no schema change needed).
 3. If the current user (from `args.User` or `Pageview.User`) is not a member of the allowed group, throws — which cancels the save.
 
-Single `.cs` file. Ships under the "NotificationSubscriber" customisation budget (per [`truvio-demo-base/references/customisations.md`](../../truvio-demo-base/references/customisations.md)) — not a preflight-blocked surface. Compose with §6.2 / §6.3 for UI gating.
+Single `.cs` file. Ships under the "NotificationSubscriber" customisation budget (per [`dynamicweb-demo-base/references/customisations.md`](../../dynamicweb-demo-base/references/customisations.md)) — not a preflight-blocked surface. Compose with §6.2 / §6.3 for UI gating.
 
 **Strength**: backend-enforced — even MCP / raw API can't bypass.
 **Weakness**: error surfacing is generic (admin sees "save failed"); UI still shows the dropdown options. Use with §6.2 if dropdown noise matters.
@@ -134,8 +134,8 @@ In all three workarounds, **add the audit-log subscriber** anyway: a `Notificati
 ## 7. Cross-references
 
 - **Permissions** — [`permissions-model.md`](permissions-model.md). All three §6 workarounds build on Layer B and Layer C grants from that ref.
-- **Render-time permissions** (Page / Paragraph gating in storefront) — [`truvio-swift-demo/references/dw10-canonical-surfaces.md`](../../truvio-swift-demo/references/dw10-canonical-surfaces.md) §"Permissions — the entity store". Different table (`Permission`, not `UnifiedPermission`), different lookup. Don't confuse — `UnifiedPermission` gates ADMIN actions (the focus of this ref); `Permission` gates STOREFRONT renders.
-- **Customisations budget** — [`truvio-demo-base/references/customisations.md`](../../truvio-demo-base/references/customisations.md). `NotificationSubscriber` and scheduled-task surfaces are NOT in the preflight glob — §6.1 and the audit-log subscriber ship unprompted.
+- **Render-time permissions** (Page / Paragraph gating in storefront) — [`dynamicweb-swift-demo/references/dw10-canonical-surfaces.md`](../../dynamicweb-swift-demo/references/dw10-canonical-surfaces.md) §"Permissions — the entity store". Different table (`Permission`, not `UnifiedPermission`), different lookup. Don't confuse — `UnifiedPermission` gates ADMIN actions (the focus of this ref); `Permission` gates STOREFRONT renders.
+- **Customisations budget** — [`dynamicweb-demo-base/references/customisations.md`](../../dynamicweb-demo-base/references/customisations.md). `NotificationSubscriber` and scheduled-task surfaces are NOT in the preflight glob — §6.1 and the audit-log subscriber ship unprompted.
 - **Cache invalidation** — [`cache-invalidation.md`](cache-invalidation.md). State transitions via `WorkflowStateService.Save` go through the domain service and invalidate caches inline; raw `UPDATE EcomProducts SET ProductWorkflowStateId = …` does NOT fire the `ProductWorkflowStateChanged` notification at all (so emails won't fire either) — use the service, not raw SQL.
 
 Source-citation line numbers re-verified against `$env:DW_VAULT/dw10source/` on 2026-05-21.

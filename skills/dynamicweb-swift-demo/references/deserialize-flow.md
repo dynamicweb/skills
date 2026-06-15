@@ -2,16 +2,16 @@
 
 > Deserialize a Swift content baseline from `$env:DW_VAULT\serialized-data\<baseline>\` into the per-demo project DB. Uses `DynamicWeb.Serializer` + Management API. Strict mode is on by default — failures surface as `CumulativeStrictModeException`. Always followed by [`integrity-sweep.md`](integrity-sweep.md).
 >
-> **Scope: Swift demos only.** PIM demos start from a blank/fresh DB and skip this flow entirely. This file is owned by `truvio-swift-demo`; the underlying Serializer install + background reference live in `truvio-demo-base/references/serializer-reference.md`.
+> **Scope: Swift demos only.** PIM demos start from a blank/fresh DB and skip this flow entirely. This file is owned by `dynamicweb-swift-demo`; the underlying Serializer install + background reference live in `dynamicweb-demo-base/references/serializer-reference.md`.
 
 ## 1. Prerequisites
 
-`truvio-demo-base` setup is complete:
+`dynamicweb-demo-base` setup is complete:
 
-- [`../../truvio-demo-base/references/setup-checks.md`](../../truvio-demo-base/references/setup-checks.md) is green (DW_VAULT, NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express, vault slot inventory all probed and resolved).
-- [`../../truvio-demo-base/references/scaffold.md`](../../truvio-demo-base/references/scaffold.md) produced a running `Dynamicweb.Host.Suite` (port reachable, host responds at `/admin`).
-- [`../../truvio-demo-base/references/mcp-setup.md`](../../truvio-demo-base/references/mcp-setup.md) verification gate passed (`claude mcp list` shows `truvio-commerce-mcp ✓ Connected` AND in-conversation `ToolSearch +dynamicweb` returns >200 tools).
-- **DynamicWeb.Serializer is installed in the host** per [`../../truvio-demo-base/references/serializer-reference.md`](../../truvio-demo-base/references/serializer-reference.md) "Installation" section (DLL built + copied to `bin/Debug/net10.0/`, `Files/Serializer.config.json` staged, host restarted). This is a one-time-per-host step.
+- [`../../dynamicweb-demo-base/references/setup-checks.md`](../../dynamicweb-demo-base/references/setup-checks.md) is green (DW_VAULT, NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express, vault slot inventory all probed and resolved).
+- [`../../dynamicweb-demo-base/references/scaffold.md`](../../dynamicweb-demo-base/references/scaffold.md) produced a running `Dynamicweb.Host.Suite` (port reachable, host responds at `/admin`).
+- [`../../dynamicweb-demo-base/references/mcp-setup.md`](../../dynamicweb-demo-base/references/mcp-setup.md) verification gate passed (`claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND in-conversation `ToolSearch +dynamicweb` returns >200 tools).
+- **DynamicWeb.Serializer is installed in the host** per [`../../dynamicweb-demo-base/references/serializer-reference.md`](../../dynamicweb-demo-base/references/serializer-reference.md) "Installation" section (DLL built + copied to `bin/Debug/net10.0/`, `Files/Serializer.config.json` staged, host restarted). This is a one-time-per-host step.
 - A Management API bearer token has been captured via `AskUserQuestion` in the current conversation. Format: `CLAUDE.<hex>`. Token lives in conversation state, never persisted to disk. Do not write the token to any file.
 
 If any of those are unmet, return to the relevant reference before attempting a deserialize. A deserialize against a half-wired host is the fastest way to corrupt a demo's state silently.
@@ -30,7 +30,7 @@ The baseline's content predicates reference `Swift-v2_*` item types whose XML de
 - `Files/Templates/Designs/Swift-v2/`
 - `Files/System/Styles/`
 
-**Repositories skip rule.** For `Files/System/Repositories/`, copy **everything EXCEPT `ProductsBackend/` and `ProductsFrontend/`** — those two index Swift's bike-demo custom fields (`PlantHardiness`, `BikeFrameSize`, plant/bike-specific facets, etc.). Copying them into a host whose products use a different data-model causes `BuildIndex` Full to fail with "field not found in products" — the index builder validates every field reference against the live `EcomProductCategoryField` table. The other Swift-shipped indexes (`Content/`, `Files/`, `Post/`, `Secondary users/`) are demo-data-agnostic — they index Pages/Files/blog Posts/Users via standard fields plus item-type fields that DO resolve cleanly; copy those alongside. Hand-write a per-demo Products index targeting the demo's actual data-model fields instead — see [`../../truvio-pim-demo/references/canonical-setup-order.md`](../../truvio-pim-demo/references/canonical-setup-order.md) Step 16. (For PIM-data + Swift-frontend hybrid demos with N categories × M custom fields each, pick 5-10 demo-relevant fields per category for the index — not the full set; index size is rarely the constraint, but maintenance and admin-UI clarity are.)
+**Repositories skip rule.** For `Files/System/Repositories/`, copy **everything EXCEPT `ProductsBackend/` and `ProductsFrontend/`** — those two index Swift's bike-demo custom fields (`PlantHardiness`, `BikeFrameSize`, plant/bike-specific facets, etc.). Copying them into a host whose products use a different data-model causes `BuildIndex` Full to fail with "field not found in products" — the index builder validates every field reference against the live `EcomProductCategoryField` table. The other Swift-shipped indexes (`Content/`, `Files/`, `Post/`, `Secondary users/`) are demo-data-agnostic — they index Pages/Files/blog Posts/Users via standard fields plus item-type fields that DO resolve cleanly; copy those alongside. Hand-write a per-demo Products index targeting the demo's actual data-model fields instead — see [`../../dynamicweb-pim-demo/references/canonical-setup-order.md`](../../dynamicweb-pim-demo/references/canonical-setup-order.md) Step 16. (For PIM-data + Swift-frontend hybrid demos with N categories × M custom fields each, pick 5-10 demo-relevant fields per category for the index — not the full set; index size is rarely the constraint, but maintenance and admin-UI clarity are.)
 
 **Catalog-paragraph path rewrite (run AFTER the deserialize).** The `eCom_ProductCatalog` paragraphs from the Swift baseline reference `/Files/System/Repositories/ProductsFrontend/Products.query` and `Products.facets` in their `ParagraphModuleSettings` XML. Those paths point into the bike-demo repos you skipped — the Catalog module silently renders an empty product list when the paths break. After authoring your per-demo `Products.query` + `Products.facets` (sourced from `Repository="Products"`, with parameters matching your facet fields), bulk-rewrite the paragraph references via SQL:
 
@@ -52,7 +52,7 @@ The flow needs three values per project. Read them, never hardcode (the discover
 
 ### 2.1 `$port` — HTTPS port from `launchSettings.json`
 
-Use the same snippet documented in [`../../truvio-demo-base/references/mcp-setup.md`](../../truvio-demo-base/references/mcp-setup.md) Section 1 (port-discovery from `Dynamicweb.Host.Suite/Properties/launchSettings.json`). That reference is the single source of truth for port discovery; do not duplicate it here.
+Use the same snippet documented in [`../../dynamicweb-demo-base/references/mcp-setup.md`](../../dynamicweb-demo-base/references/mcp-setup.md) Section 1 (port-discovery from `Dynamicweb.Host.Suite/Properties/launchSettings.json`). That reference is the single source of truth for port discovery; do not duplicate it here.
 
 After running that snippet, `$port` is populated for use in Section 4 and downstream.
 
@@ -78,7 +78,7 @@ Vault path resolution: every baseline path resolves through `$env:DW_VAULT` (bas
 
 **The Serializer reads from `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/<deploy|seed>/`** (joined from `outputDirectory: "Serializer"` in `Files/Serializer.config.json` + `outputSubfolder` per mode). It does NOT read from a project-root `baselines/` folder. A `baselines/` copy is invisible to the deserialize endpoint and any "121 updated" you see comes from whatever else is already in `SerializeRoot/deploy/` (typically a previous serialize roundtripping itself). Verified during a Swift2 baseline import — the original recipe pointed at `baselines/` and silently no-op'd.
 
-**Baseline shape — content-only.** As of 2026-05-08 the canonical Swift2.2 vault baseline contains ONLY `_content/` (Area + pages + grid-rows + paragraphs + master items, ~640 YAML files). It does **NOT** ship `_sql/`. Framework data (shops, currencies, countries, languages, manufacturers, payments, shippings, VAT groups) must already exist in the target DB before this deserialize runs. The area's YAML hardcodes `"AreaEcomShopId": "SHOP1"` and `"AreaEcomCountryCode": "DE"` as **string FKs** — they resolve against whatever rows have those surrogate ids in target. A PIM-set-up host (`truvio-pim-demo`'s blank-DB flow that creates SHOP1, DE, EUR, LANG1) is therefore a clean baseline target — the deserialize lands content additively without conflicting with the PIM-curated framework. Hosts missing the framework must run the relevant `truvio-pim-demo` setup steps (`canonical-setup-order.md` Steps 1-4) first.
+**Baseline shape — content-only.** As of 2026-05-08 the canonical Swift2.2 vault baseline contains ONLY `_content/` (Area + pages + grid-rows + paragraphs + master items, ~640 YAML files). It does **NOT** ship `_sql/`. Framework data (shops, currencies, countries, languages, manufacturers, payments, shippings, VAT groups) must already exist in the target DB before this deserialize runs. The area's YAML hardcodes `"AreaEcomShopId": "SHOP1"` and `"AreaEcomCountryCode": "DE"` as **string FKs** — they resolve against whatever rows have those surrogate ids in target. A PIM-set-up host (`dynamicweb-pim-demo`'s blank-DB flow that creates SHOP1, DE, EUR, LANG1) is therefore a clean baseline target — the deserialize lands content additively without conflicting with the PIM-curated framework. Hosts missing the framework must run the relevant `dynamicweb-pim-demo` setup steps (`canonical-setup-order.md` Steps 1-4) first.
 
 ```powershell
 $baseline = "Swift2.2"  # or a customer-flavoured "<demo>-base" baseline once it has been derived (see $env:DW_VAULT\INDEX.md serialized-data row for available baselines)
@@ -135,7 +135,7 @@ If the POST returns 4xx with a `CumulativeStrictModeException` body, the body it
 
 ## 5. Strict-mode contract
 
-For internals (where each category is detected in source), see [`../../truvio-demo-base/references/serializer-reference.md`](../../truvio-demo-base/references/serializer-reference.md).
+For internals (where each category is detected in source), see [`../../dynamicweb-demo-base/references/serializer-reference.md`](../../dynamicweb-demo-base/references/serializer-reference.md).
 
 Strict mode raises four categories of failure as `CumulativeStrictModeException`:
 
@@ -150,7 +150,7 @@ The integrity sweep ([`integrity-sweep.md`](integrity-sweep.md)) — specificall
 
 GUID-based identity. Cross-environment `Default.aspx?ID=N` rewriting is handled by Serializer automatically — `ID=` query parameters in YAML are resolved against the destination DB's GUID-to-numeric-id mapping at deserialize time, so the same baseline can be deployed to a fresh DB or to one with existing rows without manual ID surgery.
 
-Use **`Deploy`** mode for the baseline deserialize (baseline overwrites target). **`Seed`** mode is for additive cases — out of scope here; the Seed-mode contract is documented in the Serializer README + [`../../truvio-demo-base/references/serializer-reference.md`](../../truvio-demo-base/references/serializer-reference.md), and a follow-up reference can be authored if a per-demo additive seeding step is needed.
+Use **`Deploy`** mode for the baseline deserialize (baseline overwrites target). **`Seed`** mode is for additive cases — out of scope here; the Seed-mode contract is documented in the Serializer README + [`../../dynamicweb-demo-base/references/serializer-reference.md`](../../dynamicweb-demo-base/references/serializer-reference.md), and a follow-up reference can be authored if a per-demo additive seeding step is needed.
 
 ## 7. Post-deserialize host restart guidance
 

@@ -1,6 +1,6 @@
 # static-link-manager.md
 
-> The `StaticLinkManager` AppStore AddIn that owns the `/admin/api/StaticLink*` admin-deeplink surface. The BC connector's "show PIM product page" feature (the embedded webview that opens a PIM product detail page from inside Business Central) requires this AddIn -- it is **NOT** part of the BC connector AppStore package itself, despite being adjacent in functionality. Loaded from `~/.claude/skills/truvio-pim-for-bc/SKILL.md` "Where to find things" table.
+> The `StaticLinkManager` AppStore AddIn that owns the `/admin/api/StaticLink*` admin-deeplink surface. The BC connector's "show PIM product page" feature (the embedded webview that opens a PIM product detail page from inside Business Central) requires this AddIn -- it is **NOT** part of the BC connector AppStore package itself, despite being adjacent in functionality. Loaded from `~/.claude/skills/dynamicweb-pim-for-bc/SKILL.md` "Where to find things" table.
 
 ## Why this exists as a separate AddIn
 

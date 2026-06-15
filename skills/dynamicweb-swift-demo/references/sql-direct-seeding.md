@@ -1,8 +1,8 @@
 # sql-direct-seeding.md
 
-> Required-field reference for Page / GridRow / Paragraph SQL-direct INSERTs when MCP / admin UI / Management API are out of reach (bulk demo seed flows, headless agents, sister-demo replay scripts). Cross-references [`templates.md`](templates.md), [`paragraphs.md`](paragraphs.md), and [`../../truvio-pim-demo/references/cache-invalidation.md`](../../truvio-pim-demo/references/cache-invalidation.md) for the post-INSERT restart rules.
+> Required-field reference for Page / GridRow / Paragraph SQL-direct INSERTs when MCP / admin UI / Management API are out of reach (bulk demo seed flows, headless agents, sister-demo replay scripts). Cross-references [`templates.md`](templates.md), [`paragraphs.md`](paragraphs.md), and [`../../dynamicweb-pim-demo/references/cache-invalidation.md`](../../dynamicweb-pim-demo/references/cache-invalidation.md) for the post-INSERT restart rules.
 >
-> **This is the SQL-fallback surface.** The preferred surface for content seeding is MCP `save_pages` / `save_grid_rows` / `save_paragraphs` — those invalidate caches inline and don't require the field disciplines below. Read [`../../truvio-demo-base/SKILL.md` "Surface priority for CREATES"](../../truvio-demo-base/SKILL.md) before reaching for SQL. This file is the rulebook for the cases where you have already decided SQL is the right surface (bulk seeds, MCP token expiry mid-batch, no MCP available).
+> **This is the SQL-fallback surface.** The preferred surface for content seeding is MCP `save_pages` / `save_grid_rows` / `save_paragraphs` — those invalidate caches inline and don't require the field disciplines below. Read [`../../dynamicweb-demo-base/SKILL.md` "Surface priority for CREATES"](../../dynamicweb-demo-base/SKILL.md) before reaching for SQL. This file is the rulebook for the cases where you have already decided SQL is the right surface (bulk seeds, MCP token expiry mid-batch, no MCP available).
 
 ## When this file applies
 
@@ -42,7 +42,7 @@ INSERT INTO Page (
 
 The `PageActiveFrom` / `PageActiveTo` columns are the silent killers — without them DW's page-resolution treats the row as scheduled-out and returns 404 even though the slug resolves. The other NOT-NULL columns surface a more useful `Cannot insert NULL` error on first attempt.
 
-**Post-INSERT.** Restart the host — page-resolution cache does not observe SQL-direct INSERTs (2026-05-13). See [`../../truvio-pim-demo/references/cache-invalidation.md`](../../truvio-pim-demo/references/cache-invalidation.md) for the cache table. After restart, hit the page once to warm JIT, then continue seeding.
+**Post-INSERT.** Restart the host — page-resolution cache does not observe SQL-direct INSERTs (2026-05-13). See [`../../dynamicweb-pim-demo/references/cache-invalidation.md`](../../dynamicweb-pim-demo/references/cache-invalidation.md) for the cache table. After restart, hit the page once to warm JIT, then continue seeding.
 
 ## Required NOT-NULL columns — `GridRow` row
 
@@ -146,7 +146,7 @@ INSERT INTO GridRow (..., GridRowSort, ...) VALUES (..., 25, ...);
 
 This sidesteps the "duplicate sort" issue — DW10 renders ties in non-deterministic order, which surfaces as inconsistent page layout across renders. Same pattern applies to `ParagraphSort` within a GridRow.
 
-**Cache rule.** `GridRowSort` UPDATEs on existing rows DO require a host restart (the page-composition cache holds the ordered list and won't re-sort until reload). This is the one exception to the "UPDATEs on existing rows are live" rule from [`../../truvio-pim-demo/references/cache-invalidation.md`](../../truvio-pim-demo/references/cache-invalidation.md). Bundle the `* 10` rewrite + the INSERT + the restart into one operation.
+**Cache rule.** `GridRowSort` UPDATEs on existing rows DO require a host restart (the page-composition cache holds the ordered list and won't re-sort until reload). This is the one exception to the "UPDATEs on existing rows are live" rule from [`../../dynamicweb-pim-demo/references/cache-invalidation.md`](../../dynamicweb-pim-demo/references/cache-invalidation.md). Bundle the `* 10` rewrite + the INSERT + the restart into one operation.
 
 ## Soft-hide vs full delete — neither is observed reliably
 
@@ -165,6 +165,6 @@ After every batch of Page / GridRow / Paragraph SQL INSERTs:
 
 - [`templates.md`](templates.md) "Page state flags" — `active` vs `hidden` vs `published` semantics for the `PageActive` / `PageHidden` columns above.
 - [`paragraphs.md`](paragraphs.md) — Swift's stock paragraph types, the empty-`ParagraphTemplate` alphabetical-fallback hazard, the `ProductListComponentSelector` cache rule, the Bootstrap `.ratio` aspect-ratio pitfall.
-- [`../../truvio-pim-demo/references/cache-invalidation.md`](../../truvio-pim-demo/references/cache-invalidation.md) — post-mutation cache table covering every row type above.
-- [`../../truvio-demo-base/SKILL.md` "Surface priority for CREATES"](../../truvio-demo-base/SKILL.md) — the MCP-first rule. SQL is the fallback, not the default.
+- [`../../dynamicweb-pim-demo/references/cache-invalidation.md`](../../dynamicweb-pim-demo/references/cache-invalidation.md) — post-mutation cache table covering every row type above.
+- [`../../dynamicweb-demo-base/SKILL.md` "Surface priority for CREATES"](../../dynamicweb-demo-base/SKILL.md) — the MCP-first rule. SQL is the fallback, not the default.
 - [`b2b-dc-pattern.md`](b2b-dc-pattern.md) "AccessUser NOT NULL columns that easily get skipped" — sister required-fields list for `AccessUser` SQL-direct INSERTs (DC group seeding).

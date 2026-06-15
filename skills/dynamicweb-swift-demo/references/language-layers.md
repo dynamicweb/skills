@@ -1,6 +1,6 @@
 # language-layers.md
 
-> Content-side localization in Dynamicweb 10 — adding a language layer to a website (sibling Area row), wiring the language management settings, and exposing the `Swift-v2_LanguageSelector` paragraph so visitors can switch. Sister doc to `truvio-pim-demo/references/localization.md` (PIM/product side).
+> Content-side localization in Dynamicweb 10 — adding a language layer to a website (sibling Area row), wiring the language management settings, and exposing the `Swift-v2_LanguageSelector` paragraph so visitors can switch. Sister doc to `dynamicweb-pim-demo/references/localization.md` (PIM/product side).
 >
 > **TL;DR:** A language layer is a **sibling `Area` row** under the same Website, with `AreaMasterAreaId` pointing back to the master area and `AreaCulture` / `AreaEcomLanguageId` set to the new locale. Admin UI flow is Settings → Content → Websites → "+ New website Language" → pick the master to copy from. All pages/paragraphs/grid-rows from the master are cloned into the new Area at create-time; from then on the language management settings (see "The eight knobs" below) decide whether subsequent master changes propagate. Frontend switches between layers via the OOTB `Swift-v2_LanguageSelector` paragraph, which renders one anchor per active sibling area and currency-formats accordingly.
 
@@ -9,7 +9,7 @@
 - A second-language storefront under the SAME brand/website (different culture, different translated copy, often a different currency/country default).
 - Multi-market demos ("we sell into BE / DE / FR" → three language layers under one master).
 
-If the question is "translate product names + descriptions for an existing area," that's PIM-side — see [`../../truvio-pim-demo/references/localization.md`](../../truvio-pim-demo/references/localization.md). Content-side language layers do NOT translate product field values; they read whichever `AreaEcomLanguageId` you wire and PIM serves the right product strings via its own translation tables.
+If the question is "translate product names + descriptions for an existing area," that's PIM-side — see [`../../dynamicweb-pim-demo/references/localization.md`](../../dynamicweb-pim-demo/references/localization.md). Content-side language layers do NOT translate product field values; they read whichever `AreaEcomLanguageId` you wire and PIM serves the right product strings via its own translation tables.
 
 ## The two-table mental model
 
@@ -72,7 +72,7 @@ UPDATE Area SET
 WHERE AreaId = <newAreaId>;
 ```
 
-PIM must have a matching `LANG2` row + the products you care about translated to that LanguageId. See `truvio-pim-demo/references/localization.md`.
+PIM must have a matching `LANG2` row + the products you care about translated to that LanguageId. See `dynamicweb-pim-demo/references/localization.md`.
 
 ## The Swift OOTB language switcher
 
@@ -123,9 +123,9 @@ Emit `<a href="/Default.aspx?ID=@target" hreflang="...">` — DW's URL provider 
 **Hard rule:** a language layer is a multi-table CREATE that DW does ~95 page clones + paragraph/grid-row/item-localization/sibling-link bookkeeping for. The base skill's "Surface priority for CREATES" rule applies in full — MCP first, then Management API, then admin UI, **never raw SQL `INSERT INTO Area`**. A SQL clone produces a partially-cloned tree (the 7 stub pages DW auto-creates when it notices a new sibling Area) that looks plausible in the page picker but is missing PDPs, sign-in, customer-center, and the sibling-page links the LanguageSelector relies on. Cleanup is then harder than just using the right surface in the first place. The author of this skill burned an hour on this; you do not need to repeat the lesson.
 
 1. **Confirm master area state.** `SELECT AreaId, AreaName, AreaUrlName, AreaMasterAreaId, AreaCulture, AreaEcomLanguageId, AreaEcomCurrencyId, AreaEcomCountryCode FROM Area`. The master should have `AreaMasterAreaId=0`.
-2. **Pre-stage PIM** — add the new `EcomLanguages` row (MCP `save_languages` first; Management API `Languages` family as fallback; SQL only as last resort) and translate the hero products + groups per `truvio-pim-demo/references/localization.md`. Doing this first means the language layer has something to render when it's created.
-3. **Prereqs (BOTH must be in place — verify via `truvio-demo-base/references/setup-checks.md` §"MSDTC for cross-connection TransactionScope"):**
-   - `Program.cs` has `System.Transactions.TransactionManager.ImplicitDistributedTransactions = true;` set before `WebApplication.CreateBuilder` (see `truvio-demo-base/references/scaffold.md` §2.1b — the .NET 7+ opt-in).
+2. **Pre-stage PIM** — add the new `EcomLanguages` row (MCP `save_languages` first; Management API `Languages` family as fallback; SQL only as last resort) and translate the hero products + groups per `dynamicweb-pim-demo/references/localization.md`. Doing this first means the language layer has something to render when it's created.
+3. **Prereqs (BOTH must be in place — verify via `dynamicweb-demo-base/references/setup-checks.md` §"MSDTC for cross-connection TransactionScope"):**
+   - `Program.cs` has `System.Transactions.TransactionManager.ImplicitDistributedTransactions = true;` set before `WebApplication.CreateBuilder` (see `dynamicweb-demo-base/references/scaffold.md` §2.1b — the .NET 7+ opt-in).
    - MSDTC service running + inbound/outbound enabled + DTC firewall rules enabled (one-time per machine).
 
    Without either, the AreaCopy call below fails with `System.Transactions.TransactionException: The operation is not valid for the state of the transaction.` The error LOOKS like it could be transactional logic, but it's environmental — fix the prereqs, do not change the input shape.
@@ -145,7 +145,7 @@ Emit `<a href="/Default.aspx?ID=@target" hreflang="...">` — DW's URL provider 
      {"Model": {"SourceAreaId": <masterId>, "Name": "<brand> <lang>", "Culture": "<culture>", "CopyPermissions": true, "AsWebsite": false}}
      ```
      `AsWebsite=false` = language layer (sibling of master with `AreaMasterAreaId` back-link). `AsWebsite=true` = full separate website (no sibling link). Returns `{status: "ok", modelIdentifier: "<newAreaId>"}` in ~7s for a 95-page Swift tree. DW does the entire clone — pages, paragraphs, grid rows, items, item links, color swatches, item-type layouts — inside one TransactionScope. On a 10.25.x build the endpoint instead accepted its parameters as `Query.`-prefixed query-string params (e.g. `/Admin/Api/AreaCopy?Query.SourceAreaId=<id>&Query.Name=...`) — try the JSON body first, fall back to the query-string shape if the body is ignored.
-   - **4b. MCP fallback.** `mcp__truvio-commerce-mcp__copy_area` accepts `{areaId, name}` per its schema, but **as of DW 10.25.6 it returns "Area was not copied" with no actionable detail**. The Management API endpoint above is the working primary surface. If MCP exposes a `language_layer`-specific tool in a future build, prefer it.
+   - **4b. MCP fallback.** `mcp__dynamicweb-commerce-mcp__copy_area` accepts `{areaId, name}` per its schema, but **as of DW 10.25.6 it returns "Area was not copied" with no actionable detail**. The Management API endpoint above is the working primary surface. If MCP exposes a `language_layer`-specific tool in a future build, prefer it.
    - **4c. Admin UI fallback (ask the user to click).** Settings → Content → Websites → context menu on the master website → "+ New website Language" → name + regional setting → Create. Same `/admin/api/AreaCopy` endpoint under the hood; use only if the API is unavailable — and per the base surface-priority rule, Claude doesn't drive `/Admin` for changes, so this route is a user one-click.
    - **4d. SQL is NOT a fallback for the create.** Reserve SQL for post-create wiring (the `AreaEcomLanguageId` update in step 5), for cleanup of a previous bad attempt, and for read-side discovery. Cloning the page tree via SQL is the trap this rule exists to prevent.
 5. **Wire the area** to the PIM language + URL slug (small UPDATE — MCP `save_areas` preferred, SQL acceptable):
@@ -205,7 +205,7 @@ A common surprise: after creating the language layer + translating products, the
 |-------|------------------|----------------|-------------------|
 | **1. `Translations.xml`** | UI chrome strings called via `@Translate("...")` in cshtml (Search here, Sign in, Add to cart, Page not found, footer headings, etc.) | `Files/Templates/Designs/Swift-v2/Translations.xml` | After enabling a new locale that's not already in the file. Stock Swift ships ~2170 keys with en-GB / da-DK / nb-NO / en-US / en-DK / nl-NL — **no fr-FR, no de-DE**. Adding a new locale = bulk-inject `<translation culture="<locale>">` children per key. |
 | **2. Per-clone Item `Title` fields** | Header chrome — `Swift-v2_MyAccount`, `Swift-v2_MiniCart`, `Swift-v2_Favorites` render their visible label from `Model.Item.GetString("Title")` directly; they do **NOT** fall through to `@Translate`. Same pattern for some navigation labels. | `ItemType_Swift-v2_<Type>` rows in DB | After AreaCopy. The clone copies the English `Title` text into every language-layer's new item row; each one needs an individual UPDATE. Map header-page→item-id via `Paragraph.ParagraphItemId` filtered by `ParagraphPageId` for that area's header pages. |
-| **3. DB content** | Paragraphs, products, groups, page menu text | `ItemType_Swift-v2_Text` / `_Poster` / `_Feature` rows on language-layer page clones; `EcomProducts` / `EcomGroups` per `ProductLanguageId`; `Page.PageMenuText` | After AreaCopy. The clones exist but with master text — UPDATE the language-layer Item rows individually. PIM products + groups via [`../../truvio-pim-demo/references/localization.md`](../../truvio-pim-demo/references/localization.md). |
+| **3. DB content** | Paragraphs, products, groups, page menu text | `ItemType_Swift-v2_Text` / `_Poster` / `_Feature` rows on language-layer page clones; `EcomProducts` / `EcomGroups` per `ProductLanguageId`; `Page.PageMenuText` | After AreaCopy. The clones exist but with master text — UPDATE the language-layer Item rows individually. PIM products + groups via [`../../dynamicweb-pim-demo/references/localization.md`](../../dynamicweb-pim-demo/references/localization.md). |
 
 **How to apply in order:** (1) bulk-inject the new locale's entries into `Translations.xml` for visible keys, (2) UPDATE the cloned MyAccount/MiniCart/Favorites/etc. `Title` fields on the language-layer item rows, (3) translate the DB paragraphs / products / groups. **Restart the host** after editing `Translations.xml` (cached at app startup) and after touching header item rows (paragraph composition cache). The DB content updates for page paragraphs flush via the normal page cache cycle.
 
@@ -330,7 +330,7 @@ Restart afterwards (page metadata cached). Add demo content to the now-empty pag
 
 ## Cross-references
 
-- [`../../truvio-pim-demo/references/localization.md`](../../truvio-pim-demo/references/localization.md) — the product side (translate product names, descriptions, custom fields).
+- [`../../dynamicweb-pim-demo/references/localization.md`](../../dynamicweb-pim-demo/references/localization.md) — the product side (translate product names, descriptions, custom fields).
 - [`styles-assets.md`](styles-assets.md) — Style asset inheritance (language layers reuse the master's brand).
 - [`re-skin.md`](re-skin.md) — escalation ladder for per-language CSS overrides (rarely needed; Tier-0 schemes usually cover).
 - Official Dynamicweb docs:

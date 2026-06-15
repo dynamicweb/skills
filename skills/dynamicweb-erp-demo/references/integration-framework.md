@@ -1,6 +1,6 @@
 # integration-framework.md
 
-> The canonical "source+target, NOT channel/feed" rule. Loaded from `truvio-erp-demo/SKILL.md` "Always-on rule" and "When to use this skill". Read before deciding how to model an ERP in any Truvio demo.
+> The canonical "source+target, NOT channel/feed" rule. Loaded from `dynamicweb-erp-demo/SKILL.md` "Always-on rule" and "When to use this skill". Read before deciding how to model an ERP in any Dynamicweb demo.
 
 ## The rule, one sentence
 
@@ -41,7 +41,7 @@ Activity (one per direction)
 
 Concretely:
 
-- **Live flavor** (sister skill `truvio-pim-for-bc`): the AppStore "PIM for Business Central connector" registers BC-side endpoints under `/admin/api/BC*` (11 queries + 4 commands). BC polls these on its own schedule; DW responds with the requested data shape. The connector itself is the destination provider FROM BC's perspective; the queries are the source endpoints FROM BC's perspective. See [`../truvio-pim-for-bc/references/connector-endpoints.md`](../../truvio-pim-for-bc/references/connector-endpoints.md).
+- **Live flavor** (sister skill `dynamicweb-pim-for-bc`): the AppStore "PIM for Business Central connector" registers BC-side endpoints under `/admin/api/BC*` (11 queries + 4 commands). BC polls these on its own schedule; DW responds with the requested data shape. The connector itself is the destination provider FROM BC's perspective; the queries are the source endpoints FROM BC's perspective. See [`../dynamicweb-pim-for-bc/references/connector-endpoints.md`](../../dynamicweb-pim-for-bc/references/connector-endpoints.md).
 - **Mock flavor** (this skill, [mock-deltas.md](mock-deltas.md)): no provider class is registered. The database is pre-staged into the **post-BC-sync state** — every value BC would have written is already in `EcomProducts`, as if the delta arrived overnight — and a single built-in `RunSqlScheduledTaskAddIn` RESET task flips it back between demos. The demo narrates "BC sent us this; look at the result", with the data + action-rule definition + email template as evidence. The PIM→BC direction is told via one static field-mapping artefact. The framework concepts (source provider, destination provider, activity, field mapping) are narrated against that staged state, not against live wires. (Superseded 2026-05-21: an earlier version of this flavor used inbox/outbox JSON files — see the "Do not" section of mock-deltas.md.)
 
 The mock flavor is a model of the framework, not a bypass of it. The whole point is to make the framework's shape visible without requiring a live BC tenant.
@@ -74,10 +74,10 @@ The mock flavor is a model of the framework, not a bypass of it. The whole point
 
 ## What the framework looks like in code (live flavor)
 
-For Truvio's live BC flavor, the framework registration is split:
+For Dynamicweb's live BC flavor, the framework registration is split:
 
 - The AppStore "PIM for Business Central connector" package ships the provider classes (in the AppStore install folder under `wwwroot/Files/System/AddIns/Installed/`). You don't write these yourself.
-- DW's `BCSetupUpdateProvider` populates default settings (`indexBuildKey`, `buildName`, `workflowStateId`) that have to be corrected per-demo -- see [`../truvio-pim-for-bc/references/truvio-connector-settings.md`](../../truvio-pim-for-bc/references/truvio-connector-settings.md).
+- DW's `BCSetupUpdateProvider` populates default settings (`indexBuildKey`, `buildName`, `workflowStateId`) that have to be corrected per-demo -- see [`../dynamicweb-pim-for-bc/references/dynamicweb-connector-settings.md`](../../dynamicweb-pim-for-bc/references/dynamicweb-connector-settings.md).
 - The framework wires BC -> `/admin/api/BC*` queries (BC is source, DW is destination via the connector's destination provider) and DW -> BC (the connector's source provider reads from DW Products + posts to the BC endpoint).
 
 You don't see the framework as "an Activity row in a UI grid" in this flavor -- the AppStore connector hides that surface. But conceptually it's there: source provider, destination provider, mapping, schedule. The `/admin/api/BC*` surface IS the framework, exposed to BC's side.
@@ -87,5 +87,5 @@ You don't see the framework as "an Activity row in a UI grid" in this flavor -- 
 - Mock flavor end-to-end: [mock-deltas.md](mock-deltas.md).
 - Generic ERP data shape (which fields ERP writes vs reads): [erp-data-shape.md](erp-data-shape.md).
 - Scenarios-first planning to scope an ERP integration before building: [scenarios-first-planning.md](scenarios-first-planning.md).
-- Live flavor (ngrok + AppStore connector + `/admin/api/BC*`): [`../truvio-pim-for-bc/SKILL.md`](../../truvio-pim-for-bc/SKILL.md).
-- Channel-vs-shop pedagogy beat (ShopType enum, why ShopType=3 is feeds not ERPs): [`../truvio-pim-demo/references/structural-model.md`](../../truvio-pim-demo/references/structural-model.md) §2.1.
+- Live flavor (ngrok + AppStore connector + `/admin/api/BC*`): [`../dynamicweb-pim-for-bc/SKILL.md`](../../dynamicweb-pim-for-bc/SKILL.md).
+- Channel-vs-shop pedagogy beat (ShopType enum, why ShopType=3 is feeds not ERPs): [`../dynamicweb-pim-demo/references/structural-model.md`](../../dynamicweb-pim-demo/references/structural-model.md) §2.1.

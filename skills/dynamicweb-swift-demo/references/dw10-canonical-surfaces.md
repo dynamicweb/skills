@@ -97,7 +97,7 @@ Fix: revert the legacy-column write, INSERT the equivalent row into `Permission`
 
 ## Cross-cutting redirects (anon gate, role gate, etc.)
 
-- **Canonical hook**: a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` that sets `loadedArgs.OutputResult = new RedirectOutputResult { RedirectUrl = ... }`. Fires before any Razor streams. dw10source `PageView.cs:388-392`. **A subscriber is NOT a hit on the customisations-ledger preflight** — see [`../../truvio-demo-base/references/customisations.md`](../../truvio-demo-base/references/customisations.md) §"What the rule *actually* forbids vs. doesn't forbid".
+- **Canonical hook**: a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` that sets `loadedArgs.OutputResult = new RedirectOutputResult { RedirectUrl = ... }`. Fires before any Razor streams. dw10source `PageView.cs:388-392`. **A subscriber is NOT a hit on the customisations-ledger preflight** — see [`../../dynamicweb-demo-base/references/customisations.md`](../../dynamicweb-demo-base/references/customisations.md) §"What the rule *actually* forbids vs. doesn't forbid".
 - **For "anon hits a permission-required page"**: don't write anything. Configure `Page.PermissionType = 0` + a `Permission` row, and `CheckPermissionsAndRedirect()` takes care of it.
 - **NEVER**: `WriteLiteral` + `return;` from inside `Swift-v2_Master.cshtml`. That's a workaround for using the wrong layer.
 
@@ -162,7 +162,7 @@ A worked example with the full repeater pattern: `<Brand>_PointsDashboard.xml` +
 
 ## Discipline audit — grep pack
 
-Verify a Swift demo's templates against this file's canonical surfaces before declaring "ready" or before plugin fold-back. Each hit is a candidate finding; a clean run = green light. Sister audit: [`../../truvio-demo-base/references/audit-customisations.md`](../../truvio-demo-base/references/audit-customisations.md) is the recipe for the customisations-ledger preflight; this pack is its peer for the discipline checks that don't show up in `git status` of `.cs` files.
+Verify a Swift demo's templates against this file's canonical surfaces before declaring "ready" or before plugin fold-back. Each hit is a candidate finding; a clean run = green light. Sister audit: [`../../dynamicweb-demo-base/references/audit-customisations.md`](../../dynamicweb-demo-base/references/audit-customisations.md) is the recipe for the customisations-ledger preflight; this pack is its peer for the discipline checks that don't show up in `git status` of `.cs` files.
 
 ### When to run
 
@@ -239,4 +239,4 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String -Pattern '
 - [`paragraphs.md`](paragraphs.md) — Swift's stock paragraph types and the empty-`ParagraphTemplate` alphabetical-fallback hazard (a `<Prefix>_*` variant cshtml interacts with this).
 - [`customer-center.md`](customer-center.md) — the CSR section uses the Permission store for its group-gated subtree; do not re-implement the gate.
 - [`integrity-sweep.md`](integrity-sweep.md) Check 7 — the gating subset (raw DB access only) of the grep pack above.
-- [`../../truvio-demo-base/references/customisations.md`](../../truvio-demo-base/references/customisations.md) §"What the rule *actually* forbids vs. doesn't forbid" — scope clarification for subscribers / helpers / item-type XMLs.
+- [`../../dynamicweb-demo-base/references/customisations.md`](../../dynamicweb-demo-base/references/customisations.md) §"What the rule *actually* forbids vs. doesn't forbid" — scope clarification for subscribers / helpers / item-type XMLs.

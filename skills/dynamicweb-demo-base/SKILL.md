@@ -1,11 +1,11 @@
 ---
 name: dynamicweb-demo-base
-description: Foundation skill for Truvio (Dynamicweb 10) demos -- scaffold the dw10-suite host, wire Backend MCP + the two-layer localhost TLS bypass, install Playwright MCP for verification flows, drop the customisations + customer-context guardrails, document the Serializer install for sister skills. Does NOT load a baseline. Use FIRST on any new Truvio demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (references/online-mode.md). Also owns the maintainer fold-back workflow -- "fold this into the skill", "save this back to the plugin", "publish this update" route to references/iterate-plugin.md. Sister skills (truvio-pim-demo, truvio-swift-demo, truvio-erp-demo, truvio-pim-for-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
+description: Foundation skill for Dynamicweb 10 demos -- scaffold the dw10-suite host, wire Backend MCP + the two-layer localhost TLS bypass, install Playwright MCP for verification flows, drop the customisations + customer-context guardrails, document the Serializer install for sister skills. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (references/online-mode.md). Also owns the maintainer fold-back workflow -- "fold this into the skill", "save this back to the plugin", "publish this update" route to references/iterate-plugin.md. Sister skills (dynamicweb-pim-demo, dynamicweb-swift-demo, dynamicweb-erp-demo, dynamicweb-pim-for-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
 ---
 
-# Truvio Demo Base Skill
+# Dynamicweb Demo Base Skill
 
-The foundation skill for any Truvio (Dynamicweb 10) demo. **Use FIRST** on every new Truvio demo. Sister skills (`truvio-pim-demo`, `truvio-swift-demo`) inherit the `.mcp.json`, `CUSTOMISATIONS.md`, vault resolution, and TLS bypass that this skill establishes -- they are **Use AFTER**, never standalone.
+The foundation skill for any Dynamicweb 10 demo. **Use FIRST** on every new Dynamicweb demo. Sister skills (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`) inherit the `.mcp.json`, `CUSTOMISATIONS.md`, vault resolution, and TLS bypass that this skill establishes -- they are **Use AFTER**, never standalone.
 
 This SKILL.md is an orchestrator only. Each step of the canonical flow links to a `references/<topic>.md` that owns the verbatim recipe, gotchas, and verification gate for that topic.
 
@@ -33,8 +33,8 @@ DO NOT skip any step. Each step's reference contains its own verification gate; 
 
 Loading reference content into the project DB is **NOT** part of this skill's canonical flow. Two separate paths follow base, depending on demo type:
 
-- **PIM demo** -> start with a blank/fresh demo DB; the PIM skill's modelling recipes build content from scratch via MCP. No deserialize step. See [`truvio-pim-demo/SKILL.md`](../truvio-pim-demo/SKILL.md).
-- **Swift demo** -> deserialize the Swift content baseline from `$env:DW_VAULT\serialized-data\<baseline>\` via the Serializer. Owned end-to-end by [`truvio-swift-demo/references/deserialize-flow.md`](../truvio-swift-demo/references/deserialize-flow.md) + [`truvio-swift-demo/references/integrity-sweep.md`](../truvio-swift-demo/references/integrity-sweep.md). Prerequisite: the Serializer is installed per [`references/serializer-reference.md`](references/serializer-reference.md) "Installation".
+- **PIM demo** -> start with a blank/fresh demo DB; the PIM skill's modelling recipes build content from scratch via MCP. No deserialize step. See [`dynamicweb-pim-demo/SKILL.md`](../dynamicweb-pim-demo/SKILL.md).
+- **Swift demo** -> deserialize the Swift content baseline from `$env:DW_VAULT\serialized-data\<baseline>\` via the Serializer. Owned end-to-end by [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dynamicweb-swift-demo/references/deserialize-flow.md) + [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dynamicweb-swift-demo/references/integrity-sweep.md). Prerequisite: the Serializer is installed per [`references/serializer-reference.md`](references/serializer-reference.md) "Installation".
 
 The Serializer install steps live in base so any sister skill can pull them; the act of deserializing is Swift-specific.
 
@@ -58,8 +58,8 @@ The Serializer install steps live in base so any sister skill can pull them; the
 | Recover from silent AddIn install failure (stuck `UpdateManager` queue) | references/db-update-recovery.md |
 | Install `DynamicWeb.Serializer` in the demo host; triage Serializer failure patterns; check baseline compatibility | references/serializer-reference.md ("Installation") |
 | Understand Serializer internals — these live upstream in the Serializer repo's own docs; the reference carries the pointer block | references/serializer-reference.md ("Internals — upstream pointer block") |
-| Run a Swift baseline deserialize (Swift demos only) | [`truvio-swift-demo/references/deserialize-flow.md`](../truvio-swift-demo/references/deserialize-flow.md) |
-| Verify post-deserialize integrity (Swift demos only) | [`truvio-swift-demo/references/integrity-sweep.md`](../truvio-swift-demo/references/integrity-sweep.md) |
+| Run a Swift baseline deserialize (Swift demos only) | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dynamicweb-swift-demo/references/deserialize-flow.md) |
+| Verify post-deserialize integrity (Swift demos only) | [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dynamicweb-swift-demo/references/integrity-sweep.md) |
 | **Fold a demo-build learning back into the plugin** (validate -> version bump in both manifests -> commit -> push -> tag -> refresh marketplace clone). Maintainer-only. | references/iterate-plugin.md |
 
 ## Folding demo-build learnings back into the plugin (maintainer-only)
@@ -93,7 +93,7 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
   Use this freely — restart is cheap, locked-in-cache state is the bigger risk.
 - Visibility ≠ permission: still announce in one line ("starting host…", "host up at :31873", "restarting to clear plugin cache"). Authorization removes the *ask*, not the *narration*.
 
-This rule is owned by this skill and inherited by every sister skill (`truvio-pim-demo`, `truvio-swift-demo`, `truvio-pim-for-bc`). A sister skill that pauses mid-flow to ask "please start the host" is violating this contract.
+This rule is owned by this skill and inherited by every sister skill (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`, `dynamicweb-pim-for-bc`). A sister skill that pauses mid-flow to ask "please start the host" is violating this contract.
 
 ## Surface priority for CREATES (always-on rule)
 
@@ -101,7 +101,7 @@ This rule is owned by this skill and inherited by every sister skill (`truvio-pi
 
 | Surface | Use for | Why |
 |---------|---------|-----|
-| 1. **MCP (`truvio-commerce-mcp`)** | **Default — try this first for anything that creates a structural row** (pages, paragraphs, areas, products, groups, orders, users, etc.) | Calls DW's domain services. Triggers ALL the bookkeeping a UI click would: ItemRelation cloning, ItemList propagation, sibling-page linking, cache invalidation, index refresh, child-row creation, validation. ~260 tools. |
+| 1. **MCP (`dynamicweb-commerce-mcp`)** | **Default — try this first for anything that creates a structural row** (pages, paragraphs, areas, products, groups, orders, users, etc.) | Calls DW's domain services. Triggers ALL the bookkeeping a UI click would: ItemRelation cloning, ItemList propagation, sibling-page linking, cache invalidation, index refresh, child-row creation, validation. ~260 tools. |
 | 2. **Management API** (`/admin/api/...`) | Fallback when MCP doesn't expose the operation. Usually admin-grade actions: `BuildIndex`, `CacheInformationRefresh`, `FeatureManagementToggle`, anything in `/admin/api/docs/`. | Same DW domain services as MCP, just a different transport. |
 | 3. **Admin UI** (Playwright) | **Verification only** — navigate, screenshot, DOM-grep to confirm a change landed. Never an action surface. | Every admin-UI click is an Admin API call underneath (the admin SPA is a client of `/admin/api/...`), so a "UI-only" operation means you haven't found the endpoint yet — check `/admin/api/docs/` or watch the SPA's network calls. For a genuinely awkward one-click (e.g. AppStore install), ask the user to click manually; don't drive the admin SPA via Playwright to make changes. |
 | 4. **Direct SQL** (`sqlcmd ...`) | **LAST RESORT** — only for: (a) cleanup/teardown, (b) bulk schema-drift fixes, (c) reading data, (d) cases where you've confirmed all three higher surfaces don't support the operation and a vendor patch is the only alternative. | Bypasses every DW service. Misses bookkeeping. Creates orphans. Corrupts caches. **You will not figure out the full bookkeeping for a non-trivial create via SQL — DW does too much per service call.** |
@@ -150,23 +150,23 @@ Demo time is short; condensed beats spread. Default to a single deep storyline r
 
 **Default postures (sister skills enforce the specifics):**
 
-- **Logins / personas — floor of 2.** One buyer + one CSR so impersonation has somewhere to land. Don't scaffold a roster of personas you won't have time to log into. Owned by `truvio-swift-demo`.
-- **Shops / channels — 1 + 1.** One shop plus the channel most relevant to the customer's pitch. Don't add a second channel of equal weight. Owned by `truvio-pim-demo`.
-- **Locale — single home market.** US-only for a US customer (EN/USD), DE-only for a DACH customer, etc. Add a second language/currency only when the customer's case explicitly demands it. Owned by `truvio-pim-demo`.
-- **Customer-center sections, paragraph types, page presets — storyline-driven.** Scaffold the ones the storyline actually visits, not the ones the platform supports. Owned by `truvio-swift-demo`.
+- **Logins / personas — floor of 2.** One buyer + one CSR so impersonation has somewhere to land. Don't scaffold a roster of personas you won't have time to log into. Owned by `dynamicweb-swift-demo`.
+- **Shops / channels — 1 + 1.** One shop plus the channel most relevant to the customer's pitch. Don't add a second channel of equal weight. Owned by `dynamicweb-pim-demo`.
+- **Locale — single home market.** US-only for a US customer (EN/USD), DE-only for a DACH customer, etc. Add a second language/currency only when the customer's case explicitly demands it. Owned by `dynamicweb-pim-demo`.
+- **Customer-center sections, paragraph types, page presets — storyline-driven.** Scaffold the ones the storyline actually visits, not the ones the platform supports. Owned by `dynamicweb-swift-demo`.
 
-**Product catalogue is the deliberate exception — go deep AND wide there.** Rich product data (variants, BOM bundles, completeness rules, assortments, ample SKUs across categories) is cheap to produce via MCP and makes the demo feel real instead of sketched. The "narrow it down" rule does not apply to product modelling — see `truvio-pim-demo` for the modelling depth recipes.
+**Product catalogue is the deliberate exception — go deep AND wide there.** Rich product data (variants, BOM bundles, completeness rules, assortments, ample SKUs across categories) is cheap to produce via MCP and makes the demo feel real instead of sketched. The "narrow it down" rule does not apply to product modelling — see `dynamicweb-pim-demo` for the modelling depth recipes.
 
 When in doubt: every login / channel / locale / customer-center section must justify itself against demo minutes. A product family does not need to justify itself. Generic storytelling tactics (audience framing, one-source-N-shapes, speak the customer's words): [references/demo-tactics.md](references/demo-tactics.md).
 
 ## Sister skills
 
-- **`truvio-pim-demo`** -- PIM modelling, structural mental model (shops vs channels, GroupType, repositories, variants, BOM, channels + feeds, assets, product categories), MCP/API/SQL/filesystem decision matrix. **Use AFTER** `truvio-demo-base`.
-- **`truvio-swift-demo`** -- Swift frontend (templates, paragraph types, B2B customer-center scaffolding, baseline deserialize). **Use AFTER** `truvio-demo-base`.
-- **`truvio-erp-demo`** -- ERP integration (source/target rule, DB-staged mock, scenarios-first planning). **Use AFTER** `truvio-demo-base`.
-- **`truvio-pim-for-bc`** -- live BC connector via ngrok + AppStore connector. **Use AFTER** `truvio-demo-base`.
+- **`dynamicweb-pim-demo`** -- PIM modelling, structural mental model (shops vs channels, GroupType, repositories, variants, BOM, channels + feeds, assets, product categories), MCP/API/SQL/filesystem decision matrix. **Use AFTER** `dynamicweb-demo-base`.
+- **`dynamicweb-swift-demo`** -- Swift frontend (templates, paragraph types, B2B customer-center scaffolding, baseline deserialize). **Use AFTER** `dynamicweb-demo-base`.
+- **`dynamicweb-erp-demo`** -- ERP integration (source/target rule, DB-staged mock, scenarios-first planning). **Use AFTER** `dynamicweb-demo-base`.
+- **`dynamicweb-pim-for-bc`** -- live BC connector via ngrok + AppStore connector. **Use AFTER** `dynamicweb-demo-base`.
 
-A sibling skill that runs without `truvio-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`, no resolved `$env:DW_VAULT`) silently no-ops or produces broken artefacts. The "Use FIRST" routing wording in this skill's description and the "Use AFTER" markers in the sister skills are the inoculation.
+A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`, no resolved `$env:DW_VAULT`) silently no-ops or produces broken artefacts. The "Use FIRST" routing wording in this skill's description and the "Use AFTER" markers in the sister skills are the inoculation.
 
 ## Vault layout
 
@@ -174,7 +174,7 @@ The on-disk vault at `$env:DW_VAULT` (default `C:\VibeCode\dw-vault\`) is the si
 
 ## Path-resolution rule
 
-Every path in this skill (and sister skills) resolves via `$env:DW_VAULT` joined with a slot name from `INDEX.md`. Per-machine hardcoded literals (legacy paths under user-specific source folders or sibling solution folders) are a known anti-pattern; the existing `truvio-pim-demo` skill still carries some as a cautionary cleanup target.
+Every path in this skill (and sister skills) resolves via `$env:DW_VAULT` joined with a slot name from `INDEX.md`. Per-machine hardcoded literals (legacy paths under user-specific source folders or sibling solution folders) are a known anti-pattern; the existing `dynamicweb-pim-demo` skill still carries some as a cautionary cleanup target.
 
 ## Discover-from-project-files rule
 

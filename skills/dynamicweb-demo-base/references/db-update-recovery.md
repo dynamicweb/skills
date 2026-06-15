@@ -218,7 +218,7 @@ Mode B fix: corrected PK uses `ConsolidatedOrderPaymentPaidOrderId` (matching th
 ## When this whole recipe is NOT the right fix
 
 - **Update fails because of permissions** (e.g. `db_ddladmin` missing on the SQL user). Neither A nor B helps — clearing/recreating just retries the same permission failure. Fix the SQL grant first.
-- **The DB has real customer data and the failing update is a DESTRUCTIVE migration.** Mode A re-runs everything including data migrations; on a populated DB this can corrupt. For Truvio demo work the DB is always fresh and never has real customer data at this stage (baseline deserialization happens *after* this skill's setup gates pass), so the "fresh demo DB" path applies and Mode A is safe. For production, talk to Dynamicweb Service Desk first.
+- **The DB has real customer data and the failing update is a DESTRUCTIVE migration.** Mode A re-runs everything including data migrations; on a populated DB this can corrupt. For Dynamicweb demo work the DB is always fresh and never has real customer data at this stage (baseline deserialization happens *after* this skill's setup gates pass), so the "fresh demo DB" path applies and Mode A is safe. For production, talk to Dynamicweb Service Desk first.
 
 ---
 

@@ -9,8 +9,8 @@
 **Adopted from the vendor repos:**
 
 - Description shape for skill routing: `<one-sentence what>. Use when <triggers>.`
-- Verify widget / field system names via API lookups, never assumptions — including the full `ProductCategory|<CategoryId>|<FieldId>` field format (lives in `truvio-pim-demo` structural-model + governance references).
-- `patch_products_safe` only; never `update_products` (lives in `truvio-pim-demo/references/canonical-setup-order.md`).
+- Verify widget / field system names via API lookups, never assumptions — including the full `ProductCategory|<CategoryId>|<FieldId>` field format (lives in `dynamicweb-pim-demo` structural-model + governance references).
+- `patch_products_safe` only; never `update_products` (lives in `dynamicweb-pim-demo/references/canonical-setup-order.md`).
 - Upgrade-safe extension points — no monkey-patching `Dynamicweb.*` assemblies (enforced conceptually by the customisations-ledger preflight, `references/customisations.md`).
 
 **Deliberate deviations (each motivated by lived demo-build experience):**
@@ -27,5 +27,5 @@ Patterns recommended in customer-facing architecture conversations with Dynamicw
 
 | Pattern | Source | Owning reference |
 |---|---|---|
-| **DC = AccessUser group** for any multi-DC B2B portal — unlocks DC-scoped Assortments, Shipping methods, and Shipping fees with no custom code. Naming convention: `DC-<code>`, with `AccessUserCustomerNumber` set to the same value. Treat as default for wholesale demos, not as an upgrade path. | Dynamicweb vendor architect, 2026-05-13 | [`truvio-swift-demo/references/b2b-dc-pattern.md`](../../truvio-swift-demo/references/b2b-dc-pattern.md) |
-| **ERP-imported pre-graduated prices** for any demo that needs cart-time qty-break behavior. `EcomPrices.PriceQuantity > 0` tier rows are silently ignored by the stock cart resolver — the production pattern is one row per (product, user-group, qty-band) with the resolved price baked in, indexed via the same user-group mechanic as the DC pattern. | Dynamicweb vendor architect, 2026-05-13 | [`truvio-pim-demo/references/structural-model.md` §2.11](../../truvio-pim-demo/references/structural-model.md) |
+| **DC = AccessUser group** for any multi-DC B2B portal — unlocks DC-scoped Assortments, Shipping methods, and Shipping fees with no custom code. Naming convention: `DC-<code>`, with `AccessUserCustomerNumber` set to the same value. Treat as default for wholesale demos, not as an upgrade path. | Dynamicweb vendor architect, 2026-05-13 | [`dynamicweb-swift-demo/references/b2b-dc-pattern.md`](../../dynamicweb-swift-demo/references/b2b-dc-pattern.md) |
+| **ERP-imported pre-graduated prices** for any demo that needs cart-time qty-break behavior. `EcomPrices.PriceQuantity > 0` tier rows are silently ignored by the stock cart resolver — the production pattern is one row per (product, user-group, qty-band) with the resolved price baked in, indexed via the same user-group mechanic as the DC pattern. | Dynamicweb vendor architect, 2026-05-13 | [`dynamicweb-pim-demo/references/structural-model.md` §2.11](../../dynamicweb-pim-demo/references/structural-model.md) |

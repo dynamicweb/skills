@@ -3,7 +3,7 @@
 > **Rule:** No custom controllers, providers, or `*Controller.cs` files in `Dynamicweb.Host.Suite/`
 > without a row below explaining why.
 >
-> Approved by Justin (or designate) at write-time via `truvio-demo-base` AskUserQuestion.
+> Approved by Justin (or designate) at write-time via `dynamicweb-demo-base` AskUserQuestion.
 
 | Date | File | Type | Reason | Approved by |
 |------|------|------|--------|-------------|

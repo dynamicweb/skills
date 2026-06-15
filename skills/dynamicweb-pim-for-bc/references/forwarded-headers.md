@@ -1,10 +1,10 @@
 # forwarded-headers.md
 
-> Wire ASP.NET Core `ForwardedHeaders` middleware in `Program.cs` so DW emits public URLs in any absolute-URL paths -- redirects, JSON payloads, OpenID metadata, JWT issuer URIs. Without this, DW thinks it's still `https://localhost:31873` and BC follows redirects to localhost (and obviously fails). Loaded from `~/.claude/skills/truvio-pim-for-bc/SKILL.md` "Where to find things" table.
+> Wire ASP.NET Core `ForwardedHeaders` middleware in `Program.cs` so DW emits public URLs in any absolute-URL paths -- redirects, JSON payloads, OpenID metadata, JWT issuer URIs. Without this, DW thinks it's still `https://localhost:31873` and BC follows redirects to localhost (and obviously fails). Loaded from `~/.claude/skills/dynamicweb-pim-for-bc/SKILL.md` "Where to find things" table.
 
 ## Customisations preflight
 
-This is a `Program.cs` edit -- a customisation. **Run the customisations-ledger preflight from `truvio-demo-base/references/customisations.md` before applying.** Approved ledger entry shape (drop into `CUSTOMISATIONS.md` at solution root):
+This is a `Program.cs` edit -- a customisation. **Run the customisations-ledger preflight from `dynamicweb-demo-base/references/customisations.md` before applying.** Approved ledger entry shape (drop into `CUSTOMISATIONS.md` at solution root):
 
 ```
 | Path | Type | Reason | Date approved |

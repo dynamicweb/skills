@@ -32,8 +32,8 @@ skills/
 | Plugin | Audience | Skills included |
 |--------|----------|-----------------|
 | `dynamicweb-developer` | Developers building on Dynamicweb 10 | solution-installer, source-explorer, mcp-tool-creator |
-| `dynamicweb-implementer` | Implementers configuring PIM, content, and business solutions | pim-query, pim-dashboard, pim-enrichment, pim-solution-assistant, business-setup-agent, swift2-site-builder |
-| `dynamicweb-user` | End-users and business users | pim-enrichment, pim-query, business-solution-agent |
+| `dynamicweb-implementer` | Implementers configuring PIM, content, and business solutions | pim-query, pim-dashboard, pim-enrichment, pim-solution-assistant, business-setup-agent, business-solution-agent, swift2-site-builder |
+| `dynamicweb-user` | End-users and business users | pim-enrichment, pim-query |
 | `dynamicweb-presales` | Presales and demo engineers | demo-base, pim-demo, swift-demo, erp-demo, pim-for-bc |
 
 ## Skills
@@ -90,6 +90,27 @@ ERP integration demo — DB-staged mock or live BC, Integration Framework rules,
 
 **[dynamicweb-pim-for-bc](skills/dynamicweb-pim-for-bc/SKILL.md)**
 Live BC connector demo — exposes the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface. Use after `dynamicweb-demo-base`.
+
+## Skill dependencies
+
+Most skills are standalone, but two groups have an order:
+
+- **Presales demo chain.** `dynamicweb-demo-base` must run **first** — it scaffolds the host,
+  wires MCP + the TLS bypass, and resolves the vault. The sister demo skills
+  (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`, `dynamicweb-erp-demo`,
+  `dynamicweb-pim-for-bc`) are **Use AFTER** and inherit that setup; they no-op or break if
+  run standalone.
+- **Business orchestration.** `dynamicweb-business-solution-agent` orchestrates a full build:
+  it runs `dynamicweb-solution-installer` if no install exists, then delegates to
+  `dynamicweb-business-setup-agent`, which in turn draws on `dynamicweb-swift2-site-builder`
+  and `dynamicweb-pim-solution-assistant`.
+
+## Validation
+
+`scripts/validate-skills.py` (Python 3, no dependencies) lints the repo structure —
+marketplace integrity, folder/name/path agreement, relative-link resolution, and the
+description convention. Run `python3 scripts/validate-skills.py` before committing. See
+`CLAUDE.md` for the optional `SessionStart` hook that runs it automatically.
 
 ## Installation
 

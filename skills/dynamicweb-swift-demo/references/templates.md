@@ -46,7 +46,7 @@ The `EcomPages` row carries three orthogonal flags. Misreading them leads to fal
 
 A page with `published=true, hidden=false, active=false` is **fully reachable** by direct URL and by JS-driven navigation from other pages (asset cards → Cart Service, product cards → Product Detail, etc.). It is correctly hidden from the top navigation. This is the right state for almost every utility page in a Swift demo.
 
-**Gotcha — `mcp__truvio-commerce-mcp__publish_pages` flips both flags.** Despite the name, that tool sets `Active=true, Hidden=false` together. Calling it on a Cart Service or Product Detail page that was deliberately `active=false` will add an unwanted entry to the main nav. To toggle only one flag, use `save_pages` with the field you want.
+**Gotcha — `mcp__dynamicweb-commerce-mcp__publish_pages` flips both flags.** Despite the name, that tool sets `Active=true, Hidden=false` together. Calling it on a Cart Service or Product Detail page that was deliberately `active=false` will add an unwanted entry to the main nav. To toggle only one flag, use `save_pages` with the field you want.
 
 When auditing a page's runtime reachability, check `published=true` and `hidden=false`. Do **not** flag `active=false` as a problem on its own — that's what keeps the menu clean.
 

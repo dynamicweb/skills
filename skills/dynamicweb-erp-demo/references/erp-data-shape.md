@@ -1,10 +1,10 @@
 # erp-data-shape.md
 
-> The generic ERP <-> PIM data shape that recurs across Truvio demos, regardless of mock vs live flavor. Loaded from `truvio-erp-demo/SKILL.md` "Where to find things". Use this before you decide which flavor to pick -- knowing the shape helps you scope the demo's ERP beats.
+> The generic ERP <-> PIM data shape that recurs across Dynamicweb demos, regardless of mock vs live flavor. Loaded from `dynamicweb-erp-demo/SKILL.md` "Where to find things". Use this before you decide which flavor to pick -- knowing the shape helps you scope the demo's ERP beats.
 
 ## The ownership split
 
-Every ERP <-> PIM integration in a Truvio demo settles on the same general ownership split. The ERP owns transactional data; the PIM owns descriptive/marketing data. The interesting beats live at the boundary: a few fields that conceptually belong to both, and a handful where the demo has to make a deliberate choice.
+Every ERP <-> PIM integration in a Dynamicweb demo settles on the same general ownership split. The ERP owns transactional data; the PIM owns descriptive/marketing data. The interesting beats live at the boundary: a few fields that conceptually belong to both, and a handful where the demo has to make a deliberate choice.
 
 | Field group | Owned by ERP (writes to DW) | Owned by PIM (writes to ERP) | Notes |
 |---|---|---|---|
@@ -28,7 +28,7 @@ A recurring beat in B2B demos: the ERP holds per-customer-group contract prices 
 - `EcomPrices.UserCustomerNumber` or `EcomPrices.UserGroupId` (price rows scoped to a customer or customer group)
 - `EcomPrices.CurrencyCode`, `EcomPrices.Quantity` (tier breaks)
 
-The ERP writes these rows; the PIM displays read-only. Frontend pricing resolution is via `Dynamicweb.Ecommerce.Prices.PriceManager` (use the real API, not URL parsing or raw SQL -- see [`../truvio-swift-demo/references/dw10-canonical-surfaces.md`](../../truvio-swift-demo/references/dw10-canonical-surfaces.md)).
+The ERP writes these rows; the PIM displays read-only. Frontend pricing resolution is via `Dynamicweb.Ecommerce.Prices.PriceManager` (use the real API, not URL parsing or raw SQL -- see [`../dynamicweb-swift-demo/references/dw10-canonical-surfaces.md`](../../dynamicweb-swift-demo/references/dw10-canonical-surfaces.md)).
 
 For B2B demos that need to demo "Customer X sees price A, Customer Y sees price B", stage TWO pre/post row sets in the [mock-deltas.md](mock-deltas.md) Step 1 table (or two scheduled batches in live flavor) -- one per customer-group price update.
 
@@ -53,5 +53,5 @@ The smallest-viable PIM->ERP payload is usually: ProductNumber, ProductName, man
 
 - Wider rule on source/target: [integration-framework.md](integration-framework.md).
 - Staging this shape concretely (pre/post table, RESET task): [mock-deltas.md](mock-deltas.md) Step 1.
-- PIM-side modelling of categories, attributes, and prices: [`../truvio-pim-demo/references/structural-model.md`](../../truvio-pim-demo/references/structural-model.md).
-- Frontend price resolution (use `PriceManager`, not raw SQL): [`../truvio-swift-demo/references/dw10-canonical-surfaces.md`](../../truvio-swift-demo/references/dw10-canonical-surfaces.md).
+- PIM-side modelling of categories, attributes, and prices: [`../dynamicweb-pim-demo/references/structural-model.md`](../../dynamicweb-pim-demo/references/structural-model.md).
+- Frontend price resolution (use `PriceManager`, not raw SQL): [`../dynamicweb-swift-demo/references/dw10-canonical-surfaces.md`](../../dynamicweb-swift-demo/references/dw10-canonical-surfaces.md).

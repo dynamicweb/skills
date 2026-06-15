@@ -1,11 +1,6 @@
 ---
 name: dynamicweb-business-setup-agent
-description: >
-  Full-stack Dynamicweb 10 plus Swift 2 business configurator. Use when MCP bootstrap is already
-  complete and the user wants to turn an existing Swift 2 installation into a specific business.
-  The skill inspects the demo installation first, preserves the working Swift 2 shell, removes demo
-  business data when needed, and then configures content, catalog, PIM, and commerce for the new
-  business.
+description: Full-stack Dynamicweb 10 plus Swift 2 business configurator that turns an already-installed Swift 2 site into a specific business -- inspects the demo install, preserves the Swift 2 shell, removes demo business data as needed, and configures content, catalog, PIM, and commerce. Triggers: MCP bootstrap is already complete and the user wants the install configured for a named business, replace demo data with real business data, set up catalog/PIM/commerce on an existing site. Non-triggers: no install yet or starting from a plain-language brief -> dynamicweb-business-solution-agent; installing Swift 2 -> dynamicweb-solution-installer; only site shell or branding changes -> dynamicweb-swift2-site-builder.
 ---
 
 # Dynamicweb Business Setup Agent

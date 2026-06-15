@@ -77,7 +77,7 @@ Two machines should produce **identical `ManifestHash` per slot**. Mismatch poli
 | `samples` differs | Sample bundle drift. Usually means `dw10adminUI/` was updated on one box and not the other. |
 | `databases` differs | DB snapshot drift. The `swift2.2.0-<date>-database.zip` or similar artefact was rolled. Check INDEX.md `Last-updated`. |
 | `docs` differs | Curated docs drift. Usually intentional — one machine added a new doc — and resolved by copy. |
-| `serialized-data` differs | **Highest-stakes drift.** Baseline rolls cascade into Swift's [`../../truvio-swift-demo/references/deserialize-flow.md`](../../truvio-swift-demo/references/deserialize-flow.md) results. Check INDEX.md and the per-baseline subfolder's own `README.md` for the version stamp. |
+| `serialized-data` differs | **Highest-stakes drift.** Baseline rolls cascade into Swift's [`../../dynamicweb-swift-demo/references/deserialize-flow.md`](../../dynamicweb-swift-demo/references/deserialize-flow.md) results. Check INDEX.md and the per-baseline subfolder's own `README.md` for the version stamp. |
 
 **Resolution:** the authoritative machine bumps `INDEX.md`'s `Last-updated` column for the affected slot, then mirrors the slot to the other machine (typically via robocopy / sync tool / archive download). Run the recipe again on both boxes; manifest hashes should now match.
 
@@ -87,4 +87,4 @@ If a baseline-roll is the cause, escalate to the team — multiple machines need
 
 ## Cross-reference: baseline-drift self-diagnosis
 
-If grep results in any sibling skill (PIM, Swift) contradict the live vault — say a `truvio-pim-demo` reference says "expect 17 product groups in the Swift baseline" but the live deserialize produces 19 — this recipe's output is the diagnostic. Was the `serialized-data\Swift2.2\` slot rolled? Cross-check `INDEX.md`'s `Last-updated` and version-stamp columns. Reality wins; the skill is the second source of truth.
+If grep results in any sibling skill (PIM, Swift) contradict the live vault — say a `dynamicweb-pim-demo` reference says "expect 17 product groups in the Swift baseline" but the live deserialize produces 19 — this recipe's output is the diagnostic. Was the `serialized-data\Swift2.2\` slot rolled? Cross-check `INDEX.md`'s `Last-updated` and version-stamp columns. Reality wins; the skill is the second source of truth.

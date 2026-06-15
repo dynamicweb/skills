@@ -6,7 +6,7 @@
 
 ## When to use
 
-The configuration-only approach is the default starting point for any Swift 2 demo re-skin — it covers most copy / asset / layout work with zero code. **Executor split:** the admin click-paths in this file are the *map* of what is configurable — for a human doing manual authoring, and as verification targets. When Claude makes a change itself, it resolves the click-path to the equivalent MCP / Management API call (every Visual Editor / Style-tools save is an Admin API call underneath) per the base surface-priority rule — [truvio-demo-base/references/surface-priority.md](../../truvio-demo-base/references/surface-priority.md) §"Admin UI is verification-only". Claude drives `/Admin` via Playwright only to verify a change landed, never to author. Escalate to [re-skin.md](re-skin.md) §`<customer>_custom.css` only when the admin Style tools cannot express the visual you need; escalate further (content-layout `.cshtml`) only when a tailored screen requires a new rendering — see [re-skin.md](re-skin.md) §Pixel-perfect escalation. Only the controller/provider `.cs` tier triggers base's customisations-ledger preflight.
+The configuration-only approach is the default starting point for any Swift 2 demo re-skin — it covers most copy / asset / layout work with zero code. **Executor split:** the admin click-paths in this file are the *map* of what is configurable — for a human doing manual authoring, and as verification targets. When Claude makes a change itself, it resolves the click-path to the equivalent MCP / Management API call (every Visual Editor / Style-tools save is an Admin API call underneath) per the base surface-priority rule — [dynamicweb-demo-base/references/surface-priority.md](../../dynamicweb-demo-base/references/surface-priority.md) §"Admin UI is verification-only". Claude drives `/Admin` via Playwright only to verify a change landed, never to author. Escalate to [re-skin.md](re-skin.md) §`<customer>_custom.css` only when the admin Style tools cannot express the visual you need; escalate further (content-layout `.cshtml`) only when a tailored screen requires a new rendering — see [re-skin.md](re-skin.md) §Pixel-perfect escalation. Only the controller/provider `.cs` tier triggers base's customisations-ledger preflight.
 
 ## The 5-step Day-1 workflow (configuration-only)
 
@@ -41,9 +41,9 @@ The Style-tools admin paths in workflow step 2 + 4 above are the same forms the 
 | Add a new content paragraph to a page | YES (Admin UI → page → "Add paragraph" → pick type) | n/a (VE handles fully) |
 | Need a layout shape no existing page-preset matches; new column / alternative rendering for a paragraph type | NO | New content layout `.cshtml` per [re-skin.md](re-skin.md) §Pixel-perfect escalation — **not** a customisations-ledger preflight hit (see Razor-glob note below) |
 | Site title | YES (Settings → Areas → SHOP1 → Site Settings) | n/a (VE handles fully) |
-| Data-shape transformation, conditional rendering, external calls / business logic | NO | Controller / provider `.cs` — triggers base's customisations-ledger preflight (Approve+log / Refactor / Cancel). See [truvio-demo-base/references/customisations.md](../truvio-demo-base/references/customisations.md). |
+| Data-shape transformation, conditional rendering, external calls / business logic | NO | Controller / provider `.cs` — triggers base's customisations-ledger preflight (Approve+log / Refactor / Cancel). See [dynamicweb-demo-base/references/customisations.md](../../dynamicweb-demo-base/references/customisations.md). |
 
-**Razor `.cshtml` is NOT in the customisations-ledger glob.** The right-column escalations do not all trigger the preflight — only `.cs` controllers / providers do. Per [truvio-demo-base/references/customisations.md](../truvio-demo-base/references/customisations.md) §5, Razor content layouts are conventional, normal demo-build flow per the Swift docs ([doc.dynamicweb.dev/swift/design/pixel-perfect.html](https://doc.dynamicweb.dev/swift/design/pixel-perfect.html)).
+**Razor `.cshtml` is NOT in the customisations-ledger glob.** The right-column escalations do not all trigger the preflight — only `.cs` controllers / providers do. Per [dynamicweb-demo-base/references/customisations.md](../../dynamicweb-demo-base/references/customisations.md) §5, Razor content layouts are conventional, normal demo-build flow per the Swift docs ([doc.dynamicweb.dev/swift/design/pixel-perfect.html](https://doc.dynamicweb.dev/swift/design/pixel-perfect.html)).
 
 ## Verification: did the change land via the admin UI?
 
@@ -72,7 +72,7 @@ Some changes don't have an admin-UI authoring surface and require either preflig
 
 - **Customer-center CSR section customisation** — never; see [customer-center.md](customer-center.md) (the stock-CSR rule).
 - **Customer-flavoured products / orders seeding** — project-specific data work, not a styling concern.
-- **New product fields / completeness rules** — PIM concern. See [truvio-pim-demo/references/structural-model.md §2.8](../truvio-pim-demo/references/structural-model.md) and `truvio-pim-demo/references/canonical-setup-order.md` step 7.
-- **MCP tool wiring** — base concern. See `truvio-demo-base/references/mcp-setup.md`.
-- **Custom payment provider / shipping carrier** — out of scope for Truvio demos (a known customisation trap).
+- **New product fields / completeness rules** — PIM concern. See [dynamicweb-pim-demo/references/structural-model.md §2.8](../../dynamicweb-pim-demo/references/structural-model.md) and `dynamicweb-pim-demo/references/canonical-setup-order.md` step 7.
+- **MCP tool wiring** — base concern. See `dynamicweb-demo-base/references/mcp-setup.md`.
+- **Custom payment provider / shipping carrier** — out of scope for Dynamicweb demos (a known customisation trap).
 - **`<customer>_custom.css` / `.scss` / `.cshtml` work** — the escalation ladder in [re-skin.md](re-skin.md). (Brand CSS never goes in a file named `custom.css` — that's Swift-shipped sample code; hard rule in re-skin.md §What NOT to touch.)

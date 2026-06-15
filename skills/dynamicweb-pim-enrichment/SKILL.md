@@ -1,10 +1,6 @@
 ---
 name: dynamicweb-pim-enrichment
-description: >
-  Interactive agent for filling missing completeness fields on products returned by a Dynamicweb
-  product query. Use when the user names a saved query and wants the agent to read its required
-  fields, fetch matching products page by page, propose values for empty fields, confirm the plan,
-  and patch only the missing fields without touching existing values.
+description: Interactive agent that fills missing completeness fields on the products returned by a saved Dynamicweb product query, page by page, patching only empty fields and never overwriting existing values. Triggers: the user names a saved query and wants its empty or required fields filled, bulk-enrich products from a query, propose-then-confirm field values before writing. Non-triggers: creating or editing the query itself -> dynamicweb-pim-query; defining which fields are required (completeness rules) -> dynamicweb-pim-solution-assistant.
 ---
 
 # Dynamicweb Product Enrichment Agent

@@ -1,6 +1,6 @@
 ---
 name: dynamicweb-pim-dashboard
-description: Create and configure Dynamicweb 10 dashboards and widgets using MCP tools. Use when the user wants to create a dashboard, add widgets, configure query widgets, or manage dashboard layouts in Dynamicweb administration.
+description: Create and configure Dynamicweb 10 dashboards and widgets using MCP tools. Triggers: create a dashboard, add or configure widgets, build query-backed count widgets, look up widget parameters, manage dashboard areas or layouts. Non-triggers: building or fixing the underlying product query -> dynamicweb-pim-query; designing the PIM data model -> dynamicweb-pim-solution-assistant.
 ---
 
 # Dynamicweb Dashboard Creator

@@ -1,8 +1,8 @@
 # Browser MCP — Playwright install + verification gate
 
-Wire `@playwright/mcp` (Microsoft's official Playwright MCP server) at **user scope** so every Truvio demo on this machine gets first-class browser tooling — log in, navigate, click, screenshot, inspect DOM. This replaces the friction of asking the user to manually drive a tab and paste back screenshots after each PIM seeding / template edit / customer-center wiring change.
+Wire `@playwright/mcp` (Microsoft's official Playwright MCP server) at **user scope** so every Dynamicweb demo on this machine gets first-class browser tooling — log in, navigate, click, screenshot, inspect DOM. This replaces the friction of asking the user to manually drive a tab and paste back screenshots after each PIM seeding / template edit / customer-center wiring change.
 
-**Scope guard — verification only.** Playwright's job on a Truvio demo is to *verify*: walk the storefront as a seeded persona, or navigate `/Admin` read-only to confirm a change landed (screenshot, DOM-grep). Driving `/Admin` to *make* changes is off-limits — every admin-UI operation is an Admin API call underneath, so the change itself belongs on MCP / Management API per the surface-priority rule (`references/surface-priority.md` §"Admin UI is verification-only").
+**Scope guard — verification only.** Playwright's job on a Dynamicweb demo is to *verify*: walk the storefront as a seeded persona, or navigate `/Admin` read-only to confirm a change landed (screenshot, DOM-grep). Driving `/Admin` to *make* changes is off-limits — every admin-UI operation is an Admin API call underneath, so the change itself belongs on MCP / Management API per the surface-priority rule (`references/surface-priority.md` §"Admin UI is verification-only").
 
 Three steps in **strict order**:
 
@@ -16,10 +16,10 @@ The verification gate (Step 2) refuses to declare 'browser tooling ready' until 
 
 ## Why user scope, not per-demo `.mcp.json`
 
-Browser tooling is **cross-demo plumbing** — like the Backend MCP install or the TLS bypass. Every Truvio demo on this machine needs the same browser tools; per-demo install would create drift and clutter each `.mcp.json`. User scope keeps it canonical:
+Browser tooling is **cross-demo plumbing** — like the Backend MCP install or the TLS bypass. Every Dynamicweb demo on this machine needs the same browser tools; per-demo install would create drift and clutter each `.mcp.json`. User scope keeps it canonical:
 
 - One install command, one place to upgrade.
-- Tools surface in every Claude Code session on this machine, not just inside a Truvio demo solution folder.
+- Tools surface in every Claude Code session on this machine, not just inside a Dynamicweb demo solution folder.
 - No leakage to git: per-demo `.mcp.json` is project-tracked; user scope is in `~/.claude.json` (machine-local).
 
 ---
@@ -37,7 +37,7 @@ What each flag does:
 | Flag | Why |
 |---|---|
 | `--scope user` | Registers the MCP in `~/.claude.json` (user-global), not in the current project's `.mcp.json`. Keeps it cross-demo. |
-| `--ignore-https-errors` | The Truvio demo host runs on `https://localhost:<port>/` with a self-signed dev cert. Without this flag, every Playwright `browser_navigate` to the host throws `net::ERR_CERT_AUTHORITY_INVALID`. This is the browser-side equivalent of the two-layer TLS bypass in `references/tls-bypass.md` — same threat model (localhost only), same scope (developer machine only). |
+| `--ignore-https-errors` | The Dynamicweb demo host runs on `https://localhost:<port>/` with a self-signed dev cert. Without this flag, every Playwright `browser_navigate` to the host throws `net::ERR_CERT_AUTHORITY_INVALID`. This is the browser-side equivalent of the two-layer TLS bypass in `references/tls-bypass.md` — same threat model (localhost only), same scope (developer machine only). |
 | `npx -y @playwright/mcp@latest` | Resolves the latest published Playwright MCP on each spawn. No global npm install to maintain; `npx` caches the package. |
 
 **Optional flags** (append before any verification):
@@ -48,7 +48,7 @@ What each flag does:
 | `--isolated` | Keeps the browser profile in memory only — no cookies / localStorage persisted between runs. Recommended for verification flows where each "log in as user X, walk to URL Y" should start fresh. Without it, login state leaks across calls. |
 | `--headless` | Run without a visible browser window. Default is headed, which is useful when the user is watching the demo machine; flip to headless for CI-like silent runs. |
 
-A reasonable default for Truvio verification flows on Windows:
+A reasonable default for Dynamicweb verification flows on Windows:
 
 ```powershell
 claude mcp add --scope user playwright -- npx -y @playwright/mcp@latest --ignore-https-errors --isolated
@@ -91,7 +91,7 @@ If the install was done in the same session that needs to use the tools, the use
 
 ## Generic verify-flow recipe
 
-After a Truvio demo finishes seeding (PIM content, customer-center pages, paragraph wiring), use this shape to confirm the user-facing surface actually works. Substitute placeholders for the demo's real values — never bake demo-specific URLs / credentials into this file:
+After a Dynamicweb demo finishes seeding (PIM content, customer-center pages, paragraph wiring), use this shape to confirm the user-facing surface actually works. Substitute placeholders for the demo's real values — never bake demo-specific URLs / credentials into this file:
 
 1. **Resolve the host URL.** From `Dynamicweb.Host.Suite/Properties/launchSettings.json` HTTPS profile (the discover-from-project-files rule — see `references/mcp-setup.md` Step 1). Format: `https://localhost:<port>/`.
 2. **Navigate to the public storefront** (not `/Admin`). Example: `mcp__playwright__browser_navigate url="https://localhost:<port>/<shop-slug>/"`.

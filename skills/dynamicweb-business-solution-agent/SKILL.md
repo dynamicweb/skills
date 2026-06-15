@@ -1,11 +1,6 @@
 ---
 name: dynamicweb-business-solution-agent
-description: >
-  End-to-end Dynamicweb 10 plus Swift 2 solution orchestrator. Use when the user wants a full
-  business solution from a plain-language request such as "I want a wine solution". The skill
-  installs Swift 2 if needed, bootstraps MCP access, inspects the existing demo installation as a
-  baseline, and then delegates to the business setup flow that replaces demo business data with the
-  new business while preserving the working Swift 2 shell.
+description: End-to-end Dynamicweb 10 plus Swift 2 solution orchestrator that turns a plain-language request into a working solution -- installs Swift 2 if needed, bootstraps MCP access, inspects the demo baseline, then delegates to the business setup flow, preserving the working Swift 2 shell. Triggers: "I want a <X> solution" or "build me a full webshop for <business>", a full build from a single plain-language brief, when no usable installation exists yet. Non-triggers: an install is already bootstrapped and only configuration is needed -> dynamicweb-business-setup-agent; only the Swift 2 site shell needs customizing -> dynamicweb-swift2-site-builder; only installing Swift 2 -> dynamicweb-solution-installer.
 ---
 
 # Dynamicweb Business Solution Agent

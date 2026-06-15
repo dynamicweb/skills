@@ -1,6 +1,6 @@
 # Scaffold — `dotnet new dw10-suite`
 
-Scaffold a new Truvio (Dynamicweb 10) demo project. Walk `dotnet new dw10-suite --name Dynamicweb.Host.Suite`. The `--name Dynamicweb.Host.Suite` is **mandatory** — sister-skill path discovery (`Dynamicweb.Host.Suite/Properties/launchSettings.json`, `Dynamicweb.Host.Suite/GlobalSettings.Database.config`) depends on this name.
+Scaffold a new Dynamicweb 10 demo project. Walk `dotnet new dw10-suite --name Dynamicweb.Host.Suite`. The `--name Dynamicweb.Host.Suite` is **mandatory** — sister-skill path discovery (`Dynamicweb.Host.Suite/Properties/launchSettings.json`, `Dynamicweb.Host.Suite/GlobalSettings.Database.config`) depends on this name.
 
 Suite version is whatever the template + `dotnet restore` resolve. **Version policy is out of scope for this skill** — neither pinning a specific patch nor enforcing Ring-N stability is something this skill does. If a particular demo needs a frozen version, edit its csproj directly.
 
@@ -26,13 +26,13 @@ Inside the demo solution folder (e.g. `C:\Projects\Solutions\<demo>\`):
 dotnet new dw10-suite --name Dynamicweb.Host.Suite
 ```
 
-**Constraint:** `--name Dynamicweb.Host.Suite` is mandatory (the discover-from-project-files path-discovery contract). Sister skills (`truvio-pim-demo`, `truvio-swift-demo`) and references in this skill (`mcp-setup.md`, `setup-checks.md`'s discovery table) all assume this exact project name when reading `launchSettings.json` and `GlobalSettings.Database.config`. Renaming the host project breaks the entire downstream chain.
+**Constraint:** `--name Dynamicweb.Host.Suite` is mandatory (the discover-from-project-files path-discovery contract). Sister skills (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`) and references in this skill (`mcp-setup.md`, `setup-checks.md`'s discovery table) all assume this exact project name when reading `launchSettings.json` and `GlobalSettings.Database.config`. Renaming the host project breaks the entire downstream chain.
 
 After the command completes, the solution folder contains a new `Dynamicweb.Host.Suite/` folder with the canonical Suite scaffold (`.csproj`, `Program.cs`, `Properties/launchSettings.json`, etc.). The csproj's `Dynamicweb.Suite` PackageReference is whatever the template ships with — leave it as-is unless the demo has a specific reason to freeze a version.
 
 ### 2.1 — TargetFramework MUST be `net10.0` (mandatory)
 
-Template 1.26.0 ships multi-target (`<TargetFrameworks>net8.0;net10.0</TargetFrameworks>`). **Pin to single-target `net10.0`** — this is non-negotiable for any Truvio demo, because every Truvio demo needs the AppStore Backend MCP AddIn (per `references/mcp-setup.md`, a non-skippable canonical step), and the MCP AddIn loader hard-requires the host process to run on .NET 10:
+Template 1.26.0 ships multi-target (`<TargetFrameworks>net8.0;net10.0</TargetFrameworks>`). **Pin to single-target `net10.0`** — this is non-negotiable for any Dynamicweb demo, because every Dynamicweb demo needs the AppStore Backend MCP AddIn (per `references/mcp-setup.md`, a non-skippable canonical step), and the MCP AddIn loader hard-requires the host process to run on .NET 10:
 
 ```xml
 <TargetFramework>net10.0</TargetFramework>
@@ -152,8 +152,8 @@ After the first run completes, the per-demo project files are the source of trut
 | What | Read from | Used by |
 |---|---|---|
 | HTTPS port | `Dynamicweb.Host.Suite/Properties/launchSettings.json` (`applicationUrl`, HTTPS profile) | `references/mcp-setup.md` Step 1, all subsequent Management API calls |
-| Database name | `Dynamicweb.Host.Suite/GlobalSettings.Database.config` (`Database=` or `Initial Catalog=` in connection string) | Swift's [`../../truvio-swift-demo/references/integrity-sweep.md`](../../truvio-swift-demo/references/integrity-sweep.md) SQL probes; PIM admin/SQL recipes |
-| Management API bearer token | Captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`). Storage contract is canonical in `references/mcp-setup.md` Step 6. | Swift's [`../../truvio-swift-demo/references/deserialize-flow.md`](../../truvio-swift-demo/references/deserialize-flow.md) + [`../../truvio-swift-demo/references/integrity-sweep.md`](../../truvio-swift-demo/references/integrity-sweep.md); any Management API call |
+| Database name | `Dynamicweb.Host.Suite/GlobalSettings.Database.config` (`Database=` or `Initial Catalog=` in connection string) | Swift's [`../../dynamicweb-swift-demo/references/integrity-sweep.md`](../../dynamicweb-swift-demo/references/integrity-sweep.md) SQL probes; PIM admin/SQL recipes |
+| Management API bearer token | Captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`). Storage contract is canonical in `references/mcp-setup.md` Step 6. | Swift's [`../../dynamicweb-swift-demo/references/deserialize-flow.md`](../../dynamicweb-swift-demo/references/deserialize-flow.md) + [`../../dynamicweb-swift-demo/references/integrity-sweep.md`](../../dynamicweb-swift-demo/references/integrity-sweep.md); any Management API call |
 
 `references/mcp-setup.md` Section 1 contains the verbatim port-discovery PowerShell that reads `launchSettings.json`.
 
@@ -161,7 +161,7 @@ After the first run completes, the per-demo project files are the source of trut
 
 ## 5. Anti-patterns (CLAUDE.md "What NOT to Use")
 
-- **Do not target Dynamicweb 9.x.** EOL trajectory; Truvio Commerce is exclusively DW10 going forward. Swift 2.x explicitly drops DW9 support.
+- **Do not target Dynamicweb 9.x.** EOL trajectory; Dynamicweb Commerce is exclusively DW10 going forward. Swift 2.x explicitly drops DW9 support.
 - **Do not reference the older `Dynamicweb` meta-package** (distinct from `Dynamicweb.Suite`) standalone in the host project. The host should reference `Dynamicweb.Suite` only, which transitively pulls Content + PIM + Commerce + Users + Files + Settings + Headless.
 - **Do not name the host project anything other than `Dynamicweb.Host.Suite`.** The path-discovery contract is hardcoded to this name across this skill and all sister skills.
-- **Do not use the `dotnet new dw10-cms` template** (CMS-only) for a Truvio demo that needs Commerce + PIM. Use `dw10-suite` (the full Suite template).
+- **Do not use the `dotnet new dw10-cms` template** (CMS-only) for a Dynamicweb demo that needs Commerce + PIM. Use `dw10-suite` (the full Suite template).

@@ -1,6 +1,6 @@
 # scenarios-first-planning.md
 
-> Plan ERP beats BEFORE you build. The pattern: author a `<demo>-Scenarios.xlsx` (or `.md` if you don't want Excel) listing every demo scenario as one row, with explicit columns for ERP-side and PIM-side actions, BEFORE staging the database or wiring a connector. Loaded from `truvio-erp-demo/SKILL.md` "Where to find things".
+> Plan ERP beats BEFORE you build. The pattern: author a `<demo>-Scenarios.xlsx` (or `.md` if you don't want Excel) listing every demo scenario as one row, with explicit columns for ERP-side and PIM-side actions, BEFORE staging the database or wiring a connector. Loaded from `dynamicweb-erp-demo/SKILL.md` "Where to find things".
 
 ## Why scenarios first
 
@@ -51,7 +51,7 @@ Once the scenarios artefact is locked, the build follows it:
 - One pre/post row set in the [mock-deltas.md](mock-deltas.md) Step 1 table (and one RESET `UPDATE`) per scenario row that fires from BC.
 - ONE static field-mapping artefact total for the PIM->BC direction (mock-deltas.md Step 4) -- not one per scenario row.
 - One action rule per scenario row that mentions "action rule" in PIM-side action.
-- One dashboard widget per scenario row that needs a "watch this widget change" beat (and watch the [`../truvio-pim-demo/references/governance.md`](../../truvio-pim-demo/references/governance.md) rule: `RepositoryCountWidget` for drill-through, never `ScalarSqlCountWidget`).
+- One dashboard widget per scenario row that needs a "watch this widget change" beat (and watch the [`../dynamicweb-pim-demo/references/governance.md`](../../dynamicweb-pim-demo/references/governance.md) rule: `RepositoryCountWidget` for drill-through, never `ScalarSqlCountWidget`).
 - One customer-center / storefront page touch per scenario row that lists a frontend surface.
 
 Each is a small, scoped artefact -- not 200 lines of speculative scaffolding. The "go deep, not wide" rule inherited from base means: only the scenarios drive the build. A paragraph type or page preset that no scenario row needs is wasted demo time.
@@ -60,6 +60,6 @@ Each is a small, scoped artefact -- not 200 lines of speculative scaffolding. Th
 
 - The scenarios artefact informs the delta set: [mock-deltas.md](mock-deltas.md).
 - It also informs the field shape: [erp-data-shape.md](erp-data-shape.md).
-- The "go deep, not wide" demo philosophy: [`../truvio-demo-base/SKILL.md`](../../truvio-demo-base/SKILL.md) "Demo philosophy".
-- The customer-context read-only contract that protects the customer-supplied PDF: [`../truvio-demo-base/references/customer-context.md`](../../truvio-demo-base/references/customer-context.md).
+- The "go deep, not wide" demo philosophy: [`../dynamicweb-demo-base/SKILL.md`](../../dynamicweb-demo-base/SKILL.md) "Demo philosophy".
+- The customer-context read-only contract that protects the customer-supplied PDF: [`../dynamicweb-demo-base/references/customer-context.md`](../../dynamicweb-demo-base/references/customer-context.md).
 - Reference artefact shape: `<demo>/<Demo>-Scenarios.xlsx` + `customer-context/<Customer>_-_PIM_Scenarios_-_*.pdf`.

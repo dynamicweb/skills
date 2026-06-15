@@ -47,7 +47,7 @@ $env:NODE_TLS_REJECT_UNAUTHORIZED = "0"  # current process — see dual-set patt
 
 Write-Host "Set NODE_TLS_REJECT_UNAUTHORIZED=0 at User scope."
 Write-Host "IMPORTANT: Close ALL Claude Code instances and reopen from a fresh PowerShell."
-Write-Host "Verify with: claude mcp list  (should show 'truvio-commerce-mcp ✓ Connected' after restart)"
+Write-Host "Verify with: claude mcp list  (should show 'dynamicweb-commerce-mcp ✓ Connected' after restart)"
 ```
 
 The two-line setter follows the dual-set env-var propagation pattern (canonical in `references/setup-checks.md` §4): set User scope for persistence AND the current-process `$env:` copy, then restart Claude Code from a fresh shell.
@@ -62,7 +62,7 @@ After both layers are in place AND the admin-UI MCP config is created (see `refe
 claude mcp list
 ```
 
-- If it shows `truvio-commerce-mcp ✓ Connected` → Layer 2 is working.
+- If it shows `dynamicweb-commerce-mcp ✓ Connected` → Layer 2 is working.
 - If it shows `Failed to connect` → return to this file, re-verify Layer 2:
   - `[Environment]::GetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED","User")` returns `"0"`?
   - Did you close ALL Claude Code instances and reopen from a fresh PowerShell after setting the var?

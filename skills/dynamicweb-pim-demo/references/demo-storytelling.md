@@ -1,6 +1,6 @@
 # demo-storytelling.md
 
-> PIM-flavoured demo tactics — governance and modelling-specific framing for a Dynamicweb 10 PIM demo. Generic narrative tactics that apply to any Truvio demo (audience framing, multi-channel publishing tactics) live in `truvio-demo-base/references/demo-tactics.md` — that split is deliberate; this file is intentionally PIM-narrow.
+> PIM-flavoured demo tactics — governance and modelling-specific framing for a Dynamicweb 10 PIM demo. Generic narrative tactics that apply to any Dynamicweb demo (audience framing, multi-channel publishing tactics) live in `dynamicweb-demo-base/references/demo-tactics.md` — that split is deliberate; this file is intentionally PIM-narrow.
 
 ## PIM tactics
 

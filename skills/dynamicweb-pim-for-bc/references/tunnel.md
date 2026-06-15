@@ -1,6 +1,6 @@
 # tunnel.md
 
-> Bring the local DW host up at a stable public HTTPS URL via ngrok so a Business Central tenant can call it. Loaded from `~/.claude/skills/truvio-pim-for-bc/SKILL.md` "Where to find things" table.
+> Bring the local DW host up at a stable public HTTPS URL via ngrok so a Business Central tenant can call it. Loaded from `~/.claude/skills/dynamicweb-pim-for-bc/SKILL.md` "Where to find things" table.
 
 ## Prerequisites
 

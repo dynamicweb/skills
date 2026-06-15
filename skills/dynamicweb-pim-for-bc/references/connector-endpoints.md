@@ -1,6 +1,6 @@
 # connector-endpoints.md
 
-> The `/admin/api/BC*` call surface exposed by the **PIM for Business Central connector** AppStore app. 11 queries (read) + 4 commands (write), all bearer-auth via the existing Management API token. Loaded from `~/.claude/skills/truvio-pim-for-bc/SKILL.md` "Where to find things" table.
+> The `/admin/api/BC*` call surface exposed by the **PIM for Business Central connector** AppStore app. 11 queries (read) + 4 commands (write), all bearer-auth via the existing Management API token. Loaded from `~/.claude/skills/dynamicweb-pim-for-bc/SKILL.md` "Where to find things" table.
 
 ## Call convention
 
@@ -65,7 +65,7 @@ Roles:
 - **`BCBuildIndex`** -- triggers a Products index rebuild. Same effect as `POST /admin/api/BuildIndex {Repository:"Products", IndexName:"Products.index", BuildName:"Full"}` -- the BC variant infers the index target from `BCSettings.indexBuildKey` and `BCSettings.buildName`.
 - **`BCProductCreate`** -- BC pushes a new item. Connector creates the DW product, attaches it to the data-model groups, optionally stamps it with `BCSettings.workflowStateId`, optionally triggers a partial index build.
 - **`BCProductUpdate`** -- BC pushes an update. Connector resolves the product (typically by external id), patches the changed fields, re-builds index if configured.
-- **`BCSettingsSave`** -- writes the connector configuration. See [truvio-connector-settings.md](truvio-connector-settings.md) for the exact payload.
+- **`BCSettingsSave`** -- writes the connector configuration. See [dynamicweb-connector-settings.md](dynamicweb-connector-settings.md) for the exact payload.
 
 ## Background plumbing -- not endpoints
 
@@ -73,8 +73,8 @@ Five types in the AppStore package don't expose endpoints; they're internal pipe
 
 - `BCEndpointsPipeline` -- DI-time pipeline that registers all the queries + commands at host startup.
 - `BCSettingsEditScreen` + `BCSettingsNodeProvider` -- admin UI surface (Settings -> tree node "BC connector settings" with an edit screen).
-- `BCSetupUpdateProvider` -- runs on first host startup after install. Seeds the BCSettings row with default values (which are usually wrong for your project, see [truvio-connector-settings.md](truvio-connector-settings.md)).
-- `BCWorkflowUpdateProvider` -- creates the "BC Products" workflow with a single state "New Product From BC". This is `workflowStateId=1` in a fresh install. Verify with `mcp__truvio-commerce-mcp__get_workflow_states`.
+- `BCSetupUpdateProvider` -- runs on first host startup after install. Seeds the BCSettings row with default values (which are usually wrong for your project, see [dynamicweb-connector-settings.md](dynamicweb-connector-settings.md)).
+- `BCWorkflowUpdateProvider` -- creates the "BC Products" workflow with a single state "New Product From BC". This is `workflowStateId=1` in a fresh install. Verify with `mcp__dynamicweb-commerce-mcp__get_workflow_states`.
 - `BCDeletedProductsCleanupHostedService` -- background service that prunes old `BCProductDeleteLog` rows past the `retentionDays` window.
 - `BCFileStreams` -- update-provider helper for streaming connector files into the AddIn folder during install.
 
