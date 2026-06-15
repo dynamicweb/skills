@@ -1,0 +1,50 @@
+{
+  "marketplace": {
+    "name": "Dynamicweb Skills",
+    "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
+    "version": "2.0.0"
+  },
+  "plugins": [
+    {
+      "name": "dynamicweb-developer",
+      "description": "Skills for developers building on the Dynamicweb 10 platform — MCP tools, source exploration, and solution bootstrapping.",
+      "skills": [
+        "skills/dynamicweb-solution-installer",
+        "skills/dynamicweb-source-explorer",
+        "skills/dynamicweb-mcp-tool-creator"
+      ]
+    },
+    {
+      "name": "dynamicweb-implementer",
+      "description": "Skills for implementers configuring PIM, content, and full business solutions on Dynamicweb 10.",
+      "skills": [
+        "skills/dynamicweb-pim-query",
+        "skills/dynamicweb-pim-dashboard",
+        "skills/dynamicweb-pim-enrichment",
+        "skills/dynamicweb-pim-solution-assistant",
+        "skills/dynamicweb-business-setup-agent",
+        "skills/dynamicweb-swift2-site-builder"
+      ]
+    },
+    {
+      "name": "dynamicweb-user",
+      "description": "Skills for end-users and business users working with product data and business solutions.",
+      "skills": [
+        "skills/dynamicweb-pim-enrichment",
+        "skills/dynamicweb-pim-query",
+        "skills/dynamicweb-business-solution-agent"
+      ]
+    },
+    {
+      "name": "dynamicweb-presales",
+      "description": "Skills for presales and demo engineers running Dynamicweb 10 demos — PIM, Swift frontend, ERP integration, and BC connector.",
+      "skills": [
+        "skills/dynamicweb-demo-base",
+        "skills/dynamicweb-pim-demo",
+        "skills/dynamicweb-swift-demo",
+        "skills/dynamicweb-erp-demo",
+        "skills/dynamicweb-pim-for-bc"
+      ]
+    }
+  ]
+}

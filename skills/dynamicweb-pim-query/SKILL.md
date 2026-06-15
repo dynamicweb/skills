@@ -1,5 +1,5 @@
 ---
-name: dynamicweb-product-query-creator
+name: dynamicweb-pim-query
 description: Design, validate, and generate Dynamicweb 10 product queries for administration use and follow-up dashboard work. Use when the user wants to build, fix, refactor, or explain Dynamicweb product queries in either the manual UI model or the MCP payload model.
 ---
 

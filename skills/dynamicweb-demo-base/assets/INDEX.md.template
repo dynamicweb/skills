@@ -1,0 +1,16 @@
+# DW Vault Index
+
+> Single source of truth for vault slot resolution. Updated at slot creation / DW10 version bump.
+> Resolved at runtime via `$env:DW_VAULT` (default `C:\VibeCode\dw-vault\`).
+
+| Slot | Path | Purpose | DW10 version stamp | Last-updated |
+|------|------|---------|--------------------|--------------|
+| `dw10source` | `$DW_VAULT\dw10source\` | Local clone of DW10 source for deep schema/internals search | _(version of DW10 source at last sync)_ | _(YYYY-MM-DD)_ |
+| `samples` | `$DW_VAULT\samples\` | Reference admin-UI samples (`dw10adminUI/`) and any future sample bundles | _(applies to dw10adminUI commit hash)_ | _(YYYY-MM-DD)_ |
+| `databases` | `$DW_VAULT\databases\` | Optional .mdf snapshots / clean-DB zips for fast restore (alternative to deserialize) | _(version of DW10 the snapshot targets)_ | _(YYYY-MM-DD)_ |
+| `docs` | `$DW_VAULT\docs\` | Curated DW10 docs (custom admin screens guide, middleware deep-dive) | _(N/A -- version-agnostic)_ | _(YYYY-MM-DD)_ |
+| `serialized-data` | `$DW_VAULT\serialized-data\` | YAML baselines for `DynamicWeb.Serializer` deserialize. Each subfolder is one baseline (e.g. generic `Swift2.2/`, plus per-demo customer-flavoured baselines named `<demo>-base/` by convention once derived). | _(per-baseline; each subfolder lists its target DW10 version in its own README)_ | _(YYYY-MM-DD)_ |
+
+## Resolution rule
+
+Every Truvio skill resolves vault content via `$env:DW_VAULT` joined with a slot name from this table. Hardcoded literal-path fallbacks (e.g., `C:\VibeCode\dw-vault\dw10source\`) are documented as bootstrap-only / emergency-only. See `truvio-demo-base/references/setup-checks.md` for the verify-and-fix walkthrough; see `truvio-demo-base/references/compare-vault.md` for cross-machine drift detection.

@@ -1,0 +1,15 @@
+# Customisations Ledger -- <demo-name>
+
+> **Rule:** No custom controllers, providers, or `*Controller.cs` files in `Dynamicweb.Host.Suite/`
+> without a row below explaining why.
+>
+> Approved by Justin (or designate) at write-time via `truvio-demo-base` AskUserQuestion.
+
+| Date | File | Type | Reason | Approved by |
+|------|------|------|--------|-------------|
+| _(append rows here)_ | | | | |
+
+**Audit:** Run `references/audit-customisations.md` to verify file count under
+`Dynamicweb.Host.Suite/Controllers/` matches ledger row count.
+
+**Closing-review target:** zero custom controllers.

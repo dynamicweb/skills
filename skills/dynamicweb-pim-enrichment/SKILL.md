@@ -1,5 +1,5 @@
 ---
-name: dynamicweb-product-enrichment-agent
+name: dynamicweb-pim-enrichment
 description: >
   Interactive agent for filling missing completeness fields on products returned by a Dynamicweb
   product query. Use when the user names a saved query and wants the agent to read its required
