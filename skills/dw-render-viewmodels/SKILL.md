@@ -21,7 +21,7 @@ Model.Item.GetString("FieldName")  ← ViewModel method
 Rendered output
 ```
 
-## The Three Main ViewModels
+## The Main ViewModels
 
 ### ParagraphViewModel
 Rendering context for a single paragraph on a page. Contains grid position, container, image data, and the optional `Item` property.
@@ -122,6 +122,148 @@ From Swift's `ImageTopTextLeft.cshtml`:
 - `Model.Item` — access the item data
 - `Model.` properties directly (e.g., `Model.Header`) for paragraph-level fields
 
+## Ecommerce ViewModels
+
+Product catalog apps expose specialized ViewModels for rendering products and lists. Use these in product templates.
+
+### ProductViewModel
+Represents a single product with all its data: name, SKU, description, pricing, images, variants, and stock info.
+
+**Performance note:** Most properties are lazy-loaded. Using multiple expensive properties on large product lists (e.g., 100 products) can cause performance issues. On lists, stick to basic properties (`Name`, `Number`, `Price`, `DefaultImage`); load details on the product detail page.
+
+**Key properties:**
+- `Id` — product ID (eager loaded, no overhead)
+- `VariantId` — variant combination (eager loaded)
+- `LanguageId` — language context
+- `Name`, `ShortDescription`, `LongDescription` — copy
+- `Number` — SKU
+- `Price` → `PriceViewModel` with VAT, currency, discount
+- `PriceBeforeDiscount` → price before any discount applied
+- `DefaultImage` → primary product image (string path)
+- `VariantName` — human-readable variant label (e.g., "Red, Large")
+- `StockLevel` — quantity available
+- `ProductType` — Stock, Service, NonStock
+- `NeverOutOfstock` — ignore stock limits if true
+- `HasDiscount()` — check if discounted
+- `GetProductLink(pageId)` — URL to product detail page
+- `FieldDisplayGroups` — custom product fields grouped by category
+- `PurchaseQuantityStep`, `PurchaseMinimumQuantity` — order constraints
+
+**When to use:** Product catalog lists, product detail pages, cart/checkout, recommendations.
+
+### ProductListViewModel
+Top-level model for a product list page. Contains the current product set, pagination, sorting, facets (filters), and group navigation.
+
+**Key properties:**
+- `Products` → list of `ProductViewModel` on current page (null if not requested)
+- `Group` → current product group (null for search results)
+- `SubGroups` → child groups of current group
+- `PageSize`, `PageCount`, `CurrentPage` — pagination state
+- `TotalProductsCount` — total products across all pages
+- `SortBy`, `SortOrder` — current sort (e.g., "Name", "ASC")
+- `FacetGroups` → filter categories and options (null if not requested)
+- `SpellCheckerSuggestions` → alternative search terms if few/no results
+
+**When to use:** Product list pages. Iterate over `Products` to render each product; use `FacetGroups` for a filter sidebar; use pagination properties for "Load more" buttons.
+
+### PriceViewModel
+Encapsulates pricing with currency formatting, VAT info, and discount handling.
+
+**Key properties:**
+- `Price` → `PriceInfo { Value: double, Formatted: string, FormattedNoSymbol: string }`
+- `PriceWithVat`, `PriceWithoutVat` → VAT variants
+- `Vat` → VAT amount
+- `VatPercent` → VAT as percentage
+- `Currency` → `CurrencyInfo { Symbol: string, Code: string }`
+- `ShowPricesWithVat`, `ReverseChargeForVat` — display flags
+
+**When to use:** Whenever rendering product prices. Always prefer `Price.PriceFormatted` (respects user's locale and VAT rules) over raw `Value`.
+
+## Template Example: Product Grid Card
+
+From Swift's single-product card in a grid:
+
+```razor
+@inherits Dynamicweb.Rendering.ViewModelTemplate<Dynamicweb.Ecommerce.ProductCatalog.ProductViewModel>
+@using Dynamicweb.Ecommerce.ProductCatalog
+
+@{
+    var product = Model;
+    string link = product.GetProductLink(GetPageIdByNavigationTag("Shop"), false);
+    string imagePath = product?.DefaultImage?.ToString() ?? string.Empty;
+}
+
+<a href="@link" class="text-decoration-none d-block">
+    <div class="position-relative">
+        <img src="@imagePath" class="img-fluid" alt="@product.Name" />
+    </div>
+    <div>
+        <h3>@product.Name @product.VariantName</h3>
+        
+        @if (product.HasDiscount())
+        {
+            <span class="text-decoration-line-through opacity-75">
+                @product.PriceBeforeDiscount.PriceFormatted
+            </span>
+        }
+        
+        <span class="text-price fw-bold">@product.Price.PriceFormatted</span>
+        @if (product.Price.TryGetVatLabel(out string vatLabel)) {
+            <small>@Translate(vatLabel)</small>
+        }
+    </div>
+</a>
+```
+
+## Template Example: Product List with Facets
+
+From Swift's related-products list (simplified):
+
+```razor
+@inherits ViewModelTemplate<ProductListViewModel>
+@using Dynamicweb.Ecommerce.ProductCatalog
+
+@foreach (var product in Model.Products)
+{
+    <tr>
+        <td>@product.Number</td>
+        <td><a href="@product.GetProductLink(GetPageIdByNavigationTag("Shop"))">@product.Name</a></td>
+        <td>@product.Price.PriceFormatted</td>
+        <td>
+            @if (product.StockLevel > 0) { <span class="text-success">In Stock</span> }
+            else { <span class="text-danger">Out of Stock</span> }
+        </td>
+    </tr>
+}
+
+@* Facet sidebar *@
+@if (Model.FacetGroups != null)
+{
+    @foreach (var facetGroup in Model.FacetGroups)
+    {
+        @foreach (var facet in facetGroup.Facets)
+        {
+            <div class="filter-group">
+                <h5>@facet.Name</h5>
+                @foreach (var option in facet.Options)
+                {
+                    <label>
+                        <input type="checkbox" name="@facet.QueryParameter" value="@option.Value" />
+                        @option.Label (@option.Count)
+                    </label>
+                }
+            </div>
+        }
+    }
+}
+
+@* Pagination *@
+@for (int p = 1; p <= Model.PageCount; p++)
+{
+    <a href="?PageNum=@p" class="@(p == Model.CurrentPage ? "active" : "")">@p</a>
+}
+```
+
 ## When to Drop to the C# API
 
 ViewModels are sufficient for 95% of rendering. Reach for `dw-extend-csharp-api` when:
@@ -144,13 +286,23 @@ Example: custom sorting of items by a computed field:
 
 ## References
 
+**Core ViewModels:**
 - [ViewModelBase](references/viewmodel-base.cs) — the foundation class
 - [ParagraphViewModel](references/paragraph-viewmodel.cs) — paragraph rendering context
 - [ItemViewModel](references/item-viewmodel.cs) — item field accessors (all methods documented)
 - [ItemViewModelExtensions](references/item-viewmodel-extensions.cs) — validation helpers
-- [Swift Template: Image](references/swift-image-template.cshtml) — simple image + link pattern
-- [Swift Template: Image + Text + Buttons](references/swift-imagetext-template.cshtml) — complex layout with multiple field types
+
+**Ecommerce ViewModels:**
+- [ProductViewModel](references/product-viewmodel.cs) — single product with pricing, images, variants
+- [ProductListViewModel](references/product-list-viewmodel.cs) — product list page with pagination, filters, facets
+- [PriceViewModel](references/price-viewmodel.cs) — currency-aware pricing with VAT
+
+**Template Examples:**
+- [Swift Template: Content Image](references/swift-image-template.cshtml) — simple image + link pattern
+- [Swift Template: Content Image + Text + Buttons](references/swift-imagetext-template.cshtml) — complex content layout
 - [Swift Template: Buttons Only](references/swift-buttons-template.cshtml) — focused button rendering
+- [Swift Template: Product Card](references/swift-product-card.cshtml) — single product in grid with pricing
+- [Swift Template: Product List with Facets](references/swift-product-list.cshtml) — full list with filters, pagination, stock
 
 ## Gotchas
 
