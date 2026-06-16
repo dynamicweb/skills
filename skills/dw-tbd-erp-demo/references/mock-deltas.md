@@ -14,7 +14,7 @@ The model is intentionally one-direction (BC â†’ PIM). The PIM â†’ BC 
 
 ## When to use this flavor
 
-| Constraint | DB-staged mock (this file) | Live BC ([`dynamicweb-pim-for-bc`](../../dw-tbd-pim-for-bc/SKILL.md)) |
+| Constraint | DB-staged mock (this file) | Live BC ([`dynamicweb-pim-for-bc`](../../dw-integration-bc/SKILL.md)) |
 |---|---|---|
 | Demo handed off to a partner with no BC credentials | **Yes** (only viable option) | No |
 | Demo laptop has no internet | **Yes** | No (ngrok needs internet) |
@@ -131,6 +131,7 @@ No live fire. No JSON file open. Data + rule + template tell the story.
 - [integration-framework.md](integration-framework.md) â€” the always-on "ERP is source/target, not channel/feed" rule.
 - [erp-data-shape.md](erp-data-shape.md) â€” generic ERPâ†”PIM field-ownership table for authoring the post-sync state in Step 1.
 - [scenarios-first-planning.md](scenarios-first-planning.md) â€” design the BC-driven scenarios before staging the DB.
-- Live BC alternative: [`dynamicweb-pim-for-bc`](../../dw-tbd-pim-for-bc/SKILL.md).
+- Live BC alternative: [`dynamicweb-pim-for-bc`](../../dw-integration-bc/SKILL.md).
 - Reference implementation: `<demo>/.planning/stage-and-reset.ps1` (2026-05-21 pivot from JSON-files to DB-staged).
+
 

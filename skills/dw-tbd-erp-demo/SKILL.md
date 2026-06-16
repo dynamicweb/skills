@@ -38,7 +38,7 @@ If the trigger is "expose the host to a real BC tenant via ngrok / set up the Ap
 Pick the flavor at the start of the demo build â€” mixing both forces the audience to track two integration models in parallel. The full constraint-by-constraint decision table is owned by [references/mock-deltas.md](references/mock-deltas.md) Â§"When to use this flavor".
 
 - **No BC tenant in scope** (partner handover, offline laptop) â†’ DB-staged mock, this skill: [references/mock-deltas.md](references/mock-deltas.md).
-- **Real BC tenant + credentials in scope** â†’ live BC, sister skill: [`dynamicweb-pim-for-bc`](../dw-tbd-pim-for-bc/SKILL.md).
+- **Real BC tenant + credentials in scope** â†’ live BC, sister skill: [`dynamicweb-pim-for-bc`](../dw-integration-bc/SKILL.md).
 
 The two flavors demonstrate DIFFERENT demo beats: mock shows "the PIM responds to BC-sourced data" (staged state + action rule as evidence); live BC shows the actual wire. Choose deliberately.
 
@@ -50,7 +50,7 @@ The two flavors demonstrate DIFFERENT demo beats: mock shows "the PIM responds t
 | Stage demo data in the post-BC-sync state and wire the single RESET scheduled task | references/mock-deltas.md |
 | Look up which DW10 fields the ERP typically writes vs reads from PIM (the generic shape) | references/erp-data-shape.md |
 | Plan ERP beats BEFORE the build (the `<demo>-Scenarios.xlsx` pattern) | references/scenarios-first-planning.md |
-| Run the live-BC path (ngrok + ForwardedHeaders + AppStore connector + `/admin/api/BC*`) | [`../dw-tbd-pim-for-bc/SKILL.md`](../dw-tbd-pim-for-bc/SKILL.md) |
+| Run the live-BC path (ngrok + ForwardedHeaders + AppStore connector + `/admin/api/BC*`) | [`../dw-integration-bc/SKILL.md`](../dw-integration-bc/SKILL.md) |
 
 ## Inherited from dynamicweb-demo-base
 
@@ -77,5 +77,6 @@ A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.jso
 ## Vendor patterns
 
 The vendor skill-repo consultation outcome (`dynamicweb/skills` + `dynamicweb/ai-implementor-skills`) is documented in [dynamicweb-demo-base/references/vendor-patterns.md](../dw-tbd-demo-base/references/vendor-patterns.md). Single source of truth for vendor positioning across PIM, Swift, ERP, and BC connector skills.
+
 
 
