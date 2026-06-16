@@ -238,6 +238,84 @@ else
 }
 ```
 
+## Using TemplateTags in HTML Attributes
+
+A common challenge: **double quotes in both Razor string syntax and HTML attributes**. When you embed a TemplateTags value in an HTML attribute, quote nesting becomes tricky.
+
+### Problem: Quote Collision
+
+```html
+<!-- ❌ This breaks — nested quotes confuse the parser -->
+<a href="@GetString("Ecom:Order.Link")">Order</a>
+                   ^                  ^
+              Both use double quotes
+```
+
+The parser sees the first `"` after `GetString(` as the end of the Razor expression, breaking the attribute.
+
+### Solution: Use Single Quotes for Attributes
+
+**Swap the quote types** — use single quotes for the HTML attribute and double quotes for the method call:
+
+```html
+<!-- ✓ This works — outer single, inner double -->
+<a href='@GetString("Ecom:Order.Link")'>Order</a>
+
+<!-- Or assign to variable first (also works) -->
+@{
+    string orderLink = GetString("Ecom:Order.Link");
+}
+<a href="@orderLink">Order</a>
+```
+
+### Real-World Example
+
+From Swift's SavedCardList template:
+
+```html
+<!-- ✓ Single quotes on data attribute, double in GetString -->
+<a href='@savedCardUrl' class='d-block text-decoration-none'>
+    <span>@cardName</span>
+</a>
+
+<!-- ✓ Or build the variable first -->
+@{
+    string deleteUrl = savedCard.GetString("Ecom:CustomerCenter.SavedCards.DeleteUrl");
+    string formAction = GetString("Ecom:RMA.AddURL");
+}
+
+<form action="@formAction" method="post">
+    <!-- form content -->
+</form>
+
+<a href="@deleteUrl" class="btn btn-link">@Translate("Delete")</a>
+```
+
+### When to Use Each Pattern
+
+| Pattern | When to Use |
+|---------|------------|
+| `<a href='@GetString(...)'...>` | Quick, single attribute with value |
+| `@{ var x = GetString(...); }` then `<a href="@x">` | Multiple attributes or complex logic |
+| Single quotes throughout | Consistent, avoids quote nesting entirely |
+
+### Avoiding XSS: HTML Encoding
+
+**Always HTML-encode** user-supplied values in attributes to prevent injection:
+
+```html
+<!-- ✓ Safe — Razor auto-encodes in attributes -->
+<input value='@GetString("User.Name")'>
+
+<!-- ❌ Unsafe in attribute context — could break out with quotes -->
+<div title='@GetString("User.Description")'>
+
+<!-- ✓ Safer — explicitly encode if in doubt -->
+<div title='@System.Net.WebUtility.HtmlEncode(GetString("User.Description"))'>
+```
+
+Razor **auto-encodes** when you use `@expression` directly in an attribute, but it's safer to be explicit when the value contains user input or dynamic content.
+
 ## LoopItem Accessors
 
 Within a loop, `LoopItem` provides the same accessor methods as the top-level context:
