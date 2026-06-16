@@ -42,10 +42,10 @@ This skill assumes `dynamicweb-demo-base` ran first. Four rules apply at all tim
 
 | Rule | Owner |
 |------|-------|
-| `$env:DW_VAULT` path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-tbd-demo-base/SKILL.md) |
-| The customer-context read-only contract | [dynamicweb-demo-base/references/customer-context.md](../dw-tbd-demo-base/references/customer-context.md) |
-| The customisations-ledger preflight | [dynamicweb-demo-base/references/customisations.md](../dw-tbd-demo-base/references/customisations.md) |
-| The baseline-drift self-diagnosis rule | [dynamicweb-demo-base/SKILL.md "Self-diagnosis rule"](../dw-tbd-demo-base/SKILL.md) |
+| `$env:DW_VAULT` path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
+| The customer-context read-only contract | [dynamicweb-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
+| The customisations-ledger preflight | [dynamicweb-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
+| The baseline-drift self-diagnosis rule | [dynamicweb-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
 
 **Customisations note**: `Program.cs` edits to add `ForwardedHeaders` middleware ARE customisations and need a row in `CUSTOMISATIONS.md`. The recipe in [references/forwarded-headers.md](references/forwarded-headers.md) calls this out and provides the exact ledger entry to write.
 
@@ -59,7 +59,8 @@ A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.jso
 
 ## Vendor patterns
 
-The vendor skill-repo consultation outcome (`dynamicweb/skills` + `dynamicweb/ai-implementor-skills`) is documented in [dynamicweb-demo-base/references/vendor-patterns.md](../dw-tbd-demo-base/references/vendor-patterns.md). Single source of truth for vendor positioning across PIM, Swift, and BC connector skills.
+The vendor skill-repo consultation outcome (`dynamicweb/skills` + `dynamicweb/ai-implementor-skills`) is documented in [dynamicweb-demo-base/references/vendor-patterns.md](../dw-demo-base/references/vendor-patterns.md). Single source of truth for vendor positioning across PIM, Swift, and BC connector skills.
+
 
 
 

@@ -67,10 +67,10 @@
       "name": "dynamicweb-presales",
       "description": "Skills for presales and demo engineers running Dynamicweb 10 demos.",
       "skills": [
-        "skills/dw-tbd-demo-base",
-        "skills/dw-tbd-pim-demo",
-        "skills/dw-tbd-swift-demo",
-        "skills/dw-tbd-erp-demo",
+        "skills/dw-demo-base",
+        "skills/dw-demo-pim",
+        "skills/dw-demo-swift",
+        "skills/dw-demo-erp",
         "skills/dw-integration-bc"
       ]
     }
