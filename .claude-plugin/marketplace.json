@@ -16,10 +16,11 @@
     },
     {
       "name": "dynamicweb-frontend",
-      "description": "Skills for template and storefront developers — rendering, ViewModels, content, Swift, and headless delivery.",
+      "description": "Skills for template and storefront developers — rendering (Razor, ViewModels, TemplateTags), content, Swift, and headless delivery.",
       "skills": [
-        "skills/dw-render-templates",
-        "skills/dw-viewmodel-basics",
+        "skills/dw-render-razor",
+        "skills/dw-render-viewmodels",
+        "skills/dw-render-templatetags",
         "skills/dw-content-modelling",
         "skills/dw-swift-building",
         "skills/dw-headless-delivery"
