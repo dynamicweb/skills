@@ -11,21 +11,25 @@ All templates in Dynamicweb 10 are **Razor templates** (`.cshtml` files). Razor 
 
 ### Template Hierarchy
 
-Templates live under `Files/Templates/Designs/<YourDesign>/` and follow a folder structure that mirrors your page/content types:
+Templates live under `Files/Templates/Designs/<YourDesign>/` and follow a folder structure organized by template type and feature area:
 
 ```
 Files/Templates/Designs/Swift-v2/
-├── Paragraph/                    ← Paragraph templates
+├── Paragraph/                    ← Page paragraph templates (content building blocks)
 │   ├── Swift-v2_Image/
 │   │   └── Plain.cshtml
 │   ├── Swift-v2_TextAndImage/
 │   │   └── ImageTopTextLeft.cshtml
 │   └── Swift-v2_Button/
 │       └── ButtonCenter.cshtml
-├── Item/                         ← Item templates (for custom items)
-├── Common/                       ← Shared/reusable templates
+├── eCom/                         ← E-commerce templates (product pages, lists)
+│   ├── ProductPage.cshtml
+│   └── ProductList.cshtml
+├── Navigation/                   ← Navigation and menu templates
 │   ├── Header.cshtml
 │   └── Footer.cshtml
+├── Forms/                        ← Form templates
+├── Custom/                       ← Custom item templates (for extensibility)
 └── Master.cshtml                 ← Site-wide wrapper (optional)
 ```
 
