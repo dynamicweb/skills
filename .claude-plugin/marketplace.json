@@ -2,48 +2,76 @@
   "marketplace": {
     "name": "Dynamicweb Skills",
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "2.1.0"
+    "version": "3.0.0"
   },
   "plugins": [
     {
+      "name": "dynamicweb-setup",
+      "description": "Skills for bootstrapping Dynamicweb 10 solutions — installation, configuration, and upgrades.",
+      "skills": [
+        "skills/dw-setup-install",
+        "skills/dw-setup-config",
+        "skills/dw-setup-upgrade"
+      ]
+    },
+    {
+      "name": "dynamicweb-frontend",
+      "description": "Skills for template and storefront developers — rendering, ViewModels, content, Swift, and headless delivery.",
+      "skills": [
+        "skills/dw-render-templates",
+        "skills/dw-viewmodel-basics",
+        "skills/dw-content-modelling",
+        "skills/dw-swift-building",
+        "skills/dw-headless-delivery"
+      ]
+    },
+    {
+      "name": "dynamicweb-commerce",
+      "description": "Skills for commerce and PIM implementers — products, catalogs, orders, B2B, search, and user management.",
+      "skills": [
+        "skills/dw-pim-modelling",
+        "skills/dw-pim-completeness",
+        "skills/dw-pim-workflow",
+        "skills/dw-pim-localization",
+        "skills/dw-commerce-catalog",
+        "skills/dw-commerce-orders",
+        "skills/dw-commerce-b2b",
+        "skills/dw-search-indexing",
+        "skills/dw-users-permissions"
+      ]
+    },
+    {
+      "name": "dynamicweb-backend",
+      "description": "Skills for backend and platform engineers — C# API, providers, scheduled tasks, MCP tools, integrations, and data access.",
+      "skills": [
+        "skills/dw-extend-csharp-api",
+        "skills/dw-extend-providers",
+        "skills/dw-extend-scheduled-tasks",
+        "skills/dw-extend-mcp-tools",
+        "skills/dw-integration-framework",
+        "skills/dw-integration-erp",
+        "skills/dw-integration-bc",
+        "skills/dw-data-access"
+      ]
+    },
+    {
       "name": "dynamicweb-developer",
-      "description": "Skills for developers building on the Dynamicweb 10 platform — MCP tools, source exploration, and solution bootstrapping.",
+      "description": "Developer tools for Dynamicweb 10 platform engineering.",
       "skills": [
-        "skills/dynamicweb-solution-installer",
-        "skills/dynamicweb-source-explorer",
-        "skills/dynamicweb-mcp-tool-creator"
-      ]
-    },
-    {
-      "name": "dynamicweb-implementer",
-      "description": "Skills for implementers configuring PIM, content, and full business solutions on Dynamicweb 10.",
-      "skills": [
-        "skills/dynamicweb-pim-query",
-        "skills/dynamicweb-pim-dashboard",
-        "skills/dynamicweb-pim-enrichment",
-        "skills/dynamicweb-pim-solution-assistant",
-        "skills/dynamicweb-business-setup-agent",
-        "skills/dynamicweb-business-solution-agent",
-        "skills/dynamicweb-swift2-site-builder"
-      ]
-    },
-    {
-      "name": "dynamicweb-user",
-      "description": "Skills for end-users and business users working with product data and business solutions.",
-      "skills": [
-        "skills/dynamicweb-pim-enrichment",
-        "skills/dynamicweb-pim-query"
+        "skills/dw-setup-install",
+        "skills/dw-tbd-source-explorer",
+        "skills/dw-extend-mcp-tools"
       ]
     },
     {
       "name": "dynamicweb-presales",
-      "description": "Skills for presales and demo engineers running Dynamicweb 10 demos — PIM, Swift frontend, ERP integration, and BC connector.",
+      "description": "Skills for presales and demo engineers running Dynamicweb 10 demos.",
       "skills": [
-        "skills/dynamicweb-demo-base",
-        "skills/dynamicweb-pim-demo",
-        "skills/dynamicweb-swift-demo",
-        "skills/dynamicweb-erp-demo",
-        "skills/dynamicweb-pim-for-bc"
+        "skills/dw-tbd-demo-base",
+        "skills/dw-tbd-pim-demo",
+        "skills/dw-tbd-swift-demo",
+        "skills/dw-tbd-erp-demo",
+        "skills/dw-tbd-pim-for-bc"
       ]
     }
   ]
