@@ -1,4 +1,4 @@
-﻿# deserialize-flow.md
+# deserialize-flow.md
 
 > Deserialize a Swift content baseline from `$env:DW_VAULT\serialized-data\<baseline>\` into the per-demo project DB. Uses `DynamicWeb.Serializer` + Management API. Strict mode is on by default â€” failures surface as `CumulativeStrictModeException`. Always followed by [`integrity-sweep.md`](integrity-sweep.md).
 >

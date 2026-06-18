@@ -2,134 +2,183 @@
 
 Claude skills for [Dynamicweb 10](https://www.dynamicweb.com) — installable as a Claude plugin.
 
-Skills are organized by task domain on disk and bundled by role in the plugin registry.
+Skills are organized by task domain on disk (`skills/dw-<domain>-<topic>/`) and bundled by
+role in the plugin registry. Skills are shared across bundles: a single skill directory can
+appear in more than one role bundle, with no copying or symlinks.
 
 ## Structure
 
 ```
 .claude-plugin/
-  marketplace.json                       # plugin registry — role bundles referencing skills by path
+  marketplace.json          # plugin registry — role bundles, each curating skills by path
 skills/
-  dynamicweb-pim-query/                  # design, validate, and generate product queries
-  dynamicweb-pim-dashboard/              # create dashboards and attach widgets
-  dynamicweb-pim-enrichment/             # fill missing completeness fields on products
-  dynamicweb-pim-solution-assistant/     # design full PIM data model structures
-  dynamicweb-business-setup-agent/       # configure an existing Swift 2 installation as a business
-  dynamicweb-business-solution-agent/    # end-to-end business solution from a plain-language request
-  dynamicweb-swift2-site-builder/        # customize a Swift 2 site for a specific business
-  dynamicweb-solution-installer/         # install Swift 2 from scratch
-  dynamicweb-source-explorer/            # browse Dynamicweb source code on GitHub
-  dynamicweb-mcp-tool-creator/           # add new MCP tools to the Dynamicweb.MCP project
-  dynamicweb-demo-base/                  # foundation skill for all demos — MCP wiring, TLS, customisations
-  dynamicweb-pim-demo/                   # PIM modelling from a blank DB — structures, completeness, workflows
-  dynamicweb-swift-demo/                 # Swift 2 frontend — baseline deserialize, re-skin, content, paragraphs
-  dynamicweb-erp-demo/                   # ERP integration demo — mock or live BC, Integration Framework rules
-  dynamicweb-pim-for-bc/                 # live BC connector demo — ngrok tunnel, AppStore connector setup
+  dw-setup-*/               # install, configure, upgrade a Dynamicweb 10 solution
+  dw-render-*/              # Razor, ViewModels, TemplateTags
+  dw-content-modelling/     # item types, paragraphs, content models
+  dw-swift-building/        # customize a Swift 2 site for a business
+  dw-headless-delivery/     # decoupled frontends over the /dwapi/ delivery API
+  dw-pim-*/                 # PIM modelling, completeness, workflow, localization
+  dw-commerce-*/            # catalog, orders, B2B
+  dw-search-indexing/       # product queries
+  dw-users-permissions/     # users, groups, permissions
+  dw-extend-*/              # C# API, providers, scheduled tasks, MCP tools
+  dw-integration-*/         # Integration Framework, ERP connectors, Business Central
+  dw-data-access/           # data-access patterns and caching
+  dw-tbd-source-explorer/   # browse Dynamicweb source on GitHub
+  dw-demo-*/                # presales demo chain (base, pim, swift, erp)
 ```
 
 ## Plugins
 
+Each bundle is a role-oriented selection of skills. Shared skills (for example
+`dw-setup-install`, `dw-extend-mcp-tools`, `dw-integration-bc`) appear in more than one bundle.
+
 | Plugin | Audience | Skills included |
 |--------|----------|-----------------|
-| `dynamicweb-developer` | Developers building on Dynamicweb 10 | solution-installer, source-explorer, mcp-tool-creator |
-| `dynamicweb-implementer` | Implementers configuring PIM, content, and business solutions | pim-query, pim-dashboard, pim-enrichment, pim-solution-assistant, business-setup-agent, business-solution-agent, swift2-site-builder |
-| `dynamicweb-user` | End-users and business users | pim-enrichment, pim-query |
-| `dynamicweb-presales` | Presales and demo engineers | demo-base, pim-demo, swift-demo, erp-demo, pim-for-bc |
+| `dynamicweb-setup` | Provisioning Dynamicweb 10 | setup-install, setup-config, setup-upgrade |
+| `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, swift-building, headless-delivery |
+| `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
+| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access |
+| `dynamicweb-developer` | Developers building on the platform | setup-install, tbd-source-explorer, extend-mcp-tools |
+| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-erp, integration-bc |
 
 ## Skills
 
-### PIM & Data
+### Setup
 
-**[dynamicweb-pim-query](skills/dynamicweb-pim-query/SKILL.md)**
-Design, validate, and generate Dynamicweb 10 product queries. Covers the MCP payload model, field discovery, completion rules, and source index format.
+**[dw-setup-install](skills/dw-setup-install/SKILL.md)**
+Installs Dynamicweb Swift 2 from scratch — downloads the latest database, files, and demo data, imports the database, installs the temporary MCP add-ins payload, and writes the first-run bootstrap manifest.
 
-**[dynamicweb-pim-dashboard](skills/dynamicweb-pim-dashboard/SKILL.md)**
-Create dashboards and add widgets using MCP tools. Handles dashboard areas, widget discovery, parameter lookup, and query-backed count widgets.
+**[dw-setup-config](skills/dw-setup-config/SKILL.md)**
+Configure Dynamicweb 10 environment and connection settings.
 
-**[dynamicweb-pim-enrichment](skills/dynamicweb-pim-enrichment/SKILL.md)**
-Interactive agent that fills missing completeness fields on products returned by a saved query — page by page, with confirmation before writing.
+**[dw-setup-upgrade](skills/dw-setup-upgrade/SKILL.md)**
+Manage Dynamicweb 10 version upgrades and migration mechanics.
 
-**[dynamicweb-pim-solution-assistant](skills/dynamicweb-pim-solution-assistant/SKILL.md)**
-Design full PIM data model structures from real source data. Proposes folders, DataModels, category fields, completeness rules, workflows, product queries, and dashboards.
+### Rendering & Content
 
-### Business Solutions
+**[dw-render-razor](skills/dw-render-razor/SKILL.md)**
+Build template hierarchies and Razor patterns — the foundation for all rendering.
 
-**[dynamicweb-business-solution-agent](skills/dynamicweb-business-solution-agent/SKILL.md)**
-End-to-end business solution orchestrator. Builds a full Dynamicweb 10 + Swift 2 solution from a plain-language request such as "I want a wine solution."
+**[dw-render-viewmodels](skills/dw-render-viewmodels/SKILL.md)**
+Fetch and shape content using ViewModels in Dynamicweb 10 templates.
 
-**[dynamicweb-business-setup-agent](skills/dynamicweb-business-setup-agent/SKILL.md)**
-Full-stack business configurator. Use after MCP bootstrap is complete to turn an existing Swift 2 installation into a specific business.
+**[dw-render-templatetags](skills/dw-render-templatetags/SKILL.md)**
+Build templates using TemplateTags to access content properties directly.
 
-**[dynamicweb-swift2-site-builder](skills/dynamicweb-swift2-site-builder/SKILL.md)**
-Customize an existing Swift 2 site for a specific business — inspects the current installation, preserves the page shell, and applies branding and content changes.
+**[dw-content-modelling](skills/dw-content-modelling/SKILL.md)**
+Design item types, paragraphs, and content models in Dynamicweb 10.
 
-### Developer & Platform
+**[dw-swift-building](skills/dw-swift-building/SKILL.md)**
+Customize an existing Swift 2 site for a specific business without rebuilding it — preserves the working page shell and updates area, navigation, category pages, and item values.
 
-**[dynamicweb-solution-installer](skills/dynamicweb-solution-installer/SKILL.md)**
-Installs Dynamicweb Swift 2 from scratch — downloads the latest database, files, and demo data, imports the database, and bootstraps the MCP connection.
+**[dw-headless-delivery](skills/dw-headless-delivery/SKILL.md)**
+Build decoupled frontends using the `/dwapi/` delivery API — authentication, content, ecommerce, users, navigation, forms, and query endpoints.
 
-**[dynamicweb-source-explorer](skills/dynamicweb-source-explorer/SKILL.md)**
-Browse Dynamicweb source code on GitHub to understand internal APIs, classes, extension points, and patterns before building MCP tools or add-ins.
+### PIM & Commerce
 
-**[dynamicweb-mcp-tool-creator](skills/dynamicweb-mcp-tool-creator/SKILL.md)**
-Step-by-step guide for adding new MCP tools to the Dynamicweb.MCP project — tool classes, services, models, and route handlers.
+**[dw-pim-modelling](skills/dw-pim-modelling/SKILL.md)**
+Fill missing completeness fields on products returned by a saved query, page by page, patching only empty fields.
+
+**[dw-pim-completeness](skills/dw-pim-completeness/SKILL.md)**
+Create and configure Dynamicweb 10 dashboards and widgets using MCP tools.
+
+**[dw-pim-workflow](skills/dw-pim-workflow/SKILL.md)**
+Design PIM solution and DataModel structures from real source data, then execute `create_data_model_structure` and follow-up tools.
+
+**[dw-pim-localization](skills/dw-pim-localization/SKILL.md)**
+Manage product translation and localization across EcomLanguages.
+
+**[dw-commerce-catalog](skills/dw-commerce-catalog/SKILL.md)**
+Render product catalogs and assortments in Dynamicweb 10.
+
+**[dw-commerce-orders](skills/dw-commerce-orders/SKILL.md)**
+Handle orders, checkout, and cart functionality.
+
+**[dw-commerce-b2b](skills/dw-commerce-b2b/SKILL.md)**
+Implement B2B patterns — customer groups, scoped assortments, and sales workflows.
+
+**[dw-search-indexing](skills/dw-search-indexing/SKILL.md)**
+Design, validate, and generate Dynamicweb 10 product queries (manual UI or MCP payload model).
+
+**[dw-users-permissions](skills/dw-users-permissions/SKILL.md)**
+Manage users, groups, and the Permission entity store.
+
+### Backend & Integration
+
+**[dw-extend-csharp-api](skills/dw-extend-csharp-api/SKILL.md)**
+Use the C# API and `Dynamicweb.Services` for custom backend code.
+
+**[dw-extend-providers](skills/dw-extend-providers/SKILL.md)**
+Build providers, notification subscribers, and AddIns.
+
+**[dw-extend-scheduled-tasks](skills/dw-extend-scheduled-tasks/SKILL.md)**
+Create and manage scheduled tasks, including `RunSqlScheduledTaskAddIn`.
+
+**[dw-extend-mcp-tools](skills/dw-extend-mcp-tools/SKILL.md)**
+Step-by-step guide for adding new MCP tools to the Dynamicweb.MCP project.
+
+**[dw-integration-framework](skills/dw-integration-framework/SKILL.md)**
+Understand Dynamicweb 10 Integration Framework architecture and patterns.
+
+**[dw-integration-erp](skills/dw-integration-erp/SKILL.md)**
+Configure ERP connectors and data ownership.
+
+**[dw-integration-bc](skills/dw-integration-bc/SKILL.md)**
+Live "PIM for Business Central connector" demos — expose the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface.
+
+**[dw-data-access](skills/dw-data-access/SKILL.md)**
+Choose appropriate data-access patterns and optimize caching.
+
+**[dw-tbd-source-explorer](skills/dw-tbd-source-explorer/SKILL.md)**
+Browse Dynamicweb source code on GitHub to understand internal APIs, classes, and extension points.
 
 ### Demos (Presales)
 
-**[dynamicweb-demo-base](skills/dynamicweb-demo-base/SKILL.md)**
+**[dw-demo-base](skills/dw-demo-base/SKILL.md)**
 Foundation skill for all demos. Scaffolds the dw10-suite host, wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first.
 
-**[dynamicweb-pim-demo](skills/dynamicweb-pim-demo/SKILL.md)**
-PIM modelling from a blank DB — product data structures, shops vs channels, variants, BOM, completeness rules, workflows, role/permission matrix, and localization. Use after `dynamicweb-demo-base`.
+**[dw-demo-pim](skills/dw-demo-pim/SKILL.md)**
+PIM modelling from a blank DB — product data built from scratch via MCP. Use after `dw-demo-base`.
 
-**[dynamicweb-swift-demo](skills/dynamicweb-swift-demo/SKILL.md)**
-Swift 2 frontend — baseline content deserialize, re-skinning to a customer brand, paragraph types, Visual Editor, language layers, and customer-center flows. Use after `dynamicweb-demo-base`.
+**[dw-demo-swift](skills/dw-demo-swift/SKILL.md)**
+Swift frontend — baseline content deserialize, templates, paragraph types, Visual Editor, and the customer-center playbook. Use after `dw-demo-base`.
 
-**[dynamicweb-erp-demo](skills/dynamicweb-erp-demo/SKILL.md)**
-ERP integration demo — DB-staged mock or live BC, Integration Framework rules, field ownership (ERP vs PIM), and demo reset between runs. Use after `dynamicweb-demo-base`.
-
-**[dynamicweb-pim-for-bc](skills/dynamicweb-pim-for-bc/SKILL.md)**
-Live BC connector demo — exposes the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface. Use after `dynamicweb-demo-base`.
+**[dw-demo-erp](skills/dw-demo-erp/SKILL.md)**
+ERP integration demo — DB-staged mock or live BC, Integration Framework rules. Use after `dw-demo-base`.
 
 ## Skill dependencies
 
-Most skills are standalone, but two groups have an order:
-
-- **Presales demo chain.** `dynamicweb-demo-base` must run **first** — it scaffolds the host,
-  wires MCP + the TLS bypass, and resolves the vault. The sister demo skills
-  (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`, `dynamicweb-erp-demo`,
-  `dynamicweb-pim-for-bc`) are **Use AFTER** and inherit that setup; they no-op or break if
-  run standalone.
-- **Business orchestration.** `dynamicweb-business-solution-agent` orchestrates a full build:
-  it runs `dynamicweb-solution-installer` if no install exists, then delegates to
-  `dynamicweb-business-setup-agent`, which in turn draws on `dynamicweb-swift2-site-builder`
-  and `dynamicweb-pim-solution-assistant`.
+The **presales demo chain** has a hard order. `dw-demo-base` must run **first** — it scaffolds
+the host, wires MCP + the TLS bypass, and resolves the vault. The sister demo skills
+(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
+are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
 ## Validation
 
 `scripts/validate-skills.py` (Python 3, no dependencies) lints the repo structure —
-marketplace integrity, folder/name/path agreement, relative-link resolution, and the
-description convention. Run `python3 scripts/validate-skills.py` before committing. See
-`CLAUDE.md` for the optional `SessionStart` hook that runs it automatically.
+marketplace schema and integrity, folder/name/path agreement, relative-link resolution,
+absence of UTF-8 BOMs, and the description convention. Run `python3 scripts/validate-skills.py`
+before committing. See `CLAUDE.md` for the optional `SessionStart` hook that runs it
+automatically.
+
+You can also validate against Claude Code's own schema:
+
+```
+claude plugin validate ./
+```
 
 ## Installation
 
-Register this repo as a plugin marketplace in your Claude Code settings, then install the plugin for your role.
-
-```jsonc
-// .claude/settings.json
-{
-  "pluginMarketplaces": [
-    "https://github.com/your-org/skills"
-  ]
-}
-```
-
-Then install a plugin bundle:
+Add this repo as a plugin marketplace, then install the bundle for your role:
 
 ```
-/plugins install dynamicweb-implementer
+claude plugin marketplace add dynamicweb/skills
+claude plugin install dynamicweb-presales@dynamicweb-skills
 ```
+
+Install any of the six bundles by name: `dynamicweb-setup`, `dynamicweb-frontend`,
+`dynamicweb-commerce`, `dynamicweb-backend`, `dynamicweb-developer`, `dynamicweb-presales`.
 
 ## Requirements
 

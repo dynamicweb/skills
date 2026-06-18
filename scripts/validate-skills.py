@@ -6,6 +6,8 @@ Checks (errors fail the build, warnings are printed but do not):
   - Each skill folder name == `name:` frontmatter == marketplace path basename.
   - Each SKILL.md frontmatter has both `name` and `description`.
   - Every relative markdown link in SKILL.md / references resolves to a real file.
+  - No markdown file under skills/ begins with a UTF-8 BOM (breaks some
+    frontmatter parsers).
   - The string "truvio" (case-insensitive) appears nowhere.
   - WARN if a skill description lacks a trigger signal (Triggers:/Use when/Use FIRST).
 
@@ -89,11 +91,29 @@ def check_marketplace() -> list[str]:
     except json.JSONDecodeError as e:
         err(f"{rel(MARKETPLACE)} does not parse: {e}")
         return []
+    # Top-level schema the Claude Code loader requires: name (string),
+    # owner (object), plugins (array). description/version live under metadata.
+    if not isinstance(data.get("name"), str):
+        err(f"{rel(MARKETPLACE)}: top-level `name` must be a string")
+    if not isinstance(data.get("owner"), dict):
+        err(f"{rel(MARKETPLACE)}: top-level `owner` must be an object")
+    elif not data["owner"].get("name"):
+        err(f"{rel(MARKETPLACE)}: `owner.name` is required")
+    if not isinstance(data.get("plugins"), list):
+        err(f"{rel(MARKETPLACE)}: top-level `plugins` must be an array")
+
     referenced: list[str] = []
     for plugin in data.get("plugins", []):
+        # Every entry needs a source so Claude Code knows where to fetch files;
+        # a bare skills list with no source does not install.
+        if "source" not in plugin:
+            err(f"marketplace plugin '{plugin.get('name')}' has no `source`")
         for skill_path in plugin.get("skills", []):
             referenced.append(skill_path)
-            if not (REPO / skill_path).is_dir():
+            # Skill paths are resolved relative to the source root and may carry
+            # a leading "./"; normalise before checking they exist on disk.
+            local = skill_path[2:] if skill_path.startswith("./") else skill_path
+            if not (REPO / local).is_dir():
                 err(f"marketplace plugin '{plugin.get('name')}' references missing "
                     f"skill path: {skill_path}")
     return referenced
@@ -135,6 +155,15 @@ def check_links() -> None:
                 err(f"{rel(md)}: broken link -> {target}")
 
 
+def check_no_bom() -> None:
+    # A leading UTF-8 BOM (EF BB BF) before the opening `---` defeats some YAML
+    # frontmatter parsers, so name/description go unread and the skill fails to
+    # load. Read raw bytes — utf-8-sig used elsewhere would silently hide it.
+    for md in sorted(SKILLS_DIR.rglob("*.md")):
+        if md.read_bytes()[:3] == b"\xef\xbb\xbf":
+            err(f"{rel(md)}: starts with a UTF-8 BOM (strip it)")
+
+
 def check_no_truvio() -> None:
     # Scope the purge check to shipped plugin content (skills/ + marketplace).
     # Root dev docs (CHANGELOG/CLAUDE) may reference the retired codename historically.
@@ -159,6 +188,7 @@ def main() -> int:
     check_marketplace()
     check_skills()
     check_links()
+    check_no_bom()
     check_no_truvio()
 
     for w in warnings:

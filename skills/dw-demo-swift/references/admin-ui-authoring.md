@@ -1,4 +1,4 @@
-﻿# admin-ui-authoring.md
+# admin-ui-authoring.md
 
 > Swift 2 admin-UI authoring: the configuration-only Day-1 workflow (get 80% of the brand applied via admin Style tools alone, zero CSS / Razor / .cs edits â€” per [doc.dynamicweb.dev/swift/design/configuration-only.html](https://doc.dynamicweb.dev/swift/design/configuration-only.html)) plus the Visual Editor patterns for editing paragraph properties without touching code. Operates against a deserialized Swift 2.2 baseline (source-of-truth at `$env:DW_VAULT\serialized-data\Swift2.2\`).
 >

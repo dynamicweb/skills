@@ -1,4 +1,4 @@
-﻿# Scaffold â€” `dotnet new dw10-suite`
+# Scaffold â€” `dotnet new dw10-suite`
 
 Scaffold a new Dynamicweb 10 demo project. Walk `dotnet new dw10-suite --name Dynamicweb.Host.Suite`. The `--name Dynamicweb.Host.Suite` is **mandatory** â€” sister-skill path discovery (`Dynamicweb.Host.Suite/Properties/launchSettings.json`, `Dynamicweb.Host.Suite/GlobalSettings.Database.config`) depends on this name.
 

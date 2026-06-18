@@ -1,4 +1,4 @@
-﻿# paragraphs.md
+# paragraphs.md
 
 > Swift 2.2 paragraph-type survey. Source-of-truth: paragraphs are exposed in admin UI under each page; backing definitions live in `wwwroot/Files/Templates/Paragraph/` (built-in â€” DON'T edit) and the page-preset YAML at `$env:DW_VAULT\serialized-data\Swift2.2\_content\Swift 2\<area>\<page>\<grid-row>\paragraph-*.yml`. Reference Swift v2.3.0 at https://github.com/dynamicweb/Swift.
 >

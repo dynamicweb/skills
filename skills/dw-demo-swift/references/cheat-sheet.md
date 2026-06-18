@@ -1,4 +1,4 @@
-﻿# cheat-sheet.md â€” the hidden demo info page
+# cheat-sheet.md â€” the hidden demo info page
 
 > Owns the canonical recipe for the hidden-from-nav demo info page at `/<area-url>/demo` (typical URL slug `demo`) that the presenter keeps on a side screen during the live demo, plus the customer-safety rules for its content. Driven end-to-end by the `/dynamicweb-cheatsheet` command.
 

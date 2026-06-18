@@ -1,4 +1,4 @@
-﻿# b2b-dc-pattern.md
+# b2b-dc-pattern.md
 
 > The canonical Dynamicweb 10 B2B pattern for any portal where pricing, stock, shipping methods, or shipping fees vary by Distribution Center (DC). Vendor-blessed by the Dynamicweb vendor architect (2026-05-13 architecture call).
 >

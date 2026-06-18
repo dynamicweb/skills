@@ -1,4 +1,4 @@
-﻿# Setup Checks â€” fresh-machine readiness
+# Setup Checks â€” fresh-machine readiness
 
 Verification logic lives as fenced PowerShell inside this Markdown reference, not as standalone `.ps1` scripts. Use it to verify env vars, the .NET 10 SDK, `Dynamicweb.ProjectTemplates`, the SQL Express service, and the five vault slots before touching any per-demo work.
 

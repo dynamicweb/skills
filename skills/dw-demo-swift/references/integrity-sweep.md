@@ -1,4 +1,4 @@
-﻿# integrity-sweep.md
+# integrity-sweep.md
 
 > Mandatory post-deserialize integrity sweep. Seven sequential checks. Run after [`deserialize-flow.md`](deserialize-flow.md) returns 2xx. The skill refuses to declare deserialize complete until ALL seven pass. Strict-mode Serializer is the first line of defence â€” this sweep is the second, catching DW10-specific failures strict mode does not detect.
 

@@ -1,4 +1,4 @@
-﻿# structural-model.md
+# structural-model.md
 
 > The structural mental model for Dynamicweb 10 PIM. Read before modelling â€” getting any of these wrong wastes 30+ min of rework. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Each `### 2.x` sub-section cross-references siblings; do NOT split this file.
 

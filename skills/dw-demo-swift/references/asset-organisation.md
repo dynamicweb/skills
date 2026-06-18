@@ -1,4 +1,4 @@
-﻿# asset-organisation.md
+# asset-organisation.md
 
 > `wwwroot/Files/` asset organisation conventions for a Swift 2.2 / Dynamicweb 10 demo. Reference layouts at `$env:DW_VAULT\serialized-data\Swift2.2\` and Swift v2.3.0 at https://github.com/dynamicweb/Swift.
 >

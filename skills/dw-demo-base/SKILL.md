@@ -1,4 +1,4 @@
-﻿---
+---
 name: dw-demo-base
 description: Foundation skill for Dynamicweb 10 demos -- scaffold the dw10-suite host, wire Backend MCP + the two-layer localhost TLS bypass, install Playwright MCP for verification flows, drop the customisations + customer-context guardrails, document the Serializer install for sister skills. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (references/online-mode.md). Also owns the maintainer fold-back workflow -- "fold this into the skill", "save this back to the plugin", "publish this update" route to references/iterate-plugin.md. Sister skills (dynamicweb-pim-demo, dynamicweb-swift-demo, dynamicweb-erp-demo, dynamicweb-pim-for-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
 ---

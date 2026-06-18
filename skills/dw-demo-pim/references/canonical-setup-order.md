@@ -1,4 +1,4 @@
-﻿# canonical-setup-order.md
+# canonical-setup-order.md
 
 > The canonical setup order for a Dynamicweb 10 PIM build. Each step depends on earlier ones â€” skipping or reordering causes rework. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Cross-references out to `structural-model.md`, `governance.md`, `cache-invalidation.md`, `workflow.md`, `permissions-model.md`.
 

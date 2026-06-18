@@ -1,4 +1,4 @@
-﻿# erp-data-shape.md
+# erp-data-shape.md
 
 > The generic ERP <-> PIM data shape that recurs across Dynamicweb demos, regardless of mock vs live flavor. Loaded from `dynamicweb-erp-demo/SKILL.md` "Where to find things". Use this before you decide which flavor to pick -- knowing the shape helps you scope the demo's ERP beats.
 

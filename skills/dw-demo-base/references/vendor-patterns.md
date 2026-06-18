@@ -1,4 +1,4 @@
-﻿# vendor-patterns.md
+# vendor-patterns.md
 
 > Outcome of the vendor skill-repo consultation (2026-05, before authoring the sister skills). Two vendor repos reviewed: [`dynamicweb/skills`](https://github.com/dynamicweb/skills) (Python agent skills targeting MCP + Management API) and [`dynamicweb/ai-implementor-skills`](https://github.com/dynamicweb/ai-implementor-skills) (Claude Code skill bundle, incl. `dw-extend` extension scaffolding).
 > Sister skills cross-reference this file from their vendor-patterns section instead of restating it â€” single source for vendor positioning across all sister skills.

@@ -1,4 +1,4 @@
-﻿# Customisations governance
+# Customisations governance
 
 Customisations governance for the per-demo project. Two artefacts: the per-demo `<demo>\CUSTOMISATIONS.md` ledger (template at `assets/CUSTOMISATIONS.md.template`, dropped at scaffold time) AND the write-time preflight that appends to it. The audit recipe (`references/audit-customisations.md`) is the verifier -- its output is paste-ready slide content for the demo's closing customisation-budget review.
 

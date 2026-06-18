@@ -1,4 +1,4 @@
-﻿# mock-deltas.md
+# mock-deltas.md
 
 > Canonical recipe for mocking an ERP without a live tenant: the demo data starts in the **post-delta state**, staged directly in the database, with a single scheduled task to reset between demos. Loaded from `dynamicweb-erp-demo/SKILL.md` "Where to find things". Use when the demo handover doesn't include BC tenant access.
 

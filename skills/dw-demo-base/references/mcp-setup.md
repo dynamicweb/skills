@@ -1,4 +1,4 @@
-﻿# MCP Setup â€” `.mcp.json` + admin-UI walkthrough + verification gate
+# MCP Setup â€” `.mcp.json` + admin-UI walkthrough + verification gate
 
 Wire MCP for the Dynamicweb MCP server (`dynamicweb-commerce-mcp`) bundled with `Dynamicweb.Suite` 10.x. The canonical flow is **API-Key auth with a static bearer in `.mcp.json`** â€” five steps in **strict order**:
 

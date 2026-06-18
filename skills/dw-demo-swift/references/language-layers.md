@@ -1,4 +1,4 @@
-﻿# language-layers.md
+# language-layers.md
 
 > Content-side localization in Dynamicweb 10 â€” adding a language layer to a website (sibling Area row), wiring the language management settings, and exposing the `Swift-v2_LanguageSelector` paragraph so visitors can switch. Sister doc to `dynamicweb-pim-demo/references/localization.md` (PIM/product side).
 >

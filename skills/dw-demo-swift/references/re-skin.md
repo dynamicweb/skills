@@ -1,4 +1,4 @@
-﻿# re-skin.md
+# re-skin.md
 
 > Customer-themed re-skin recipe for a Swift 2 baseline. Defaults to the configuration-only path (admin UI Visual Editor + theme tokens -- see [admin-ui-authoring.md](admin-ui-authoring.md)). Escalation ladder when configuration falls short: (1) project-scoped CSS overrides at `Files/Templates/Designs/Swift-v2/Custom/<customer>_custom.css` consuming the `--dw-*` variables Dynamicweb generates from admin (per [doc.dynamicweb.dev/swift/customization/design-css.html](https://doc.dynamicweb.dev/swift/customization/design-css.html)); (2) layout-only `.cshtml` content-layouts for tailored screens (per [doc.dynamicweb.dev/swift/design/pixel-perfect.html](https://doc.dynamicweb.dev/swift/design/pixel-perfect.html) -- see Â§Pixel-perfect escalation below); (3) controller/provider `.cs` triggers base's customisations-ledger preflight ([dynamicweb-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md)).
 >

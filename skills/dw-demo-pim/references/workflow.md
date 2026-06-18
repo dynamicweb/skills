@@ -1,4 +1,4 @@
-﻿# workflow.md
+# workflow.md
 
 > Dynamicweb 10 has a real product-workflow engine. Tables, state graph, the email-firing subscriber, the verified gap (no native per-state role gating), and three workaround patterns for role-based transitions. Read this BEFORE building any "approve / publish" demo story â€” most of the moving parts are already wired and you only need data, not C#. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table.
 >

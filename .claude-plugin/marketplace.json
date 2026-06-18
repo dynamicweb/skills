@@ -1,78 +1,94 @@
 {
-  "marketplace": {
-    "name": "Dynamicweb Skills",
+  "name": "dynamicweb-skills",
+  "owner": {
+    "name": "Dynamicweb",
+    "email": "support@dynamicweb.dk"
+  },
+  "metadata": {
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "3.0.0"
+    "version": "3.0.1"
   },
   "plugins": [
     {
       "name": "dynamicweb-setup",
       "description": "Skills for bootstrapping Dynamicweb 10 solutions — installation, configuration, and upgrades.",
+      "source": "./",
+      "strict": false,
       "skills": [
-        "skills/dw-setup-install",
-        "skills/dw-setup-config",
-        "skills/dw-setup-upgrade"
+        "./skills/dw-setup-install",
+        "./skills/dw-setup-config",
+        "./skills/dw-setup-upgrade"
       ]
     },
     {
       "name": "dynamicweb-frontend",
       "description": "Skills for template and storefront developers — rendering (Razor, ViewModels, TemplateTags), content, Swift, and headless delivery.",
+      "source": "./",
+      "strict": false,
       "skills": [
-        "skills/dw-render-razor",
-        "skills/dw-render-viewmodels",
-        "skills/dw-render-templatetags",
-        "skills/dw-content-modelling",
-        "skills/dw-swift-building",
-        "skills/dw-headless-delivery"
+        "./skills/dw-render-razor",
+        "./skills/dw-render-viewmodels",
+        "./skills/dw-render-templatetags",
+        "./skills/dw-content-modelling",
+        "./skills/dw-swift-building",
+        "./skills/dw-headless-delivery"
       ]
     },
     {
       "name": "dynamicweb-commerce",
       "description": "Skills for commerce and PIM implementers — products, catalogs, orders, B2B, search, and user management.",
+      "source": "./",
+      "strict": false,
       "skills": [
-        "skills/dw-pim-modelling",
-        "skills/dw-pim-completeness",
-        "skills/dw-pim-workflow",
-        "skills/dw-pim-localization",
-        "skills/dw-commerce-catalog",
-        "skills/dw-commerce-orders",
-        "skills/dw-commerce-b2b",
-        "skills/dw-search-indexing",
-        "skills/dw-users-permissions"
+        "./skills/dw-pim-modelling",
+        "./skills/dw-pim-completeness",
+        "./skills/dw-pim-workflow",
+        "./skills/dw-pim-localization",
+        "./skills/dw-commerce-catalog",
+        "./skills/dw-commerce-orders",
+        "./skills/dw-commerce-b2b",
+        "./skills/dw-search-indexing",
+        "./skills/dw-users-permissions"
       ]
     },
     {
       "name": "dynamicweb-backend",
       "description": "Skills for backend and platform engineers — C# API, providers, scheduled tasks, MCP tools, integrations, and data access.",
+      "source": "./",
+      "strict": false,
       "skills": [
-        "skills/dw-extend-csharp-api",
-        "skills/dw-extend-providers",
-        "skills/dw-extend-scheduled-tasks",
-        "skills/dw-extend-mcp-tools",
-        "skills/dw-integration-framework",
-        "skills/dw-integration-erp",
-        "skills/dw-integration-bc",
-        "skills/dw-data-access"
+        "./skills/dw-extend-csharp-api",
+        "./skills/dw-extend-providers",
+        "./skills/dw-extend-scheduled-tasks",
+        "./skills/dw-extend-mcp-tools",
+        "./skills/dw-integration-framework",
+        "./skills/dw-integration-erp",
+        "./skills/dw-integration-bc",
+        "./skills/dw-data-access"
       ]
     },
     {
       "name": "dynamicweb-developer",
       "description": "Developer tools for Dynamicweb 10 platform engineering.",
+      "source": "./",
+      "strict": false,
       "skills": [
-        "skills/dw-setup-install",
-        "skills/dw-tbd-source-explorer",
-        "skills/dw-extend-mcp-tools"
+        "./skills/dw-setup-install",
+        "./skills/dw-tbd-source-explorer",
+        "./skills/dw-extend-mcp-tools"
       ]
     },
     {
       "name": "dynamicweb-presales",
       "description": "Skills for presales and demo engineers running Dynamicweb 10 demos.",
+      "source": "./",
+      "strict": false,
       "skills": [
-        "skills/dw-demo-base",
-        "skills/dw-demo-pim",
-        "skills/dw-demo-swift",
-        "skills/dw-demo-erp",
-        "skills/dw-integration-bc"
+        "./skills/dw-demo-base",
+        "./skills/dw-demo-pim",
+        "./skills/dw-demo-swift",
+        "./skills/dw-demo-erp",
+        "./skills/dw-integration-bc"
       ]
     }
   ]

@@ -1,4 +1,4 @@
-﻿# cache-invalidation.md
+# cache-invalidation.md
 
 > Post-mutation cache invalidation table for Dynamicweb 10 PIM. Use this to look up "I just mutated X â€” what cache do I need to flush, and do I need to restart the host?". Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Cross-references `governance.md` for the causal explanations behind each "YES restart" row.
 

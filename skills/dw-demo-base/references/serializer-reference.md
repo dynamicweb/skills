@@ -1,4 +1,4 @@
-﻿# serializer-reference.md
+# serializer-reference.md
 
 > Install + failure-triage reference for `DynamicWeb.Serializer`. Owns: the **fact the Serializer exists** for any Dynamicweb demo, **how to install it in the demo host** (one-time-per-host DLL drop + config staging), **common failure patterns**, and **versioning / baseline compatibility**.
 >

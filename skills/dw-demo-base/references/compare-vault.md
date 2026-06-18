@@ -1,4 +1,4 @@
-﻿# Compare Vault â€” drift detection across machines
+# Compare Vault â€” drift detection across machines
 
 Vault drift detection. Skill-only recipe â€” fenced PowerShell that hashes slot contents and emits a slot-by-slot drift summary (no standalone `.ps1` script).
 

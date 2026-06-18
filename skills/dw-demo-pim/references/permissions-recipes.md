@@ -1,4 +1,4 @@
-﻿# permissions-recipes.md
+# permissions-recipes.md
 
 > Operational SQL recipes for seeding the role/permission grants behind demo personas in Dynamicweb 10 â€” abstract role matrix, functional-view grant checklist, action-button level bump, field-editability dual-gate, per-role field-level differentiation, UI-section hides, dashboard pinning, and the plaintext-password escape hatch. **Concept â†’ [permissions-model.md](permissions-model.md)** (three-layer model, storage tables, `CapabilityControlFeature` flag, entity registry, admin bypass, cache/enforcement); **seeding grants for personas â†’ this file.** Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table.
 >

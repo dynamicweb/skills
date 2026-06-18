@@ -1,4 +1,4 @@
-﻿# integration-framework.md
+# integration-framework.md
 
 > The canonical "source+target, NOT channel/feed" rule. Loaded from `dynamicweb-erp-demo/SKILL.md` "Always-on rule" and "When to use this skill". Read before deciding how to model an ERP in any Dynamicweb demo.
 

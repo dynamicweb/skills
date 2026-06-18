@@ -1,4 +1,4 @@
-﻿# DW10 canonical surfaces â€” use these, don't re-implement
+# DW10 canonical surfaces â€” use these, don't re-implement
 
 > The "use X, not Y" cheat sheet for the DW10 surfaces that get re-implemented in Razor. When in doubt, search `dw10source` (vault: `$env:DW_VAULT/dw10source`) for the canonical surface before writing SQL or parsing URLs. Non-optional on every demo build. Also home to the custom item-type discipline and the discipline-audit grep pack (sections below).
 >

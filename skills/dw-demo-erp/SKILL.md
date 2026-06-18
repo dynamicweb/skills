@@ -1,4 +1,4 @@
-﻿---
+---
 name: dw-demo-erp
 description: Dynamicweb 10 ERP integration -- owns the always-on rule that an ERP is a source AND target in DW10's Integration Framework, never a `ShopType=3` channel or an `EcomFeed`. Two flavors -- DB-staged mock (post-sync state pre-staged in the DB + built-in RESET scheduled task; no JSON files) and live BC (routes to sister skill dynamicweb-pim-for-bc). Triggers: "model the ERP integration", "mock the ERP / BC sync without a live tenant", "reset demo data between runs", "which fields does ERP own vs PIM", "is the ERP a channel?" (NO), planning ERP demo beats. Non-triggers: ngrok / AppStore connector -> dynamicweb-pim-for-bc; PIM modelling -> dynamicweb-pim-demo; frontend -> dynamicweb-swift-demo. Use AFTER dynamicweb-demo-base.
 ---

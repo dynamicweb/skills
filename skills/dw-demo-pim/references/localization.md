@@ -1,4 +1,4 @@
-﻿# localization.md
+# localization.md
 
 > PIM-side localization in Dynamicweb 10 â€” translating products, product groups, and the eight other ecommerce objects that can carry translations. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things". Sister doc to `dynamicweb-swift-demo/references/language-layers.md` (content/area side).
 >

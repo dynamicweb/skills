@@ -1,4 +1,4 @@
-﻿---
+---
 name: dw-setup-install
 description: Installs Dynamicweb Swift 2 from scratch -- downloads the latest Swift 2 database, files, and demo data from doc.dynamicweb.com, imports the database via sqlpackage, extracts files, installs the temporary Custom.Mcp add-ins payload, and writes the first-run bootstrap manifest and GlobalSettings.Database.config. Triggers: a fresh or empty Dynamicweb instance needs Swift 2 installed, bootstrap the MCP connection on a new install, download and import the Swift 2 baseline. Non-triggers: install exists and needs business configuration -> dynamicweb-business-setup-agent; presales demo host scaffolding, TLS, and MCP wiring -> dynamicweb-demo-base.
 ---

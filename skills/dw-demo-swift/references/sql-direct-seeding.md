@@ -1,4 +1,4 @@
-﻿# sql-direct-seeding.md
+# sql-direct-seeding.md
 
 > Required-field reference for Page / GridRow / Paragraph SQL-direct INSERTs when MCP / admin UI / Management API are out of reach (bulk demo seed flows, headless agents, sister-demo replay scripts). Cross-references [`templates.md`](templates.md), [`paragraphs.md`](paragraphs.md), and [`../../dw-demo-pim/references/cache-invalidation.md`](../../dw-demo-pim/references/cache-invalidation.md) for the post-INSERT restart rules.
 >

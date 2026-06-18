@@ -1,4 +1,4 @@
-﻿---
+---
 name: dw-demo-pim
 description: Dynamicweb 10 PIM modelling -- starts from a blank/fresh DB, building product data from scratch via MCP (no baseline deserialize). Triggers: modelling PIM data structures (shops vs channels, repositories/indexes, variants, BOM, categories, assortments, Dynamic Workspaces), choosing Storefront-first vs PIM-first setup order, fixing "completeness rules don't show", building PIM dashboards, GUID-collision errors in the Products tree, designing the product workflow / approval flow, designing the role/permission matrix for a PIM team, translating products into additional EcomLanguages, recovering from data-load mishaps or stale indexes, post-mutation cache invalidation. Non-triggers: setup/MCP/TLS issues -> dynamicweb-demo-base; storefront/content/re-skin -> dynamicweb-swift-demo; ERP -> dynamicweb-erp-demo. Use AFTER dynamicweb-demo-base (assumes MCP connected with >200 tools, vault resolved).
 ---
