@@ -1,45 +1,115 @@
-﻿---
+---
 name: dw-pim-completeness
 description: Create and configure Dynamicweb 10 dashboards and widgets using MCP tools. Triggers: create a dashboard, add or configure widgets, build query-backed count widgets, look up widget parameters, manage dashboard areas or layouts. Non-triggers: building or fixing the underlying product query -> dynamicweb-pim-query; designing the PIM data model -> dynamicweb-pim-solution-assistant.
 ---
 
-# Dynamicweb Dashboard Creator
+# Product Completeness
 
-## Objective
-Create or update Dynamicweb dashboards and attach widgets using the current MCP dashboard tools.
+## What Completeness Is
 
-## Core Tools
-- `get_dashboard_areas`
-- `get_dashboards`
-- `create_dashboards`
-- `get_available_widgets`
-- `get_widget_parameters`
-- `add_widgets_to_dashboards`
+Completeness is a calculated percentage score that represents how complete a product's data is in a given context. The score is derived from **completion rules** — configured sets of fields that must be filled. Products reach 100% completeness when all required fields have values.
 
-## Workflow
+Completeness powers two things:
+1. **Editorial oversight** — editors can see and filter products by their completeness score in product queries and dashboards
+2. **Automatic workflows** — queries can be configured to automatically move products as completeness changes (see below)
 
-### Create a Dashboard
-1. call `get_dashboard_areas` and pick the correct area, such as `Products`
-2. call `get_dashboards` and check whether a matching dashboard already exists
-3. if needed, call `create_dashboards` and note the returned dashboard `Id`
+## Completion Rules
 
-### Add Widgets
-1. call `get_available_widgets` to find the exact `WidgetSystemName`
-2. call `get_widget_parameters` for each widget type you plan to use
-3. call `add_widgets_to_dashboards` with the dashboard `Id`
+### What a Completion Rule Is
 
-### Product Query Widgets
-If the dashboard depends on saved product queries:
-1. ensure the query already exists
-2. use the correct query name in the widget parameters
-3. for `RepositoryCountWidget`, set `WidgetType` to `Count`, `Sum`, or `Avg`
+A completion rule is a named group of fields. Each rule contributes equally to the overall completeness percentage. A product satisfies a rule when all fields in that rule have non-empty values.
 
-## Guardrails
-- Never guess `WidgetSystemName`.
-- Never guess parameter names.
-- Use a real persisted dashboard `Id`.
-- Create the dashboard first, then add widgets.
+**Example:** If there are 4 completion rules and a product satisfies 3 of them, its completeness is 75%.
 
-## Reference
-See [references/dashboard-widgets.md](references/dashboard-widgets.md) for schemas and examples.
+### Creating Completion Rules
 
+Admin path: **Settings > Products > Advanced > Completion Rules** (or via the Workflow tab on a data model or product group)
+
+1. Click **New completion rule**
+2. Provide a **name** (e.g., "Basic content", "SEO fields", "B2B attributes")
+3. Add **fields** — select from standard fields and category/custom fields
+4. Save
+
+### Assigning Completion Rules to Contexts
+
+Completion rules are assigned at two levels:
+
+**Data model level:** Open a data model → **Workflow tab** → select which completion rules apply to products of this model
+
+**Product group (channel) level:** Open a product group → **Workflow tab** → select completion rules for this group
+
+A product can have different completion requirements depending on which data model or channel context it is evaluated in.
+
+## Completeness as an Automatic Workflow Engine
+
+Completion rules on **product queries** create a form of automatic workflow where products move between queries as their completeness score changes.
+
+### Setup
+
+1. Create a product query (e.g., "Needs enrichment")
+2. On the query settings, enable **"Use completeness rules to limit results"**
+3. When checked, products that have reached **100% completeness** are automatically **excluded** from this query
+
+This means:
+- Query "Needs enrichment" shows all incomplete products
+- As products reach 100%, they drop off this query automatically
+- A second query "Complete — ready to publish" can filter for products at 100%
+
+This is the "automatic workflow" — products progress through queries without manual state changes.
+
+### Combining with Manual Workflows
+
+For teams needing explicit state tracking (e.g., "In Review" before "Approved"), combine completion queries with the **PIM Workflow** feature. Products move automatically when completion rules are met, then require a manual workflow state change for the final approval step.
+
+See [dw-pim-workflow](../dw-pim-workflow) for workflow configuration.
+
+## Viewing Completeness in the Admin
+
+### In product list
+
+The product list displays a **Completeness** column showing each product's percentage for the current query context. Filter and sort by this column.
+
+### Completion status in dashboards
+
+Add a **Repository Count Widget** to a dashboard that counts products matching a query (e.g., "products with completeness < 100%"). This provides a live quality overview.
+
+See the dashboard skill for widget setup.
+
+## Per-Language Completeness
+
+Completeness is calculated **per language**. A product may be 100% complete in English but 40% complete in German if the required fields have not been translated.
+
+Completion queries can be scoped to a specific language, enabling language-specific editorial backlogs.
+
+See [dw-pim-localization](../dw-pim-localization) for language setup.
+
+## Completion Rule API
+
+```csharp
+using Dynamicweb.Ecommerce.Services;
+
+// Get all completion rules
+var rules = Services.CompletionRules.GetCompletionRules();
+
+// Get completion rules for a specific data model
+var modelRules = Services.CompletionRules.GetCompletionRulesByDataModel(dataModelId);
+
+// Get completeness score for a product
+double score = Services.CompletionRules.GetCompletenessScore(product, languageId, context);
+```
+
+## Pitfalls
+
+**Completeness context matters** — a product's completeness score can differ between channels and languages. Always check completeness in the relevant context, not just the default.
+
+**"Use completeness rules to limit results" excludes 100% complete products** — this setting removes complete products from the query, which is the intended behavior for an enrichment backlog. If you want to see all products regardless of completeness, do not enable this setting.
+
+**Empty completion rules count as satisfied** — a completion rule with no fields configured is always satisfied (contributes 100% to its portion). Always add fields to rules before assigning them.
+
+**Completion rules must be assigned** — creating a completion rule at the global level does not automatically apply it to any product. It must be explicitly assigned to a data model or product group's Workflow tab.
+
+## Next Steps
+
+- **Setting up PIM workflows?** See [dw-pim-workflow](../dw-pim-workflow)
+- **Querying by completeness?** See the product query creator skill
+- **Per-language completeness tracking?** See [dw-pim-localization](../dw-pim-localization)
