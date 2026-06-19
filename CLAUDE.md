@@ -18,6 +18,36 @@ tooling is `scripts/validate-skills.py`, a structural linter (see "Validation" b
 
 ## Authoring rules
 
+### Skill categories: foundational vs demo (strict one-way)
+
+Every skill is one of two kinds, and the boundary is load-bearing:
+
+- **Foundational skills** — every `dw-<domain>-<topic>` skill that is *not* a demo skill
+  (setup, render, content, pim, commerce, search, users, extend, integration, data-access,
+  source-explorer). These are vendor-generic, reusable Dynamicweb 10 platform knowledge.
+  They ship in the role bundles that implementers and developers install.
+- **Demo skills** — the presales chain: `dw-demo-base` and its sisters (`dw-demo-pim`,
+  `dw-demo-swift`, `dw-demo-erp`) plus the `dw-integration-bc` connector demo. These scaffold
+  live presales demos and carry the demo-only guardrails (the customisations ledger, the
+  read-only `customer-context/` contract, the maintainer fold-back).
+
+The dependency direction is **one-way and enforced**:
+
+1. **Foundational skills must contain zero demo- or customer-specific content** — no
+   engagement slugs, customer/brand/personal names, session-relative time markers, or
+   presales-scaffolding assumptions. They must read as if no demo ever existed.
+2. **Foundational skills must never reference or depend on a demo skill.** Demo skills may
+   build on foundational ones; never the reverse. A `references/` link or routing row from a
+   foundational skill into `dw-demo-*` is a boundary violation.
+3. **Learnings flow demo → foundational only via the sanitized fold-back** (see
+   `skills/dw-demo-base/references/iterate-plugin.md`). A demo-build discovery that is durable
+   and vendor-generic gets folded *up* into the right foundational skill, stripped of all
+   demo/customer specifics first. A discovery that needs the customer's name to make sense is
+   demo-specific and is **not** folded — it stays in that demo's own notes.
+
+When adding or editing a skill, first decide which category it is; that decides whether
+demo/customer content and demo-skill links are even allowed in it.
+
 ### Naming
 
 All skills use the `dw-<domain>-<topic>` prefix — folder name, `name:` frontmatter, and the
@@ -103,10 +133,33 @@ surfaces immediately), add this `SessionStart` hook to `.claude/settings.json`:
 Record notable changes (skills added/renamed, role-bundle moves, structural changes) in
 `CHANGELOG.md`, and bump `marketplace.json`'s `version` accordingly.
 
-## No PRs
+## Contributing: every change lands via PR
 
-Commit and push directly to the working branch. Do not open pull requests.
+All changes reach the integration branch through a pull request — **no direct pushes** to
+`v2` (the active integration branch) or `main`. This is the standing way of working; it
+replaces the earlier "push directly, no PRs" rule.
+
+**One atomic logical change per PR.** A PR is a single, self-contained, reviewable unit: a
+fold-back of one learning, one new skill, one bundle re-balance, one doc fix. Don't bundle
+unrelated edits. If a change touches a skill's content, its `marketplace.json` registration,
+the README table, and the CHANGELOG, those all belong in the *same* PR — they are one logical
+change — but a second, unrelated skill edit does not.
+
+Workflow:
+
+1. Branch off the current integration branch (`v2` until it merges to `main`, then `main`):
+   `git checkout -b <type>/<short-topic>` (`type` ∈ `feat` / `fix` / `docs` / `chore`).
+2. Make the atomic change. Run `python3 scripts/validate-skills.py` — it must exit 0.
+3. Update `CHANGELOG.md` and bump `marketplace.json`'s `metadata.version` (semver) in the
+   same commit when skills are added/renamed or contracts change.
+4. Commit (see "Commits" below), push the branch, and open a PR targeting the integration
+   branch with `gh pr create`.
+5. Merge after review. **Squash-merge** so each PR is one atomic commit on the integration
+   branch. Tag a release (`v<X.Y.Z>`) on the integration branch only when cutting a version,
+   not per PR.
 
 ## Commits
 
-Do not add `Co-Authored-By` lines or any other self-attribution to commit messages.
+Each PR squash-merges to one atomic commit, so the **PR title is the commit subject** — make
+it name what changed and why. Do not add `Co-Authored-By` lines or any other self-attribution
+to commit messages or PR bodies.

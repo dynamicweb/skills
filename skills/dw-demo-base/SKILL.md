@@ -60,11 +60,11 @@ The Serializer install steps live in base so any sister skill can pull them; the
 | Understand Serializer internals â€” these live upstream in the Serializer repo's own docs; the reference carries the pointer block | references/serializer-reference.md ("Internals â€” upstream pointer block") |
 | Run a Swift baseline deserialize (Swift demos only) | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) |
 | Verify post-deserialize integrity (Swift demos only) | [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md) |
-| **Fold a demo-build learning back into the plugin** (validate -> version bump in both manifests -> commit -> push -> tag -> refresh marketplace clone). Maintainer-only. | references/iterate-plugin.md |
+| **Fold a demo-build learning back into the repo** (route foundational-vs-demo -> sanitize -> validate -> bump `metadata.version` -> atomic commit on a branch -> open PR -> refresh marketplace clone after merge). Maintainer-only, PR-based. | references/iterate-plugin.md |
 
 ## Folding demo-build learnings back into the plugin (maintainer-only)
 
-The whole point of authoring these skills locally and publishing them as a versioned plugin is **so demo-build learnings don't decay**. When a non-trivial discovery surfaces mid-demo, capture it back to the plugin **while the conversation context is still rich** â€” not from notes a week later.
+The whole point of authoring these skills locally and publishing them as a versioned plugin is **so demo-build learnings don't decay**. When a non-trivial discovery surfaces mid-demo, capture it back **while the conversation context is still rich** â€” not from notes a week later.
 
 Trigger phrases â€” when the user says any of these mid-demo, route to [references/iterate-plugin.md](references/iterate-plugin.md):
 
@@ -74,7 +74,7 @@ Trigger phrases â€” when the user says any of these mid-demo, route to [ref
 - "publish this update"
 - "this is worth keeping â€” add it to the skill"
 
-The reference owns the full workflow end-to-end. It is maintainer-only; consumers of the plugin can ignore it â€” or open a PR.
+The reference owns the full workflow end-to-end, including the load-bearing first step: **route the learning before editing** — a platform truth folds *up* into the owning foundational skill (fully sanitized), demo-craft folds into a demo skill, and a learning that needs the customer's name stays demo-local. Every fold lands via a **PR** (one learning = one atomic commit = one PR), never a direct push. It is maintainer-only; consumers of the plugin can ignore it â€” or open a PR.
 
 ## Host lifecycle authority
 
