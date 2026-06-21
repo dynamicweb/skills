@@ -52,7 +52,7 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 | **Verify post-deserialize integrity** (mandatory) | **references/integrity-sweep.md** |
 | **Start a new demo's frontend** (configuration-only Day-1 workflow) or use the Visual Editor effectively | **references/admin-ui-authoring.md** |
 | Understand Swift template / page / paragraph conventions; debug Razor pitfalls in custom layouts (`@Html.Raw`, `ProductFieldValues`, raw Razor source rendering on the PDP, role gates by customer-number suffix) | references/templates.md |
-| Pick the right paragraph type for a section; debug "paragraph renders empty / stale after delete" (`RenderGrid` cache, `SelectedGroups` deserialization, alphabetical template fallback) | references/paragraphs.md |
+| **Component-first gate** â€” map a rendering requirement to a standard `Swift-v2_*` component (catalogue: category banner, subgroup nav, related/similar, specs, BOM) BEFORE customising; pick the right paragraph type for a section; debug "paragraph renders empty / stale after delete" (`RenderGrid` cache, `SelectedGroups` deserialization, alphabetical template fallback) | references/paragraphs.md |
 | **Content-modeling discipline for designed pages** â€” one paragraph/field per editor concern, rich-text = prose only, images in image fields, no page-ID-scoped CSS, list pages read modeled fields. Load BEFORE building any designed page, not as a post-hoc audit. | **references/content-modeling.md** |
 | Build the demo cheat-sheet page (canonical 5-step MCP chain + customer-safety rules) | references/cheat-sheet.md |
 | Customer-center playbook (Account vs CSR; impersonation flow) | references/customer-center.md |

@@ -3,6 +3,19 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.1.2]
+
+### Added
+- **Component-first gate in `dw-demo-swift/references/paragraphs.md`.** Swift ships a standard component
+  for most PLP/PDP/navigation needs, but the default reflex on a "make the UI do X" request was to author
+  or override a `.cshtml` — which accrues off-baseline code a Serializer re-deploy drops, and (on a
+  2026-06-21 build) produced a hand-rolled category-banner hero that errored twice when
+  `Swift-v2_ProductListGroupPoster` already does exactly that. The reference now leads with a mandatory
+  gate (enumerate the standard components → classify the change as place / configure / override / new →
+  pick the lowest tier) plus a "common need → standard component" catalogue (group poster/image, subgroup
+  nav grid/list/slider, component slider for related/similar, field-display accordion, BOM). Generalises
+  the existing "Don't customise this paragraph" callouts; SKILL.md routing row updated to surface it.
+
 ## [3.1.1]
 
 ### Fixed
