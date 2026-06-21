@@ -32,6 +32,8 @@ Run from any directory (the install is global to the user account):
 claude mcp add --scope user playwright -- npx -y @playwright/mcp@latest --ignore-https-errors
 ```
 
+(On a real demo machine, add `--output-dir` — see "Where screenshots land" below; the bare command above lets `browser_take_screenshot` write into the demo solution root.)
+
 What each flag does:
 
 | Flag | Why |
@@ -47,12 +49,31 @@ What each flag does:
 | `--browser msedge` | If Chrome is not installed on this machine. Edge ships on every Windows 11; Chromium would otherwise need a separate `npx playwright install chromium`. Default is `chrome` (the installed channel). |
 | `--isolated` | Keeps the browser profile in memory only — no cookies / localStorage persisted between runs. Recommended for verification flows where each "log in as user X, walk to URL Y" should start fresh. Without it, login state leaks across calls. |
 | `--headless` | Run without a visible browser window. Default is headed, which is useful when the user is watching the demo machine; flip to headless for CI-like silent runs. |
+| `--output-dir <path>` | **Always, on a demo machine.** Sets where `browser_take_screenshot` writes relative filenames. Without it, bare filenames land in the folder Claude Code was launched from — the demo solution root. See "Where screenshots land" below. |
 
 A reasonable default for Dynamicweb verification flows on Windows:
 
 ```powershell
-claude mcp add --scope user playwright -- npx -y @playwright/mcp@latest --ignore-https-errors --isolated
+claude mcp add --scope user playwright -- npx -y @playwright/mcp@latest --ignore-https-errors --isolated --output-dir "$env:USERPROFILE\.playwright-mcp-output"
 ```
+
+---
+
+## Where screenshots land — set `--output-dir` or they pollute the project root
+
+`browser_take_screenshot` writes its `filename` relative to the MCP server's working directory when no `--output-dir` is set — and that working directory is **whatever folder Claude Code was launched from**, i.e. the demo solution root. A verification flow that takes a dozen shots with bare filenames (`home.jpeg`, `pdp.jpeg`, …) therefore litters the repo root; one demo build accumulated ~40 stray `.jpeg` files in the solution root this way before anyone noticed. The skill recipe below says "screenshot" but the *where* is the guardrail — without it, the default is the worst place.
+
+Two-part fix:
+
+1. **Pin a neutral machine-level `--output-dir` at install time.** Because the Browser MCP is user-scope (cross-demo plumbing, per "Why user scope" above), this path must NOT be any one demo's folder — pointing it at a demo's `notes\` would funnel *every* demo's screenshots into that one solution. Point it at a throwaway scratch dir so a forgotten bare filename lands there, never in a repo root:
+
+   ```powershell
+   claude mcp add --scope user playwright -- npx -y @playwright/mcp@latest --ignore-https-errors --isolated --output-dir "$env:USERPROFILE\.playwright-mcp-output"
+   ```
+
+2. **For keeper shots, pass an absolute path under the demo's `notes\`.** Verification screenshots worth keeping belong *with* the demo, not in the cross-demo scratch dir. Pass an absolute `filename` so it bypasses `--output-dir` entirely: `<demo>\notes\playwright\<persona>-<step>.jpeg`. This matches the `<demo>\notes\` output convention the customer-context contract already mandates (`references/customer-context.md`).
+
+Changing `--output-dir` on an already-registered MCP requires a **fresh Claude Code session** — the running server is pinned to its launch-time argv (same restart rule as Step 3, and the Chromium-fallback gotcha below).
 
 ---
 
@@ -97,7 +118,7 @@ After a Dynamicweb demo finishes seeding (PIM content, customer-center pages, pa
 2. **Navigate to the public storefront** (not `/Admin`). Example: `mcp__playwright__browser_navigate url="https://localhost:<port>/<shop-slug>/"`.
 3. **Log in as a seeded buyer.** Submit credentials via the storefront login form, NOT against `/Admin` (that's the admin UI, not the customer journey). Credentials come from the demo's per-demo Claude memory (the discover-from-project-files rule); never hardcode.
 4. **Walk to the target tab** (e.g. account orders, favorites, recurring orders, checkout).
-5. **Screenshot** + **DOM-grep** for the expected entity count. Example: assert at least N order rows visible, or that a specific SKU appears in favorites.
+5. **Screenshot** (pass an absolute `<demo>\notes\playwright\` filename so the shot lands with the demo, never in the repo root — see "Where screenshots land") + **DOM-grep** for the expected entity count. Example: assert at least N order rows visible, or that a specific SKU appears in favorites.
 6. **Report findings to chat.** Surface mismatches (wrong count, missing element, NRE in template) so the next iteration of the seeding script can patch the root cause.
 
 This pattern replaces the manual loop of "user logs in, observes symptom, pastes error/screenshot to chat" — which is what the Playwright MCP install is for in the first place. The placeholder fields (`<port>`, `<shop-slug>`, seeded user credentials) are deliberately not filled in here; they belong to the per-demo `<demo>\notes\` working notes, not the cross-demo skill.

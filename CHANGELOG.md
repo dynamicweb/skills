@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.1.1]
+
+### Fixed
+- **Browser MCP screenshots no longer land in the demo solution root.** `browser_take_screenshot`
+  writes relative filenames against the MCP server's working directory, which is the folder Claude
+  Code was launched from — so a verification flow with bare filenames littered the demo repo root
+  (~40 stray `.jpeg` files in one build). `dw-demo-base/references/browser-automation.md` now adds a
+  "Where screenshots land" section and a `--output-dir` install flag: pin a neutral machine-level
+  scratch dir at user scope (cross-demo plumbing, so it must NOT be any one demo's folder), and pass
+  an absolute `<demo>\notes\playwright\` filename for keeper shots. The one-line install in
+  `mcp-setup.md` carries the same `--output-dir` flag.
+
 ## [3.1.0]
 
 ### Changed
