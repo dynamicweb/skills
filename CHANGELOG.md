@@ -3,6 +3,28 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.1.0]
+
+### Changed
+- **New way of working: every change lands via PR.** Replaced the `## No PRs` rule in
+  `CLAUDE.md` with a PR-based workflow — branch off the integration branch (`v2` until it
+  merges to `main`), one atomic logical change per PR, validate + version-bump + docs in the
+  same commit, squash-merge. The `## Commits` note now ties the commit subject to the PR title
+  and keeps the no-`Co-Authored-By` rule.
+- **Made the foundational-vs-demo split explicit and one-way.** Added a "Skill categories"
+  section to `CLAUDE.md`: foundational skills are vendor-generic and carry zero demo/customer
+  content and no links into demo skills; demo skills (`dw-demo-*` + `dw-integration-bc`) build
+  on foundational ones; learnings flow demo → foundational only via the sanitized fold-back.
+- **Rewrote the maintainer fold-back** (`skills/dw-demo-base/references/iterate-plugin.md`) for
+  the migrated repo and the new model. It now targets `dynamicweb/skills` (was
+  `justdynamics/dynamicweb-commerce-demo`), bumps the single `metadata.version` in
+  `marketplace.json` (the old dual-manifest `plugin.json` rule is retired), runs
+  `python3 scripts/validate-skills.py` (was `scripts/validate.py`), uses the current `dw-*`
+  skill names, and lands every fold via a PR with the leak-catch window before merge. Added a
+  load-bearing first step that routes each learning foundational-vs-demo. The Step 1a
+  sanitization and Step 1b content-hygiene gates are preserved. Updated the matching fold-back
+  row and section in `dw-demo-base/SKILL.md`.
+
 ## [3.0.1]
 
 ### Fixed
