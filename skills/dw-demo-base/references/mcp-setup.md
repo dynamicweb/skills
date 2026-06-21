@@ -159,8 +159,10 @@ The Browser MCP (`@playwright/mcp`) gives Claude first-class browser tooling â�
 The full recipe + flag rationale + verification gate lives in [`references/browser-automation.md`](browser-automation.md). One-line install:
 
 ```powershell
-claude mcp add --scope user playwright -- npx -y @playwright/mcp@latest --ignore-https-errors
+claude mcp add --scope user playwright -- npx -y @playwright/mcp@latest --ignore-https-errors --output-dir "$env:USERPROFILE\.playwright-mcp-output"
 ```
+
+`--output-dir` keeps `browser_take_screenshot` from dumping shots into the demo solution root — see browser-automation.md "Where screenshots land".
 
 Verification gate: `claude mcp list` shows `playwright âœ“ Connected`. Tool surface (`mcp__playwright__browser_*`) appears only in a **fresh** Claude Code session â€” see browser-automation.md Step 3 for why.
 
