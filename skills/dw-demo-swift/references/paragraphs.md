@@ -22,6 +22,41 @@ The exact paragraph-type list on a running host is enumerable via Admin UI â†
 
 Picking the type is half the job â€” how many paragraphs a designed section becomes, and what goes in fields vs. rich text, is owned by [content-modeling.md](content-modeling.md).
 
+## Component-first: map the requirement to a standard component BEFORE customising
+
+Swift is a component system. **Before writing or overriding any `.cshtml`, enumerate the standard
+components and map the requirement to one.** Most PLP / PDP / navigation needs are already shipped;
+reaching for a custom template first is the most common way a Swift demo accrues off-baseline,
+unmaintainable code that a Serializer re-deploy silently drops. This generalises the "Don't customise this
+paragraph" callouts below into a gate that runs for *every* rendering requirement:
+
+1. **Enumerate candidates** â€” `ls Files/Templates/Designs/Swift-v2/Paragraph/Swift-v2_*` and
+   `â€¦/eCom/ProductCatalog/*`; grep the dir for keywords from the requirement (`group`, `poster`, `image`,
+   `slider`, `facet`, `related`, `bom`).
+2. **Classify** the change: **place** a component on a page Â· **configure** an existing one via its
+   item-fields (`get_paragraph_item_field_values` â†’ `set_paragraph_item_fields`) and/or grid placement
+   (`save_grid_rows`, `place_paragraph_in_grid`) Â· **override** its template Â· **new `.cs`**.
+3. **Pick the lowest tier that works.** Author or override a template only when no standard component +
+   configuration fits â€” and log which components you considered and why each was insufficient (the
+   `re-skin.md` variant rule + base customisations-ledger). "Customisation" in Swift is mostly
+   **placement + item-field config**, not new markup.
+
+**Common need â†’ standard component** (always confirm the live item-type fields; names per Swift v2.3):
+
+| Need | Standard component | Key fields / notes |
+|---|---|---|
+| Category banner (image + title + desc hero) | `Swift-v2_ProductListGroupPoster` | reads the group `LargeImage` asset; `PosterHeight`, `Layout`, `ImageFilter`, `HideGroupTitle/Description` |
+| Category image only | `Swift-v2_ProductListGroupImage` | group image asset |
+| Group title + description (no image) | `Swift-v2_ProductListInfo` | `HideGroupTitle`, `HideGroupDescription`, `TitleFontSize` |
+| Subgroup navigation (tiles / list / carousel) | `Swift-v2_ProductGroupGrid` / `ProductGroupList` / `ProductGroupSlider` | needs child groups; see `SelectedGroups` + aspect-ratio pitfalls below |
+| Related / "similar" products | `Swift-v2_ProductComponentSlider` (+ `eCom/ProductCatalog/ProductSlider.cshtml` service) | `RelationType` (variants/most-sold/trending/latest/related-products); lazy-loads from a Catalog-app **service page** â€” an `eCom_ProductCatalog` app placed in a grid row (an app at `gridRowId=0` never renders, and the service page must be active) |
+| Spec / attribute groups | `Swift-v2_ProductFieldDisplayGroupsAccordion` | `FieldDisplayGroups`, `Layout` (bullets/list/table), `HideFieldLabels` |
+| BOM / assembled-from | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page |
+
+> Proven 2026-06-21: a "category banner" requirement was first met with a hand-rolled hero template (which
+> errored twice) when `Swift-v2_ProductListGroupPoster` already does exactly that. The gate above â€” grep
+> the component dir first, classify, configure the standard component â€” is the cheaper and on-baseline path.
+
 ## Where to find a paragraph's wiring
 
 To trace what a specific paragraph does on a Swift 2.2 page:
