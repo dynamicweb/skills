@@ -6,6 +6,17 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 ## [3.1.4]
 
 ### Added
+- **Checkout reads the billing address from the user profile, not from `UserAddress` records — in `dw-demo-swift/references/customer-center.md` §4.**
+  A recurring 2026-06 build symptom: a buyer seeded with `save_user_addresses` (Billing + Shipping
+  `UserAddress`) but a blank profile address could not complete checkout — checkout showed "no address
+  selected" on the billing side and the step would not advance. Root cause is stock Swift, not the demo:
+  `eCom7/CartV2/Step/InformationUser.cshtml` gates the Continue button on `addressString`, built solely
+  from `UserManagement:User.Address/Zip/City`, and `Helpers/AddressUser.cshtml`'s "Same as billing
+  address" option reads those same profile fields; the default Shipping `UserAddress` still pre-selects
+  for delivery, which is why only the billing side looks empty. Fix: populate the profile address too
+  (`update_users` / the `AccessUser` columns), mirroring the Billing `UserAddress`, for every buyer
+  persona. Sharpened the previously-incomplete "addresses come from `save_user_addresses`" claim in place
+  and updated the SKILL.md routing row.
 - **Customer-specific pricing + buyer-dashboard gating in `dw-demo-swift/references/customer-center.md`.**
   Continues the 2026-06 customer-experience build. (1) New §9 on contract / "customer-card" pricing:
   `save_prices`'s `customerGroupId` writes `PriceCustomerGroupId`, which the frontend price resolver does
