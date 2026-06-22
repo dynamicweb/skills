@@ -149,6 +149,15 @@ If you can sign in as the CSR and the impersonation bar still does not list the 
 
 > Superseded 2026-06-10: this section previously gated via per-template `foreach` filters on `PageNavigationTag`, raw `Database.ExecuteScalar` lookups on `AccessUserGroupRelation`, and a redirect guard inside `Swift-v2_CustomerCenter.cshtml`, on the claim that `Pageview.User` group APIs fail at compile time. Retracted â€” `GetGroups()` compiles on 10.25+, template SQL fails the skill's own audit, and the Permission store gates nav + URL + render without touching templates.
 
+### Gating the buyer (Account) sections away from the CSR — and the resolution rule
+
+The same `Permission` store hides the *other* direction too: keep a pure CSR persona out of the buyer's self-service dashboards (`Customer center/Account/*` and any legacy quick-link nav page), so the CSR sees only the CSR section + Overview. One non-obvious rule drives how to write it: **frontend permission resolution takes the *highest* level across all of a user's identities (roles + groups), so you cannot hide a page from a sub-group by giving that group `None`** — a role-level `Read` the user also holds wins. To hide a subtree from one persona while keeping it for everyone else:
+
+1. Deny the broad role on the subtree root: `AuthenticatedFrontend → None`.
+2. Grant the personas that *should* keep it: the customer/account group → `Read`.
+
+The CSR (in the staff group, not the customer group) then resolves to `None` — the section drops from all nav templates and direct URLs 302 — while the buyer (in the customer group) keeps it. Children inherit the root. When the CSR **impersonates** a customer the session becomes that customer (now in the customer group), so the buyer dashboards correctly reappear under impersonation. Same SQL cache caveat as above: restart / refresh after writing the rows.
+
 ### Where the CC nav renders (theming map, not a gating surface)
 
 If you're re-theming the Customer center nav (not gating it), know that it renders through **three** templates depending on viewport and entry point:
@@ -202,5 +211,18 @@ Practical use in a Swift Order detail layout â€” a one-line Razor expressio
 **Related cart commands (the family `cartcmd=` belongs to).** `cartcmd=add` / `cartcmd=remove` / `cartcmd=delete` / `cartcmd=empty` / `cartcmd=update` all flow through the same handler. The Swift product-detail and cart paragraphs use these directly â€” meaning any `cartcmd=` URL you'd construct for a custom button is structurally identical to what Swift already emits, just with different parameters. Don't reinvent.
 
 This pattern stays inside the [re-skin.md](re-skin.md) Â§Pixel-perfect escalation envelope: it's a content-layout extension to existing item-type templates (the user view models), not a controller change.
+
+## 9. Customer-specific (contract) pricing
+
+A B2B differentiator -- account/contract pricing, "customer-card" prices -- is a per-customer `EcomPrices` row. Two gotchas make a correct setup look broken:
+
+- **Scope by customer number, not the MCP `customerGroupId`.** `save_prices`'s `customerGroupId` writes `PriceCustomerGroupId`, which the frontend price resolver does **not** match against a logged-in user's group membership -- the price silently never applies (the cart keeps showing list). The reliable scope is the **customer number**: `UPDATE EcomPrices SET PriceUserCustomerNumber='<custno>'` (and clear the group columns) matches every user whose `AccessUserCustomerNumber` equals it -- i.e. the whole account. This is the "customer-card pricing" shape and is what actually resolves.
+- **Lowest matching price wins** -- not priority. A lower contract amount beats the all-customers list price automatically once it matches; you don't need to set `PricePriority`.
+
+**Where it renders:** *not* on PLP/PDP -- those show the index / default price context regardless of who is signed in. The customer price resolves **live in the cart and checkout** (and on any order whose customer context carries the customer number). Demo it by signing in as the buyer and showing the cart, not the catalogue. If the storyline needs a per-customer price visible on the PDP, that's a content-layout extension that reads the live price for the current user -- not the index field.
+
+**Cache:** prices are cached in process -- a SQL price change needs a cache refresh or **host restart** before it resolves (same caveat as §5/§6).
+
+**Verification trap:** the MCP `force_price_recalculation` recomputes *without* a frontend user price context, so it returns the default price even when customer pricing is correct. Verify in the storefront cart as the signed-in user, never via recalc.
 
 
