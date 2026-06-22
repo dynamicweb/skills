@@ -17,6 +17,17 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   (`update_users` / the `AccessUser` columns), mirroring the Billing `UserAddress`, for every buyer
   persona. Sharpened the previously-incomplete "addresses come from `save_user_addresses`" claim in place
   and updated the SKILL.md routing row.
+- **Customer-specific pricing + buyer-dashboard gating in `dw-demo-swift/references/customer-center.md`.**
+  Continues the 2026-06 customer-experience build. (1) New §9 on contract / "customer-card" pricing:
+  `save_prices`'s `customerGroupId` writes `PriceCustomerGroupId`, which the frontend price resolver does
+  **not** match against a logged-in user's groups — the price silently never applies; the reliable scope is
+  `PriceUserCustomerNumber` (the account's customer number). Lowest matching price wins (not priority);
+  customer prices resolve **live in the cart/checkout**, not on PLP/PDP (index context); prices are cached
+  (restart to apply); and `force_price_recalculation` recomputes without a frontend price context so it's
+  not a valid test. (2) §6 extended with the inverse gate — hiding the buyer's Account sections from a pure
+  CSR persona — and the load-bearing rule that frontend permission resolution takes the **highest** level
+  across a user's identities, so you deny the broad role + grant the customer group rather than denying the
+  staff group. SKILL.md routing row updated.
 
 ## [3.1.3]
 
