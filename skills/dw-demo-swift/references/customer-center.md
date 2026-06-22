@@ -63,6 +63,12 @@ A typical mixed-source-orders demo requirement (orders with discriminator badge 
 
 **Demo-builder pitfall:** opening `Customer center/CSR/Accounts/` and seeing "no impersonate button" is *expected* -- that page is by design a company directory, not the sales-on-behalf launcher. Send the CSR to `Customer center/CSR/Users/`. If `Users/` *also* shows no Impersonate link on a row, the wiring described in Â§5 is missing or has the column direction inverted.
 
+### Why `CSR/Accounts/` can be empty while `CSR/Users/` is populated
+
+The Accounts page's `UserGroups` module filters by its `ListGroupType` setting (stock = `SystemAccount`). A company/account group appears under Accounts **only when its `AccessUser` row carries `AccessUserUserAndGroupType = 'SystemAccount'`**. A group created through the Management API / MCP (`save_user_groups`) lands as a plain group with that column NULL, so it never lists under Accounts -- even though the company exists and its members already show under `CSR/Users/`. Fix: set the flag on the account group, then refresh the security cache so the new type is picked up (the group type is cached -- same cache caveat as §5; a host restart is the blunt reliable way).
+
+Do **not** "fix" this by switching the module to `ListGroupType=''` to make it list everything -- that surfaces every group, including internal staff groups (e.g. the CSR group itself), as if they were customer accounts. Flag the real account group as `SystemAccount` and leave the filter on `SystemAccount`.
+
 ## 4. What to do when the section "looks empty"
 
 Symptom: CSR Overview page has empty grid rows, or `CSR/Orders/` shows no orders, or `CSR/Accounts/` is blank.
@@ -75,6 +81,15 @@ Cause is almost always one of:
 4. **Index not built or cache stale after wiring Â§5** -- see Â§5 for the rebuild + cache-clear step that *must* follow any change to `AccessUserSecondaryRelation`. For Products-index rebuilds, see [dynamicweb-pim-demo/references/governance.md "Recovery recipe: Rebuild Products index"](../../dw-demo-pim/references/governance.md).
 
 What is NOT the cause: missing paragraphs / broken templates / Swift 2.3 incompatibility. The Swift2.2 baseline is verified working by [`deserialize-flow.md`](deserialize-flow.md); if the page renders at all, the structure is intact and the issue is data-side.
+
+### Seeding the section's demo data directly (orders, quotes, carts, favorites)
+
+When you seed the customer-experience data yourself -- MCP (`create_orders` + `add_products`) or SQL -- instead of relying on a customer-flavoured baseline, two stock filters silently hide otherwise-correct data:
+
+- **Placed orders only show in `Account/Orders/` ("My orders") when `EcomOrders.OrderComplete = 1`.** A freshly created order defaults to incomplete; it is visible in the admin order list but filtered out of the customer-facing one. Set `OrderComplete = 1` (and `OrderCompletedDate`) on each seeded order after adding its lines + setting state. Quotes and carts list by their own discriminators (`OrderIsQuote`, `OrderCart`) and do not need this. There is no MCP tool for `OrderComplete`; it is a direct column set.
+- **Favorites seeded via SQL:** `EcomCustomerFavoriteProducts` has NOT-NULL `ProductVariantId`, `Note`, `ProductReferenceUrl`, `UnitId` -- pass empty strings, never NULL, or the INSERT fails (the general rule is in [sql-direct-seeding.md](sql-direct-seeding.md) "required NOT-NULL columns"). The list header is one `EcomCustomerFavoriteLists` row per user (`IsDefault = 1` for the default list); the storefront reads it at runtime via `Pageview.User.GetFavoriteLists()`. There is no MCP tool for favorites -- it is SQL-only.
+
+Account-side `Users/` and `Addresses/` need no flag: the Users list (`UserView` module, `Source = ListOfUsersByCustomerNumber`) shows every user sharing the signed-in user's customer number, so adding account members + a matching `AccessUserCustomerNumber` populates it; addresses come from `save_user_addresses`.
 
 ## 5. Wiring CSR â†” customer impersonation grants (`AccessUserSecondaryRelation`)
 
@@ -125,6 +140,8 @@ If you can sign in as the CSR and the impersonation bar still does not list the 
 1. Set `Page.PermissionType = 0` on the CSR root + descendants.
 2. INSERT one `Permission` row per (page, CSR group) binding Read access.
 3. Done. All three enforcement points self-filter: the nav tree drops the pages (`PageNavigationTreeNodeProvider`), a direct URL hit (`/customer-center/csr/orders` typed in the bar) 302s via `CheckPermissionsAndRedirect()`, and paragraph render returns empty. Verify as the CSR, as a signed-in non-CSR, and anonymous â€” at desktop and mobile widths (the CC nav renders through three different templates; the permission gate covers all of them).
+
+**Cache caveat when writing `Permission` rows via SQL:** the admin UI invalidates the permission model for you; a direct SQL INSERT does not. DW caches the permission model in process, so a SQL-only grant won't take effect (the nav still shows the pages, the gate still lets the page render) until the cache drops -- **refresh the security cache or restart the host**, same caveat as §5's `AccessUserSecondaryRelation`. Verify only after the drop, or you'll misread a working gate as broken. A specific-user grant is also ignored here -- frontend permissions resolve by **role and group**, not by individual `AccessUser` id, so bind the grant to the CSR group, not the CSR user.
 
 **The wrong-looking-right path:** the legacy `Paragraph.ParagraphPermission` / `Page.PagePermission` columns can be SQL-set but do NOT enforce frontend visibility â€” they're admin-side back-compat only. Setting `ParagraphPermission='9'` and reloading changes nothing. Write the equivalent `Permission` row instead ([dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) Â§"Permissions â€” the entity store" â†’ "Common misdiagnosis").
 

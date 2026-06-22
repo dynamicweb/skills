@@ -3,6 +3,21 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.1.3]
+
+### Added
+- **Customer-experience seeding + account-type specifics in `dw-demo-swift/references/customer-center.md`.**
+  A 2026-06 build that seeded the CSR/account section directly (MCP + SQL) instead of from a
+  customer-flavoured baseline hit three stock filters that silently hide correct data, none previously
+  documented: (1) `CSR/Accounts/` lists only groups flagged `AccessUserUserAndGroupType = 'SystemAccount'`
+  (a group made via `save_user_groups` lands plain, so the page reads empty while its users still show
+  under `CSR/Users/`); (2) placed orders appear in "My orders" only when `EcomOrders.OrderComplete = 1`,
+  and favorites seeded via SQL need empty-string (not NULL) `ProductVariantId` / `Note` /
+  `ProductReferenceUrl` / `UnitId`; (3) the §6 permission gate, when its `Permission` rows are written via
+  SQL rather than the admin UI, needs a security-cache refresh/restart to take effect and resolves grants
+  by role/group, not by individual user id. SKILL.md routing row updated to surface seeding + the
+  "looks empty" symptoms.
+
 ## [3.1.2]
 
 ### Added
