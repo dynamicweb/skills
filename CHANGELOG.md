@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.1.5]
+
+### Added
+- **Headless Backend MCP AddIn install via NuGet PackageReference in `dw-demo-base/references/scaffold.md`
+  (new §2.1c).** Folded from a headless DW10 install. The canonical flow installs the MCP AddIn through
+  the admin AppStore; when the admin UI isn't reachable (fully headless build / automated provisioning),
+  add `<PackageReference Include="Dynamicweb.MCP" Version="…" />` to the host csproj instead — the AddIn
+  registers at host startup and `/admin/mcp` goes from 404 to live with no AppStore click. Records that
+  the net10 TFM requirement (§2.1) still applies, that this also sidesteps the virtualized AppStore
+  "Available apps" grid (which Playwright struggles to drive), and that the beta-track package version must
+  match the resolved Suite version. §2.1 cross-reference updated.
+
 ## [3.1.4]
 
 ### Added
