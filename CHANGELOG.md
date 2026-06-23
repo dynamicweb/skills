@@ -3,6 +3,20 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.1.5]
+
+### Added
+- **Headless MCP token + configuration binding (`McpConfigurationService.LinkToken`) in
+  `dw-demo-base/references/mcp-setup.md`.** Folded from a headless DW10 install. New
+  "Step 3 (headless alternative)" documents creating the API token in code
+  (`TokenService.TryCreateToken` with an `ApiTokenRequestModel`, returning the unhashed `CLAUDE.<secret>`
+  bearer) and the MCP configuration row (`AllowEverything = 1`) when the admin UI isn't reachable — and the
+  load-bearing gotcha: a raw `McpConfigurationCredential` insert does **not** satisfy the auth path (still
+  401), so the token must be bound via the internal `McpConfigurationService.LinkToken(configId, tokenId,
+  user)` invoked by reflection from the live `app.Services`, followed by a host restart (the MCP config is
+  cached at startup). Carries a brittleness warning (internal type, version-fragile) steering callers back
+  to the admin-UI route when it's reachable. Step 6's binding note updated for consistency.
+
 ## [3.1.4]
 
 ### Added

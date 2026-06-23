@@ -121,6 +121,29 @@ After saving, do **not** rerun `/mcp` in Claude Code yet â€” there's no bea
 
 ---
 
+## Step 3 (headless alternative) — create the token + MCP config without the admin UI
+
+Steps 3 and 3b assume the admin UI is reachable. When it isn't (a fully headless build / automated provisioning), create both the API token and the MCP configuration **in code** — e.g. a one-shot `Program.cs` maintenance branch run *inside the built host* (after `app.UseDynamicweb()`, so DI is live — see [`../../dw-extend-csharp-api/SKILL.md`](../../dw-extend-csharp-api/SKILL.md)). Three pieces, and the third is the non-obvious one:
+
+1. **Issue the token.** `TokenService.TryCreateToken(new ApiTokenRequestModel { Name = …, Prefix = "CLAUDE", ExpiryDate = … }, user)` returns the **unhashed** token; the DB stores only the hash in `AccessUserToken`. The public-facing bearer is `CLAUDE.<secret>` — capture it now, it can't be recovered later (same as the admin-UI "shown once" behaviour in Step 3).
+
+2. **Create the MCP configuration.** Insert an `McpConfiguration` row (`Name`, `TokenId`, `AllowEverything = 1` for full access — the headless equivalent of `Access = Full access`).
+
+3. **Bind the token to the config through the service — not raw SQL.** A raw `McpConfigurationCredential` insert does **NOT** satisfy the auth path; the request still returns `401`. You must call `McpConfigurationService.LinkToken(configId, tokenId, user)`. That class is **internal**, so invoke it by reflection, resolving the instance from the live DI container (`app.Services`):
+
+   ```csharp
+   var asm = Assembly.Load("Dynamicweb.MCP");
+   var t   = asm.GetType("Dynamicweb.MCP.Configuration.Services.McpConfigurationService");
+   var svc = app.Services.GetService(t) ?? Activator.CreateInstance(t, true);
+   t.GetMethod("LinkToken").Invoke(svc, new object[] { configId, tokenId, user });
+   ```
+
+**Then restart the host.** The MCP configuration is cached at startup, so a freshly inserted/bound config is invisible to `/admin/mcp` until the next boot. (The same startup-cache rule applies to the admin password and the token — direct SQL writes don't take until restart; for MCP credentials a raw insert is *insufficient* even after restart, hence the `LinkToken` call.)
+
+> **Brittleness warning.** `McpConfigurationService` is an internal type invoked by reflection — its namespace, method name, and signature can change between DW10 releases without notice, and the `Dynamicweb.MCP` version pin matters. Prefer the admin-UI route (Step 3) whenever the UI is reachable; use this code path only for genuinely headless installs, and re-verify the type/method names against the `Dynamicweb.MCP` version in use.
+
+---
+
 ## Step 4 â€” The MCP verification gate
 
 The skill **refuses to declare setup complete** until BOTH conditions pass:
@@ -179,7 +202,7 @@ A Dynamicweb demo has **two** bearer tokens, both `CLAUDE.<hex>`-shaped rows in 
 | **MCP API key** | Admin UI â†’ Settings â†’ Integration â†’ MCP configurations â†’ New (Authentication method = API Key). Captured in Step 3 of this file. | `Authorization: Bearer â€¦` header in `.mcp.json` (Step 3b). Validated against `AccessUserTokenHash` by `McpAuthMiddleware`. |
 | **Management API token** | Admin UI â†’ Settings â†’ System â†’ Developer â†’ API keys â†’ New. Captured here in Step 6 via `AskUserQuestion`. | `Authorization: Bearer â€¦` header on `/admin/api/...` calls. Used by Swift's [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) and [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md), and by PIM admin-API calls. |
 
-These are distinct rows. The MCP API key is bound to the MCP configuration via `McpConfigurationTokenId`; the Management API token is the unconstrained admin-API key. Don't try to reuse one for the other unless you've verified empirically â€” the validation paths differ.
+These are distinct rows. The MCP API key is bound to the MCP configuration via `McpConfigurationTokenId` — established by the admin UI on save, or in code by `McpConfigurationService.LinkToken` (a raw `McpConfigurationCredential` insert does not satisfy the auth path; see "Step 3 (headless alternative)"). The Management API token is the unconstrained admin-API key. Don't try to reuse one for the other unless you've verified empirically â€” the validation paths differ.
 
 If you don't have a Management API token in conversation state or memory, capture it via:
 
