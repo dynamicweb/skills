@@ -1,6 +1,8 @@
 ---
 name: dw-pim-modelling
-description: Interactive agent that fills missing completeness fields on the products returned by a saved Dynamicweb product query, page by page, patching only empty fields and never overwriting existing values. Triggers: the user names a saved query and wants its empty or required fields filled, bulk-enrich products from a query, propose-then-confirm field values before writing. Non-triggers: creating or editing the query itself -> dynamicweb-pim-query; defining which fields are required (completeness rules) -> dynamicweb-pim-solution-assistant.
+type: knowledge
+group: pim
+description: Model Dynamicweb 10 PIM data — Data Models, category fields, variant groups, and global vs category field storage. Triggers: design or refactor a Data Model, choose global vs category fields, structure variant groups, organize category groups vs product folders. Non-triggers: workflow states and transitions -> dw-pim-workflow; completeness rules and scores -> dw-pim-completeness; translating products -> dw-pim-localization.
 ---
 
 # PIM Data Modelling

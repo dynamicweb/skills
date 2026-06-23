@@ -1,5 +1,7 @@
 ---
 name: dw-setup-upgrade
+type: flow
+group: setup
 description: Manage Dynamicweb 10 version upgrades and migration mechanics. Triggers: upgrading versions, migration steps, pre-upgrade checks, DW9 to DW10 migration, minor version upgrades within DW10. Non-triggers: initial setup -> dw-setup-install; configuration -> dw-setup-config.
 ---
 

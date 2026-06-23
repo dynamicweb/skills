@@ -1,6 +1,8 @@
 ---
 name: dw-pim-workflow
-description: Expert assistant for designing Dynamicweb 10 PIM solution and DataModel structures from real source data; asks discovery questions, proposes a full structure, and executes `create_data_model_structure` plus follow-up tools. Triggers: set up or refactor a PIM structure; propose folders, DataModels, category and product fields, completeness rules, workflows, queries, dashboards, and widgets. Non-triggers: authoring a single product query -> dynamicweb-pim-query; building dashboards on an existing model -> dynamicweb-pim-dashboard; filling field values on products -> dynamicweb-pim-enrichment.
+type: knowledge
+group: pim
+description: Configure Dynamicweb 10 PIM workflows — named states, transitions, and editorial handoffs across the product enrichment lifecycle. Triggers: create a PIM workflow, define workflow states and transitions, set up manual editorial handoffs, configure state notifications. Non-triggers: completeness-driven automatic movement -> dw-pim-completeness; the Data Model schema -> dw-pim-modelling.
 ---
 
 # PIM Workflow

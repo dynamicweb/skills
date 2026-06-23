@@ -1,0 +1,21 @@
+name: manifest-check
+
+# Fail the build if manifest.json is out of sync with the skills' frontmatter.
+# Dynamo (the Dynamicweb MCP server) fetches manifest.json directly, so a stale
+# manifest ships broken discovery to every Dynamo user.
+
+on:
+  push:
+    branches: [v2, main]
+  pull_request:
+
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Verify manifest.json is current
+        run: node scripts/build-manifest.mjs --check

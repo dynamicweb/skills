@@ -1,6 +1,8 @@
 ---
 name: dw-demo-swift
-description: Dynamicweb 10 Swift frontend -- owns the baseline content deserialize (Swift2.2 vault content via DynamicWeb.Serializer strict-mode POST + mandatory post-deserialize integrity sweep), templates, paragraph types, Visual Editor, asset organisation, the customer-center / sales-on-behalf playbook (stock CSR section -- never rebuild it), and the customer re-skin escalation ladder. Triggers: starting a Swift demo (load the baseline), re-skinning to a customer brand, "where do I edit the header/footer", customer-center / impersonation flows, paragraph renders empty or stale, Razor pitfalls in custom layouts, language layers, gating pages or paragraphs by group, SQL-direct content seeding. Non-triggers: demo setup/MCP/TLS -> dynamicweb-demo-base; PIM data modelling -> dynamicweb-pim-demo; ERP integration -> dynamicweb-erp-demo. Swift 2 only -- never follow `doc.dynamicweb.dev/swift/swift-1/` URLs. Use AFTER dynamicweb-demo-base (host running, Serializer installed).
+type: flow
+group: demo
+description: Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, and the customer re-skin ladder. Triggers: starting a Swift demo (load the baseline), re-skinning to a customer brand, "where do I edit the header/footer", customer-center / impersonation flows, paragraph renders empty or stale, Razor pitfalls in custom layouts, language layers, gating pages or paragraphs by group, SQL-direct content seeding. Non-triggers: demo setup/MCP/TLS -> dw-demo-base; PIM data modelling -> dw-demo-pim; ERP integration -> dw-demo-erp. Swift 2 only -- never follow `doc.dynamicweb.dev/swift/swift-1/` URLs. Use AFTER dw-demo-base (host running, Serializer installed).
 ---
 
 # Dynamicweb Swift Demo Skill
