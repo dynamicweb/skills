@@ -1,6 +1,8 @@
 ---
 name: dw-search-indexing
-description: Design, validate, and generate Dynamicweb 10 product queries (manual UI model or MCP payload model) for administration use and follow-up dashboard work. Triggers: build, fix, refactor, or explain a product query; discover queryable fields; write completion rules; understand the source index format. Non-triggers: putting a query on a dashboard widget -> dynamicweb-pim-dashboard; filling missing field values on query results -> dynamicweb-pim-enrichment; designing the overall PIM structure -> dynamicweb-pim-solution-assistant.
+type: knowledge
+group: search
+description: Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, and product index setup. Triggers: set up a product, content, user, or SQL index, configure repositories and index instances, tune analyzers or field boosts, understand Lucene scoring. Non-triggers: PIM data modelling -> dw-pim-modelling; product completeness -> dw-pim-completeness.
 ---
 
 # Search Indexing

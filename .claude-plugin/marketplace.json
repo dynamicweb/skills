@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "3.1.4"
+    "version": "3.2.0"
   },
   "plugins": [
     {
@@ -74,7 +74,7 @@
       "strict": false,
       "skills": [
         "./skills/dw-setup-install",
-        "./skills/dw-tbd-source-explorer",
+        "./skills/dw-source-explorer",
         "./skills/dw-extend-mcp-tools"
       ]
     },

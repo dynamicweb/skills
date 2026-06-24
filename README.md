@@ -19,12 +19,12 @@ skills/
   dw-headless-delivery/     # decoupled frontends over the /dwapi/ delivery API
   dw-pim-*/                 # PIM modelling, completeness, workflow, localization
   dw-commerce-*/            # catalog, orders, B2B
-  dw-search-indexing/       # product queries
+  dw-search-indexing/       # search indexes on Lucene
   dw-users-permissions/     # users, groups, permissions
   dw-extend-*/              # C# API, providers, scheduled tasks, MCP tools
   dw-integration-*/         # Integration Framework, ERP connectors, Business Central
   dw-data-access/           # data-access patterns and caching
-  dw-tbd-source-explorer/   # browse Dynamicweb source on GitHub
+  dw-source-explorer/       # browse Dynamicweb source on GitHub
   dw-demo-*/                # presales demo chain (base, pim, swift, erp)
 ```
 
@@ -39,7 +39,7 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, swift-building, headless-delivery |
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
 | `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access |
-| `dynamicweb-developer` | Developers building on the platform | setup-install, tbd-source-explorer, extend-mcp-tools |
+| `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, extend-mcp-tools |
 | `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-erp, integration-bc |
 
 ## Skills
@@ -78,13 +78,13 @@ Build decoupled frontends using the `/dwapi/` delivery API — authentication, c
 ### PIM & Commerce
 
 **[dw-pim-modelling](skills/dw-pim-modelling/SKILL.md)**
-Fill missing completeness fields on products returned by a saved query, page by page, patching only empty fields.
+Model Dynamicweb 10 PIM data — Data Models, category fields, variant groups, and global vs category field storage.
 
 **[dw-pim-completeness](skills/dw-pim-completeness/SKILL.md)**
-Create and configure Dynamicweb 10 dashboards and widgets using MCP tools.
+Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, and query-driven automatic workflows.
 
 **[dw-pim-workflow](skills/dw-pim-workflow/SKILL.md)**
-Design PIM solution and DataModel structures from real source data, then execute `create_data_model_structure` and follow-up tools.
+Configure Dynamicweb 10 PIM workflows — named states, transitions, and editorial handoffs across the product enrichment lifecycle.
 
 **[dw-pim-localization](skills/dw-pim-localization/SKILL.md)**
 Manage product translation and localization across EcomLanguages.
@@ -99,7 +99,7 @@ Handle orders, checkout, and cart functionality.
 Implement B2B patterns — customer groups, scoped assortments, and sales workflows.
 
 **[dw-search-indexing](skills/dw-search-indexing/SKILL.md)**
-Design, validate, and generate Dynamicweb 10 product queries (manual UI or MCP payload model).
+Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, and product index setup.
 
 **[dw-users-permissions](skills/dw-users-permissions/SKILL.md)**
 Manage users, groups, and the Permission entity store.
@@ -116,7 +116,7 @@ Build providers, notification subscribers, and AddIns.
 Create and manage scheduled tasks, including `RunSqlScheduledTaskAddIn`.
 
 **[dw-extend-mcp-tools](skills/dw-extend-mcp-tools/SKILL.md)**
-Step-by-step guide for adding new MCP tools to the Dynamicweb.MCP project.
+Step-by-step guide for adding new MCP tools to the Dynamicweb MCP project.
 
 **[dw-integration-framework](skills/dw-integration-framework/SKILL.md)**
 Understand Dynamicweb 10 Integration Framework architecture and patterns.
@@ -130,7 +130,7 @@ Live "PIM for Business Central connector" demos — expose the local DW host pub
 **[dw-data-access](skills/dw-data-access/SKILL.md)**
 Choose appropriate data-access patterns and optimize caching.
 
-**[dw-tbd-source-explorer](skills/dw-tbd-source-explorer/SKILL.md)**
+**[dw-source-explorer](skills/dw-source-explorer/SKILL.md)**
 Browse Dynamicweb source code on GitHub to understand internal APIs, classes, and extension points.
 
 ### Demos (Presales)
@@ -153,6 +153,24 @@ The **presales demo chain** has a hard order. `dw-demo-base` must run **first** 
 the host, wires MCP + the TLS bypass, and resolves the vault. The sister demo skills
 (`dw-demo-pim`, `dw-demo-swift`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
+
+## Manifest
+
+`manifest.json` (repo root) is a generated index of every skill — `name`, `type`
+(`knowledge` or `flow`), `group`, a one-sentence `description`, and the `path` to its
+`SKILL.md`. The Dynamicweb MCP server ("Dynamo") fetches this single file to auto-discover
+skills; Claude Code does not use it (it loads skills via `marketplace.json`).
+
+It is generated from each skill's frontmatter — never edit it by hand:
+
+```
+node scripts/build-manifest.mjs          # rewrite manifest.json
+node scripts/build-manifest.mjs --check  # CI: fail if it is stale
+```
+
+The description shown by Dynamo is the first sentence of each skill's `description`, so keep
+that first sentence a tight, intent-bearing summary with no mid-sentence periods. CI
+(`.github/workflows/manifest-check.yml`) fails on drift.
 
 ## Validation
 

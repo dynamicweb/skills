@@ -1,6 +1,8 @@
 ---
 name: dw-pim-completeness
-description: Create and configure Dynamicweb 10 dashboards and widgets using MCP tools. Triggers: create a dashboard, add or configure widgets, build query-backed count widgets, look up widget parameters, manage dashboard areas or layouts. Non-triggers: building or fixing the underlying product query -> dynamicweb-pim-query; designing the PIM data model -> dynamicweb-pim-solution-assistant.
+type: knowledge
+group: pim
+description: Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, and query-driven automatic workflows. Triggers: create completion rules, assign rules to data models or product groups, understand completeness scoring, set up completeness-driven query movement. Non-triggers: manual workflow states -> dw-pim-workflow; the Data Model schema -> dw-pim-modelling.
 ---
 
 # Product Completeness

@@ -1,0 +1,223 @@
+{
+  "version": 1,
+  "generatedAt": "2026-06-23T12:01:28.576Z",
+  "skills": [
+    {
+      "name": "dw-demo-base",
+      "type": "flow",
+      "group": "demo",
+      "description": "Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails.",
+      "path": "skills/dw-demo-base/SKILL.md"
+    },
+    {
+      "name": "dw-demo-erp",
+      "type": "flow",
+      "group": "demo",
+      "description": "Dynamicweb 10 ERP integration -- owns the always-on rule that an ERP is a source AND target in DW10's Integration Framework, never a `ShopType=3` channel or an `EcomFeed`.",
+      "path": "skills/dw-demo-erp/SKILL.md"
+    },
+    {
+      "name": "dw-demo-pim",
+      "type": "flow",
+      "group": "demo",
+      "description": "Dynamicweb 10 PIM modelling -- starts from a blank/fresh DB, building product data from scratch via MCP (no baseline deserialize).",
+      "path": "skills/dw-demo-pim/SKILL.md"
+    },
+    {
+      "name": "dw-demo-swift",
+      "type": "flow",
+      "group": "demo",
+      "description": "Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, and the customer re-skin ladder.",
+      "path": "skills/dw-demo-swift/SKILL.md"
+    },
+    {
+      "name": "dw-extend-mcp-tools",
+      "type": "flow",
+      "group": "extend",
+      "description": "Step-by-step guide for adding new MCP tools to the Dynamicweb MCP project — tool classes, services, models, and route handlers.",
+      "path": "skills/dw-extend-mcp-tools/SKILL.md"
+    },
+    {
+      "name": "dw-integration-bc",
+      "type": "flow",
+      "group": "integration",
+      "description": "Dynamicweb 10 live \"PIM for Business Central connector\" demos -- expose the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface.",
+      "path": "skills/dw-integration-bc/SKILL.md"
+    },
+    {
+      "name": "dw-setup-install",
+      "type": "flow",
+      "group": "setup",
+      "description": "Install Dynamicweb Swift 2 from scratch — download and import the database, extract files, install the temporary MCP add-ins payload, and write the first-run bootstrap manifest.",
+      "path": "skills/dw-setup-install/SKILL.md"
+    },
+    {
+      "name": "dw-setup-upgrade",
+      "type": "flow",
+      "group": "setup",
+      "description": "Manage Dynamicweb 10 version upgrades and migration mechanics.",
+      "path": "skills/dw-setup-upgrade/SKILL.md"
+    },
+    {
+      "name": "dw-swift-building",
+      "type": "flow",
+      "group": "swift",
+      "description": "Customize an existing Swift 2 Dynamicweb site for a specific business without rebuilding it — preserve the working page shell and update area, navigation, category pages, and item values.",
+      "path": "skills/dw-swift-building/SKILL.md"
+    },
+    {
+      "name": "dw-commerce-b2b",
+      "type": "knowledge",
+      "group": "commerce",
+      "description": "Implement B2B patterns including customer groups, scoped assortments, and sales workflows.",
+      "path": "skills/dw-commerce-b2b/SKILL.md"
+    },
+    {
+      "name": "dw-commerce-catalog",
+      "type": "knowledge",
+      "group": "commerce",
+      "description": "Render product catalogs and assortments in Dynamicweb 10.",
+      "path": "skills/dw-commerce-catalog/SKILL.md"
+    },
+    {
+      "name": "dw-commerce-orders",
+      "type": "knowledge",
+      "group": "commerce",
+      "description": "Handle orders, checkout, and cart functionality in Dynamicweb 10.",
+      "path": "skills/dw-commerce-orders/SKILL.md"
+    },
+    {
+      "name": "dw-content-modelling",
+      "type": "knowledge",
+      "group": "content",
+      "description": "Design item types, paragraphs, and content models in Dynamicweb 10.",
+      "path": "skills/dw-content-modelling/SKILL.md"
+    },
+    {
+      "name": "dw-data-access",
+      "type": "knowledge",
+      "group": "data",
+      "description": "Choose appropriate data-access patterns and optimize caching in Dynamicweb 10.",
+      "path": "skills/dw-data-access/SKILL.md"
+    },
+    {
+      "name": "dw-extend-csharp-api",
+      "type": "knowledge",
+      "group": "extend",
+      "description": "Use the Dynamicweb 10 C# API and Services layer for custom backend code.",
+      "path": "skills/dw-extend-csharp-api/SKILL.md"
+    },
+    {
+      "name": "dw-extend-providers",
+      "type": "knowledge",
+      "group": "extend",
+      "description": "Build providers, notification subscribers, and AddIns for Dynamicweb 10.",
+      "path": "skills/dw-extend-providers/SKILL.md"
+    },
+    {
+      "name": "dw-extend-scheduled-tasks",
+      "type": "knowledge",
+      "group": "extend",
+      "description": "Create and manage scheduled tasks in Dynamicweb 10 including RunSqlScheduledTaskAddIn.",
+      "path": "skills/dw-extend-scheduled-tasks/SKILL.md"
+    },
+    {
+      "name": "dw-headless-delivery",
+      "type": "knowledge",
+      "group": "headless",
+      "description": "Build decoupled frontends using the Dynamicweb 10 /dwapi/ delivery API.",
+      "path": "skills/dw-headless-delivery/SKILL.md"
+    },
+    {
+      "name": "dw-integration-erp",
+      "type": "knowledge",
+      "group": "integration",
+      "description": "Configure ERP connectors and data ownership in Dynamicweb 10.",
+      "path": "skills/dw-integration-erp/SKILL.md"
+    },
+    {
+      "name": "dw-integration-framework",
+      "type": "knowledge",
+      "group": "integration",
+      "description": "Understand Dynamicweb 10 Integration Framework architecture and patterns.",
+      "path": "skills/dw-integration-framework/SKILL.md"
+    },
+    {
+      "name": "dw-pim-completeness",
+      "type": "knowledge",
+      "group": "pim",
+      "description": "Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, and query-driven automatic workflows.",
+      "path": "skills/dw-pim-completeness/SKILL.md"
+    },
+    {
+      "name": "dw-pim-localization",
+      "type": "knowledge",
+      "group": "pim",
+      "description": "Manage product translation and localization across EcomLanguages in Dynamicweb 10.",
+      "path": "skills/dw-pim-localization/SKILL.md"
+    },
+    {
+      "name": "dw-pim-modelling",
+      "type": "knowledge",
+      "group": "pim",
+      "description": "Model Dynamicweb 10 PIM data — Data Models, category fields, variant groups, and global vs category field storage.",
+      "path": "skills/dw-pim-modelling/SKILL.md"
+    },
+    {
+      "name": "dw-pim-workflow",
+      "type": "knowledge",
+      "group": "pim",
+      "description": "Configure Dynamicweb 10 PIM workflows — named states, transitions, and editorial handoffs across the product enrichment lifecycle.",
+      "path": "skills/dw-pim-workflow/SKILL.md"
+    },
+    {
+      "name": "dw-render-razor",
+      "type": "knowledge",
+      "group": "render",
+      "description": "Build template hierarchies and Razor patterns in Dynamicweb 10 — the foundation for all rendering.",
+      "path": "skills/dw-render-razor/SKILL.md"
+    },
+    {
+      "name": "dw-render-templatetags",
+      "type": "knowledge",
+      "group": "render",
+      "description": "Build templates using TemplateTags to access content properties directly in Dynamicweb 10.",
+      "path": "skills/dw-render-templatetags/SKILL.md"
+    },
+    {
+      "name": "dw-render-viewmodels",
+      "type": "knowledge",
+      "group": "render",
+      "description": "Fetch and shape content using ViewModels in Dynamicweb 10 templates.",
+      "path": "skills/dw-render-viewmodels/SKILL.md"
+    },
+    {
+      "name": "dw-search-indexing",
+      "type": "knowledge",
+      "group": "search",
+      "description": "Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, and product index setup.",
+      "path": "skills/dw-search-indexing/SKILL.md"
+    },
+    {
+      "name": "dw-setup-config",
+      "type": "knowledge",
+      "group": "setup",
+      "description": "Configure Dynamicweb 10 environment and connection settings.",
+      "path": "skills/dw-setup-config/SKILL.md"
+    },
+    {
+      "name": "dw-source-explorer",
+      "type": "knowledge",
+      "group": "source",
+      "description": "Browse Dynamicweb source code on GitHub to understand internal APIs, classes, extension points, and patterns.",
+      "path": "skills/dw-source-explorer/SKILL.md"
+    },
+    {
+      "name": "dw-users-permissions",
+      "type": "knowledge",
+      "group": "users",
+      "description": "Manage users, groups, and the Permission entity store in Dynamicweb 10.",
+      "path": "skills/dw-users-permissions/SKILL.md"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 ---
 name: dw-extend-mcp-tools
-description: Step-by-step guide for adding new MCP tools to the Dynamicweb.MCP project -- tool classes, services, models, and route handlers. Triggers: create a new MCP tool or domain area, add services/models/route handlers to Dynamicweb.MCP, expose a new operation over MCP. Non-triggers: understanding existing Dynamicweb APIs before coding -> dynamicweb-source-explorer; using existing MCP tools to query products -> dynamicweb-pim-query.
+type: flow
+group: extend
+description: Step-by-step guide for adding new MCP tools to the Dynamicweb MCP project — tool classes, services, models, and route handlers. Triggers: create a new MCP tool or domain area, add services/models/route handlers to the MCP project, expose a new operation over MCP. Non-triggers: understanding existing Dynamicweb APIs before coding -> dw-source-explorer; building product queries -> dw-search-indexing.
 ---
 
 # MCP Tool Creator

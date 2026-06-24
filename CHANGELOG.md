@@ -3,6 +3,32 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.2.0]
+
+### Added
+- **`manifest.json` + `scripts/build-manifest.mjs` — a generated skill index for the Dynamicweb MCP server ("Dynamo").**
+  Dynamo fetches a single `manifest.json` from the repo root to auto-discover skills (grouped by
+  `type` then `group`, one-sentence `description` per skill, `path` to each `SKILL.md`). The
+  generator (Node, no dependencies) derives the manifest from each skill's frontmatter; `--check`
+  mode fails CI on drift via `.github/workflows/manifest-check.yml`. Claude Code behaviour is
+  unchanged — it still loads skills through `marketplace.json`. Layout kept flat.
+
+### Changed
+- **Added `type` (`knowledge`/`flow`) and `group` frontmatter to every skill.** Nine skills are
+  flows (the setup-install/upgrade, swift-building, extend-mcp-tools, and the demo chain); the rest
+  are knowledge.
+- **Fixed four mislabeled descriptions** whose text had been copied from unrelated agent skills:
+  `dw-pim-modelling` (was an enrichment description), `dw-pim-workflow` (was a solution-assistant
+  description), `dw-pim-completeness` (was a dashboards description), and `dw-search-indexing` (was a
+  product-query description) now describe what their bodies actually cover.
+- **Tightened skill lead sentences** so each is a single intent-bearing sentence with no mid-sentence
+  periods (Dynamo shows the description up to the first `.`). Corrected stale `dynamicweb-*` sister
+  references in the demo skills to the real `dw-*` names.
+
+### Renamed
+- **`dw-tbd-source-explorer` → `dw-source-explorer`** (the `tbd` placeholder is resolved). Updated the
+  folder, frontmatter `name`, `marketplace.json` path, and README.
+
 ## [3.1.4]
 
 ### Added

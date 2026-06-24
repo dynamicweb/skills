@@ -1,6 +1,8 @@
 ---
 name: dw-integration-bc
-description: Dynamicweb 10 live "PIM for Business Central connector" demos -- expose the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface. Triggers: "connect BC to the local Dynamicweb host", "give BC a real URL", expose localhost publicly for a connector demo, `Unknown query`/`Unknown command` errors from `BC*` endpoints, connector defaults wrong after AppStore install, BC's Test Connection is green but no products appear, StaticLinkManager errors on "show PIM product page". Non-triggers: PIM data modelling -> dynamicweb-pim-demo; DB-mocked ERP sync without a live tenant -> dynamicweb-erp-demo; demo setup/MCP/TLS -> dynamicweb-demo-base. Use AFTER dynamicweb-demo-base (assumes MCP connected, vault resolved, host up).
+type: flow
+group: integration
+description: Dynamicweb 10 live "PIM for Business Central connector" demos -- expose the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface. Triggers: "connect BC to the local Dynamicweb host", "give BC a real URL", expose localhost publicly for a connector demo, `Unknown query`/`Unknown command` errors from `BC*` endpoints, connector defaults wrong after AppStore install, BC's Test Connection is green but no products appear, StaticLinkManager errors on "show PIM product page". Non-triggers: PIM data modelling -> dw-demo-pim; DB-mocked ERP sync without a live tenant -> dw-demo-erp; demo setup/MCP/TLS -> dw-demo-base. Use AFTER dw-demo-base (assumes MCP connected, vault resolved, host up).
 ---
 
 # Dynamicweb PIM for Business Central Connector skill
