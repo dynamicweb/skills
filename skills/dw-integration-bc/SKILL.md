@@ -9,7 +9,16 @@ description: Dynamicweb 10 live "PIM for Business Central connector" demos -- ex
 
 Expose the local Dynamicweb host as a stable public HTTPS URL so a real Business Central tenant can connect through the **PIM for Business Central connector** AppStore app. Covers the four pieces that have to line up: ngrok tunnel, ASP.NET Core `ForwardedHeaders`, BC connector settings (the AppStore app's defaults are usually wrong), and the BC-side configuration values.
 
-This SKILL.md is an orchestrator. Each topic links to a `references/<topic>.md` that owns the verbatim recipe.
+This SKILL.md is a nav layer. Each topic links to a `references/<topic>.md` that owns the verbatim recipe.
+
+## How to run me
+
+This skill holds domain knowledge, not build sequencing. An **orchestrator** owns the phase
+order: GSD injects this skill into its agents (via the `agent_skills` block), or the native
+`/demo:*` command set invokes it; **standalone**, the skill's own lightweight harness guards its
+documented order (gate every step, persist progress to `.demo/<slug>/flow-state.json`). The
+orchestrator abstraction (GSD primary, native command set, and the standalone harness) is owned by
+[`../dw-demo-base/references/orchestrator.md`](../dw-demo-base/references/orchestrator.md).
 
 ## When to use this skill
 

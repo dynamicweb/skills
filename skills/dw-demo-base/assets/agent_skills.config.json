@@ -1,0 +1,10 @@
+{
+  "_comment": "Merge this agent_skills block into the demo project's .planning/config.json (GSD mode). Keys are the real GSD agent type names in this install — a fork may differ; run /gsd config or list the install's agent types and re-key. Each value is a list of skill directories (each holds a SKILL.md); GSD reads them into the agent at spawn. Rewrite the skills/dw-demo-* paths to the plugin's install base (e.g. ~/.claude/plugins/marketplaces/dynamicweb-skills/skills/...) or a local clone. See dw-demo-base/references/orchestrator.md.",
+  "agent_skills": {
+    "gsd-project-researcher": ["skills/dw-demo-base"],
+    "gsd-phase-researcher": ["skills/dw-demo-base"],
+    "gsd-planner": ["skills/dw-demo-base", "skills/dw-demo-pim"],
+    "gsd-executor": ["skills/dw-demo-base", "skills/dw-demo-pim", "skills/dw-demo-swift", "skills/dw-demo-erp", "skills/dw-integration-bc"],
+    "gsd-verifier": ["skills/dw-demo-base", "skills/dw-demo-swift"]
+  }
+}

@@ -11,6 +11,15 @@ Baseline content deserialize, frontend / Swift / customer-center playbook, and r
 
 This SKILL.md is pure nav. Swift is a knowledge book, not a recipe -- see references for any specific topic.
 
+## How to run me
+
+This skill holds domain knowledge, not build sequencing. An **orchestrator** owns the phase
+order: GSD injects this skill into its agents (via the `agent_skills` block), or the native
+`/demo:*` command set invokes it; **standalone**, the skill's own lightweight harness guards its
+documented order (gate every step, persist progress to `.demo/<slug>/flow-state.json`). The
+orchestrator abstraction (GSD primary, native command set, and the standalone harness) is owned by
+[`../dw-demo-base/references/orchestrator.md`](../dw-demo-base/references/orchestrator.md).
+
 ## Step 0 â€” Load the Swift baseline (every Swift demo)
 
 Before any frontend work (templates, paragraphs, re-skin), load the Swift content baseline into the host's project DB. Swift demos depend on `Swift-v2_*` item types, `Swift2.2` paragraph wiring, and the **content rows** (Area, Pages, grid-rows, paragraphs) that the baseline ships. `dynamicweb-demo-base` deliberately does NOT deserialize â€” that step lives here.
