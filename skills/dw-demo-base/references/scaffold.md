@@ -32,7 +32,7 @@ After the command completes, the solution folder contains a new `Dynamicweb.Host
 
 ### 2.1 â€” TargetFramework MUST be `net10.0` (mandatory)
 
-Template 1.26.0 ships multi-target (`<TargetFrameworks>net8.0;net10.0</TargetFrameworks>`). **Pin to single-target `net10.0`** â€” this is non-negotiable for any Dynamicweb demo, because every Dynamicweb demo needs the AppStore Backend MCP AddIn (per `references/mcp-setup.md`, a non-skippable canonical step), and the MCP AddIn loader hard-requires the host process to run on .NET 10:
+Template 1.26.0 ships multi-target (`<TargetFrameworks>net8.0;net10.0</TargetFrameworks>`). **Pin to single-target `net10.0`** â€” this is non-negotiable for any Dynamicweb demo, because every Dynamicweb demo needs the Backend MCP AddIn (per `references/mcp-setup.md`, a non-skippable canonical step — installed via the AppStore or, headless, via NuGet; see Section 2.1c), and the MCP AddIn loader hard-requires the host process to run on .NET 10:
 
 ```xml
 <TargetFramework>net10.0</TargetFramework>
@@ -70,6 +70,18 @@ This is a separate prereq from the MSDTC + firewall configuration documented in 
 - **`ImplicitDistributedTransactions = true`** â†’ tells .NET 7+ that the app *consents* to using the transport
 
 Without either, AreaCopy fails the same way. With both, AreaCopy completes in ~7-10s for a 95-page Swift website.
+
+### 2.1c — Headless AddIn install: NuGet PackageReference (alternative to the AppStore)
+
+The canonical route installs the Backend MCP AddIn through the admin AppStore. When the admin UI isn't reachable — a fully headless build, automated provisioning — install it from NuGet instead by adding the package to the host csproj:
+
+```xml
+<PackageReference Include="Dynamicweb.MCP" Version="<version>" />
+```
+
+Rebuild and restart. The AddIn registers **at host startup**, so `/admin/mcp` flips from 404 to live with no AppStore click. The net10 TFM requirement from Section 2.1 still applies — the loader's runtime check runs regardless of how the package arrived. This route also sidesteps a flaky UI path: the AppStore "Available apps" grid is a virtualized component that Playwright struggles to drive reliably.
+
+Pin the version deliberately — `Dynamicweb.MCP` is a beta-track package, and the version must be compatible with the Suite version the host resolves. After the AddIn is installed, continue with the MCP configuration in `references/mcp-setup.md` (installing the AddIn is upstream of creating and binding the config).
 
 ### 2.2 â€” Exclude `wwwroot\Files\System\**` from the build (mandatory)
 
