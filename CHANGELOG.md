@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.2.4]
+
+### Added
+- **Invoking internal DW services by reflection — DI-timing constraint in
+  `dw-extend-csharp-api/SKILL.md`.** Folded from a headless DW10 install. Adds a "last resort" subsection
+  to the service-access patterns: some DW services are `internal` (no compile-time type) but resolvable
+  from the DI container at runtime, and reflection-invoking one only works **inside the built host after
+  `app.UseDynamicweb()` has run** — from a standalone console/utility process the container is
+  uninitialised and the call fails on `Microsoft.Extensions.DependencyInjection.Abstractions`. Shows the
+  `Assembly.Load` → `GetType` → resolve-from-`app.Services` → `MethodInfo.Invoke` pattern, flags it as
+  version-fragile, and steers callers to public facades / `DependencyResolver` when a public surface exists.
+
 ## [3.2.3]
 
 ### Added

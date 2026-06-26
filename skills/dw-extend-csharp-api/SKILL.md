@@ -51,6 +51,22 @@ using Dynamicweb.Extensibility;
 var service = ServiceLocator.Current.GetInstance<ISomeService>();
 ```
 
+### Invoking internal services by reflection (last resort)
+
+Some Dynamicweb services are `internal` — there's no public type to reference at compile time — but they are still registered in the DI container at runtime (the MCP `McpConfigurationService` is one example). To call one, two constraints govern:
+
+- **DI must be live.** Resolve the instance from `app.Services` **inside the built host, after `app.UseDynamicweb()` has run.** Reflection-invoking a DW service from a standalone console app or detached utility process hits an uninitialised container and fails on `Microsoft.Extensions.DependencyInjection.Abstractions` (nothing is registered yet). A one-shot maintenance branch in the host's own `Program.cs`, after the app is built, is the reliable place.
+- **No compile-time surface.** Load the assembly, get the type by full name, resolve the instance from `app.Services` (fall back to `Activator.CreateInstance(type, true)` to reach the internal constructor), then call the method via `MethodInfo.Invoke`:
+
+```csharp
+var asm = Assembly.Load("Dynamicweb.MCP");
+var t   = asm.GetType("Dynamicweb.MCP.Configuration.Services.McpConfigurationService");
+var svc = app.Services.GetService(t) ?? Activator.CreateInstance(t, true);
+t.GetMethod("LinkToken").Invoke(svc, new object[] { configId, tokenId, user });
+```
+
+This is **version-fragile** — internal namespaces, type names, and signatures can change between releases without notice. Reach for it only when no public facade or Management API endpoint covers what you need; prefer the static facades or `DependencyResolver` above whenever a public surface exists.
+
 ## Context API
 
 ### `Dynamicweb.Context.Current`
