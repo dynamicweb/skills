@@ -82,16 +82,18 @@ The reference owns the full workflow end-to-end, including the load-bearing firs
 
 Claude controls the `Dynamicweb.Host.Suite` host process autonomously â€” start, stop, restart without asking. The host going up and down is part of the normal build / deserialize / test / template-edit loop; blocking on the user to run `dotnet run` is friction.
 
-- Start (durable): use PowerShell `Start-Process` so the host survives the spawning subshell:
+- Start (durable): use PowerShell `Start-Process` so the host survives the spawning subshell, **and redirect stdout/stderr to log files**. A hidden `Start-Process` *without* redirection has proven flaky — the spawned process can exit right after kickoff; redirecting keeps it stable and leaves a startup log to read (e.g. to confirm the TFM line — see `references/scaffold.md` Section 2.1):
   ```
-  powershell -Command "Start-Process -FilePath 'dotnet' -ArgumentList 'run','--launch-profile','Dynamicweb.Host.Suite' -WorkingDirectory '<absolute-path-to-Suite>' -WindowStyle Hidden -PassThru | Select-Object -ExpandProperty Id"
+  powershell -Command "Start-Process -FilePath 'dotnet' -ArgumentList 'run','--launch-profile','Dynamicweb.Host.Suite' -WorkingDirectory '<absolute-path-to-Suite>' -WindowStyle Hidden -PassThru -RedirectStandardOutput '<Suite>\out.log' -RedirectStandardError '<Suite>\err.log' | Select-Object -ExpandProperty Id"
   ```
   Returns PID. After kickoff, poll `/Admin` (or `/admin/api/api.json` with bearer) until 200, then proceed.
   **Do NOT** use plain `dotnet run` via Bash `run_in_background:true` â€” when the bash subshell ends, dotnet receives SIGHUP and the host dies after the next idle window. We've seen this fail with exit 127 mid-session.
-- Stop: kill the `dotnet` process gracefully via PID returned from Start-Process, or:
+  - **`--no-build` caveat:** `dotnet run --no-build` launches whatever DLL is already in `bin/`. If a prior `dotnet build` *failed*, you silently run the **stale** binary — and a run you intended as a one-shot maintenance arg can instead boot a normal host and lock the exe. Confirm the last build succeeded before relying on `--no-build`.
+- Stop: kill by the **PID returned from Start-Process** when you have it. When you don't, target the host **by its launchSettings port — never by the shared project name**: every demo scaffolds the same `Dynamicweb.Host.Suite` project, so a name / command-line match (`*Dynamicweb.Host.Suite*`) kills *sibling* demos' hosts too. Resolve the PID from the port and stop that:
   ```
-  powershell -Command "Get-CimInstance Win32_Process -Filter \"Name='dotnet.exe'\" | ?{ \$_.CommandLine -like '*Dynamicweb.Host.Suite*' } | %{ Stop-Process -Id \$_.ProcessId -Force }"
+  powershell -Command "$p = Get-NetTCPConnection -LocalPort <PORT> -State Listen | Select-Object -ExpandProperty OwningProcess -Unique; if ($p) { Stop-Process -Id $p -Force }"
   ```
+  `<PORT>` is the HTTPS port from `Dynamicweb.Host.Suite/Properties/launchSettings.json` (the discover-from-project-files source of truth — see `references/scaffold.md`).
   Use this freely â€” restart is cheap, locked-in-cache state is the bigger risk.
 - Visibility â‰  permission: still announce in one line ("starting hostâ€¦", "host up at :31873", "restarting to clear plugin cache"). Authorization removes the *ask*, not the *narration*.
 

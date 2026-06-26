@@ -117,7 +117,11 @@ Then stop the running host, restore, and restart per the host-lifecycle pattern 
 **Process-lock gotcha (MSB3026 / MSB3027).** `dotnet restore` after the swap succeeds quietly. The next `dotnet build` / `dotnet run` then fails repeatedly with `Could not copy "...\apphost.exe" ... locked by Dynamicweb.Host.Suite (<PID>)`. The csproj edit changes the package set MSBuild wants to write to `bin/`, but the previous-ring host still has the exe + DLLs loaded. Stop the host BEFORE the next build:
 
 ```powershell
-Get-Process -Name "Dynamicweb.Host.Suite" -ErrorAction SilentlyContinue | Stop-Process -Force
+# Target the host by its launchSettings port, NOT the shared project name — every demo
+# scaffolds the same `Dynamicweb.Host.Suite`, so a name match kills sibling demos' hosts too
+# (see SKILL.md "Host lifecycle authority"). <PORT> is the HTTPS port from launchSettings.json.
+$p = Get-NetTCPConnection -LocalPort <PORT> -State Listen | Select-Object -ExpandProperty OwningProcess -Unique
+if ($p) { Stop-Process -Id $p -Force }
 ```
 
 If a fresh `Dynamicweb.Host.Suite` PID appears within a second of the kill, you have a watch/auto-restart hook (Visual Studio debugger, `dotnet watch`, an IDE-managed reload). Stop the upstream source too, otherwise the loop repeats and the build keeps failing the copy step.

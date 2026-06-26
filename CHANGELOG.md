@@ -3,6 +3,20 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.2.1]
+
+### Changed
+- **Port-targeted host control + stable host start in `dw-demo-base`.** Folded from a headless
+  DW10 install. The "Host lifecycle authority" stop command matched the shared
+  `Dynamicweb.Host.Suite` project name (`*Dynamicweb.Host.Suite*`), so stopping one demo's host
+  killed *sibling* demos' hosts too — every demo scaffolds that same project name. Stop now
+  targets the host by its launchSettings **port** (`Get-NetTCPConnection -LocalPort`), and the
+  same fix replaces the name-only kill in the `references/scaffold.md` ring-swap process-lock
+  gotcha. The durable-start guidance now **redirects stdout/stderr to log files** (a hidden
+  `Start-Process` without redirection proved flaky — the process exits after kickoff), and adds a
+  `dotnet run --no-build` caveat (a failed prior build means `--no-build` silently launches the
+  stale DLL and can lock the exe).
+
 ## [3.2.0]
 
 ### Added
