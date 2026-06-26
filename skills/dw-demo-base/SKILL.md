@@ -20,7 +20,9 @@ phases and holds the gates is the **orchestrator**, and it is swappable:
   via the `agent_skills` block in `assets/agent_skills.config.json`).
 - **Under the native command set** — the `/demo:*` slash commands (scaffolded into the demo
   project) invoke this skill and hold the one human gate.
-- **Standalone** — follow this skill's own canonical flow below, in order.
+- **Standalone** — no GSD, no `/demo:*` commands: the skill's own **lightweight harness** guards
+  the canonical flow below (walk it in order, gate every step, persist progress to
+  `.demo/<slug>/flow-state.json`, refuse to declare done before a gate passes).
 
 The orchestrator abstraction (modes, GSD detection / deference, `--standalone`, the strictness
 gradient, acceptance criteria) is owned by [references/orchestrator.md](references/orchestrator.md).

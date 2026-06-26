@@ -19,8 +19,12 @@ Two orchestrators are supported, plus the no-orchestrator floor:
 - **Native command set (floor).** A small set of `/demo:*` slash commands, scaffolded into the
   demo project, sequence the phases and hold the one human gate when GSD is absent.
   Self-contained, single-context, single-pass validation.
-- **Skills alone.** A person or agent invokes the skills by hand in the order each skill
-  documents. No enforcement. Always available — the skills never require an orchestrator.
+- **Skills alone, with the lightweight in-skill harness (floor).** No GSD and no `/demo:*`
+  commands — a person or agent invokes the skills by hand. The skills are **not** run blind here:
+  each carries a small built-in harness that guards its own canonical flow (ordering + a gate per
+  step + a resumable progress artifact). Always available — the skills never require an external
+  orchestrator, but they still refuse to skip a step or declare the build done before its gate
+  passes. See "Standalone — the lightweight in-skill harness" below.
 
 Both orchestrators read the **same** SKILL.md files; no skill is rewritten for either path. The
 native command set detects GSD and steps aside when it is present, so the two never drive the
@@ -30,9 +34,46 @@ same build.
 
 | Mode | Orchestrator | Enforcement |
 |---|---|---|
-| Skills alone | a person or agent, by hand | none |
-| Skills + native command set | `/demo:*` slash commands | sequencing + one human gate + single-pass validate |
-| Skills + GSD | GSD pipeline | sequencing + gates + validate/gap/buff loop |
+| Skills alone | the skill's own lightweight harness | canonical-flow ordering + gate-per-step (refuse to skip / refuse to declare done) + a resumable progress artifact |
+| Skills + native command set | `/demo:*` slash commands | the above + one human gate (impact sign-off) + single-pass validate |
+| Skills + GSD | GSD pipeline | the above + fresh-context agents + gates + validate/gap/buff loop |
+
+## Standalone — the lightweight in-skill harness (no orchestrator)
+
+When neither GSD nor the `/demo:*` command set is driving, the skills are still not run blind.
+Each demo skill carries a **lightweight orchestration harness** of its own — enough to guard the
+canonical flow, far less than a full orchestrator. It is the floor, and it is always on. Three
+rules plus one artifact:
+
+1. **Walk the canonical flow in order.** Each demo skill documents its canonical step order
+   (`dw-demo-base`'s end-to-end flow; the sister skills' prerequisites). The harness follows that
+   order and does not jump ahead.
+2. **Gate every step before advancing.** Each canonical step owns a verification gate. The
+   harness runs the gate and **refuses to advance — or to declare the build done — until the gate
+   passes**, exactly as `dw-demo-base` already refuses to declare setup complete with a failing
+   gate. A miss surfaces and pauses; it never silently advances.
+3. **Persist progress to a small artifact.** The harness writes one lightweight file —
+   `.demo/<slug>/flow-state.json` — recording which canonical steps and gates have passed. This
+   survives a context reset: a fresh agent reads the artifact and resumes at the first unchecked
+   step instead of re-running or skipping work. The shape is deliberately minimal:
+
+   ```json
+   {
+     "slug": "<prospect-slug>",
+     "flow": "dw-demo-base",
+     "steps": { "setup-checks": "pass", "scaffold": "pass", "mcp-setup": "pending" },
+     "gates_passed": ["setup-checks", "scaffold"]
+   }
+   ```
+
+This is the **same** `.demo/<slug>/` state the native command set uses — the native `state.json`
+is a superset that adds `phase` and `impact_signed_off`. Running by hand and later adopting the
+`/demo:*` commands or GSD does not throw the progress away; the heavier orchestrator reads the
+artifact the harness already wrote.
+
+The harness is **lightweight on purpose**: no fresh-context agents, no convergence loop, no human
+gate beyond what a skill already asks for. It buys ordering + gate discipline + resumability over
+pure freeform — and nothing more. For real assurance, promote to the native command set or GSD.
 
 ## Detection and deference (the native command set steps aside for GSD)
 

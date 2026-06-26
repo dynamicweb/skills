@@ -156,10 +156,13 @@ are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
 The demo skills hold domain knowledge and carry no build sequencing — that is owned by a
 swappable **orchestrator**: **GSD** (primary; its pipeline injects the skills into fresh-context
-agents via the `agent_skills` block) or the **native `/demo:*` command set** (floor; scaffolded
-into the demo project, it detects GSD and defers unless run `--standalone`). Both read the same
-SKILL.md files. The abstraction — running modes, detection/deference, the `agent_skills` keystone,
-the strictness gradient, and shared acceptance criteria — lives in
+agents via the `agent_skills` block) or the **native `/demo:*` command set** (scaffolded into the
+demo project, it detects GSD and defers unless run `--standalone`). With neither present, the floor
+is a **lightweight in-skill harness** — each skill guards its own canonical flow (ordering + a gate
+per step + a resumable `.demo/<slug>/flow-state.json` artifact) so a fully standalone run is still
+not run blind. All three read the same SKILL.md files. The abstraction — running modes,
+detection/deference, the `agent_skills` keystone, the strictness gradient, and shared acceptance
+criteria — lives in
 [dw-demo-base/references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md).
 
 ## Manifest

@@ -19,6 +19,13 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   the two never drive the same build. One human gate in both modes — the impact sign-off; everything
   else is automated (GSD's convergence loop, or the native single-pass validate against shared
   acceptance criteria).
+- **Lightweight in-skill harness for fully standalone runs (the floor).** With no GSD and no
+  `/demo:*` commands, the demo skills are no longer run blind: each guards its own canonical flow —
+  walk it in order, gate every step (refuse to skip or to declare the build done before a gate
+  passes), and persist progress to a resumable `.demo/<slug>/flow-state.json` artifact that the
+  native `state.json` and GSD both read as a superset. Lightweight on purpose — ordering + gate
+  discipline + resumability, nothing heavier; promote to the native command set or GSD for real
+  assurance.
 - **The `agent_skills` keystone — `dw-demo-base/assets/agent_skills.config.json`.** Registers the
   demo skills to GSD agent types, keyed to the **real** agent type names in this install
   (`gsd-project-researcher`, `gsd-phase-researcher`, `gsd-planner`, `gsd-executor`, `gsd-verifier`).
