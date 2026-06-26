@@ -18,7 +18,11 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   detect GSD (`.planning/` or a `/gsd-*` surface) and defer to it unless passed `--standalone`, so
   the two never drive the same build. One human gate in both modes — the impact sign-off; everything
   else is automated (GSD's convergence loop, or the native single-pass validate against shared
-  acceptance criteria).
+  acceptance criteria). Names the **two gate types** explicitly — a single human sign-off vs the
+  automated **validate/gap/buff loop** (builder → fresh-context validator → gap feedback → re-run
+  until PASS/cap) — so scaffold and customer build are gated *without* a human pause; documents the
+  per-mode assurance ladder and the throwaway-demo escape hatches; and flags the GSD upstream split
+  (GSD Core / Open GSD) to verify agent type names and `/gsd-update` before wiring.
 - **Lightweight in-skill harness for fully standalone runs (the floor).** With no GSD and no
   `/demo:*` commands, the demo skills are no longer run blind: each guards its own canonical flow —
   walk it in order, gate every step (refuse to skip or to declare the build done before a gate

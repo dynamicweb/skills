@@ -150,6 +150,14 @@ Path resolution: the `skills/dw-demo-*` paths resolve against wherever this plug
 them to that absolute base before GSD spawns agents. The native command set reads the same skill
 directories directly through the installed plugin — no rewrite needed there.
 
+> **Verify against your install before wiring anything.** The agent type names above and the
+> `/gsd-*` command names throughout this reference are the canonical ones; a GSD **fork can rename
+> agents or add new ones**, and a wrong key means the skill silently never injects. The upstream
+> has also **split** — the original `get-shit-done` repo points to **GSD Core** in the **Open
+> GSD** project as the active home, with maintained forks elsewhere. So: (1) read your install's
+> `.planning/config.json` (or its agent registry) and re-key `agent_skills` to the real names, and
+> (2) confirm which fork your install tracks before pointing `/gsd-update` anywhere.
+
 ## Reuse mapping (GSD mode) — reuse GSD primitives, do not rebuild them
 
 | Demo need | GSD primitive | What the skills add |
@@ -161,10 +169,39 @@ directories directly through the installed plugin — no rewrite needed there.
 | Customer-specific context | another phase, plan → execute → verify | `dw-demo-swift` (customer-center, pricing, re-skin), `dw-demo-erp`/`dw-integration-bc` (integration beats) |
 | Polish | `/gsd-quick`, `/gsd-fast`, `/gsd-verify-work` | nothing |
 
-## Strictness gradient — one human pause, automated quality elsewhere (both modes)
+## Two kinds of gate (why scaffold is gated without pausing for a human)
 
-The mechanism differs by orchestrator; the shape does not. Exactly one phase blocks on a human:
-the impact sign-off.
+Strictness here is **not one mechanism but two**, and conflating them is what makes a workflow
+either too slow (a human pause everywhere) or too loose (no gate at all):
+
+- **Human sign-off gate.** Execution pauses and waits for the user's explicit OK before
+  proceeding. It costs a real wait, so it is spent **once** — at the impact sign-off, the single
+  place where a wrong call is expensive to undo.
+- **Automated quality gate — the validate/gap/buff loop.** A builder produces the output; a
+  **separate validator with fresh context** checks it against the explicit acceptance criteria;
+  the gaps feed back; the builder re-runs; repeat until PASS or a cycle cap. **No human waits.**
+  This is the mechanism that lifts quality the most — a fresh-context validator catches what the
+  builder rationalised past, and gaps close before the next phase builds on top.
+
+**Scaffold and customer build are gated — by the automated loop, not by a human pause.** That is
+the point: they stay fast *and* get more reliable. The assurance level of that loop is what
+separates the orchestrators:
+
+- **GSD** supplies the loop natively: execute spawns a verifier that writes `VERIFICATION.md`;
+  `/gsd-plan-phase --bounce` re-plans against review until no HIGH concerns (max 3 cycles);
+  `/gsd-audit-fix` audits and fixes medium-and-up issues automatically. Highest assurance.
+- **Native floor** runs a **single** validate pass against the same acceptance criteria, then
+  offers a fix pass — no fresh-context validator, no convergence loop. It says so in its output;
+  high-stakes demos should use GSD.
+- **Standalone harness** is lower still: one gate check per canonical step, no validator agent.
+
+The single **human** gate sits only at the impact sign-off, in every mode. Everything else is the
+automated gate at whatever assurance the active orchestrator provides.
+
+## Strictness gradient — one human pause, automated quality elsewhere (every mode)
+
+These are the two gates above, placed per phase. The mechanism differs by orchestrator; the shape
+does not. Exactly one phase blocks on a human: the impact sign-off.
 
 | Phase | Enforcement | GSD | Native |
 |---|---|---|---|
@@ -172,6 +209,12 @@ the impact sign-off.
 | Impact analysis | **Human sign-off** | discuss CONTEXT.md + approval gate | `/demo:impact` pause |
 | Customer build | Automated | plan `--bounce` → execute → verify | single validate vs acceptance + offered fix |
 | Polish | None | `/gsd-quick` / `/gsd-fast` / `/gsd-verify-work` | freeform |
+
+**Flexibility — a demo is not a product, so the gates have escape hatches.** For a fast throwaway
+demo, drop the loop depth: GSD `--skip-research` and `/gsd-fast` skip the heavier agents;
+`model_overrides` / the `inherit` profile put cheap models on scaffold verification; the native
+`--standalone` forces the single-pass floor. The one gate that never lifts is the impact sign-off
+— that is the decision a demo lives or dies on. Polish stays free in every mode.
 
 ## Discovery prompts (impact-analysis input — shared by both orchestrators)
 
