@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "3.2.4"
+    "version": "3.3.0"
   },
   "plugins": [
     {
@@ -80,7 +80,7 @@
     },
     {
       "name": "dynamicweb-presales",
-      "description": "Skills for presales and demo engineers running Dynamicweb 10 demos.",
+      "description": "Skills for presales and demo engineers running Dynamicweb 10 demos. The skills are the substrate; the build is driven by a swappable orchestrator (GSD primary, or the native /demo:* command set) — see dw-demo-base/references/orchestrator.md.",
       "source": "./",
       "strict": false,
       "skills": [

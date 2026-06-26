@@ -136,7 +136,7 @@ Browse Dynamicweb source code on GitHub to understand internal APIs, classes, an
 ### Demos (Presales)
 
 **[dw-demo-base](skills/dw-demo-base/SKILL.md)**
-Foundation skill for all demos. Scaffolds the dw10-suite host, wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first.
+Foundation skill for all demos. Scaffolds the dw10-suite host, wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first. Also owns the **orchestrator abstraction** ([references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md)) — how a build is driven, GSD primary or the native `/demo:*` command set.
 
 **[dw-demo-pim](skills/dw-demo-pim/SKILL.md)**
 PIM modelling from a blank DB — product data built from scratch via MCP. Use after `dw-demo-base`.
@@ -153,6 +153,14 @@ The **presales demo chain** has a hard order. `dw-demo-base` must run **first** 
 the host, wires MCP + the TLS bypass, and resolves the vault. The sister demo skills
 (`dw-demo-pim`, `dw-demo-swift`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
+
+The demo skills hold domain knowledge and carry no build sequencing — that is owned by a
+swappable **orchestrator**: **GSD** (primary; its pipeline injects the skills into fresh-context
+agents via the `agent_skills` block) or the **native `/demo:*` command set** (floor; scaffolded
+into the demo project, it detects GSD and defers unless run `--standalone`). Both read the same
+SKILL.md files. The abstraction — running modes, detection/deference, the `agent_skills` keystone,
+the strictness gradient, and shared acceptance criteria — lives in
+[dw-demo-base/references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md).
 
 ## Manifest
 

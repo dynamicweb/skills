@@ -2,14 +2,29 @@
 name: dw-demo-base
 type: flow
 group: demo
-description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (references/online-mode.md). Also owns the maintainer fold-back workflow -- "fold this into the skill", "save this back to the plugin", "publish this update" route to references/iterate-plugin.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-erp, dw-integration-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
+description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (references/online-mode.md). Also owns the orchestrator abstraction (how a demo build is driven — GSD primary vs the native `/demo:*` command set); "drive the demo build", "run the demo natively", "register the skills to GSD", "GSD vs native", "what runs the build" route to references/orchestrator.md. Also owns the maintainer fold-back workflow -- "fold this into the skill", "save this back to the plugin", "publish this update" route to references/iterate-plugin.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-erp, dw-integration-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
 ---
 
 # Dynamicweb Demo Base Skill
 
 The foundation skill for any Dynamicweb 10 demo. **Use FIRST** on every new Dynamicweb demo. Sister skills (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`) inherit the `.mcp.json`, `CUSTOMISATIONS.md`, vault resolution, and TLS bypass that this skill establishes -- they are **Use AFTER**, never standalone.
 
-This SKILL.md is an orchestrator only. Each step of the canonical flow links to a `references/<topic>.md` that owns the verbatim recipe, gotchas, and verification gate for that topic.
+This SKILL.md is a nav layer only. Each step of the canonical flow links to a `references/<topic>.md` that owns the verbatim recipe, gotchas, and verification gate for that topic.
+
+## How to run me
+
+This skill holds **domain knowledge**, not build sequencing. The thing that sequences the
+phases and holds the gates is the **orchestrator**, and it is swappable:
+
+- **Under GSD** — GSD injects this skill into its agents and owns the phase order (register it
+  via the `agent_skills` block in `assets/agent_skills.config.json`).
+- **Under the native command set** — the `/demo:*` slash commands (scaffolded into the demo
+  project) invoke this skill and hold the one human gate.
+- **Standalone** — follow this skill's own canonical flow below, in order.
+
+The orchestrator abstraction (modes, GSD detection / deference, `--standalone`, the strictness
+gradient, acceptance criteria) is owned by [references/orchestrator.md](references/orchestrator.md).
+Every sister demo skill carries the same "how to run me" header and defers to that reference.
 
 ## Environment fork â€” local install vs hosted (online) install
 
@@ -29,7 +44,7 @@ DO NOT skip any step. Each step's reference contains its own verification gate; 
    Write `.mcp.json`, apply both TLS-bypass layers, create the admin-UI MCP configuration manually (Authentication method = API Key; Claude.ai OAuth is fallback-only), and install the user-scope Browser MCP (`@playwright/mcp`, machine-level and idempotent). The MCP verification gate: `claude mcp list` shows `Connected` AND `ToolSearch +dynamicweb` returns >200 tools.
 
 4. **Drop the guardrail artefacts** -> `references/customisations.md` + `references/customer-context.md`
-   Stage `<demo>\CUSTOMISATIONS.md` (the customisation ledger) and ensure the `<demo>\customer-context\` read-only contract is wired into the per-demo `CLAUDE.md`. The `references/audit-customisations.md` recipe produces paste-ready end-of-phase audit content.
+   Stage `<demo>\CUSTOMISATIONS.md` (the customisation ledger) and ensure the `<demo>\customer-context\` read-only contract is wired into the per-demo `CLAUDE.md`. The `references/audit-customisations.md` recipe produces paste-ready end-of-phase audit content. When running **without GSD**, also copy the native orchestrator commands from `assets/commands/demo/` into the demo project's `.claude/commands/demo/` so `/demo:scaffold|impact|build|status` are available (see [references/orchestrator.md](references/orchestrator.md)).
 
 ## Baseline data â€” explicit non-step
 
@@ -44,6 +59,7 @@ The Serializer install steps live in base so any sister skill can pull them; the
 
 | If you need to... | Read this reference |
 |---|---|
+| Understand how a demo build is **driven** — the orchestrator abstraction (GSD primary vs the native `/demo:*` command set), GSD detection / deference + `--standalone`, the `agent_skills` keystone, the strictness gradient, and the shared acceptance criteria | references/orchestrator.md |
 | Verify a fresh machine is build-ready (incl. the MSDTC check that AreaCopy `TransactionException`s trace back to) | references/setup-checks.md |
 | **Build on a hosted/cloud install** (URL + Admin API key only â€” no scaffold, no SQL, no host restart; Management API create-vs-update semantics, binder shapes, upload, variants, cache-refresh-as-restart, known API gaps) | **references/online-mode.md** |
 | Detect vault drift across machines | references/compare-vault.md |

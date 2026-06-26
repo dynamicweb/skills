@@ -3,6 +3,34 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.3.0]
+
+### Added
+- **Orchestrator abstraction for presales demo builds — `dw-demo-base/references/orchestrator.md`
+  plus a native `/demo:*` command set.** Separates the demo skills (domain-knowledge *substrate*)
+  from the thing that *drives* a build through its phases — now named the **orchestrator** (the
+  industry term; "driver" was rejected to avoid overloading the device-/browser-driver sense). Two
+  orchestrators are supported behind a common substrate: **GSD (primary)** — its discuss → plan →
+  execute → verify → review → ship pipeline injects the skills into fresh-context agents, with the
+  verifier loop and audit-fix; and a **native command set (floor)** — `/demo:scaffold`,
+  `/demo:impact`, `/demo:build`, `/demo:status`, scaffolded into the demo project's
+  `.claude/commands/demo/` (templates in `dw-demo-base/assets/commands/demo/`). The native commands
+  detect GSD (`.planning/` or a `/gsd-*` surface) and defer to it unless passed `--standalone`, so
+  the two never drive the same build. One human gate in both modes — the impact sign-off; everything
+  else is automated (GSD's convergence loop, or the native single-pass validate against shared
+  acceptance criteria).
+- **The `agent_skills` keystone — `dw-demo-base/assets/agent_skills.config.json`.** Registers the
+  demo skills to GSD agent types, keyed to the **real** agent type names in this install
+  (`gsd-project-researcher`, `gsd-phase-researcher`, `gsd-planner`, `gsd-executor`, `gsd-verifier`).
+  No skill is rewritten for either orchestrator; both read the same `SKILL.md` files.
+- **3-phase roadmap template — `dw-demo-base/assets/ROADMAP.template.md`** (scaffold → customer
+  build → polish), with the strictness gradient and acceptance criteria per phase.
+- **Per-skill "how to run me" header** on every demo skill (`dw-demo-base`, `dw-demo-pim`,
+  `dw-demo-swift`, `dw-demo-erp`, `dw-integration-bc`): the skill holds knowledge, not sequencing;
+  an orchestrator owns the phase order, and standalone the skill's own order applies. Disambiguated
+  the legacy "this SKILL.md is an orchestrator" nav phrasing to "nav layer" so the term is reserved
+  for the build orchestrator.
+
 ## [3.2.4]
 
 ### Added
