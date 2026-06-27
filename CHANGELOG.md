@@ -3,6 +3,21 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.3.1]
+
+### Changed
+- **Reversed the Backend MCP AddIn install order — NuGet `PackageReference` is now the default,
+  the admin AppStore the last resort (`dw-demo-base/references/scaffold.md` §2.1/§2.1c, and the
+  surface-priority table in `dw-demo-base/SKILL.md`).** The prior wording called the AppStore the
+  "canonical" route and NuGet the headless "alternative" — backwards for an agent-driven build. The
+  `PackageReference` route is deterministic, scriptable, and idempotent (a csproj edit), registers the
+  AddIn at host startup, and sidesteps the virtualized AppStore "Available apps" grid that Playwright
+  can't drive reliably; it also aligns with the standing rule that the admin UI is verification-only,
+  never an action surface. The AppStore is now framed as the fallback for when the host csproj can't be
+  edited, to be clicked manually rather than driven via Playwright. The MCP *config*-creation ordering
+  in `mcp-setup.md` is deliberately left admin-UI-first, because its scriptable alternative is brittle
+  reflection into an internal type (`McpConfigurationService.LinkToken`).
+
 ## [3.3.0]
 
 ### Added
