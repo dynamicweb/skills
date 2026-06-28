@@ -78,7 +78,7 @@ Vault path resolution: every baseline path resolves through `$env:DW_VAULT` (bas
 
 **The Serializer reads from `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/<deploy|seed>/`** (joined from `outputDirectory: "Serializer"` in `Files/Serializer.config.json` + `outputSubfolder` per mode). It does NOT read from a project-root `baselines/` folder. A `baselines/` copy is invisible to the deserialize endpoint and any "121 updated" you see comes from whatever else is already in `SerializeRoot/deploy/` (typically a previous serialize roundtripping itself). Verified during a Swift2 baseline import â€” the original recipe pointed at `baselines/` and silently no-op'd.
 
-**Baseline shape â€” content-only.** As of 2026-05-08 the canonical Swift2.2 vault baseline contains ONLY `_content/` (Area + pages + grid-rows + paragraphs + master items, ~640 YAML files). It does **NOT** ship `_sql/`. Framework data (shops, currencies, countries, languages, manufacturers, payments, shippings, VAT groups) must already exist in the target DB before this deserialize runs. The area's YAML hardcodes `"AreaEcomShopId": "SHOP1"` and `"AreaEcomCountryCode": "DE"` as **string FKs** â€” they resolve against whatever rows have those surrogate ids in target. A PIM-set-up host (`dynamicweb-pim-demo`'s blank-DB flow that creates SHOP1, DE, EUR, LANG1) is therefore a clean baseline target â€” the deserialize lands content additively without conflicting with the PIM-curated framework. Hosts missing the framework must run the relevant `dynamicweb-pim-demo` setup steps (`canonical-setup-order.md` Steps 1-4) first.
+**Baseline shape â€” content-only.** The canonical Swift2.2 vault baseline contains ONLY `_content/` (Area + pages + grid-rows + paragraphs + master items, ~640 YAML files). It does **NOT** ship `_sql/`. Framework data (shops, currencies, countries, languages, manufacturers, payments, shippings, VAT groups) must already exist in the target DB before this deserialize runs. The area's YAML hardcodes `"AreaEcomShopId": "SHOP1"` and `"AreaEcomCountryCode": "DE"` as **string FKs** â€” they resolve against whatever rows have those surrogate ids in target. A PIM-set-up host (`dynamicweb-pim-demo`'s blank-DB flow that creates SHOP1, DE, EUR, LANG1) is therefore a clean baseline target â€” the deserialize lands content additively without conflicting with the PIM-curated framework. Hosts missing the framework must run the relevant `dynamicweb-pim-demo` setup steps (`canonical-setup-order.md` Steps 1-4) first.
 
 ```powershell
 $baseline = "Swift2.2"  # or a customer-flavoured "<demo>-base" baseline once it has been derived (see $env:DW_VAULT\INDEX.md serialized-data row for available baselines)
@@ -88,7 +88,7 @@ if (-not (Test-Path "$env:DW_VAULT\serialized-data\$baseline\_content")) {
 $deployRoot = "Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/deploy"
 New-Item -ItemType Directory -Path "$deployRoot/_content" -Force | Out-Null
 Copy-Item -Recurse "$env:DW_VAULT\serialized-data\$baseline\_content\*" "$deployRoot/_content/" -Force
-# Note: no `_sql/` to copy â€” current baseline is content-only by design (2026-05-08).
+# Note: no `_sql/` to copy â€” current baseline is content-only by design.
 # If a future baseline reintroduces `_sql/`, add the corresponding copy + framework-conflict reasoning back.
 ```
 
@@ -171,16 +171,16 @@ The sweep is the second line of defence for the failures strict mode does not ca
 
 ## 9. Known schema-drift workaround (Swift 2.2 baseline â†” DW10)
 
-With the **content-only** baseline shape (current as of 2026-05-08), one drift point remains.
+With the **content-only** baseline shape, one drift point remains.
 
-Superseded 2026-05-08: the baseline ships no `_sql/`, so the former `EcomCurrencies.CurrencyUseCurrencyCodeForFormat` column-strip workaround is obsolete â€” reconstruct from git history if a future baseline reintroduces `_sql/`.
-Superseded 2026-05-08: same for the former `EcomShopGroupRelation/GROUP253$$SHOP19.yml` orphan-YAML workaround.
+Superseded: the baseline ships no `_sql/`, so the former `EcomCurrencies.CurrencyUseCurrencyCodeForFormat` column-strip workaround is obsolete â€” reconstruct from git history if a future baseline reintroduces `_sql/`.
+Superseded: same for the former `EcomShopGroupRelation/GROUP253$$SHOP19.yml` orphan-YAML workaround.
 
 ### 9.1 â€” Content predicates require Swift v2 item-type XMLs
 
 The baseline's `Content - Swift 2 (...)` predicates reference item types like `Swift-v2_Master`, `Swift-v2_PageProperties`, `Swift-v2_HomePage`, etc. â€” XML files that ship with the **Swift design package**, NOT with the data baseline. If the XMLs are not yet on disk, the Content predicates fail with `Unable to resolve the item type. The item cannot be saved.` for every page. Fix: run Â§"Design-package deploy (before any deserialize)" above (including the ProductsBackend/ProductsFrontend skip rule stated there), then re-run the deserialize unmodified.
 
-Superseded 2026-05-08: deploy-design-first is the only viable path â€” the former Approach A ("strip Content predicates") no longer applies with a content-only baseline, and running with strict mode off remains forbidden per Â§4.
+Superseded: deploy-design-first is the only viable path â€” the former Approach A ("strip Content predicates") no longer applies with a content-only baseline, and running with strict mode off remains forbidden per Â§4.
 
 ### 9.2 â€” Verified clean outcome (content-only)
 

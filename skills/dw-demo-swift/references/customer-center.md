@@ -149,7 +149,7 @@ If you can sign in as the CSR and the impersonation bar still does not list the 
 
 **If template logic genuinely needs group membership** (e.g. the Â§7 role badge â€” presentation, not gating): use `Pageview.User.GetGroups()`, non-obsolete on 10.25+ â€” see [dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) Â§"User identity / groups". Never raw `SELECT FROM AccessUserGroupRelation` in Razor; it fails the grep pack at [dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) Â§"Discipline audit â€” grep pack".
 
-> Superseded 2026-06-10: this section previously gated via per-template `foreach` filters on `PageNavigationTag`, raw `Database.ExecuteScalar` lookups on `AccessUserGroupRelation`, and a redirect guard inside `Swift-v2_CustomerCenter.cshtml`, on the claim that `Pageview.User` group APIs fail at compile time. Retracted â€” `GetGroups()` compiles on 10.25+, template SQL fails the skill's own audit, and the Permission store gates nav + URL + render without touching templates.
+> Superseded: this section previously gated via per-template `foreach` filters on `PageNavigationTag`, raw `Database.ExecuteScalar` lookups on `AccessUserGroupRelation`, and a redirect guard inside `Swift-v2_CustomerCenter.cshtml`, on the claim that `Pageview.User` group APIs fail at compile time. Retracted â€” `GetGroups()` compiles on 10.25+, template SQL fails the skill's own audit, and the Permission store gates nav + URL + render without touching templates.
 
 ### Gating the buyer (Account) sections away from the CSR — and the resolution rule
 

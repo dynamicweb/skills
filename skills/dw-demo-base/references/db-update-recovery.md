@@ -207,9 +207,9 @@ A buggy CREATE in `EcommerceUpdateProvider.cs` (or any of the standard providers
 
 ---
 
-## Known-as-of-2026-05 example
+## Worked example
 
-Hosts scaffolded from `Dynamicweb.ProjectTemplates` 1.26.0 (i.e. the `Dynamicweb.Suite` version that template + `dotnet restore` resolved as of 2026-05) ship a buggy CREATE for `EcomConsolidatedOrderPayments` in `EcommerceUpdateProvider.cs`: the PK constraint references `ConsolidatedOrderPaymentPaidByOrderId` while the column list defines `ConsolidatedOrderPaymentPaidOrderId` (no "By"). A later `sp_rename` update would have renamed `PaidByOrderId` → `PaidOrderId` if the table existed, but the table never gets created. AppStore "Backend MCP" install hits this on first install attempt.
+Hosts scaffolded from `Dynamicweb.ProjectTemplates` 1.26.0 (i.e. the `Dynamicweb.Suite` version that template + `dotnet restore` resolved) ship a buggy CREATE for `EcomConsolidatedOrderPayments` in `EcommerceUpdateProvider.cs`: the PK constraint references `ConsolidatedOrderPaymentPaidByOrderId` while the column list defines `ConsolidatedOrderPaymentPaidOrderId` (no "By"). A later `sp_rename` update would have renamed `PaidByOrderId` → `PaidOrderId` if the table existed, but the table never gets created. AppStore "Backend MCP" install hits this on first install attempt.
 
 Mode B fix: corrected PK uses `ConsolidatedOrderPaymentPaidOrderId` (matching the column list). Step B4 then marks UpdateIds `2bcced05-2b99-4a17-8c8c-af359d28fdd8` (the broken CREATE) as already-run; the cluster-index UpdateId `8df89410-14cf-44f7-85ea-5797af36937f` is typically already recorded from a prior partial replay.
 

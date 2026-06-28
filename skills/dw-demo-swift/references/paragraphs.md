@@ -53,7 +53,7 @@ paragraph" callouts below into a gate that runs for *every* rendering requiremen
 | Spec / attribute groups | `Swift-v2_ProductFieldDisplayGroupsAccordion` | `FieldDisplayGroups`, `Layout` (bullets/list/table), `HideFieldLabels` |
 | BOM / assembled-from | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page |
 
-> Proven 2026-06-21: a "category banner" requirement was first met with a hand-rolled hero template (which
+> Proven: a "category banner" requirement was first met with a hand-rolled hero template (which
 > errored twice) when `Swift-v2_ProductListGroupPoster` already does exactly that. The gate above â€” grep
 > the component dir first, classify, configure the standard component â€” is the cheaper and on-baseline path.
 
@@ -184,7 +184,7 @@ Authoring a variant cshtml lands in [`re-skin.md`](re-skin.md) Â§Pixel-perfect
 
 ### Bootstrap `.ratio` aspect-ratio token vs CSS custom-property
 
-DW10's `Swift-v2_ProductGroupGrid` admin editor stores aspect-ratio as a Bootstrap token (`1x1`, `4x3`, `16x9`) and emits it on the card as `style="--bs-aspect-ratio: 1x1"`. **Bootstrap's `.ratio` class expects `--bs-aspect-ratio` to be a percentage (`100%`, `75%`, `56.25%`)** â€” the token form is invalid CSS, the rule silently no-ops, and the card collapses to `height: 0` with `position: absolute` children spilling outside the parent. Symptom: 192 px of dead grey space where the category tile should be (2026-05-13).
+DW10's `Swift-v2_ProductGroupGrid` admin editor stores aspect-ratio as a Bootstrap token (`1x1`, `4x3`, `16x9`) and emits it on the card as `style="--bs-aspect-ratio: 1x1"`. **Bootstrap's `.ratio` class expects `--bs-aspect-ratio` to be a percentage (`100%`, `75%`, `56.25%`)** â€” the token form is invalid CSS, the rule silently no-ops, and the card collapses to `height: 0` with `position: absolute` children spilling outside the parent. Symptom: 192 px of dead grey space where the category tile should be.
 
 **Fix in `<customer>_custom.css`** â€” override the rule per `ProductGroupGrid` card with a real percentage and re-enable layout:
 
@@ -252,7 +252,7 @@ Start-Process dotnet -ArgumentList "run","--no-build" -WorkingDirectory "<demo>\
 
 After restart, wait for the host to listen on its port (`netstat -ano | findstr :<port>`) then hit the page once to warm JIT before re-walking.
 
-**Practical rule:** schedule paragraph deletion just BEFORE a host restart you were already planning to do (e.g. after a seed batch, after a styles refresh). Bundling deletion with a deliberate restart avoids the "where did this stale block come from?" hour spent on a phantom symptom.
+**Practical rule:** schedule paragraph deletion just BEFORE a host restart you were already planning to do (e.g. after a seed batch, after a styles refresh). Bundling deletion with a deliberate restart avoids chasing a "where did this stale block come from?" phantom symptom.
 
 **Related:** the user/group cache for `AccessUserSecondaryRelation` and `AccessUserUserAndGroupType` updates has the same property â€” see [customer-center.md](customer-center.md) Â§5/Â§6. The general DW10 rule: **any table whose rows are joined into a render-time composition tree (paragraphs, users, groups, navigation) is cached in-memory and needs a process restart to repopulate.**
 
@@ -260,9 +260,9 @@ After restart, wait for the host to listen on its port (`netstat -ano | findstr 
 
 There's a worse case nested inside the grid-composition cache: when a paragraph's cshtml uses `@RenderGrid(componentPage.ID)` to embed another page's grid into itself, the **inner grid's HTML is cached** and DW10 does NOT observe `ParagraphDeleted = 1` or `ParagraphShowParagraph = 0` on paragraphs inside that nested grid â€” **even after a host restart**. The cache for `RenderGrid`-of-another-page survives the process bounce that flushes everything else in this section.
 
-The canonical surface is Swift's PLP dual-page pattern: a wrapper page hosts a `Swift-v2_ProductListComponentSelector` paragraph that does `@RenderGrid(<inner-page-id>)`; the inner page has its own paragraphs (facets, item-repeater, often a bottom `Swift-v2_ProductListInfo`). Soft-hiding or deleting paragraphs on the inner page leaves them rendered on the wrapper page indefinitely. **The same applies to the PDP's component-source pages** (the product-info / purchase-panel pages a Swift PDP composes via the same pattern) â€” confirmed on a 10.25.x build where a duplicate `ProductVariantSelector` paragraph on a PDP component page ignored `ShowParagraph = 0` even after a host restart (2026-06-09).
+The canonical surface is Swift's PLP dual-page pattern: a wrapper page hosts a `Swift-v2_ProductListComponentSelector` paragraph that does `@RenderGrid(<inner-page-id>)`; the inner page has its own paragraphs (facets, item-repeater, often a bottom `Swift-v2_ProductListInfo`). Soft-hiding or deleting paragraphs on the inner page leaves them rendered on the wrapper page indefinitely. **The same applies to the PDP's component-source pages** (the product-info / purchase-panel pages a Swift PDP composes via the same pattern) â€” confirmed on a 10.25.x build where a duplicate `ProductVariantSelector` paragraph on a PDP component page ignored `ShowParagraph = 0` even after a host restart.
 
-**The "two ProductListInfo paragraphs" anatomy.** Swift's stock catalog setup ships a PLP wrapper page (e.g. PageId 71) that hosts `Breadcrumb + ProductListInfo (h3, large title) + ProductListComponentSelector + ProductListNavigation`, plus an inner component-source page (e.g. PageId 57) that the selector renders via `@RenderGrid`. The inner page carries `ProductListFacets + ProductListItemRepeater + a second ProductListInfo (h6, small title)`. The small h6 ProductListInfo lands *under* the product grid + counter â€” visually identical to an orphan category title floating at the bottom of the PLP. SQL `ParagraphDeleted=1` / `ParagraphShowParagraph=0` on the inner paragraph does not hide it (per the cache rule above). CSS-hide the bottom variant explicitly (2026-05-13):
+**The "two ProductListInfo paragraphs" anatomy.** Swift's stock catalog setup ships a PLP wrapper page (e.g. PageId 71) that hosts `Breadcrumb + ProductListInfo (h3, large title) + ProductListComponentSelector + ProductListNavigation`, plus an inner component-source page (e.g. PageId 57) that the selector renders via `@RenderGrid`. The inner page carries `ProductListFacets + ProductListItemRepeater + a second ProductListInfo (h6, small title)`. The small h6 ProductListInfo lands *under* the product grid + counter â€” visually identical to an orphan category title floating at the bottom of the PLP. SQL `ParagraphDeleted=1` / `ParagraphShowParagraph=0` on the inner paragraph does not hide it (per the cache rule above). CSS-hide the bottom variant explicitly:
 
 This inverts the [`cache-invalidation.md`](../../dw-demo-pim/references/cache-invalidation.md) "edit-vs-insert rule": UPDATEs on existing rows are normally live, but a `ParagraphDeleted` / `ParagraphShowParagraph` flip on a paragraph rendered through `RenderGrid` is *not*. The `RenderGrid` HTML cache is keyed by the source page id, not by individual paragraph row state.
 
@@ -277,6 +277,6 @@ Scope the rule as tightly as possible â€” by item-type class, by paragraph-
 
 **Practical rule:** if a paragraph is inside a page that is `@RenderGrid`-rendered from another page, **assume soft-hide and delete won't work** and reach for CSS-hide on first attempt. Likely fires anywhere a Swift component-selector pattern is in play (the PLP wrapper is the most common, but the pattern is generic to any `RenderGrid(<otherPageId>)` invocation).
 
-**Cross-AREA corollary (validated 2026-06-10):** the cache is keyed by source page id only â€” not by area or culture. If a language layer's component selectors still point at the MASTER's component pages (which is what AreaCopy leaves behind), both areas share one cache entry and whichever context renders first wins: the layer can serve master-language labels, or the master can serve a render produced in the layer's anonymous context. The durable fix is to repoint the layer's `ComponentSource` at the layer's own component-page clones â€” separate page ids, separate cache entries, separately translatable items. See [`language-layers.md`](language-layers.md) Â§"What a full-content AreaCopy does NOT carry".
+**Cross-AREA corollary:** the cache is keyed by source page id only â€” not by area or culture. If a language layer's component selectors still point at the MASTER's component pages (which is what AreaCopy leaves behind), both areas share one cache entry and whichever context renders first wins: the layer can serve master-language labels, or the master can serve a render produced in the layer's anonymous context. The durable fix is to repoint the layer's `ComponentSource` at the layer's own component-page clones â€” separate page ids, separate cache entries, separately translatable items. See [`language-layers.md`](language-layers.md) Â§"What a full-content AreaCopy does NOT carry".
 
 

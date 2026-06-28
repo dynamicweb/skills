@@ -250,7 +250,7 @@ When you need the current loop position:
 | Mixed data sources (some dynamic, some static HTML) | **ViewModels** for dynamic parts, plain HTML for static |
 | Performance-sensitive list rendering (100+ items) | **ViewModels** (lazy-loading) |
 | Need type safety and IDE support | **ViewModels** |
-| Quick prototype or one-off template | **ViewModels** (saves time debugging typos) |
+| Quick prototype or one-off template | **ViewModels** (type-safe access, no typo-prone string keys) |
 
 ## Gotchas
 

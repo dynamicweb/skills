@@ -6,7 +6,7 @@
 
 ## 1. Schema â€” five tables, two foreign-key columns
 
-Source: `dw10source/src/Core/Dynamicweb.Core/Security/Workflows/` (verified 2026-05-21). Class files present: `Workflow.cs`, `WorkflowState.cs`, `WorkflowStateRepository.cs`, `WorkflowNotification.cs`, `WorkflowNotificationRepository.cs`, `WorkflowRepository.cs`, `WorkflowService.cs`, `WorkflowNotificationService.cs`, `WorkflowStateService.cs`, `WorkflowUsage.cs`. No `WorkflowGoToState.cs` file â€” the table is read/written directly from `WorkflowStateRepository.cs` (lines 41-77 via `GetGoToStates` / `SetGoToStates`) and the schema can only be cited by symbol + the SQL strings in that repository.
+Source: `dw10source/src/Core/Dynamicweb.Core/Security/Workflows/`. Class files present: `Workflow.cs`, `WorkflowState.cs`, `WorkflowStateRepository.cs`, `WorkflowNotification.cs`, `WorkflowNotificationRepository.cs`, `WorkflowRepository.cs`, `WorkflowService.cs`, `WorkflowNotificationService.cs`, `WorkflowStateService.cs`, `WorkflowUsage.cs`. No `WorkflowGoToState.cs` file â€” the table is read/written directly from `WorkflowStateRepository.cs` (lines 41-77 via `GetGoToStates` / `SetGoToStates`) and the schema can only be cited by symbol + the SQL strings in that repository.
 
 | Table | Columns | Purpose |
 |---|---|---|
@@ -37,7 +37,7 @@ This is the key fact behind the PIM-first story: a DataModelFolder (GroupType=1)
 
 ## 3. The state-change subscriber â€” emails fire from state changes
 
-Source: `dw10source/src/Features/Ecommerce/Dynamicweb.Ecommerce/Products/ProductWorkflowStateChangedSubscriber.cs` (verified 2026-05-21).
+Source: `dw10source/src/Features/Ecommerce/Dynamicweb.Ecommerce/Products/ProductWorkflowStateChangedSubscriber.cs`.
 
 The subscriber wires `Notifications.Ecommerce.Product.ProductWorkflowStateChanged` to email sending:
 
@@ -70,7 +70,7 @@ Same as Â§3: `wwwroot/Files/Templates/PIM/Workflow Notifications/<filename>.cs
 
 ## 5. VERIFIED GAP â€” DW10 workflow has NO per-state role gating
 
-This is the one place DW10's workflow engine falls short of "out of the box for enterprise approval flows", and the gap is the same shape in every release as of 2026-05-21:
+This is the one place DW10's workflow engine falls short of "out of the box for enterprise approval flows", and the gap is the same shape in every release:
 
 **Confirmed in source** (`$env:DW_VAULT/dw10source/src/Core/Dynamicweb.Core/Security/Workflows/`):
 
@@ -105,7 +105,7 @@ Single `.cs` file. Ships under the "NotificationSubscriber" customisation budget
 
 ### 6.2 Custom capability key + permission-gated action
 
-Wire a custom "Approve" / "Publish" button to a dedicated capability key (e.g. `/Products/Workflow/Approve`) with `PermissionLevelRequired = PermissionLevel.Create`. This is the same pattern the native "Publish to channel" action uses (`ProductListScreen.cs:726-743`, verified 2026-05-21; there is also a duplicate inline-form "Publish to channel" at line 372, and the bulk-action wiring is at line 420).
+Wire a custom "Approve" / "Publish" button to a dedicated capability key (e.g. `/Products/Workflow/Approve`) with `PermissionLevelRequired = PermissionLevel.Create`. This is the same pattern the native "Publish to channel" action uses (`ProductListScreen.cs:726-743`; there is also a duplicate inline-form "Publish to channel" at line 372, and the bulk-action wiring is at line 420).
 
 Layer B (capability) hides the button entirely from non-approvers (see [`permissions-model.md`](permissions-model.md) Â§3 for the capability tree). When the button isn't rendered, the user can't even attempt the transition.
 
@@ -138,6 +138,6 @@ In all three workarounds, **add the audit-log subscriber** anyway: a `Notificati
 - **Customisations budget** â€” [`dynamicweb-demo-base/references/customisations.md`](../../dw-demo-base/references/customisations.md). `NotificationSubscriber` and scheduled-task surfaces are NOT in the preflight glob â€” Â§6.1 and the audit-log subscriber ship unprompted.
 - **Cache invalidation** â€” [`cache-invalidation.md`](cache-invalidation.md). State transitions via `WorkflowStateService.Save` go through the domain service and invalidate caches inline; raw `UPDATE EcomProducts SET ProductWorkflowStateId = â€¦` does NOT fire the `ProductWorkflowStateChanged` notification at all (so emails won't fire either) â€” use the service, not raw SQL.
 
-Source-citation line numbers re-verified against `$env:DW_VAULT/dw10source/` on 2026-05-21.
+Source-citation line numbers re-verified against `$env:DW_VAULT/dw10source/`.
 
 

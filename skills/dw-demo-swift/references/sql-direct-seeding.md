@@ -15,7 +15,7 @@ Everything below assumes you've already chosen SQL. If you're still deciding, es
 
 ## Required NOT-NULL columns â€” `Page` row
 
-DW10 returns 404 for a SQL-inserted Page even when the slug resolves correctly, unless every column below carries a real value (2026-05-13):
+DW10 returns 404 for a SQL-inserted Page even when the slug resolves correctly, unless every column below carries a real value:
 
 ```sql
 INSERT INTO Page (
@@ -42,7 +42,7 @@ INSERT INTO Page (
 
 The `PageActiveFrom` / `PageActiveTo` columns are the silent killers â€” without them DW's page-resolution treats the row as scheduled-out and returns 404 even though the slug resolves. The other NOT-NULL columns surface a more useful `Cannot insert NULL` error on first attempt.
 
-**Post-INSERT.** Restart the host â€” page-resolution cache does not observe SQL-direct INSERTs (2026-05-13). See [`../../dw-demo-pim/references/cache-invalidation.md`](../../dw-demo-pim/references/cache-invalidation.md) for the cache table. After restart, hit the page once to warm JIT, then continue seeding.
+**Post-INSERT.** Restart the host â€” page-resolution cache does not observe SQL-direct INSERTs. See [`../../dw-demo-pim/references/cache-invalidation.md`](../../dw-demo-pim/references/cache-invalidation.md) for the cache table. After restart, hit the page once to warm JIT, then continue seeding.
 
 ## Required NOT-NULL columns â€” `GridRow` row
 
@@ -63,7 +63,7 @@ INSERT INTO GridRow (
 
 ## Required NOT-NULL columns â€” `Paragraph` row
 
-Most error-prone of the three â€” DW10's `Paragraph` schema has more NOT-NULL columns than the other content tables, and a handful (`ParagraphGlobalId`, `ParagraphValidFrom/To`, `ParagraphTemplate`) trip up demo seeders the first time (2026-05-13):
+Most error-prone of the three â€” DW10's `Paragraph` schema has more NOT-NULL columns than the other content tables, and a handful (`ParagraphGlobalId`, `ParagraphValidFrom/To`, `ParagraphTemplate`) trip up demo seeders the first time:
 
 ```sql
 INSERT INTO Paragraph (
@@ -98,7 +98,7 @@ INSERT INTO Paragraph (
 
 **`ParagraphTemplate` is the optional-looking column you do NOT want to omit** â€” leaving it `NULL` or `''` invokes Swift's empty-template alphabetical fallback; the hijack symptom + mitigations live in [`paragraphs.md` "Empty `ParagraphTemplate` resolves to the first cshtml alphabetically"](paragraphs.md).
 
-**Post-INSERT.** Restart the host. Observed every time during the seed flow: SQL-direct Paragraph INSERTs do not render until the page-composition cache is flushed (2026-05-13).
+**Post-INSERT.** Restart the host. Observed every time during the seed flow: SQL-direct Paragraph INSERTs do not render until the page-composition cache is flushed.
 
 ## `ItemType_*` rows â€” pre-seeding the paragraph's item instance
 
@@ -116,11 +116,11 @@ INSERT INTO [ItemType_Swift-v2_Text] (
 
 ### `ItemInstanceType` is `nvarchar NOT NULL` â€” use empty string, not NULL
 
-Several `ItemType_Swift-v2_*` tables ship with `ItemInstanceType nvarchar NOT NULL`. SQL inserts with `NULL` fail with `Cannot insert the value NULL into column 'ItemInstanceType'`. **Use empty string `''` instead** (2026-05-13). Affects: `ItemType_Swift-v2_ProductStock`, `ItemType_Swift-v2_RowFlex`, and most `Swift-v2_*` item types â€” the column is leftover from a legacy DW shape and is normally populated by the admin item editor as empty string on save.
+Several `ItemType_Swift-v2_*` tables ship with `ItemInstanceType nvarchar NOT NULL`. SQL inserts with `NULL` fail with `Cannot insert the value NULL into column 'ItemInstanceType'`. **Use empty string `''` instead**. Affects: `ItemType_Swift-v2_ProductStock`, `ItemType_Swift-v2_RowFlex`, and most `Swift-v2_*` item types â€” the column is leftover from a legacy DW shape and is normally populated by the admin item editor as empty string on save.
 
 ### `MAX(Id)` on `nvarchar` ID columns lies â€” use `TRY_CAST`
 
-`ItemType_Swift-v2_*.Id` and many neighbouring DW10 ID columns are `nvarchar` despite holding integer values. `SELECT MAX(Id) FROM [ItemType_Swift-v2_Page]` returns `'9'` even when `'50'` exists, because the sort is lexicographic (2026-05-13). Use:
+`ItemType_Swift-v2_*.Id` and many neighbouring DW10 ID columns are `nvarchar` despite holding integer values. `SELECT MAX(Id) FROM [ItemType_Swift-v2_Page]` returns `'9'` even when `'50'` exists, because the sort is lexicographic. Use:
 
 ```sql
 DECLARE @nextId int = ISNULL((SELECT MAX(TRY_CAST(Id AS int))
@@ -132,7 +132,7 @@ The `TRY_CAST` form drops non-numeric ids (rare but legal) instead of failing th
 
 ## Inserting between existing rows â€” `GridRowSort Ã— 10` slot reservation
 
-To squeeze a new Paragraph or GridRow between existing siblings (e.g. inserting `ProductStock` between `ProductPrice` and `ProductVariantSelector` on a PDP component-source page), the cleanest path is to multiply existing sorts by 10 to create slots, then INSERT at an intermediate value (2026-05-13):
+To squeeze a new Paragraph or GridRow between existing siblings (e.g. inserting `ProductStock` between `ProductPrice` and `ProductVariantSelector` on a PDP component-source page), the cleanest path is to multiply existing sorts by 10 to create slots, then INSERT at an intermediate value:
 
 ```sql
 -- Open up slots between existing rows
@@ -156,7 +156,7 @@ This sidesteps the "duplicate sort" issue â€” DW10 renders ties in non-dete
 
 After every batch of Page / GridRow / Paragraph SQL INSERTs:
 
-1. **Restart the host** â€” page-resolution + grid-composition caches do not observe SQL writes. The bounce is ~30 seconds on a warm SQL Express; bundle multiple INSERTs + one restart, not per-INSERT restarts.
+1. **Restart the host** â€” page-resolution + grid-composition caches do not observe SQL writes. Bundle multiple INSERTs behind a single restart, not per-INSERT restarts.
 2. **Hit the page once** with a GET request to warm JIT.
 3. **Confirm in the browser** that the new content renders. If the Paragraph wrapper appears but the inner item-type fields are empty, the `ItemType_*` instance row is missing or its `Id` doesn't match `ParagraphItemId`.
 4. **Run the post-deserialize integrity sweep** if the seed was substantial enough to plausibly break invariants â€” see [`integrity-sweep.md`](integrity-sweep.md).

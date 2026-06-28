@@ -34,7 +34,7 @@ The naive `save_paragraphs` create-with-`itemType=Swift-v2_Text` path does NOT a
 
 **Caveat:** `active=false` on `save_paragraphs` does NOT reliably persist for already-existing paragraphs â€” if you need to retire an obsolete paragraph on the page, clear its `text`/`header` fields and let it render empty rather than expecting `active=false` to hide it. (The same no-op applies to `ShowParagraph` via the Management API â€” there, hide via `ParagraphDelete` instead.)
 
-**Hosted/API-only installs:** the same clone-then-rewrite chain maps onto the Management API â€” copy a simple page as the carrier (`PageCopy`; clear the inherited `shortCut`), `ParagraphCopy` an existing Swift-v2_Text paragraph onto it, `GridRowCopy` a 1-column row, then `ParagraphSave` round-trips for content and row attachment. Endpoint shapes in [`dynamicweb-demo-base/references/online-mode.md`](../../dw-demo-base/references/online-mode.md) (validated DW 10.25.x, 2026-06-10).
+**Hosted/API-only installs:** the same clone-then-rewrite chain maps onto the Management API â€” copy a simple page as the carrier (`PageCopy`; clear the inherited `shortCut`), `ParagraphCopy` an existing Swift-v2_Text paragraph onto it, `GridRowCopy` a 1-column row, then `ParagraphSave` round-trips for content and row attachment. Endpoint shapes in [`dynamicweb-demo-base/references/online-mode.md`](../../dw-demo-base/references/online-mode.md) (validated DW 10.25.x).
 
 ## Reality-check role
 

@@ -1,6 +1,6 @@
 # b2b-dc-pattern.md
 
-> The canonical Dynamicweb 10 B2B pattern for any portal where pricing, stock, shipping methods, or shipping fees vary by Distribution Center (DC). Vendor-blessed by the Dynamicweb vendor architect (2026-05-13 architecture call).
+> The canonical Dynamicweb 10 B2B pattern for any portal where pricing, stock, shipping methods, or shipping fees vary by Distribution Center (DC). Vendor-blessed by the Dynamicweb vendor architect (architecture call).
 >
 > **This is the standard B2B mechanic in DW10, not an upgrade path.** Treat it as the default scaffold for any wholesale / B2B-distributor demo that touches DC-aware behavior â€” not as something to design when the customer asks for it explicitly. Customers expect it; framing it as bespoke would invent friction that DW10 doesn't have.
 

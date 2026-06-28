@@ -40,7 +40,7 @@ For dashboard widget queries, put each `.query` + `.configuration` file in **exa
 
 Do **NOT** also place a GUID-identical copy under `/Files/System/Repositories/Products/<subfolder>/`. Feed queries at `/Files/System/Repositories/Products/` root (e.g. `Tributech.query`, `BC.query`, `GPL.query`) are a separate category — they're resolved by repository+filename for `EcomFeed.FeedIndexQueryId` and must stay at the repo root.
 
-**Why it matters** (DW10 bug I hit on 2026-04-23, demo day minus 1):
+**Why it matters** (a DW10 bug):
 
 `QueryHelper.InitQueriesCache` (in `Dynamicweb.Core`) populates the cache from `SmartSearches` first, then `Repositories`, and **overwrites on GUID collision**:
 ```csharp
