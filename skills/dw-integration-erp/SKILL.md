@@ -30,7 +30,7 @@ The central concept in ERP integration is **data ownership** — which system is
 | Shipment confirmations | ERP | ERP → Dynamicweb |
 | Customer credit | ERP | Live query |
 
-**Rule:** Never write to ERP-owned fields from the Dynamicweb admin — changes will be overwritten on the next sync. Use field-locking or read-only UI settings to prevent accidental edits.
+**Rule:** Treat ERP-owned fields as read-only in the Dynamicweb admin — manual edits are overwritten on the next sync. Use field-locking or read-only UI settings to prevent accidental edits.
 
 ## Standard Integration Flow Pattern
 

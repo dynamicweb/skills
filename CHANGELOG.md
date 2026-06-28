@@ -3,6 +3,23 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.3.4]
+
+### Changed
+- **Recast bare prohibitions as positive (or paired) instructions across the skill set.** Models
+  follow "do A" more reliably than a bare "don't do B" — a bare prohibition raises B's salience and
+  leaves the target underspecified. Converted bare directive prohibitions to positive form where the
+  target was obvious, and to the paired "do A, not B" form where B is the model's natural pull (raw
+  SQL on core tables, URL-parsing to identify a product, disabling strict mode, auto-fixing a
+  User-scope mutation, starting new templates on TemplateTags, etc.). The flagship case is
+  `dw-demo-swift/references/dw10-canonical-surfaces.md`, whose nine `NEVER:` bullets each now name
+  the canonical surface alongside the boundary. Already-paired negations, descriptive prose, few-shot
+  anti-pattern blocks, and hard one-way contracts were left as-is.
+- **Encoded the principle in the authoring guidance** so new skills and fold-backs follow it: a
+  "Phrase instructions positively" rule in `dw-demo-base/references/iterate-plugin.md` (with the test
+  for when contrast earns its place, and the few-shot exemption) and a pointer to it from
+  `CLAUDE.md`. Applied the rule to the guidance's own prohibitions too.
+
 ## [3.3.3]
 
 ### Changed

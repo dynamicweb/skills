@@ -9,7 +9,7 @@
 - **Read user**: `Pageview.User` (the model; not a viewmodel). Public properties include `ID`, `Name`, `FirstName`, `LastName`, `UserName`, `Email`, `CustomerNumber`, `PointBalance`.
 - **Read user groups**: `Pageview.User.GetGroups()` returns `IEnumerable<UserGroup>`. Non-obsolete on 10.25+ â€” see `src/Core/Dynamicweb.Core/Security/UserManagement/User.cs:717`. `User.HasGroup(int)` (User.cs:1329) is `[Obsolete]` but compiles.
 - **From viewmodel side**: `UserViewModelExtensions.GetDirectUserGroups()` (`Frontend/UserViewModelExtensions.cs:54`).
-- **NEVER**: raw `SELECT FROM AccessUserGroupRelation` in Razor.
+- **Read user groups via `Pageview.User.GetGroups()`, never raw `SELECT FROM AccessUserGroupRelation` in Razor.**
 
 ## Permissions â€” the entity store
 
@@ -66,51 +66,51 @@ Fix: revert the legacy-column write, INSERT the equivalent row into `Permission`
 
 - **Read tier prices**: `Services.Prices.GetByProductId(productId)` â€” currency / customer-group / shop scoped by the configured `IPriceProvider`. dw10source `Prices/Price.cs:179`.
 - **Custom price logic**: `PriceProvider` subclass. dw10source `Prices/PriceProvider.cs:17`. Override `FindPrice(PriceContext, PriceProductSelection)` for line price, `FindQuantityPrices` for qty-break tier rows, `PreparePrices` for batched ERP fetch.
-- **NEVER**: raw `SELECT FROM EcomPrices` in Razor. The query returns rows from all customer-group scopes, leaking pricing.
+- **Read prices through `Services.Prices.GetByProductId`, never raw `SELECT FROM EcomPrices` in Razor.** The query returns rows from all customer-group scopes, leaking pricing.
 
 ## Orders
 
 - **Read customer orders**: `Services.Orders.GetCustomerOrdersByType(int customerId, string shopIds, OrderType, int recurringOrderId, string customerNumber, string orderContextIds, DateTime fromDate, bool includeImpersonation, bool isCart, bool includeUserAndSecondaryUserIds)`. dw10source `Orders/OrderRepository.cs:1905`.
 - **Search**: `Services.Orders.GetOrdersBySearch(OrderSearchFilter filter)`. `OrderRepository.cs:1196`.
 - **Both return `Order` aggregates** with `.OrderLines` materialised.
-- **NEVER**: hand-roll a 4-subquery `EcomOrders/EcomOrderLines` SQL chain in Razor.
+- **Read customer orders via `Services.Orders.GetCustomerOrdersByType(...)`, never a hand-rolled 4-subquery `EcomOrders/EcomOrderLines` SQL chain in Razor.**
 
 ## Products
 
 - **Get product**: `Services.Products.GetProductById(productId, variantId, true)` (the `true` = include all fields, materialise `ProductFieldValues`).
 - **Get product URL**: `Services.Products.GetProductUrl(...)` or `SearchEngineFriendlyURLs.GetFriendlyUrl(...)`.
 - **Get product groups**: `Services.ProductGroups.GetGroup(id).Subgroups`.
-- **NEVER**: parse a URL or `Request.RawUrl` to identify a product.
+- **Identify a product via `Services.Products.GetProductById(...)`, never by parsing a URL or `Request.RawUrl`.**
 
 ## URLs
 
 - **Friendly URL for a page**: `SearchEngineFriendlyURLs.GetFriendlyUrl(pageId)`.
 - **Page ID by tag**: `GetPageIdByNavigationTag("tag")` (helper available in Swift templates).
 - **Canonical share URL**: `Pageview.Meta.Canonical?.ToString()` (NOT `Request.Url.AbsoluteUri` â€” that captures tracking params + proxy hostnames).
-- **NEVER**: hard-code area prefixes (`/<brand-slug>/...`) or synthesize `/Default.aspx?ID=...` strings.
+- **Build links via `SearchEngineFriendlyURLs.GetFriendlyUrl(...)` / `GetPageIdByNavigationTag(...)`, never hard-coded area prefixes (`/<brand-slug>/...`) or synthesized `/Default.aspx?ID=...` strings.**
 
 ## Stylesheets / scripts
 
 - **Page-scoped css/js**: `AddStylesheet(...)` / `AddScript(...)` in the same `@{}` block as the paragraph setup code. Swift master hoists, dedups, orders.
 - **Project-scoped includes**: `Area.Item.CustomHeadInclude` field pointing at `Custom\<Customer>HeadInclude.cshtml`. The stock master already renders this partial if set. Stock example: `Custom\CustomHeadIncludeExample.cshtml`. See also [`re-skin.md`](re-skin.md) Â§"Wiring up project-scoped custom.css".
-- **NEVER**: inline `<script src="...">` in a paragraph template (re-emits per paragraph appearance, breaks cache-busting). **NEVER**: inline `AddStylesheet(...)` in `Swift-v2_Master.cshtml`.
+- **Add scripts via `AddScript(...)` in the paragraph's `@{}` block, never an inline `<script src="...">` in a paragraph template** (an inline tag re-emits per paragraph appearance and breaks cache-busting). **Add project-scoped includes via `Area.Item.CustomHeadInclude`, never an inline `AddStylesheet(...)` in `Swift-v2_Master.cshtml`.**
 
 ## Cross-cutting redirects (anon gate, role gate, etc.)
 
 - **Canonical hook**: a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` that sets `loadedArgs.OutputResult = new RedirectOutputResult { RedirectUrl = ... }`. Fires before any Razor streams. dw10source `PageView.cs:388-392`. **A subscriber is NOT a hit on the customisations-ledger preflight** â€” see [`../../dw-demo-base/references/customisations.md`](../../dw-demo-base/references/customisations.md) Â§"What the rule *actually* forbids vs. doesn't forbid".
 - **For "anon hits a permission-required page"**: don't write anything. Configure `Page.PermissionType = 0` + a `Permission` row, and `CheckPermissionsAndRedirect()` takes care of it.
-- **NEVER**: `WriteLiteral` + `return;` from inside `Swift-v2_Master.cshtml`. That's a workaround for using the wrong layer.
+- **Use a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` for cross-cutting redirects, never `WriteLiteral` + `return;` from inside `Swift-v2_Master.cshtml`.** That's a workaround for using the wrong layer.
 
 ## Per-category behavior
 
 - **Storage**: `ProductGroup.ProductGroupFieldValues` (group-level custom fields).
 - **Read**: `product.PrimaryOrDefaultGroup.ProductGroupFieldValues["FieldName"]`.
-- **NEVER**: `product.PrimaryOrDefaultGroup.Name.Contains("roof")` in Razor. Marketing renames the group â†’ silent breakage.
+- **Read per-category behavior from `product.PrimaryOrDefaultGroup.ProductGroupFieldValues["FieldName"]`, never `product.PrimaryOrDefaultGroup.Name.Contains("roof")` in Razor.** Marketing renames the group â†’ silent breakage.
 
 ## Product field arrays / lists
 
 - **Define**: a `ProductField` of type `ListBox` / `EditableList` / repeater.
-- **NEVER**: regex on `LongDescription` to lift `<li>` items.
+- **Read list data from a `ProductField` (`ListBox` / `EditableList` / repeater), never regex on `LongDescription` to lift `<li>` items.**
 
 ## Custom item types â€” the `<Prefix>_*` discipline
 

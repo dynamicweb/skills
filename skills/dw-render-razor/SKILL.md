@@ -117,7 +117,7 @@ Examples: See [dw-render-viewmodels](../dw-render-viewmodels/SKILL.md) for compr
 - **Performance overhead** — retrieves all data, doesn't lazy-load
 - **Being phased out** — new features are added to ViewModels, not TemplateTags
 
-**When to use:** Only when working with legacy templates that predate ViewModels. Do not start new templates with TemplateTags.
+**When to use:** Only when working with legacy templates that predate ViewModels. Start new templates with ViewModels, not TemplateTags.
 
 For TemplateTags details, see [dw-render-templatetags](../dw-render-templatetags/SKILL.md).
 
@@ -262,7 +262,7 @@ When you need the current loop position:
 
 **Case sensitivity in TemplateTags**: Property names in `GetString("Product.Name")` are case-sensitive. Typos cause silent failures.
 
-**Loop variable scope**: Loop variables (from `@foreach`) are local to that loop. Don't try to reference them outside the loop block.
+**Loop variable scope**: Loop variables (from `@foreach`) are local to that loop. Reference them only inside their loop block.
 
 ## Next Steps
 

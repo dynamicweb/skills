@@ -109,7 +109,7 @@ If the automated script fails (no sqlpackage, download blocked, wrong SQL Server
      -DynamicwebUrl "https://localhost:5001" `
      -FilesPath "C:\MyProject\wwwroot\Files"
    ```
-   - Do not continue until `/admin` no longer redirects to `/admin/license`
+   - Continue only once `/admin` no longer redirects to `/admin/license`
 
 8. **Bootstrap MCP**: `POST /admin/mcp/bootstrap` with the secret from `Files/System/mcp-bootstrap.json`
 
@@ -129,7 +129,7 @@ This bootstraps, persists credentials, writes MCP config, and validates connecti
 For agent-driven setup, this means writing the Dynamicweb MCP server into the config used by the
 current agent and verifying the connection before continuing.
 
-This step is mandatory. Do not treat the installation as ready for agent use until the MCP server
+This step is mandatory. Treat the installation as ready for agent use only once the MCP server
 entry exists in the active agent config.
 
 If the script cannot attach automatically, stop the automation, explain the exact manual config

@@ -179,7 +179,7 @@ Note: auto-rebuild on save does NOT remove deleted products from the index. Only
 
 **Expensive ViewModel properties on lists** — `StockLevel`, `Prices`, `FieldDisplayGroups`, and image collections hit the database per product. Disable unused properties in the app's Product Properties settings for list templates.
 
-**Facet fields must not be Analyzed** — if a facet field is analyzed, values like "Light Blue" split to "light" and "blue", corrupting facet display and filtering.
+**Set facet fields to non-analyzed** — an analyzed facet field splits values like "Light Blue" into "light" and "blue", corrupting facet display and filtering.
 
 **Search index out of sync after deletes** — only full rebuilds remove deleted products. An Update build does not detect deletions.
 

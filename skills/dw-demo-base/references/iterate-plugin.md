@@ -233,15 +233,24 @@ Voice + structure rules (match what's already there):
   default), then the **how** (commands, recipes, verification).
 - Concrete commands beat prose. Include the exact `dotnet`, `git`, `Invoke-RestMethod`,
   `sqlcmd`, or PowerShell snippet that worked.
+- **Phrase instructions positively — say what to do, not just what to avoid.** A model follows
+  "DO A" more reliably than "don't do B": a bare prohibition raises B's salience and leaves the
+  target underspecified. Reach for contrast only when B is the model's natural pull *and* a
+  predictable failure mode, and then prefer the paired form ("serialize with the DW serializer,
+  not a raw XML export") over a bare "don't" — it gives both the target and the boundary. A
+  one-line reason sharpens it further ("read prices through the ViewModel — a raw `SELECT` leaks
+  cross-scope pricing"). A bare "don't do B" is the last resort. A good test: would a competent
+  model, reading only "DO A", still plausibly do B? If no, the "not B" is noise; drop it.
+  (Few-shot bad→good example pairs are exempt — that's a different mechanism.)
 - Prefer rewriting the existing text over appending below it (Step 1b §3). If a future reader
   could mistake the new content for hypothetical advice, mark it as proven inline — sparingly.
   **Keep dates out of the skill body: the date lives in `git log`. Never "today" / "this morning" / a `(verified <date>)` stamp.** (Step 1a).
 - **Provenance citations name roles, never individuals or dates.** "Per the Dynamicweb vendor
   architect" — not "Per `<Person Name>` (2026-05-13 …)". Apply
   to customer-side, partner-side, AND vendor-side individuals.
-- Don't break existing cross-references. If you change a heading, search the other skills for
-  links to it and update them too. **Never add a link from a foundational skill into a
-  `dw-demo-*` skill** (the one-way rule).
+- Keep existing cross-references intact. If you change a heading, search the other skills for
+  links to it and update them too. **Links flow one way: a `dw-demo-*` skill may reference a
+  foundational one, never the reverse** (the one-way rule).
 
 ## Step 3 — Validate
 

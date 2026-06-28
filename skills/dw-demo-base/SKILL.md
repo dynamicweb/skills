@@ -34,7 +34,7 @@ The canonical flow below assumes a **local install** (scaffold + SQL Express + v
 
 ## Canonical end-to-end flow
 
-DO NOT skip any step. Each step's reference contains its own verification gate; the skill **refuses to declare setup complete** until every gate passes.
+Walk every step in order — skip none. Each step's reference contains its own verification gate; the skill **refuses to declare setup complete** until every gate passes.
 
 1. **Verify the environment is build-ready** -> [references/setup-checks.md](references/setup-checks.md)
    Probes env vars (`DW_VAULT`, `NODE_TLS_REJECT_UNAUTHORIZED`), the **.NET 10 SDK** (mandatory â€” rationale in `references/scaffold.md` Â§2.1), `Dynamicweb.ProjectTemplates`, the SQL Express service, MSDTC, and the five vault slots from `$env:DW_VAULT\INDEX.md`. Posture: verify + opt-in fix for cheap fixes (env vars); print-and-link only for install-grade fixes (SDK, SQL Express).

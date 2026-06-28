@@ -54,7 +54,7 @@ Each check follows the same shape: **Why** â†’ **Probe** â†’ **Expecte
 >
 > After this, you'll need to **close ALL Claude Code instances and reopen from a fresh PowerShell** for the new value to be visible to MCP/Node tooling. Approve? [Set + restart guidance / Specify different path / Skip]"
 
-**Don't fix automatically.** This is a User-scope mutation; user opt-in is the contract.
+**Ask before fixing — never auto-apply.** This is a User-scope mutation; user opt-in is the contract.
 
 **Dual-set pattern:** Always set both the User-scope persistent var AND the current-process `$env:VAR`. The two-line setter above does both. See Section 4.
 
