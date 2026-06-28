@@ -16,7 +16,7 @@ description: Choose appropriate data-access patterns and optimize caching in Dyn
 | Reporting / large aggregate queries | **`Database` static class** — services load full objects; SQL is more efficient for aggregates |
 | Cross-domain joins not possible via API | **`Database` static class** with read-only queries |
 
-**Never use raw SQL on Ecommerce core tables** (EcomProducts, EcomOrders, etc.) for writes — bypasses cache invalidation and notification subscribers.
+**Use the Service API for writes to Ecommerce core tables** (EcomProducts, EcomOrders, etc.), never raw SQL — raw SQL bypasses cache invalidation and notification subscribers.
 
 ## Database Static Class
 

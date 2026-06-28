@@ -129,7 +129,7 @@ $resp = Invoke-RestMethod `
 # On failure: HTTP 4xx with CumulativeStrictModeException details.
 ```
 
-**Do NOT disable strict mode** by passing a `strictMode` query parameter or body field set to a falsy value. Strict mode is the first line of defence (FK orphans, missing templates, cache failures, schema drift). Disabling it produces a deserialized DB that *looks* succeeded but is silently inconsistent â€” the deserialize-blind failure mode in its purest form.
+**Keep strict mode on; never disable it** by passing a `strictMode` query parameter or body field set to a falsy value. Strict mode is the first line of defence (FK orphans, missing templates, cache failures, schema drift). Disabling it produces a deserialized DB that *looks* succeeded but is silently inconsistent â€” the deserialize-blind failure mode in its purest form.
 
 If the POST returns 4xx with a `CumulativeStrictModeException` body, the body itself is the diagnostic. Read the listed FK orphans / missing templates / schema drift entries; the fix is almost always upstream (the baseline YAML), not on the host. Cross-check `$env:DW_VAULT\INDEX.md`'s `serialized-data` row version stamp to confirm the baseline version matches the host's DW10 version (the baseline-drift self-diagnosis rule).
 

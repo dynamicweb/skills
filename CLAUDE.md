@@ -79,6 +79,16 @@ description: Create and configure Dynamicweb 10 dashboards and widgets using MCP
 Demo skills additionally carry a `Use AFTER dw-demo-base` marker (see below). Keep
 descriptions on a single line.
 
+### Writing the instruction body
+
+Phrase instructions positively — state what to do, not just what to avoid. A model follows
+"DO A" more reliably than a bare "don't do B" (the prohibition raises B's salience and leaves
+the target underspecified). Keep a contrast only when B is the model's natural pull and a
+predictable failure mode, and prefer the paired form ("serialize with the DW serializer, not a
+raw XML export") over a bare "don't". Few-shot bad→good example pairs are exempt. The full
+rule, with the test for when contrast earns its place, lives in
+`skills/dw-demo-base/references/iterate-plugin.md` ("Phrase instructions positively").
+
 ### Adding a new skill
 
 1. Create `skills/dw-<domain>-<topic>/SKILL.md` with matching `name:` frontmatter (UTF-8, no BOM).

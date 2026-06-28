@@ -30,7 +30,7 @@ This is *not* a custom architecture. Each of the four features is a stock DW10 s
 
 A buyer who's primarily fulfilled out of `DC-OMA` gets `AccessUserGroupRelation` rows linking them to the `DC-OMA` group. If a buyer is multi-DC (e.g. headquarters in Omaha, branch office in Phoenix), they get rows for both â€” DW's user-group resolution returns the union, so Assortments / Shipping methods filtered on either group apply.
 
-**Don't model DC as a user attribute** (e.g. `AccessUserStockLocationID`, custom `AccessUserDCCode` field). The user-attribute path doesn't compose with Assortments / Shipping methods / fees, which all scope by *group*, not by attribute. The attribute approach forces a custom `IPriceProvider` / custom shipping-filter / custom-assortment provider â€” three pieces of code that DW already ships. `AccessUserStockLocationID` (which DW does ship as a bigint column) is fine as supplementary metadata for ERP sync, but **the DC-as-group membership is the load-bearing wiring**.
+**Model DC as group membership, not as a user attribute** (e.g. `AccessUserStockLocationID`, custom `AccessUserDCCode` field). The user-attribute path doesn't compose with Assortments / Shipping methods / fees, which all scope by *group*, not by attribute. The attribute approach forces a custom `IPriceProvider` / custom shipping-filter / custom-assortment provider â€” three pieces of code that DW already ships. `AccessUserStockLocationID` (which DW does ship as a bigint column) is fine as supplementary metadata for ERP sync, but **the DC-as-group membership is the load-bearing wiring**.
 
 ## Surface guidance for setting this up
 
