@@ -22,6 +22,7 @@ If you used MCP for a row whose mutation type appears in the table below, you sh
 | MCP `create_or_update_product_queries` | `Searching:Queries` cache | (cache populated at startup; no API to invalidate) | YES on overwrite/conflict â€” see [governance.md "Dashboard query location"](governance.md) |
 | Disk delete of `.query` file | Same | (none) | YES â€” see [governance.md "Dashboard query location"](governance.md) |
 | MCP product mutation | Lucene index | `POST /admin/api/BuildIndex {Repository:Products,IndexName:Products.index,BuildName:Full}` | No â€” see [governance.md "Recovery recipe: Rebuild Products index"](governance.md) |
+| **Direct SQL UPDATE on `EcomProducts` translatable fields** (e.g. `ProductName`, `ProductShortDescription` on a per-language layer row) | live `ProductService` product cache **and the Lucene index builder reads *through* that cache** | `POST /admin/api/CacheInformationRefresh` (or restart) **then** BuildIndex | YES (flush/restart) â€” and see the ordering trap below: a `BuildIndex` run while the product cache is stale bakes the OLD values into the index, so reindex is NOT sufficient on its own (2026-06-28) |
 | Direct SQL INSERT into `EcomProductItems` | `ProductItem` Lazy<Dictionary> cache | (none) | YES â€” bundle Components tab will show empty until restart |
 | **Direct SQL INSERT new `Page` row** | Page-resolution cache | (none) | YES â€” page 404s on the storefront until restart, even with correct slug/area wiring |
 | **Direct SQL INSERT new `Paragraph` row** | Page-composition cache | (none) | YES â€” paragraph does not render until restart |
@@ -53,8 +54,36 @@ For `Page` / `Paragraph` / `GridRow` / `EcomPrices`, the cache-vs-live behavior 
 
 This is **the SQL-fallback rulebook only.** MCP `save_paragraphs` / `save_pages` / `save_grid_rows` / `save_prices` and the admin-UI Visual Editor invalidate the relevant caches for you â€” none of these rules apply to those surfaces. The decision to use SQL-direct over MCP is a separate question, governed by [`dynamicweb-demo-base/SKILL.md` "Surface priority for CREATES"](../../dw-demo-base/SKILL.md); when MCP is available, use it and skip this section.
 
-## When in doubt: restart
+## The index-build-reads-through-cache ordering trap
 
-If a mutation looks like it should have applied but the symptom (a stale dashboard count, an empty completeness panel, a missing variant SKU) persists, the safest single step is `dotnet run` restart. The host start time is bounded (~30 seconds on a warm SQL Express); a half-day of "is it cached or is it broken" is not. After restart, if a Swift baseline was previously deserialized you can re-run the integrity-sweep checks owned by Swift ([dynamicweb-swift-demo/references/integrity-sweep.md](../../dw-demo-swift/references/integrity-sweep.md)) to confirm; on a blank PIM-only DB, just re-run the targeted MCP/SQL probe whose result was stale.
+When you write product data via **Direct SQL** (e.g. translating `ProductName` /
+`ProductShortDescription` into a per-language layer, or any `EcomProducts` field edit) and then
+need it visible on the storefront/Delivery API PLP, two caches are in play and **order matters**:
+
+1. The live `ProductService` holds products in an in-memory cache. A SQL write does not touch it,
+   so reads (single-product Delivery API, PDP) return the **stale** value until the cache is
+   flushed (`CacheInformationRefresh`) or the host restarts. A `BuildIndex` does **not** flush it.
+2. **The Lucene index builder reads product data *through* that same `ProductService` cache.** So
+   if you `BuildIndex` while the cache is stale, the builder indexes the OLD values â€” the PLP/
+   facets then show stale data even though the DB is correct and you "reindexed".
+
+**Correct order for a SQL product-data write:** write â†’ **flush/restart** (clear the
+`ProductService` cache) â†’ **then** `BuildIndex`. Reindex-then-restart is the wrong order and the
+classic time-sink: the index keeps the stale values until the *next* rebuild after a flush.
+(Verified 2026-06-28 translating a catalogue into a new ecommerce language: PDP + PLP stayed
+English after SQL+reindex; correct only after restart-then-reindex.)
+
+Related write-path note: MCP `patch_products_safe` with a non-default `languageId` was observed to
+echo the translated `name` in its response but not persist it to the `EcomProducts` language-layer
+row (DB stayed default-language) on a 10.26.x build (2026-06-28) â€” verify the DB row after a
+per-language product-text write; direct SQL was the reliable surface.
+
+## When a mutation doesn't show up
+
+If a mutation looks like it should have applied but the symptom persists (a stale dashboard count, an empty completeness panel, a missing variant SKU), it's a cache the mutation surface didn't invalidate. Resolve it in order:
+
+1. **Find the row above and run its named invalidation surface** â€” usually a targeted `CacheInformationRefresh` (enumerate cache ids with `GET /admin/api/GetServiceCaches`). This is the specific fix and the one to reach for first.
+2. **Restart the host (`dotnet run`)** only when the row says "YES restart", or when you can't identify which cache holds the stale value. Restarting drops all in-memory state, so don't use it as the default when the table names a flush.
+3. **Re-verify after the fix:** on a deserialized Swift baseline, re-run the Swift integrity-sweep checks ([dynamicweb-swift-demo/references/integrity-sweep.md](../../dw-demo-swift/references/integrity-sweep.md)); on a blank PIM-only DB, re-run the targeted MCP/SQL probe whose result was stale.
 
 
