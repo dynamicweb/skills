@@ -83,7 +83,7 @@ The `slug` is a 64-hex-char opaque token. BC composes the embedded webview URL b
 
 ## Why the cloud demo "just works"
 
-`jus.dw10demo.dynamicweb.cloud` ships a fuller default install that includes `StaticLinkManager` out of the box. Local `dw10-suite` template installs do NOT include it. The cloud also has 3 pre-existing `StaticLinkAll` entries (Type=Product, arguments 10001/10059/10005) created Jan-Feb 2026 -- evidence the BC connector demo flow has been actively used there.
+`jus.dw10demo.dynamicweb.cloud` ships a fuller default install that includes `StaticLinkManager` out of the box. Local `dw10-suite` template installs do NOT include it. The cloud also has 3 pre-existing `StaticLinkAll` entries (Type=Product, arguments 10001/10059/10005) created earlier -- evidence the BC connector demo flow has been actively used there.
 
 If you're comparing your local install against the cloud and discovering missing endpoints, the AppStore page in admin is the place to check. AddIns that are present on cloud but not local need the install + host-restart cycle.
 

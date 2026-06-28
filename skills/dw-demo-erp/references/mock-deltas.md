@@ -132,6 +132,6 @@ No live fire. No JSON file open. Data + rule + template tell the story.
 - [erp-data-shape.md](erp-data-shape.md) â€” generic ERPâ†”PIM field-ownership table for authoring the post-sync state in Step 1.
 - [scenarios-first-planning.md](scenarios-first-planning.md) â€” design the BC-driven scenarios before staging the DB.
 - Live BC alternative: [`dynamicweb-pim-for-bc`](../../dw-integration-bc/SKILL.md).
-- Reference implementation: `<demo>/.planning/stage-and-reset.ps1` (2026-05-21 pivot from JSON-files to DB-staged).
+- Reference implementation: `<demo>/.planning/stage-and-reset.ps1` (pivot from JSON-files to DB-staged).
 
 

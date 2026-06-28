@@ -22,7 +22,7 @@ If you used MCP for a row whose mutation type appears in the table below, you sh
 | MCP `create_or_update_product_queries` | `Searching:Queries` cache | (cache populated at startup; no API to invalidate) | YES on overwrite/conflict â€” see [governance.md "Dashboard query location"](governance.md) |
 | Disk delete of `.query` file | Same | (none) | YES â€” see [governance.md "Dashboard query location"](governance.md) |
 | MCP product mutation | Lucene index | `POST /admin/api/BuildIndex {Repository:Products,IndexName:Products.index,BuildName:Full}` | No â€” see [governance.md "Recovery recipe: Rebuild Products index"](governance.md) |
-| **Direct SQL UPDATE on `EcomProducts` translatable fields** (e.g. `ProductName`, `ProductShortDescription` on a per-language layer row) | live `ProductService` product cache **and the Lucene index builder reads *through* that cache** | `POST /admin/api/CacheInformationRefresh` (or restart) **then** BuildIndex | YES (flush/restart) â€” and see the ordering trap below: a `BuildIndex` run while the product cache is stale bakes the OLD values into the index, so reindex is NOT sufficient on its own (2026-06-28) |
+| **Direct SQL UPDATE on `EcomProducts` translatable fields** (e.g. `ProductName`, `ProductShortDescription` on a per-language layer row) | live `ProductService` product cache **and the Lucene index builder reads *through* that cache** | `POST /admin/api/CacheInformationRefresh` (or restart) **then** BuildIndex | YES (flush/restart) â€” and see the ordering trap below: a `BuildIndex` run while the product cache is stale bakes the OLD values into the index, so reindex is NOT sufficient on its own |
 | Direct SQL INSERT into `EcomProductItems` | `ProductItem` Lazy<Dictionary> cache | (none) | YES â€” bundle Components tab will show empty until restart |
 | **Direct SQL INSERT new `Page` row** | Page-resolution cache | (none) | YES â€” page 404s on the storefront until restart, even with correct slug/area wiring |
 | **Direct SQL INSERT new `Paragraph` row** | Page-composition cache | (none) | YES â€” paragraph does not render until restart |
@@ -31,9 +31,9 @@ If you used MCP for a row whose mutation type appears in the table below, you sh
 | **Direct SQL UPDATE on an existing `Page` / `Paragraph` / `GridRow` field** (e.g. `ParagraphTemplate`, `PageMetaTitle`, content fields) | (cache holds the row by id; updated fields are read live from DB on next render) | (none needed) | **No** â€” live, refresh the page. This is the one safe SQL pattern for these tables. |
 | **Direct SQL UPDATE on `GridRow.GridRowSort` (re-ordering existing rows)** | Page-composition cache holds the ordered list | (none) | YES â€” the cached ordering wins until restart, even though field updates on individual rows go live |
 | **Direct SQL UPDATE on `EcomPrices.PriceAmount` / `PriceCurrency` / scope columns** | Resolved-price cache | (none) | YES â€” old price wins until restart |
-| **Direct SQL UPDATE on `EcomOrderStates.OrderStateColor` (or other state-row columns read at render time)** | `OrderStates.GetStateById()` in-memory cache | (none) | YES â€” the badge's inline-style attribute holds the stale color even after a full page reload; storefront-rendered order-state badges and CSS variables fed by `Services.Orders.GetStateById(...).Color` keep the old hex until restart (2026-05-13) |
+| **Direct SQL UPDATE on `EcomOrderStates.OrderStateColor` (or other state-row columns read at render time)** | `OrderStates.GetStateById()` in-memory cache | (none) | YES â€” the badge's inline-style attribute holds the stale color even after a full page reload; storefront-rendered order-state badges and CSS variables fed by `Services.Orders.GetStateById(...).Color` keep the old hex until restart |
 | MCP `save_paragraphs` / `save_pages` / `save_grid_rows` | Page-composition cache | (auto via MCP) | No â€” these are the preferred surface for content seeding; the four "Direct SQL INSERT" rows above are the SQL-fallback equivalents |
-| **Paragraph-soft-hide / delete inside a `@RenderGrid(otherPageId)` nested grid** (e.g. Swift's `Swift-v2_ProductListComponentSelector` PLP wrapper) | RenderGrid HTML cache (keyed by source page id) | (none â€” survives host restart) | **No surface fix** â€” `ParagraphDeleted=1` / `ParagraphShowParagraph=0` are not observed even after restart. CSS-hide is the only reliable lever; see [`dynamicweb-swift-demo/references/paragraphs.md` "ProductListComponentSelector caches even harder"](../../dw-demo-swift/references/paragraphs.md) for the worked recipe (2026-05-13). |
+| **Paragraph-soft-hide / delete inside a `@RenderGrid(otherPageId)` nested grid** (e.g. Swift's `Swift-v2_ProductListComponentSelector` PLP wrapper) | RenderGrid HTML cache (keyed by source page id) | (none â€” survives host restart) | **No surface fix** â€” `ParagraphDeleted=1` / `ParagraphShowParagraph=0` are not observed even after restart. CSS-hide is the only reliable lever; see [`dynamicweb-swift-demo/references/paragraphs.md` "ProductListComponentSelector caches even harder"](../../dw-demo-swift/references/paragraphs.md) for the worked recipe. |
 | Service-cache enumerate | All services | `GET /admin/api/GetServiceCaches` | n/a (read-only) |
 | Specific service cache flush | Single service | `POST /admin/api/CacheInformationRefresh {CacheTypeName:...}` | No |
 | Feature flag toggle | (varies; flag-specific) | `POST /admin/api/FeatureManagementToggle {FeatureTypeName:...}` â€” **DO NOT use for Completeness flag, see [governance.md "Completeness rules" step 7](governance.md)** | Varies |
@@ -68,14 +68,11 @@ need it visible on the storefront/Delivery API PLP, two caches are in play and *
    facets then show stale data even though the DB is correct and you "reindexed".
 
 **Correct order for a SQL product-data write:** write â†’ **flush/restart** (clear the
-`ProductService` cache) â†’ **then** `BuildIndex`. Reindex-then-restart is the wrong order and the
-classic time-sink: the index keeps the stale values until the *next* rebuild after a flush.
-(Verified 2026-06-28 translating a catalogue into a new ecommerce language: PDP + PLP stayed
-English after SQL+reindex; correct only after restart-then-reindex.)
+`ProductService` cache) â†’ **then** `BuildIndex`. Reindex-then-restart is the wrong order: the index keeps the stale values until the *next* rebuild after a flush.
 
 Related write-path note: MCP `patch_products_safe` with a non-default `languageId` was observed to
 echo the translated `name` in its response but not persist it to the `EcomProducts` language-layer
-row (DB stayed default-language) on a 10.26.x build (2026-06-28) â€” verify the DB row after a
+row (DB stayed default-language) on a 10.26.x build â€” verify the DB row after a
 per-language product-text write; direct SQL was the reliable surface.
 
 ## When a mutation doesn't show up

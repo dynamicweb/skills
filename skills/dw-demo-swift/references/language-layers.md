@@ -95,7 +95,7 @@ To wire it:
 
 Frontend behaviour: clicking an entry navigates to the SAME page on the target sibling area â€” DW10 maintains a sibling-page relationship via the clone metadata so `/<master>/some-page` swaps cleanly to `/<lang>/some-page`. If a sibling page doesn't exist (e.g. master added a new page but language layer hasn't been re-synced), the link falls back to the language layer's frontpage.
 
-### Alternative: a master-template toggle (cache-safe, brandable â€” validated 2026-06-09)
+### Alternative: a master-template toggle (cache-safe, brandable)
 
 When the OOTB selector paragraph is awkward â€” the header grid composition is cached (restart per insert), every language layer needs its own paragraph wired (step 6 below), or the demo wants a branded pill instead of a dropdown â€” a small block in `Swift-v2_Master.cshtml` just before `@ContentPlaceholder()` does the same job with none of the content-cache friction. Razor recompiles live, so iterating on it costs nothing. Note this IS an edit to a stock template, which [re-skin.md](re-skin.md) treats as last-resort: acceptable here because the block is small, self-contained, and uses only canonical APIs â€” keep it clearly comment-delimited and note it in the demo's working notes for upgrade-time diffing.
 
@@ -120,7 +120,7 @@ Emit `<a href="/Default.aspx?ID=@target" hreflang="...">` â€” DW's URL prov
 
 ## Recipe â€” adding a language layer to a Swift demo
 
-**Hard rule:** a language layer is a multi-table CREATE that DW does ~95 page clones + paragraph/grid-row/item-localization/sibling-link bookkeeping for. The base skill's "Surface priority for CREATES" rule applies in full â€” MCP first, then Management API, then admin UI, **never raw SQL `INSERT INTO Area`**. A SQL clone produces a partially-cloned tree (the 7 stub pages DW auto-creates when it notices a new sibling Area) that looks plausible in the page picker but is missing PDPs, sign-in, customer-center, and the sibling-page links the LanguageSelector relies on. Cleanup is then harder than just using the right surface in the first place. The author of this skill burned an hour on this; you do not need to repeat the lesson.
+**Hard rule:** a language layer is a multi-table CREATE that DW does ~95 page clones + paragraph/grid-row/item-localization/sibling-link bookkeeping for. The base skill's "Surface priority for CREATES" rule applies in full â€” MCP first, then Management API, then admin UI, **never raw SQL `INSERT INTO Area`**. A SQL clone produces a partially-cloned tree (the 7 stub pages DW auto-creates when it notices a new sibling Area) that looks plausible in the page picker but is missing PDPs, sign-in, customer-center, and the sibling-page links the LanguageSelector relies on. Cleanup is then harder than just using the right surface in the first place.
 
 1. **Confirm master area state.** `SELECT AreaId, AreaName, AreaUrlName, AreaMasterAreaId, AreaCulture, AreaEcomLanguageId, AreaEcomCurrencyId, AreaEcomCountryCode FROM Area`. The master should have `AreaMasterAreaId=0`.
 2. **Pre-stage PIM** â€” add the new `EcomLanguages` row (MCP `save_languages` first; Management API `Languages` family as fallback; SQL only as last resort) and translate the hero products + groups per `dynamicweb-pim-demo/references/localization.md`. Doing this first means the language layer has something to render when it's created.
@@ -130,7 +130,7 @@ Emit `<a href="/Default.aspx?ID=@target" hreflang="...">` â€” DW's URL prov
 
    Without either, the AreaCopy call below fails with `System.Transactions.TransactionException: The operation is not valid for the state of the transaction.` The error LOOKS like it could be transactional logic, but it's environmental â€” fix the prereqs, do not change the input shape.
 
-   **net10 hosts: the prereqs above are NOT sufficient (validated DW 10.25.x, 2026-06-09).** On a net10 single-target host (the scaffold default â€” the AppStore Backend MCP AddIn requires it), a full `StructureAndContent` copy opens a second SQL connection inside the TransactionScope, the transaction tries to promote to MSDTC, and **`System.Data.SqlClient` cannot promote on .NET 10** â€” the same `TransactionException` fires even with `ImplicitDistributedTransactions = true` and MSDTC fully configured. Both the MCP `copy_area` path and the Management API `AreaCopy` path hit it. The working workaround:
+   **net10 hosts: the prereqs above are NOT sufficient (validated DW 10.25.x).** On a net10 single-target host (the scaffold default â€” the AppStore Backend MCP AddIn requires it), a full `StructureAndContent` copy opens a second SQL connection inside the TransactionScope, the transaction tries to promote to MSDTC, and **`System.Data.SqlClient` cannot promote on .NET 10** â€” the same `TransactionException` fires even with `ImplicitDistributedTransactions = true` and MSDTC fully configured. Both the MCP `copy_area` path and the Management API `AreaCopy` path hit it. The working workaround:
 
    1. Take a DB snapshot/backup (the copy will run non-transactionally â€” no rollback if it dies midway).
    2. Add `Enlist=false` to DW's `<ConnectionString>` in `GlobalSettings.Database.config` and restart the host.
@@ -161,7 +161,7 @@ Emit `<a href="/Default.aspx?ID=@target" hreflang="...">` â€” DW's URL prov
 8. **Translate header/footer text + key page items** that the demo flow touches. Use the Visual Editor's Translations panel on each paragraph the storyline lands on. Same depth-not-width rule as PIM: localize the **demo path**, not the whole site.
 9. **Verify**: switch via the LanguageSelector in the storefront. URL changes to `?ID=<layerHomePageId>` initially (DW resolves friendly slugs once routing context updates). Page title + h1 + breadcrumb + nav + group descriptions render in the new language; product cards on the category page render localized names + descriptions for any SKU that has a per-language EcomProducts row (others fall back to master). Walk a PDP and the customer-center to confirm those pages exist on the layer â€” if they 404, step 4 didn't run a full clone and you need to redo it on the proper surface.
 
-## What a full-content AreaCopy does NOT carry â€” post-copy verification (validated DW 10.25.x, 2026-06-10)
+## What a full-content AreaCopy does NOT carry â€” post-copy verification (validated DW 10.25.x)
 
 A `StructureAndContent` copy that returns `status: ok` is **not** a complete clone. Four classes of content silently don't make it; all four surfaced on one demo's language layer, and each one renders as a different confusing symptom weeks later. Run this section as a checklist immediately after every AreaCopy.
 

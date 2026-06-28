@@ -1,6 +1,6 @@
 # online-mode.md — building a demo on a hosted (cloud) install
 
-> Owns the **online/cloud variant** of the demo-base flow: what changes when the demo runs on a vendor-hosted DW10 install reached only by URL + Admin API bearer key — no local scaffold, no SQL, no filesystem, no host-process control. Validated end-to-end on a DW 10.25.x hosted install (2026-06-10): styles, PIM model, shop/channel, products with color variants, content rebuild, and a cheat-sheet page were all built through the Management API alone.
+> Owns the **online/cloud variant** of the demo-base flow: what changes when the demo runs on a vendor-hosted DW10 install reached only by URL + Admin API bearer key — no local scaffold, no SQL, no filesystem, no host-process control. Validated end-to-end on a DW 10.25.x hosted install: styles, PIM model, shop/channel, products with color variants, content rebuild, and a cheat-sheet page were all built through the Management API alone.
 >
 > Local installs remain the default; this reference is the fork target from [SKILL.md](../SKILL.md) "Environment fork". The four always-on guardrails (customisations ledger, customer-context read-only, demo philosophy, discover-from-project-files) apply unchanged.
 
@@ -40,7 +40,7 @@ Most `*Save` commands UPDATE when `Id` is set and CREATE when `Id` is empty (the
 - Some commands put properties at BOTH the command level and inside `Model` (e.g. `VariantCombinationCreate` needs `ProductId` and the cache key in both places). When a payload bounces with "value is required" for a field you sent, mirror it into/out of `Model`.
 
 ### dw10source as binder disambiguator
-When a payload shape isn't obvious from the OpenAPI spec, read the command class in the `dw10source` vault slot (`Dynamicweb.*.UI/Commands/**/<Name>Command.cs`). Five minutes in the source beats an hour of payload guessing — it resolved every binder mystery in the validation build (SelectedImage `Id`, the create/update fork, the variant wizard below).
+When a payload shape isn't obvious from the OpenAPI spec, read the command class in the `dw10source` vault slot (`Dynamicweb.*.UI/Commands/**/<Name>Command.cs`). Reading the source resolved every binder mystery in the validation build (SelectedImage `Id`, the create/update fork, the variant wizard below).
 
 ### File upload
 `POST /Admin/Api/Upload`, multipart form: field `path` = **relative** directory (no leading slash — leading-slash paths are rejected as "outside allowed root"), repeated `files` fields for the payload. The target directory must already exist physically. **`DirectorySave` is rename-only** (returns ok, creates nothing) — create folders via `DirectoryCopy` of any small existing folder to the new path, then `DirectoryEmpty` on it.
@@ -60,7 +60,7 @@ Wherever a recipe says "restart the host" (variant seeding, BOM inserts, asset b
 1. `GET /Admin/Api/GetServiceCaches` → collect the `modelIdentifier`s of the Ecommerce Product/Stock/Price/Variant services.
 2. `POST /Admin/Api/CacheInformationsRefresh {"Ids": [<those ids>]}`.
 
-This fixed a stale disabled add-to-cart after variant seeding within seconds. (`CacheInformationRefresh` — singular — takes one `CacheTypeName` for targeted flushes; the pim-skill access-surfaces matrix covers the local use of the same endpoints.)
+This fixes a stale disabled add-to-cart after variant seeding. (`CacheInformationRefresh` — singular — takes one `CacheTypeName` for targeted flushes; the pim-skill access-surfaces matrix covers the local use of the same endpoints.)
 
 ### Content editing
 - Paragraph item fields save through `ParagraphSave` round-trips of `GetParagraphById` (mind the binder asymmetries above). String/HTML fields persist directly.

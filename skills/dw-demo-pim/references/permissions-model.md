@@ -1,6 +1,6 @@
 # permissions-model.md
 
-> Three-layer permission model for Dynamicweb 10 â€” three SQL tables (`UnifiedPermission` for entity grants, `CapabilityLimitation` for UI hides, `DashboardAccessUserRelation` for per-user dashboard pinning), two semantic conventions (permit vs limit â€” opposite directions), one feature flag (`CapabilityControlFeature`, DW10.21+) that decides whether the layers cascade or stand orthogonal. Read this BEFORE designing any role matrix; the flag's default and its cascade behavior are the load-bearing facts that prevent a half-day of "I granted Edit on the Products area but the user still can't see anything" detours. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Cross-cuts with the **render-time** half of permissions â€” see [`dynamicweb-swift-demo/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) Â§"Permissions â€” the entity store" for how the storefront's `Page`/`Paragraph` permissions resolve at request time. This ref owns **modelling-time** concerns (entity hierarchy, capability tree, flag decision); the Swift ref owns **render-time** lookup (the `Permission` table read on every paragraph render). **Concept lives here; seeding grants for demo personas â†’ [permissions-recipes.md](permissions-recipes.md).**
+> Three-layer permission model for Dynamicweb 10 â€” three SQL tables (`UnifiedPermission` for entity grants, `CapabilityLimitation` for UI hides, `DashboardAccessUserRelation` for per-user dashboard pinning), two semantic conventions (permit vs limit â€” opposite directions), one feature flag (`CapabilityControlFeature`, DW10.21+) that decides whether the layers cascade or stand orthogonal. Read this BEFORE designing any role matrix; the flag's default and its cascade behavior are the load-bearing facts that prevent the "I granted Edit on the Products area but the user still can't see anything" detours. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Cross-cuts with the **render-time** half of permissions â€” see [`dynamicweb-swift-demo/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) Â§"Permissions â€” the entity store" for how the storefront's `Page`/`Paragraph` permissions resolve at request time. This ref owns **modelling-time** concerns (entity hierarchy, capability tree, flag decision); the Swift ref owns **render-time** lookup (the `Permission` table read on every paragraph render). **Concept lives here; seeding grants for demo personas â†’ [permissions-recipes.md](permissions-recipes.md).**
 >
 > **Cross-cutting placement note.** This ref sits at PIM-skill level. Permissions touch PIM, Swift frontend, ERP integration, and Business Central potentially â€” all of them. If cross-cutting use materialises across more than two sibling skills, consider promoting to a future `dynamicweb-platform-demo` sibling alongside `dynamicweb-demo-base`. Until then, this is the home and Swift's `dw10-canonical-surfaces.md` Â§"Permissions â€” the entity store" cross-references back.
 >
@@ -8,7 +8,7 @@
 
 ## 1. The `CapabilityControlFeature` flag â€” DW10.21+, default OFF
 
-Source: `dw10source/src/Core/Dynamicweb.Core/CapabilityControl/CapabilityControlFeature.cs:3` (verified 2026-05-21):
+Source: `dw10source/src/Core/Dynamicweb.Core/CapabilityControl/CapabilityControlFeature.cs:3`:
 
 ```csharp
 public sealed class CapabilityControlFeature() : FeatureBase("Capability Control", "Capabilities", false);
@@ -25,7 +25,7 @@ if (!Feature.IsActive<Core.CapabilityControl.CapabilityControlFeature>())
     yield return new PermissionSection("Products");
 ```
 
-Verified at (2026-05-21):
+Verified:
 - `Shop.cs:310-311` (PermissionName at line 314 = `"Shop"`)
 - `Group.cs:313-314` (PermissionName at line 278 = `"ProductGroup"`)
 - `Product.cs:513-514` (the guard; the `PermissionName` const declaration is at line 498 = `"Product"`)
@@ -54,7 +54,7 @@ When the flag is **ON (modern)**: the legacy top link is severed. Entity-level g
 
 ## 2. Layer A â€” `UnifiedPermission` (the storage layer)
 
-Source: `dw10source/src/Core/Dynamicweb.Core/Security/Permissions/PermissionRepository.cs` (verified 2026-05-21).
+Source: `dw10source/src/Core/Dynamicweb.Core/Security/Permissions/PermissionRepository.cs`.
 
 ```sql
 TABLE UnifiedPermission (

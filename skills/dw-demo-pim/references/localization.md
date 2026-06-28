@@ -151,7 +151,7 @@ VALUES
    VALUES (N'<langId>', N'<culture>', N'<iso2>', N'<englishName>', N'<nativeName>', 0);
    ```
 3. **Pick the products to translate**. For a demo, translate **only the hero SKUs the storyline lands on** (typically 5-12 products) plus all the catalog group names â€” translating the full catalogue is wasted demo budget.
-4. **Translate group names** first (groups must be translated so the navigation tree localizes). Use `update_groups` MCP with `languageId=<new>` OR direct SQL `INSERT INTO EcomGroupTranslation`. **This step is load-bearing, not cosmetic (validated DW 10.25.x, 2026-06-10):** `Services.ProductGroups.GetGroup(id)` resolves against the CURRENT language context, and with no group rows for the new language it returns null â€” group-driven frontend components (`Swift-v2_ProductGroupGrid`, group-name surfaces) render **empty**, not English-fallback. The proven shape on 10.25 is a per-language `EcomGroups` row per group (clone the default-language rows overriding `GroupLanguageId` + `GroupName` via a dynamic column-list INSERT that excludes identity columns). A blank category grid on a language layer is this gap, every time.
+4. **Translate group names** first (groups must be translated so the navigation tree localizes). Use `update_groups` MCP with `languageId=<new>` OR direct SQL `INSERT INTO EcomGroupTranslation`. **This step is load-bearing, not cosmetic (validated DW 10.25.x):** `Services.ProductGroups.GetGroup(id)` resolves against the CURRENT language context, and with no group rows for the new language it returns null â€” group-driven frontend components (`Swift-v2_ProductGroupGrid`, group-name surfaces) render **empty**, not English-fallback. The proven shape on 10.25 is a per-language `EcomGroups` row per group (clone the default-language rows overriding `GroupLanguageId` + `GroupName` via a dynamic column-list INSERT that excludes identity columns). A blank category grid on a language layer is this gap, every time.
 5. **Translate the hero products' name + short description** via `update_products`/`patch_products_safe` with `languageId=<new>`. Skip custom-field translation in a first pass; the fallback handles it.
 6. **Rebuild the index** + run `build_assortments` if assortments are in play.
 7. **Wire the area** to the new language as a SECOND language layer â€” see [`dynamicweb-swift-demo/references/language-layers.md`](../../dw-demo-swift/references/language-layers.md). On the area side you need a sibling `Area` row with `AreaEcomLanguageId=<langId>` so the storefront actually serves the translated values.
@@ -160,9 +160,9 @@ VALUES
 
 PIM localization sells the "single product master, multiple market storefronts" story â€” high-leverage. But:
 
-- **Translate depth, not width.** Localize 8-12 SKUs that the demo flow touches (hero PLPs + PDPs). Don't translate the long-tail; the customer can't see it during a 45-minute demo and you've wasted hours.
+- **Translate depth, not width.** Localize 8-12 SKUs that the demo flow touches (hero PLPs + PDPs). Don't translate the long-tail; the demo flow never lands on it.
 - **Translate at least one custom field** (e.g. a marketing tagline) to show the "all field types translatable" point. Translating ONLY the name leaves the demo feeling shallow.
-- **Translate group names** (navigation localizes) â€” this is the most visible win per minute of effort.
+- **Translate group names** (navigation localizes) â€” this is the highest-visibility win for the least work.
 - **Skip variant options + assets translation** unless the customer's pitch specifically lands on them. Fallback covers the rest.
 
 ## Cross-references

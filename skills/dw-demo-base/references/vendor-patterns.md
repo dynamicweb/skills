@@ -1,6 +1,6 @@
 # vendor-patterns.md
 
-> Outcome of the vendor skill-repo consultation (2026-05, before authoring the sister skills). Two vendor repos reviewed: [`dynamicweb/skills`](https://github.com/dynamicweb/skills) (Python agent skills targeting MCP + Management API) and [`dynamicweb/ai-implementor-skills`](https://github.com/dynamicweb/ai-implementor-skills) (Claude Code skill bundle, incl. `dw-extend` extension scaffolding).
+> Outcome of the vendor skill-repo consultation (before authoring the sister skills). Two vendor repos reviewed: [`dynamicweb/skills`](https://github.com/dynamicweb/skills) (Python agent skills targeting MCP + Management API) and [`dynamicweb/ai-implementor-skills`](https://github.com/dynamicweb/ai-implementor-skills) (Claude Code skill bundle, incl. `dw-extend` extension scaffolding).
 > Sister skills cross-reference this file from their vendor-patterns section instead of restating it â€” single source for vendor positioning across all sister skills.
 > Default posture: **adopt vendor patterns whenever they apply**; deviate only with a documented lived-experience reason, recorded below. Re-check the vendor repos before each major skill revision in case new patterns appear.
 
@@ -27,7 +27,7 @@ Patterns recommended in customer-facing architecture conversations with Dynamicw
 
 | Pattern | Source | Owning reference |
 |---|---|---|
-| **DC = AccessUser group** for any multi-DC B2B portal â€” unlocks DC-scoped Assortments, Shipping methods, and Shipping fees with no custom code. Naming convention: `DC-<code>`, with `AccessUserCustomerNumber` set to the same value. Treat as default for wholesale demos, not as an upgrade path. | Dynamicweb vendor architect, 2026-05-13 | [`dynamicweb-swift-demo/references/b2b-dc-pattern.md`](../../dw-demo-swift/references/b2b-dc-pattern.md) |
-| **ERP-imported pre-graduated prices** for any demo that needs cart-time qty-break behavior. `EcomPrices.PriceQuantity > 0` tier rows are silently ignored by the stock cart resolver â€” the production pattern is one row per (product, user-group, qty-band) with the resolved price baked in, indexed via the same user-group mechanic as the DC pattern. | Dynamicweb vendor architect, 2026-05-13 | [`dynamicweb-pim-demo/references/structural-model.md` Â§2.11](../../dw-demo-pim/references/structural-model.md) |
+| **DC = AccessUser group** for any multi-DC B2B portal â€” unlocks DC-scoped Assortments, Shipping methods, and Shipping fees with no custom code. Naming convention: `DC-<code>`, with `AccessUserCustomerNumber` set to the same value. Treat as default for wholesale demos, not as an upgrade path. | Dynamicweb vendor architect | [`dynamicweb-swift-demo/references/b2b-dc-pattern.md`](../../dw-demo-swift/references/b2b-dc-pattern.md) |
+| **ERP-imported pre-graduated prices** for any demo that needs cart-time qty-break behavior. `EcomPrices.PriceQuantity > 0` tier rows are silently ignored by the stock cart resolver â€” the production pattern is one row per (product, user-group, qty-band) with the resolved price baked in, indexed via the same user-group mechanic as the DC pattern. | Dynamicweb vendor architect | [`dynamicweb-pim-demo/references/structural-model.md` Â§2.11](../../dw-demo-pim/references/structural-model.md) |
 
 

@@ -22,7 +22,7 @@ The Swift 2.2 baseline ships these template / page-preset surfaces under `_conte
 | `Sign in/` | Login + register | Stock |
 | `Newsletter Emails/` + `System emails/` | Email templates | Subject / body copy edits via admin UI |
 
-As of 2026-05-08 the baseline ships content-only — no `_sql/` framework-data folder. Framework rows (shops, currencies, countries, languages) must already exist in the target DB before the deserialize lands the area + pages. See [`deserialize-flow.md`](deserialize-flow.md) §3 for the baseline-shape contract.
+The baseline ships content-only — no `_sql/` framework-data folder. Framework rows (shops, currencies, countries, languages) must already exist in the target DB before the deserialize lands the area + pages. See [`deserialize-flow.md`](deserialize-flow.md) §3 for the baseline-shape contract.
 
 ## Page presets (the Theme primitive)
 
@@ -58,7 +58,7 @@ Three pitfalls land repeatedly when authoring custom variants under `Paragraph/<
 
 ### `@Html.Raw()` does NOT exist in `ViewModelTemplate<>`
 
-DW10 Razor layouts inheriting `Dynamicweb.Rendering.ViewModelTemplate<>` (e.g. `Swift-v2_Master.cshtml`, every `Paragraph/*` layout) do not expose the MVC `Html` helper. Using `@Html.Raw(value)` fails with `'Html' does not exist in the current context` (observed 2026-05-12).
+DW10 Razor layouts inheriting `Dynamicweb.Rendering.ViewModelTemplate<>` (e.g. `Swift-v2_Master.cshtml`, every `Paragraph/*` layout) do not expose the MVC `Html` helper. Using `@Html.Raw(value)` fails with `'Html' does not exist in the current context`.
 
 **The error surfaces misleadingly.** The compile error is reported against `Swift-v2_Page.cshtml` as a flood of duplicate-using directives and nullable-annotation warnings — scroll past them to find the real `'Html' does not exist` line at the bottom. If you've added an `@Html.Raw(...)` call somewhere and the build complains about `Swift-v2_Page.cshtml`, that's where to look.
 
@@ -66,7 +66,7 @@ DW10 Razor layouts inheriting `Dynamicweb.Rendering.ViewModelTemplate<>` (e.g. `
 
 ### `product.ProductFieldValues` is NOT on `ProductViewModel`
 
-`product.ProductFieldValues` lives on the underlying `Dynamicweb.Ecommerce.Products.Product` entity, NOT on `Dynamicweb.Ecommerce.ProductCatalog.ProductViewModel`. Razor templates that call it against `Model.Product` (a `ProductViewModel`) **compile to a runtime error that surfaces as raw source rendered as page text** on the PDP — typically a wall of Razor markup appearing below the price stack (2026-05-13, demo-blocker).
+`product.ProductFieldValues` lives on the underlying `Dynamicweb.Ecommerce.Products.Product` entity, NOT on `Dynamicweb.Ecommerce.ProductCatalog.ProductViewModel`. Razor templates that call it against `Model.Product` (a `ProductViewModel`) **compile to a runtime error that surfaces as raw source rendered as page text** on the PDP — typically a wall of Razor markup appearing below the price stack (demo-blocker).
 
 **Fix.** Resolve the underlying entity and read the field collection off it:
 
@@ -88,7 +88,7 @@ The Swift "Add to favorites" icon embedded inside `Swift-v2_ProductAddToCart` ca
 int favoriteListId = GetViewParameter("ListId") != null ? GetViewParameterInt32("ListId") : 0;
 ```
 
-i.e. `favoriteListId = 0` regardless of how many lists the user has. The rendered button ships `FavoriteListId=0` and the AJAX call to `swift.Favorites.Toggle` either silently fails, adds to "list 0" (no-op), or opens an empty offcanvas panel — depending on whether the user is in single-list or multi-list mode (2026-05-13).
+i.e. `favoriteListId = 0` regardless of how many lists the user has. The rendered button ships `FavoriteListId=0` and the AJAX call to `swift.Favorites.Toggle` either silently fails, adds to "list 0" (no-op), or opens an empty offcanvas panel — depending on whether the user is in single-list or multi-list mode.
 
 **Fix.** Auto-resolve `favoriteListId` to the user's first list when exactly one exists, and route zero-list users to the favorites overview page so they can create one. Patch lives in the project's `Components/ToggleFavorite.cshtml` override (re-skin Tier 2 — sibling layout, stock base untouched):
 
@@ -106,7 +106,7 @@ This is a content-layout-only override of an existing item type — doc-sanction
 
 ### Customer-number suffix as a role-flag (B2B-friendly)
 
-For "hide prices for installer / browse-only" demos, the lowest-overhead role gate is to bake the role into the user's `AccessUserCustomerNumber` suffix (e.g. `CUST-002-BROWSE`) and read it off `Pageview.User?.CustomerNumber` in any paragraph that needs to gate behavior (2026-05-13):
+For "hide prices for installer / browse-only" demos, the lowest-overhead role gate is to bake the role into the user's `AccessUserCustomerNumber` suffix (e.g. `CUST-002-BROWSE`) and read it off `Pageview.User?.CustomerNumber` in any paragraph that needs to gate behavior:
 
 ```csharp
 bool isBrowseOnly = Pageview.User?.CustomerNumber?.EndsWith("-BROWSE",

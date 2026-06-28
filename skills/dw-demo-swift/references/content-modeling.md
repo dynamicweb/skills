@@ -6,7 +6,7 @@
 
 ## Why this exists
 
-A 2026-06 demo audit found a family of designed article pages where each page was a single `Swift-v2_Text` paragraph whose `Text` field held a hand-authored HTML blob: an inline hero `<img>`, a custom-class `<blockquote>`, and a hand-built key-figures `<div>` grid — plus raw `<h2>` markup inside the `Title` field. The pages LOOKED right, but:
+A demo audit found a family of designed article pages where each page was a single `Swift-v2_Text` paragraph whose `Text` field held a hand-authored HTML blob: an inline hero `<img>`, a custom-class `<blockquote>`, and a hand-built key-figures `<div>` grid — plus raw `<h2>` markup inside the `Title` field. The pages LOOKED right, but:
 
 - An editor could not swap the hero image (no file picker — it's markup), reword the pull-quote, or change one stat without editing HTML in the RTE. The first WYSIWYG touch destroys the class-bearing structure.
 - ~150 lines of the demo's `<customer>_custom.css` existed only to style content-embedded classes — including a styled "byline" block that NO content actually used. Dead CSS is undetectable when the markup lives in database rows instead of a template.

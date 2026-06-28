@@ -3,6 +3,25 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.3.3]
+
+### Changed
+- **Stripped "time-noise" from the skills — wall-clock/effort claims and inline date stamps an LLM
+  can't use (sweep across ~25 demo-skill reference files).** Two classes removed: (1) subjective
+  duration/effort flourishes (`~30 seconds on a warm SQL Express`, `don't burn a half-day`,
+  `you've wasted hours`, `saves time`, `classic time-sink`, `Pay the 15 minutes`) — the actionable
+  rule is kept, the time estimate dropped; (2) inline prose date markers (`(verified 2026-05-21)`,
+  `(validated DW 10.25.x, 2026-06-10)`, `Superseded 2026-05-08:`, `A 2026-06 demo audit found`) —
+  the date already lives in `git log`; where a marker also carried a build version (`DW 10.25.x`)
+  the version is preserved and only the date dropped. Dates that are *data* (SQL literals, JSON
+  example payloads, the `CUSTOMISATIONS.md` ledger column the audit regex keys on) are untouched,
+  as are functional durations (script timeout bounds, schedule intervals, cache TTLs, presenter
+  pacing).
+- **Added the guardrail to `dw-demo-base/references/iterate-plugin.md`** so folds don't reintroduce
+  it: the scrub table now has a "Wall-clock duration / effort claims" row and a strengthened
+  "Session-relative time AND inline date stamps" row (resolve to *nothing* — the date is in `git
+  log`), and the provenance-citation rule now names roles, never individuals **or** dates.
+
 ## [3.3.2]
 
 ### Changed

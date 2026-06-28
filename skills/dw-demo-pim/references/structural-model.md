@@ -1,10 +1,10 @@
 # structural-model.md
 
-> The structural mental model for Dynamicweb 10 PIM. Read before modelling â€” getting any of these wrong wastes 30+ min of rework. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Each `### 2.x` sub-section cross-references siblings; do NOT split this file.
+> The structural mental model for Dynamicweb 10 PIM. Read before modelling â€” getting any of these wrong causes rework. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Each `### 2.x` sub-section cross-references siblings; do NOT split this file.
 
 ## The structural mental model
 
-Getting any of these wrong wastes 30+ min of rework. Each has burned me.
+Getting any of these wrong causes rework. Each has burned me.
 
 ### 2.1 Shop types â€” one enum controls everything
 
@@ -21,7 +21,7 @@ Getting any of these wrong wastes 30+ min of rework. Each has burned me.
 - **DataStructure for data models** â€” a separate ShopType=4 shop owns the data model tree. Never park data models under the commerce shop.
 - **EVERY shop needs a language relation** â€” insert into `EcomShopLanguageRelation(ShopId, LanguageId, IsDefault)`. Missing this causes "channel with no name" display in admin.
 
-**Where each ShopType appears in admin nav** (verified 2026-05-21):
+**Where each ShopType appears in admin nav**:
 
 | ShopType | Admin tree section | Source |
 |---|---|---|
@@ -42,7 +42,7 @@ So in the admin tree, a `ShopType=1` Shop and a `ShopType=3` Channel sit side-by
 - `3` DataSet
 
 **Critical behaviors:**
-- Admin distinguishes the product's "Groups/Channels" tab vs "Data Models" tab by filtering on parent shop's `UsageType`: Shop/Channel â†’ Groups tab; DataStructure â†’ Data Models tab. Cite `Dynamicweb.Products.UI/Queries/ProductGroupRelationsByProductIdQuery.cs:38` â€” `return usageType is ShopType.Shop or ShopType.Channel;` â€” and the mirror `Dynamicweb.Products.UI/Queries/ProductRelationsByProductIdQuery.cs:40` â€” `return usageType is ShopType.DataStructure;` (verified 2026-05-21). A "PIM-only" product (relations only to ShopType=4 groups) therefore renders an empty Groups/Channels tab â€” that's the visible signal that nothing is published.
+- Admin distinguishes the product's "Groups/Channels" tab vs "Data Models" tab by filtering on parent shop's `UsageType`: Shop/Channel â†’ Groups tab; DataStructure â†’ Data Models tab. Cite `Dynamicweb.Products.UI/Queries/ProductGroupRelationsByProductIdQuery.cs:38` â€” `return usageType is ShopType.Shop or ShopType.Channel;` â€” and the mirror `Dynamicweb.Products.UI/Queries/ProductRelationsByProductIdQuery.cs:40` â€” `return usageType is ShopType.DataStructure;`. A "PIM-only" product (relations only to ShopType=4 groups) therefore renders an empty Groups/Channels tab â€” that's the visible signal that nothing is published.
 - **Every group needs a `EcomShopGroupRelation` row** linking it to its parent shop. Missing = "channel with no name" appears on every product in that group.
 - **Every group needs `GroupType` set explicitly.** NULL defaults to 0 (Common) â€” data models not set to 2 will appear as catalog groups.
 - **Every DataModel group needs `ProductCategoryId`** pointing at a CategoryFields category (e.g. `PlantAttributes`) â€” that's how field values get plumbed to the product.
@@ -66,7 +66,7 @@ Do:
 
 The DW10 admin ships a built-in action that is the **only supported way** to move a product from "in PIM" to "in a channel". Until this action fires (or its single-product equivalent), a product is invisible to every publish target â€” feeds, storefront templates, channel-group filters all return zero rows for it.
 
-**Bulk variant** â€” cite `Dynamicweb.Products.UI/Screens/ProductListScreen.cs` `GetPublishToChannelDataNode()` at lines 726-743 (verified 2026-05-21). Wired into the bulk Product List screen at lines 415-421 alongside `GetAddToDataModelActionNode()` and `GetAddToDataSetActionNode()`, gated on `LicenseManager.LicenseHasFeature("PIM")`:
+**Bulk variant** â€” cite `Dynamicweb.Products.UI/Screens/ProductListScreen.cs` `GetPublishToChannelDataNode()` at lines 726-743. Wired into the bulk Product List screen at lines 415-421 alongside `GetAddToDataModelActionNode()` and `GetAddToDataSetActionNode()`, gated on `LicenseManager.LicenseHasFeature("PIM")`:
 
 ```csharp
 NodeAction = ProductListHelper.GetGroupSlideOverSelectorAction(
@@ -149,12 +149,12 @@ Then trigger a Products index rebuild (`POST /admin/api/BuildIndex {"Repository"
 
 Use `INSERT INTO EcomProducts (col1,col2,...) SELECT m.col1, m.col2, ... FROM @combinations v INNER JOIN EcomProducts m ON m.ProductId = v.MasterId AND m.ProductVariantId = ''` â€” copy master, override 3 fields. Make `ProductNumber` one of the overridden fields, not a copied one.
 
-### 2.5a Single-axis variants â€” leaner shape + the MCP/SQL surface split (validated DW 10.25.x, 2026-06-09)
+### 2.5a Single-axis variants â€” leaner shape + the MCP/SQL surface split (validated DW 10.25.x)
 
 When the product has exactly ONE variant axis (a Color selector, a tier ladder), the shape is leaner than Â§2.5's general case:
 
 - `EcomProducts.ProductVariantId` is the **bare `VariantOptionId`** (e.g. `VO3`) â€” **no `EcomVariantOptionsProductRelation` rows needed**. That table only matters for multi-axis dot-joined combinations. The master still keeps one `EcomVariantGroupProductRelation` row.
-- Surface split: MCP `save_variant_groups` / `save_variant_options` create the vocabulary, but there is **no MCP surface** for the groupâ†’product relation or for the per-variant `EcomProducts` rows. `update_products` against a variant id that has no row yet fails with `Product not found` â€” it updates, never creates, variant language rows. The Â§2.5 SQL INSERT (copy master, override per-variant fields) is the proven path for both on local installs. On hosted/API-only installs the Management API chain covers the whole shape â€” `VariantGroupAdd` then `VariantCombinationSave` (which runs `ExtendAllVariants` to create the per-variant rows); see [`dynamicweb-demo-base/references/online-mode.md`](../../dw-demo-base/references/online-mode.md) Â§"Variants without SQL" (validated DW 10.25.x, 2026-06-10).
+- Surface split: MCP `save_variant_groups` / `save_variant_options` create the vocabulary, but there is **no MCP surface** for the groupâ†’product relation or for the per-variant `EcomProducts` rows. `update_products` against a variant id that has no row yet fails with `Product not found` â€” it updates, never creates, variant language rows. The Â§2.5 SQL INSERT (copy master, override per-variant fields) is the proven path for both on local installs. On hosted/API-only installs the Management API chain covers the whole shape â€” `VariantGroupAdd` then `VariantCombinationSave` (which runs `ExtendAllVariants` to create the per-variant rows); see [`dynamicweb-demo-base/references/online-mode.md`](../../dw-demo-base/references/online-mode.md) Â§"Variants without SQL" (validated DW 10.25.x).
 - Set **`VariantOptionColor`** (hex) on the options and Swift's PDP `VariantSelector` renders live **color swatches** with zero template work.
 - Per-variant `EcomProducts` gotchas beyond the Â§2.5 override list:
   - Copy **`ProductDefaultUnitId`** onto every variant row. Variants without it silently drop the per-unit price column from Swift's quantity-break table â€” the master shows Qty / per-unit / per-piece, the variants show a narrower table, and it reads like a pricing bug even though prices never differed.
@@ -228,13 +228,13 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
 
 Switching surfaces will not fix it; the resolver is the same downstream code path. If the symptom is "I added a quantity-5 tier row but the cart charges base price for 10 units", **stop debugging the insert â€” the insert is fine, the resolver doesn't read it**. Same applies in reverse: if you have unrelated cart-pricing weirdness, do NOT assume tier rows are causing it â€” they're silently ignored, not malfunctioning.
 
-**Production pattern (vendor-recommended).** Per the Dynamicweb vendor architect (2026-05-13 architecture call): for B2B demos that need real qty-break behavior, the canonical DW10 production pattern is ERP integration that imports per-user *pre-graduated* prices â€” one row per (product, user, qty-band) with the resolved price already baked in. The cart resolver then picks the correct pre-graduated row by user-group scope. This shifts the qty-band logic out of DW into the ERP. For demos that explicitly want to show the DC-aware / customer-group-aware pricing beat, this is the pattern to scaffold (see `dynamicweb-swift-demo` DC pattern for the user-group side).
+**Production pattern (vendor-recommended).** Per the Dynamicweb vendor architect (architecture call): for B2B demos that need real qty-break behavior, the canonical DW10 production pattern is ERP integration that imports per-user *pre-graduated* prices â€” one row per (product, user, qty-band) with the resolved price already baked in. The cart resolver then picks the correct pre-graduated row by user-group scope. This shifts the qty-band logic out of DW into the ERP. For demos that explicitly want to show the DC-aware / customer-group-aware pricing beat, this is the pattern to scaffold (see `dynamicweb-swift-demo` DC pattern for the user-group side).
 
 **Escape hatch for demos that need cart-time qty-break math.** Implement a custom `Dynamicweb.Ecommerce.Prices.IPriceProvider` in `Providers/*.cs` (the customisations-ledger preflight applies per [`dynamicweb-demo-base/references/customisations.md`](../../dw-demo-base/references/customisations.md)) that consults `EcomPrices` rows with `PriceQuantity > 0` and returns the best matching row. Worth doing only when the demo's storyline lands on a "watch the price drop as the buyer adds units" beat that ERP-pre-graduated rows can't tell.
 
 **Demo workaround (no-customisation).** Keep the tier rows in `EcomPrices` so the PDP tier table still renders, and surface the limitation in the demo cheat-sheet â€” "tier prices are illustrative; cart shows base price". The pattern: a per-demo `Swift-v2_ProductPrice.cshtml` variant reads the tier rows directly via a bypassed SQL path to render the table, while the cart honors the base row at checkout. Acceptable for demos that don't make qty-break-at-cart-time the closing beat.
 
-**Don't burn a half-day on this.** This gotcha eats demo time precisely because the docs say it works and the rows look correct in the admin pricing matrix. If you see "tier price not applied at cart", the answer is in this section, not in the data.
+**This gotcha is misleading precisely because** the docs say it works and the rows look correct in the admin pricing matrix. If you see "tier price not applied at cart", the answer is in this section, not in the data.
 
 ### 2.12 Dynamic Workspaces â€” projections, not storage
 
@@ -247,11 +247,11 @@ Dynamic Workspaces are the modern PIM workbench UI in DW10 â€” multi-level 
 | `DynamicStructures` | GUID | One row per workspace â€” name + backing query GUID. |
 | `DynamicStructureLevels` | GUID + ordered | Levels of the workspace tree. Each level has a `SourceField` (the axis) and a `LevelType` enum. |
 
-Cite `Dynamicweb.Core/Indexing/DynamicStructuring/DynamicStructure.cs:24` (`public Guid Id { get; set; }`) and `DynamicStructureLevel.cs` for the level shape (verified 2026-05-21).
+Cite `Dynamicweb.Core/Indexing/DynamicStructuring/DynamicStructure.cs:24` (`public Guid Id { get; set; }`) and `DynamicStructureLevel.cs` for the level shape.
 
 **Permission entity** â€” `PermissionName="DynamicStructure"`, key=Guid. Cite `Dynamicweb.Core/Indexing/DynamicStructuring/DynamicStructure.cs:43` (`private const string PermissionName = "DynamicStructure";`) and the `[PermissionEntity(PermissionName)]` attribute at line 12. The class implements `IPermissionEntity, IPermissionEntityLookup` (line 13). Cross-ref `permissions-model.md` for how this entity slots into the three-layer model.
 
-**Level types** â€” `DataModelKey` or `ProductField`. Cite `Dynamicweb.Products.UI/Models/ProductCatalogs/DynamicStructureLevelTypes.cs` (2-value enum, verified 2026-05-21):
+**Level types** â€” `DataModelKey` or `ProductField`. Cite `Dynamicweb.Products.UI/Models/ProductCatalogs/DynamicStructureLevelTypes.cs` (2-value enum):
 
 ```csharp
 public enum DynamicStructureLevelTypes { DataModelKey, ProductField }
@@ -274,7 +274,7 @@ A workspace level rooted on `DataModelKey` projects products by which DataModel 
 - Permission boundary. Workspaces are gated by the `/Products/DynamicWorkspaces` capability key (single on/off across all workspaces of that capability scope), not per workspace. Per-product permissions still come from group-level grants â€” see the parallel `permissions-model.md` for the full picture.
 - Originating products without a catalog group. Without `UseRelationOnProductCreate=true` on at least one level, the workspace's "Create product" UI produces orphans.
 
-Cite source files (all under `dw10source/src/Core/Dynamicweb.Core/Indexing/DynamicStructuring/`, verified 2026-05-21):
+Cite source files (all under `dw10source/src/Core/Dynamicweb.Core/Indexing/DynamicStructuring/`):
 - `DynamicStructure.cs` â€” entity (Guid key, `PermissionName="DynamicStructure"`, line 43)
 - `DynamicStructureLevel.cs` â€” level + `UseRelationOnProductCreate` (line 74)
 - `DynamicStructureLevelScope.cs` â€” runtime level recognition (value-based)

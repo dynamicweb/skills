@@ -96,7 +96,8 @@ squash-merged to the integration branch the recovery is the expensive history re
 | **Personal names** of customer, partner, OR vendor employees | first+last name in narrative; first name in attribution; surname-only in citations | role-based language (`the Dynamicweb vendor architect`, `the customer CSR`, `the demo presenter`) + the date |
 | **Customer-specific paths** | `C:\Projects\Solutions\<customer-slug>\...`; `<customer-slug>/notes/...`; `<customer-slug>/RESUME.md` | `<demo>/...`, `<prior-demo>/RESUME.md` |
 | **Brand identifiers in code/JSON** | `<Brand>_<Concept>.xml` worked examples baked with a real prefix; CSS custom-property tokens like `--<brand>-<colour>`; HTML data-attributes like `data-<brand>-variant`; `<brand>_custom.css` filenames; JSON `"Id"`/`"Name"` baked with a real brand | `<Brand>_<Concept>.xml`, `--brand-primary`, `data-<brand>-variant`, `<brand>_custom.css`, `"Name": "Acme"`, `"Id": "acme"` |
-| **Session-relative time** | `Today's …`, `this morning`, `yesterday's`, `this week we …` | absolute date (`2026-05-21`), or nothing (the date already lives in `git log` — don't restate it in prose) |
+| **Session-relative time AND inline date stamps** | `Today's …`, `this morning`, `yesterday's`, `this week we …`; *and* prose date markers — `(verified 2026-05-21)`, `(validated DW 10.25.x, 2026-06-10)`, `Superseded 2026-05-08:` | nothing — the date already lives in `git log`; don't restate it in prose. Keep a build version if the marker carries one (`DW 10.25.x`) and drop only the date. Dates that are *data* (SQL literals; the `CUSTOMISATIONS.md` ledger column) stay. |
+| **Wall-clock duration / effort claims** | `~30 seconds on a warm SQL Express`, `saves time`, `don't burn a half-day`, `you've wasted hours`, `classic time-sink` | nothing — an LLM has no notion of wall-clock time. State the actionable rule (`bundle INSERTs behind one restart`), not how long it takes or saves. |
 | **Customer hex colors / domain names / phone numbers / addresses** | brand hex codes baked into examples; customer-domain hostnames in code or links; real phone numbers / street addresses in DC band / contact strip examples | `var(--brand-primary)`, `<host>`, `<phone>`, `<address>` |
 
 ### The grep pack — run BEFORE the file gets edited AND in the PR gate
@@ -234,9 +235,9 @@ Voice + structure rules (match what's already there):
   `sqlcmd`, or PowerShell snippet that worked.
 - Prefer rewriting the existing text over appending below it (Step 1b §3). If a future reader
   could mistake the new content for hypothetical advice, mark it as proven inline — sparingly.
-  **Use absolute dates, never "today" / "this morning" / etc.** (Step 1a).
-- **Provenance citations name roles + dates, never individuals.** "Per the Dynamicweb vendor
-  architect (2026-05-13 architecture call)" — not "Per `<Person Name>` (2026-05-13 …)". Apply
+  **Keep dates out of the skill body: the date lives in `git log`. Never "today" / "this morning" / a `(verified <date>)` stamp.** (Step 1a).
+- **Provenance citations name roles, never individuals or dates.** "Per the Dynamicweb vendor
+  architect" — not "Per `<Person Name>` (2026-05-13 …)". Apply
   to customer-side, partner-side, AND vendor-side individuals.
 - Don't break existing cross-references. If you change a heading, search the other skills for
   links to it and update them too. **Never add a link from a foundational skill into a
@@ -411,7 +412,7 @@ or `git rebase`), re-run the grep pack, and `git push --force-with-lease` *the b
 updates in place; nothing public on the integration branch was ever touched. This pre-merge
 window is the whole point of the PR gate.
 
-If it already merged, the recipe used during the 2026-05-21 sweep:
+If it already merged, the recipe used during a prior sweep:
 
 1. **Scrub working-tree content** first via direct `Edit`s, replacing customer-named strings
    with `<demo>`/`<brand>`/`Acme`-style placeholders.

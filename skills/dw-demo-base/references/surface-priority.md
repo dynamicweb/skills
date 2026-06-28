@@ -48,7 +48,7 @@ A `succeeded` / `status: ok` response from surfaces 1-2 does NOT guarantee the f
 
 | Surface | What gets silently dropped | Verified | Working fallback |
 |---|---|---|---|
-| MCP `save_pages` (update path) | `menuText` — the response even echoes the OLD value | DW 10.25.x, 2026-06-10 | SQL `UPDATE Page SET PageMenuText` + host restart (nav tree caches menu text) |
-| Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x, 2026-05 | MCP `set_item_field_values` first; SQL UPDATE last resort. `ParagraphSave` IS still right for paragraph-level scalars (Header, Sort, GridRow, Template) |
+| MCP `save_pages` (update path) | `menuText` — the response even echoes the OLD value | DW 10.25.x | SQL `UPDATE Page SET PageMenuText` + host restart (nav tree caches menu text) |
+| Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort. `ParagraphSave` IS still right for paragraph-level scalars (Header, Sort, GridRow, Template) |
 
 **Rule:** after any update through MCP/API where the change is demo-critical, round-trip it (read the value back through a different surface, or curl the rendered page) before declaring it done. When a silent no-op is confirmed, the SQL fallback is sanctioned — log it in the demo's `CUSTOMISATIONS.md` and note the cache that needs flushing.
