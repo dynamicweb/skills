@@ -3,6 +3,20 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.3.2]
+
+### Changed
+- **Documented the index-build-reads-through-cache ordering trap for SQL product-data writes
+  (`dw-demo-pim/references/cache-invalidation.md`).** The cache table had no row for direct SQL
+  edits to `EcomProducts` translatable fields, and nothing warned that the Lucene index builder
+  reads product data *through* the live `ProductService` cache. Symptom: after translating a
+  catalogue into a new ecommerce language via SQL and rebuilding the index, PDP + PLP stayed in the
+  default language — because `BuildIndex` ran while the product cache was stale and baked the old
+  values in. Added the table row + a dedicated section stating the correct order (write →
+  flush/restart → *then* BuildIndex; reindex-then-restart is wrong), and a note that MCP
+  `patch_products_safe` with a non-default `languageId` was observed to echo the translation but not
+  persist it (verify the DB row; SQL was the reliable write surface).
+
 ## [3.3.1]
 
 ### Changed
