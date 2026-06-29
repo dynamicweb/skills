@@ -77,7 +77,8 @@ description: Create and configure Dynamicweb 10 dashboards and widgets using MCP
 ```
 
 Demo skills additionally carry a `Use AFTER dw-demo-base` marker (see below). Keep
-descriptions on a single line.
+descriptions on a single line, and within the **1024-character** frontmatter cap — parsers
+truncate past it, silently dropping trigger coverage (the validator errors over the cap).
 
 ### Writing the instruction body
 
@@ -88,6 +89,24 @@ predictable failure mode, and prefer the paired form ("serialize with the DW ser
 raw XML export") over a bare "don't". Few-shot bad→good example pairs are exempt. The full
 rule, with the test for when contrast earns its place, lives in
 `skills/dw-demo-base/references/iterate-plugin.md` ("Phrase instructions positively").
+
+### Length budgets and references
+
+Keep a **SKILL.md body under ~500 lines** — past that it is doing reference work, so split the
+overflow into `references/<topic>.md` and link to it (the validator warns over 500). A SKILL.md
+should read as a nav layer over its references, not a manual.
+
+Any `references/` file over **100 lines** gets a **top-of-file table of contents** — a
+`## Contents` block linking to its sections. It survives the partial-preview reads Claude does
+when reaching a reference through a link, and gives the model a map of the file (the validator
+warns when it is missing). Keep references one level deep from SKILL.md.
+
+### Encoding
+
+Author every markdown file as **UTF-8 without a BOM** and free of **double-encoded UTF-8
+(mojibake)** — the `â€"`/`Â§` corruption you get when text is pasted from a mis-decoded source
+(a common fold-back hazard). The validator errors on both. If a paste looks corrupted, repair it
+with `ftfy.fix_encoding` before committing rather than hand-editing character by character.
 
 ### Adding a new skill
 
@@ -115,9 +134,11 @@ The `dynamicweb-presales` bundle has a hard dependency chain — `dw-demo-base` 
 that `marketplace.json` parses and has the required top-level schema (`name`, `owner`,
 `plugins`), that every plugin entry has a `source` and every referenced skill path exists;
 that each skill's folder name, `name:` frontmatter, and marketplace path agree; that every
-relative link in `SKILL.md`/`references` resolves; that no markdown file begins with a UTF-8
-BOM; and that the retired "truvio" codename appears nowhere. It warns (without failing) when a
-description lacks a trigger signal.
+relative link in `SKILL.md`/`references` resolves; that each `description` is within the
+1024-char cap; that no markdown file begins with a UTF-8 BOM or contains double-encoded UTF-8
+(mojibake); and that the retired "truvio" codename appears nowhere. It warns (without failing)
+when a description lacks a trigger signal, a SKILL.md body runs past 500 lines, or a reference
+over 100 lines lacks a table of contents.
 
 For a deeper check against Claude Code's own plugin schema, also run `claude plugin validate ./`.
 

@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.3.9]
+
+### Added
+- **Encoded the recent structural audit rules into `validate-skills.py` and the authoring guidance**
+  so folds and PRs can't silently reintroduce them. New validator checks: `description` over the
+  **1024-char** frontmatter cap (**error**); **double-encoded UTF-8 / mojibake** anywhere under
+  `skills/` (**error**, the fold-back hazard from CHANGELOG 3.3.7); a **SKILL.md body over 500
+  lines** (warning); and a **references/ file over 100 lines without a top-of-file table of
+  contents** (warning). Documented all four in `CLAUDE.md` (new "Length budgets and references" and
+  "Encoding" subsections, plus the frontmatter cap and the Validation summary) and in the
+  fold-back's `Step 3 — Validate` note in `dw-demo-base/references/iterate-plugin.md`.
+
 ## [3.3.8]
 
 ### Changed

@@ -279,9 +279,12 @@ python3 scripts/validate-skills.py
 ```
 
 Must exit 0. Errors → fix before continuing. The validator checks the marketplace schema,
-folder/name/path agreement, relative-link resolution, and absence of UTF-8 BOMs; if you only
-edited a reference file under `skills/*/references/`, it should pass trivially. For a deeper
-check, also run `claude plugin validate ./`.
+folder/name/path agreement, relative-link resolution, the 1024-char `description` cap, absence of
+UTF-8 BOMs, and absence of double-encoded UTF-8 (mojibake — the failure mode when a fold pastes
+text from a mis-decoded source; repair with `ftfy.fix_encoding`, not by hand). It also warns when
+a SKILL.md body runs past 500 lines or a reference over 100 lines lacks a top-of-file table of
+contents. If you only edited a reference file under `skills/*/references/`, it should pass
+trivially. For a deeper check, also run `claude plugin validate ./`.
 
 ## Step 4 — Bump the version (one place)
 
