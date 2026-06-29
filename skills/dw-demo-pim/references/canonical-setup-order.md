@@ -89,43 +89,10 @@ No `ShopType=1` shop. Products live on `EcomGroupProductRelation` rows under `SH
 
 The two sections below are commerce / customer-center seeding, not PIM setup order — they apply when a demo seeds order history for Swift's account-side and CSR views.
 
-### Post-seed: order completion backfill
+The vendor-generic order-completion backfill facts — `create_orders` seeds `OrderComplete=0` carts (not completed orders), `OrderCustomerNumber` is not populated by `create_orders` (the `UseCustomerNumber` lookup), the area-currency-filters-order-history caveat, and the SQL-backfills-vs-runtime-subscribers distinction — live in [`../../dw-demo-base/references/foundational/commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md). The `Order.BeforeSave` / `complete_order` / password-rehash runtime paths and the "subscriber ships without a ledger row" rule are covered there too.
 
-`mcp__dynamicweb-commerce-mcp__create_orders` seeds rows into `EcomOrders` with `OrderComplete=0`, i.e. **carts**, not completed orders. Swift's account-side Orders paragraph and the CSR Orders impersonation view both filter on `OrderComplete=1` and silently skip the cart rows — the symptom is "I seeded 13 orders via MCP and the My Orders tab is empty," not an error.
+**Demo-sequence context:** in a Swift customer-center demo this seeding fires *after* the order rows are created, before the account-side / CSR verification walk. The area-default-vs-seed-currency pitfall is the one that most often produces a silently-empty My Orders tab on a deserialized Swift baseline — align the area currency to the seeded `OrderCurrencyCode` before backfilling completion. See [`../../dw-demo-swift/references/customer-center.md`](../../dw-demo-swift/references/customer-center.md) for the area-default pitfall and the CSR `AccessUserSecondaryRelation` grants.
 
-For demo seed scripts where the orders are *meant* to be order-history (not in-progress carts), backfill the flag in one SQL after `create_orders` returns:
-
-```powershell
-sqlcmd -S "<dwserver>" -d <dwdb> -E -Q `
-  "UPDATE EcomOrders SET OrderComplete = 1 WHERE OrderComplete = 0 AND OrderCart = 0 AND OrderID LIKE 'ORDER%'"
-```
-
-Use a `WHERE` clause precise enough to skip any rows that are intentionally carts (CART1/CART2/...). The `mcp__dynamicweb-commerce-mcp__complete_order` MCP tool exists and works on individual orders but runs the full price-recalc + workflow chain per call, which is slow for bulk seed and can fail if pricing has any unresolved currency / country gaps. Direct UPDATE is the right tool for seed-script bulk completion; reserve `complete_order` for in-demo flows where the side-effects (workflow, email, inventory) are part of the demo.
-
-**Also seed `OrderCustomerNumber` when seeding for B2B account-side display.** The Account → Orders paragraph uses a `UseCustomerNumber` lookup against the seeded user's `AccessUserCustomerNumber`; MCP `create_orders` populates `OrderCustomerAccessUserId` but not `OrderCustomerNumber`. Backfill:
-
-```sql
-UPDATE o
-SET OrderCustomerNumber = u.AccessUserCustomerNumber
-FROM EcomOrders o
-JOIN AccessUser u ON u.AccessUserID = o.OrderCustomerAccessUserId
-WHERE o.OrderCustomerNumber IS NULL OR o.OrderCustomerNumber = '';
-```
-
-**Currency / country alignment caveat.** Account-side filters orders by the area's *current* currency, not the order's stored currency. If the demo's `Area` row defaults to EUR/DE after a `deserialize` and seeds orders in USD, My Orders renders empty silently. Switch the area to match the seeded `OrderCurrencyCode` (or seed orders in the area's default) BEFORE backfilling completion. See `dynamicweb-swift-demo/references/customer-center.md` for the area-default-vs-seed-currency pitfall.
-
-**Verification:** after the backfill, walk the demo: log in as a seeded buyer, hit `/customer-center/account/orders`, confirm at least N order rows. Then log in as the CSR persona and hit `/customer-center/csr/orders`, confirm rows there too (CSR view depends on `AccessUserSecondaryRelation` grants — see `dynamicweb-swift-demo/references/customer-center.md` §5).
-
-### SQL backfills vs runtime subscribers
-
-The bulk SQL backfills documented above (`OrderCustomerNumber`, `OrderComplete=1`, `AccessUserPassword`) are correct for **seed data** — they're the fastest path to populate a demo from a clean slate.
-
-For **runtime** flows (orders placed by users on the storefront, password resets, etc.), the canonical DW10 path is different:
-
-- `OrderCustomerNumber`: `[Subscribe(Order.BeforeSave)]` subscriber copies `user.CustomerNumber` to `order.CustomerNumber`.
-- `OrderComplete=1`: setting `order.Complete = true` + `Services.Orders.Save(order)` auto-stamps `CompletedDate`. Or call `complete_order` MCP. dw10source `Order.cs:250-271`.
-- `AccessUserPassword`: `UserManagementServices.Users.ChangePassword(user, pw)` + `Services.Users.Save(user)`. dw10source `UserService.cs:430,439`. DW10's `AuthenticationManager.cs:184` also auto-rehashes plaintext seeds on first successful login.
-
-The subscriber is a `.cs` file but **not in the customisations preflight glob** — a `NotificationSubscriber` ships unprompted. See [`../../dw-demo-base/references/customisations.md`](../../dw-demo-base/references/customisations.md) §"What the rule *actually* forbids vs. doesn't forbid" and [`../../dw-demo-swift/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) §"Cross-cutting redirects". Ship the subscriber without a ledger row.
+**Verification (demo walk):** after the backfill, log in as a seeded buyer and hit `/customer-center/account/orders`, confirm at least N order rows; then log in as the CSR persona and hit `/customer-center/csr/orders`, confirm rows there too (CSR view depends on `AccessUserSecondaryRelation` grants — see [`../../dw-demo-swift/references/customer-center.md`](../../dw-demo-swift/references/customer-center.md) §5).
 
 

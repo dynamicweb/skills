@@ -6,40 +6,33 @@
 
 **An ERP in DW10 is modelled through the Integration Framework as both a source AND a target -- never as an `EcomShops.ShopType=3` channel and never as an `EcomFeed`.**
 
-## What the DW docs actually say
+## The framework this rides on
 
-From [doc.dynamicweb.com](https://doc.dynamicweb.com/) (Integration area, Integration Framework v2):
-
-- "Data integration is the process of importing and exporting data to and from your Dynamicweb solution, either on an ad-hoc basis, on a schedule or in real-time."
-- The Integration Framework v2 is "a collection of components for transferring data and maintaining data consistency between a Dynamicweb solution and a remote system. **This is typically an ERP.**"
-- "An integration provider is a piece of software for moving data between Dynamicweb and an external data source, like an XML file, a CSV file or an SQL database."
-- An activity requires two provider types: "**A source provider matching the data source**" and "**A destination provider matching the data destination**."
-- Three approaches: **ad-hoc activities**, **batch integration** (scheduled tasks at hourly/daily/weekly intervals), and **live integration** ("retrieves data from a remote system in real-time, and uses it to show for instance live prices or stock states").
+The Integration Framework architecture — activities, the source-provider / destination-provider pair,
+and field mapping — is owned by
+[`dw-integration-framework`](../../dw-integration-framework/SKILL.md). Read it for the architecture;
+the three approaches (ad-hoc / batch / live) are catalogued in
+[`../../dw-demo-base/references/foundational/integration-framework.md`](../../dw-demo-base/references/foundational/integration-framework.md).
+This skill covers only how an ERP demo *applies* that framework. The one ERP-specific framing the
+demo adds is the rule above: an ERP is both source and target, never a channel or a feed.
 
 ## Source vs target -- which is the ERP?
 
 It depends on the direction of the activity. Across the bidirectional set of activities that make up an "ERP integration", the ERP is BOTH a source and a target.
 
-| Direction | Source | Target | Typical payload |
-|---|---|---|---|
-| BC -> DW | ERP (BC) | Dynamicweb (Ecom/Products) | Price, stock, cost, vendor item no, reorder status, customer-specific contract prices |
-| DW -> BC | Dynamicweb (Ecom/Products) | ERP (BC) | New-product descriptive data, enrichment updates, marketing copy, attribute values |
+| Direction | Source | Target |
+|---|---|---|
+| BC -> DW | ERP (BC) | Dynamicweb (Ecom/Products) |
+| DW -> BC | Dynamicweb (Ecom/Products) | ERP (BC) |
 
-A given **activity** has exactly one source and one target. The "ERP is source AND target" rule applies at the integration-level (the collection of activities), not at the activity-level.
+A given **activity** has exactly one source and one target. The "ERP is source AND target" rule applies at the integration-level (the collection of activities), not at the activity-level. Which fields flow in each direction — the ERP↔PIM ownership split — is in the foundational candidate [`../../dw-demo-base/references/foundational/integration-erp.md`](../../dw-demo-base/references/foundational/integration-erp.md).
 
 ## The right modelling shape in DW10
 
-For both flavors of this skill (mock + live), the modelling shape is the same -- only the implementation differs.
-
-```
-Activity (one per direction)
-    Source provider     -> data source (BC for BC->DW; DW for DW->BC)
-    Destination provider -> data target (DW for BC->DW; BC for DW->BC)
-    Field mapping       -> how source fields map to destination fields
-    Schedule            -> ad-hoc | batch (cron) | live (per request)
-```
-
-Concretely:
+For both flavors (mock + live) the modelling shape is the same — one activity per direction, each
+with a source provider, a destination provider, a field mapping, and a schedule (ad-hoc / batch /
+live). That shape is owned by [`dw-integration-framework`](../../dw-integration-framework/SKILL.md);
+only the *implementation* differs per flavor:
 
 - **Live flavor** (sister skill `dynamicweb-pim-for-bc`): the AppStore "PIM for Business Central connector" registers BC-side endpoints under `/admin/api/BC*` (11 queries + 4 commands). BC polls these on its own schedule; DW responds with the requested data shape. The connector itself is the destination provider FROM BC's perspective; the queries are the source endpoints FROM BC's perspective. See [`../dw-integration-bc/references/connector-endpoints.md`](../../dw-integration-bc/references/connector-endpoints.md).
 - **Mock flavor** (this skill, [mock-deltas.md](mock-deltas.md)): no provider class is registered. The database is pre-staged into the **post-BC-sync state** — every value BC would have written is already in `EcomProducts`, as if the delta arrived overnight — and a single built-in `RunSqlScheduledTaskAddIn` RESET task flips it back between demos. The demo narrates "BC sent us this; look at the result", with the data + action-rule definition + email template as evidence. The PIM→BC direction is told via one static field-mapping artefact. The framework concepts (source provider, destination provider, activity, field mapping) are narrated against that staged state, not against live wires. (Superseded: an earlier version of this flavor used inbox/outbox JSON files — see the "Do not" section of mock-deltas.md.)

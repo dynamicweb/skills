@@ -3,6 +3,35 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.0]
+
+### Changed
+- **Separated vendor-generic platform knowledge out of all five demo skills.** An audit found the
+  demo skills carried large amounts of authoritative DW10 platform knowledge (≈50–75% of body in
+  the heaviest cases) that belongs in foundational skills — demo skills should be flow +
+  demo-building only. This refactor relocates that knowledge **without folding it into the real
+  foundational skills yet** (a deliberate "prepare to fold up" stage), via two mechanisms:
+  - **Mechanism A — already in a foundational skill → reference, don't repeat.** The demo file drops
+    the duplicated prose and links to the foundational skill. The two skills referenced this way
+    (`dw-integration-framework`, `dw-extend-csharp-api`) are added to the `dynamicweb-presales`
+    bundle so the links resolve in a presales-only install (presales becomes a superset).
+  - **Mechanism B — not yet in a foundational skill → stage as a fold-up candidate.** The
+    vendor-generic content moves into a labeled candidate under
+    `dw-demo-base/references/foundational/<target>.md` (header: **FOUNDATIONAL CANDIDATE →
+    dw-<target>**), and the demo file points at it. Candidates map 1:1 to a future foundational
+    owner, so the eventual fold-up is mechanical (move the body, re-target the pointers).
+  - **Result:** **22 candidate files** (~4,700 lines of platform knowledge) now staged under
+    `dw-demo-base/references/foundational/`; the demo skills are thinned to flow + pointers
+    (`dw-demo-pim` ~1500→527 lines, `dw-demo-swift` ~2500→1148, plus `dw-demo-erp`,
+    `dw-integration-bc`, and the platform-heavy parts of `dw-demo-base`). **No foundational skill
+    file was edited**, and several pre-existing foundational→demo boundary links were removed in the
+    process (the one-way rule now holds cleaner). Candidate targets span `dw-pim-*`,
+    `dw-commerce-*`, `dw-users-permissions`, `dw-search-indexing`, `dw-content-modelling`,
+    `dw-render-*`, `dw-swift-building`, `dw-data-access`, `dw-setup-*`, `dw-extend-*`,
+    `dw-integration-*`, and `dw-source-explorer`.
+  - **Next:** fold each candidate into its named foundational skill (sanitized), re-target the
+    demo pointers, and extend the presales superset accordingly — one foundational skill per future PR.
+
 ## [3.3.10]
 
 ### Added
