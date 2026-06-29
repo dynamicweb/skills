@@ -1,0 +1,5 @@
+# Local fold-back working notes — drafts mined from demo builds before they are
+# sanitized and folded into a skill. These routinely contain customer/engagement
+# names and the retired codename, so they must never be committed to this public
+# repo (see dw-demo-base/references/iterate-plugin.md, "What to scrub").
+notes/
