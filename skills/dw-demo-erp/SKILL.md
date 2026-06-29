@@ -34,7 +34,7 @@ If the trigger is "expose the host to a real BC tenant via ngrok / set up the Ap
 
 ## Always-on rule: ERP is a source/target in the Integration Framework, NOT a channel or feed
 
-**The single most common ERP-demo mismodelling.** It surfaces every time someone reaches for "create a shop / create a feed" when they mean "wire an ERP". Channels and feeds publish FROM DW TO an external read-only consumer that doesn't write back; ERPs write back â€” so an ERP is modelled as a source provider + destination provider + activity in the Integration Framework, never as `EcomShops.ShopType=3` or an `EcomFeed`. The DW-doc grounding, the source-vs-target table, and the full anti-pattern discussion are owned by [references/integration-framework.md](references/integration-framework.md).
+**The single most common ERP-demo mismodelling.** It surfaces every time someone reaches for "create a shop / create a feed" when they mean "wire an ERP". Channels and feeds publish FROM DW TO an external read-only consumer that doesn't write back; ERPs write back — so an ERP is modelled as a source provider + destination provider + activity in the Integration Framework, never as `EcomShops.ShopType=3` or an `EcomFeed`. The DW-doc grounding, the source-vs-target table, and the full anti-pattern discussion are owned by [references/integration-framework.md](references/integration-framework.md).
 
 **Anti-pattern table** (full discussion in the reference):
 
@@ -46,10 +46,10 @@ If the trigger is "expose the host to a real BC tenant via ngrok / set up the Ap
 
 ## Two flavors: DB-staged mock vs live BC
 
-Pick the flavor at the start of the demo build â€” mixing both forces the audience to track two integration models in parallel. The full constraint-by-constraint decision table is owned by [references/mock-deltas.md](references/mock-deltas.md) Â§"When to use this flavor".
+Pick the flavor at the start of the demo build — mixing both forces the audience to track two integration models in parallel. The full constraint-by-constraint decision table is owned by [references/mock-deltas.md](references/mock-deltas.md) §"When to use this flavor".
 
-- **No BC tenant in scope** (partner handover, offline laptop) â†’ DB-staged mock, this skill: [references/mock-deltas.md](references/mock-deltas.md).
-- **Real BC tenant + credentials in scope** â†’ live BC, sister skill: [`dynamicweb-pim-for-bc`](../dw-integration-bc/SKILL.md).
+- **No BC tenant in scope** (partner handover, offline laptop) → DB-staged mock, this skill: [references/mock-deltas.md](references/mock-deltas.md).
+- **Real BC tenant + credentials in scope** → live BC, sister skill: [`dynamicweb-pim-for-bc`](../dw-integration-bc/SKILL.md).
 
 The two flavors demonstrate DIFFERENT demo beats: mock shows "the PIM responds to BC-sourced data" (staged state + action rule as evidence); live BC shows the actual wire. Choose deliberately.
 

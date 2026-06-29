@@ -1,11 +1,11 @@
-# Setup Checks â€” fresh-machine readiness
+# Setup Checks — fresh-machine readiness
 
 Verification logic lives as fenced PowerShell inside this Markdown reference, not as standalone `.ps1` scripts. Use it to verify env vars, the .NET 10 SDK, `Dynamicweb.ProjectTemplates`, the SQL Express service, and the five vault slots before touching any per-demo work.
 
 **Posture:** verify + opt-in fix.
 
-- **Cheap fixes** (env vars at User scope) â†’ the skill prompts for approval, runs the fix, advises a Claude Code restart.
-- **Install-grade fixes** (.NET 10 SDK, SQL Express, `Dynamicweb.ProjectTemplates`) â†’ print + link only. Never auto-install. The user runs the installer.
+- **Cheap fixes** (env vars at User scope) → the skill prompts for approval, runs the fix, advises a Claude Code restart.
+- **Install-grade fixes** (.NET 10 SDK, SQL Express, `Dynamicweb.ProjectTemplates`) → print + link only. Never auto-install. The user runs the installer.
 
 ---
 
@@ -14,14 +14,14 @@ Verification logic lives as fenced PowerShell inside this Markdown reference, no
 Run all probes at once. If every line is green, you can skip the per-check sections below and head to `references/scaffold.md`.
 
 ```powershell
-dotnet --version                                   # any modern SDK is fine; the live check is `--list-sdks | Select-String '^10\.'` below (host targets net10 â€” required for AppStore Backend MCP)
+dotnet --version                                   # any modern SDK is fine; the live check is `--list-sdks | Select-String '^10\.'` below (host targets net10 — required for AppStore Backend MCP)
 dotnet new list | Select-String 'dw10-suite'       # expect "DynamicWeb 10 Suite Project Template" or similar
 Get-Service "MSSQL`$SQLEXPRESS" | Select-Object Name, Status
 [Environment]::GetEnvironmentVariable("DW_VAULT","User")
 [Environment]::GetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED","User")
 ```
 
-Note the backtick on `MSSQL`$SQLEXPRESS` â€” `$SQLEXPRESS` is a PowerShell special token unless escaped.
+Note the backtick on `MSSQL`$SQLEXPRESS` — `$SQLEXPRESS` is a PowerShell special token unless escaped.
 
 If any line is red, jump to its per-check section below.
 
@@ -29,7 +29,7 @@ If any line is red, jump to its per-check section below.
 
 ## 2. Per-check sections
 
-Each check follows the same shape: **Why** â†’ **Probe** â†’ **Expected** â†’ **Cheap fix (opt-in)** OR **Install-grade fix (print+link)**.
+Each check follows the same shape: **Why** → **Probe** → **Expected** → **Cheap fix (opt-in)** OR **Install-grade fix (print+link)**.
 
 ### Check: DW_VAULT env var (User scope)
 
@@ -60,7 +60,7 @@ Each check follows the same shape: **Why** â†’ **Probe** â†’ **Expecte
 
 ### Check: NODE_TLS_REJECT_UNAUTHORIZED env var (User scope)
 
-**Why this matters:** This is the load-bearing layer of the two-layer TLS bypass â€” without it the MCP HTTPS handshake fails silently (`claude mcp list` shows "Failed to connect"). Full rationale and both layers: `references/tls-bypass.md`; this check is only the env-var verification.
+**Why this matters:** This is the load-bearing layer of the two-layer TLS bypass — without it the MCP HTTPS handshake fails silently (`claude mcp list` shows "Failed to connect"). Full rationale and both layers: `references/tls-bypass.md`; this check is only the env-var verification.
 
 **Probe:**
 
@@ -85,7 +85,7 @@ Each check follows the same shape: **Why** â†’ **Probe** â†’ **Expecte
 
 ### Check: .NET 10 SDK
 
-**Why this matters:** the host runs on .NET 10 (csproj is pinned to `<TargetFramework>net10.0</TargetFramework>` per `references/scaffold.md` Section 2.1). The AppStore Backend MCP AddIn loader hard-requires .NET 10 even though its package ships net6/net8 lib binaries â€” installing on a net8 host appears to succeed (POST returns 200, files drop to disk) but the AddIn never registers. Net8 SDKs may also be installed for legacy compatibility and that's fine â€” they coexist â€” but .NET 10 must be present.
+**Why this matters:** the host runs on .NET 10 (csproj is pinned to `<TargetFramework>net10.0</TargetFramework>` per `references/scaffold.md` Section 2.1). The AppStore Backend MCP AddIn loader hard-requires .NET 10 even though its package ships net6/net8 lib binaries — installing on a net8 host appears to succeed (POST returns 200, files drop to disk) but the AddIn never registers. Net8 SDKs may also be installed for legacy compatibility and that's fine — they coexist — but .NET 10 must be present.
 
 **Probe:**
 
@@ -102,7 +102,7 @@ dotnet --list-sdks | Select-String '^10\.'
 
 ### Check: Dynamicweb.ProjectTemplates 1.26.0
 
-**Why this matters:** `dotnet new dw10-suite` (the canonical scaffold command) requires the `Dynamicweb.ProjectTemplates` package. Pin to 1.26.0 â€” templates are forward-only and 1.26.0 is the latest version we have verified against.
+**Why this matters:** `dotnet new dw10-suite` (the canonical scaffold command) requires the `Dynamicweb.ProjectTemplates` package. Pin to 1.26.0 — templates are forward-only and 1.26.0 is the latest version we have verified against.
 
 **Probe:**
 
@@ -112,7 +112,7 @@ dotnet new list | Select-String 'dw10-suite'
 
 **Expected:** a row matching `dw10-suite` (the template short name).
 
-**Cheap fix (borderline; opt-in):** This sits between cheap and install-grade â€” it mutates user-global dotnet template config but doesn't require admin. Ask the user via `AskUserQuestion`:
+**Cheap fix (borderline; opt-in):** This sits between cheap and install-grade — it mutates user-global dotnet template config but doesn't require admin. Ask the user via `AskUserQuestion`:
 
 > "`Dynamicweb.ProjectTemplates 1.26.0` is not installed. I can run:
 >
@@ -120,7 +120,7 @@ dotnet new list | Select-String 'dw10-suite'
 > dotnet new install Dynamicweb.ProjectTemplates::1.26.0
 > ```
 >
-> This mutates user-global dotnet template config. Approve? [Install / Skip â€” I'll install manually]"
+> This mutates user-global dotnet template config. Approve? [Install / Skip — I'll install manually]"
 
 If the user prefers manual: link <https://www.nuget.org/packages/Dynamicweb.ProjectTemplates/1.26.0>.
 
@@ -146,13 +146,13 @@ Get-Service "MSSQL`$SQLEXPRESS" | Select-Object Name, Status
 >
 > Windows may prompt for admin elevation. Approve? [Start / Skip]"
 
-**Install-grade fallback:** If `Get-Service` returns no service at all (not just stopped â€” missing), SQL Express isn't installed. Do not auto-install. Print:
+**Install-grade fallback:** If `Get-Service` returns no service at all (not just stopped — missing), SQL Express isn't installed. Do not auto-install. Print:
 
 > "SQL Express is not installed. Download SQL Server Express 2022 from <https://www.microsoft.com/en-us/sql-server/sql-server-downloads> and run the installer with the named instance `SQLEXPRESS`. After install, re-run this probe."
 
 ### Check: Vault slot inventory
 
-**Why this matters:** The skill resolves all reference content via `$env:DW_VAULT` + the slot table in `$env:DW_VAULT\INDEX.md`. The five slots are `dw10source`, `samples`, `databases`, `docs`, `serialized-data`. The vault layout also hard-relocated `dw10adminUI-samples\` â†’ `samples\dw10adminUI\`; if the legacy top-level location is still present, INDEX.md tells two stories and the vault is in a drift state (apply the baseline-drift self-diagnosis rule).
+**Why this matters:** The skill resolves all reference content via `$env:DW_VAULT` + the slot table in `$env:DW_VAULT\INDEX.md`. The five slots are `dw10source`, `samples`, `databases`, `docs`, `serialized-data`. The vault layout also hard-relocated `dw10adminUI-samples\` → `samples\dw10adminUI\`; if the legacy top-level location is still present, INDEX.md tells two stories and the vault is in a drift state (apply the baseline-drift self-diagnosis rule).
 
 **Probe:**
 
@@ -185,7 +185,7 @@ if (Test-Path $legacy) {
 
 **Expected:** INDEX.md present, all five slots present, no legacy `dw10adminUI-samples\` at top level.
 
-**Cheap fix (opt-in, only if individual slots missing):** Offer to `New-Item -ItemType Directory -Force` the missing slot folders. Do NOT seed content automatically â€” slot population is a vault-bootstrap concern; this check just detects absence.
+**Cheap fix (opt-in, only if individual slots missing):** Offer to `New-Item -ItemType Directory -Force` the missing slot folders. Do NOT seed content automatically — slot population is a vault-bootstrap concern; this check just detects absence.
 
 ---
 
@@ -195,13 +195,13 @@ if (Test-Path $legacy) {
 
 1. **MSDTC service running** AND **inbound/outbound transactions enabled** at the service level
 2. **DTC Windows Firewall rules enabled** (DTC RPC, RPC-EPMAP, TCP-In, TCP-Out)
-3. **`TransactionManager.ImplicitDistributedTransactions = true`** set in the host process (see `scaffold.md` Â§2.1b â€” applied at project scaffold time)
+3. **`TransactionManager.ImplicitDistributedTransactions = true`** set in the host process (see `scaffold.md` §2.1b — applied at project scaffold time)
 
 On a fresh dev box only (1) is partially true (MSDTC runs in Manual mode with all flags off). Without all three, AreaCopy fails with:
 
 > `System.Transactions.TransactionException: The operation is not valid for the state of the transaction.`
 
-with a stack going through `EnlistPromotableSinglePhase` â†’ `SqlInternalConnection.EnlistNonNull`. Every per-page warning logs the same exception; the final ColorSwatch.Save throws fatally and the catch block returns `"Area was not copied!"`.
+with a stack going through `EnlistPromotableSinglePhase` → `SqlInternalConnection.EnlistNonNull`. Every per-page warning logs the same exception; the final ColorSwatch.Save throws fatally and the catch block returns `"Area was not copied!"`.
 
 **Probe (no admin needed):**
 
@@ -211,7 +211,7 @@ $fw  = (Get-NetFirewallRule | ? { $_.DisplayName -match 'Distributed Transaction
 "InboundTx=$($dtc.InboundTransactionsEnabled) OutboundTx=$($dtc.OutboundTransactionsEnabled) FwRulesEnabled=$fw"
 ```
 
-**Expected:** `InboundTx=True OutboundTx=True FwRulesEnabled=8` (or however many DTC rules your Windows ships â€” the key is `> 0` and most enabled).
+**Expected:** `InboundTx=True OutboundTx=True FwRulesEnabled=8` (or however many DTC rules your Windows ships — the key is `> 0` and most enabled).
 
 **Install-grade fix (requires admin):** the `enable-msdtc.ps1` script pattern below is reusable per demo. Drop it at `<demo>\audit\enable-msdtc.ps1` and ask the user to run it elevated:
 
@@ -222,7 +222,7 @@ Get-NetFirewallRule | ? { $_.DisplayName -match 'Distributed Transaction|DTC' } 
 Restart-Service msdtc -Force
 ```
 
-`AuthenticationLevel=NoAuth` is fine for a local-only dev box. One-time per machine â€” persists across reboots.
+`AuthenticationLevel=NoAuth` is fine for a local-only dev box. One-time per machine — persists across reboots.
 
 **Verify after fix:** re-run the probe. Then test directly with a 2-connection TransactionScope (this should return "OK" once everything is wired):
 
@@ -231,23 +231,23 @@ $cs = "Server=localhost\SQLEXPRESS;Database=master;Integrated Security=True;Trus
 try { $s = New-Object System.Transactions.TransactionScope; $c1 = New-Object System.Data.SqlClient.SqlConnection $cs; $c1.Open(); $c2 = New-Object System.Data.SqlClient.SqlConnection $cs; $c2.Open(); $c1.Close(); $c2.Close(); $s.Complete(); $s.Dispose(); "OK" } catch { "FAIL: $($_.Exception.Message)" }
 ```
 
-If this returns "Implicit distributed transactions have not been enabled", the runtime is .NET 7+ and `scaffold.md Â§2.1b` Program.cs patch is still needed inside the host process. The PowerShell test itself runs in a fresh process that needs the same opt-in â€” for the test only, set `[System.Transactions.TransactionManager]::ImplicitDistributedTransactions = $true` before the test.
+If this returns "Implicit distributed transactions have not been enabled", the runtime is .NET 7+ and `scaffold.md §2.1b` Program.cs patch is still needed inside the host process. The PowerShell test itself runs in a fresh process that needs the same opt-in — for the test only, set `[System.Transactions.TransactionManager]::ImplicitDistributedTransactions = $true` before the test.
 
 ---
 
-## 3. Discovery table â€” read these from project files (the discover-from-project-files rule)
+## 3. Discovery table — read these from project files (the discover-from-project-files rule)
 
 Once setup is verified, the per-demo project files are the source of truth for port, DB name, and bearer token. Never hardcode these.
 
 | What | Where to read it |
 |---|---|
-| **HTTPS port + host URL** | `.mcp.json` at solution root (e.g. `https://localhost:<PORT>/admin/mcp`) â€” or `Dynamicweb.Host.Suite/Properties/launchSettings.json` under `applicationUrl` |
-| **Database name** | `Dynamicweb.Host.Suite/GlobalSettings.Database.config` â€” look for the `<database>` element or `Initial Catalog=` in the connection string. Falls back to the solution folder name if no explicit setting. |
-| **Management API bearer token** | Project-specific â€” captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`). Storage contract is canonical in `references/mcp-setup.md` Step 6. |
+| **HTTPS port + host URL** | `.mcp.json` at solution root (e.g. `https://localhost:<PORT>/admin/mcp`) — or `Dynamicweb.Host.Suite/Properties/launchSettings.json` under `applicationUrl` |
+| **Database name** | `Dynamicweb.Host.Suite/GlobalSettings.Database.config` — look for the `<database>` element or `Initial Catalog=` in the connection string. Falls back to the solution folder name if no explicit setting. |
+| **Management API bearer token** | Project-specific — captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`). Storage contract is canonical in `references/mcp-setup.md` Step 6. |
 
 ---
 
-## 4. Dual-set env-var propagation pattern â€” User-scope env-var doesn't propagate
+## 4. Dual-set env-var propagation pattern — User-scope env-var doesn't propagate
 
 When you set any User-scope env var via `[Environment]::SetEnvironmentVariable(name, value, "User")` or `setx`, **it is NOT visible to the currently-running Claude Code process** (or to any already-spawned shell). The fix has three parts:
 
@@ -255,8 +255,8 @@ When you set any User-scope env var via `[Environment]::SetEnvironmentVariable(n
 2. **Set current-process `$env:`** (visible to the rest of the current PowerShell session, but NOT to Claude Code): `$env:NAME = value`.
 3. **Restart Claude Code from a fresh shell**: close ALL Claude Code instances, open a new PowerShell, run `claude` from there.
 
-Use `[Environment]::GetEnvironmentVariable(name, "User")` (not `$env:NAME`) for verification re-reads â€” `$env:NAME` reads the current-process copy, which is stale after a `setx`/`SetEnvironmentVariable` call.
+Use `[Environment]::GetEnvironmentVariable(name, "User")` (not `$env:NAME`) for verification re-reads — `$env:NAME` reads the current-process copy, which is stale after a `setx`/`SetEnvironmentVariable` call.
 
-This pattern applies to **all** User-scope env-var fixes in this file (DW_VAULT, NODE_TLS_REJECT_UNAUTHORIZED, anything else) and is the canonical statement of the dual-set pattern â€” other files (e.g. `tls-bypass.md` Â§3) pointer here. The two-line setter (`SetEnvironmentVariable` + `$env:NAME = ...`) covers parts 1 and 2; the user must do part 3.
+This pattern applies to **all** User-scope env-var fixes in this file (DW_VAULT, NODE_TLS_REJECT_UNAUTHORIZED, anything else) and is the canonical statement of the dual-set pattern — other files (e.g. `tls-bypass.md` §3) pointer here. The two-line setter (`SetEnvironmentVariable` + `$env:NAME = ...`) covers parts 1 and 2; the user must do part 3.
 
 

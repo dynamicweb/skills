@@ -2,7 +2,7 @@
 
 > The Swift 2.2 customer-center frontend playbook for Dynamicweb 10 demos. Covers the page-tree map (Account vs CSR vs legacy nav vs Overview), the stock-CSR rule rationale (inoculation against the rebuild-the-CSR-section trap in sales-on-behalf demos), and where impersonation, mixed-source order rendering, and exit-impersonation live in the stock paragraph wiring. The top-level rule lifts a one-paragraph summary into SKILL.md body; this file is the deeper playbook.
 >
-> Swift 2.x guidance â€” never follow `/swift/swift-1/` URLs (different content model, phased out).
+> Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
 ## 1. Why this rule exists
 
@@ -14,7 +14,7 @@ The detection signature for the rebuild trap is "demo-builder lands on the CSR O
 2. Verify orders exist and are tied to a customer the CSR can impersonate
 3. Re-theme without touching page structure (see [re-skin.md](re-skin.md))
 
-Rebuilding is never the right answer. The stock section already supports impersonation, mixed-source order viewing (the `OrderSource` discriminator badge needed for sales-on-behalf demos lives in the stock paragraph's templating), cart-pollution prevention, and one-click exit-impersonation. **Even when [re-skin.md](re-skin.md) Â§Pixel-perfect escalation authorises a new content layout `.cshtml`, the CSR section's stock paragraphs are exempt** -- overriding their layouts loses the wiring that makes sales-on-behalf trivial.
+Rebuilding is never the right answer. The stock section already supports impersonation, mixed-source order viewing (the `OrderSource` discriminator badge needed for sales-on-behalf demos lives in the stock paragraph's templating), cart-pollution prevention, and one-click exit-impersonation. **Even when [re-skin.md](re-skin.md) §Pixel-perfect escalation authorises a new content layout `.cshtml`, the CSR section's stock paragraphs are exempt** -- overriding their layouts loses the wiring that makes sales-on-behalf trivial.
 
 ## 2. Page-tree map
 
@@ -22,14 +22,14 @@ Source-of-truth: `$env:DW_VAULT\serialized-data\Swift2.2\_content\Swift 2\Custom
 
 ```
 Customer center/
-â”œâ”€â”€ Account/                      â† logged-in customer's own self-service
-â”‚   â”œâ”€â”€ Orders/         (page.yml + grid-row-1/{grid-row.yml, paragraph-c1-1.yml})
-â”‚   â”œâ”€â”€ Carts/, Quotes/, Users/, Addresses/, Favorites/
-â”œâ”€â”€ CSR/                          â† THE STOCK SALES-ON-BEHALF SECTION (never rebuild)
-â”‚   â”œâ”€â”€ Orders/, Accounts/, Carts/, Users/
-â”œâ”€â”€ Customer center/              â† legacy/alt nav under same top-level
-â”‚   â””â”€â”€ My profile/, My addresses/, Change password/, ...
-â””â”€â”€ Overview/                     â† landing page (4 grid rows)
+├── Account/                      ← logged-in customer's own self-service
+│   ├── Orders/         (page.yml + grid-row-1/{grid-row.yml, paragraph-c1-1.yml})
+│   ├── Carts/, Quotes/, Users/, Addresses/, Favorites/
+├── CSR/                          ← THE STOCK SALES-ON-BEHALF SECTION (never rebuild)
+│   ├── Orders/, Accounts/, Carts/, Users/
+├── Customer center/              ← legacy/alt nav under same top-level
+│   └── My profile/, My addresses/, Change password/, ...
+└── Overview/                     ← landing page (4 grid rows)
 ```
 
 This is the canonical tree any Customer-360 / sales-on-behalf demo references (`Customer center/CSR/{Orders, Accounts, Carts, Users}`). It's pre-built, paragraph-driven, requires no custom Razor.
@@ -61,7 +61,7 @@ While impersonation is active:
 
 A typical mixed-source-orders demo requirement (orders with discriminator badge by source channel) maps onto this view 1:1 -- the badge text is whatever the order's `OrderSource` column holds (`WEBSHOP`, `EDI`, `PUNCH-OUT`, `MANUAL`); rendering is paragraph-driven, no controller changes needed.
 
-**Demo-builder pitfall:** opening `Customer center/CSR/Accounts/` and seeing "no impersonate button" is *expected* -- that page is by design a company directory, not the sales-on-behalf launcher. Send the CSR to `Customer center/CSR/Users/`. If `Users/` *also* shows no Impersonate link on a row, the wiring described in Â§5 is missing or has the column direction inverted.
+**Demo-builder pitfall:** opening `Customer center/CSR/Accounts/` and seeing "no impersonate button" is *expected* -- that page is by design a company directory, not the sales-on-behalf launcher. Send the CSR to `Customer center/CSR/Users/`. If `Users/` *also* shows no Impersonate link on a row, the wiring described in §5 is missing or has the column direction inverted.
 
 ### Why `CSR/Accounts/` can be empty while `CSR/Users/` is populated
 
@@ -77,8 +77,8 @@ Cause is almost always one of:
 
 1. **No orders / users seeded** -- the customer-flavoured baseline (`<demo>-base/`) hasn't been deserialized yet, or only the generic `Swift2.2` baseline has been loaded. Run [`deserialize-flow.md`](deserialize-flow.md) first against the appropriate baseline.
 2. **Logged-in user is not in a CSR group** -- `EcomCustomers.GroupId` doesn't include a CSR-permission UserGroup row. The customer-flavoured baseline is expected to seed a CSR sample user; the stock `AdminUser` default has admin perms but isn't in a customer-facing CSR group.
-3. **CSR â†” customer grants not wired** -- `AccessUserSecondaryRelation` is empty for this CSR. See Â§5 below.
-4. **Index not built or cache stale after wiring Â§5** -- see Â§5 for the rebuild + cache-clear step that *must* follow any change to `AccessUserSecondaryRelation`. For Products-index rebuilds, see [dynamicweb-pim-demo/references/governance.md "Recovery recipe: Rebuild Products index"](../../dw-demo-pim/references/governance.md).
+3. **CSR ↔ customer grants not wired** -- `AccessUserSecondaryRelation` is empty for this CSR. See §5 below.
+4. **Index not built or cache stale after wiring §5** -- see §5 for the rebuild + cache-clear step that *must* follow any change to `AccessUserSecondaryRelation`. For Products-index rebuilds, see [dynamicweb-pim-demo/references/governance.md "Recovery recipe: Rebuild Products index"](../../dw-demo-pim/references/governance.md).
 
 What is NOT the cause: missing paragraphs / broken templates / Swift 2.3 incompatibility. The Swift2.2 baseline is verified working by [`deserialize-flow.md`](deserialize-flow.md); if the page renders at all, the structure is intact and the issue is data-side.
 
@@ -93,9 +93,9 @@ Account-side `Users/` and `Addresses/` need no flag: the Users list (`UserView` 
 
 **Stock Swift checkout reads the billing address from the user-*profile* fields, not from `UserAddress` records.** A buyer seeded with `save_user_addresses` (a Billing + Shipping `UserAddress`) but a blank profile address (`AccessUser.Address/Zip/City` empty — the default when the user was made via `create_users` without those fields) cannot complete checkout. In stock `eCom7/CartV2/Step/InformationUser.cshtml` the "Continue" button (`StepsNavigation`) renders only `@if (!string.IsNullOrWhiteSpace(addressString))`, where `addressString` is built solely from `UserManagement:User.Address/Zip/City`; and the "Same as the billing address" option in `Helpers/AddressUser.cshtml` is populated from those same profile fields. With the profile blank, no billing address pre-selects and the step never advances — note the default Shipping `UserAddress` *does* still pre-select for delivery, so the symptom reads on screen as "no address is selected" on the billing side only, which is the confusing part. Fix: populate the profile address too — `update_users` with `address/zip/city/state/country/countryCode` (or set the `AccessUser` columns directly), normally mirroring the buyer's Billing `UserAddress`. Seed both for every buyer persona, not just the `UserAddress` records.
 
-## 5. Wiring CSR â†” customer impersonation grants (`AccessUserSecondaryRelation`)
+## 5. Wiring CSR ↔ customer impersonation grants (`AccessUserSecondaryRelation`)
 
-The session-level impersonation flow in Â§3 only fires if the database knows that *this CSR* is allowed to impersonate *this customer*. That permission lives in a single table:
+The session-level impersonation flow in §3 only fires if the database knows that *this CSR* is allowed to impersonate *this customer*. That permission lives in a single table:
 
 | Column | Meaning |
 | --- | --- |
@@ -128,28 +128,28 @@ Inserts/updates to `AccessUserSecondaryRelation` are **not** picked up live. Two
 
 Both can be triggered from the DW admin UI **and** via the admin API (the admin UI buttons are thin wrappers over the same admin-API endpoints). Use whichever is convenient -- API for scripted seed flows, UI for one-off fixes:
 
-- Settings â†’ Indexing surfaces the index-rebuild endpoint for the Secondary user index.
-- Settings â†’ System info â†’ Cache surfaces the cache-clear endpoint.
+- Settings → Indexing surfaces the index-rebuild endpoint for the Secondary user index.
+- Settings → System info → Cache surfaces the cache-clear endpoint.
 
-If you can sign in as the CSR and the impersonation bar still does not list the customer after both steps, re-check Â§5 column direction first; if direction is correct, re-check that the CSR's `AccessUserType` does not have the bit-16 *Service* flag set (Service-flagged users are filtered out of MCP listings and standard form-login flows).
+If you can sign in as the CSR and the impersonation bar still does not list the customer after both steps, re-check §5 column direction first; if direction is correct, re-check that the CSR's `AccessUserType` does not have the bit-16 *Service* flag set (Service-flagged users are filtered out of MCP listings and standard form-login flows).
 
 ## 6. Hiding the CSR section from non-CSR users (per-demo gating)
 
-**Default Swift behaviour:** every signed-in user â€” customer admin, buyer, browse-only, AND the CSR â€” sees the same Customer center side nav, including the CSR section under `Customer center/CSR/{Orders, Accounts, Carts, Users}`. For demos that show a customer-admin journey alongside a separate CSR sales-on-behalf journey, this leaks the wrong persona's UI to the wrong audience.
+**Default Swift behaviour:** every signed-in user — customer admin, buyer, browse-only, AND the CSR — sees the same Customer center side nav, including the CSR section under `Customer center/CSR/{Orders, Accounts, Carts, Users}`. For demos that show a customer-admin journey alongside a separate CSR sales-on-behalf journey, this leaks the wrong persona's UI to the wrong audience.
 
-**The canonical gate is the `Permission` entity store â€” zero template edits.** Per [dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) Â§"Permissions â€” the entity store" â†’ "How to gate a page subtree":
+**The canonical gate is the `Permission` entity store — zero template edits.** Per [dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) §"Permissions — the entity store" → "How to gate a page subtree":
 
 1. Set `Page.PermissionType = 0` on the CSR root + descendants.
 2. INSERT one `Permission` row per (page, CSR group) binding Read access.
-3. Done. All three enforcement points self-filter: the nav tree drops the pages (`PageNavigationTreeNodeProvider`), a direct URL hit (`/customer-center/csr/orders` typed in the bar) 302s via `CheckPermissionsAndRedirect()`, and paragraph render returns empty. Verify as the CSR, as a signed-in non-CSR, and anonymous â€” at desktop and mobile widths (the CC nav renders through three different templates; the permission gate covers all of them).
+3. Done. All three enforcement points self-filter: the nav tree drops the pages (`PageNavigationTreeNodeProvider`), a direct URL hit (`/customer-center/csr/orders` typed in the bar) 302s via `CheckPermissionsAndRedirect()`, and paragraph render returns empty. Verify as the CSR, as a signed-in non-CSR, and anonymous — at desktop and mobile widths (the CC nav renders through three different templates; the permission gate covers all of them).
 
 **Cache caveat when writing `Permission` rows via SQL:** the admin UI invalidates the permission model for you; a direct SQL INSERT does not. DW caches the permission model in process, so a SQL-only grant won't take effect (the nav still shows the pages, the gate still lets the page render) until the cache drops -- **refresh the security cache or restart the host**, same caveat as §5's `AccessUserSecondaryRelation`. Verify only after the drop, or you'll misread a working gate as broken. A specific-user grant is also ignored here -- frontend permissions resolve by **role and group**, not by individual `AccessUser` id, so bind the grant to the CSR group, not the CSR user.
 
-**The wrong-looking-right path:** the legacy `Paragraph.ParagraphPermission` / `Page.PagePermission` columns can be SQL-set but do NOT enforce frontend visibility â€” they're admin-side back-compat only. Setting `ParagraphPermission='9'` and reloading changes nothing. Write the equivalent `Permission` row instead ([dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) Â§"Permissions â€” the entity store" â†’ "Common misdiagnosis").
+**The wrong-looking-right path:** the legacy `Paragraph.ParagraphPermission` / `Page.PagePermission` columns can be SQL-set but do NOT enforce frontend visibility — they're admin-side back-compat only. Setting `ParagraphPermission='9'` and reloading changes nothing. Write the equivalent `Permission` row instead ([dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) §"Permissions — the entity store" → "Common misdiagnosis").
 
-**If template logic genuinely needs group membership** (e.g. the Â§7 role badge â€” presentation, not gating): use `Pageview.User.GetGroups()`, non-obsolete on 10.25+ â€” see [dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) Â§"User identity / groups". Never raw `SELECT FROM AccessUserGroupRelation` in Razor; it fails the grep pack at [dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) Â§"Discipline audit â€” grep pack".
+**If template logic genuinely needs group membership** (e.g. the §7 role badge — presentation, not gating): use `Pageview.User.GetGroups()`, non-obsolete on 10.25+ — see [dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) §"User identity / groups". Never raw `SELECT FROM AccessUserGroupRelation` in Razor; it fails the grep pack at [dw10-canonical-surfaces.md](dw10-canonical-surfaces.md) §"Discipline audit — grep pack".
 
-> Superseded: this section previously gated via per-template `foreach` filters on `PageNavigationTag`, raw `Database.ExecuteScalar` lookups on `AccessUserGroupRelation`, and a redirect guard inside `Swift-v2_CustomerCenter.cshtml`, on the claim that `Pageview.User` group APIs fail at compile time. Retracted â€” `GetGroups()` compiles on 10.25+, template SQL fails the skill's own audit, and the Permission store gates nav + URL + render without touching templates.
+> Superseded: this section previously gated via per-template `foreach` filters on `PageNavigationTag`, raw `Database.ExecuteScalar` lookups on `AccessUserGroupRelation`, and a redirect guard inside `Swift-v2_CustomerCenter.cshtml`, on the claim that `Pageview.User` group APIs fail at compile time. Retracted — `GetGroups()` compiles on 10.25+, template SQL fails the skill's own audit, and the Permission store gates nav + URL + render without touching templates.
 
 ### Gating the buyer (Account) sections away from the CSR — and the resolution rule
 
@@ -176,16 +176,16 @@ A styling change applied to only one of the three will look fixed on desktop and
 
 A demo with multiple personas (customer admin / buyer / browse / CSR) lands harder when the storefront makes the persona switch *visible*. Stock Swift renders every signed-in user the same: blue avatar circle + name. To distinguish:
 
-- Derive a role from `AccessUser.AccessUserCustomerNumber` suffix (a per-demo convention â€” e.g. `...-ADMIN`, `...-OWNER`, `...-BUYER`, `...-BROWSE`) **plus** CSR group membership via `Pageview.User.GetGroups()` (Â§6).
+- Derive a role from `AccessUser.AccessUserCustomerNumber` suffix (a per-demo convention — e.g. `...-ADMIN`, `...-OWNER`, `...-BUYER`, `...-BROWSE`) **plus** CSR group membership via `Pageview.User.GetGroups()` (§6).
 - Map each role to a **ring color** + **badge background/foreground**. Suggested palette: blue for admin/owner, teal for buyer, gray for browse, amber for CSR. (Adjust per-demo to fit the brand layer.)
-- Render in **both** avatar templates: `Users/UserView/Detail/UserAvatar.cshtml` (header top-right) AND `Users/UserView/Detail/UserInfo.cshtml` (the bigger avatar inside the CC sidebar). Same logic, same palette â€” keep them visually consistent or the persona signal feels accidental rather than designed.
-- Add the user's `Company` field below the role badge â€” distinguishes one buyer's company name from another's at a glance.
+- Render in **both** avatar templates: `Users/UserView/Detail/UserAvatar.cshtml` (header top-right) AND `Users/UserView/Detail/UserInfo.cshtml` (the bigger avatar inside the CC sidebar). Same logic, same palette — keep them visually consistent or the persona signal feels accidental rather than designed.
+- Add the user's `Company` field below the role badge — distinguishes one buyer's company name from another's at a glance.
 
 The avatar ring is best done with `box-shadow: 0 0 0 3px <color>` on the wrapper rather than `border` (border affects layout; box-shadow doesn't). The badge is a single `<span class="badge">` with inline `style=` for color tokens; consume from `--<brand>-primary` / `--<brand>-charcoal` style vars per [re-skin.md](re-skin.md) so the brand layer flows through.
 
-## 8. Reorder a past order â€” `cartcmd=copyorder` is built in
+## 8. Reorder a past order — `cartcmd=copyorder` is built in
 
-DW10 ships a cart command that copies every line of a previous order into the user's active cart, repricing at today's prices. **No backend code needed, no custom controller, no MCP tool** â€” it's the same surface the cart uses for add-to-cart / remove / update-quantity.
+DW10 ships a cart command that copies every line of a previous order into the user's active cart, repricing at today's prices. **No backend code needed, no custom controller, no MCP tool** — it's the same surface the cart uses for add-to-cart / remove / update-quantity.
 
 The shape:
 
@@ -197,7 +197,7 @@ The shape:
 - `orderid` = the order to copy from. Stock Swift Order paragraphs expose this as `Model.Order.Id` inside the order-list / order-detail templates.
 - `redirect=true` = redirect to the cart page after the copy. Omit if you'd rather handle the response yourself.
 
-Practical use in a Swift Order detail layout â€” a one-line Razor expression renders the Reorder button without any C# behind it:
+Practical use in a Swift Order detail layout — a one-line Razor expression renders the Reorder button without any C# behind it:
 
 ```cshtml
 <a class="btn btn-primary"
@@ -206,13 +206,13 @@ Practical use in a Swift Order detail layout â€” a one-line Razor expressio
 </a>
 ```
 
-**Where the button belongs:** `Customer center/Account/Orders/` order-detail (the buyer's own order history). The CSR section under `Customer center/CSR/Orders/` also benefits â€” copying a previous order while impersonating a customer is a high-impact sales-on-behalf beat ("repeat last month's pallet order in one click").
+**Where the button belongs:** `Customer center/Account/Orders/` order-detail (the buyer's own order history). The CSR section under `Customer center/CSR/Orders/` also benefits — copying a previous order while impersonating a customer is a high-impact sales-on-behalf beat ("repeat last month's pallet order in one click").
 
-**This is a stock DW10 mechanic, not a dynamicweb-specific add-on.** Works in DW10 1.26.0 and reachable on every Swift baseline this skill loads. Adding a Reorder button is one-line of Razor in a custom content-layout for an Order-detail paragraph â€” it does NOT trigger base's customisations-ledger preflight because no `.cs` or controller is involved (see [`re-skin.md`](re-skin.md) Â§Pixel-perfect escalation for what a new content-layout `.cshtml` is and is not allowed to do).
+**This is a stock DW10 mechanic, not a dynamicweb-specific add-on.** Works in DW10 1.26.0 and reachable on every Swift baseline this skill loads. Adding a Reorder button is one-line of Razor in a custom content-layout for an Order-detail paragraph — it does NOT trigger base's customisations-ledger preflight because no `.cs` or controller is involved (see [`re-skin.md`](re-skin.md) §Pixel-perfect escalation for what a new content-layout `.cshtml` is and is not allowed to do).
 
-**Related cart commands (the family `cartcmd=` belongs to).** `cartcmd=add` / `cartcmd=remove` / `cartcmd=delete` / `cartcmd=empty` / `cartcmd=update` all flow through the same handler. The Swift product-detail and cart paragraphs use these directly â€” meaning any `cartcmd=` URL you'd construct for a custom button is structurally identical to what Swift already emits, just with different parameters. Don't reinvent.
+**Related cart commands (the family `cartcmd=` belongs to).** `cartcmd=add` / `cartcmd=remove` / `cartcmd=delete` / `cartcmd=empty` / `cartcmd=update` all flow through the same handler. The Swift product-detail and cart paragraphs use these directly — meaning any `cartcmd=` URL you'd construct for a custom button is structurally identical to what Swift already emits, just with different parameters. Don't reinvent.
 
-This pattern stays inside the [re-skin.md](re-skin.md) Â§Pixel-perfect escalation envelope: it's a content-layout extension to existing item-type templates (the user view models), not a controller change.
+This pattern stays inside the [re-skin.md](re-skin.md) §Pixel-perfect escalation envelope: it's a content-layout extension to existing item-type templates (the user view models), not a controller change.
 
 ## 9. Customer-specific (contract) pricing
 

@@ -33,14 +33,14 @@ Columns (typical shape, adapt as needed):
 | ERP-side action | What BC does (or what the staged post-sync state represents). E.g. "BC writes new defaultPrice for ROLL-COMFORT-PLUS, syncs to PIM via integration framework activity". |
 | PIM-side action | What DW does in response. E.g. "PIM stores the new price; action rule X fires if condition Y holds; index rebuild; cache flush". |
 | Frontend surface | Where the audience sees the result. E.g. "PDP at /shop/rollator-comfort-plus shows new price; dashboard widget 'Recent price changes' shows the delta". |
-| Post-sync DB state | The mock-flavor pre/post field values this scenario stages (the [mock-deltas.md](mock-deltas.md) Step 1 rows). E.g. "PROD1 ProductPrice 249â†’229". Blank for live-flavor scenarios. |
+| Post-sync DB state | The mock-flavor pre/post field values this scenario stages (the [mock-deltas.md](mock-deltas.md) Step 1 rows). E.g. "PROD1 ProductPrice 249→229". Blank for live-flavor scenarios. |
 | Notes / risk | Anything the build-time agent needs to know. E.g. "Action rule X must be re-saved through MCP after raw-SQL changes to GroupMetaUrl, see PIM-demo cache-invalidation.md". |
 
 ## What a good row looks like
 
 > | # | Title | Trigger | Beat | ERP-side action | PIM-side action | Frontend surface | Delta files | Notes |
 > |---|---|---|---|---|---|---|---|---|
-> | 5 | Quarterly pricelist correction | Presenter says "BC just posted the Q3 pricelist" | BC owns price; PIM displays read-only; ecommerce gets a sparse update (only the changed field). | BC writes new defaultPrice for ROLL-COMFORT-PLUS (229 EUR) and ROLL-COMFORT-PRO (459 EUR). Mock: staged post-state + RESET row. Live: BC connector posts. | New price already staged; narrate the sync, rebuild Products index, flush price cache. | Dashboard widget 'Recent price changes' shows two rows; PDPs show new price. | PROD1 249â†’229, PROD2 449â†’459 | Index rebuild can take 5-15 sec; warn the presenter. |
+> | 5 | Quarterly pricelist correction | Presenter says "BC just posted the Q3 pricelist" | BC owns price; PIM displays read-only; ecommerce gets a sparse update (only the changed field). | BC writes new defaultPrice for ROLL-COMFORT-PLUS (229 EUR) and ROLL-COMFORT-PRO (459 EUR). Mock: staged post-state + RESET row. Live: BC connector posts. | New price already staged; narrate the sync, rebuild Products index, flush price cache. | Dashboard widget 'Recent price changes' shows two rows; PDPs show new price. | PROD1 249→229, PROD2 449→459 | Index rebuild can take 5-15 sec; warn the presenter. |
 
 A row without every active column filled is half-done and probably mis-scoped. The most-skipped column is "Frontend surface" -- if you can't say where the audience sees the result, the beat doesn't land.
 

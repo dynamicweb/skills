@@ -6,11 +6,11 @@
 
 There is **no live wire**. There is no file polling daemon, no JSON inbox, no human firing deltas during the demo. Instead:
 
-- The DB is pre-staged into the **post-BC-sync state** â€” every value that BC would have written (price, stock, reorder, lifecycle state, etc.) is already in `EcomProducts` as if the delta arrived overnight.
-- The demo narrates *"BC sent us this; look at the result."* Evidence is the data, the action-rule definition, and the email template â€” not a live trigger.
-- **One** scheduled task (Settings â†’ System â†’ Scheduled tasks â†’ `<Demo> RESET to clean state`) flips everything back to the canonical starting state via a SQL subtask. The presenter clicks "Run now" between demos.
+- The DB is pre-staged into the **post-BC-sync state** — every value that BC would have written (price, stock, reorder, lifecycle state, etc.) is already in `EcomProducts` as if the delta arrived overnight.
+- The demo narrates *"BC sent us this; look at the result."* Evidence is the data, the action-rule definition, and the email template — not a live trigger.
+- **One** scheduled task (Settings → System → Scheduled tasks → `<Demo> RESET to clean state`) flips everything back to the canonical starting state via a SQL subtask. The presenter clicks "Run now" between demos.
 
-The model is intentionally one-direction (BC â†’ PIM). The PIM â†’ BC enrichment story is told via a single static field-mapping artefact checked into the demo solution. No JSON inboxes, no folder structure, no in-demo firing protocol.
+The model is intentionally one-direction (BC → PIM). The PIM → BC enrichment story is told via a single static field-mapping artefact checked into the demo solution. No JSON inboxes, no folder structure, no in-demo firing protocol.
 
 ## When to use this flavor
 
@@ -18,14 +18,14 @@ The model is intentionally one-direction (BC â†’ PIM). The PIM â†’ BC 
 |---|---|---|
 | Demo handed off to a partner with no BC credentials | **Yes** (only viable option) | No |
 | Demo laptop has no internet | **Yes** | No (ngrok needs internet) |
-| Customisation budget tight (customisations ledger) | **Yes** â€” uses the built-in `RunSqlScheduledTaskAddIn`, zero custom code | Live adds `ForwardedHeaders` + AppStore connector configuration |
+| Customisation budget tight (customisations ledger) | **Yes** — uses the built-in `RunSqlScheduledTaskAddIn`, zero custom code | Live adds `ForwardedHeaders` + AppStore connector configuration |
 | Customer asks "does this really sync with BC?" | No (it's a model) | **Yes** |
 
 Choose one and stick with it. Mixing flavors forces the audience to track two integration models in parallel.
 
 ## The recipe
 
-### Step 1 â€” Decide the post-sync state per scenario
+### Step 1 — Decide the post-sync state per scenario
 
 For each BC-driven scenario beat, write down: which products, which fields, the pre and post values. Example:
 
@@ -41,15 +41,15 @@ For each BC-driven scenario beat, write down: which products, which fields, the 
 
 The "Post" column is what's in the DB at demo start. The "Pre" column is what RESET sets it back to.
 
-### Step 2 â€” Stage the DB
+### Step 2 — Stage the DB
 
 Build one PowerShell + SQL script at `<demo>/.planning/stage-and-reset.ps1` that applies the post-sync state on first run. Run it once before authoring the runbook so the demo data matches the storyline.
 
-Reference implementation: `<demo>/.planning/stage-and-reset.ps1` (build-time tooling â€” adapt per demo).
+Reference implementation: `<demo>/.planning/stage-and-reset.ps1` (build-time tooling — adapt per demo).
 
-### Step 3 â€” Register the RESET scheduled task
+### Step 3 — Register the RESET scheduled task
 
-Use the built-in `Dynamicweb.Scheduling.ScheduledTaskAddIns.RunSqlScheduledTaskAddIn` (in `Dynamicweb.Core`). No customisation needed â€” this addin ships with DW10 and accepts a `SQL Query` text parameter + a `Log debugging info` bool.
+Use the built-in `Dynamicweb.Scheduling.ScheduledTaskAddIns.RunSqlScheduledTaskAddIn` (in `Dynamicweb.Core`). No customisation needed — this addin ships with DW10 and accepts a `SQL Query` text parameter + a `Log debugging info` bool.
 
 Idempotent SQL insert with hex-encoded XML settings (dodges all escaping):
 
@@ -95,32 +95,32 @@ IF NOT EXISTS (SELECT 1 FROM ScheduledTask WHERE TaskName=N'<Demo> RESET to clea
 
 **NOT NULL columns** in `ScheduledTask` that bite if you forget: `TaskLastRun`, `TaskNextRun`, `TaskMinute`, `TaskHour`, `TaskDay`, `TaskWday`, `TaskStartFromLastRun`.
 
-### Step 4 â€” Tell the outbox story without a JSON inbox
+### Step 4 — Tell the outbox story without a JSON inbox
 
-PIM â†’ BC enrichment is the "we send descriptive data to the ERP" beat. Tell it via a single static artefact in the demo solution. Pick **one**:
+PIM → BC enrichment is the "we send descriptive data to the ERP" beat. Tell it via a single static artefact in the demo solution. Pick **one**:
 
-1. **Field-mapping markdown** â€” `<demo>/notes/pim-to-bc-mapping.md` with the PIM systemName â†’ BC field-path table. Presenter opens during the relevant beat.
-2. **Single sample outbox JSON** â€” `<demo>/notes/sample-pim-to-bc.json`, never moved, never fired. Presenter shows it as a sample of what BC would receive.
+1. **Field-mapping markdown** — `<demo>/notes/pim-to-bc-mapping.md` with the PIM systemName → BC field-path table. Presenter opens during the relevant beat.
+2. **Single sample outbox JSON** — `<demo>/notes/sample-pim-to-bc.json`, never moved, never fired. Presenter shows it as a sample of what BC would receive.
 
 Don't both. Don't build a `bc-deltas/outbox/` folder structure.
 
-### Step 5 â€” Wire the demo flow
+### Step 5 — Wire the demo flow
 
-Every BC-driven beat in the runbook narrates the post-state and points to evidence â€” never a live trigger. Scenario template (Sc.4 â€” auto-offline on stock-zero):
+Every BC-driven beat in the runbook narrates the post-state and points to evidence — never a live trigger. Scenario template (Sc.4 — auto-offline on stock-zero):
 
-> **Beat 1 â€” Open BM-HANDLEBAR.** Product detail shows `ProductStock=0`, `g_bc_reorder='no'`, lifecycle = Offline. *"BC's overnight sync delivered the stock-zero / no-reorder signal. The PIM action rule fired and took the product offline automatically."*
+> **Beat 1 — Open BM-HANDLEBAR.** Product detail shows `ProductStock=0`, `g_bc_reorder='no'`, lifecycle = Offline. *"BC's overnight sync delivered the stock-zero / no-reorder signal. The PIM action rule fired and took the product offline automatically."*
 >
-> **Beat 2 â€” Open Settings â†’ Actions â†’ Rules.** Show the rule definition (`stock=0 AND g_bc_reorder='no' â†’ Offline + email`). *"This is what executed."*
+> **Beat 2 — Open Settings → Actions → Rules.** Show the rule definition (`stock=0 AND g_bc_reorder='no' → Offline + email`). *"This is what executed."*
 >
-> **Beat 3 â€” Open `Templates/Mail/<demo>-auto-offline.cshtml`.** Show the template that would have been rendered. Narrate the recipient field.
+> **Beat 3 — Open `Templates/Mail/<demo>-auto-offline.cshtml`.** Show the template that would have been rendered. Narrate the recipient field.
 
 No live fire. No JSON file open. Data + rule + template tell the story.
 
-### Step 6 â€” Between demos: RESET + BuildIndex
+### Step 6 — Between demos: RESET + BuildIndex
 
-1. Settings â†’ System â†’ Scheduled tasks â†’ `<Demo> RESET to clean state` â†’ **Run task now**.
+1. Settings → System → Scheduled tasks → `<Demo> RESET to clean state` → **Run task now**.
 2. Wait for green status (one SQL transaction, sub-second).
-3. Settings â†’ Search â†’ Repositories â†’ Products â†’ BuildIndex (or `POST /admin/api/BuildIndex` with the management API bearer). Required because raw SQL UPDATEs don't trigger `ShopAutoBuildIndex` â€” dashboard tiles lag until the index rebuilds.
+3. Settings → Search → Repositories → Products → BuildIndex (or `POST /admin/api/BuildIndex` with the management API bearer). Required because raw SQL UPDATEs don't trigger `ShopAutoBuildIndex` — dashboard tiles lag until the index rebuilds.
 
 ## Do not
 
@@ -128,9 +128,9 @@ No live fire. No JSON file open. Data + rule + template tell the story.
 
 ## Cross-references
 
-- [integration-framework.md](integration-framework.md) â€” the always-on "ERP is source/target, not channel/feed" rule.
-- [erp-data-shape.md](erp-data-shape.md) â€” generic ERPâ†”PIM field-ownership table for authoring the post-sync state in Step 1.
-- [scenarios-first-planning.md](scenarios-first-planning.md) â€” design the BC-driven scenarios before staging the DB.
+- [integration-framework.md](integration-framework.md) — the always-on "ERP is source/target, not channel/feed" rule.
+- [erp-data-shape.md](erp-data-shape.md) — generic ERP↔PIM field-ownership table for authoring the post-sync state in Step 1.
+- [scenarios-first-planning.md](scenarios-first-planning.md) — design the BC-driven scenarios before staging the DB.
 - Live BC alternative: [`dynamicweb-pim-for-bc`](../../dw-integration-bc/SKILL.md).
 - Reference implementation: `<demo>/.planning/stage-and-reset.ps1` (pivot from JSON-files to DB-staged).
 
