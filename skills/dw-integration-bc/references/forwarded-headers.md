@@ -1,5 +1,15 @@
 # forwarded-headers.md
 
+## Contents
+
+- [Customisations preflight](#customisations-preflight)
+- [Why this is needed](#why-this-is-needed)
+- [The exact edit](#the-exact-edit)
+- [Restart required](#restart-required)
+- [Verification](#verification)
+- [Troubleshooting](#troubleshooting)
+- [When NOT to do this](#when-not-to-do-this)
+
 > Wire ASP.NET Core `ForwardedHeaders` middleware in `Program.cs` so DW emits public URLs in any absolute-URL paths -- redirects, JSON payloads, OpenID metadata, JWT issuer URIs. Without this, DW thinks it's still `https://localhost:31873` and BC follows redirects to localhost (and obviously fails). Loaded from `~/.claude/skills/dynamicweb-pim-for-bc/SKILL.md` "Where to find things" table.
 
 ## Customisations preflight

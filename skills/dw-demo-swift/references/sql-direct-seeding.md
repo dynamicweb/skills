@@ -1,5 +1,17 @@
 # sql-direct-seeding.md
 
+## Contents
+
+- [When this file applies](#when-this-file-applies)
+- [Required NOT-NULL columns — `Page` row](#required-not-null-columns--page-row)
+- [Required NOT-NULL columns — `GridRow` row](#required-not-null-columns--gridrow-row)
+- [Required NOT-NULL columns — `Paragraph` row](#required-not-null-columns--paragraph-row)
+- [`ItemType_*` rows — pre-seeding the paragraph's item instance](#itemtype_-rows--pre-seeding-the-paragraphs-item-instance)
+- [Inserting between existing rows — `GridRowSort × 10` slot reservation](#inserting-between-existing-rows--gridrowsort--10-slot-reservation)
+- [Soft-hide vs full delete — neither is observed reliably](#soft-hide-vs-full-delete--neither-is-observed-reliably)
+- [Verification after SQL-direct seeding](#verification-after-sql-direct-seeding)
+- [Cross-references](#cross-references)
+
 > Required-field reference for Page / GridRow / Paragraph SQL-direct INSERTs when MCP / admin UI / Management API are out of reach (bulk demo seed flows, headless agents, sister-demo replay scripts). Cross-references [`templates.md`](templates.md), [`paragraphs.md`](paragraphs.md), and [`../../dw-demo-pim/references/cache-invalidation.md`](../../dw-demo-pim/references/cache-invalidation.md) for the post-INSERT restart rules.
 >
 > **This is the SQL-fallback surface.** The preferred surface for content seeding is MCP `save_pages` / `save_grid_rows` / `save_paragraphs` — those invalidate caches inline and don't require the field disciplines below. Read [`../../dw-demo-base/SKILL.md` "Surface priority for CREATES"](../../dw-demo-base/SKILL.md) before reaching for SQL. This file is the rulebook for the cases where you have already decided SQL is the right surface (bulk seeds, MCP token expiry mid-batch, no MCP available).

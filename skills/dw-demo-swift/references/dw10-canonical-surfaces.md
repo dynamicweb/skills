@@ -1,5 +1,21 @@
 # DW10 canonical surfaces — use these, don't re-implement
 
+## Contents
+
+- [User identity / groups](#user-identity--groups)
+- [Permissions — the entity store](#permissions--the-entity-store)
+- [Pricing](#pricing)
+- [Orders](#orders)
+- [Products](#products)
+- [URLs](#urls)
+- [Stylesheets / scripts](#stylesheets--scripts)
+- [Cross-cutting redirects (anon gate, role gate, etc.)](#cross-cutting-redirects-anon-gate-role-gate-etc)
+- [Per-category behavior](#per-category-behavior)
+- [Product field arrays / lists](#product-field-arrays--lists)
+- [Custom item types — the `<Prefix>_*` discipline](#custom-item-types--the-prefix_-discipline)
+- [Discipline audit — grep pack](#discipline-audit--grep-pack)
+- [Cross-references](#cross-references)
+
 > The "use X, not Y" cheat sheet for the DW10 surfaces that get re-implemented in Razor. When in doubt, search `dw10source` (vault: `$env:DW_VAULT/dw10source`) for the canonical surface before writing SQL or parsing URLs. Non-optional on every demo build. Also home to the custom item-type discipline and the discipline-audit grep pack (sections below).
 >
 > **Why this exists.** Every "fake pattern" in a Swift demo (raw SQL probes on `AccessUserGroupRelation`, hard-coded area prefixes, master-template `WriteLiteral` redirects, `EcomOrders` SQL chains in Razor) is a workaround for a surface the demo author didn't know was there. This file is the inventory. Cross-references the escalation ladder in [`re-skin.md`](re-skin.md) §Pre-escalation check — search here first.

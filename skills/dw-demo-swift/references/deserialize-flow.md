@@ -1,5 +1,18 @@
 # deserialize-flow.md
 
+## Contents
+
+- [1. Prerequisites](#1-prerequisites)
+- [Design-package deploy (before any deserialize)](#design-package-deploy-before-any-deserialize)
+- [2. Step 0 — Discover project context](#2-step-0--discover-project-context)
+- [3. Step 1 — Stage baseline YAML from vault](#3-step-1--stage-baseline-yaml-from-vault)
+- [4. Step 2 — POST against running host](#4-step-2--post-against-running-host)
+- [5. Strict-mode contract](#5-strict-mode-contract)
+- [6. Identity model](#6-identity-model)
+- [7. Post-deserialize host restart guidance](#7-post-deserialize-host-restart-guidance)
+- [8. Mandatory next step](#8-mandatory-next-step)
+- [9. Known schema-drift workaround (Swift 2.2 baseline ↔ DW10)](#9-known-schema-drift-workaround-swift-22-baseline--dw10)
+
 > Deserialize a Swift content baseline from `$env:DW_VAULT\serialized-data\<baseline>\` into the per-demo project DB. Uses `DynamicWeb.Serializer` + Management API. Strict mode is on by default — failures surface as `CumulativeStrictModeException`. Always followed by [`integrity-sweep.md`](integrity-sweep.md).
 >
 > **Scope: Swift demos only.** PIM demos start from a blank/fresh DB and skip this flow entirely. This file is owned by `dynamicweb-swift-demo`; the underlying Serializer install + background reference live in `dynamicweb-demo-base/references/serializer-reference.md`.

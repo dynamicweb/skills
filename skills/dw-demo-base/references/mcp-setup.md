@@ -1,5 +1,19 @@
 # MCP Setup — `.mcp.json` + admin-UI walkthrough + verification gate
 
+## Contents
+
+- [Why API Key by default (not Claude.ai OAuth)](#why-api-key-by-default-not-claudeai-oauth)
+- [Step 1 — Discover port from `launchSettings.json`](#step-1--discover-port-from-launchsettingsjson)
+- [Step 1b — Generate `.mcp.json` at solution root (bearer placeholder)](#step-1b--generate-mcpjson-at-solution-root-bearer-placeholder)
+- [Step 2 — Verify the two-layer TLS bypass](#step-2--verify-the-two-layer-tls-bypass)
+- [Step 3 — Create the MCP configuration in DW10 admin UI (API Key)](#step-3--create-the-mcp-configuration-in-dw10-admin-ui-api-key)
+- [Step 3b — Paste the bearer into `.mcp.json` and per-demo memory](#step-3b--paste-the-bearer-into-mcpjson-and-per-demo-memory)
+- [Step 3 (headless alternative) — create the token + MCP config without the admin UI](#step-3-headless-alternative--create-the-token--mcp-config-without-the-admin-ui)
+- [Step 4 — The MCP verification gate](#step-4--the-mcp-verification-gate)
+- [Step 5 — Install Browser MCP (machine-level, do once per Windows account)](#step-5--install-browser-mcp-machine-level-do-once-per-windows-account)
+- [Step 6 — Discover bearer tokens (the discover-from-project-files rule)](#step-6--discover-bearer-tokens-the-discover-from-project-files-rule)
+- [Triage table — when verification fails](#triage-table--when-verification-fails)
+
 Wire MCP for the Dynamicweb MCP server (`dynamicweb-commerce-mcp`) bundled with `Dynamicweb.Suite` 10.x. The canonical flow is **API-Key auth with a static bearer in `.mcp.json`** — five steps in **strict order**:
 
 1. Write `.mcp.json` with the discovered HTTPS port (bearer placeholder filled in Step 3b).

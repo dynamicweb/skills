@@ -1,5 +1,23 @@
 # structural-model.md
 
+## Contents
+
+- [The structural mental model](#the-structural-mental-model)
+  - [2.1 Shop types — one enum controls everything](#21-shop-types--one-enum-controls-everything)
+  - [2.2 Group types — data models vs catalog groups](#22-group-types--data-models-vs-catalog-groups)
+  - [2.3 Catalog vs Channel group trees (the published-to story)](#23-catalog-vs-channel-group-trees-the-published-to-story)
+  - [2.3a Publishing products: native "Publish to channel" action](#23a-publishing-products-native-publish-to-channel-action)
+  - [2.4 Repositories, Indexes, and Queries — file-based](#24-repositories-indexes-and-queries--file-based)
+  - [2.5 Variants — 3 tables, composite IDs](#25-variants--3-tables-composite-ids)
+  - [2.5a Single-axis variants — leaner shape + the MCP/SQL surface split (validated DW 10.25.x)](#25a-single-axis-variants--leaner-shape--the-mcpsql-surface-split-validated-dw-1025x)
+  - [2.6 Bundles (BOM) — two concerns](#26-bundles-bom--two-concerns)
+  - [2.7 Channels + Feeds](#27-channels--feeds)
+  - [2.8 Product Categories + Fields (data model internals)](#28-product-categories--fields-data-model-internals)
+  - [2.9 Assortments (customer access) ≠ Channels (publishing)](#29-assortments-customer-access--channels-publishing)
+  - [2.10 Assets](#210-assets)
+  - [2.11 Pricing — tier rows are NOT honored by the stock cart](#211-pricing--tier-rows-are-not-honored-by-the-stock-cart)
+  - [2.12 Dynamic Workspaces — projections, not storage](#212-dynamic-workspaces--projections-not-storage)
+
 > The structural mental model for Dynamicweb 10 PIM. Read before modelling — getting any of these wrong causes rework. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Each `### 2.x` sub-section cross-references siblings; do NOT split this file.
 
 ## The structural mental model

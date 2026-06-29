@@ -1,5 +1,16 @@
 # Browser MCP — Playwright install + verification gate
 
+## Contents
+
+- [Why user scope, not per-demo `.mcp.json`](#why-user-scope-not-per-demo-mcpjson)
+- [Step 1 — Install at user scope](#step-1--install-at-user-scope)
+- [Where screenshots land — set `--output-dir` or they pollute the project root](#where-screenshots-land--set---output-dir-or-they-pollute-the-project-root)
+- [Step 2 — Verification gate](#step-2--verification-gate)
+- [Step 3 — Tool surface in a fresh Claude Code session](#step-3--tool-surface-in-a-fresh-claude-code-session)
+- [Generic verify-flow recipe](#generic-verify-flow-recipe)
+- [Removal / re-install](#removal--re-install)
+- [Chromium fallback when `chrome` isn't resolvable](#chromium-fallback-when-chrome-isnt-resolvable)
+
 Wire `@playwright/mcp` (Microsoft's official Playwright MCP server) at **user scope** so every Dynamicweb demo on this machine gets first-class browser tooling — log in, navigate, click, screenshot, inspect DOM. This replaces the friction of asking the user to manually drive a tab and paste back screenshots after each PIM seeding / template edit / customer-center wiring change.
 
 **Scope guard — verification only.** Playwright's job on a Dynamicweb demo is to *verify*: walk the storefront as a seeded persona, or navigate `/Admin` read-only to confirm a change landed (screenshot, DOM-grep). Driving `/Admin` to *make* changes is off-limits — every admin-UI operation is an Admin API call underneath, so the change itself belongs on MCP / Management API per the surface-priority rule (`references/surface-priority.md` §"Admin UI is verification-only").

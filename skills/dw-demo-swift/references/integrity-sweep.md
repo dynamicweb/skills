@@ -1,5 +1,18 @@
 # integrity-sweep.md
 
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Why this sweep is mandatory](#why-this-sweep-is-mandatory)
+- [Check 1: FK orphans (strict-mode-delegated)](#check-1-fk-orphans-strict-mode-delegated)
+- [Check 2: `reference_category` parent row](#check-2-reference_category-parent-row)
+- [Check 3: Query GUID dedup across `Repositories/` and `SmartSearches/Shared/`](#check-3-query-guid-dedup-across-repositories-and-smartsearchesshared)
+- [Check 4: Template-reference walk (defense-in-depth)](#check-4-template-reference-walk-defense-in-depth)
+- [Check 5: BuildIndex Full + wait-for-Idle](#check-5-buildindex-full--wait-for-idle)
+- [Check 6: Icon set populated under `Files/Images/Icons/` (Pitfall: blank-blue-button storefront)](#check-6-icon-set-populated-under-filesimagesicons-pitfall-blank-blue-button-storefront)
+- [Check 7: Raw SQL in paragraph templates (DW10 discipline)](#check-7-raw-sql-in-paragraph-templates-dw10-discipline)
+- [Sweep complete](#sweep-complete)
+
 > Mandatory post-deserialize integrity sweep. Seven sequential checks. Run after [`deserialize-flow.md`](deserialize-flow.md) returns 2xx. The skill refuses to declare deserialize complete until ALL seven pass. Strict-mode Serializer is the first line of defence — this sweep is the second, catching DW10-specific failures strict mode does not detect.
 
 ## Prerequisites

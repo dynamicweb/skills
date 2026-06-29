@@ -3,6 +3,16 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.3.8]
+
+### Changed
+- **Added a top-of-file table of contents to every reference file over 100 lines** (35 files). Per
+  Anthropic's skill-authoring guidance, long reference files get a TOC at the top so it survives
+  partial-preview reads and gives the model a map of the file's sections. The TOC lists H2 sections
+  (flat); files organised at H3 under one or two H2s (`structural-model.md`,
+  `completeness-and-workflows.md`) get a nested H2+H3 TOC instead. Anchors follow GitHub's
+  heading-slug algorithm. Pure additions — no existing content was changed.
+
 ## [3.3.7]
 
 ### Fixed

@@ -1,5 +1,17 @@
 # customer-center.md
 
+## Contents
+
+- [1. Why this rule exists](#1-why-this-rule-exists)
+- [2. Page-tree map](#2-page-tree-map)
+- [3. Where the impersonation flow lives](#3-where-the-impersonation-flow-lives)
+- [4. What to do when the section "looks empty"](#4-what-to-do-when-the-section-looks-empty)
+- [5. Wiring CSR ↔ customer impersonation grants (`AccessUserSecondaryRelation`)](#5-wiring-csr--customer-impersonation-grants-accessusersecondaryrelation)
+- [6. Hiding the CSR section from non-CSR users (per-demo gating)](#6-hiding-the-csr-section-from-non-csr-users-per-demo-gating)
+- [7. Persona presentation: avatar + role badge](#7-persona-presentation-avatar--role-badge)
+- [8. Reorder a past order — `cartcmd=copyorder` is built in](#8-reorder-a-past-order--cartcmdcopyorder-is-built-in)
+- [9. Customer-specific (contract) pricing](#9-customer-specific-contract-pricing)
+
 > The Swift 2.2 customer-center frontend playbook for Dynamicweb 10 demos. Covers the page-tree map (Account vs CSR vs legacy nav vs Overview), the stock-CSR rule rationale (inoculation against the rebuild-the-CSR-section trap in sales-on-behalf demos), and where impersonation, mixed-source order rendering, and exit-impersonation live in the stock paragraph wiring. The top-level rule lifts a one-paragraph summary into SKILL.md body; this file is the deeper playbook.
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).

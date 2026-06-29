@@ -1,5 +1,12 @@
 # Setup Checks — fresh-machine readiness
 
+## Contents
+
+- [1. Quick verification ritual](#1-quick-verification-ritual)
+- [2. Per-check sections](#2-per-check-sections)
+- [3. Discovery table — read these from project files (the discover-from-project-files rule)](#3-discovery-table--read-these-from-project-files-the-discover-from-project-files-rule)
+- [4. Dual-set env-var propagation pattern — User-scope env-var doesn't propagate](#4-dual-set-env-var-propagation-pattern--user-scope-env-var-doesnt-propagate)
+
 Verification logic lives as fenced PowerShell inside this Markdown reference, not as standalone `.ps1` scripts. Use it to verify env vars, the .NET 10 SDK, `Dynamicweb.ProjectTemplates`, the SQL Express service, and the five vault slots before touching any per-demo work.
 
 **Posture:** verify + opt-in fix.

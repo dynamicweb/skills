@@ -1,5 +1,23 @@
 # language-layers.md
 
+## Contents
+
+- [When to use](#when-to-use)
+- [The two-table mental model](#the-two-table-mental-model)
+- [What gets created when you add a language layer (admin UI)](#what-gets-created-when-you-add-a-language-layer-admin-ui)
+- [The eight knobs ("Language Management" settings)](#the-eight-knobs-language-management-settings)
+- [Wiring the area to PIM language](#wiring-the-area-to-pim-language)
+- [The Swift OOTB language switcher](#the-swift-ootb-language-switcher)
+- [Recipe — adding a language layer to a Swift demo](#recipe--adding-a-language-layer-to-a-swift-demo)
+- [What a full-content AreaCopy does NOT carry — post-copy verification (validated DW 10.25.x)](#what-a-full-content-areacopy-does-not-carry--post-copy-verification-validated-dw-1025x)
+- [The three-layer translation cascade — must localize all three](#the-three-layer-translation-cascade--must-localize-all-three)
+- [Nav-tree leaks the master area on language layers — `LocalizeLink` template patch](#nav-tree-leaks-the-master-area-on-language-layers--localizelink-template-patch)
+- [Friendly URL config — culture-coded area prefixes](#friendly-url-config--culture-coded-area-prefixes)
+- [SQL files with non-ASCII characters — encoding pitfall](#sql-files-with-non-ascii-characters--encoding-pitfall)
+- ["About Us" / "Privacy" / similar pages 404 after deserialize — `PageShortCut` baseline cruft](#about-us--privacy--similar-pages-404-after-deserialize--pageshortcut-baseline-cruft)
+- [Common gotchas](#common-gotchas)
+- [Cross-references](#cross-references)
+
 > Content-side localization in Dynamicweb 10 — adding a language layer to a website (sibling Area row), wiring the language management settings, and exposing the `Swift-v2_LanguageSelector` paragraph so visitors can switch. Sister doc to `dynamicweb-pim-demo/references/localization.md` (PIM/product side).
 >
 > **TL;DR:** A language layer is a **sibling `Area` row** under the same Website, with `AreaMasterAreaId` pointing back to the master area and `AreaCulture` / `AreaEcomLanguageId` set to the new locale. Admin UI flow is Settings → Content → Websites → "+ New website Language" → pick the master to copy from. All pages/paragraphs/grid-rows from the master are cloned into the new Area at create-time; from then on the language management settings (see "The eight knobs" below) decide whether subsequent master changes propagate. Frontend switches between layers via the OOTB `Swift-v2_LanguageSelector` paragraph, which renders one anchor per active sibling area and currency-formats accordingly.

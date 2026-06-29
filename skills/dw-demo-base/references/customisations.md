@@ -1,5 +1,15 @@
 # Customisations governance
 
+## Contents
+
+- [What the rule *actually* forbids vs. doesn't forbid](#what-the-rule-actually-forbids-vs-doesnt-forbid)
+- [1. Ledger template location](#1-ledger-template-location)
+- [2. Drop the template at scaffold time](#2-drop-the-template-at-scaffold-time)
+- [3. Write-time preflight (mandatory)](#3-write-time-preflight-mandatory)
+- [4. Approve+log row format](#4-approvelog-row-format)
+- [5. Glob coverage notes](#5-glob-coverage-notes)
+- [6. Cross-references](#6-cross-references)
+
 Customisations governance for the per-demo project. Two artefacts: the per-demo `<demo>\CUSTOMISATIONS.md` ledger (template at `assets/CUSTOMISATIONS.md.template`, dropped at scaffold time) AND the write-time preflight that appends to it. The audit recipe (`references/audit-customisations.md`) is the verifier -- its output is paste-ready slide content for the demo's closing customisation-budget review.
 
 This file is the long-form contract for **the customisations-ledger preflight**. The orchestrator's summary -- including the canonical preflight prompt -- lives in `SKILL.md` "Two guarded-writes"; see also the sister contract `references/customer-context.md` (the customer-context read-only contract) which shares the *same mental model* -- write-time preflight on a path glob -- with a single hard-abort branch instead of three.
