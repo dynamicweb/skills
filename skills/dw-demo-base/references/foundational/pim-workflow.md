@@ -109,7 +109,7 @@ A custom `NotificationSubscriber` on `Product.BeforeSave` (or on `ProductWorkflo
 2. Looks up which AccessUserGroup is allowed to move INTO that state (config lives in a small custom table OR a JSON config file under `Files/System/` — no schema change needed).
 3. If the current user (from `args.User` or `Pageview.User`) is not a member of the allowed group, throws — which cancels the save.
 
-Single `.cs` file. Ships under the "NotificationSubscriber" customisation budget (per [`../customisations.md`](../customisations.md)) — not a preflight-blocked surface. Compose with §6.2 / §6.3 for UI gating.
+Single `.cs` file. A `NotificationSubscriber` is custom code that ships without a config-surface prompt. Compose with §6.2 / §6.3 for UI gating.
 
 **Strength**: backend-enforced — even MCP / raw API can't bypass.
 **Weakness**: error surfacing is generic (admin sees "save failed"); UI still shows the dropdown options. Use with §6.2 if dropdown noise matters.
@@ -146,7 +146,7 @@ In all three workarounds, **add the audit-log subscriber** anyway: a `Notificati
 
 - **Permissions** — [`users-permissions.md`](users-permissions.md). All three §6 workarounds build on Layer B and Layer C grants from that ref.
 - **Render-time permissions** (Page / Paragraph gating in storefront) — [`users-permissions.md`](users-permissions.md) §15 ("Render-time half — the `Permission` entity store"). Different table (`Permission`, not `UnifiedPermission`), different lookup. Don't confuse — `UnifiedPermission` gates ADMIN actions (the focus of this ref); `Permission` gates STOREFRONT renders.
-- **Customisations budget** — [`../customisations.md`](../customisations.md). `NotificationSubscriber` and scheduled-task surfaces are NOT in the preflight glob — §6.1 and the audit-log subscriber ship unprompted.
+- **Custom code** — `NotificationSubscriber` and scheduled-task surfaces are custom code that ships without a config-surface prompt — §6.1 and the audit-log subscriber ship unprompted.
 - **Cache invalidation** — [`cache-invalidation.md`](cache-invalidation.md). State transitions via `WorkflowStateService.Save` go through the domain service and invalidate caches inline; raw `UPDATE EcomProducts SET ProductWorkflowStateId = …` does NOT fire the `ProductWorkflowStateChanged` notification at all (so emails won't fire either) — use the service, not raw SQL.
 
 Source-citation line numbers re-verified against `$env:DW_VAULT/dw10source/`.

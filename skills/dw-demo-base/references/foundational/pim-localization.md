@@ -72,7 +72,7 @@ Per the official doc page `dynamicweb10/products/concepts/localization.html`:
 2. PIM → product list → select one or more products → action menu **"Add languages"** → pick languages + state (Draft/Active) → Save.
 3. Open a product → **"Translations"** button → side-by-side editor → fill in fields. Field-locking is controlled by per-field "Editable on language version" config (column `EcomProductField.ProductFieldAllowChangesAcrossLanguages`). **On a fresh dw10-suite scaffold none of the standard text fields have this set — every field appears disabled in the side-by-side editor.** See "Enable per-language editing on standard fields" below for the one-time seed.
 4. Product groups: open group edit view → action menu **"Manage languages"** → select languages → Create. Then "Translations" same as products.
-5. For the eight fallback objects (countries, currencies, etc.): open the object's edit view → **"Translations"** button → side-by-side. Skip unless the storyline cares.
+5. For the eight fallback objects (countries, currencies, etc.): open the object's edit view → **"Translations"** button → side-by-side. Skip unless these objects need translating.
 
 ## Backstage data model
 

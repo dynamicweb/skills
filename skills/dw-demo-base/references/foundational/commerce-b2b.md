@@ -161,7 +161,7 @@ verify by logging in as a buyer in one DC group and confirming:
 
 ## When not to use this pattern
 
-- **Single-DC scenarios** — if the storyline doesn't lean on "different buyer sees different stock",
+- **Single-DC scenarios** — if the use case doesn't involve "different buyer sees different stock",
   don't scaffold DC groups. One Assortment is fine. Adding the DC mechanic where it isn't needed is
   wasted complexity.
 - **B2C scenarios** — the DC-as-group pattern presupposes accounts-with-customer-numbers.

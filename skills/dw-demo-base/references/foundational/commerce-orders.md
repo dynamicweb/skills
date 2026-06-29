@@ -63,9 +63,8 @@ canonical DW10 paths differ:
   `Services.Users.Save(user)` (`UserService.cs:430,439`). `AuthenticationManager.cs:184` also
   auto-rehashes plaintext seeds on first successful login.
 
-The `Order.BeforeSave` subscriber is a `.cs` file but is **not** in the customisations preflight
-glob — a `NotificationSubscriber` ships unprompted (see [`../customisations.md`](../customisations.md)
-§"What the rule *actually* forbids vs. doesn't forbid").
+The `Order.BeforeSave` subscriber is a `.cs` file — a `NotificationSubscriber` ships unprompted, with
+no config-surface prompt.
 
 ## The canonical order read surface
 

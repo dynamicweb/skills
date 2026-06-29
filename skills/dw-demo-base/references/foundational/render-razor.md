@@ -59,9 +59,8 @@ surfaces in [`commerce-orders.md`](commerce-orders.md).)
 
 - **Canonical hook**: a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` that sets
   `loadedArgs.OutputResult = new RedirectOutputResult { RedirectUrl = ... }`. Fires before any Razor
-  streams (`PageView.cs:388-392`). A subscriber is **NOT** a hit on the customisations-ledger
-  preflight — see the customisations-rule scope note in the demo base, and the subscriber lifecycle
-  in [`extend-providers.md`](extend-providers.md).
+  streams (`PageView.cs:388-392`). For the subscriber lifecycle, see
+  [`extend-providers.md`](extend-providers.md).
 - **For "anon hits a permission-required page"**: don't write anything. Configure
   `Page.PermissionType = 0` + a `Permission` row, and `CheckPermissionsAndRedirect()` handles it —
   see [`users-permissions.md`](users-permissions.md).
@@ -270,7 +269,7 @@ $page = (Invoke-WebRequest -SkipCertificateCheck https://localhost:<port>/).Cont
 [regex]::Matches($page, '[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}]') | Select-Object -ExpandProperty Value -Unique
 ```
 
-Any hits in `<header>`/`<footer>`/`<nav>`/value-props bands render in color on the demo machine even
+Any hits in `<header>`/`<footer>`/`<nav>`/value-props bands render in color (e.g. on a developer machine) even
 if they look fine on a Mac (which renders some codepoints monochrome by default).
 
 ## Cross-references

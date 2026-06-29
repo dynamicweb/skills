@@ -12,7 +12,7 @@ Each Channel (ShopType=3) has its OWN group tree. Products are published to a ch
 - Attach channels directly to the main catalog groups
 
 Do:
-- Each channel has its own groups (e.g. `G-SHOP-INDOOR` under `CH-SHOPIFY`, `G-HD-HOUSEPLANTS` under `CH-HOMEDEPOT`)
+- Each channel has its own groups (e.g. `G-CHANNELA-X` under `CH-CHANNELA`, `G-CHANNELB-Y` under `CH-CHANNELB`)
 - Use `INSERT...SELECT` to bulk-populate channel groups from catalog groups
 - Products live in 1+ catalog group (under the ShopType=1 shop) AND 1+ channel group per channel they're published to
 
@@ -90,7 +90,7 @@ Switching surfaces will not fix it; the resolver is the same downstream code pat
 
 **Production pattern (vendor-recommended).** Per the Dynamicweb vendor architecture guidance: for B2B scenarios that need real qty-break behavior, the canonical DW10 production pattern is ERP integration that imports per-user *pre-graduated* prices — one row per (product, user, qty-band) with the resolved price already baked in. The cart resolver then picks the correct pre-graduated row by user-group scope. This shifts the qty-band logic out of DW into the ERP.
 
-**Escape hatch for cart-time qty-break math.** Implement a custom `Dynamicweb.Ecommerce.Prices.IPriceProvider` in `Providers/*.cs` (the customisations-ledger preflight applies per [`../customisations.md`](../customisations.md)) that consults `EcomPrices` rows with `PriceQuantity > 0` and returns the best matching row. Worth doing only when the requirement is genuinely "watch the price drop as the buyer adds units" and ERP-pre-graduated rows can't express it.
+**Escape hatch for cart-time qty-break math.** Implement a custom `Dynamicweb.Ecommerce.Prices.IPriceProvider` in `Providers/*.cs` (this is custom code — a provider class) that consults `EcomPrices` rows with `PriceQuantity > 0` and returns the best matching row. Worth doing only when the requirement is genuinely "watch the price drop as the buyer adds units" and ERP-pre-graduated rows can't express it.
 
 **No-customisation workaround.** Keep the tier rows in `EcomPrices` so the PDP tier table still renders, and treat the limitation as known — the tier prices are illustrative; the cart charges the base row at checkout. A `ProductPrice` template variant can read the tier rows directly via a bypassed SQL path to render the table, while the cart honors the base row.
 

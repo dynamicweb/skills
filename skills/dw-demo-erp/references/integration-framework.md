@@ -8,10 +8,12 @@
 
 ## The framework this rides on
 
-The Integration Framework itself — activities, the source-provider / destination-provider pair,
-field mapping, and the three approaches (ad-hoc / batch / live integration) — is owned by
+The Integration Framework architecture — activities, the source-provider / destination-provider pair,
+and field mapping — is owned by
 [`dw-integration-framework`](../../dw-integration-framework/SKILL.md). Read it for the architecture;
-this skill covers only how an ERP demo *applies* that framework. The one ERP-specific framing the
+the three approaches (ad-hoc / batch / live) are catalogued in
+[`../../dw-demo-base/references/foundational/integration-framework.md`](../../dw-demo-base/references/foundational/integration-framework.md).
+This skill covers only how an ERP demo *applies* that framework. The one ERP-specific framing the
 demo adds is the rule above: an ERP is both source and target, never a channel or a feed.
 
 ## Source vs target -- which is the ERP?

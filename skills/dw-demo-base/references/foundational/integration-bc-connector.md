@@ -155,5 +155,6 @@ Three of the four fields are typically wrong for the host the app is dropped int
 
 `retentionDays: 30` is fine as a default and rarely changes.
 
-The corrected `BCSettingsSave` recipe is per-host and lives in the demo skill (it has to read the
-actual repo name, index build names, and workflow id off the host being demoed).
+The corrected `BCSettingsSave` recipe is per-host and environment-specific (it has to read the
+actual repo name, index build names, and workflow id off the host), so it is applied at deploy time
+rather than specified here.

@@ -210,7 +210,7 @@ The mapping (verified DW 10.25.8 against `$env:DW_VAULT/dw10source/`):
 | Entity | `PermissionName` constant | `PermissionKey` shape | Source citation |
 |---|---|---|---|
 | Area root (Section grant for the whole area) | `"Section"` | area name without leading slash (e.g. `"Products"`, `"Assets"`) | `PermissionSection.cs:12` |
-| Shop | `"Shop"` (`nameof(Shop)`) | `ShopId` (e.g. `"SHOP1"`, `"SHOP-DATA"`, `"CH-WEBSHOP"`) | `Shop.cs:314` |
+| Shop | `"Shop"` (`nameof(Shop)`) | `ShopId` (e.g. `"SHOP1"`, `"SHOP2"`) | `Shop.cs:314` |
 | Group (catalog, DataModelFolder, DataModel) | `"ProductGroup"` | `GroupId` | `Group.cs:278` |
 | Product | `"Product"` | `ProductId` | `Product.cs:498` |
 | **ProductField** (standard, custom, AND category fields) | `"ProductField"` | `SystemName` (e.g. `"ProductName"`, `"ProductNumber"`, `"dpp_passport_id"`) | `ProductField.cs:1520` |

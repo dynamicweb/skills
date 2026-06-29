@@ -391,8 +391,8 @@ next directory-listing read, no restart). Both show in `git status` the same way
 
 **What lives OUTSIDE `wwwroot/Files/`.** Admin UI File management surfaces ONLY `wwwroot/Files/`
 content — anything else is shell-only. (Project-specific working folders, read-only context folders,
-and ledger files live outside it; those conventions are owned by the demo skills, not this foundational
-ref.)
+and ledger files live outside it; those are a deployment/working-folder convention, out of scope for
+this skill.)
 
 ## 9. Re-skin doctrine — never edit standard templates
 
@@ -441,8 +441,7 @@ Per `doc.dynamicweb.dev/swift/customization/design-css.html`:
   — Swift sample code, not the project's override file. Writing brand CSS into them breaks the sample
   and destroys the upgrade story. **Hard rule: brand CSS goes in a project-named `<name>_custom.css` —
   never a file named `custom.css`.** A `git diff` showing a stock `custom.css` modified is a re-skin
-  bug: revert and move the rules. (The owning demo skill carries the `<customer>_custom.css` naming
-  convention.)
+  bug: revert and move the rules. (Project-scoped custom-CSS naming is a deployment convention.)
 
 ✅ **Allowed:** a project-scoped `Files/Templates/Designs/Swift-v2/Custom/<name>_custom.css` in the
 Swift `Custom/` slot, loaded after `swift.css`, wired via a `Custom/<name>HeadInclude.cshtml`
