@@ -1,16 +1,16 @@
-# Compare Vault â€” drift detection across machines
+# Compare Vault — drift detection across machines
 
-Vault drift detection. Skill-only recipe â€” fenced PowerShell that hashes slot contents and emits a slot-by-slot drift summary (no standalone `.ps1` script).
+Vault drift detection. Skill-only recipe — fenced PowerShell that hashes slot contents and emits a slot-by-slot drift summary (no standalone `.ps1` script).
 
-The vault at `$env:DW_VAULT` is meant to be **identical across all dev machines** (Justin's box, demo-machine, future contributors). If two machines diverge, every sister skill that reads vault content will produce subtly different results â€” the demo that "works on Justin's machine" suddenly doesn't. This recipe is the diagnostic.
+The vault at `$env:DW_VAULT` is meant to be **identical across all dev machines** (Justin's box, demo-machine, future contributors). If two machines diverge, every sister skill that reads vault content will produce subtly different results — the demo that "works on Justin's machine" suddenly doesn't. This recipe is the diagnostic.
 
 ---
 
 ## When to run
 
-- **"This works on Justin's machine but not mine."** â€” drift is the most likely cause; this recipe is the first triage step.
-- **Before installing a new demo on a fresh box.** â€” verify the freshly-copied vault matches the source machine.
-- **When a baseline rolls.** â€” Swift 2.2 â†’ Swift 2.3, DW10 source bump, new sample bundles. The "Last-updated" column in `INDEX.md` should be bumped on the authoritative machine; the recipe confirms downstream machines are in sync.
+- **"This works on Justin's machine but not mine."** — drift is the most likely cause; this recipe is the first triage step.
+- **Before installing a new demo on a fresh box.** — verify the freshly-copied vault matches the source machine.
+- **When a baseline rolls.** — Swift 2.2 → Swift 2.3, DW10 source bump, new sample bundles. The "Last-updated" column in `INDEX.md` should be bumped on the authoritative machine; the recipe confirms downstream machines are in sync.
 - **As a sanity check before declaring base setup complete on a new machine.**
 
 ---
@@ -51,7 +51,7 @@ $report = foreach ($slot in $slots) {
 $report | Format-Table -AutoSize
 ```
 
-The recipe sorts files by `FullName` before hashing so the resulting `ManifestHash` is order-stable across runs and across machines (different filesystems can return different default enumeration orders). Without `Sort-Object`, two identical vault copies could produce different manifest hashes â€” that's a false-positive drift signal.
+The recipe sorts files by `FullName` before hashing so the resulting `ManifestHash` is order-stable across runs and across machines (different filesystems can return different default enumeration orders). Without `Sort-Object`, two identical vault copies could produce different manifest hashes — that's a false-positive drift signal.
 
 ### Example output
 
@@ -76,17 +76,17 @@ Two machines should produce **identical `ManifestHash` per slot**. Mismatch poli
 | `dw10source` differs | Source-tree drift. The two machines have different DW10 source-clone snapshots. Update the lagging machine via `git pull` (or `git reset --hard <ref>` if the trail diverged). |
 | `samples` differs | Sample bundle drift. Usually means `dw10adminUI/` was updated on one box and not the other. |
 | `databases` differs | DB snapshot drift. The `swift2.2.0-<date>-database.zip` or similar artefact was rolled. Check INDEX.md `Last-updated`. |
-| `docs` differs | Curated docs drift. Usually intentional â€” one machine added a new doc â€” and resolved by copy. |
+| `docs` differs | Curated docs drift. Usually intentional — one machine added a new doc — and resolved by copy. |
 | `serialized-data` differs | **Highest-stakes drift.** Baseline rolls cascade into Swift's [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) results. Check INDEX.md and the per-baseline subfolder's own `README.md` for the version stamp. |
 
 **Resolution:** the authoritative machine bumps `INDEX.md`'s `Last-updated` column for the affected slot, then mirrors the slot to the other machine (typically via robocopy / sync tool / archive download). Run the recipe again on both boxes; manifest hashes should now match.
 
-If a baseline-roll is the cause, escalate to the team â€” multiple machines need updates, and downstream sister skills' assumptions may need revisiting.
+If a baseline-roll is the cause, escalate to the team — multiple machines need updates, and downstream sister skills' assumptions may need revisiting.
 
 ---
 
 ## Cross-reference: baseline-drift self-diagnosis
 
-If grep results in any sibling skill (PIM, Swift) contradict the live vault â€” say a `dynamicweb-pim-demo` reference says "expect 17 product groups in the Swift baseline" but the live deserialize produces 19 â€” this recipe's output is the diagnostic. Was the `serialized-data\Swift2.2\` slot rolled? Cross-check `INDEX.md`'s `Last-updated` and version-stamp columns. Reality wins; the skill is the second source of truth.
+If grep results in any sibling skill (PIM, Swift) contradict the live vault — say a `dynamicweb-pim-demo` reference says "expect 17 product groups in the Swift baseline" but the live deserialize produces 19 — this recipe's output is the diagnostic. Was the `serialized-data\Swift2.2\` slot rolled? Cross-check `INDEX.md`'s `Last-updated` and version-stamp columns. Reality wins; the skill is the second source of truth.
 
 

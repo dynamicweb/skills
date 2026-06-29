@@ -1,5 +1,22 @@
 # Completeness Rules & Workflows (Dynamicweb 10 MCP)
 
+## Contents
+
+- [Completeness Rules](#completeness-rules)
+  - [Purpose](#purpose)
+  - [MCP Tool](#mcp-tool)
+  - [CompletionRuleModel Schema](#completionrulemodel-schema)
+  - [Field System Names](#field-system-names)
+  - [Inclusion in create_data_model_structure](#inclusion-in-create_data_model_structure)
+  - [Connecting Rules to Queries](#connecting-rules-to-queries)
+  - [Design Guidance](#design-guidance)
+- [Workflows](#workflows)
+  - [Purpose](#purpose-1)
+  - [MCP Tool](#mcp-tool-1)
+  - [WorkflowStateModel Schema](#workflowstatemodel-schema)
+  - [Typical Three-State Workflow](#typical-three-state-workflow)
+  - [Design Guidance](#design-guidance-1)
+
 ## Completeness Rules
 
 ### Purpose

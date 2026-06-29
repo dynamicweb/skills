@@ -9,11 +9,54 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 - **Encoded the recent structural audit rules into `validate-skills.py` and the authoring guidance**
   so folds and PRs can't silently reintroduce them. New validator checks: `description` over the
   **1024-char** frontmatter cap (**error**); **double-encoded UTF-8 / mojibake** anywhere under
-  `skills/` (**error**, the fold-back hazard from CHANGELOG 3.3.8); a **SKILL.md body over 500
+  `skills/` (**error**, the fold-back hazard from CHANGELOG 3.3.7); a **SKILL.md body over 500
   lines** (warning); and a **references/ file over 100 lines without a top-of-file table of
   contents** (warning). Documented all four in `CLAUDE.md` (new "Length budgets and references" and
   "Encoding" subsections, plus the frontmatter cap and the Validation summary) and in the
   fold-back's `Step 3 — Validate` note in `dw-demo-base/references/iterate-plugin.md`.
+
+## [3.3.8]
+
+### Changed
+- **Added a top-of-file table of contents to every reference file over 100 lines** (35 files). Per
+  Anthropic's skill-authoring guidance, long reference files get a TOC at the top so it survives
+  partial-preview reads and gives the model a map of the file's sections. The TOC lists H2 sections
+  (flat); files organised at H3 under one or two H2s (`structural-model.md`,
+  `completeness-and-workflows.md`) get a nested H2+H3 TOC instead. Anchors follow GitHub's
+  heading-slug algorithm. Pure additions — no existing content was changed.
+
+## [3.3.7]
+
+### Fixed
+- **Repaired double-encoded UTF-8 (mojibake) across 33 skill markdown files** (1101 lines).
+  These files carried text that had been UTF-8-encoded, misread as CP1252, and re-encoded —
+  so em-dashes rendered as `â€"`, arrows and box-drawing characters, `§` as `Â§`, `…`, `✓`,
+  etc. Repaired with `ftfy.fix_encoding`, which reverses only the damaged byte sequences and
+  leaves already-correct characters (including genuine em-dashes in mixed files) untouched.
+  Verified: zero residual mojibake markers and zero replacement characters (`�`) introduced
+  repo-wide; line endings preserved.
+
+## [3.3.6]
+
+### Changed
+- **Split `dw-headless-delivery/SKILL.md` under the 500-line budget** (569 → 104 lines). The
+  SKILL.md had grown into a flat `/dwapi/` endpoint catalog. Moved the endpoint-family listings
+  (Content, Products, Cart, Checkout, Orders, Users, Favorites, Internationalisation, Loyalty
+  Points, Forms, Query, Connectivity) verbatim into a new `references/endpoint-reference.md` (with
+  a top-of-file table of contents), and kept the gateway concepts in SKILL.md — authentication,
+  the headless architecture rules, and a routing table that links each family to its section in
+  the reference. No endpoint content was lost or changed.
+
+## [3.3.5]
+
+### Changed
+- **Trimmed the `dw-demo-base` description under the 1024-char frontmatter limit** (1093 → 984
+  chars). The activation description had grown past the hard cap and risked truncation by
+  frontmatter parsers. Dropped redundant route-phrases ("register the skills to GSD", "what runs
+  the build", "publish this update") and an explanatory parenthetical; every distinct trigger
+  concept — scaffolding, MCP-load failure symptoms, fresh-machine/online modes, the orchestrator
+  and fold-back routes, sister-skill ordering, and the read-only `customer-context` contract — is
+  preserved.
 
 ## [3.3.4]
 

@@ -44,7 +44,7 @@ SKILL_BODY_MAX = 500
 REFERENCE_TOC_MIN = 100
 # Substrings that signal double-encoded UTF-8 (mojibake): a UTF-8 byte sequence
 # was read as CP1252 and re-encoded. None occur in correct English/code, so a hit
-# is reliable. U+FFFD is already-lost data. See CHANGELOG 3.3.8.
+# is reliable. U+FFFD is already-lost data. See CHANGELOG 3.3.7.
 MOJIBAKE_MARKERS = (
     "â€",                                # em/en-dash, smart quotes, ellipsis, bullet
     "â†", "â”", "â•", "â‰", "âœ", "â–",   # arrows, box-drawing, math, check/cross marks
@@ -212,7 +212,7 @@ def check_reference_tocs() -> None:
 
 def check_no_mojibake() -> None:
     # Double-encoded UTF-8 most often re-enters via a fold-back pasted from a
-    # mis-decoded source. Catch it at the door. See CHANGELOG 3.3.8.
+    # mis-decoded source. Catch it at the door. See CHANGELOG 3.3.7.
     for md in sorted(SKILLS_DIR.rglob("*.md")):
         for i, line in enumerate(md.read_text(encoding=ENCODING).splitlines(), 1):
             for marker in MOJIBAKE_MARKERS:

@@ -1,5 +1,13 @@
 # templates.md
 
+## Contents
+
+- [Template categories (vault baseline)](#template-categories-vault-baseline)
+- [Page presets (the Theme primitive)](#page-presets-the-theme-primitive)
+- [Page state flags — `active` is "Hidden in Menu", not route availability](#page-state-flags--active-is-hidden-in-menu-not-route-availability)
+- [Razor pitfalls inside `ViewModelTemplate<>` layouts](#razor-pitfalls-inside-viewmodeltemplate-layouts)
+- [Swift v2.3.0 vs v2.2 baseline](#swift-v230-vs-v22-baseline)
+
 > Swift 2.2 template / page-preset catalogue. Source-of-truth: `$env:DW_VAULT\serialized-data\Swift2.2\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).

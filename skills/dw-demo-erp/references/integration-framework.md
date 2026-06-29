@@ -42,7 +42,7 @@ Activity (one per direction)
 Concretely:
 
 - **Live flavor** (sister skill `dynamicweb-pim-for-bc`): the AppStore "PIM for Business Central connector" registers BC-side endpoints under `/admin/api/BC*` (11 queries + 4 commands). BC polls these on its own schedule; DW responds with the requested data shape. The connector itself is the destination provider FROM BC's perspective; the queries are the source endpoints FROM BC's perspective. See [`../dw-integration-bc/references/connector-endpoints.md`](../../dw-integration-bc/references/connector-endpoints.md).
-- **Mock flavor** (this skill, [mock-deltas.md](mock-deltas.md)): no provider class is registered. The database is pre-staged into the **post-BC-sync state** â€” every value BC would have written is already in `EcomProducts`, as if the delta arrived overnight â€” and a single built-in `RunSqlScheduledTaskAddIn` RESET task flips it back between demos. The demo narrates "BC sent us this; look at the result", with the data + action-rule definition + email template as evidence. The PIMâ†’BC direction is told via one static field-mapping artefact. The framework concepts (source provider, destination provider, activity, field mapping) are narrated against that staged state, not against live wires. (Superseded: an earlier version of this flavor used inbox/outbox JSON files â€” see the "Do not" section of mock-deltas.md.)
+- **Mock flavor** (this skill, [mock-deltas.md](mock-deltas.md)): no provider class is registered. The database is pre-staged into the **post-BC-sync state** — every value BC would have written is already in `EcomProducts`, as if the delta arrived overnight — and a single built-in `RunSqlScheduledTaskAddIn` RESET task flips it back between demos. The demo narrates "BC sent us this; look at the result", with the data + action-rule definition + email template as evidence. The PIM→BC direction is told via one static field-mapping artefact. The framework concepts (source provider, destination provider, activity, field mapping) are narrated against that staged state, not against live wires. (Superseded: an earlier version of this flavor used inbox/outbox JSON files — see the "Do not" section of mock-deltas.md.)
 
 The mock flavor is a model of the framework, not a bypass of it. The whole point is to make the framework's shape visible without requiring a live BC tenant.
 
@@ -88,7 +88,7 @@ You don't see the framework as "an Activity row in a UI grid" in this flavor -- 
 - Generic ERP data shape (which fields ERP writes vs reads): [erp-data-shape.md](erp-data-shape.md).
 - Scenarios-first planning to scope an ERP integration before building: [scenarios-first-planning.md](scenarios-first-planning.md).
 - Live flavor (ngrok + AppStore connector + `/admin/api/BC*`): [`../dw-integration-bc/SKILL.md`](../../dw-integration-bc/SKILL.md).
-- Channel-vs-shop pedagogy beat (ShopType enum, why ShopType=3 is feeds not ERPs): [`../dw-demo-pim/references/structural-model.md`](../../dw-demo-pim/references/structural-model.md) Â§2.1.
+- Channel-vs-shop pedagogy beat (ShopType enum, why ShopType=3 is feeds not ERPs): [`../dw-demo-pim/references/structural-model.md`](../../dw-demo-pim/references/structural-model.md) §2.1.
 
 
 

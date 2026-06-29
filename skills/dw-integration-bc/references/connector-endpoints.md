@@ -1,5 +1,14 @@
 # connector-endpoints.md
 
+## Contents
+
+- [Call convention](#call-convention)
+- [Authentication](#authentication)
+- [Reads -- the 11 queries](#reads----the-11-queries)
+- [Writes -- the 4 commands](#writes----the-4-commands)
+- [Background plumbing -- not endpoints](#background-plumbing----not-endpoints)
+- [Discovering this surface yourself](#discovering-this-surface-yourself)
+
 > The `/admin/api/BC*` call surface exposed by the **PIM for Business Central connector** AppStore app. 11 queries (read) + 4 commands (write), all bearer-auth via the existing Management API token. Loaded from `~/.claude/skills/dynamicweb-pim-for-bc/SKILL.md` "Where to find things" table.
 
 ## Call convention

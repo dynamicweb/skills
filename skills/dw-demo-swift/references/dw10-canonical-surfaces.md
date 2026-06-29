@@ -1,17 +1,33 @@
-# DW10 canonical surfaces â€” use these, don't re-implement
+# DW10 canonical surfaces — use these, don't re-implement
+
+## Contents
+
+- [User identity / groups](#user-identity--groups)
+- [Permissions — the entity store](#permissions--the-entity-store)
+- [Pricing](#pricing)
+- [Orders](#orders)
+- [Products](#products)
+- [URLs](#urls)
+- [Stylesheets / scripts](#stylesheets--scripts)
+- [Cross-cutting redirects (anon gate, role gate, etc.)](#cross-cutting-redirects-anon-gate-role-gate-etc)
+- [Per-category behavior](#per-category-behavior)
+- [Product field arrays / lists](#product-field-arrays--lists)
+- [Custom item types — the `<Prefix>_*` discipline](#custom-item-types--the-prefix_-discipline)
+- [Discipline audit — grep pack](#discipline-audit--grep-pack)
+- [Cross-references](#cross-references)
 
 > The "use X, not Y" cheat sheet for the DW10 surfaces that get re-implemented in Razor. When in doubt, search `dw10source` (vault: `$env:DW_VAULT/dw10source`) for the canonical surface before writing SQL or parsing URLs. Non-optional on every demo build. Also home to the custom item-type discipline and the discipline-audit grep pack (sections below).
 >
-> **Why this exists.** Every "fake pattern" in a Swift demo (raw SQL probes on `AccessUserGroupRelation`, hard-coded area prefixes, master-template `WriteLiteral` redirects, `EcomOrders` SQL chains in Razor) is a workaround for a surface the demo author didn't know was there. This file is the inventory. Cross-references the escalation ladder in [`re-skin.md`](re-skin.md) Â§Pre-escalation check â€” search here first.
+> **Why this exists.** Every "fake pattern" in a Swift demo (raw SQL probes on `AccessUserGroupRelation`, hard-coded area prefixes, master-template `WriteLiteral` redirects, `EcomOrders` SQL chains in Razor) is a workaround for a surface the demo author didn't know was there. This file is the inventory. Cross-references the escalation ladder in [`re-skin.md`](re-skin.md) §Pre-escalation check — search here first.
 
 ## User identity / groups
 
 - **Read user**: `Pageview.User` (the model; not a viewmodel). Public properties include `ID`, `Name`, `FirstName`, `LastName`, `UserName`, `Email`, `CustomerNumber`, `PointBalance`.
-- **Read user groups**: `Pageview.User.GetGroups()` returns `IEnumerable<UserGroup>`. Non-obsolete on 10.25+ â€” see `src/Core/Dynamicweb.Core/Security/UserManagement/User.cs:717`. `User.HasGroup(int)` (User.cs:1329) is `[Obsolete]` but compiles.
+- **Read user groups**: `Pageview.User.GetGroups()` returns `IEnumerable<UserGroup>`. Non-obsolete on 10.25+ — see `src/Core/Dynamicweb.Core/Security/UserManagement/User.cs:717`. `User.HasGroup(int)` (User.cs:1329) is `[Obsolete]` but compiles.
 - **From viewmodel side**: `UserViewModelExtensions.GetDirectUserGroups()` (`Frontend/UserViewModelExtensions.cs:54`).
 - **Read user groups via `Pageview.User.GetGroups()`, never raw `SELECT FROM AccessUserGroupRelation` in Razor.**
 
-## Permissions â€” the entity store
+## Permissions — the entity store
 
 The single load-bearing fact that prevents the entire "SQL-write to `EcomParagraph.ParagraphPermission`, then template-shim because nothing gates" detour: DW10's `Page` and `Paragraph` permissions are stored in the **`Permission` table**, not in the legacy `Page.PagePermission` / `EcomParagraph.ParagraphPermission` columns. The legacy columns exist for back-compat but the runtime renderer reads from `Permission`.
 
@@ -28,9 +44,9 @@ Permission
 
 ### Enforcement points in dw10source
 
-- Page navigation tree filter: `PageNavigationTreeNodeProvider.cs:161` â€” `page.HasPermission(PermissionLevel.Read)`.
+- Page navigation tree filter: `PageNavigationTreeNodeProvider.cs:161` — `page.HasPermission(PermissionLevel.Read)`.
 - Page-level redirect for anon: `PageView.cs:399-427` `CheckPermissionsAndRedirect()` auto-302s anon hits to the area's login module page.
-- Paragraph render: `Frontend/Content.cs:398` â€” returns `ContentOutputResult.Empty` when `paragraph.HasPermission(PermissionLevel.Read)` fails.
+- Paragraph render: `Frontend/Content.cs:398` — returns `ContentOutputResult.Empty` when `paragraph.HasPermission(PermissionLevel.Read)` fails.
 
 ### How to gate a page subtree (e.g. CSR section)
 
@@ -64,7 +80,7 @@ Fix: revert the legacy-column write, INSERT the equivalent row into `Permission`
 
 ## Pricing
 
-- **Read tier prices**: `Services.Prices.GetByProductId(productId)` â€” currency / customer-group / shop scoped by the configured `IPriceProvider`. dw10source `Prices/Price.cs:179`.
+- **Read tier prices**: `Services.Prices.GetByProductId(productId)` — currency / customer-group / shop scoped by the configured `IPriceProvider`. dw10source `Prices/Price.cs:179`.
 - **Custom price logic**: `PriceProvider` subclass. dw10source `Prices/PriceProvider.cs:17`. Override `FindPrice(PriceContext, PriceProductSelection)` for line price, `FindQuantityPrices` for qty-break tier rows, `PreparePrices` for batched ERP fetch.
 - **Read prices through `Services.Prices.GetByProductId`, never raw `SELECT FROM EcomPrices` in Razor.** The query returns rows from all customer-group scopes, leaking pricing.
 
@@ -86,18 +102,18 @@ Fix: revert the legacy-column write, INSERT the equivalent row into `Permission`
 
 - **Friendly URL for a page**: `SearchEngineFriendlyURLs.GetFriendlyUrl(pageId)`.
 - **Page ID by tag**: `GetPageIdByNavigationTag("tag")` (helper available in Swift templates).
-- **Canonical share URL**: `Pageview.Meta.Canonical?.ToString()` (NOT `Request.Url.AbsoluteUri` â€” that captures tracking params + proxy hostnames).
+- **Canonical share URL**: `Pageview.Meta.Canonical?.ToString()` (NOT `Request.Url.AbsoluteUri` — that captures tracking params + proxy hostnames).
 - **Build links via `SearchEngineFriendlyURLs.GetFriendlyUrl(...)` / `GetPageIdByNavigationTag(...)`, never hard-coded area prefixes (`/<brand-slug>/...`) or synthesized `/Default.aspx?ID=...` strings.**
 
 ## Stylesheets / scripts
 
 - **Page-scoped css/js**: `AddStylesheet(...)` / `AddScript(...)` in the same `@{}` block as the paragraph setup code. Swift master hoists, dedups, orders.
-- **Project-scoped includes**: `Area.Item.CustomHeadInclude` field pointing at `Custom\<Customer>HeadInclude.cshtml`. The stock master already renders this partial if set. Stock example: `Custom\CustomHeadIncludeExample.cshtml`. See also [`re-skin.md`](re-skin.md) Â§"Wiring up project-scoped custom.css".
+- **Project-scoped includes**: `Area.Item.CustomHeadInclude` field pointing at `Custom\<Customer>HeadInclude.cshtml`. The stock master already renders this partial if set. Stock example: `Custom\CustomHeadIncludeExample.cshtml`. See also [`re-skin.md`](re-skin.md) §"Wiring up project-scoped custom.css".
 - **Add scripts via `AddScript(...)` in the paragraph's `@{}` block, never an inline `<script src="...">` in a paragraph template** (an inline tag re-emits per paragraph appearance and breaks cache-busting). **Add project-scoped includes via `Area.Item.CustomHeadInclude`, never an inline `AddStylesheet(...)` in `Swift-v2_Master.cshtml`.**
 
 ## Cross-cutting redirects (anon gate, role gate, etc.)
 
-- **Canonical hook**: a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` that sets `loadedArgs.OutputResult = new RedirectOutputResult { RedirectUrl = ... }`. Fires before any Razor streams. dw10source `PageView.cs:388-392`. **A subscriber is NOT a hit on the customisations-ledger preflight** â€” see [`../../dw-demo-base/references/customisations.md`](../../dw-demo-base/references/customisations.md) Â§"What the rule *actually* forbids vs. doesn't forbid".
+- **Canonical hook**: a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` that sets `loadedArgs.OutputResult = new RedirectOutputResult { RedirectUrl = ... }`. Fires before any Razor streams. dw10source `PageView.cs:388-392`. **A subscriber is NOT a hit on the customisations-ledger preflight** — see [`../../dw-demo-base/references/customisations.md`](../../dw-demo-base/references/customisations.md) §"What the rule *actually* forbids vs. doesn't forbid".
 - **For "anon hits a permission-required page"**: don't write anything. Configure `Page.PermissionType = 0` + a `Permission` row, and `CheckPermissionsAndRedirect()` takes care of it.
 - **Use a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` for cross-cutting redirects, never `WriteLiteral` + `return;` from inside `Swift-v2_Master.cshtml`.** That's a workaround for using the wrong layer.
 
@@ -105,16 +121,16 @@ Fix: revert the legacy-column write, INSERT the equivalent row into `Permission`
 
 - **Storage**: `ProductGroup.ProductGroupFieldValues` (group-level custom fields).
 - **Read**: `product.PrimaryOrDefaultGroup.ProductGroupFieldValues["FieldName"]`.
-- **Read per-category behavior from `product.PrimaryOrDefaultGroup.ProductGroupFieldValues["FieldName"]`, never `product.PrimaryOrDefaultGroup.Name.Contains("roof")` in Razor.** Marketing renames the group â†’ silent breakage.
+- **Read per-category behavior from `product.PrimaryOrDefaultGroup.ProductGroupFieldValues["FieldName"]`, never `product.PrimaryOrDefaultGroup.Name.Contains("roof")` in Razor.** Marketing renames the group → silent breakage.
 
 ## Product field arrays / lists
 
 - **Define**: a `ProductField` of type `ListBox` / `EditableList` / repeater.
 - **Read list data from a `ProductField` (`ListBox` / `EditableList` / repeater), never regex on `LongDescription` to lift `<li>` items.**
 
-## Custom item types â€” the `<Prefix>_*` discipline
+## Custom item types — the `<Prefix>_*` discipline
 
-When a paragraph block needs editor-configurable fields that aren't on Swift's stock item types, create a **new item type** with a project prefix (`Acme_PointsDashboard`, `Acme_RebateTracker`) â€” not "another Swift-v2_Text variant". This explicitly forbids the "Swift-v2_Text shim + foreign cshtml" pattern.
+When a paragraph block needs editor-configurable fields that aren't on Swift's stock item types, create a **new item type** with a project prefix (`Acme_PointsDashboard`, `Acme_RebateTracker`) — not "another Swift-v2_Text variant". This explicitly forbids the "Swift-v2_Text shim + foreign cshtml" pattern.
 
 ### What this looks like in practice
 
@@ -135,15 +151,15 @@ Reference: stock `Swift-v2_Accordion.xml` + `Swift-v2_Accordion_Item.xml`.
 
 Three rules for what stays in cshtml vs moves to a field:
 
-1. **Editor copy** (labels, microcopy, hero copy, fineprint, CTA labels) â†’ ALWAYS a field. Even one-off strings. Editors will want to change them.
-2. **Data-shape transformations / math / lookups** â†’ cshtml. Computing dial degrees, formatting currency, deriving "is unlocked" booleans â†’ cshtml.
-3. **Magic numbers** (threshold = 10000, windowDays = 90, maxChips = 8) â†’ fields with sensible defaults. The default lives in the XML; the editor can override.
+1. **Editor copy** (labels, microcopy, hero copy, fineprint, CTA labels) → ALWAYS a field. Even one-off strings. Editors will want to change them.
+2. **Data-shape transformations / math / lookups** → cshtml. Computing dial degrees, formatting currency, deriving "is unlocked" booleans → cshtml.
+3. **Magic numbers** (threshold = 10000, windowDays = 90, maxChips = 8) → fields with sensible defaults. The default lives in the XML; the editor can override.
 
 ### Things to NEVER do
 
-- âŒ **Repurpose a generic item type** (`Swift-v2_Text`) and attach a foreign cshtml. The editor sees `Title/Subtitle/Text/FirstButton/SecondButton`; the template ignores most of them and embeds the real fields as hardcoded strings.
-- âŒ **One cshtml per "variant"** with hardcoded forks. Use a field with a multi-select / radio for the variant.
-- âŒ **Bake category-aware copy into cshtml** with `.Contains("roof")` chains. Put the category-aware copy on a `ProductGroup` field instead â€” see Â§"Per-category behavior" above.
+- ❌ **Repurpose a generic item type** (`Swift-v2_Text`) and attach a foreign cshtml. The editor sees `Title/Subtitle/Text/FirstButton/SecondButton`; the template ignores most of them and embeds the real fields as hardcoded strings.
+- ❌ **One cshtml per "variant"** with hardcoded forks. Use a field with a multi-select / radio for the variant.
+- ❌ **Bake category-aware copy into cshtml** with `.Contains("roof")` chains. Put the category-aware copy on a `ProductGroup` field instead — see §"Per-category behavior" above.
 
 ### Audit query
 
@@ -154,13 +170,13 @@ Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\*" -F
     | Where-Object { $_.Name -notlike 'Swift-v2_*' }
 ```
 
-Anything that surfaces here is a "Swift-v2_Text shim" smell. Refactor to a custom item type. See also Â§"Discipline audit â€” grep pack" grep #6 below.
+Anything that surfaces here is a "Swift-v2_Text shim" smell. Refactor to a custom item type. See also §"Discipline audit — grep pack" grep #6 below.
 
 ### Reference example
 
 A worked example with the full repeater pattern: `<Brand>_PointsDashboard.xml` + `<Brand>_PointsDashboard_Tier.xml` (Item type + repeater child + content layout cshtml + `<customer>_custom.css` block). Copy from a current demo where the pattern has landed.
 
-## Discipline audit â€” grep pack
+## Discipline audit — grep pack
 
 Verify a Swift demo's templates against this file's canonical surfaces before declaring "ready" or before plugin fold-back. Each hit is a candidate finding; a clean run = green light. Sister audit: [`../../dw-demo-base/references/audit-customisations.md`](../../dw-demo-base/references/audit-customisations.md) is the recipe for the customisations-ledger preflight; this pack is its peer for the discipline checks that don't show up in `git status` of `.cs` files.
 
@@ -168,23 +184,23 @@ Verify a Swift demo's templates against this file's canonical surfaces before de
 
 - Before declaring a demo "ready" (end-of-build budget review).
 - Before folding learnings back into the plugin (so the plugin's reference docs aren't carrying lessons the active demos haven't applied).
-- After any escalation up [`re-skin.md`](re-skin.md) Tier 3+ â€” a `.cshtml` write is the most likely place to acquire one of these anti-patterns.
+- After any escalation up [`re-skin.md`](re-skin.md) Tier 3+ — a `.cshtml` write is the most likely place to acquire one of these anti-patterns.
 
 ### Prerequisites
 
 ```powershell
 $Root = "Dynamicweb.Host.Suite\wwwroot"  # adjust if running outside the demo's solution root
-$Slug = "<area-url-slug>"                 # e.g. "<brand-slug>" â€” a demo's hardcoded area prefix you want to scan for
+$Slug = "<area-url-slug>"                 # e.g. "<brand-slug>" — a demo's hardcoded area prefix you want to scan for
 ```
 
 ### The grep pack
 
 ```powershell
-# 1. Raw DB access in Razor (should be zero â€” use Services.* APIs per the surface inventory above)
+# 1. Raw DB access in Razor (should be zero — use Services.* APIs per the surface inventory above)
 Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' `
   | Select-String -Pattern 'Database\.(CreateDataReader|ExecuteScalar|ExecuteReader|ExecuteNonQuery)'
 
-# 2. Substring scans on URL/query (should be zero â€” use page-id helpers + Pageview.User per the surface inventory)
+# 2. Substring scans on URL/query (should be zero — use page-id helpers + Pageview.User per the surface inventory)
 Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' `
   | Select-String -Pattern 'PathAndQuery\.IndexOf|QueryString\.ToString|Url\.AbsoluteUri\.Contains'
 
@@ -196,49 +212,49 @@ Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtm
 Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' `
   | Select-String -Pattern 'Default\.aspx\?(ID|GroupID|ProductID)='
 
-# 5. Category-name substring branching (should be zero â€” use ProductGroup field per Â§"Per-category behavior")
+# 5. Category-name substring branching (should be zero — use ProductGroup field per §"Per-category behavior")
 Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' `
   | Select-String -Pattern '\.PrimaryOrDefaultGroup.*\.(Name|Title).*\.(Contains|StartsWith)'
 
-# 6. Swift-v2_Text shim smell (project files under generic item folders â€” see Â§"Custom item types")
+# 6. Swift-v2_Text shim smell (project files under generic item folders — see §"Custom item types")
 Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\" -Recurse -Filter '*.cshtml' `
   | Where-Object { $_.Name -notlike 'Swift-v2_*' }
 
-# 7. Inline AddStylesheet / AddScript in master (should be zero â€” use Area.Item.CustomHeadInclude per re-skin.md)
+# 7. Inline AddStylesheet / AddScript in master (should be zero — use Area.Item.CustomHeadInclude per re-skin.md)
 Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Swift-v2_Master.cshtml" `
   | Select-String -Pattern 'AddStylesheet|AddScript'
 
-# 8. Regex on LongDescription / ProductName (should be zero â€” use ProductField list types per Â§"Product field arrays / lists")
+# 8. Regex on LongDescription / ProductName (should be zero — use ProductField list types per §"Product field arrays / lists")
 Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' `
   | Select-String -Pattern 'Regex\.(Match|Matches|Replace).*LongDescription|Regex\..*ProductName'
 
-# 9. Stock custom.css written to (should be zero â€” brand CSS belongs in <customer>_custom.css; any file named
-#    exactly custom.css is Swift-shipped sample code per re-skin.md Â§What NOT to touch)
+# 9. Stock custom.css written to (should be zero — brand CSS belongs in <customer>_custom.css; any file named
+#    exactly custom.css is Swift-shipped sample code per re-skin.md §What NOT to touch)
 git diff --name-only -- '*custom.css' | Select-String -Pattern '(^|[\\/])custom\.css$'
 git log --name-only --pretty=format: -- '*custom.css' | Select-String -Pattern '(^|[\\/])custom\.css$' | Select-Object -Unique
-# (second command catches already-committed writes â€” the baseline-import commit is the only sanctioned hit)
+# (second command catches already-committed writes — the baseline-import commit is the only sanctioned hit)
 ```
 
 ### Interpretation
 
 | Grep | Hit means | Remediation reference |
 |------|-----------|-----------------------|
-| #1 | Raw DB access in a paragraph template | Â§"Pricing" / Â§"Orders" / Â§"Products" / Â§"User identity / groups" above |
-| #2 | Routing-by-URL-string | Â§"URLs" |
-| #3 | Project-locked URL string | Â§"URLs" (use `GetPageIdByNavigationTag`) |
-| #4 | Legacy URL synthesis | Â§"URLs" |
-| #5 | Marketing-fragile branching | Â§"Custom item types" â†’ "Things to NEVER do" + Â§"Per-category behavior" |
-| #6 | Shim instead of custom item type | Â§"Custom item types â€” the `<Prefix>_*` discipline" |
-| #7 | Cache-buster-breaking inline include | [`re-skin.md`](re-skin.md) Â§"Wiring up project-scoped custom.css" |
-| #8 | Brittle content-extraction regex | Â§"Product field arrays / lists" |
-| #9 | Brand CSS written into Swift's shipped `custom.css` sample | [`re-skin.md`](re-skin.md) Â§What NOT to touch â€” revert, move rules to `<customer>_custom.css` |
+| #1 | Raw DB access in a paragraph template | §"Pricing" / §"Orders" / §"Products" / §"User identity / groups" above |
+| #2 | Routing-by-URL-string | §"URLs" |
+| #3 | Project-locked URL string | §"URLs" (use `GetPageIdByNavigationTag`) |
+| #4 | Legacy URL synthesis | §"URLs" |
+| #5 | Marketing-fragile branching | §"Custom item types" → "Things to NEVER do" + §"Per-category behavior" |
+| #6 | Shim instead of custom item type | §"Custom item types — the `<Prefix>_*` discipline" |
+| #7 | Cache-buster-breaking inline include | [`re-skin.md`](re-skin.md) §"Wiring up project-scoped custom.css" |
+| #8 | Brittle content-extraction regex | §"Product field arrays / lists" |
+| #9 | Brand CSS written into Swift's shipped `custom.css` sample | [`re-skin.md`](re-skin.md) §What NOT to touch — revert, move rules to `<customer>_custom.css` |
 
 ## Cross-references
 
-- [`re-skin.md`](re-skin.md) Â§"Pre-escalation check â€” search `dw10source` first" â€” uses this file as the lookup table; Â§"Re-skin smell" â€” the shim symptom that the custom item-type discipline fixes.
-- [`paragraphs.md`](paragraphs.md) â€” Swift's stock paragraph types and the empty-`ParagraphTemplate` alphabetical-fallback hazard (a `<Prefix>_*` variant cshtml interacts with this).
-- [`customer-center.md`](customer-center.md) â€” the CSR section uses the Permission store for its group-gated subtree; do not re-implement the gate.
-- [`integrity-sweep.md`](integrity-sweep.md) Check 7 â€” the gating subset (raw DB access only) of the grep pack above.
-- [`../../dw-demo-base/references/customisations.md`](../../dw-demo-base/references/customisations.md) Â§"What the rule *actually* forbids vs. doesn't forbid" â€” scope clarification for subscribers / helpers / item-type XMLs.
+- [`re-skin.md`](re-skin.md) §"Pre-escalation check — search `dw10source` first" — uses this file as the lookup table; §"Re-skin smell" — the shim symptom that the custom item-type discipline fixes.
+- [`paragraphs.md`](paragraphs.md) — Swift's stock paragraph types and the empty-`ParagraphTemplate` alphabetical-fallback hazard (a `<Prefix>_*` variant cshtml interacts with this).
+- [`customer-center.md`](customer-center.md) — the CSR section uses the Permission store for its group-gated subtree; do not re-implement the gate.
+- [`integrity-sweep.md`](integrity-sweep.md) Check 7 — the gating subset (raw DB access only) of the grep pack above.
+- [`../../dw-demo-base/references/customisations.md`](../../dw-demo-base/references/customisations.md) §"What the rule *actually* forbids vs. doesn't forbid" — scope clarification for subscribers / helpers / item-type XMLs.
 
 

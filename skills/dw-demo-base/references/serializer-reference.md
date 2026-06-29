@@ -1,48 +1,57 @@
 # serializer-reference.md
 
+## Contents
+
+- [Installation](#installation)
+- [Vault baseline shape](#vault-baseline-shape)
+- [Internals — upstream pointer block](#internals--upstream-pointer-block)
+- [Common failure patterns and diagnostics](#common-failure-patterns-and-diagnostics)
+- [Versioning and baseline-format compatibility](#versioning-and-baseline-format-compatibility)
+- [Cross-references](#cross-references)
+
 > Install + failure-triage reference for `DynamicWeb.Serializer`. Owns: the **fact the Serializer exists** for any Dynamicweb demo, **how to install it in the demo host** (one-time-per-host DLL drop + config staging), **common failure patterns**, and **versioning / baseline compatibility**.
 >
-> **Operational baseline-deserialize steps** (POST `/Admin/Api/SerializerDeserialize`, integrity sweep, schema-drift workarounds) are owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md). Only Swift demos need that flow â€” PIM demos start from a blank/fresh DB.
+> **Operational baseline-deserialize steps** (POST `/Admin/Api/SerializerDeserialize`, integrity sweep, schema-drift workarounds) are owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md). Only Swift demos need that flow — PIM demos start from a blank/fresh DB.
 >
-> **Tool internals live upstream.** The Serializer ships its own canonical docs at `C:\VibeCode\DynamicWeb.Serializer\docs\` â€” when this reference disagrees with upstream, upstream wins (the baseline-drift self-diagnosis rule: skill text is the second source of truth). See "Internals â€” upstream pointer block" below.
+> **Tool internals live upstream.** The Serializer ships its own canonical docs at `C:\VibeCode\DynamicWeb.Serializer\docs\` — when this reference disagrees with upstream, upstream wins (the baseline-drift self-diagnosis rule: skill text is the second source of truth). See "Internals — upstream pointer block" below.
 
 ## Installation
 
-Three steps. The build is one-time per machine; the DLL copy + config staging are per-host (re-run when scaffolding a new demo host or when the Serializer DLL is rebuilt). Only run these steps on demos that actually need the Serializer â€” typically Swift demos that will deserialize a baseline. PIM demos that start from a blank DB can skip installation until/unless they later need to serialize their own work back into the vault.
+Three steps. The build is one-time per machine; the DLL copy + config staging are per-host (re-run when scaffolding a new demo host or when the Serializer DLL is rebuilt). Only run these steps on demos that actually need the Serializer — typically Swift demos that will deserialize a baseline. PIM demos that start from a blank DB can skip installation until/unless they later need to serialize their own work back into the vault.
 
-### Step 1 â€” Build the Serializer DLL (one-time per machine, when source updates)
+### Step 1 — Build the Serializer DLL (one-time per machine, when source updates)
 
 ```powershell
 dotnet build C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\ -c Release
 ```
 
-Note: The Serializer source root is currently at `C:\VibeCode\DynamicWeb.Serializer\` â€” this is a fixed path on the developer's machine, not a vault slot (the Serializer is a tool, not reference content). If the path differs on a fresh machine, update this snippet locally and consider whether the Serializer should be relocated under the vault as a future improvement.
+Note: The Serializer source root is currently at `C:\VibeCode\DynamicWeb.Serializer\` — this is a fixed path on the developer's machine, not a vault slot (the Serializer is a tool, not reference content). If the path differs on a fresh machine, update this snippet locally and consider whether the Serializer should be relocated under the vault as a future improvement.
 
-### Step 2 â€” Copy DLL to host's TFM-specific bin folder
+### Step 2 — Copy DLL to host's TFM-specific bin folder
 
-For a `dotnet run` host, .NET loads assemblies from `bin/Debug/<TFM>/` of the TARGET project, not from a generic `bin/` root. With the host pinned to `net10.0` (per [`scaffold.md`](scaffold.md) Â§2.1), the destination is `bin/Debug/net10.0/`:
+For a `dotnet run` host, .NET loads assemblies from `bin/Debug/<TFM>/` of the TARGET project, not from a generic `bin/` root. With the host pinned to `net10.0` (per [`scaffold.md`](scaffold.md) §2.1), the destination is `bin/Debug/net10.0/`:
 
 ```powershell
 Copy-Item "C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\bin\Release\net8.0\DynamicWeb.Serializer.dll" `
           "Dynamicweb.Host.Suite\bin\Debug\net10.0\" -Force
 ```
 
-The DLL is built net8.0 (Serializer ships single-target net8.0 per its csproj). .NET 10's runtime back-loads net8.0 assemblies fine. Restart the host after the copy so the new DLL is picked up. Note: the README and `docs/getting-started.md` still say "copy to `/path/to/your-dw-host/bin/`" â€” that's the published-deployment shape and does NOT work for local `dotnet run` hosts; always use the TFM subfolder.
+The DLL is built net8.0 (Serializer ships single-target net8.0 per its csproj). .NET 10's runtime back-loads net8.0 assemblies fine. Restart the host after the copy so the new DLL is picked up. Note: the README and `docs/getting-started.md` still say "copy to `/path/to/your-dw-host/bin/`" — that's the published-deployment shape and does NOT work for local `dotnet run` hosts; always use the TFM subfolder.
 
-### Step 3 â€” Stage `Files/Serializer.config.json`
+### Step 3 — Stage `Files/Serializer.config.json`
 
-The Serializer requires a config at `<host>/wwwroot/Files/Serializer.config.json`. Without one, `/Admin/Api/SerializerDeserialize` returns `Serializer.config.json not found (also checked ContentSync.config.json)`. The Serializer repo ships a canonical Swift 2.2 baseline config at `<serializer>/src/DynamicWeb.Serializer/Configuration/swift2.2-combined.json` â€” copy that as the starting point:
+The Serializer requires a config at `<host>/wwwroot/Files/Serializer.config.json`. Without one, `/Admin/Api/SerializerDeserialize` returns `Serializer.config.json not found (also checked ContentSync.config.json)`. The Serializer repo ships a canonical Swift 2.2 baseline config at `<serializer>/src/DynamicWeb.Serializer/Configuration/swift2.2-combined.json` — copy that as the starting point:
 
 ```powershell
 Copy-Item "C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Configuration\swift2.2-combined.json" `
           "Dynamicweb.Host.Suite\wwwroot\Files\Serializer.config.json" -Force
 ```
 
-The shipped config uses the current schema: a single flat `predicates: [...]` list with a per-entry `"mode": "Deploy"|"Seed"` field â€” see "Deploy vs Seed" below for the schema break vs the legacy `deploy: { predicates: [...] }` shape.
+The shipped config uses the current schema: a single flat `predicates: [...]` list with a per-entry `"mode": "Deploy"|"Seed"` field — see "Deploy vs Seed" below for the schema break vs the legacy `deploy: { predicates: [...] }` shape.
 
 ### Verification
 
-After steps 1â€“3, restart the host. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST with no payload typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
+After steps 1–3, restart the host. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST with no payload typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
 
 ### Deploy vs Seed
 
@@ -55,26 +64,26 @@ Two **conflict strategies** for the same deserialize pipeline, set per predicate
 
 For Swift baseline restore ([`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md)), only Deploy mode is used. Seed mode is out of scope for the canonical Swift baseline-load flow.
 
-Upstream long-form: `C:\VibeCode\DynamicWeb.Serializer\docs\concepts.md` â€” "Deploy and Seed modes", "The three-bucket split".
+Upstream long-form: `C:\VibeCode\DynamicWeb.Serializer\docs\concepts.md` — "Deploy and Seed modes", "The three-bucket split".
 
 ## Vault baseline shape
 
-The vault baseline at `$env:DW_VAULT\serialized-data\Swift2.2\` is **content-only** (the historical `_sql/` framework rows were deliberately removed: they silently overwrote framework data hosts had already built via the PIM-skill flow). One top-level subfolder: `_content/`, a mirror tree of the DW areaâ†’pageâ†’gridRowâ†’paragraph hierarchy, one YAML file per node (folder = page; files = `area.yml`, `page.yml`, `grid-row.yml`, `paragraph-<col>-<n>.yml`). Hosts that need a baseline framework should run [`../../dw-demo-pim/references/canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md) Steps 1-4 before this deserialize. The runtime contract is [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) Â§3 "Baseline shape".
+The vault baseline at `$env:DW_VAULT\serialized-data\Swift2.2\` is **content-only** (the historical `_sql/` framework rows were deliberately removed: they silently overwrote framework data hosts had already built via the PIM-skill flow). One top-level subfolder: `_content/`, a mirror tree of the DW area→page→gridRow→paragraph hierarchy, one YAML file per node (folder = page; files = `area.yml`, `page.yml`, `grid-row.yml`, `paragraph-<col>-<n>.yml`). Hosts that need a baseline framework should run [`../../dw-demo-pim/references/canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md) Steps 1-4 before this deserialize. The runtime contract is [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §3 "Baseline shape".
 
-## Internals â€” upstream pointer block
+## Internals — upstream pointer block
 
-Architecture, source layout, pipeline walkthrough, YAML schema details, strict-mode internals, the identity model (GUID-based `PageUniqueId` identity with per-environment numeric ID resolution), link-resolution passes, runtime exclusions, and the tools folder (`purge-cleandb.sql`, `swift22-cleanup/`, e2e harness, smoke tests, the Swift 2.2 bacpac) are all documented canonically in the upstream repo â€” **do not rely on a paraphrase here; upstream wins**:
+Architecture, source layout, pipeline walkthrough, YAML schema details, strict-mode internals, the identity model (GUID-based `PageUniqueId` identity with per-environment numeric ID resolution), link-resolution passes, runtime exclusions, and the tools folder (`purge-cleandb.sql`, `swift22-cleanup/`, e2e harness, smoke tests, the Swift 2.2 bacpac) are all documented canonically in the upstream repo — **do not rely on a paraphrase here; upstream wins**:
 
-- `C:\VibeCode\DynamicWeb.Serializer\docs\` â€” README â†’ `concepts.md` â†’ `strict-mode.md` (full warning-source table, override precedence, cache-registry extension recipe) â†’ `link-resolution.md` â†’ `troubleshooting.md` â†’ `configuration.md` â†’ `runtime-exclusions.md` â†’ `sql-tables.md` â†’ `permissions.md` â†’ `cicd.md`
-- `C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\` â€” source; `Providers\SerializerOrchestrator.cs` is the entry point
-- `C:\VibeCode\DynamicWeb.Serializer\tools\` â€” each tool subfolder carries its own README; the Swift 2.2 bacpac there is the emergency fast-restore alternative to deserialize referenced by `$env:DW_VAULT\INDEX.md`'s `databases` row
+- `C:\VibeCode\DynamicWeb.Serializer\docs\` — README → `concepts.md` → `strict-mode.md` (full warning-source table, override precedence, cache-registry extension recipe) → `link-resolution.md` → `troubleshooting.md` → `configuration.md` → `runtime-exclusions.md` → `sql-tables.md` → `permissions.md` → `cicd.md`
+- `C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\` — source; `Providers\SerializerOrchestrator.cs` is the entry point
+- `C:\VibeCode\DynamicWeb.Serializer\tools\` — each tool subfolder carries its own README; the Swift 2.2 bacpac there is the emergency fast-restore alternative to deserialize referenced by `$env:DW_VAULT\INDEX.md`'s `databases` row
 
-Note: `$env:DW_VAULT\dw10source\` is the DW10 clone, NOT the Serializer â€” Serializer source lives only at the path above.
+Note: `$env:DW_VAULT\dw10source\` is the DW10 clone, NOT the Serializer — Serializer source lives only at the path above.
 
 Two operational facts worth keeping in mind without loading upstream docs:
 
-- **Strict-mode default**: Cli / Api entry points default strict-mode **on**; AdminUi defaults off. Request parameter overrides config value overrides entry-point default. The Swift deserialize flow forbids disabling strict mode for API callers â€” `?strictMode=false` is a deliberate override of the safety contract.
-- **Failure response shape**: when strict mode escalates, the API returns a non-2xx whose body starts `Deserialization failed: Strict mode: N warning(s) escalated to failure:` followed by one `- <verbatim warning>` line per accumulated warning. Read the body â€” each warning prefix maps to a failure pattern below; do not retry blindly.
+- **Strict-mode default**: Cli / Api entry points default strict-mode **on**; AdminUi defaults off. Request parameter overrides config value overrides entry-point default. The Swift deserialize flow forbids disabling strict mode for API callers — `?strictMode=false` is a deliberate override of the safety contract.
+- **Failure response shape**: when strict mode escalates, the API returns a non-2xx whose body starts `Deserialization failed: Strict mode: N warning(s) escalated to failure:` followed by one `- <verbatim warning>` line per accumulated warning. Read the body — each warning prefix maps to a failure pattern below; do not retry blindly.
 
 ## Common failure patterns and diagnostics
 
@@ -105,7 +114,7 @@ WHERE NOT EXISTS (
 
 **Symptom:** Strict-mode body contains `Unresolvable page ID N in link`.
 
-**What happened:** Source YAML references page N via `Default.aspx?ID=N`, but page N's `PageUniqueId` isn't in the target's `PageGuidCache` (page wasn't deserialized â€” wrong predicate path, wrong mode, or stale baseline).
+**What happened:** Source YAML references page N via `Default.aspx?ID=N`, but page N's `PageUniqueId` isn't in the target's `PageGuidCache` (page wasn't deserialized — wrong predicate path, wrong mode, or stale baseline).
 
 **Diagnostics:**
 
@@ -120,11 +129,11 @@ WHERE Link LIKE '%Default.aspx?%=3421%';
 1. Extend the Content predicate `path` so page 3421 is included in Deploy mode.
 2. Move the referencing page (or referenced page) into the same mode if they're split across Deploy/Seed.
 3. Clean source: null the dangling reference. For Swift 2.2, `tools/swift22-cleanup/01-null-orphan-page-refs.sql` is the canonical fix.
-4. Acknowledge the orphan (escape hatch): add the ID to the predicate's `acknowledgedOrphanPageIds` array. Demotes the fatal serialize error to a warning. Remove the entry once the data is clean â€” leaving acknowledged IDs around silences real future drift.
+4. Acknowledge the orphan (escape hatch): add the ID to the predicate's `acknowledgedOrphanPageIds` array. Demotes the fatal serialize error to a warning. Remove the entry once the data is clean — leaving acknowledged IDs around silences real future drift.
 
 ### "source column [T].[C] not present on target schema"
 
-**Symptom:** `WARNING: source column [EcomShops].[ShopNewField] not present on target schema â€” skipping`.
+**Symptom:** `WARNING: source column [EcomShops].[ShopNewField] not present on target schema — skipping`.
 
 **What happened:** Source DW host is on a different `Dynamicweb.Suite` NuGet version than the target. The source has a column the target's `UpdateProvider` hasn't created yet.
 
@@ -153,13 +162,13 @@ The Serializer's API surface (Management API commands, predicate shape, YAML for
 
 Three signals:
 
-1. **`SourcePageId` missing** from page YAML â†’ baseline pre-dates the Serializer's cross-environment link-rewriting support. Re-serialize from a current Serializer version.
-2. **Legacy `deploy: { predicates: [...] }` / `seed: { ... }` config shape** â†’ older config schema. ConfigLoader rejects with a clear error pointing at the current flat `predicates: [...]` list with per-predicate `"mode": "Deploy" | "Seed"`. Migrate the config; YAML payloads are unchanged.
-3. **`UpdateVersion_ecom.xml` style update tracking** â†’ pre-DW-9.14 era. Not a Serializer issue per se; affects the host DW10's update-manager queue (see `references/db-update-recovery.md`).
+1. **`SourcePageId` missing** from page YAML → baseline pre-dates the Serializer's cross-environment link-rewriting support. Re-serialize from a current Serializer version.
+2. **Legacy `deploy: { predicates: [...] }` / `seed: { ... }` config shape** → older config schema. ConfigLoader rejects with a clear error pointing at the current flat `predicates: [...]` list with per-predicate `"mode": "Deploy" | "Seed"`. Migrate the config; YAML payloads are unchanged.
+3. **`UpdateVersion_ecom.xml` style update tracking** → pre-DW-9.14 era. Not a Serializer issue per se; affects the host DW10's update-manager queue (see `references/db-update-recovery.md`).
 
 ### How baselines roll
 
-Baseline rolls (the vault's `Swift2.2/` content) happen out-of-band â€” when Dynamicweb ships a new Swift release, the vault baseline gets re-serialized from a fresh Swift install. The vault's `INDEX.md` `serialized-data` row carries the date stamp; cross-check it against the demo's host DW10 version when triaging schema-drift warnings (the baseline-drift self-diagnosis rule).
+Baseline rolls (the vault's `Swift2.2/` content) happen out-of-band — when Dynamicweb ships a new Swift release, the vault baseline gets re-serialized from a fresh Swift install. The vault's `INDEX.md` `serialized-data` row carries the date stamp; cross-check it against the demo's host DW10 version when triaging schema-drift warnings (the baseline-drift self-diagnosis rule).
 
 ## Cross-references
 
@@ -169,6 +178,6 @@ Baseline rolls (the vault's `Swift2.2/` content) happen out-of-band â€” whe
 | Run a baseline content deserialize (Swift demos only) | [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) |
 | Post-deserialize integrity checks | [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md) |
 | Recover from DW10 update-queue bugs (independent of Serializer) | `references/db-update-recovery.md` |
-| Serializer internals â€” architecture, YAML schema, strict mode, link resolution, tools (canonical) | `C:\VibeCode\DynamicWeb.Serializer\docs\` + source ("Internals â€” upstream pointer block" above) |
+| Serializer internals — architecture, YAML schema, strict mode, link resolution, tools (canonical) | `C:\VibeCode\DynamicWeb.Serializer\docs\` + source ("Internals — upstream pointer block" above) |
 
 

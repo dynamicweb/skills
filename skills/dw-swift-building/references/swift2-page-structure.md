@@ -1,5 +1,15 @@
 # Swift 2 Page Structure Reference
 
+## Contents
+
+- [What the BACPAC Contains](#what-the-bacpac-contains)
+- [Expected Page Hierarchy (After BACPAC Import)](#expected-page-hierarchy-after-bacpac-import)
+- [Navigation Tag Reference](#navigation-tag-reference)
+- [Layout Template Path](#layout-template-path)
+- [Category Pages — What to Expect](#category-pages--what-to-expect)
+- [Swift 2 Item Types (Per-Page Settings)](#swift-2-item-types-per-page-settings)
+- [After Customisation — What Still Needs Manual Configuration](#after-customisation--what-still-needs-manual-configuration)
+
 ## What the BACPAC Contains
 
 The `swift2.bacpac` database backup contains a **complete, working Dynamicweb website**.
