@@ -1,5 +1,15 @@
 # DB update recovery — unstick the `UpdateManager` queue
 
+## Contents
+
+- [Symptom](#symptom)
+- [Triage](#triage)
+- [Mode A — Queue-stuck recovery (canonical forum procedure)](#mode-a--queue-stuck-recovery-canonical-forum-procedure)
+- [Mode B — Manual schema patch (when the CREATE itself is buggy)](#mode-b--manual-schema-patch-when-the-create-itself-is-buggy)
+- [Worked example](#worked-example)
+- [When this whole recipe is NOT the right fix](#when-this-whole-recipe-is-not-the-right-fix)
+- [Sources](#sources)
+
 When a DW10 host reaches a state where `UpdateManager.ExecuteUpdates()` fails on a missing schema object, every AddIn install (Backend MCP, any AppStore app, any plugin) **silently rolls back** — the install POST returns 200 but the underlying CommandResult contains the failure. The admin UI shows no error, the configuration menu the app was supposed to add never appears, and `/admin/<app>` endpoints return 404.
 
 EventViewer logs at `wwwroot/Files/System/Log/EventViewer/*.log` are the only signal.

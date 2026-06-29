@@ -1,5 +1,16 @@
 # b2b-dc-pattern.md
 
+## Contents
+
+- [The mechanic in one sentence](#the-mechanic-in-one-sentence)
+- [Naming convention](#naming-convention)
+- [User assignment](#user-assignment)
+- [Surface guidance for setting this up](#surface-guidance-for-setting-this-up)
+- [Admin Users tree filters typed groups](#admin-users-tree-filters-typed-groups)
+- [Verification flow](#verification-flow)
+- [When not to use this pattern](#when-not-to-use-this-pattern)
+- [Cross-references](#cross-references)
+
 > The canonical Dynamicweb 10 B2B pattern for any portal where pricing, stock, shipping methods, or shipping fees vary by Distribution Center (DC). Vendor-blessed by the Dynamicweb vendor architect (architecture call).
 >
 > **This is the standard B2B mechanic in DW10, not an upgrade path.** Treat it as the default scaffold for any wholesale / B2B-distributor demo that touches DC-aware behavior — not as something to design when the customer asks for it explicitly. Customers expect it; framing it as bespoke would invent friction that DW10 doesn't have.

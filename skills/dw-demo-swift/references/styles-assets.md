@@ -1,5 +1,17 @@
 # styles-assets.md
 
+## Contents
+
+- [Why this is the higher-leverage tier](#why-this-is-the-higher-leverage-tier)
+- [The four asset directories](#the-four-asset-directories)
+- [How the Master template loads them](#how-the-master-template-loads-them)
+- [JSON schemas](#json-schemas)
+- [Wiring the Area to a brand](#wiring-the-area-to-a-brand)
+- [Empty-state pitfall (silent no-op)](#empty-state-pitfall-silent-no-op)
+- [Reference vault: `$env:DW_VAULT\dw-swift-styles\`](#reference-vault-envdw_vaultdw-swift-styles)
+- [When to use this vs `<customer>_custom.css`](#when-to-use-this-vs-customer_customcss)
+- [Cross-references](#cross-references)
+
 > Per-demo Style assets (Color Schemes, Buttons, Typography, Fonts) — the higher-leverage re-skin lever above `<customer>_custom.css`. Cross-references out to [`re-skin.md`](re-skin.md) (escalation ladder) and [`admin-ui-authoring.md`](admin-ui-authoring.md) (Day-1 admin-UI workflow).
 >
 > **TL;DR:** Drop a `<brand>.json` + `<brand>.css` pair into each `wwwroot/Files/System/Styles/{ColorSchemes,Buttons,Typography}/`, point the Area row's `AreaColorSchemeGroupId` / `AreaButtonStyleId` / `AreaTypographyId` columns at `<brand>`, restart host. The Master template's `Model.TryGet*Style` calls auto-load the matching CSS file; every `data-dw-colorscheme="<id>"` attribute on a paragraph/row resolves against `<brand>.json`'s `Schemes[].Id` entries. Reference vault: **`$env:DW_VAULT\dw-swift-styles\`** (carries Swift defaults + a Fixaflex example).

@@ -1,5 +1,21 @@
 # re-skin.md
 
+## Contents
+
+- [Pitfall index](#pitfall-index)
+- [Surface inventory](#surface-inventory)
+- [What NOT to touch (and what IS allowed)](#what-not-to-touch-and-what-is-allowed)
+- [Pre-escalation check — search `dw10source` first](#pre-escalation-check--search-dw10source-first)
+- [Re-skin smell: "Swift-v2_Text shim + foreign cshtml"](#re-skin-smell-swift-v2_text-shim--foreign-cshtml)
+- [Pixel-perfect escalation: layout-only `.cshtml` content layouts](#pixel-perfect-escalation-layout-only-cshtml-content-layouts)
+- [Recipe](#recipe)
+- [What this recipe does NOT do](#what-this-recipe-does-not-do)
+- [Wiring up project-scoped custom.css](#wiring-up-project-scoped-customcss)
+- [Color schemes architecture](#color-schemes-architecture)
+- [Pitfall: over-broad `[data-dw-button]` selectors in `<customer>_custom.css`](#pitfall-over-broad-data-dw-button-selectors-in-customer_customcss)
+- [Pitfall: bare `footer { ... }` selectors clobber card action-bars](#pitfall-bare-footer----selectors-clobber-card-action-bars)
+- [Pitfall: emoji codepoints render in color regardless of CSS `color:`](#pitfall-emoji-codepoints-render-in-color-regardless-of-css-color)
+
 > Customer-themed re-skin recipe for a Swift 2 baseline. Defaults to the configuration-only path (admin UI Visual Editor + theme tokens -- see [admin-ui-authoring.md](admin-ui-authoring.md)). Escalation ladder when configuration falls short: (1) project-scoped CSS overrides at `Files/Templates/Designs/Swift-v2/Custom/<customer>_custom.css` consuming the `--dw-*` variables Dynamicweb generates from admin (per [doc.dynamicweb.dev/swift/customization/design-css.html](https://doc.dynamicweb.dev/swift/customization/design-css.html)); (2) layout-only `.cshtml` content-layouts for tailored screens (per [doc.dynamicweb.dev/swift/design/pixel-perfect.html](https://doc.dynamicweb.dev/swift/design/pixel-perfect.html) -- see §Pixel-perfect escalation below); (3) controller/provider `.cs` triggers base's customisations-ledger preflight ([dynamicweb-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md)).
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).

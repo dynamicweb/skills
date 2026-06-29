@@ -1,5 +1,19 @@
 # permissions-model.md
 
+## Contents
+
+- [1. The `CapabilityControlFeature` flag — DW10.21+, default OFF](#1-the-capabilitycontrolfeature-flag--dw1021-default-off)
+- [2. Layer A — `UnifiedPermission` (the storage layer)](#2-layer-a--unifiedpermission-the-storage-layer)
+- [3. Layer B — Capability Control (UI-section visibility)](#3-layer-b--capability-control-ui-section-visibility)
+- [4. Layer C — Entity-level permissions](#4-layer-c--entity-level-permissions)
+- [4b. Dashboard pinning — separate `DashboardAccessUserRelation` table](#4b-dashboard-pinning--separate-dashboardaccessuserrelation-table)
+- [4c. Admin-UI exposure gap — must script the tables directly](#4c-admin-ui-exposure-gap--must-script-the-tables-directly)
+- [5. The unified picture](#5-the-unified-picture)
+- [6. Role matrix + grant seeding — moved](#6-role-matrix--grant-seeding--moved)
+- [7. Admin bypass — who escapes every check](#7-admin-bypass--who-escapes-every-check)
+- [8. Plaintext password storage — moved](#8-plaintext-password-storage--moved)
+- [9. Cross-references](#9-cross-references)
+
 > Three-layer permission model for Dynamicweb 10 — three SQL tables (`UnifiedPermission` for entity grants, `CapabilityLimitation` for UI hides, `DashboardAccessUserRelation` for per-user dashboard pinning), two semantic conventions (permit vs limit — opposite directions), one feature flag (`CapabilityControlFeature`, DW10.21+) that decides whether the layers cascade or stand orthogonal. Read this BEFORE designing any role matrix; the flag's default and its cascade behavior are the load-bearing facts that prevent the "I granted Edit on the Products area but the user still can't see anything" detours. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Cross-cuts with the **render-time** half of permissions — see [`dynamicweb-swift-demo/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) §"Permissions — the entity store" for how the storefront's `Page`/`Paragraph` permissions resolve at request time. This ref owns **modelling-time** concerns (entity hierarchy, capability tree, flag decision); the Swift ref owns **render-time** lookup (the `Permission` table read on every paragraph render). **Concept lives here; seeding grants for demo personas → [permissions-recipes.md](permissions-recipes.md).**
 >
 > **Cross-cutting placement note.** This ref sits at PIM-skill level. Permissions touch PIM, Swift frontend, ERP integration, and Business Central potentially — all of them. If cross-cutting use materialises across more than two sibling skills, consider promoting to a future `dynamicweb-platform-demo` sibling alongside `dynamicweb-demo-base`. Until then, this is the home and Swift's `dw10-canonical-surfaces.md` §"Permissions — the entity store" cross-references back.

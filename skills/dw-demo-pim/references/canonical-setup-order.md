@@ -1,5 +1,11 @@
 # canonical-setup-order.md
 
+## Contents
+
+- [0. Setup-order variants](#0-setup-order-variants)
+- [1. Canonical setup order (Variant A — Storefront-first)](#1-canonical-setup-order-variant-a--storefront-first)
+- [Appendix: commerce-side order seeding (used by Swift customer-center demos)](#appendix-commerce-side-order-seeding-used-by-swift-customer-center-demos)
+
 > The canonical setup order for a Dynamicweb 10 PIM build. Each step depends on earlier ones — skipping or reordering causes rework. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Cross-references out to `structural-model.md`, `governance.md`, `cache-invalidation.md`, `workflow.md`, `permissions-model.md`.
 
 ## 0. Setup-order variants

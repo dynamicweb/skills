@@ -1,5 +1,13 @@
 # Scaffold — `dotnet new dw10-suite`
 
+## Contents
+
+- [1. Prerequisites](#1-prerequisites)
+- [2. Scaffold the per-demo project](#2-scaffold-the-per-demo-project)
+- [3. First run — Setup Guide for DB + Files folder](#3-first-run--setup-guide-for-db--files-folder)
+- [4. Discover-from-project-files rule](#4-discover-from-project-files-rule)
+- [5. Anti-patterns (CLAUDE.md "What NOT to Use")](#5-anti-patterns-claudemd-what-not-to-use)
+
 Scaffold a new Dynamicweb 10 demo project. Walk `dotnet new dw10-suite --name Dynamicweb.Host.Suite`. The `--name Dynamicweb.Host.Suite` is **mandatory** — sister-skill path discovery (`Dynamicweb.Host.Suite/Properties/launchSettings.json`, `Dynamicweb.Host.Suite/GlobalSettings.Database.config`) depends on this name.
 
 Suite version is whatever the template + `dotnet restore` resolve. **Version policy is out of scope for this skill** — neither pinning a specific patch nor enforcing Ring-N stability is something this skill does. If a particular demo needs a frozen version, edit its csproj directly.

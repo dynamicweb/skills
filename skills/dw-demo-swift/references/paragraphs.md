@@ -1,5 +1,17 @@
 # paragraphs.md
 
+## Contents
+
+- [Paragraph categories (Swift 2.2)](#paragraph-categories-swift-22)
+- [Component-first: map the requirement to a standard component BEFORE customising](#component-first-map-the-requirement-to-a-standard-component-before-customising)
+- [Where to find a paragraph's wiring](#where-to-find-a-paragraphs-wiring)
+- ["Don't customise this paragraph" callouts](#dont-customise-this-paragraph-callouts)
+- [Empty `ParagraphTemplate` resolves to the first cshtml alphabetically (silent footgun)](#empty-paragraphtemplate-resolves-to-the-first-cshtml-alphabetically-silent-footgun)
+- [SQL-direct Paragraph INSERTs — see the seeding reference](#sql-direct-paragraph-inserts--see-the-seeding-reference)
+- [Configuring paragraph item-type fields (PDP enrichment learnings)](#configuring-paragraph-item-type-fields-pdp-enrichment-learnings)
+- [ProductHeader inline-enrichment escalation](#productheader-inline-enrichment-escalation)
+- [Grid composition cache — host restart required for paragraph deletion](#grid-composition-cache--host-restart-required-for-paragraph-deletion)
+
 > Swift 2.2 paragraph-type survey. Source-of-truth: paragraphs are exposed in admin UI under each page; backing definitions live in `wwwroot/Files/Templates/Paragraph/` (built-in — read-only) and the page-preset YAML at `$env:DW_VAULT\serialized-data\Swift2.2\_content\Swift 2\<area>\<page>\<grid-row>\paragraph-*.yml`. Reference Swift v2.3.0 at https://github.com/dynamicweb/Swift.
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).

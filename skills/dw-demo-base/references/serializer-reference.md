@@ -1,5 +1,14 @@
 # serializer-reference.md
 
+## Contents
+
+- [Installation](#installation)
+- [Vault baseline shape](#vault-baseline-shape)
+- [Internals — upstream pointer block](#internals--upstream-pointer-block)
+- [Common failure patterns and diagnostics](#common-failure-patterns-and-diagnostics)
+- [Versioning and baseline-format compatibility](#versioning-and-baseline-format-compatibility)
+- [Cross-references](#cross-references)
+
 > Install + failure-triage reference for `DynamicWeb.Serializer`. Owns: the **fact the Serializer exists** for any Dynamicweb demo, **how to install it in the demo host** (one-time-per-host DLL drop + config staging), **common failure patterns**, and **versioning / baseline compatibility**.
 >
 > **Operational baseline-deserialize steps** (POST `/Admin/Api/SerializerDeserialize`, integrity sweep, schema-drift workarounds) are owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md). Only Swift demos need that flow — PIM demos start from a blank/fresh DB.

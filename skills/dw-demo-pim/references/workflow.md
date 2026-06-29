@@ -1,5 +1,15 @@
 # workflow.md
 
+## Contents
+
+- [1. Schema — five tables, two foreign-key columns](#1-schema--five-tables-two-foreign-key-columns)
+- [2. Two attachment paths — group OR product](#2-two-attachment-paths--group-or-product)
+- [3. The state-change subscriber — emails fire from state changes](#3-the-state-change-subscriber--emails-fire-from-state-changes)
+- [4. Notification template path](#4-notification-template-path)
+- [5. VERIFIED GAP — DW10 workflow has NO per-state role gating](#5-verified-gap--dw10-workflow-has-no-per-state-role-gating)
+- [6. Three workaround patterns for per-state role gating](#6-three-workaround-patterns-for-per-state-role-gating)
+- [7. Cross-references](#7-cross-references)
+
 > Dynamicweb 10 has a real product-workflow engine. Tables, state graph, the email-firing subscriber, the verified gap (no native per-state role gating), and three workaround patterns for role-based transitions. Read this BEFORE building any "approve / publish" demo story — most of the moving parts are already wired and you only need data, not C#. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table.
 >
 > **Cross-cutting placement note.** Same placement note as [`permissions-model.md`](permissions-model.md): this ref sits at PIM-skill level. Workflow concerns touch PIM and the Swift frontend (the approver UI is a CMS surface; the audit log can drive content) and integrations (ERP push fires off state changes). If cross-cutting use materialises across more than two sibling skills, consider promoting to a future `dynamicweb-platform-demo` sibling. For now: here.

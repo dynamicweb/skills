@@ -1,5 +1,13 @@
 # mock-deltas.md
 
+## Contents
+
+- [The mental model](#the-mental-model)
+- [When to use this flavor](#when-to-use-this-flavor)
+- [The recipe](#the-recipe)
+- [Do not](#do-not)
+- [Cross-references](#cross-references)
+
 > Canonical recipe for mocking an ERP without a live tenant: the demo data starts in the **post-delta state**, staged directly in the database, with a single scheduled task to reset between demos. Loaded from `dynamicweb-erp-demo/SKILL.md` "Where to find things". Use when the demo handover doesn't include BC tenant access.
 
 ## The mental model

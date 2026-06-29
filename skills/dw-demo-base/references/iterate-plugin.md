@@ -1,5 +1,24 @@
 # Folding demo-build learnings back into the dynamicweb/skills repo
 
+## Contents
+
+- [When to invoke](#when-to-invoke)
+- [Step 0 — Resolve the local skills-repo path](#step-0--resolve-the-local-skills-repo-path)
+- [Step 1 — Route the learning: foundational skill or demo skill?](#step-1--route-the-learning-foundational-skill-or-demo-skill)
+- [Step 1a — Sanitize the candidate content BEFORE drafting the edit (load-bearing)](#step-1a--sanitize-the-candidate-content-before-drafting-the-edit-load-bearing)
+- [Step 1b — Content-hygiene gate (load-bearing — this is how the corpus stays correct)](#step-1b--content-hygiene-gate-load-bearing--this-is-how-the-corpus-stays-correct)
+- [Step 2 — Make the edit](#step-2--make-the-edit)
+- [Step 3 — Validate](#step-3--validate)
+- [Step 4 — Bump the version (one place)](#step-4--bump-the-version-one-place)
+- [Step 4a — Update README.md and CHANGELOG.md (mandatory when content/scope changes)](#step-4a--update-readmemd-and-changelogmd-mandatory-when-contentscope-changes)
+- [Step 5 — Branch, atomic commit, push, open PR](#step-5--branch-atomic-commit-push-open-pr)
+- [Step 6 — After the PR merges: refresh the local marketplace clone](#step-6--after-the-pr-merges-refresh-the-local-marketplace-clone)
+- [Step 7 — Tell the user the slash commands to refresh the install](#step-7--tell-the-user-the-slash-commands-to-refresh-the-install)
+- [Verification gate — this workflow is NOT complete until](#verification-gate--this-workflow-is-not-complete-until)
+- [Recovery from a leak that merged to the integration branch](#recovery-from-a-leak-that-merged-to-the-integration-branch)
+- [Anti-patterns](#anti-patterns)
+- [Reference: file layout](#reference-file-layout)
+
 When a demo build surfaces a non-trivial learning — a workaround, a gotcha, a corrected
 surface order, a missing prereq — that should be captured into a skill, follow this workflow.
 The goal is to fold it back **while the demo's context is still fresh in the conversation**,

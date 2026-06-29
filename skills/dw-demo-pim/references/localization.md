@@ -1,5 +1,18 @@
 # localization.md
 
+## Contents
+
+- [When to use](#when-to-use)
+- [The two-table mental model](#the-two-table-mental-model)
+- [What can be translated (and what falls back)](#what-can-be-translated-and-what-falls-back)
+- [The admin-UI flow (what a human does)](#the-admin-ui-flow-what-a-human-does)
+- [Backstage data model](#backstage-data-model)
+- [Surfaces — which MCP tools do what](#surfaces--which-mcp-tools-do-what)
+- [Enable per-language editing on standard fields (one-time seed)](#enable-per-language-editing-on-standard-fields-one-time-seed)
+- [Recipe — adding a new language to a PIM-only demo](#recipe--adding-a-new-language-to-a-pim-only-demo)
+- [Demo philosophy](#demo-philosophy)
+- [Cross-references](#cross-references)
+
 > PIM-side localization in Dynamicweb 10 — translating products, product groups, and the eight other ecommerce objects that can carry translations. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things". Sister doc to `dynamicweb-swift-demo/references/language-layers.md` (content/area side).
 >
 > **TL;DR:** PIM languages live in `EcomLanguages` (the PRODUCT-side language table) and are completely separate from CONTENT-side area language layers (`Area.AreaMasterAreaId`). Translating a product is a write-per-language to `EcomProductTranslation` (and friends) keyed by (ProductId, LanguageId, VariantId). Everything else (variant options, attribute fields, RMA states, countries, currencies, VAT, units, asset categories, custom-field labels) **falls back to the default language** if no row exists — translations are additive. Products + product groups are the only objects that **must** be translated to appear in non-default-language frontends.

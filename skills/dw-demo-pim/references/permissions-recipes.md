@@ -1,5 +1,16 @@
 # permissions-recipes.md
 
+## Contents
+
+- [1. Role matrix — abstract roles only](#1-role-matrix--abstract-roles-only)
+- [2. Functional-view checklist (flag ON)](#2-functional-view-checklist-flag-on)
+- [3. Action-button visibility — bump entity grant from Read to Edit](#3-action-button-visibility--bump-entity-grant-from-read-to-edit)
+- [4. Field-level editability — the dual-gate trap](#4-field-level-editability--the-dual-gate-trap)
+- [5. Per-role field-level differentiation (writable for some roles, readonly for others)](#5-per-role-field-level-differentiation-writable-for-some-roles-readonly-for-others)
+- [6. Hide a UI section per role (`CapabilityLimitation`)](#6-hide-a-ui-section-per-role-capabilitylimitation)
+- [7. Dashboard pinning per persona (`DashboardAccessUserRelation`)](#7-dashboard-pinning-per-persona-dashboardaccessuserrelation)
+- [8. Plaintext-password escape hatch (seeding persona logins)](#8-plaintext-password-escape-hatch-seeding-persona-logins)
+
 > Operational SQL recipes for seeding the role/permission grants behind demo personas in Dynamicweb 10 — abstract role matrix, functional-view grant checklist, action-button level bump, field-editability dual-gate, per-role field-level differentiation, UI-section hides, dashboard pinning, and the plaintext-password escape hatch. **Concept → [permissions-model.md](permissions-model.md)** (three-layer model, storage tables, `CapabilityControlFeature` flag, entity registry, admin bypass, cache/enforcement); **seeding grants for personas → this file.** Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table.
 >
 > All recipes assume direct SQL on the permission tables — the admin UI does not expose them for the resources these recipes touch ([permissions-model.md](permissions-model.md) §4c). After any insert/update, flush caches per the "Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission`" / "…on `CapabilityLimitation`" / "…on `CapabilitySetLimitation`" rows in [cache-invalidation.md](cache-invalidation.md); `DashboardAccessUserRelation` reads bypass the cache (no flush needed). Never verify a recipe logged in as Angel / BuiltInAdmin / Administrator — those user classes bypass every check ([permissions-model.md](permissions-model.md) §7); always test as a Default-type user in the target group.

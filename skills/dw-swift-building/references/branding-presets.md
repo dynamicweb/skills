@@ -1,5 +1,13 @@
 # Swift 2 Branding Presets
 
+## Contents
+
+- [Winery / Food & Beverage](#winery--food--beverage)
+- [Fashion / Apparel](#fashion--apparel)
+- [Electronics / Tech](#electronics--tech)
+- [Furniture / Home](#furniture--home)
+- [Adding New Presets](#adding-new-presets)
+
 Industry-specific branding guidance for Swift 2 site customisation.
 Use these presets to create visually coherent storefronts that match the business type.
 

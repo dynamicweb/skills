@@ -1,5 +1,17 @@
 # bc-side-config.md
 
+## Contents
+
+- [Scope](#scope)
+- [Prerequisites on the BC side](#prerequisites-on-the-bc-side)
+- [Two configuration values BC needs](#two-configuration-values-bc-needs)
+- [First-call test in BC](#first-call-test-in-bc)
+- [Field mapping setup -- REQUIRED, not optional](#field-mapping-setup----required-not-optional)
+- [First sync](#first-sync)
+- [Demo narrative](#demo-narrative)
+- [Bidirectional vs unidirectional flows](#bidirectional-vs-unidirectional-flows)
+- [Token rotation](#token-rotation)
+
 > Configure the **Business Central** side of the integration -- the BC tenant that's calling our public ngrok URL. Loaded from `~/.claude/skills/dynamicweb-pim-for-bc/SKILL.md` "Where to find things" table.
 
 ## Scope

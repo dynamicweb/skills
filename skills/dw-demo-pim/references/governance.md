@@ -1,5 +1,16 @@
 # governance.md
 
+## Contents
+
+- [Dashboards — only 7 real areas, don't invent](#dashboards--only-7-real-areas-dont-invent)
+- [Clickable widgets are the demo — don't pick dead widget types](#clickable-widgets-are-the-demo--dont-pick-dead-widget-types)
+- [Dashboard query location — Shared ONLY, never duplicate to Repositories](#dashboard-query-location--shared-only-never-duplicate-to-repositories)
+- [Completeness rules — why they sometimes "don't show"](#completeness-rules--why-they-sometimes-dont-show)
+- [Recovery recipe: Seed `reference_category` parent row](#recovery-recipe-seed-reference_category-parent-row)
+- [Recovery recipe: Rebuild Products index](#recovery-recipe-rebuild-products-index)
+- [Preflight: audit standard ProductField inventory before creating customs](#preflight-audit-standard-productfield-inventory-before-creating-customs)
+- [Recovery recipe: collapse a custom field back into its standard](#recovery-recipe-collapse-a-custom-field-back-into-its-standard)
+
 > PIM governance gotchas + recovery recipes. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Mirrors the shape of `dynamicweb-demo-base/references/integrity-sweep.md` — sequential sections, fenced PowerShell recipes inline next to their cause-explanation. The recovery recipes (seed `reference_category`, rebuild Products index) live in this file rather than as standalone `.ps1` files under `scripts/` — recipes always run inside Claude with port + DB in conversation state from base's discover-from-project-files rule.
 
 ## Dashboards — only 7 real areas, don't invent

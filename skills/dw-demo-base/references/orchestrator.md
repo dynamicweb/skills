@@ -1,5 +1,19 @@
 # Orchestrators — how a demo build is driven (GSD primary, native floor)
 
+## Contents
+
+- [Running modes](#running-modes)
+- [Standalone — the lightweight in-skill harness (no orchestrator)](#standalone--the-lightweight-in-skill-harness-no-orchestrator)
+- [Detection and deference (the native command set steps aside for GSD)](#detection-and-deference-the-native-command-set-steps-aside-for-gsd)
+- [The native command set](#the-native-command-set)
+- [The keystone — register the demo skills to GSD agents](#the-keystone--register-the-demo-skills-to-gsd-agents)
+- [Reuse mapping (GSD mode) — reuse GSD primitives, do not rebuild them](#reuse-mapping-gsd-mode--reuse-gsd-primitives-do-not-rebuild-them)
+- [Two kinds of gate (why scaffold is gated without pausing for a human)](#two-kinds-of-gate-why-scaffold-is-gated-without-pausing-for-a-human)
+- [Strictness gradient — one human pause, automated quality elsewhere (every mode)](#strictness-gradient--one-human-pause-automated-quality-elsewhere-every-mode)
+- [Discovery prompts (impact-analysis input — shared by both orchestrators)](#discovery-prompts-impact-analysis-input--shared-by-both-orchestrators)
+- [Acceptance criteria (the shared definition of PASS)](#acceptance-criteria-the-shared-definition-of-pass)
+- ["How to run me" header — the convention every demo skill carries](#how-to-run-me-header--the-convention-every-demo-skill-carries)
+
 A demo build needs two separable things: **domain knowledge** (what to scaffold, how DW10
 behaves, the surface-priority rule, the customer-center playbook) and **sequencing** (which
 phase runs when, where the human gate sits, when validation fires). The demo skills in this

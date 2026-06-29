@@ -1,5 +1,16 @@
 # Customer-context read-only contract
 
+## Contents
+
+- [1. Why this rule exists](#1-why-this-rule-exists)
+- [2. Customer-context contents (read by skill, never written)](#2-customer-context-contents-read-by-skill-never-written)
+- [3. Write-time preflight (mandatory, hard abort)](#3-write-time-preflight-mandatory-hard-abort)
+- [4. Path-matching rule](#4-path-matching-rule)
+- [5. Three-place rule communication (skill-composition mitigation)](#5-three-place-rule-communication-skill-composition-mitigation)
+- [6. Per-demo CLAUDE.md drop at scaffold time](#6-per-demo-claudemd-drop-at-scaffold-time)
+- [7. Detection signature for bypass](#7-detection-signature-for-bypass)
+- [8. Cross-references](#8-cross-references)
+
 The `<demo>\customer-context\` directory holds intro-call materials, customer-supplied artefacts, transcripts, and reference documents that must **NEVER** be modified by demo-build automation. Pre-flight check on any path containing `customer-context\` (case-insensitive) is a **HARD ABORT** -- no Approve+log branch, no override. Customer-context writes are never necessary; if a transformation is needed, write the transformed output to `<demo>\notes\` or `<demo>\extracts\` instead.
 
 This file is the long-form contract for **the customer-context read-only contract**. The orchestrator's summary -- including the canonical abort message -- lives in `SKILL.md` "Two guarded-writes"; see also the sister contract `references/customisations.md` (the customisations-ledger preflight) which shares the *same mental model* -- write-time preflight on a path glob -- with three branches instead of one.
