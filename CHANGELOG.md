@@ -14,6 +14,17 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   the headless architecture rules, and a routing table that links each family to its section in
   the reference. No endpoint content was lost or changed.
 
+## [3.3.5]
+
+### Changed
+- **Trimmed the `dw-demo-base` description under the 1024-char frontmatter limit** (1093 → 984
+  chars). The activation description had grown past the hard cap and risked truncation by
+  frontmatter parsers. Dropped redundant route-phrases ("register the skills to GSD", "what runs
+  the build", "publish this update") and an explanatory parenthetical; every distinct trigger
+  concept — scaffolding, MCP-load failure symptoms, fresh-machine/online modes, the orchestrator
+  and fold-back routes, sister-skill ordering, and the read-only `customer-context` contract — is
+  preserved.
+
 ## [3.3.4]
 
 ### Changed
