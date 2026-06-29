@@ -3,6 +3,17 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.3.6]
+
+### Changed
+- **Split `dw-headless-delivery/SKILL.md` under the 500-line budget** (569 → 104 lines). The
+  SKILL.md had grown into a flat `/dwapi/` endpoint catalog. Moved the endpoint-family listings
+  (Content, Products, Cart, Checkout, Orders, Users, Favorites, Internationalisation, Loyalty
+  Points, Forms, Query, Connectivity) verbatim into a new `references/endpoint-reference.md` (with
+  a top-of-file table of contents), and kept the gateway concepts in SKILL.md — authentication,
+  the headless architecture rules, and a routing table that links each family to its section in
+  the reference. No endpoint content was lost or changed.
+
 ## [3.3.4]
 
 ### Changed
