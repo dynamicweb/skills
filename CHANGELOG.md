@@ -3,6 +3,26 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.1]
+
+### Fixed
+- **Index-build cache trap now covers the MCP value-write surface, not only Direct SQL.** The
+  `cache-invalidation.md` "Surface scope" section asserted that MCP `save_*` / `patch_products_safe`
+  writes invalidate caches inline and therefore never need the cache table — but the Lucene index
+  builder reads product + category-field data *through* the `ProductService` /
+  `ProductCategoryFieldValueService` / `ProductCategoryService` caches, which a `patch_products_safe`
+  value write does **not** flush. Rebuilding the index after such a write bakes the stale (often
+  empty) pre-patch value in, so `get_products_by_query` and dashboard widgets return 0/stale while
+  the DB and `get_product_by_id` are correct — previously misdiagnosed as an "index quirk". Corrected
+  the false carve-out, added a table row for the value-write surface, and generalized the
+  "index-build-reads-through-cache ordering trap" to both surfaces in
+  `dw-demo-base/references/foundational/cache-invalidation.md`. The
+  `search-indexing.md` rebuild recipe now starts with a mandatory **STEP 0** that flushes those three
+  caches via `CacheInformationRefresh` before `BuildIndex`, plus a re-verify step;
+  `pim-completeness.md` step 5 carries the same flush-before-rebuild gate for governance-widget
+  counts. Also notes a host restart is not a reliable substitute (the `dotnet run` parent/child
+  process trap can leave the real host running).
+
 ## [3.4.0]
 
 ### Changed

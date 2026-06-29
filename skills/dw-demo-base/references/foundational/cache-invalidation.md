@@ -11,7 +11,8 @@ Post-mutation cache invalidation for Dynamicweb 10. Use this to look up "I just 
 
 This table is the rulebook for **Direct SQL fallback** mutations and a handful of MCP/API edge cases. It is **NOT** something you read before using MCP or admin UI for the same operation:
 
-- **MCP `save_*` / `create_or_update_*` / admin-UI Visual Editor / admin-UI form save** → these go through DW's domain services, which invalidate caches inline. You do not consult this table; you do not restart the host. Domain-service surfaces — MCP `save_*` / `create_or_update_*` and the admin UI — invalidate caches inline, so prefer them for structural CREATEs for exactly this reason.
+- **MCP `save_*` / `create_or_update_*` / admin-UI Visual Editor / admin-UI form save** → these go through DW's domain services, which invalidate caches inline **for the read path**. You do not consult this table for structural CREATEs; you do not restart the host. Domain-service surfaces — MCP `save_*` / `create_or_update_*` and the admin UI — invalidate caches inline, so prefer them for structural CREATEs for exactly this reason.
+  - **EXCEPTION — the index-build path is NOT covered by inline invalidation.** MCP **`patch_products_safe` / `update_products`** writes to product or category-field VALUES are live on the read path (`get_product_by_id`, admin), but the **Lucene index builder reads product+category data *through* the `ProductService` / `ProductCategoryFieldValueService` / `ProductCategoryService` caches**, and those are NOT flushed by the MCP write. A `BuildIndex` / `wait_for_product_index` run after the patch bakes the **pre-patch (often empty) value** into the index — `get_products_by_query` then returns 0/stale even though the DB and `get_product_by_id` are correct. This is the same "ordering trap" documented below; it fires on the **MCP patch surface too, not only Direct SQL**. See the trap section and [search-indexing.md "Recovery recipe: Rebuild Products index"](search-indexing.md) for the flush-then-rebuild recipe. **A host restart is NOT a reliable substitute here** — verify the bounce actually cold-started (the `dotnet run` parent spawns a child; killing the parent can leave the real host running, so the cache never cleared). The targeted `CacheInformationRefresh` flush is the reliable surface.
 - **Management API** (`POST /admin/api/...`) → same domain services as MCP; same cache invalidation behavior. The dedicated `CacheInformationRefresh` / `BuildIndex` / `GetServiceCaches` endpoints listed below are themselves Management API calls — use them when you need to flush something explicitly without restarting. On a **hosted install** there is no restart at all: every "YES restart" row below resolves to a bulk flush instead — `GetServiceCaches` → `CacheInformationsRefresh {"Ids": [...]}` (plural, takes the service ids); the Management API surface for both is in [`data-access.md`](data-access.md).
 - **Direct SQL `INSERT` / `UPDATE`** → bypasses every domain service. Almost everything below applies to this surface. **The "Restart required" column tells you what SQL-direct seeding owes you afterward.**
 - **Filesystem mutations** (`.query`, `.index`, `.cshtml` drops/edits) → mostly cache-bypassing. The `.query` row below covers the worst case.
@@ -26,7 +27,8 @@ If you used MCP for a row whose mutation type appears in the table below, you sh
 | Direct SQL INSERT into `EcomCompletionRules` | Same | (none — SQL bypasses cache) | YES (or save once via admin UI) — see [pim-completeness.md "Completeness rules"](pim-completeness.md) |
 | MCP `create_or_update_product_queries` | `Searching:Queries` cache | (cache populated at startup; no API to invalidate) | YES on overwrite/conflict — see [search-indexing.md "Dashboard query location"](search-indexing.md) |
 | Disk delete of `.query` file | Same | (none) | YES — see [search-indexing.md "Dashboard query location"](search-indexing.md) |
-| MCP product mutation | Lucene index | `POST /admin/api/BuildIndex {Repository:Products,IndexName:Products.index,BuildName:Full}` | No — see [search-indexing.md "Recovery recipe: Rebuild Products index"](search-indexing.md) |
+| MCP **structural** product mutation (`save_groups`, `assign_products_to_group`, `create_products`) | Lucene index | `BuildIndex` (rebuild only) | No — see [search-indexing.md "Recovery recipe: Rebuild Products index"](search-indexing.md) |
+| MCP **value** write to product / category fields (`patch_products_safe`, `update_products`, incl. new `create_category_fields` values) | `ProductService` + `ProductCategoryFieldValueService` + `ProductCategoryService` caches **that the index builder reads through** | `POST /admin/api/CacheInformationRefresh {CacheTypeName:...}` for those 3 services **then** `BuildIndex` | **Flush-then-rebuild required** — rebuild alone indexes the stale pre-patch value. NOT reliably fixed by restart (verify cold-start). See "ordering trap" below + [search-indexing.md](search-indexing.md) |
 | **Direct SQL UPDATE on `EcomProducts` translatable fields** (e.g. `ProductName`, `ProductShortDescription` on a per-language layer row) | live `ProductService` product cache **and the Lucene index builder reads *through* that cache** | `POST /admin/api/CacheInformationRefresh` (or restart) **then** BuildIndex | YES (flush/restart) — and see the ordering trap below: a `BuildIndex` run while the product cache is stale bakes the OLD values into the index, so reindex is NOT sufficient on its own |
 | Direct SQL INSERT into `EcomProductItems` | `ProductItem` Lazy<Dictionary> cache | (none) | YES — bundle Components tab will show empty until restart |
 | **Direct SQL INSERT new `Page` row** | Page-resolution cache | (none) | YES — page 404s on the storefront until restart, even with correct slug/area wiring |
@@ -61,9 +63,19 @@ This is **the SQL-fallback rulebook only.** MCP `save_paragraphs` / `save_pages`
 
 ## The index-build-reads-through-cache ordering trap
 
+This trap fires on **two surfaces**, not one: (a) **Direct SQL** product/category writes, and
+(b) **MCP `patch_products_safe` / `update_products` / new-`create_category_fields` value writes** —
+because both leave the index-builder's read-through caches stale. The blanket "MCP invalidates
+inline, skip this table" rule in *Surface scope* above does **not** extend to the index-build path.
+The single most common symptom on a demo build: you set a category field (a channel flag, a
+completeness field, a facet value) via MCP, `wait_for_product_index`, then a dashboard widget /
+`get_products_by_query` shows **0 or stale** — the DB and `get_product_by_id` are correct. That is
+this trap, every time. Do **not** call it an "index quirk"; it is an un-flushed read-through cache.
+
 When you write product data via **Direct SQL** (e.g. translating `ProductName` /
-`ProductShortDescription` into a per-language layer, or any `EcomProducts` field edit) and then
-need it visible on the storefront/Delivery API PLP, two caches are in play and **order matters**:
+`ProductShortDescription` into a per-language layer, or any `EcomProducts` field edit) **or via MCP
+`patch_products_safe`** and then need it visible on the storefront/Delivery API PLP **or in an index
+query / dashboard widget**, two caches are in play and **order matters**:
 
 1. The live `ProductService` holds products in an in-memory cache. A SQL write does not touch it,
    so reads (single-product Delivery API, PDP) return the **stale** value until the cache is
@@ -72,8 +84,18 @@ need it visible on the storefront/Delivery API PLP, two caches are in play and *
    if you `BuildIndex` while the cache is stale, the builder indexes the OLD values — the PLP/
    facets then show stale data even though the DB is correct and you "reindexed".
 
-**Correct order for a SQL product-data write:** write → **flush/restart** (clear the
-`ProductService` cache) → **then** `BuildIndex`. Reindex-then-restart is the wrong order: the index keeps the stale values until the *next* rebuild after a flush.
+**Correct order for any product/category VALUE write (SQL or MCP `patch_products_safe`):** write →
+**flush** (`POST /admin/api/CacheInformationRefresh {CacheTypeName:...}` for
+`Dynamicweb.Ecommerce.Products.ProductService`,
+`Dynamicweb.Ecommerce.Products.Categories.ProductCategoryFieldValueService`, and
+`Dynamicweb.Ecommerce.Products.Categories.ProductCategoryService`) → **then** `BuildIndex` →
+**then re-verify** with `get_products_by_query`. Reindex-first is the wrong order: the index keeps
+the stale values until the *next* rebuild after a flush. The Management API accepts the same bearer
+key as the MCP endpoint. Prefer the targeted flush over a host restart — a restart only works if it
+actually cold-starts (the `dotnet run` parent vs child-process trap), and it throws away all warm
+state for no reason. Verified on 10.26.x: setting a new text/list category field via MCP +
+`wait_for_product_index` left every product's value empty in the index; flushing those three caches
+then rebuilding made the values queryable immediately.
 
 Related write-path note: MCP `patch_products_safe` with a non-default `languageId` was observed to
 echo the translated `name` in its response but not persist it to the `EcomProducts` language-layer
