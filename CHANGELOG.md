@@ -3,7 +3,7 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
-## [3.3.8]
+## [3.3.7]
 
 ### Fixed
 - **Repaired double-encoded UTF-8 (mojibake) across 33 skill markdown files** (1101 lines).
@@ -13,6 +13,28 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   leaves already-correct characters (including genuine em-dashes in mixed files) untouched.
   Verified: zero residual mojibake markers and zero replacement characters (`�`) introduced
   repo-wide; line endings preserved.
+
+## [3.3.6]
+
+### Changed
+- **Split `dw-headless-delivery/SKILL.md` under the 500-line budget** (569 → 104 lines). The
+  SKILL.md had grown into a flat `/dwapi/` endpoint catalog. Moved the endpoint-family listings
+  (Content, Products, Cart, Checkout, Orders, Users, Favorites, Internationalisation, Loyalty
+  Points, Forms, Query, Connectivity) verbatim into a new `references/endpoint-reference.md` (with
+  a top-of-file table of contents), and kept the gateway concepts in SKILL.md — authentication,
+  the headless architecture rules, and a routing table that links each family to its section in
+  the reference. No endpoint content was lost or changed.
+
+## [3.3.5]
+
+### Changed
+- **Trimmed the `dw-demo-base` description under the 1024-char frontmatter limit** (1093 → 984
+  chars). The activation description had grown past the hard cap and risked truncation by
+  frontmatter parsers. Dropped redundant route-phrases ("register the skills to GSD", "what runs
+  the build", "publish this update") and an explanatory parenthetical; every distinct trigger
+  concept — scaffolding, MCP-load failure symptoms, fresh-machine/online modes, the orchestrator
+  and fold-back routes, sister-skill ordering, and the read-only `customer-context` contract — is
+  preserved.
 
 ## [3.3.4]
 
