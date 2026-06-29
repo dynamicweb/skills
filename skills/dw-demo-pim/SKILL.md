@@ -18,7 +18,7 @@ documented order (gate every step, persist progress to `.demo/<slug>/flow-state.
 orchestrator abstraction (GSD primary, native command set, and the standalone harness) is owned by
 [`../dw-demo-base/references/orchestrator.md`](../dw-demo-base/references/orchestrator.md).
 
-**This skill starts from a blank/fresh DB.** PIM demos do NOT deserialize a content baseline â€” the modelling recipes here build product data from scratch via MCP. The Serializer install + Swift baseline deserialize live in `dynamicweb-demo-base` and `dynamicweb-swift-demo` respectively; see [`../dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) only if a hybrid demo needs Swift content alongside the PIM model.
+**This skill starts from a blank/fresh DB.** PIM demos do NOT deserialize a content baseline — the modelling recipes here build product data from scratch via MCP. The Serializer install + Swift baseline deserialize live in `dynamicweb-demo-base` and `dynamicweb-swift-demo` respectively; see [`../dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) only if a hybrid demo needs Swift content alongside the PIM model.
 
 This SKILL.md is an orchestrator only. Each topic links to a `references/<topic>.md` that owns the verbatim recipe and gotchas.
 
@@ -28,7 +28,7 @@ Trigger shapes, one per thematic reference (the "Where to find things" table bel
 
 - Choosing the right access surface (MCP / Management API / SQL / filesystem) for a task.
 - Modelling PIM data structures (shops vs channels vs data structures, GroupType, repositories+indexes, variants, BOM, channels+feeds, assets, product categories).
-- Choosing and executing a setup order â€” Storefront-first vs PIM-first.
+- Choosing and executing a setup order — Storefront-first vs PIM-first.
 - Diagnosing "completeness rule doesn't show", building governance dashboards, recovering from missing seed rows or stale indexes (incl. GUID-collision errors in the Products -> Shared queries tree).
 - Looking up the post-mutation cache flush for any surface.
 - Designing the product workflow / approval flow (states, transitions, notifications).
@@ -37,7 +37,7 @@ Trigger shapes, one per thematic reference (the "Where to find things" table bel
 - Translating products / groups / commerce objects into additional `EcomLanguages`.
 - PIM-flavoured demo-storytelling tactics.
 
-If the trigger is setup-shaped (host won't start, MCP empty, TLS handshake failing, vault not resolving), it belongs in `dynamicweb-demo-base`, not here. PIM-skill recipes assume the host is up and MCP returns >200 tools â€” but **NOT** that a content baseline has been deserialized. PIM demos start from a blank DB.
+If the trigger is setup-shaped (host won't start, MCP empty, TLS handshake failing, vault not resolving), it belongs in `dynamicweb-demo-base`, not here. PIM-skill recipes assume the host is up and MCP returns >200 tools — but **NOT** that a content baseline has been deserialized. PIM demos start from a blank DB.
 
 ## Where to find things
 
@@ -46,23 +46,23 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 | If you need to... | Read this reference |
 |---|---|
 | Pick the right access surface (MCP / API / SQL / FS) for a given task | references/access-surfaces.md |
-| Understand the structural model (incl. Â§2.3a native "Publish to channel" action, Â§2.5a single-axis variants, Â§2.11 Pricing / `PriceQuantity>0` cart gotcha, Â§2.12 Dynamic Workspaces) | references/structural-model.md |
-| Pick the right setup-order variant â€” Storefront-first or **PIM-first** (no `ShopType=1` shop, Dynamic Workspaces + workflow-driven) | references/canonical-setup-order.md (Â§0 decision matrix at top) |
+| Understand the structural model (incl. §2.3a native "Publish to channel" action, §2.5a single-axis variants, §2.11 Pricing / `PriceQuantity>0` cart gotcha, §2.12 Dynamic Workspaces) | references/structural-model.md |
+| Pick the right setup-order variant — Storefront-first or **PIM-first** (no `ShopType=1` shop, Dynamic Workspaces + workflow-driven) | references/canonical-setup-order.md (§0 decision matrix at top) |
 | Diagnose "rules don't show", build dashboards, recover from missing seed rows or stale indexes | references/governance.md |
 | Look up a post-mutation cache flush | references/cache-invalidation.md |
 | Design the **DW10 product Workflow** (states, transitions, notifications) + work around the verified per-state-role-gating gap | **references/workflow.md** |
-| Understand the **three-layer permission model** (UnifiedPermission + CapabilityControlFeature + entity-level) â€” concept, storage tables, flag decision, admin bypass | **references/permissions-model.md** |
-| Seed the role/permission grants for demo personas (SQL recipes: role matrix, functional-view checklist, Readâ†’Edit bumps, field-level differentiation, dashboard pinning) | **references/permissions-recipes.md** |
+| Understand the **three-layer permission model** (UnifiedPermission + CapabilityControlFeature + entity-level) — concept, storage tables, flag decision, admin bypass | **references/permissions-model.md** |
+| Seed the role/permission grants for demo personas (SQL recipes: role matrix, functional-view checklist, Read→Edit bumps, field-level differentiation, dashboard pinning) | **references/permissions-recipes.md** |
 | Find demo-storytelling tactics (governance flavour) | references/demo-storytelling.md |
 | Translate products / groups / commerce objects into additional `EcomLanguages` (PIM side; sister doc is `dynamicweb-swift-demo/references/language-layers.md` for the content/area side) | references/localization.md |
 
-## Demo philosophy â€” go deep, not wide
+## Demo philosophy — go deep, not wide
 
 Inherited principle from [`dynamicweb-demo-base/SKILL.md` "Demo philosophy"](../dw-demo-base/SKILL.md). PIM-specific guardrails:
 
-- **Shops + channels: 1 + 1.** One shop plus one channel. Pick the channel most relevant to the customer's pitch (B2B / retail / wholesale / marketplace â€” whichever the customer leads with). A second channel of equal weight is wasted demo time and dilutes the shop-vs-channel beat. Add it only when the customer's pitch is explicitly multi-channel (e.g. they sell B2B AND retail and want to see both in one platform). The shop-vs-channel concept itself is worth a single moment of pedagogy â€” one channel is enough to land it.
+- **Shops + channels: 1 + 1.** One shop plus one channel. Pick the channel most relevant to the customer's pitch (B2B / retail / wholesale / marketplace — whichever the customer leads with). A second channel of equal weight is wasted demo time and dilutes the shop-vs-channel beat. Add it only when the customer's pitch is explicitly multi-channel (e.g. they sell B2B AND retail and want to see both in one platform). The shop-vs-channel concept itself is worth a single moment of pedagogy — one channel is enough to land it.
 - **Locale: single home market.** Default to the customer's home market only (e.g. US-only with EN/USD/US-country for a US customer; DE/EUR/DE for a DACH customer). `references/canonical-setup-order.md` Steps 1-4 set this up. Add a second language/currency/country only when the customer's case explicitly demands it (e.g. they explicitly sell cross-border).
-- **Product catalogue: deep AND wide â€” exception case.** Rich product data is the demo's substance, not its scaffolding. Go deep (variants on every relevant axis, BOM bundles, completeness rules that actually fire, assortments, facets that matter) AND wide (ample SKUs across categories) â€” both are cheap via MCP and make the storefront feel real. The "narrow it down" rule does not apply here. `canonical-setup-order.md` is calibrated for this â€” run its product-modelling steps in full, not a truncated subset to "save time".
+- **Product catalogue: deep AND wide — exception case.** Rich product data is the demo's substance, not its scaffolding. Go deep (variants on every relevant axis, BOM bundles, completeness rules that actually fire, assortments, facets that matter) AND wide (ample SKUs across categories) — both are cheap via MCP and make the storefront feel real. The "narrow it down" rule does not apply here. `canonical-setup-order.md` is calibrated for this — run its product-modelling steps in full, not a truncated subset to "save time".
 
 When in doubt: every channel, locale, shop, country, currency, and language you add must justify itself against demo minutes. A product family does not need to justify itself.
 

@@ -1,12 +1,12 @@
 # permissions-model.md
 
-> Three-layer permission model for Dynamicweb 10 â€” three SQL tables (`UnifiedPermission` for entity grants, `CapabilityLimitation` for UI hides, `DashboardAccessUserRelation` for per-user dashboard pinning), two semantic conventions (permit vs limit â€” opposite directions), one feature flag (`CapabilityControlFeature`, DW10.21+) that decides whether the layers cascade or stand orthogonal. Read this BEFORE designing any role matrix; the flag's default and its cascade behavior are the load-bearing facts that prevent the "I granted Edit on the Products area but the user still can't see anything" detours. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Cross-cuts with the **render-time** half of permissions â€” see [`dynamicweb-swift-demo/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) Â§"Permissions â€” the entity store" for how the storefront's `Page`/`Paragraph` permissions resolve at request time. This ref owns **modelling-time** concerns (entity hierarchy, capability tree, flag decision); the Swift ref owns **render-time** lookup (the `Permission` table read on every paragraph render). **Concept lives here; seeding grants for demo personas â†’ [permissions-recipes.md](permissions-recipes.md).**
+> Three-layer permission model for Dynamicweb 10 — three SQL tables (`UnifiedPermission` for entity grants, `CapabilityLimitation` for UI hides, `DashboardAccessUserRelation` for per-user dashboard pinning), two semantic conventions (permit vs limit — opposite directions), one feature flag (`CapabilityControlFeature`, DW10.21+) that decides whether the layers cascade or stand orthogonal. Read this BEFORE designing any role matrix; the flag's default and its cascade behavior are the load-bearing facts that prevent the "I granted Edit on the Products area but the user still can't see anything" detours. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Cross-cuts with the **render-time** half of permissions — see [`dynamicweb-swift-demo/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) §"Permissions — the entity store" for how the storefront's `Page`/`Paragraph` permissions resolve at request time. This ref owns **modelling-time** concerns (entity hierarchy, capability tree, flag decision); the Swift ref owns **render-time** lookup (the `Permission` table read on every paragraph render). **Concept lives here; seeding grants for demo personas → [permissions-recipes.md](permissions-recipes.md).**
 >
-> **Cross-cutting placement note.** This ref sits at PIM-skill level. Permissions touch PIM, Swift frontend, ERP integration, and Business Central potentially â€” all of them. If cross-cutting use materialises across more than two sibling skills, consider promoting to a future `dynamicweb-platform-demo` sibling alongside `dynamicweb-demo-base`. Until then, this is the home and Swift's `dw10-canonical-surfaces.md` Â§"Permissions â€” the entity store" cross-references back.
+> **Cross-cutting placement note.** This ref sits at PIM-skill level. Permissions touch PIM, Swift frontend, ERP integration, and Business Central potentially — all of them. If cross-cutting use materialises across more than two sibling skills, consider promoting to a future `dynamicweb-platform-demo` sibling alongside `dynamicweb-demo-base`. Until then, this is the home and Swift's `dw10-canonical-surfaces.md` §"Permissions — the entity store" cross-references back.
 >
-> **Admin-UI gap warning (verified DW 10.25.8).** The admin UI does NOT expose per-resource Permissions or CapabilityLimitation editing for Dynamic Workspaces, Dashboards, or user-group Capability Sets. Direct-SQL on the three tables above is the path. See Â§4c for the full surface map + cache-flush requirement.
+> **Admin-UI gap warning (verified DW 10.25.8).** The admin UI does NOT expose per-resource Permissions or CapabilityLimitation editing for Dynamic Workspaces, Dashboards, or user-group Capability Sets. Direct-SQL on the three tables above is the path. See §4c for the full surface map + cache-flush requirement.
 
-## 1. The `CapabilityControlFeature` flag â€” DW10.21+, default OFF
+## 1. The `CapabilityControlFeature` flag — DW10.21+, default OFF
 
 Source: `dw10source/src/Core/Dynamicweb.Core/CapabilityControl/CapabilityControlFeature.cs:3`:
 
@@ -14,7 +14,7 @@ Source: `dw10source/src/Core/Dynamicweb.Core/CapabilityControl/CapabilityControl
 public sealed class CapabilityControlFeature() : FeatureBase("Capability Control", "Capabilities", false);
 ```
 
-The third positional argument (`false`) is the default-enabled flag. **Capability Control ships OFF.** Toggle via Settings â†’ Feature management â†’ "Capability Control".
+The third positional argument (`false`) is the default-enabled flag. **Capability Control ships OFF.** Toggle via Settings → Feature management → "Capability Control".
 
 ### What the flag changes
 
@@ -33,26 +33,26 @@ Verified:
 - `Assortment.cs:186-187` (PermissionName at line 180 / 190 = `"Assortment"`)
 - `DynamicStructure.cs:60-61` (PermissionName at line 43 = `"DynamicStructure"`)
 
-When the flag is **OFF (legacy, default)**: every entity's parent chain terminates at `PermissionSection("Products")` â€” so a grant on the `/Products` capability key cascades down to every Shop, every Group, every Product, every Feed, every Assortment, every Dynamic Workspace in the system. This is the inherited DW9-style mental model: "give a user Edit on Products and they get Edit everywhere."
+When the flag is **OFF (legacy, default)**: every entity's parent chain terminates at `PermissionSection("Products")` — so a grant on the `/Products` capability key cascades down to every Shop, every Group, every Product, every Feed, every Assortment, every Dynamic Workspace in the system. This is the inherited DW9-style mental model: "give a user Edit on Products and they get Edit everywhere."
 
-When the flag is **ON (modern)**: the legacy top link is severed. Entity-level grants stand alone. The capability tree (Layer B, Â§3 below) gates *menu visibility*; the entity tree (Layer C, Â§4) gates *actions*. They are orthogonal â€” both must grant for the user to see AND act.
+When the flag is **ON (modern)**: the legacy top link is severed. Entity-level grants stand alone. The capability tree (Layer B, §3 below) gates *menu visibility*; the entity tree (Layer C, §4) gates *actions*. They are orthogonal — both must grant for the user to see AND act.
 
-### Decision rubric â€” ON or OFF for a Dynamicweb demo
+### Decision rubric — ON or OFF for a Dynamicweb demo
 
-| You wantâ€¦ | Flag |
+| You want… | Flag |
 |---|---|
 | The "give Admin user Edit on Products and they can do everything" legacy mental model | OFF |
 | Per-section UI hiding (e.g. hide `/Products/Feeds` from product managers; keep `/Products/AllProducts` visible) | ON |
 | To demo the modern permission model to a PIM-selection committee | ON |
 | Minimum-effort grants (one capability assignment cascades everywhere) | OFF |
 | Per-channel publishing authority where different roles see different channels | ON |
-| **You're not sure** | OFF â€” match the ship default; revisit when the demo brief calls for orthogonal gating |
+| **You're not sure** | OFF — match the ship default; revisit when the demo brief calls for orthogonal gating |
 
 **Decide BEFORE granting anything.** Two different role matrices follow from the two settings; toggling mid-demo strands every grant you already made.
 
-> **Do not confuse with the Completeness feature flag** (separate flag, also off by default; that one is the buggy beta covered in [`governance.md` "Completeness rules" Â§7](governance.md)). `CapabilityControlFeature` is independent of completeness behavior.
+> **Do not confuse with the Completeness feature flag** (separate flag, also off by default; that one is the buggy beta covered in [`governance.md` "Completeness rules" §7](governance.md)). `CapabilityControlFeature` is independent of completeness behavior.
 
-## 2. Layer A â€” `UnifiedPermission` (the storage layer)
+## 2. Layer A — `UnifiedPermission` (the storage layer)
 
 Source: `dw10source/src/Core/Dynamicweb.Core/Security/Permissions/PermissionRepository.cs`.
 
@@ -67,20 +67,20 @@ TABLE UnifiedPermission (
 ```
 
 Verified mechanics:
-- `MERGE [UnifiedPermission] WITH (SERIALIZABLE)` insert (line 53) â€” atomic upsert, no race on concurrent grants.
-- `PermissionLevel` is hierarchical: `All` âŠ‡ `Delete` âŠ‡ `Create` âŠ‡ `Edit` âŠ‡ `Read`.
+- `MERGE [UnifiedPermission] WITH (SERIALIZABLE)` insert (line 53) — atomic upsert, no race on concurrent grants.
+- `PermissionLevel` is hierarchical: `All` ⊇ `Delete` ⊇ `Create` ⊇ `Edit` ⊇ `Read`.
 - Multi-group membership resolves to **highest level wins** across all groups a user belongs to.
-- `IncludeSubKeys` query mode (line 111) issues `PermissionKey LIKE '<key>%'` â€” so granting `/Products` cascades through every sub-section's key when the flag is OFF (Â§1).
+- `IncludeSubKeys` query mode (line 111) issues `PermissionKey LIKE '<key>%'` — so granting `/Products` cascades through every sub-section's key when the flag is OFF (§1).
 
-**Layer A stores Layer C (entity) grants.** The layer-A table holds entity-level rows (Shop / ProductGroup / Product / ProductField / FilePermissionEntity / DynamicStructure / Feed / Assortment / `Section` for area roots). Each row's *shape* is determined by `PermissionName` (entity type) + `PermissionKey` (entity id or SystemName). **Layer B does NOT write here.** Capability Control (Layer B) lives in its own table â€” see Â§3.
+**Layer A stores Layer C (entity) grants.** The layer-A table holds entity-level rows (Shop / ProductGroup / Product / ProductField / FilePermissionEntity / DynamicStructure / Feed / Assortment / `Section` for area roots). Each row's *shape* is determined by `PermissionName` (entity type) + `PermissionKey` (entity id or SystemName). **Layer B does NOT write here.** Capability Control (Layer B) lives in its own table — see §3.
 
-## 3. Layer B â€” Capability Control (UI-section visibility)
+## 3. Layer B — Capability Control (UI-section visibility)
 
 Source: `dw10source/Dynamicweb.Products.UI/CapabilityControl/ProductsCapabilities.cs` + `ProductsCapabilityProvider.cs`; storage in `dw10source/Dynamicweb.CoreUI/CapabilityControl/CapabilityRepository.cs` (verified DW 10.25.8).
 
 Capability Control is the **modern UI-permission layer**, introduced in DW10.21+ to fix the cascading-inheritance problem the legacy model had with hiding UI elements without affecting feature access. Each capability key is a slash-delimited path like `/Products/Channels`.
 
-### Storage â€” separate `CapabilityLimitation` table (NOT `UnifiedPermission`)
+### Storage — separate `CapabilityLimitation` table (NOT `UnifiedPermission`)
 
 ```sql
 TABLE CapabilityLimitation (
@@ -90,11 +90,11 @@ TABLE CapabilityLimitation (
 )
 ```
 
-Semantics are **inverted from Layer A's "permit" model**: presence of a row = users in this group are *limited out of* (hidden from) this capability. Absence = no limit = capability visible (subject to Layer C entity check). The class is called `CapabilityLimitation`, not `CapabilityPermission` â€” read it as a hide-list. `DefaultCapabilityService.IsCapabilityLimitedForUser()` returns true when a matching row exists for any group the user belongs to.
+Semantics are **inverted from Layer A's "permit" model**: presence of a row = users in this group are *limited out of* (hidden from) this capability. Absence = no limit = capability visible (subject to Layer C entity check). The class is called `CapabilityLimitation`, not `CapabilityPermission` — read it as a hide-list. `DefaultCapabilityService.IsCapabilityLimitedForUser()` returns true when a matching row exists for any group the user belongs to.
 
-Takes group IDs only â€” there is no per-user override. Per-role hide recipe â†’ [permissions-recipes.md](permissions-recipes.md) Â§"Hide a UI section per role".
+Takes group IDs only — there is no per-user override. Per-role hide recipe → [permissions-recipes.md](permissions-recipes.md) §"Hide a UI section per role".
 
-### Capability key registry â€” by area
+### Capability key registry — by area
 
 Each backend area has its own `*Capabilities.cs` file under `<Area>.UI/CapabilityControl/`:
 
@@ -110,24 +110,24 @@ Each backend area has its own `*Capabilities.cs` file under `<Area>.UI/Capabilit
 | Integration | `Dynamicweb.Integration.UI/.../IntegrationCapabilities.cs` | `/Integration` | `/Integration/Setup`, `/Integration/Connections` |
 | Apps | `Dynamicweb.Apps.UI/.../AppsCapabilities.cs` | `/Apps` | `/Apps/Dashboard`, `/Apps/AppStore` |
 
-**`/Settings` is NOT a capability key.** The Settings tab is gated by the `BuiltInAdmin` / `SystemAdministrator` user-type check (Â§7), not by Capability Control. Non-admin users never see Settings regardless of `CapabilityLimitation` rows.
+**`/Settings` is NOT a capability key.** The Settings tab is gated by the `BuiltInAdmin` / `SystemAdministrator` user-type check (§7), not by Capability Control. Non-admin users never see Settings regardless of `CapabilityLimitation` rows.
 
-**Capability keys have parent relationships.** Limit the parent and the children become invisible regardless of child grants. E.g. add `/Products` to `CapabilityLimitation` for a group and the entire left-nav section disappears for them â€” child grants on `/Products/Channels` don't override.
+**Capability keys have parent relationships.** Limit the parent and the children become invisible regardless of child grants. E.g. add `/Products` to `CapabilityLimitation` for a group and the entire left-nav section disappears for them — child grants on `/Products/Channels` don't override.
 
-**Capability + entity = both must grant.** This is the orthogonal design (only meaningful with the Â§1 flag ON):
+**Capability + entity = both must grant.** This is the orthogonal design (only meaningful with the §1 flag ON):
 
 | User has capability? | User has entity perm? | Outcome |
 |---|---|---|
-| âœ— | âœ— | Section invisible. (Capability wins on visibility.) |
-| âœ— | âœ“ | Section invisible. Action would succeed via raw API but UI doesn't expose it. |
-| âœ“ | âœ— | Section visible; item rows visible (or not â€” entity ACL governs); action buttons disabled / errors. |
-| âœ“ | âœ“ | Full access. |
+| ✗ | ✗ | Section invisible. (Capability wins on visibility.) |
+| ✗ | ✓ | Section invisible. Action would succeed via raw API but UI doesn't expose it. |
+| ✓ | ✗ | Section visible; item rows visible (or not — entity ACL governs); action buttons disabled / errors. |
+| ✓ | ✓ | Full access. |
 
-If a user reports "capability control doesn't work in conjunction with other permissions": **that's the design.** Capability *hides* sections; permission *authorises* actions. Trying to make capability do entity-level gating fails â€” that's Layer C's job.
+If a user reports "capability control doesn't work in conjunction with other permissions": **that's the design.** Capability *hides* sections; permission *authorises* actions. Trying to make capability do entity-level gating fails — that's Layer C's job.
 
 Action-level granularity comes from `PermissionLevelRequired` on each `ActionNode`. E.g. `Read` on `/Products/DynamicWorkspaces` shows the section but hides the "+ Add workspace" button (which is wired to `PermissionLevel.Create`).
 
-## 4. Layer C â€” Entity-level permissions
+## 4. Layer C — Entity-level permissions
 
 Stored in `UnifiedPermission`; keys come from the entity itself via the `IPermissionEntity` interface. The mapping (verified DW 10.25.8 against `$env:DW_VAULT/dw10source/`):
 
@@ -147,20 +147,20 @@ Stored in `UnifiedPermission`; keys come from the entity itself via the `IPermis
 
 ### Two entities that demand special attention under flag ON
 
-**ProductField â€” per-field grants required for columns to render.** The `ProductListScreen` queries each `ProductField` for permission when building columns. With Cap Control ON, `ProductField.GetPermissionParents()` terminates (no `PermissionSection("Products")` fall-through) â€” so a `Section/Products` grant does NOT cascade to fields. **Symptom of the gap**: list view renders the rows (Type icon + Completeness bar appear from non-field sources) but Name / Number / Created / Updated / custom-field columns are blank. Fix: bulk-grant `('Group11', '<SystemName>', 'ProductField', '', Read)` rows for every standard field constant from `ProductField.FieldSystemName`, every `ProductFieldSystemName` row in `EcomProductField`, and every distinct `FieldId` in `EcomProductCategoryField`. Category fields use the **same `ProductField` PermissionName**, not a separate entity â€” `ProductField.GetPermissionEntityByKey()` falls back to `GetCategoryFieldBySystemName()` (line 1543).
+**ProductField — per-field grants required for columns to render.** The `ProductListScreen` queries each `ProductField` for permission when building columns. With Cap Control ON, `ProductField.GetPermissionParents()` terminates (no `PermissionSection("Products")` fall-through) — so a `Section/Products` grant does NOT cascade to fields. **Symptom of the gap**: list view renders the rows (Type icon + Completeness bar appear from non-field sources) but Name / Number / Created / Updated / custom-field columns are blank. Fix: bulk-grant `('Group11', '<SystemName>', 'ProductField', '', Read)` rows for every standard field constant from `ProductField.FieldSystemName`, every `ProductFieldSystemName` row in `EcomProductField`, and every distinct `FieldId` in `EcomProductCategoryField`. Category fields use the **same `ProductField` PermissionName**, not a separate entity — `ProductField.GetPermissionEntityByKey()` falls back to `GetCategoryFieldBySystemName()` (line 1543).
 
-**FilePermissionEntity â€” path-chain cascade.** The Assets tree (`MediaFilesNodeProvider`, `SystemFilesNodeProvider`, `DesignFilesNodeProvider`) gates every folder/file via `directory.GetPermission().HasPermission(Read)`. `FilePermissionEntity.GetPermissionParents()` yields a parent with the path's last segment stripped, recursively. Under flag ON the chain terminates at the root (no fall-through to `PermissionSection("Assets")`). **Symptom of the gap**: Assets tab is visible but every subtree (Media, System, Design) is empty. Fix: one grant on the root suffices â€” `('Group11', '/Files', 'File', '', Read)`. The path-chain cascade walks every subfolder for free. For tighter scoping, grant on `/Files/Images` only and Media-other-folders disappear.
+**FilePermissionEntity — path-chain cascade.** The Assets tree (`MediaFilesNodeProvider`, `SystemFilesNodeProvider`, `DesignFilesNodeProvider`) gates every folder/file via `directory.GetPermission().HasPermission(Read)`. `FilePermissionEntity.GetPermissionParents()` yields a parent with the path's last segment stripped, recursively. Under flag ON the chain terminates at the root (no fall-through to `PermissionSection("Assets")`). **Symptom of the gap**: Assets tab is visible but every subtree (Media, System, Design) is empty. Fix: one grant on the root suffices — `('Group11', '/Files', 'File', '', Read)`. The path-chain cascade walks every subfolder for free. For tighter scoping, grant on `/Files/Images` only and Media-other-folders disappear.
 
 Each entity declares its **permission parents** via `GetPermissionParents()`. The parent graph (when flag is OFF) is:
 
 ```
-Product â”€â”€â†’ Groups it belongs to â”€â”€â†’ parent Groups (recursive) â”€â”€â†’ Shop â”€â”€â†’ PermissionSection("Products")
-                                                                              â–²
-                                                                              â”‚
+Product ──→ Groups it belongs to ──→ parent Groups (recursive) ──→ Shop ──→ PermissionSection("Products")
+                                                                              ▲
+                                                                              │
                                                                     This top link only exists
                                                                     when CapabilityControlFeature
                                                                     is OFF. When ON: chain terminates
-                                                                    at the Shop (or earlier entity) â€”
+                                                                    at the Shop (or earlier entity) —
                                                                     no fall-through to Layer B.
 ```
 
@@ -168,7 +168,7 @@ Verified ancestor chain in `Group.cs:297-307`: a Group yields its parent Group (
 
 **The Product hierarchy is dynamic, not static.** A product with relations to three groups inherits from all three's parent chains. Highest-level wins. A product moved to a new group inherits from the new chain on next read.
 
-## 4b. Dashboard pinning â€” separate `DashboardAccessUserRelation` table
+## 4b. Dashboard pinning — separate `DashboardAccessUserRelation` table
 
 Source: `dw10source/src/Core/Dynamicweb.Core/Dashboard/DashboardConfigurationRepository.cs:42` (verified DW 10.25.8).
 
@@ -180,21 +180,21 @@ TABLE DashboardAccessUserRelation (
 )
 ```
 
-Gates which dashboards a non-admin user sees in the area's dashboard tree. The repository's `GetDashboardsConfigurations` does a LEFT JOIN with `WHERE DashboardRelationUserId IN (<userIds>)` â€” dashboards with no matching relation row are excluded for that user. **Admins bypass via empty `userIds` context.**
+Gates which dashboards a non-admin user sees in the area's dashboard tree. The repository's `GetDashboardsConfigurations` does a LEFT JOIN with `WHERE DashboardRelationUserId IN (<userIds>)` — dashboards with no matching relation row are excluded for that user. **Admins bypass via empty `userIds` context.**
 
 - Empty relation rows + non-admin user = no dashboards visible. The user lands on the area's default `DashboardOverview` and any `?Path=<guid>` URL silently falls back to it.
 - One row per (dashboard, user) pair. There is no per-group equivalent; you insert one row per user you want to pin a dashboard for.
 - `Default=1` makes that dashboard the user's auto-landing when they navigate to the area root.
 
-Persona-scoped landing recipe â†’ [permissions-recipes.md](permissions-recipes.md) Â§"Dashboard pinning per persona".
+Persona-scoped landing recipe → [permissions-recipes.md](permissions-recipes.md) §"Dashboard pinning per persona".
 
-## 4c. Admin-UI exposure gap â€” must script the tables directly
+## 4c. Admin-UI exposure gap — must script the tables directly
 
 In DW 10.25.8, the admin UI does **NOT** expose per-resource Permissions or CapabilityLimitation editing for:
 
-- **Dynamic Workspaces** â€” the workspace edit page Actions menu only offers "Edit" and "Delete".
-- **Dashboards** â€” the dashboard page Actions menu only offers "Edit dashboard" and "Add widget".
-- **User group â†’ Capability Sets** (`/Admin/UI/Users/CapabilitySetList?UserGroupId=<gid>`) â€” shows inherited rows in read mode; no Add path is wired.
+- **Dynamic Workspaces** — the workspace edit page Actions menu only offers "Edit" and "Delete".
+- **Dashboards** — the dashboard page Actions menu only offers "Edit dashboard" and "Add widget".
+- **User group → Capability Sets** (`/Admin/UI/Users/CapabilitySetList?UserGroupId=<gid>`) — shows inherited rows in read mode; no Add path is wired.
 
 Out-of-the-box, a non-admin user with `allowBackend=true` on their group sees **the backend chrome but no PIM data**: empty Products tree, custom dashboards silently fall back to the default, `ProductEdit?ProductId=<id>` renders an empty "New product" form. This is more restrictive than typical PIM expectations and requires direct table seeding (Layer A `UnifiedPermission` + Layer B `CapabilityLimitation` + 4b `DashboardAccessUserRelation`) to make the persona functional. There is no admin-UI route around this for the resources above; the [access-surfaces.md](access-surfaces.md) Direct-SQL surface is the path. The persona-seeding recipes themselves live in [permissions-recipes.md](permissions-recipes.md).
 
@@ -212,9 +212,9 @@ foreach ($cn in @(
 }
 ```
 
-`DashboardAccessUserRelation` reads bypass the cache (queried per request) â€” no flush needed for dashboard relation changes. New logins always see fresh state regardless.
+`DashboardAccessUserRelation` reads bypass the cache (queried per request) — no flush needed for dashboard relation changes. New logins always see fresh state regardless.
 
-See [cache-invalidation.md](cache-invalidation.md) â€” the "Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission`", "â€¦on `CapabilityLimitation`", "â€¦on `CapabilitySetLimitation`", and "â€¦on `DashboardAccessUserRelation`" rows â€” for the full surface.
+See [cache-invalidation.md](cache-invalidation.md) — the "Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission`", "…on `CapabilityLimitation`", "…on `CapabilitySetLimitation`", and "…on `DashboardAccessUserRelation`" rows — for the full surface.
 
 ## 5. The unified picture
 
@@ -222,27 +222,27 @@ See [cache-invalidation.md](cache-invalidation.md) â€” the "Direct SQL INSE
   Layer B: CapabilityLimitation        Layer A: UnifiedPermission        Side table
   (presence = HIDE)                    (presence = PERMIT)               (per-user pin)
                                                                           
-  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”        â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-  â”‚ CapabilityLimitation    â”‚          â”‚  UnifiedPermission      â”‚        â”‚ DashboardAccessUserRel  â”‚
-  â”‚                         â”‚          â”‚                         â”‚        â”‚                         â”‚
-  â”‚ (groupId, capKey)       â”‚          â”‚ (userOrGroupId, key,    â”‚        â”‚ (dashId, userId,        â”‚
-  â”‚                         â”‚          â”‚  name, subname, level)  â”‚        â”‚  default)               â”‚
-  â”‚ Capability keys:        â”‚          â”‚                         â”‚        â”‚                         â”‚
-  â”‚ /Products, /Assets, ... â”‚          â”‚ Entity keys via         â”‚        â”‚ Per-USER (no group     â”‚
-  â”‚ (UI section hides)      â”‚          â”‚ IPermissionEntity:      â”‚        â”‚  equivalent). Default=1 â”‚
-  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜          â”‚ Shop/ProductGroup/      â”‚        â”‚  = auto-landing.        â”‚
-                                       â”‚ Product/ProductField/   â”‚        â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                                       â”‚ FilePermissionEntity/   â”‚
-                                       â”‚ DynamicStructure/Feed/  â”‚
-                                       â”‚ Assortment/Section/...  â”‚
-                                       â”‚ (Layer C â€” action perm) â”‚
-                                       â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-        â–¼                                          â–¼
+  ┌─────────────────────────┐          ┌─────────────────────────┐        ┌─────────────────────────┐
+  │ CapabilityLimitation    │          │  UnifiedPermission      │        │ DashboardAccessUserRel  │
+  │                         │          │                         │        │                         │
+  │ (groupId, capKey)       │          │ (userOrGroupId, key,    │        │ (dashId, userId,        │
+  │                         │          │  name, subname, level)  │        │  default)               │
+  │ Capability keys:        │          │                         │        │                         │
+  │ /Products, /Assets, ... │          │ Entity keys via         │        │ Per-USER (no group     │
+  │ (UI section hides)      │          │ IPermissionEntity:      │        │  equivalent). Default=1 │
+  └─────────────────────────┘          │ Shop/ProductGroup/      │        │  = auto-landing.        │
+                                       │ Product/ProductField/   │        └─────────────────────────┘
+                                       │ FilePermissionEntity/   │
+                                       │ DynamicStructure/Feed/  │
+                                       │ Assortment/Section/...  │
+                                       │ (Layer C — action perm) │
+                                       └─────────────────────────┘
+        ▼                                          ▼
   "Is this UI section limited                "Does this owner have
    for any group I'm in?"                     PermissionLevel.X on this entity?"
-   (returns true â†’ hide)                      (highest level wins across user's groups)
+   (returns true → hide)                      (highest level wins across user's groups)
 
-                       CapabilityControlFeature flag (Â§1)
+                       CapabilityControlFeature flag (§1)
                        decides whether Layer C entity grants
                        cascade up to PermissionSection(area) keys.
                        Flag OFF = legacy cascade (Section grant covers all entities).
@@ -252,13 +252,13 @@ See [cache-invalidation.md](cache-invalidation.md) â€” the "Direct SQL INSE
 
 Layer B is *what the user can see in the admin nav* (hide-list). Layer A is *what the user can read/edit/create/delete in the data* (permit-list, written by Layer C). `AccessUserGroup` membership (separate tables: `AccessUserGroup`, `AccessUserGroupRelation`) provides transitive grants across users.
 
-The Â§1 flag controls whether Layer A's entity grants cascade up to Layer B area keys. Flag OFF = legacy cascade. Flag ON = orthogonal â€” both layers must permit, and each entity needs its own grant.
+The §1 flag controls whether Layer A's entity grants cascade up to Layer B area keys. Flag OFF = legacy cascade. Flag ON = orthogonal — both layers must permit, and each entity needs its own grant.
 
-## 6. Role matrix + grant seeding â€” moved
+## 6. Role matrix + grant seeding — moved
 
-The abstract role matrix (Editor / Reviewer / Publisher / Admin), the functional-view checklist, the action-button Readâ†’Edit bump, the field-editability dual-gate, and the per-role field-level differentiation recipes all live in [permissions-recipes.md](permissions-recipes.md).
+The abstract role matrix (Editor / Reviewer / Publisher / Admin), the functional-view checklist, the action-button Read→Edit bump, the field-editability dual-gate, and the per-role field-level differentiation recipes all live in [permissions-recipes.md](permissions-recipes.md).
 
-## 7. Admin bypass â€” who escapes every check
+## 7. Admin bypass — who escapes every check
 
 Source: `dw10source/Dynamicweb.CoreUI/CapabilityControl/CapabilityHelper.cs:87` (verified DW 10.25.8):
 
@@ -268,28 +268,28 @@ internal static bool IsRelevantUser(int userId)
        && !(user.IsAngel || user.IsBuiltInAdmin);
 ```
 
-Three classes of user bypass all `CapabilityLimitation` checks AND the per-resource Layer C checks (Dashboard listings, area trees, ProductField columns, File trees â€” everything):
+Three classes of user bypass all `CapabilityLimitation` checks AND the per-resource Layer C checks (Dashboard listings, area trees, ProductField columns, File trees — everything):
 
-- **Angel** (`AccessUserID = 1`) â€” the system-bootstrap account; always sees everything.
-- **BuiltInAdmin** (`AccessUserType = 1`, "SystemAdministrator") â€” installation-owner account.
-- **Administrator** (`AccessUserType = 3`) â€” full backend admin in practice; bypasses Capability + dashboard relation filters via empty-userIds context.
+- **Angel** (`AccessUserID = 1`) — the system-bootstrap account; always sees everything.
+- **BuiltInAdmin** (`AccessUserType = 1`, "SystemAdministrator") — installation-owner account.
+- **Administrator** (`AccessUserType = 3`) — full backend admin in practice; bypasses Capability + dashboard relation filters via empty-userIds context.
 
 Effect: when designing the role matrix, never test a recipe by logging in as one of the above. Always create a Default-type user in the target group and log in as them. A persona scoping that "works" only because you're testing as Admin is not a scoping.
 
-## 8. Plaintext password storage â€” moved
+## 8. Plaintext password storage — moved
 
-The `EncryptPassword=False` SQL escape hatch for seeding persona logins lives in [permissions-recipes.md](permissions-recipes.md) Â§"Plaintext-password escape hatch".
+The `EncryptPassword=False` SQL escape hatch for seeding persona logins lives in [permissions-recipes.md](permissions-recipes.md) §"Plaintext-password escape hatch".
 
 ## 9. Cross-references
 
-- **Grant-seeding recipes for demo personas** â€” [permissions-recipes.md](permissions-recipes.md). Everything operational (role matrix, functional-view checklist, level bumps, dual-gate, per-role differentiation, hides, pinning, passwords) lives there.
-- **Render-time half of permissions** â€” see [`dynamicweb-swift-demo/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) Â§"Permissions â€” the entity store". That section owns the `Permission` table (different from `UnifiedPermission`) which gates `Page` / `Paragraph` render at request time. Roughly: this ref controls who can EDIT a product in admin; that one controls who can SEE a CMS page on the storefront. Both ultimately read from a permission table, but the tables, the enforcement points, and the key shapes differ.
-- **Workflow transitions** â€” see [`workflow.md`](workflow.md). DW10's workflow engine has NO native per-state role gating (verified gap). The workarounds (subscriber-reject; custom capability key; soft gating via permission-aware surfaces) all build on Layer C entity permissions from this ref.
-- **Publish-to-channel native action** â€” see `structural-model.md` Â§2.3 / Â§2.3a. The action's `PermissionLevelRequired = PermissionLevel.Edit` is a Layer C check on the source products + a write-permission check on the target Channel groups.
-- **`AccessUserGroup` membership** â€” see DW10 admin Users â†’ Groups. Group membership is what makes Layer A's "highest level wins" resolution work across users. A user inherits the highest grant from any group they belong to.
-- **Capability Control vs Completeness feature flag** â€” different flags; do not confuse. `CapabilityControlFeature` is the permission-model toggle (this ref). The completeness flag is a separate buggy-beta toggle covered in [`governance.md`](governance.md) "Completeness rules" Â§7.
-- **Cache invalidation after direct-SQL permission seeding** â€” see [cache-invalidation.md](cache-invalidation.md), the "Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission` / `CapabilityLimitation` / `CapabilitySetLimitation` / `DashboardAccessUserRelation`" rows. The three caches that need flushing (`DefaultCapabilityService`, `DefaultCapabilitySetService`, `PermissionService`) are listed there with the exact `CacheInformationRefresh` payload.
-- **Access surfaces** â€” see [access-surfaces.md](access-surfaces.md). Per Â§4c, all three permission tables (`UnifiedPermission`, `CapabilityLimitation`, `DashboardAccessUserRelation`) are Direct-SQL territory in DW 10.25.8 â€” the admin UI does not expose them for the Dynamic-Workspace / Dashboard / Capability-Set resources we care about.
+- **Grant-seeding recipes for demo personas** — [permissions-recipes.md](permissions-recipes.md). Everything operational (role matrix, functional-view checklist, level bumps, dual-gate, per-role differentiation, hides, pinning, passwords) lives there.
+- **Render-time half of permissions** — see [`dynamicweb-swift-demo/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) §"Permissions — the entity store". That section owns the `Permission` table (different from `UnifiedPermission`) which gates `Page` / `Paragraph` render at request time. Roughly: this ref controls who can EDIT a product in admin; that one controls who can SEE a CMS page on the storefront. Both ultimately read from a permission table, but the tables, the enforcement points, and the key shapes differ.
+- **Workflow transitions** — see [`workflow.md`](workflow.md). DW10's workflow engine has NO native per-state role gating (verified gap). The workarounds (subscriber-reject; custom capability key; soft gating via permission-aware surfaces) all build on Layer C entity permissions from this ref.
+- **Publish-to-channel native action** — see `structural-model.md` §2.3 / §2.3a. The action's `PermissionLevelRequired = PermissionLevel.Edit` is a Layer C check on the source products + a write-permission check on the target Channel groups.
+- **`AccessUserGroup` membership** — see DW10 admin Users → Groups. Group membership is what makes Layer A's "highest level wins" resolution work across users. A user inherits the highest grant from any group they belong to.
+- **Capability Control vs Completeness feature flag** — different flags; do not confuse. `CapabilityControlFeature` is the permission-model toggle (this ref). The completeness flag is a separate buggy-beta toggle covered in [`governance.md`](governance.md) "Completeness rules" §7.
+- **Cache invalidation after direct-SQL permission seeding** — see [cache-invalidation.md](cache-invalidation.md), the "Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission` / `CapabilityLimitation` / `CapabilitySetLimitation` / `DashboardAccessUserRelation`" rows. The three caches that need flushing (`DefaultCapabilityService`, `DefaultCapabilitySetService`, `PermissionService`) are listed there with the exact `CacheInformationRefresh` payload.
+- **Access surfaces** — see [access-surfaces.md](access-surfaces.md). Per §4c, all three permission tables (`UnifiedPermission`, `CapabilityLimitation`, `DashboardAccessUserRelation`) are Direct-SQL territory in DW 10.25.8 — the admin UI does not expose them for the Dynamic-Workspace / Dashboard / Capability-Set resources we care about.
 
 Source citations re-verified against `$env:DW_VAULT/dw10source/` on DW 10.25.8.
 

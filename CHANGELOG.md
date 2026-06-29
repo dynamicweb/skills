@@ -3,6 +3,17 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.3.8]
+
+### Fixed
+- **Repaired double-encoded UTF-8 (mojibake) across 33 skill markdown files** (1101 lines).
+  These files carried text that had been UTF-8-encoded, misread as CP1252, and re-encoded —
+  so em-dashes rendered as `â€"`, arrows and box-drawing characters, `§` as `Â§`, `…`, `✓`,
+  etc. Repaired with `ftfy.fix_encoding`, which reverses only the damaged byte sequences and
+  leaves already-correct characters (including genuine em-dashes in mixed files) untouched.
+  Verified: zero residual mojibake markers and zero replacement characters (`�`) introduced
+  repo-wide; line endings preserved.
+
 ## [3.3.4]
 
 ### Changed

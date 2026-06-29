@@ -18,13 +18,13 @@ These DO NOT count as customisations and SHIP unprompted:
 | `NotificationSubscriber` subclass | NO | Standard cross-cutting hook; in `Dynamicweb.Examples` |
 | Static helper class | NO | Not in preflight glob |
 | Custom item type definition (`<Prefix>_*.xml`) | NO | Content schema, not code |
-| Razor template edit | NO | `.cshtml` outside preflight glob per re-skin.md Â§5 |
+| Razor template edit | NO | `.cshtml` outside preflight glob per re-skin.md §5 |
 | Custom field on `AccessUser` / `EcomProducts` / `ProductGroup` | NO | Data change |
-| Custom SQL helper / repository class (read-only) | NO | Not in preflight glob â€” but consider an MCP gap instead |
+| Custom SQL helper / repository class (read-only) | NO | Not in preflight glob — but consider an MCP gap instead |
 
-**Why this matters:** projects routinely over-interpret the rule to bar Notification subscribers, which then forces SQL backfills (`OrderCustomerNumber`, `OrderComplete=1`) that should have been runtime subscribers. The rule is conservative-by-design â€” the pitch beat of "low customisation budget" depends on it â€” but conservatism applies to Controllers/Providers, not "any code we write."
+**Why this matters:** projects routinely over-interpret the rule to bar Notification subscribers, which then forces SQL backfills (`OrderCustomerNumber`, `OrderComplete=1`) that should have been runtime subscribers. The rule is conservative-by-design — the pitch beat of "low customisation budget" depends on it — but conservatism applies to Controllers/Providers, not "any code we write."
 
-Cross-reference: [`../../dw-demo-swift/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) Â§"Cross-cutting redirects" â€” the `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` is the canonical anon-gate / role-gate hook and does NOT trigger this preflight.
+Cross-reference: [`../../dw-demo-swift/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) §"Cross-cutting redirects" — the `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` is the canonical anon-gate / role-gate hook and does NOT trigger this preflight.
 
 ## 1. Ledger template location
 
@@ -90,7 +90,7 @@ The preflight globs are intentional:
 - `Providers/**` -- any custom Provider class anywhere in the solution. Providers (notification, payment, shipping, integration, etc.) are a customisation-budget category in their own right.
 - `*Controller.cs` -- broader catch-all. Matches `Controllers/Foo.cs`, `Areas/Admin/BarController.cs`, anywhere in the tree, even if not under a folder named `Controllers/`.
 
-Razor files (`*.cshtml`) are **NOT** in the preflight glob. DW10 templates are conventional, not "customisations" in the pitch sense -- a Swift template override is part of normal demo-build flow, not a customisation-budget hit. If a razor IS modified for a clearly-customisation reason (e.g., hard-coded business logic in a template), it goes in `CUSTOMISATIONS.md` as a `razor` type row by user request, not by preflight. The Razor escalation ladder for Swift demos lives in `dynamicweb-swift-demo/references/re-skin.md` Â§Pixel-perfect escalation.
+Razor files (`*.cshtml`) are **NOT** in the preflight glob. DW10 templates are conventional, not "customisations" in the pitch sense -- a Swift template override is part of normal demo-build flow, not a customisation-budget hit. If a razor IS modified for a clearly-customisation reason (e.g., hard-coded business logic in a template), it goes in `CUSTOMISATIONS.md` as a `razor` type row by user request, not by preflight. The Razor escalation ladder for Swift demos lives in `dynamicweb-swift-demo/references/re-skin.md` §Pixel-perfect escalation.
 
 ## 6. Cross-references
 
