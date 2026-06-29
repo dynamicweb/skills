@@ -2,39 +2,30 @@
 
 (Formerly bc-settings-correction.md.)
 
-> The PIM for Business Central connector AppStore app installs with default settings -- the Dynamicweb/DW-side `BCSettings` row -- that are **almost always wrong** for the project you're dropping it into. This reference tells you what's wrong, what to set instead, and how. Loaded from `~/.claude/skills/dynamicweb-pim-for-bc/SKILL.md` "Where to find things" table.
+> Per-demo recipe for correcting the connector's `BCSettings` row against the host you're demoing on.
+> The AppStore app installs default settings that are almost always wrong for the host it lands in;
+> *why* (the UpdateProvider-seeds-host-unaware-defaults pattern) is the foundational candidate
+> [`extend-providers.md`](../../dw-demo-base/references/foundational/extend-providers.md) §1, and the
+> BC-specific default values + which fields are wrong are in
+> [`integration-bc-connector.md`](../../dw-demo-base/references/foundational/integration-bc-connector.md)
+> "BC default settings". This file is the hands-on correction you run against a live demo host.
 
-## What ships, and why it's wrong
+## Before correcting — verify against the actual host
 
-Right after the AppStore app installs and the host restarts, `BCSetupUpdateProvider` writes a default `BCSettings` row. Reading `GET /admin/api/BCSettings` shows shape:
+The seeded defaults (`indexBuildKey`, `buildName`, `workflowStateId`) are host-unaware guesses. Read
+[`integration-bc-connector.md`](../../dw-demo-base/references/foundational/integration-bc-connector.md)
+"BC default settings" for what each field means and how it's typically wrong, then verify each one
+against the host you're demoing on:
 
-```json
-{
-  "model": {
-    "indexBuildKey": "ProductsBackend|Products.index",
-    "buildName": "Partial",
-    "retentionDays": 30,
-    "workflowStateId": 1,
-    "permissionLevelCurrentUser": null
-  },
-  "successful": true,
-  "message": ""
-}
-```
-
-Three of those four fields are typically wrong:
-
-1. **`indexBuildKey: "ProductsBackend|Products.index"`** -- format is `<RepositoryName>|<IndexFileName>`, but the AppStore app guesses `ProductsBackend` as the repo name (presumably from the historical Swift1 `ProductsBackend`/`ProductsFrontend` split). Most modern Dynamicweb demos have a single `Products` repo. Verify by listing `wwwroot/Files/System/Repositories/`. If you see `Products` (not `ProductsBackend`), the default is dangling -- BC's `BCBuildIndex` will fail with "repository not found".
-
-2. **`buildName: "Partial"`** -- valid only if your `Products.index` actually has a `<Build Name="Partial">` element. Most Dynamicweb demos do (it's stock in the canonical index template), but a hand-trimmed index might only have `Full`. Verify with `Select-String -Path Products.index -Pattern '<Build Name'`.
-
-3. **`workflowStateId: 1`** -- assumes the BC workflow state has been created. `BCWorkflowUpdateProvider` runs on first host startup post-install and creates a workflow named "BC Products" with a single state "New Product From BC", typically with id=1. Verify via MCP: `get_workflow_states` should return `[{id:1, name:"BC Products", states:[{id:1, name:"New Product From BC", ...}]}]`. If it returns `[]`, the workflow update didn't run -- bounce the host once and re-check; if still empty, the AppStore install didn't complete cleanly.
-
-`retentionDays: 30` is fine as a default and rarely needs to change.
+- `indexBuildKey` — list `wwwroot/Files/System/Repositories/`; use the real repo name (usually
+  `Products`, not `ProductsBackend`).
+- `buildName` — `Select-String -Path Products.index -Pattern '<Build Name'` to confirm the named
+  build exists.
+- `workflowStateId` — MCP `get_workflow_states`; confirm the "New Product From BC" state's id.
 
 ## The corrected save
 
-Build the corrected payload after verifying each field against your project's actual state:
+Build the corrected payload after verifying each field against the demo host's actual state:
 
 ```powershell
 $base = "https://localhost:31873"   # local URL is fine for setup; tunnel not required yet
@@ -53,7 +44,10 @@ $body = @{
 Invoke-RestMethod -Uri "$base/admin/api/BCSettingsSave" -Method POST -Headers $h -Body $body
 ```
 
-The `{"Model": {...}}` wrapper rule and the exact 400 you get when you forget it are documented in [connector-endpoints.md](connector-endpoints.md) "Writes".
+The `{"Model": {...}}` wrapper rule and the exact 400 you get when you forget it are in
+[connector-endpoints.md](connector-endpoints.md) "Two diagnostics" /
+[`integration-bc-connector.md`](../../dw-demo-base/references/foundational/integration-bc-connector.md)
+"Writes".
 
 Successful save returns:
 
@@ -74,21 +68,24 @@ Invoke-RestMethod -Uri "$base/admin/api/BCSettings" -Headers $h | ConvertTo-Json
 ```
 
 The `model` block should match what you sent (modulo the read-only `permissionLevelCurrentUser` field).
+`BCSettingsSave` is upsert, not append — re-running the corrected save is idempotent.
 
-## Workflow state -- when to keep it, when to zero it
+## Workflow state — keep it for the governance demo beat
 
-`workflowStateId: 1` is the auto-created "New Product From BC" state. Keeping it means every product BC pushes via `BCProductCreate` is stamped with that state -- useful for dashboards that want to surface "what did BC just push" or for governance flows that require BC-imported products to go through review before they show up on shopfront.
+`workflowStateId: 1` is the auto-created "New Product From BC" state. **Keep it** when the demo's
+governance dashboard is a centerpiece: every product BC pushes via `BCProductCreate` gets stamped
+with that state, so the "BC just pushed 12 items, all in 'New Product From BC' state" pattern becomes
+a strong demo beat (governance baked into the integration). Zero it (`workflowStateId: 0`) only when
+the demo wants BC pushes to land directly in the active catalog with no state stamp — simpler
+narrative, less governance theatre.
 
-Zero it (`workflowStateId: 0`) if the demo wants BC pushes to land directly into the active catalog with no state stamp -- simpler narrative, less governance theatre.
+## If defaults LOOK right but BC still fails
 
-For demos where the governance dashboard is a centerpiece, **keep the state**. The "BC just pushed 12 items, all in 'New Product From BC' state" pattern is a strong demo beat.
+If `BCSettings` already shows correct values (the install happened to guess right) but BC still errors
+on `BCBuildIndex` or `BCProductCreate`, the failure is downstream of settings:
 
-## What to do if defaults LOOK right but BC fails
-
-If `BCSettings` already shows correct values out of the box -- the AppStore install happened to guess right -- but BC still errors on `BCBuildIndex` or `BCProductCreate`, the failure is downstream of settings:
-
-- Check that `Products.index` actually exists in `wwwroot/Files/System/Repositories/Products/`.
-- Check that the workflow state exists via `get_workflow_states`.
-- Check that the bearer token has the correct permission level. The connector inspects `permissionLevelCurrentUser` -- if your token has insufficient permissions, the response is shaped right but the writes silently no-op. (The current Dynamicweb Management API token issued via admin UI is full-access by default; only an issue if you've narrowed permissions.)
-
-Re-running the corrected save above is idempotent -- `BCSettingsSave` is upsert, not append.
+- Confirm `Products.index` exists in `wwwroot/Files/System/Repositories/Products/`.
+- Confirm the workflow state exists via `get_workflow_states`.
+- Confirm the bearer token's permission level. The connector inspects `permissionLevelCurrentUser`;
+  an under-permissioned token returns a right-shaped response but the writes silently no-op. (The
+  admin-issued Management API token is full-access by default; only an issue if you've narrowed it.)

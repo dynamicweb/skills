@@ -1,0 +1,96 @@
+# Foundational candidate → dw-search-indexing
+
+> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 product index / repositories / queries knowledge, staged here for a future
+> fold-up into `dw-search-indexing`. No demo/customer content. When folded, move this body into
+> `dw-search-indexing` and re-target the pointers in the demo skills. Until then, the demo skills
+> reference this file.
+
+## Repositories, Indexes, and Queries — file-based
+
+- **Repository** = folder under `wwwroot/Files/System/Repositories/<RepoName>/`
+- **Index** = `.index` XML file inside the repo folder (build via management API `POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}`)
+- **Queries** = `.query` XML files with `<Query ID="guid">` and `<Source Repository="..." Item="..." />`. Query placement rules are SUBTLE:
+  - Queries used by **feeds** (`EcomFeed.FeedIndexQueryId`) must live DIRECTLY in the repository root folder: `wwwroot/Files/System/Repositories/<RepoName>/*.query`. **Subfolders are NOT scanned for feed resolution** — admin will show "query does not exist" on the feed if the .query file is in a subfolder.
+  - Queries used by **dashboards/widgets** (referenced by GUID) must live in `wwwroot/Files/System/SmartSearches/Ecommerce/Shared/` (or a subfolder of it) — **never GUID-duplicated to `Repositories/<RepoName>/<subfolder>/`**. GUID-collision mechanism + recovery: "Dashboard query location — Shared ONLY" below.
+  - Admin "Queries" UI under Products → Queries → Shared queries shows all queries in the SmartSearches/Shared tree. Feed queries are visible in a separate Repository-based surface (Settings → Integration → Repositories → Products).
+  - Rule of thumb: **feed-backing queries → `Files/System/Repositories/<RepoName>/` root. Dashboard-backing queries → `Files/System/SmartSearches/Ecommerce/Shared/` only. Never both.**
+- Product index builder: `Dynamicweb.Ecommerce.Indexing.ProductIndexBuilder, Dynamicweb.Ecommerce`. Instances use `Dynamicweb.Indexing.Lucene.LuceneIndexProvider`.
+- **Hand-author the index — do NOT copy `ProductsBackend/Products.index` or `ProductsFrontend/Products.index` from the github Swift repo.** Those reference Swift's demo custom fields (per-vertical facet fields, dimension facets, etc.) that fail to build against any other product catalogue with `field not found in products` (the index builder validates every field reference against `EcomProductCategoryField`). A Swift content baseline is content-only and ships no Repositories tree — there's nothing to copy from there either. For a hybrid PIM-data + Swift-frontend solution: hand-write the `.index` listing only standard product fields plus 5-10 relevant `ProductCategory|<Cat>|<FieldId>` per category — not the full custom-field set. Use `ProductIndexBuilder.DefaultSettings` in the dw10 source as the structural template.
+- **Name-attribute gotcha:** the `<Index Name="..."/>` attribute inside `Products.index` MUST equal the file name **including the `.index` extension** — i.e. `Name="Products.index"`, not `Name="Products"`. The error on mismatch is the misleading `"Index file not found: ...\Products"` even though the file IS at `...\Products.index`; the Lucene resolver uses the `Name` attribute as the lookup key.
+- **`ProductIndexSchemaExtender` is load-bearing — a hand-written index without it builds successfully and serves zero hits.** The default DW catalog frontend resolves products via `ProductQueryHelper.GetProductsAutoIdsFromIndexQuery`, which expects a battery of stock fields (`AutoID`, `LanguageID`, `ParentGroupIDs`, `ShopIDs`, `Active`, `freetext`, `ProductName_Search`, `Manufacturer_Facet`, `PriceRange`, etc.). If your `<Fields>` block lists only your custom fields, **every PLP / PDP throws `System.ArgumentOutOfRangeException: numHits must be > 0` from `Lucene.Net.Search.TopScoreDocCollector.Create`** — `BuildIndex` returns `state=success` and the Lucene segment files on disk are 53 bytes (empty). With the extender wired, the segment grows to hundreds of KB for the same product count. Inline the extender inside `<Schema><Fields>` so the builder auto-injects the stock catalog fields alongside your custom ones:
+
+  ```xml
+  <Schema>
+    <Fields>
+      <Extension Type="Dynamicweb.Ecommerce.Indexing.ProductIndexSchemaExtender, Dynamicweb.Ecommerce" />
+      <!-- your 5-10 specific ProductCategory|<Cat>|<FieldId> fields here -->
+    </Fields>
+  </Schema>
+  ```
+
+  Then rebuild: `POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`. **Symptom check:** if PLP/PDP render `numHits must be > 0` and the index built `state=success`, this is the cause — not a missing query file, not a missing `Products.query`, not a paragraph misconfiguration. The data on disk is the diagnostic: a healthy Products index segment is ~270 KB at 30 docs; 53 bytes means the schema accepted zero documents.
+- MCP `create_or_update_product_queries` saves `.query` XML but leaves `<Source Repository="" Item="" />` empty — fix via `sed` or patch the file before index build.
+- Rebuild the index after ANY product/group/channel mutation.
+
+## Dashboard query location — Shared ONLY, never duplicate to Repositories
+
+For dashboard widget queries, put each `.query` + `.configuration` file in **exactly one** place:
+
+**`/Files/System/SmartSearches/Ecommerce/Shared/`** (or a subfolder of it).
+
+Do **NOT** also place a GUID-identical copy under `/Files/System/Repositories/Products/<subfolder>/`. Feed queries at `/Files/System/Repositories/Products/` root (e.g. integration/feed `.query` files) are a separate category — they're resolved by repository+filename for `EcomFeed.FeedIndexQueryId` and must stay at the repo root.
+
+**Why it matters** (a DW10 bug):
+
+`QueryHelper.InitQueriesCache` (in `Dynamicweb.Core`) populates the cache from `SmartSearches` first, then `Repositories`, and **overwrites on GUID collision**:
+```csharp
+result = InitQueriesCache(SystemInformation.MapPath(SMARTSEARCH_QUERY_VIRTUAL_PATH), cache);  // 1st
+// ...
+result = InitQueriesCache(repositoriesPath, cache) && result;                                  // 2nd — overwrites
+// Inside: cache[query.ID] = query;  ← Repositories copy wins
+```
+
+So if the same query GUID exists in both locations, `QueryHelper.GetQueryById(guid)` returns the **Repositories** copy. When the admin Products tree renders the Shared queries node, each query's delete action calls `QueryByIdQuery.GetModel()` → gets back the Repositories copy → its `FolderPath` is `/Files/System/Repositories/Products/<subfolder>` → `ProductListNodePathProvider.GetQueryFolderPath()` throws `NotSupportedException` (it only accepts paths starting with `SharedQueriesPath` or `MyQueriesPath`) → the entire Shared queries tree 500s with a `NavigationByPathQuery` error. Same code path also breaks widget drill-through, since clicking a widget routes through `GetQueryFolderPath`.
+
+**Diagnosis tell**: if admin Products → Queries → Shared queries returns a 500 with `System.NotSupportedException` at `ProductListNodePathProvider.GetQueryFolderPath`, grep for duplicate GUIDs across the two folders — that's almost always it:
+```bash
+grep -h 'Query ID=' wwwroot/Files/System/Repositories/Products/**/*.query | sort > /tmp/repo.txt
+grep -h 'Query ID=' wwwroot/Files/System/SmartSearches/Ecommerce/Shared/**/*.query | sort > /tmp/shared.txt
+diff /tmp/repo.txt /tmp/shared.txt  # identical lines = duplicates
+```
+
+**Fix**: delete the Repositories-side dashboard duplicates (NOT feed queries at repo root). Then **restart the host** — the `Searching:Queries` cache in `Cache.Current` is NOT exposed via `CacheInformationRefresh`, and `InitQueriesCache` never removes entries, only adds/overwrites. Deleting files from disk alone leaves stale entries in memory until restart. No MCP tool flushes this — plan the restart cost into your fix window. See [`cache-invalidation.md`](cache-invalidation.md) for the post-mutation cache table.
+
+**Does widget drill-through need the query in `Repositories`?** No. Widgets look up queries by GUID through the global cache, which is populated from SmartSearches. Drill-through navigation uses `ProductListNodePathProvider.GetPath` which requires the query's `FolderPath` to start with `SharedQueriesPath` — so Shared is actually the REQUIRED location for drill-through to work at all. Repositories is wrong on both fronts.
+
+## Recovery recipe: Rebuild Products index
+
+After any mutation that touches products, groups, categories, fields, completeness rules, or queries, the Lucene index must be rebuilt — otherwise dashboard widget counts stay stale and product queries return zero rows.
+
+> Run in PowerShell, not Bash — Bash interpolation eats `$env:` and `$_` before they reach the script.
+
+```powershell
+# $port and $token come from project-file discovery (launchSettings.json + chat).
+$buildResp = Invoke-RestMethod `
+  -Uri "https://localhost:$port/admin/api/BuildIndex" `
+  -Method POST `
+  -Headers @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' } `
+  -Body (@{ Repository = "Products"; IndexName = "Products.index"; BuildName = "Full" } | ConvertTo-Json) `
+  -SkipCertificateCheck
+
+# Poll IndexStatus until Idle (15-min timeout)
+$deadline = (Get-Date).AddMinutes(15)
+do {
+  Start-Sleep -Seconds 5
+  $status = Invoke-RestMethod `
+    -Uri "https://localhost:$port/admin/api/IndexStatus" `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -SkipCertificateCheck
+  Write-Host ("IndexStatus: " + $status.Status)
+} while ($status.Status -ne 'Idle' -and (Get-Date) -lt $deadline)
+
+if ($status.Status -ne 'Idle') { Write-Warning "BuildIndex did not reach Idle within 15 minutes" }
+else { Write-Host "BuildIndex Full complete." -ForegroundColor Green }
+```
+
+If the build fails or never reaches Idle, check that the index file exists at `wwwroot/Files/System/Repositories/Products/Products.index` and that the Repository name matches the index file's containing folder. The completeness/governance consumers of this index live in [`pim-completeness.md`](pim-completeness.md); the post-mutation cache rules live in [`cache-invalidation.md`](cache-invalidation.md).

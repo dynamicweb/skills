@@ -6,23 +6,16 @@
 - [2. Scaffold the per-demo project](#2-scaffold-the-per-demo-project)
 - [3. First run — Setup Guide for DB + Files folder](#3-first-run--setup-guide-for-db--files-folder)
 - [4. Discover-from-project-files rule](#4-discover-from-project-files-rule)
-- [5. Anti-patterns (CLAUDE.md "What NOT to Use")](#5-anti-patterns-claudemd-what-not-to-use)
 
 Scaffold a new Dynamicweb 10 demo project. Walk `dotnet new dw10-suite --name Dynamicweb.Host.Suite`. The `--name Dynamicweb.Host.Suite` is **mandatory** — sister-skill path discovery (`Dynamicweb.Host.Suite/Properties/launchSettings.json`, `Dynamicweb.Host.Suite/GlobalSettings.Database.config`) depends on this name.
 
-Suite version is whatever the template + `dotnet restore` resolve. **Version policy is out of scope for this skill** — neither pinning a specific patch nor enforcing Ring-N stability is something this skill does. If a particular demo needs a frozen version, edit its csproj directly.
+Suite version is whatever the template + `dotnet restore` resolve. **Version policy is out of scope for this skill** — neither pinning a specific patch nor enforcing Ring-N stability is something this skill does. If a particular demo needs a frozen version, edit its csproj directly. (The release-ring model and the version-scheme split, for the rare regression triage, are platform knowledge — [`foundational/setup-install.md`](foundational/setup-install.md) §5.)
 
 ---
 
 ## 1. Prerequisites
 
-Before running `dotnet new dw10-suite`, verify:
-
-- **.NET 10 SDK** is installed (`dotnet --list-sdks | Select-String '^10\.'` returns at least one row). Net 8 is NOT sufficient — see Section 2.1 below for why the host must run on net10.
-- **`Dynamicweb.ProjectTemplates 1.26.0`** is installed (`dotnet new list | Select-String 'dw10-suite'` returns a match).
-- **SQL Express service** (`MSSQL$SQLEXPRESS`) is running — needed by Section 3's first-run.
-
-If any of these are missing, run `references/setup-checks.md` first.
+Before running `dotnet new dw10-suite`, the box needs the **.NET 10 SDK**, **`Dynamicweb.ProjectTemplates`**, and a running **SQL Express service** (`MSSQL$SQLEXPRESS`). The platform-level rationale, probes, and install/fix paths for each are owned by [`foundational/setup-install.md`](foundational/setup-install.md) §1. Run the quick verification ritual in `references/setup-checks.md` first — it probes these plus the demo-specific env/vault slots in one pass.
 
 ---
 
@@ -34,125 +27,19 @@ Inside the demo solution folder (e.g. `C:\Projects\Solutions\<demo>\`):
 dotnet new dw10-suite --name Dynamicweb.Host.Suite
 ```
 
-**Constraint:** `--name Dynamicweb.Host.Suite` is mandatory (the discover-from-project-files path-discovery contract). Sister skills (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`) and references in this skill (`mcp-setup.md`, `setup-checks.md`'s discovery table) all assume this exact project name when reading `launchSettings.json` and `GlobalSettings.Database.config`. Renaming the host project breaks the entire downstream chain.
+**Constraint:** `--name Dynamicweb.Host.Suite` is mandatory (the discover-from-project-files path-discovery contract). Sister skills and references in this skill (`mcp-setup.md`, `setup-checks.md`'s discovery table) all assume this exact project name when reading `launchSettings.json` and `GlobalSettings.Database.config`. Renaming the host project breaks the entire downstream chain.
 
-After the command completes, the solution folder contains a new `Dynamicweb.Host.Suite/` folder with the canonical Suite scaffold (`.csproj`, `Program.cs`, `Properties/launchSettings.json`, etc.). The csproj's `Dynamicweb.Suite` PackageReference is whatever the template ships with — leave it as-is unless the demo has a specific reason to freeze a version.
+After the command completes, the solution folder contains a new `Dynamicweb.Host.Suite/` folder with the canonical Suite scaffold (`.csproj`, `Program.cs`, `Properties/launchSettings.json`, etc.).
 
-### 2.1 — TargetFramework MUST be `net10.0` (mandatory)
+### 2.1 — Mandatory host-config before the first run
 
-Template 1.26.0 ships multi-target (`<TargetFrameworks>net8.0;net10.0</TargetFrameworks>`). **Pin to single-target `net10.0`** — this is non-negotiable for any Dynamicweb demo, because every Dynamicweb demo needs the Backend MCP AddIn (per `references/mcp-setup.md`, a non-skippable canonical step — installed via a NuGet `PackageReference` by default, with the AppStore as a last resort; see Section 2.1c), and the MCP AddIn loader hard-requires the host process to run on .NET 10:
+Every Dynamicweb demo needs the same host-config patches applied at scaffold time, before the first `dotnet run`. These are vendor-generic platform requirements owned by [`foundational/setup-install.md`](foundational/setup-install.md); apply all of them now:
 
-```xml
-<TargetFramework>net10.0</TargetFramework>
-```
+- **Pin `<TargetFramework>net10.0</TargetFramework>`** (single-target). Non-negotiable — the Backend MCP AddIn loader hard-requires net10, and a net8 host makes the AddIn install silently no-op. Rationale + triage order: `setup-install.md` §2.
+- **Patch `Program.cs`** with `System.Transactions.TransactionManager.ImplicitDistributedTransactions = true;` before `WebApplication.CreateBuilder`, and **exclude `wwwroot\Files\System\**`** from the build. Both: `setup-install.md` §3.
+- **Install the Backend MCP AddIn** via a NuGet `PackageReference` (the deterministic default; AppStore is the last resort). The AddIn is a non-skippable canonical step for every demo and registers at host startup. Recipe + auth model: [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §1, then continue MCP configuration in `references/mcp-setup.md`.
 
-The MCP package (`Dynamicweb.MCP.0.2.0-BETA`) ships only `lib/net6.0/` and `lib/net8.0/` binaries (no `net10.0/`), so the *DLLs* themselves load fine on net8 — but the AddIn loader's runtime check fails. Symptom: install POST `/Admin/Api/AddinInstall` returns 200, files drop to `wwwroot/Files/System/AddIns/Installed/Dynamicweb.MCP.<ver>/lib/`, but the AddIn never registers, never appears in Installed Apps, and `/admin/mcp` returns 404. Indistinguishable from the queue-stuck DB-update bug (`references/db-update-recovery.md`).
-
-**Triage in this exact order:**
-
-1. Open the host startup log. If it says `Dynamicweb is running on .NET 8`, **the TFM is wrong** — fix this first. Edit csproj, restart, verify the log now says `Dynamicweb is running on .NET 10 or greater`.
-2. Only after the host is confirmed on net10, look at the DB-update path (`references/db-update-recovery.md`).
-
-Single-target net10 (not multi-target) keeps the compile/launch loop simple. The only reason to keep net8 in the matrix would be fallback-compatibility testing, which is out of scope for a per-demo build.
-
-### 2.1b — Patch `Program.cs` for .NET 7+ distributed-transactions opt-in (mandatory)
-
-**Add this line at the very top of `Program.cs`, before `WebApplication.CreateBuilder`:**
-
-```csharp
-System.Transactions.TransactionManager.ImplicitDistributedTransactions = true;
-```
-
-**Why this is mandatory on every demo:** .NET 7+ changed the default for `TransactionManager.ImplicitDistributedTransactions` from `true` to `false`. Without this opt-in, every DW10 operation that opens >1 SQL connection inside a single `TransactionScope` fails with `System.Transactions.TransactionException: The operation is not valid for the state of the transaction.` — even when MSDTC + firewall are correctly configured. The hosts affected include but are not limited to:
-
-- `/admin/api/AreaCopy` (the "+ New website Language" admin flow — creating a language layer)
-- `/admin/api/PageCopy` (copy-with-content of multi-paragraph pages)
-- Bulk imports / batch jobs that fan out across services
-- Any catch where DW domain code uses `Helpers.CreateTransactionScope(...)` and one of its inner repository calls opens a fresh `SqlConnection`
-
-This setting is per-process and applies for the lifetime. Setting it in `Program.cs` ahead of any DI / framework init is the safest place — it gets installed before any TransactionScope is opened.
-
-This is a separate prereq from the MSDTC + firewall configuration documented in `references/setup-checks.md` §"MSDTC for cross-connection TransactionScope". Both are required and orthogonal:
-
-- **MSDTC inbound/outbound + firewall** → makes the *transport* available
-- **`ImplicitDistributedTransactions = true`** → tells .NET 7+ that the app *consents* to using the transport
-
-Without either, AreaCopy fails the same way. With both, AreaCopy completes in ~7-10s for a 95-page Swift website.
-
-### 2.1c — Install the Backend MCP AddIn: NuGet PackageReference (default), AppStore (last resort)
-
-**Default: install the AddIn from NuGet** by adding the package to the host csproj:
-
-```xml
-<PackageReference Include="Dynamicweb.MCP" Version="<version>" />
-```
-
-Rebuild and restart. The AddIn registers **at host startup**, so `/admin/mcp` flips from 404 to live with no AppStore click. The net10 TFM requirement from Section 2.1 still applies — the loader's runtime check runs regardless of how the package arrived.
-
-This is the canonical route for an agent-driven build because it is deterministic, scriptable, and idempotent (it's just a csproj edit), and it sidesteps a flaky UI path: the AppStore "Available apps" grid is a virtualized component that Playwright struggles to drive reliably. It also aligns with this skill's surface-priority rule (`SKILL.md` "Surface priority for CREATES"), where the admin UI is **verification-only, never an action surface** — driving the AppStore via Playwright to install the AddIn violates that rule, the PackageReference does not.
-
-Pin the version deliberately — `Dynamicweb.MCP` is a beta-track package, and the version must be compatible with the Suite version the host resolves.
-
-**Last resort: the admin AppStore.** Only when you genuinely cannot edit the host csproj (e.g. a locked, already-deployed host) fall back to installing the AddIn through the admin AppStore. Don't drive that install via Playwright — per the surface-priority rule, ask the user to click it manually.
-
-After the AddIn is installed by either route, continue with the MCP configuration in `references/mcp-setup.md` (installing the AddIn is upstream of creating and binding the config).
-
-### 2.2 — Exclude `wwwroot\Files\System\**` from the build (mandatory)
-
-`wwwroot\Files\System\` is a runtime-managed folder (AddIns, Indexes, Repositories, Log, Diagnostics, etc.). It is created and mutated by the host at runtime — none of it is source. The Web SDK's default Content glob pulls everything under `wwwroot/**` into MSBuild's item set, so a populated demo ends up tracking thousands of runtime files on every build (typical: 7k+ files / 20+ MB after first run, growing with use). MSBuild's up-to-date check then walks all of them, slowing both incremental and full builds.
-
-Add this `<ItemGroup>` to the csproj (alongside the `Dynamicweb.Suite` package reference):
-
-```xml
-<ItemGroup>
-  <!-- Runtime-managed folder (AddIns, Indexes, Repositories, Log, Diagnostics, etc.).
-       Excluding from MSBuild's Content enumeration speeds up build. -->
-  <Content Remove="wwwroot\Files\System\**" />
-  <None Remove="wwwroot\Files\System\**" />
-</ItemGroup>
-```
-
-Apply this at scaffold time, before the first `dotnet run` — the glob safely matches nothing until the host populates the folder, so the exclusion is in place from day one. The host reads/writes `wwwroot\Files\System\` at runtime regardless of MSBuild item membership; excluding it from the build does not change runtime behaviour.
-
-### 2.3 — Release rings (regression triage only)
-
-Dynamicweb publishes the Suite as five parallel NuGet packages — one per release ring. Ring 0 (`Dynamicweb.Suite`) is the stable default and the ring every demo ships on. Rings 1–4 (`Dynamicweb.Suite.Ring1` … `Ring4`) are earlier-cadence preview tracks — higher number = earlier ring, faster cadence.
-
-| Package | Ring | Versioning | Use for |
-|---|---|---|---|
-| `Dynamicweb.Suite` | 0 (stable) | `10.x.y` (e.g. `10.25.8`) | **Default for demos.** Ship on this. |
-| `Dynamicweb.Suite.Ring1` | 1 | `YYYY.M.D` (e.g. `2026.5.20`) | Regression triage |
-| `Dynamicweb.Suite.Ring2..4` | 2–4 | `YYYY.M.D` | Internal validation tracks; rarely useful for demos |
-
-Browse versions at <https://www.nuget.org/packages?q=DynamicWeb.Suite>. Mind the version-scheme split: Ring 0 uses semver-style `10.x.y`; Rings 1–4 use date-stamped `YYYY.M.D`. A `10.*` float will NOT match a Ring-N package, and vice versa.
-
-**When to swap.** Only as a regression-triage tool: a bug shows on Ring 0 and you want to know whether it reproduces on a later ring. Same result on Ring N → platform-wide bug; gone on Ring N → ring-specific, will land in the next Ring-0 promotion. After triage, **swap back to `Dynamicweb.Suite`** before continuing the demo build. Do not ship a demo on a non-stable ring.
-
-**Swap recipe** — edit the csproj:
-
-```xml
-<!-- Default -->
-<PackageReference Include="Dynamicweb.Suite" Version="10.*" />
-
-<!-- Triage on Ring 1 (bump the year prefix when crossing into a new year) -->
-<PackageReference Include="Dynamicweb.Suite.Ring1" Version="2026.*" />
-```
-
-Then stop the running host, restore, and restart per the host-lifecycle pattern in SKILL.md.
-
-**Process-lock gotcha (MSB3026 / MSB3027).** `dotnet restore` after the swap succeeds quietly. The next `dotnet build` / `dotnet run` then fails repeatedly with `Could not copy "...\apphost.exe" ... locked by Dynamicweb.Host.Suite (<PID>)`. The csproj edit changes the package set MSBuild wants to write to `bin/`, but the previous-ring host still has the exe + DLLs loaded. Stop the host BEFORE the next build:
-
-```powershell
-# Target the host by its launchSettings port, NOT the shared project name — every demo
-# scaffolds the same `Dynamicweb.Host.Suite`, so a name match kills sibling demos' hosts too
-# (see SKILL.md "Host lifecycle authority"). <PORT> is the HTTPS port from launchSettings.json.
-$p = Get-NetTCPConnection -LocalPort <PORT> -State Listen | Select-Object -ExpandProperty OwningProcess -Unique
-if ($p) { Stop-Process -Id $p -Force }
-```
-
-If a fresh `Dynamicweb.Host.Suite` PID appears within a second of the kill, you have a watch/auto-restart hook (Visual Studio debugger, `dotnet watch`, an IDE-managed reload). Stop the upstream source too, otherwise the loop repeats and the build keeps failing the copy step.
-
-**Out of scope here.** The skill defaults the host to Ring 0 and never auto-pins a ring. Section 2.3 surfaces the swap only as a debugging tool — the disclaimer in this file's intro still holds: "Suite version is whatever the template + `dotnet restore` resolve".
+The distributed-transaction host prereqs (MSDTC, the net10 promotion caveat) only bite specific admin operations like AreaCopy — `setup-install.md` §4 owns them; `references/setup-checks.md` carries the demo-time probe.
 
 ---
 
@@ -187,13 +74,4 @@ After the first run completes, the per-demo project files are the source of trut
 
 `references/mcp-setup.md` Section 1 contains the verbatim port-discovery PowerShell that reads `launchSettings.json`.
 
----
-
-## 5. Anti-patterns (CLAUDE.md "What NOT to Use")
-
-- **Do not target Dynamicweb 9.x.** EOL trajectory; Dynamicweb Commerce is exclusively DW10 going forward. Swift 2.x explicitly drops DW9 support.
-- **Do not reference the older `Dynamicweb` meta-package** (distinct from `Dynamicweb.Suite`) standalone in the host project. The host should reference `Dynamicweb.Suite` only, which transitively pulls Content + PIM + Commerce + Users + Files + Settings + Headless.
-- **Do not name the host project anything other than `Dynamicweb.Host.Suite`.** The path-discovery contract is hardcoded to this name across this skill and all sister skills.
-- **Do not use the `dotnet new dw10-cms` template** (CMS-only) for a Dynamicweb demo that needs Commerce + PIM. Use `dw10-suite` (the full Suite template).
-
-
+The platform anti-patterns to avoid when scaffolding (don't target DW9, don't reference the bare `Dynamicweb` meta-package, don't use the CMS-only `dw10-cms` template) are owned by [`foundational/setup-install.md`](foundational/setup-install.md) §6.

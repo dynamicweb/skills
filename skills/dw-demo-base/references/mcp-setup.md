@@ -26,15 +26,7 @@ The verification gate (Step 4) refuses to declare 'setup complete' until BOTH `c
 
 ## Why API Key by default (not Claude.ai OAuth)
 
-The Backend MCP plugin (`Dynamicweb.MCP`) exposes four auth handlers in `McpAuthMiddleware`: `ApiKey`, `BearerToken` (OAuth-issued), `Jwt`, `OAuthClient`. The admin UI surfaces two as first-class choices: **API Key** and **Claude.ai** (the latter is the OAuth + Dynamic Client Registration flow used by claude.ai's hosted client).
-
-For local Claude Code development, **API Key is strictly better**:
-
-- **Restart-resilient.** Token validation hits `AccessUserToken` (DB) on every request. When the host bounces, the next MCP call from Claude Code revalidates the bearer against the DB row — no interactive `/mcp` re-authorization, no checkpoint, no "MCP server requires re-authorization (token expired)" mid-flow.
-- **No client to register.** OAuth/Claude.ai uses Dynamic Client Registration: each Claude Code instance registers itself as an OAuth client and gets bound to a session. Host restarts and Claude Code restarts both interrupt that binding. API Key has no client state at all.
-- **Same model as the Management API.** Both ride `AccessUserToken`. You already paste `CLAUDE.<hex>` bearer tokens into Management API requests; the MCP API key is the same shape, same storage, same lifecycle.
-
-Use Claude.ai OAuth only when you must connect the hosted claude.ai web client (which can't read a local `.mcp.json`). For Claude Code + a local Dynamicweb host, default to API Key.
+For Claude Code + a local Dynamicweb host, **default to API Key auth.** It is restart-resilient (the bearer is DB-backed and revalidated against `AccessUserToken` on every request — no interactive `/mcp` re-auth when the host bounces), has no OAuth client to register, and rides the same `AccessUserToken` model as the Management API token. Use Claude.ai OAuth only when connecting the hosted claude.ai web client (which can't read a local `.mcp.json`). The platform-level auth model (the four `McpAuthMiddleware` handlers, why DCR breaks on restart) is owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §2.
 
 ---
 
@@ -137,24 +129,7 @@ After saving, do **not** rerun `/mcp` in Claude Code yet — there's no bearer i
 
 ## Step 3 (headless alternative) — create the token + MCP config without the admin UI
 
-Steps 3 and 3b assume the admin UI is reachable. When it isn't (a fully headless build / automated provisioning), create both the API token and the MCP configuration **in code** — e.g. a one-shot `Program.cs` maintenance branch run *inside the built host* (after `app.UseDynamicweb()`, so DI is live — see [`../../dw-extend-csharp-api/SKILL.md`](../../dw-extend-csharp-api/SKILL.md)). Three pieces, and the third is the non-obvious one:
-
-1. **Issue the token.** `TokenService.TryCreateToken(new ApiTokenRequestModel { Name = …, Prefix = "CLAUDE", ExpiryDate = … }, user)` returns the **unhashed** token; the DB stores only the hash in `AccessUserToken`. The public-facing bearer is `CLAUDE.<secret>` — capture it now, it can't be recovered later (same as the admin-UI "shown once" behaviour in Step 3).
-
-2. **Create the MCP configuration.** Insert an `McpConfiguration` row (`Name`, `TokenId`, `AllowEverything = 1` for full access — the headless equivalent of `Access = Full access`).
-
-3. **Bind the token to the config through the service — not raw SQL.** A raw `McpConfigurationCredential` insert does **NOT** satisfy the auth path; the request still returns `401`. You must call `McpConfigurationService.LinkToken(configId, tokenId, user)`. That class is **internal**, so invoke it by reflection, resolving the instance from the live DI container (`app.Services`):
-
-   ```csharp
-   var asm = Assembly.Load("Dynamicweb.MCP");
-   var t   = asm.GetType("Dynamicweb.MCP.Configuration.Services.McpConfigurationService");
-   var svc = app.Services.GetService(t) ?? Activator.CreateInstance(t, true);
-   t.GetMethod("LinkToken").Invoke(svc, new object[] { configId, tokenId, user });
-   ```
-
-**Then restart the host.** The MCP configuration is cached at startup, so a freshly inserted/bound config is invisible to `/admin/mcp` until the next boot. (The same startup-cache rule applies to the admin password and the token — direct SQL writes don't take until restart; for MCP credentials a raw insert is *insufficient* even after restart, hence the `LinkToken` call.)
-
-> **Brittleness warning.** `McpConfigurationService` is an internal type invoked by reflection — its namespace, method name, and signature can change between DW10 releases without notice, and the `Dynamicweb.MCP` version pin matters. Prefer the admin-UI route (Step 3) whenever the UI is reachable; use this code path only for genuinely headless installs, and re-verify the type/method names against the `Dynamicweb.MCP` version in use.
+Steps 3 and 3b assume the admin UI is reachable. When it isn't (a fully headless build / automated provisioning), create both the API token and the MCP configuration **in code** — issue the token via `TokenService.TryCreateToken`, insert the `McpConfiguration` row, and bind them through `McpConfigurationService.LinkToken` (a raw `McpConfigurationCredential` insert returns `401` — the bind must go through the service, invoked by reflection since the type is internal), then restart the host. The full recipe, the reflection snippet, and the brittleness warning are owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §4. Prefer the admin-UI route (Step 3) whenever the UI is reachable.
 
 ---
 
@@ -216,7 +191,7 @@ A Dynamicweb demo has **two** bearer tokens, both `CLAUDE.<hex>`-shaped rows in 
 | **MCP API key** | Admin UI → Settings → Integration → MCP configurations → New (Authentication method = API Key). Captured in Step 3 of this file. | `Authorization: Bearer …` header in `.mcp.json` (Step 3b). Validated against `AccessUserTokenHash` by `McpAuthMiddleware`. |
 | **Management API token** | Admin UI → Settings → System → Developer → API keys → New. Captured here in Step 6 via `AskUserQuestion`. | `Authorization: Bearer …` header on `/admin/api/...` calls. Used by Swift's [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) and [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md), and by PIM admin-API calls. |
 
-These are distinct rows. The MCP API key is bound to the MCP configuration via `McpConfigurationTokenId` — established by the admin UI on save, or in code by `McpConfigurationService.LinkToken` (a raw `McpConfigurationCredential` insert does not satisfy the auth path; see "Step 3 (headless alternative)"). The Management API token is the unconstrained admin-API key. Don't try to reuse one for the other unless you've verified empirically — the validation paths differ.
+These are distinct rows with different validation paths — don't reuse one for the other unless you've verified empirically. The data-model detail (the `McpConfigurationTokenId` binding, why the validation paths differ) is owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §3.
 
 If you don't have a Management API token in conversation state or memory, capture it via:
 
@@ -243,7 +218,7 @@ If a token isn't in conversation state and no memory entry exists, capture again
 | `claude mcp list` shows "Failed to connect" | Almost always the TLS bypass: the User-scope `NODE_TLS_REJECT_UNAUTHORIZED=0` env var is missing (project-level config is silently insufficient) — fix per `references/tls-bypass.md`, then fully restart Claude Code from a fresh shell. Also check: is the `Dynamicweb.Host.Suite` host actually running on the port `.mcp.json` references? |
 | `claude mcp list` shows the server but requests fail `401 Unauthorized` despite a substituted bearer | The bearer in `.mcp.json` is not the EXACT plaintext key the admin UI displayed — check for extra whitespace or a trailing newline introduced when pasting. |
 | `claude mcp list` shows the server but `ToolSearch +dynamicweb` returns 0 / 401 Unauthorized on `/admin/mcp` requests | **Three distinct causes — check in order.** (1) `.mcp.json` still has the literal `<MCP_API_KEY>` placeholder — substitute the plaintext key from the admin UI (Step 3b). (2) No MCP configuration exists on the DW side — admin UI → Settings → Integration → MCP configurations → New, set **Access = Full access**, **Authentication method = API Key**, save, copy the displayed plaintext key (shown once), and paste into `.mcp.json`. (3) Stale bearer (config was deleted/regenerated since the key was last captured) — the configuration row in the admin UI is now linked to a different `AccessUserTokenId`; capture the new key and update `.mcp.json` + per-demo memory. |
-| AppStore install of "Backend MCP" appears to do nothing — no UI confirmation, the MCP configurations menu the app is supposed to add never appears, `/admin/mcp` returns 404 | **Two distinct causes, in order of likelihood.** (1) **Host TFM is net8.** The MCP AddIn loader requires .NET 10 even though the package ships net6/net8 lib binaries. Symptom: install POST returns 200, files drop to `wwwroot/Files/System/AddIns/Installed/Dynamicweb.MCP.<ver>/lib/`, but AddIn never registers. Fix: pin csproj `<TargetFramework>net10.0</TargetFramework>` and restart the host (verify in startup log: `Dynamicweb is running on .NET 10 or greater`). See `references/scaffold.md` Section 2.1. (2) **Stuck DB update queue** (or buggy CREATE in update queue). Check `wwwroot/Files/System/Log/EventViewer/*.log` for `Update failed:.*Cannot find the object`. Recovery: `references/db-update-recovery.md` (Mode A or B depending on triage). |
+| AppStore install of "Backend MCP" appears to do nothing — no UI confirmation, the MCP configurations menu the app is supposed to add never appears, `/admin/mcp` returns 404 | **Two distinct causes, in order of likelihood.** (1) **Host TFM is net8.** The MCP AddIn loader requires .NET 10 even though the package ships net6/net8 lib binaries. Symptom: install POST returns 200, files drop to `wwwroot/Files/System/AddIns/Installed/Dynamicweb.MCP.<ver>/lib/`, but AddIn never registers. Fix: pin csproj `<TargetFramework>net10.0</TargetFramework>` and restart the host (verify in startup log: `Dynamicweb is running on .NET 10 or greater`). See [`foundational/setup-install.md`](foundational/setup-install.md) §2. (2) **Stuck DB update queue** (or buggy CREATE in update queue). Check `wwwroot/Files/System/Log/EventViewer/*.log` for `Update failed:.*Cannot find the object`. Recovery: `references/db-update-recovery.md` (Mode A or B depending on triage). |
 | Mid-run MCP call fails with `401 Unauthorized` after a host restart | Should be rare with API-Key auth (the bearer is DB-backed, stateless, and the host revalidates against `AccessUserToken` on every request). If it happens: the admin UI's MCP config was likely deleted/recreated, which generates a new `AccessUserTokenId` and invalidates the old plaintext key. Open the admin UI, confirm the MCP configuration still exists, and capture a fresh key if the link is broken. **Do NOT silently pivot to direct-SQL fallbacks** for create/update operations — that bypasses MCP cache invalidation AND leaves required columns unset (e.g. `EcomDetails.DetailLanguageId` defaulting to empty string, see `dynamicweb-pim-demo/references/structural-model.md` §2.10). The MCP-plugin tools (e.g. `import_product_images_from_urls`, `add_product_image`) have NO Management API endpoint backing — there is no plain-HTTP fallback that preserves their column-population guarantees. |
 | Mid-run MCP call fails with `MCP server "..." requires re-authorization (token expired)` | You're on the legacy Claude.ai OAuth auth method, not API Key — that's exactly the failure mode the API-Key default exists to avoid. Switch the admin UI's MCP configuration to `Authentication method = API Key`, capture the plaintext key, and update `.mcp.json` per Step 3b. After that, host restarts and Claude Code restarts no longer trigger re-auth. |
 

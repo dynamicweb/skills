@@ -6,24 +6,31 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 ## [3.4.0]
 
 ### Changed
-- **Began separating vendor-generic platform knowledge out of the demo skills (pilot: `dw-demo-erp`).**
-  An audit found the demo skills carry large amounts of authoritative DW10 platform knowledge that
-  belongs in foundational skills (demo skills should be flow + demo-building only). This PR
-  establishes the refactor pattern and applies it to `dw-demo-erp`, without yet folding anything
-  into the real foundational skills:
-  - **Mechanism A (already in a foundational skill) — reference, don't repeat.**
-    `dw-demo-erp/references/integration-framework.md` no longer restates the Integration Framework
-    primer or the activity/source/destination/mapping shape; it points to `dw-integration-framework`,
-    which is now added to the `dynamicweb-presales` bundle so the reference resolves (presales becomes
-    a superset).
-  - **Mechanism B (not yet in a foundational skill) — stage as a fold-up candidate.** The
-    field-by-field ERP↔PIM ownership table, the contract-price data model, and the "what not to sync"
-    rules moved out of `erp-data-shape.md` into a new staging file
-    `dw-demo-base/references/foundational/integration-erp.md`, labeled **FOUNDATIONAL CANDIDATE →
-    dw-integration-erp**. The demo file keeps only how a demo *applies* the shape and points at the
-    candidate. No real foundational skill was edited.
-  - Remaining demo skills (`dw-integration-bc`, `dw-demo-swift`, `dw-demo-pim`, `dw-demo-base`) follow
-    in subsequent PRs using the same two mechanisms.
+- **Separated vendor-generic platform knowledge out of all five demo skills.** An audit found the
+  demo skills carried large amounts of authoritative DW10 platform knowledge (≈50–75% of body in
+  the heaviest cases) that belongs in foundational skills — demo skills should be flow +
+  demo-building only. This refactor relocates that knowledge **without folding it into the real
+  foundational skills yet** (a deliberate "prepare to fold up" stage), via two mechanisms:
+  - **Mechanism A — already in a foundational skill → reference, don't repeat.** The demo file drops
+    the duplicated prose and links to the foundational skill. The two skills referenced this way
+    (`dw-integration-framework`, `dw-extend-csharp-api`) are added to the `dynamicweb-presales`
+    bundle so the links resolve in a presales-only install (presales becomes a superset).
+  - **Mechanism B — not yet in a foundational skill → stage as a fold-up candidate.** The
+    vendor-generic content moves into a labeled candidate under
+    `dw-demo-base/references/foundational/<target>.md` (header: **FOUNDATIONAL CANDIDATE →
+    dw-<target>**), and the demo file points at it. Candidates map 1:1 to a future foundational
+    owner, so the eventual fold-up is mechanical (move the body, re-target the pointers).
+  - **Result:** **22 candidate files** (~4,700 lines of platform knowledge) now staged under
+    `dw-demo-base/references/foundational/`; the demo skills are thinned to flow + pointers
+    (`dw-demo-pim` ~1500→527 lines, `dw-demo-swift` ~2500→1148, plus `dw-demo-erp`,
+    `dw-integration-bc`, and the platform-heavy parts of `dw-demo-base`). **No foundational skill
+    file was edited**, and several pre-existing foundational→demo boundary links were removed in the
+    process (the one-way rule now holds cleaner). Candidate targets span `dw-pim-*`,
+    `dw-commerce-*`, `dw-users-permissions`, `dw-search-indexing`, `dw-content-modelling`,
+    `dw-render-*`, `dw-swift-building`, `dw-data-access`, `dw-setup-*`, `dw-extend-*`,
+    `dw-integration-*`, and `dw-source-explorer`.
+  - **Next:** fold each candidate into its named foundational skill (sanitized), re-target the
+    demo pointers, and extend the presales superset accordingly — one foundational skill per future PR.
 
 ## [3.3.10]
 

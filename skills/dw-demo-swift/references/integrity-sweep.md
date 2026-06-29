@@ -72,13 +72,13 @@ if ([int]$result.Trim() -lt 1) {
 
 ## Check 3: Query GUID dedup across `Repositories/` and `SmartSearches/Shared/`
 
-**Background rationale (load-bearing — must travel with the check):**
-
-DW10's `QueryHelper.InitQueriesCache` (in `Dynamicweb.Core`) populates the `Searching:Queries` cache from `SmartSearches` first, then `Repositories`, and **overwrites on GUID collision**. So if the same query GUID exists in both locations, `QueryHelper.GetQueryById(guid)` returns the **Repositories** copy.
-
-When admin's Products → Queries → Shared queries tree renders, each query's delete action calls `QueryByIdQuery.GetModel()` → gets back the Repositories copy → its `FolderPath` is `/Files/System/Repositories/Products/<subfolder>` → `ProductListNodePathProvider.GetQueryFolderPath()` throws `NotSupportedException` (it only accepts paths starting with `SharedQueriesPath` or `MyQueriesPath`) → the entire Shared queries tree 500s. The same code path also breaks widget drill-through, since clicking a widget routes through `GetQueryFolderPath`.
-
-There is **no cache-invalidation API** for `Searching:Queries`; recovery requires host restart. Feed queries → `Repositories/<RepoName>/` only. Dashboard queries → `SmartSearches/Ecommerce/Shared/` only. NEVER both.
+**Background rationale:** a query GUID duplicated across `Repositories/Products/<sub>/` and
+`SmartSearches/Ecommerce/Shared/` makes `QueryHelper.InitQueriesCache` return the Repositories copy on
+collision, which 500s the admin Shared-queries tree and breaks widget drill-through; there is no
+cache-invalidation API for `Searching:Queries`, so recovery requires a host restart. The full
+mechanism (and the rule — feed queries → `Repositories/<RepoName>/` only; dashboard queries →
+`SmartSearches/Ecommerce/Shared/` only; never both) is vendor-generic and owned by the
+`dw-search-indexing` foundational skill — staged in [`search-indexing.md`](../../dw-demo-base/references/foundational/search-indexing.md) ("Dashboard query location — Shared ONLY").
 
 **Probe:**
 
@@ -225,20 +225,20 @@ if ($hits) {
 
 **Why this matters:** the storefront still renders during the failure mode — the affected paragraph swallows its SQL error and emits empty content, the page returns 200, and the bug only surfaces when the customer notices missing data on demo day.
 
-**Recovery:** for each hit, identify the canonical surface in [`dw10-canonical-surfaces.md`](dw10-canonical-surfaces.md) and replace. The eight common substitutions:
+**Recovery:** for each hit, identify the canonical `Services.*` / `Pageview.*` surface and replace the
+raw SQL with it (e.g. `SELECT FROM AccessUserGroupRelation` → `Pageview.User.GetGroups()`;
+`SELECT FROM EcomPrices` → `Services.Prices.GetByProductId(...)`; per-customer `EcomOrders` →
+`Services.Orders.GetCustomerOrdersByType(...)`; `EcomProducts` → `Services.Products.GetProductById(...)`;
+URL-substring → `GetPageIdByNavigationTag(...)`). The full substitution table and the surface
+inventory are vendor-generic and owned by the `dw-render-razor` foundational skill — staged in
+[`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §1 ("Canonical surfaces
+— use these, don't re-implement").
 
-| Pattern | Replacement |
-|---------|-------------|
-| `SELECT FROM AccessUserGroupRelation` | `Pageview.User.GetGroups()` |
-| `SELECT FROM Permission` (with PermissionOwnerName='Paragraph') | `paragraph.HasPermission(PermissionLevel.Read)` |
-| `SELECT FROM EcomPrices` | `Services.Prices.GetByProductId(productId)` |
-| `SELECT FROM EcomOrders / EcomOrderLines` (per-customer) | `Services.Orders.GetCustomerOrdersByType(...)` |
-| `SELECT FROM EcomOrders` (admin-side search) | `Services.Orders.GetOrdersBySearch(filter)` |
-| `SELECT FROM EcomProducts` | `Services.Products.GetProductById(id, variantId, true)` |
-| URL substring → page id | `GetPageIdByNavigationTag("tag")` + `SearchEngineFriendlyURLs.GetFriendlyUrl(...)` |
-| `SELECT FROM EcomProductGroups` (for category branching) | `product.PrimaryOrDefaultGroup.ProductGroupFieldValues["Field"]` |
-
-Pair with the wider grep pack at [`dw10-canonical-surfaces.md`](dw10-canonical-surfaces.md) §"Discipline audit — grep pack" on the same workflow — Check 7 is the gating subset (raw DB access only); the audit pack covers URL substring scans, hard-coded slugs, category-name branching, master-inline `AddStylesheet`, etc.
+Pair with the wider discipline grep pack — vendor-generic, owned by the `dw-swift-building` foundational
+skill — staged in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md)
+§10 ("Discipline audit — grep pack"). Check 7 is the gating subset (raw DB access only); the audit
+pack covers URL substring scans, hard-coded slugs, category-name branching, master-inline
+`AddStylesheet`, etc.
 
 ## Sweep complete
 

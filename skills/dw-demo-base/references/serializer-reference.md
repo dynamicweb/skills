@@ -29,7 +29,7 @@ Note: The Serializer source root is currently at `C:\VibeCode\DynamicWeb.Seriali
 
 ### Step 2 — Copy DLL to host's TFM-specific bin folder
 
-For a `dotnet run` host, .NET loads assemblies from `bin/Debug/<TFM>/` of the TARGET project, not from a generic `bin/` root. With the host pinned to `net10.0` (per [`scaffold.md`](scaffold.md) §2.1), the destination is `bin/Debug/net10.0/`:
+For a `dotnet run` host, .NET loads assemblies from `bin/Debug/<TFM>/` of the TARGET project, not from a generic `bin/` root. With the host pinned to `net10.0` (per [`foundational/setup-install.md`](foundational/setup-install.md) §2), the destination is `bin/Debug/net10.0/`:
 
 ```powershell
 Copy-Item "C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\bin\Release\net8.0\DynamicWeb.Serializer.dll" `
@@ -139,7 +139,7 @@ WHERE Link LIKE '%Default.aspx?%=3421%';
 
 **Fix paths:**
 
-1. Align NuGet versions: bump the target's `Dynamicweb.Suite` to match source, `dotnet publish`, restart. DW runs pending `UpdateProvider` classes at startup. (See `references/db-update-recovery.md` if a `UpdateProvider` itself is broken.)
+1. Align NuGet versions: bump the target's `Dynamicweb.Suite` to match source, `dotnet publish`, restart. DW runs pending `UpdateProvider` classes at startup. (This NuGet-alignment / startup-migration crossover is platform-generic — owned by [`foundational/setup-upgrade.md`](foundational/setup-upgrade.md) "Schema-drift across NuGet versions"; see it too if a `UpdateProvider` itself is broken.)
 2. Drop the column on source: align downward instead of upward.
 3. Accept the drift: the column is silently dropped from MERGE, the rest of the row writes correctly. Lenient mode only.
 

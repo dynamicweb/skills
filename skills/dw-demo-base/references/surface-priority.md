@@ -1,6 +1,6 @@
 # Surface priority for CREATES — anti-pattern detail
 
-The always-on summary (surface table + 4-step pattern) lives in `SKILL.md` "Surface priority for CREATES". This reference carries the same table for standalone loading, plus the long-form anti-pattern detail on why SQL-cloning structural trees fails.
+The always-on summary (surface table + 4-step pattern) lives in `SKILL.md` "Surface priority for CREATES". This reference carries the same table for standalone loading, plus the long-form anti-pattern detail on why SQL-cloning structural trees fails. The *platform mechanism* underneath the discipline — why an MCP create triggers all the domain-service bookkeeping (ItemRelation cloning, ItemList propagation, cache/index refresh) that raw SQL misses, and why the admin UI is a SPA over `/admin/api/...` rather than a separate surface — is owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §5.
 
 ## The surface table
 
@@ -44,11 +44,6 @@ Sister-skill references that document admin click-paths (e.g. `dynamicweb-swift-
 
 ## Silent no-ops on UPDATE surfaces — verify by round-trip, not by status code
 
-A `succeeded` / `status: ok` response from surfaces 1-2 does NOT guarantee the field you sent was applied. Known cases where the call reports success, bumps `updatedDate`, and ignores part of the input:
+A `succeeded` / `status: ok` response from surfaces 1-2 does NOT guarantee the field you sent was applied. Some MCP / Management API writes report success, bump `updatedDate`, and silently drop part of the input (e.g. `save_pages` drops `menuText`; `ParagraphSave` drops item-field value mutations). The catalogue of these version-pinned no-ops and their working fallbacks lives with the tools themselves: [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §5 (MCP/API tool behaviour) and [`foundational/content-modelling.md`](foundational/content-modelling.md) (the same two no-ops framed as paragraph/page save bookkeeping).
 
-| Surface | What gets silently dropped | Verified | Working fallback |
-|---|---|---|---|
-| MCP `save_pages` (update path) | `menuText` — the response even echoes the OLD value | DW 10.25.x | SQL `UPDATE Page SET PageMenuText` + host restart (nav tree caches menu text) |
-| Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort. `ParagraphSave` IS still right for paragraph-level scalars (Header, Sort, GridRow, Template) |
-
-**Rule:** after any update through MCP/API where the change is demo-critical, round-trip it (read the value back through a different surface, or curl the rendered page) before declaring it done. When a silent no-op is confirmed, the SQL fallback is sanctioned — log it in the demo's `CUSTOMISATIONS.md` and note the cache that needs flushing.
+**The always-on demo discipline:** after any update through MCP/API where the change is demo-critical, round-trip it (read the value back through a different surface, or curl the rendered page) before declaring it done. When a silent no-op is confirmed, the SQL fallback is sanctioned — log it in the demo's `CUSTOMISATIONS.md` and note the cache that needs flushing.
