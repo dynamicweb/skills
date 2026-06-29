@@ -3,6 +3,14 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.3.10]
+
+### Added
+- **Added a `.gitignore` that excludes `notes/`** — the local working directory for fold-back
+  drafts mined from demo builds. Those drafts routinely carry customer/engagement names and the
+  retired codename before sanitization, so a stray `git add -A` must never be able to stage them
+  into this public repo. Closes the gap that let an unsanitized draft slip into a commit.
+
 ## [3.3.9]
 
 ### Added
