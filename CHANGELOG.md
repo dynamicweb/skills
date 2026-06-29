@@ -3,6 +3,28 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.0]
+
+### Changed
+- **Began separating vendor-generic platform knowledge out of the demo skills (pilot: `dw-demo-erp`).**
+  An audit found the demo skills carry large amounts of authoritative DW10 platform knowledge that
+  belongs in foundational skills (demo skills should be flow + demo-building only). This PR
+  establishes the refactor pattern and applies it to `dw-demo-erp`, without yet folding anything
+  into the real foundational skills:
+  - **Mechanism A (already in a foundational skill) — reference, don't repeat.**
+    `dw-demo-erp/references/integration-framework.md` no longer restates the Integration Framework
+    primer or the activity/source/destination/mapping shape; it points to `dw-integration-framework`,
+    which is now added to the `dynamicweb-presales` bundle so the reference resolves (presales becomes
+    a superset).
+  - **Mechanism B (not yet in a foundational skill) — stage as a fold-up candidate.** The
+    field-by-field ERP↔PIM ownership table, the contract-price data model, and the "what not to sync"
+    rules moved out of `erp-data-shape.md` into a new staging file
+    `dw-demo-base/references/foundational/integration-erp.md`, labeled **FOUNDATIONAL CANDIDATE →
+    dw-integration-erp**. The demo file keeps only how a demo *applies* the shape and points at the
+    candidate. No real foundational skill was edited.
+  - Remaining demo skills (`dw-integration-bc`, `dw-demo-swift`, `dw-demo-pim`, `dw-demo-base`) follow
+    in subsequent PRs using the same two mechanisms.
+
 ## [3.3.10]
 
 ### Added
