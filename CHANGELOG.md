@@ -3,6 +3,21 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.2]
+
+### Fixed
+- **Documented three MCP dashboard/widget construction blockers that look like "nothing rendered".**
+  In `dw-demo-base/references/foundational/pim-completeness.md`, after the clickable-widget table:
+  (1) a dashboard created via `create_dashboards` **without `userIds` is invisible in admin** — no
+  `DashboardAccessUserRelation` row, so Settings → Dashboards shows "No results" and the area renders
+  the built-in default; fix is to pass `userIds` or insert the access relation (one row `Default=1`).
+  (2) `RepositoryGridWidget` / `RepositoryListWidget` **render blank rows until the column Sources are
+  set**, and the product index uses **short field names** (`Name`, `Number`, not `ProductName` /
+  `ProductNumber`). (3) `ColorParameterEditor` / `Threshold*Color` is a **`WidgetColor` named-token
+  enum** (valid: White/Red/Yellow/Orange/Purple/Pink/LightGreen/DarkGreen/LightBlue/DarkBlue) —
+  hex/Bootstrap names coerce to `None`; the colour is the card background. Plus an ordering note that
+  `add_widgets_to_dashboards` appends after existing widgets rather than honouring `order`.
+
 ## [3.4.1]
 
 ### Fixed
