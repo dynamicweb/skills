@@ -67,10 +67,35 @@ diff /tmp/repo.txt /tmp/shared.txt  # identical lines = duplicates
 
 After any mutation that touches products, groups, categories, fields, completeness rules, or queries, the Lucene index must be rebuilt — otherwise dashboard widget counts stay stale and product queries return zero rows.
 
+> **FLUSH BEFORE YOU BUILD — this is not optional after a VALUE write.** The index builder reads
+> product + category-field data *through* the `ProductService` / `ProductCategoryFieldValueService` /
+> `ProductCategoryService` caches. If you mutated a product/category **value** this session — via
+> Direct SQL **or MCP `patch_products_safe` / `update_products` / a freshly-`create_category_fields`
+> value** — those caches are stale and a rebuild **bakes the old (often empty) value into the index**.
+> Symptom: `get_products_by_query` / a dashboard widget returns 0 or stale while `get_product_by_id`
+> and the DB are correct. That is an un-flushed read-through cache, **not** an "index quirk", and a
+> host restart is NOT a reliable fix (the `dotnet run` parent/child trap means the bounce may not
+> cold-start). Run the flush step below first, then build, then re-verify. Full rationale:
+> [`cache-invalidation.md` "index-build-reads-through-cache ordering trap"](cache-invalidation.md).
+
 > Run in PowerShell, not Bash — Bash interpolation eats `$env:` and `$_` before they reach the script.
 
 ```powershell
 # $port and $token come from project-file discovery (launchSettings.json + chat).
+# $token works for BOTH the MCP endpoint and /admin/api (same bearer key).
+
+# STEP 0 — flush the caches the index builder reads through (skip ONLY for pure structural
+# CREATEs via MCP save_*/assign_*; ALWAYS run after any patch_products_safe / SQL value write).
+foreach ($svc in @(
+  'Dynamicweb.Ecommerce.Products.ProductService',
+  'Dynamicweb.Ecommerce.Products.Categories.ProductCategoryFieldValueService',
+  'Dynamicweb.Ecommerce.Products.Categories.ProductCategoryService'
+)) {
+  Invoke-RestMethod -Uri "https://localhost:$port/admin/api/CacheInformationRefresh" `
+    -Method POST -Headers @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' } `
+    -Body (@{ CacheTypeName = $svc } | ConvertTo-Json) -SkipCertificateCheck | Out-Null
+}
+
 $buildResp = Invoke-RestMethod `
   -Uri "https://localhost:$port/admin/api/BuildIndex" `
   -Method POST `
@@ -92,5 +117,11 @@ do {
 if ($status.Status -ne 'Idle') { Write-Warning "BuildIndex did not reach Idle within 15 minutes" }
 else { Write-Host "BuildIndex Full complete." -ForegroundColor Green }
 ```
+
+**Always re-verify after a value write** — run a `get_products_by_query` against a query that filters
+on the field you just changed and confirm the count matches what you set. If it is still 0/stale, you
+either skipped STEP 0 or flushed the wrong cache — do **not** rebuild again blindly, do **not** label
+it an index quirk; flush the three services above and rebuild once more. (Building before flushing is
+the #1 cause of "the dashboard widget shows 0 but the data is right".)
 
 If the build fails or never reaches Idle, check that the index file exists at `wwwroot/Files/System/Repositories/Products/Products.index` and that the Repository name matches the index file's containing folder. The completeness/governance consumers of this index live in [`pim-completeness.md`](pim-completeness.md); the post-mutation cache rules live in [`cache-invalidation.md`](cache-invalidation.md).
