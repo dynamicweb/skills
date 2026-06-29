@@ -5,11 +5,15 @@ Checks (errors fail the build, warnings are printed but do not):
   - marketplace.json parses and every referenced skill path exists.
   - Each skill folder name == `name:` frontmatter == marketplace path basename.
   - Each SKILL.md frontmatter has both `name` and `description`.
+  - Each skill `description` is within the 1024-char frontmatter cap.
   - Every relative markdown link in SKILL.md / references resolves to a real file.
   - No markdown file under skills/ begins with a UTF-8 BOM (breaks some
     frontmatter parsers).
+  - No markdown file under skills/ contains double-encoded UTF-8 (mojibake).
   - The string "truvio" (case-insensitive) appears nowhere.
   - WARN if a skill description lacks a trigger signal (Triggers:/Use when/Use FIRST).
+  - WARN if a SKILL.md body exceeds 500 lines (split into references/).
+  - WARN if a references/ file over 100 lines lacks a top-of-file table of contents.
 
 Run from anywhere: `python3 scripts/validate-skills.py`. Exit code 0 = clean.
 """
@@ -32,6 +36,22 @@ warnings: list[str] = []
 
 # File types scanned for the "truvio" purge check.
 TEXT_SUFFIXES = {".md", ".json", ".template", ".ps1", ".yaml", ".yml", ".jsonc"}
+# Hard cap on the activation `description` (frontmatter parsers truncate past this).
+DESCRIPTION_MAX = 1024
+# Soft budget for a SKILL.md body — past this, split material into references/.
+SKILL_BODY_MAX = 500
+# References longer than this should carry a top-of-file TOC (survives partial reads).
+REFERENCE_TOC_MIN = 100
+# Substrings that signal double-encoded UTF-8 (mojibake): a UTF-8 byte sequence
+# was read as CP1252 and re-encoded. None occur in correct English/code, so a hit
+# is reliable. U+FFFD is already-lost data. See CHANGELOG 3.3.8.
+MOJIBAKE_MARKERS = (
+    "â€",                                # em/en-dash, smart quotes, ellipsis, bullet
+    "â†", "â”", "â•", "â‰", "âœ", "â–",   # arrows, box-drawing, math, check/cross marks
+    "Â§", "Â·", "Â°", "Â±", "Â»", "Â«",   # Latin-1 punctuation mis-encoded
+    "Ã©", "Ã¨", "Ã¢", "Ã ", "Ã¶", "Ã¼",   # accented-letter mojibake
+    "�",                            # replacement character (data already lost)
+)
 # Markdown links: [text](target) — captures the target.
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
@@ -122,7 +142,8 @@ def check_marketplace() -> list[str]:
 def check_skills() -> None:
     for skill_md in sorted(SKILLS_DIR.glob("*/SKILL.md")):
         folder = skill_md.parent.name
-        fm = parse_frontmatter(skill_md.read_text(encoding=ENCODING))
+        text = skill_md.read_text(encoding=ENCODING)
+        fm = parse_frontmatter(text)
         name = fm.get("name")
         if not name:
             err(f"{rel(skill_md)}: frontmatter missing `name`")
@@ -131,9 +152,20 @@ def check_skills() -> None:
         desc = fm.get("description")
         if not desc:
             err(f"{rel(skill_md)}: frontmatter missing `description`")
-        elif not re.search(r"Triggers:|Use when|Use FIRST|Use AFTER", desc):
-            warn(f"{rel(skill_md)}: description lacks a trigger signal "
-                 "(Triggers:/Use when/Use FIRST)")
+        else:
+            if len(desc) > DESCRIPTION_MAX:
+                err(f"{rel(skill_md)}: description is {len(desc)} chars "
+                    f"(max {DESCRIPTION_MAX}) — trim it")
+            if not re.search(r"Triggers:|Use when|Use FIRST|Use AFTER", desc):
+                warn(f"{rel(skill_md)}: description lacks a trigger signal "
+                     "(Triggers:/Use when/Use FIRST)")
+        # Soft line budget on the body (frontmatter stripped): past it, the body
+        # is doing reference work that belongs in references/.
+        body = FRONTMATTER_RE.sub("", text, count=1)
+        body_lines = len(body.splitlines())
+        if body_lines > SKILL_BODY_MAX:
+            warn(f"{rel(skill_md)}: body is {body_lines} lines "
+                 f"(>{SKILL_BODY_MAX}) — split material into references/")
 
 
 def check_links() -> None:
@@ -164,6 +196,32 @@ def check_no_bom() -> None:
             err(f"{rel(md)}: starts with a UTF-8 BOM (strip it)")
 
 
+def check_reference_tocs() -> None:
+    # A long reference may be only partially read when reached from a SKILL.md
+    # link, so a top-of-file TOC is what survives to map the rest of the file.
+    toc_re = re.compile(r"^#{2,}\s+(Contents|Table of [Cc]ontents)\b", re.MULTILINE)
+    for md in sorted(SKILLS_DIR.glob("*/references/*.md")):
+        lines = md.read_text(encoding=ENCODING).splitlines()
+        if len(lines) <= REFERENCE_TOC_MIN:
+            continue
+        head = "\n".join(lines[:15])
+        if not toc_re.search(head):
+            warn(f"{rel(md)}: {len(lines)} lines but no top-of-file table of "
+                 "contents (add a `## Contents` block)")
+
+
+def check_no_mojibake() -> None:
+    # Double-encoded UTF-8 most often re-enters via a fold-back pasted from a
+    # mis-decoded source. Catch it at the door. See CHANGELOG 3.3.8.
+    for md in sorted(SKILLS_DIR.rglob("*.md")):
+        for i, line in enumerate(md.read_text(encoding=ENCODING).splitlines(), 1):
+            for marker in MOJIBAKE_MARKERS:
+                if marker in line:
+                    err(f"{rel(md)}:{i}: double-encoded UTF-8 (mojibake) "
+                        f"near '{marker}' — repair the file's encoding")
+                    break  # one report per line is enough
+
+
 def check_no_truvio() -> None:
     # Scope the purge check to shipped plugin content (skills/ + marketplace).
     # Root dev docs (CHANGELOG/CLAUDE) may reference the retired codename historically.
@@ -189,6 +247,8 @@ def main() -> int:
     check_skills()
     check_links()
     check_no_bom()
+    check_reference_tocs()
+    check_no_mojibake()
     check_no_truvio()
 
     for w in warnings:
