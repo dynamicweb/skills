@@ -27,6 +27,8 @@ Admin path: **Settings > Areas > Products > Productivity > Workflows**
 
 The workflow is now a container for states.
 
+Creating workflows or completion rules via MCP instead? See [references/completeness-and-workflows.md](references/completeness-and-workflows.md) for the `create_or_update_workflows` / `create_or_update_completeness` payload schemas.
+
 ## Workflow States
 
 Each state represents a phase in the enrichment process. States are ordered and connected via transitions.

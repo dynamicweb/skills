@@ -1,55 +1,58 @@
 # Content gaps & skill roadmap
 
-This repo covers PIM and presales demos in depth, with solid implementer and developer
-coverage for the install → configure → build flow. This document records the functional
-areas that currently have **no skill**, organized so they can be picked up as future work.
-It is a planning document, not part of the shipped plugin.
+This repo covers the DW10 platform broadly — setup, rendering, content, PIM, commerce,
+search, users, extending, integration — plus the presales demo chain. This document records
+the functional areas that currently have **no skill**, organized so they can be picked up as
+future work. It is a planning document, not part of the shipped plugin.
 
 ## Coverage today
 
 | Area | Covered by |
 |------|------------|
-| PIM queries, dashboards, enrichment, data-model design | `pim-query`, `pim-dashboard`, `pim-enrichment`, `pim-solution-assistant`, `pim-demo` |
-| Swift 2 frontend (content, branding, customer center) | `swift2-site-builder`, `swift-demo` |
-| Business solution build & configuration | `business-solution-agent`, `business-setup-agent` |
-| Install & bootstrap | `solution-installer`, `demo-base` |
-| ERP / Business Central integration (demo) | `erp-demo`, `pim-for-bc` |
-| Developer platform (source, MCP tools) | `source-explorer`, `mcp-tool-creator` |
+| Install, configuration, upgrades | `dw-setup-install`, `dw-setup-config`, `dw-setup-upgrade` |
+| Rendering (Razor, ViewModels, TemplateTags) | `dw-render-razor`, `dw-render-viewmodels`, `dw-render-templatetags` |
+| Content modelling & headless delivery | `dw-content-modelling`, `dw-headless-delivery` |
+| PIM (modelling, completeness, workflow, localization) | `dw-pim-modelling`, `dw-pim-completeness`, `dw-pim-workflow`, `dw-pim-localization` |
+| Commerce (catalog, orders, B2B) | `dw-commerce-catalog`, `dw-commerce-orders`, `dw-commerce-b2b` |
+| Search & indexing | `dw-search-indexing` |
+| Users & permissions | `dw-users-permissions` |
+| Extending (C# API, providers, scheduled tasks, MCP tools) | `dw-extend-csharp-api`, `dw-extend-providers`, `dw-extend-scheduled-tasks`, `dw-extend-mcp-tools` |
+| Integration (framework, ERP, Business Central) | `dw-integration-framework`, `dw-integration-erp`, `dw-integration-bc` |
+| Data access & source navigation | `dw-data-access`, `dw-source-explorer` |
+| Swift storefront | `dw-swift-building` |
+| Presales demos | `dw-demo-base`, `dw-demo-pim`, `dw-demo-swift`, `dw-demo-erp` |
 
 ## Gaps with no skill (prioritized)
 
 ### High value
-1. **Troubleshooting & diagnostics** — query failures, stale indexes, MCP connectivity,
-   permission errors, data-sync problems. Cross-role; every role needs it.
-2. **Search & indexing** — Lucene/repository configuration, facets/filters, relevance
-   tuning. Core to ecommerce and currently only touched tangentially.
-3. **Commerce operations** — orders, checkout, pricing/discount rules, payment and shipping
-   providers, stock/inventory. No coverage today.
-4. **Advanced PIM** — variants (single/multi-axis), BOM/bundles, assortments, channels vs
-   shops, workflow/approval states. Exists only scattered inside `pim-demo` references, not
-   as an implementer-facing skill.
+1. **Troubleshooting & diagnostics** — a dedicated cross-role skill for query failures, stale
+   indexes, MCP connectivity, permission errors, data-sync problems. Recovery recipes exist
+   scattered across skill references (and the `dw-demo-base` foundational candidates); nothing
+   routes a raw symptom to the right recipe.
+2. **Payment & shipping providers** — checkout covers cart/orders, but provider configuration
+   (payment gateways, shipping calculators) has no dedicated coverage.
+3. **Marketing & personalization** — email marketing, campaigns, personalization rules.
 
 ### Medium value
-5. **Upgrades & migration** — DW9→10, Swift version upgrades, legacy data migration.
-6. **Security & permissions** — role/permission model, API security, audit/compliance.
-7. **Content & SEO** — page hierarchy, metadata/canonical URLs, scheduling, asset
-   management (beyond the Swift demo baseline).
-8. **Deployment & DevOps** — environments, release/rollback, config/version management.
+4. **Deployment & DevOps** — environments, release/rollback, config/version management.
+5. **Content & SEO** — metadata/canonical URLs, scheduling, redirects beyond the render-surface
+   notes in `dw-render-razor`.
+6. **API security & audit** — `dw-users-permissions` covers the permission model; API key
+   management, audit/compliance surfaces are uncovered.
 
 ### Lower value / situational
-9. **Reporting & analytics**, **marketing/personalization**, **performance tuning**,
-   **non-BC ERP integrations**, **Rapido** (if it is ever in scope alongside Swift).
+7. **Reporting & analytics**, **performance tuning**, **non-BC ERP integrations**, **Rapido**
+   (if it is ever in scope alongside Swift).
 
 ## Structural follow-ups (not new content)
-- **`dynamicweb-foundations` shared skill** — extract the cross-cutting knowledge currently
-  living in `demo-base/references/` (MCP setup, TLS bypass, vendor patterns) so non-demo
-  skills can reuse it without depending on the demo bundle.
-- **Implementer-facing integration coverage** — today ERP/BC knowledge is presales-only;
-  implementers have no production integration skill.
+- **Fold up the foundational candidates** — 20+ candidate files under
+  `dw-demo-base/references/foundational/` are staged for fold-up into their named foundational
+  skills (one skill per PR; see CHANGELOG 3.4.0). This is the standing highest-value
+  structural task.
 - **Operator / administrator role bundle** — monitoring, backups, user/license management,
   system health. No skills exist for this audience yet.
 
 ## Suggested bundling for new skills
 - Troubleshooting → all role bundles (or a shared `dynamicweb-troubleshooting`).
-- Search/indexing, advanced PIM, commerce ops, security → `dynamicweb-implementer`.
-- Upgrades, deployment → `dynamicweb-developer`.
+- Payment/shipping providers, marketing → `dynamicweb-commerce`.
+- Deployment, API security → `dynamicweb-backend` / `dynamicweb-developer`.

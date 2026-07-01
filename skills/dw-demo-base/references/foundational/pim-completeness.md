@@ -67,6 +67,45 @@ A PIM governance dashboard lives or dies on the "click the count, land on the of
 
 **Rule of thumb for every governance metric**: there should be a backing product query in `wwwroot/Files/System/SmartSearches/Ecommerce/Shared/*.query`, and the widget should be a `Repository*Widget` that references its GUID. That gives you both the count AND a click path. If you catch yourself reaching for SQL widgets, first ask "could I express this as a product query?" — almost always yes, via `IsEmpty` / `MatchAny` / `Equal` expressions on the indexed fields. The query-location rule (Shared ONLY, never GUID-duplicate to Repositories) and its GUID-collision failure mode live in [`search-indexing.md`](search-indexing.md).
 
+## MCP payload contracts — dashboards + widgets
+
+Call order: `get_dashboard_areas` → `get_dashboards` (check for an existing dashboard) → `create_dashboards` (note the returned `Id`) → `get_available_widgets` (exact `SystemName` — never guess) → `get_widget_parameters` per widget type → `add_widgets_to_dashboards`. The dashboard must exist first; widget payloads need a real persisted dashboard `Id`.
+
+`CreateDashboardModel` (input to `create_dashboards`, as an array) — always pass `userIds`, or the dashboard is invisible in admin (blocker 1 below):
+
+```json
+{
+  "dashboardType": "Products",
+  "path": null,
+  "title": "Product Quality Dashboard",
+  "userIds": [1]
+}
+```
+
+`AddWidgetModel` (input to `add_widgets_to_dashboards`, as an array):
+
+```json
+{
+  "dashboardId": 7,
+  "widgetSystemName": "Dynamicweb.Application.UI.Dashboard.Widgets.RepositoryCountWidget",
+  "title": "Missing Descriptions",
+  "columns": 4,
+  "order": null,
+  "parameters": {
+    "Query": "active_missing_short_description",
+    "WidgetType": "Count"
+  }
+}
+```
+
+`RepositoryCountWidget` parameters:
+
+| Parameter | Values | Notes |
+|-----------|--------|-------|
+| `Query` | query system name | must match an existing saved query |
+| `WidgetType` | `Count`, `Sum`, `Avg` | `Sum` and `Avg` also require `RepositoryField` |
+| `RepositoryField` | field system name | only needed for `Sum` and `Avg` |
+
 ## Building dashboards + widgets via MCP — three blockers that look like "nothing rendered"
 
 A dashboard built with `create_dashboards` + `add_widgets_to_dashboards` can be fully correct in the `Dashboard` / `DashboardWidget` tables (and returned by `get_dashboards`) yet show **nothing useful** in admin. Three independent causes, each with a clean fix:
