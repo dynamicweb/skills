@@ -61,29 +61,9 @@ If completeness is needed:
 - use language ID strings in `completionLanguages`
 
 ## Dashboard Attachment
-Widgets are separate from the query payload:
+Widgets are separate from the query payload. Create the query first with `create_or_update_product_queries`, then attach widgets.
 
-1. `create_or_update_product_queries`
-2. `get_available_widgets`
-3. `get_widget_parameters`
-4. `get_dashboards` or `create_dashboards`
-5. `add_widgets_to_dashboards`
-
-## Example Widget Payload
-```json
-[
-  {
-    "dashboardId": 5,
-    "widgetSystemName": "Dynamicweb.Application.UI.Dashboard.Widgets.RepositoryCountWidget",
-    "title": "Missing Descriptions",
-    "columns": 3,
-    "parameters": {
-      "Query": "active_missing_short_description",
-      "WidgetType": "Count"
-    }
-  }
-]
-```
+Widget tools, schemas, and payload examples are canonical in [dashboard-widgets.md](../../dw-pim-completeness/references/dashboard-widgets.md) (dw-pim-completeness) — follow that reference for the widget steps instead of duplicating payloads here.
 
 ## Quality Gate
 - `sourceIndex` uses `Repo|Index`

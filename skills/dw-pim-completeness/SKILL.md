@@ -75,7 +75,7 @@ The product list displays a **Completeness** column showing each product's perce
 
 Add a **Repository Count Widget** to a dashboard that counts products matching a query (e.g., "products with completeness < 100%"). This provides a live quality overview.
 
-See the dashboard skill for widget setup.
+See [references/dashboard-widgets.md](references/dashboard-widgets.md) for the MCP tools, widget schemas, and payload examples to build these widgets.
 
 ## Per-Language Completeness
 
@@ -113,5 +113,5 @@ double score = Services.CompletionRules.GetCompletenessScore(product, languageId
 ## Next Steps
 
 - **Setting up PIM workflows?** See [dw-pim-workflow](../dw-pim-workflow)
-- **Querying by completeness?** See the product query creator skill
+- **Querying by completeness?** See [product query authoring](../dw-search-indexing/references/product-query-authoring.md) in dw-search-indexing
 - **Per-language completeness tracking?** See [dw-pim-localization](../dw-pim-localization)

@@ -186,5 +186,5 @@ Template tags: `QueryResult.SpellCheck` (top suggestion), `SpellCheckerSuggestio
 ## Next Steps
 
 - **Setting up the Product Catalog app?** See [dw-commerce-catalog](../dw-commerce-catalog)
-- **PIM product queries?** Use the product query creator skill
+- **PIM product queries?** See [references/product-query-authoring.md](references/product-query-authoring.md) for MCP query payload authoring
 - **C# custom index provider?** See [dw-extend-providers](../dw-extend-providers)

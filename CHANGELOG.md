@@ -3,6 +3,20 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.3]
+
+### Fixed
+- **Reconnected the two MCP authoring references orphaned by the v2 restructure.** The legacy
+  skills' reference files were carried over verbatim (`dashboard-widgets.md` into
+  `dw-pim-completeness`, `product-query-authoring.md` into `dw-search-indexing`) but no SKILL.md
+  linked them, and three prose pointers still named skills that no longer exist ("the dashboard
+  skill", "the product query creator skill"). Both host SKILL.md files now link their reference
+  (dashboards section and Next Steps in `dw-pim-completeness`; Next Steps in `dw-search-indexing`),
+  and the stale pointers are replaced with resolvable links. Also de-duplicated the widget payload
+  content: `product-query-authoring.md` no longer embeds its own copy of the widget attachment
+  steps and `RepositoryCountWidget` payload example — `dw-pim-completeness/references/dashboard-widgets.md`
+  is the single canonical source, preventing silent drift between the two files.
+
 ## [3.4.2]
 
 ### Fixed
