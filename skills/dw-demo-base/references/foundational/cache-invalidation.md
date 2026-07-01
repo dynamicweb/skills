@@ -35,8 +35,11 @@ If you used MCP for a row whose mutation type appears in the table below, you sh
 | **Direct SQL INSERT new `Paragraph` row** | Page-composition cache | (none) | YES — paragraph does not render until restart |
 | **Direct SQL INSERT new `GridRow` row** | Page-composition cache | (none) | YES — grid row + its paragraphs do not render until restart |
 | **Direct SQL INSERT new `EcomPrices` row** | Resolved-price cache | (none) | YES — new price is not picked up by PDP / cart resolution until restart |
-| **Direct SQL UPDATE on an existing `Page` / `Paragraph` / `GridRow` field** (e.g. `ParagraphTemplate`, `PageMetaTitle`, content fields) | (cache holds the row by id; updated fields are read live from DB on next render) | (none needed) | **No** — live, refresh the page. This is the one safe SQL pattern for these tables. |
-| **Direct SQL UPDATE on `GridRow.GridRowSort` (re-ordering existing rows)** | Page-composition cache holds the ordered list | (none) | YES — the cached ordering wins until restart, even though field updates on individual rows go live |
+| **Direct SQL UPDATE on an existing `Page` / `Paragraph` / `GridRow` CONTENT field** (e.g. `ParagraphTemplate`, `PageMetaTitle`, item/text fields) | (cache holds the row by id; content fields are read live from DB on next render) | (none needed) | **No** — live, refresh the page. This is the one safe SQL pattern for these tables — but ONLY for content fields; see the two composition rows below. |
+| **Direct SQL UPDATE on `GridRow.GridRowSort` (re-ordering existing rows)** | Page-composition cache holds the ordered list | (none) | YES — the cached ordering wins until restart, even though content-field updates on individual rows go live |
+| **Direct SQL UPDATE on layout-composition columns** — `GridRowTopSpacing` / `GridRowBottomSpacing` / `GridRowVerticalAlignment` / `GridRowGapX/Y` / `GridRowColorSchemeId`, and `Page.PageItemType` / `PageItemId` / `PageColorSchemeId` | Page-composition cache (these feed the rendered `data-dw-row-space-*` / colorscheme / header-item attributes) | (none — MCP paragraph/page touches do NOT flush them) | YES — the cached values win until restart, same as the ordering row above. These columns behave like structure, not content. |
+| **Direct SQL UPDATE on `Page.PageActive` / `PageHidden` (navigation flags)** | Navigation tree cache + friendly-URL provider | (none) | YES — the nav keeps rendering the old page set (and friendly URLs keep/lose their routes) until restart. Flag semantics live in [`swift-building.md` §6](swift-building.md). |
+| **Group↔shop relation changes** (SQL on `EcomShopGroupRelation`, or an API group save that re-homes the group's shop) | Ecom navigation tree + friendly-URL provider | (none for SQL; API save still leaves the URL provider stale) | YES — group pages/slug resolution reflect the old shop homing until restart. The primary-shop trap itself is in [`commerce-catalog.md` §2.3](commerce-catalog.md). |
 | **Direct SQL UPDATE on `EcomPrices.PriceAmount` / `PriceCurrency` / scope columns** | Resolved-price cache | (none) | YES — old price wins until restart |
 | **Direct SQL UPDATE on `EcomOrderStates.OrderStateColor` (or other state-row columns read at render time)** | `OrderStates.GetStateById()` in-memory cache | (none) | YES — the badge's inline-style attribute holds the stale color even after a full page reload; storefront-rendered order-state badges and CSS variables fed by `Services.Orders.GetStateById(...).Color` keep the old hex until restart |
 | MCP `save_paragraphs` / `save_pages` / `save_grid_rows` | Page-composition cache | (auto via MCP) | No — these are the preferred surface for content seeding; the four "Direct SQL INSERT" rows above are the SQL-fallback equivalents |
@@ -54,10 +57,22 @@ If you used MCP for a row whose mutation type appears in the table below, you sh
 
 For `Page` / `Paragraph` / `GridRow` / `EcomPrices`, the cache-vs-live behavior splits cleanly along edit-vs-insert lines when mutating via SQL:
 
-- **Editing an existing row's non-ordering fields** — live. The page-composition cache holds the row by id; on next render, DW reads the current field values back from the DB. So a SQL `UPDATE Paragraph SET ParagraphTemplate = '...' WHERE ParagraphId = N` shows up immediately on refresh, no restart.
+- **Editing an existing row's content fields** — live. The page-composition cache holds the row by id; on next render, DW reads the current content-field values back from the DB. So a SQL `UPDATE Paragraph SET ParagraphTemplate = '...' WHERE ParagraphId = N` shows up immediately on refresh, no restart.
+- **Editing an existing row's layout-composition columns** — requires restart, exactly like re-ordering. GridRow spacing/alignment/gap/colorscheme columns and Page item-attach/colorscheme columns are baked into the cached composition (`data-dw-row-space-*`, header colorscheme, item lookup); the rendered values survive both page refreshes and MCP touches on sibling content until the host restarts.
 - **Inserting a new row** — requires restart. The cache resolved the parent (Page / GridRow / shop-currency-language combination for prices) at startup or at last invalidation; it doesn't know about the new child row. Restart flushes the cache and rebuilds it from the current DB state.
-- **Re-ordering existing rows** (`GridRow.GridRowSort` re-sort) — requires restart. Even though each individual row's other fields read live, the cache holds the *ordered list* and won't re-sort until reload. Same applies to `ParagraphSort` if you re-sort paragraphs within a GridRow.
+- **Re-ordering existing rows** (`GridRow.GridRowSort` re-sort) — requires restart. Even though each individual row's content fields read live, the cache holds the *ordered list* and won't re-sort until reload. Same applies to `ParagraphSort` if you re-sort paragraphs within a GridRow.
 - **Changing price amount or scope** — requires restart. The resolved-price cache keys by (product, currency, customer-group, shop, qty-band, validity-window) and doesn't reactively reload on column changes.
+
+### Mixing MCP and SQL on the same rows — MCP first, SQL last, one restart
+
+MCP `save_pages` / `save_grid_rows` / `save_paragraphs` load the row from the **domain-service cache**
+and persist the **full row back**, including every column their API model does not expose. A SQL-written
+value on such a column (`GridRowTopSpacing`, `GridRowVerticalAlignment`, `Page.PageItemId`,
+`PageColorSchemeId`, `PageHidden` …) is silently reverted by the next MCP save of that row — the save
+isn't "merging", it's writing back its stale copy. Sequence a mixed-surface authoring pass as:
+**all MCP/structural writes first → SQL for the unexposed columns last → one host restart** to flush
+the composition/nav/URL caches together. If an MCP save must happen after the SQL step, re-apply the
+SQL afterwards.
 
 This is **the SQL-fallback rulebook only.** MCP `save_paragraphs` / `save_pages` / `save_grid_rows` / `save_prices` and the admin-UI Visual Editor invalidate the relevant caches for you — none of these rules apply to those surfaces. Choosing SQL-direct over a domain-service surface is a separate decision; when a service surface is available, prefer it and skip this section.
 

@@ -3,6 +3,21 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.4]
+
+### Fixed
+- **Grid-row authoring pitfalls from a storefront-polish pass** (a furniture-configurator demo build).
+  In `dw-demo-base/references/foundational/data-access.md`: `GridRowDefinitionId` must name an existing
+  RowDefinition JSON — an unknown id (e.g. a guessed `5Columns`) renders the row and all its paragraphs
+  as **nothing, silently**; and GridRow layout columns (spacing/alignment/gap/colorscheme) are
+  SQL-only — the MCP `save_grid_rows` model doesn't carry them and a later MCP save silently reverts
+  them, while NULL spacing renders as the Swift 6rem default (the single biggest whitespace generator).
+  In `cache-invalidation.md`: the "UPDATE existing row = live" rule is now scoped to CONTENT fields —
+  layout-composition columns (GridRow spacing/valign/colorscheme, `Page.PageItemType/ItemId/PageColorSchemeId`)
+  behave like structure and need a restart; added rows for navigation-flag and group↔shop-relation
+  mutations (nav tree + friendly-URL provider are restart-only); and added the mixed-surface ordering
+  rule: **all MCP writes first, SQL for unexposed columns last, one restart**.
+
 ## [3.4.3]
 
 ### Fixed
