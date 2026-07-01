@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.8]
+
+### Fixed
+- **Dropdown/multi-select category-field values must store `FieldOptionValue`, not the display
+  name.** `dw-demo-base/references/foundational/pim-modelling.md` §2.8: a stored value that does not
+  resolve to an `EcomFieldOption.FieldOptionValue` renders as a blank cell with no error on the
+  storefront spec components (admin still shows the raw text); options whose value equals their name
+  mask the bug for some rows, so it surfaces as "some attributes randomly missing". Documents the
+  comma-separated multi-select convention, `create_field_options` with the
+  `ProductCategory|<CategoryId>|<FieldId>` id form for adding missing options, and a post-seed
+  orphan-value sweep.
+
 ## [3.4.7]
 
 ### Fixed
