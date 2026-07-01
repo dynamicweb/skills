@@ -440,7 +440,7 @@ $summaryLines = @(
     "  6. Call POST /admin/mcp/bootstrap using the secret from:",
     "       $bootstrapManifestPath",
     "",
-    "  7. Your Swift 2 site is ready for the dynamicweb-business-solution-agent flow.",
+    "  7. Your Swift 2 site is ready for business configuration (dw-setup-config).",
     ""
 )
 

@@ -60,9 +60,16 @@ marketplace `skills` path basename must all match exactly. (Only the role *bundl
 ```yaml
 ---
 name: dw-<domain>-<topic>
+type: <knowledge | flow>
+group: <area — pim, search, render, setup, extend, integration, commerce, users, swift, headless, content, data, source, demo>
 description: <one to three sentences. First sentence states what the skill does. Remaining sentences list the exact trigger phrases / conditions that activate it.>
 ---
 ```
+
+`type` is `knowledge` for reference-style platform skills and `flow` for skills that drive a
+multi-step process (the setup installers and the demo chain). `group` is the skill's area from
+the naming taxonomy (see `dynamicweb-skills-structure.md`) and matches the `<domain>` segment
+of the name.
 
 The `description` field is the activation signal — it is matched against the user's request at runtime. Write it in the third person using this shape:
 
@@ -73,7 +80,7 @@ The `description` field is the activation signal — it is matched against the u
 Example (`dw-pim-completeness`):
 
 ```
-description: Create and configure Dynamicweb 10 dashboards and widgets using MCP tools. Triggers: create a dashboard, add or configure widgets, build query-backed count widgets. Non-triggers: building the underlying product query -> dw-search-indexing; designing the PIM data model -> dw-pim-workflow.
+description: Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, and query-driven automatic workflows. Triggers: create completion rules, assign rules to data models or product groups, understand completeness scoring, set up completeness-driven query movement. Non-triggers: manual workflow states -> dw-pim-workflow; the Data Model schema -> dw-pim-modelling.
 ```
 
 Demo skills additionally carry a `Use AFTER dw-demo-base` marker (see below). Keep

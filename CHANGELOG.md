@@ -3,19 +3,57 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.4]
+
+### Fixed
+- **Purged the pre-v2 leftovers a style/structure audit found, and refreshed the stale meta-docs.**
+  Supersedes 3.4.3's reconnect approach: linking the leftover references kept stale knowledge
+  reachable — the durable fix is folding their unique content up and deleting the files.
+  The v2 restructure carried four legacy files over verbatim that nothing linked and that newer
+  knowledge had superseded or contradicted:
+  - `dw-pim-completeness/references/dashboard-widgets.md` and
+    `dw-search-indexing/references/product-query-authoring.md` — orphaned MCP payload references
+    from the deleted legacy skills, partly contradicted by the corrections in the
+    `pim-completeness.md` foundational candidate (3.4.2's `userIds` blocker, dead widget types,
+    phantom areas). Their still-unique payload contracts are **folded into the foundational
+    candidates** (`CreateDashboardModel`/`AddWidgetModel`/`RepositoryCountWidget` params into
+    `pim-completeness.md`, reconciled with the blockers — the example now passes `userIds`; the
+    `ProductQueryModel` canonical shape, hard constraints, and typical backlog queries into
+    `search-indexing.md`, reconciled with the Shared-folder location rule); the files are deleted.
+  - `dw-pim-workflow/references/queries-and-dashboards.md` — orphaned, delegated query creation to
+    the deleted `dynamicweb-product-query-creator` skill, and its dashboard half was superseded by
+    the candidate. Deleted; its backlog-query examples moved into the candidate fold above.
+  - `dw-pim-workflow/agents/openai.yaml` — a stray OpenAI-platform agent config referencing the
+    retired `dynamicweb-pim-solution-assistant`. Deleted.
+  - `dw-pim-workflow/references/completeness-and-workflows.md` was kept (unique
+    `create_or_update_workflows` / `create_or_update_completeness` MCP schemas) and is now linked
+    from the SKILL.md instead of orphaned.
+  Also fixed three stale prose pointers to deleted skills ("the dashboard skill", "the product
+  query creator skill" ×2) in `dw-pim-completeness` and `dw-search-indexing`; fixed the
+  Non-triggers routing rows that still pointed at retired pre-v2 skills —
+  `dw-setup-install` (`dynamicweb-business-setup-agent` → `dw-setup-config`) and
+  `dw-swift-building` (`dynamicweb-solution-installer` / `dynamicweb-business-solution-agent` /
+  `dynamicweb-business-setup-agent` → `dw-setup-install` / `dw-pim-modelling` /
+  `dw-commerce-catalog`) — and removed `dw-setup-install`'s foundational→demo routing row
+  (`-> dw-demo-base`, a boundary violation — now "the presales demo bundle"). Meta-docs refreshed to match the repo:
+  `CLAUDE.md` now documents the `type:`/`group:` frontmatter fields all 31 skills carry and uses
+  the real `dw-pim-completeness` description as its example; `dynamicweb-skills-structure.md`
+  catalog/taxonomy/bundle tables updated to the actual skill names (`dw-render-razor`,
+  `dw-render-templatetags`, `dw-render-viewmodels`), the `source` and `demo` areas, all six
+  bundles, and no longer points to a nonexistent `CONVENTIONS.md`; `CONTENT-GAPS.md` rewritten —
+  its coverage table listed only pre-v2 skill names and its top "gaps with no skill" (search,
+  commerce, advanced PIM, upgrades, security) all exist as skills now.
+
 ## [3.4.3]
 
 ### Fixed
-- **Reconnected the two MCP authoring references orphaned by the v2 restructure.** The legacy
-  skills' reference files were carried over verbatim (`dashboard-widgets.md` into
+- **Reconnected the two MCP authoring references orphaned by the v2 restructure.** (Superseded by
+  3.4.4, which folds their unique content into the foundational candidates and deletes the files.)
+  The legacy skills' reference files were carried over verbatim (`dashboard-widgets.md` into
   `dw-pim-completeness`, `product-query-authoring.md` into `dw-search-indexing`) but no SKILL.md
-  linked them, and three prose pointers still named skills that no longer exist ("the dashboard
-  skill", "the product query creator skill"). Both host SKILL.md files now link their reference
-  (dashboards section and Next Steps in `dw-pim-completeness`; Next Steps in `dw-search-indexing`),
-  and the stale pointers are replaced with resolvable links. Also de-duplicated the widget payload
-  content: `product-query-authoring.md` no longer embeds its own copy of the widget attachment
-  steps and `RepositoryCountWidget` payload example — `dw-pim-completeness/references/dashboard-widgets.md`
-  is the single canonical source, preventing silent drift between the two files.
+  linked them, and three prose pointers still named skills that no longer exist. Both host SKILL.md
+  files gained links to their reference, the stale pointers were replaced with resolvable links,
+  and the widget payload duplication between the two references was removed.
 
 ## [3.4.2]
 
