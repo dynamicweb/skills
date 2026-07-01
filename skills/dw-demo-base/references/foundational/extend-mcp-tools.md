@@ -24,15 +24,15 @@ regardless of how the package arrived (see [`setup-install.md`](setup-install.md
 
 This is the canonical route for an agent-driven build: deterministic, scriptable, and idempotent (just a
 csproj edit), and it sidesteps a flaky UI path — the AppStore "Available apps" grid is a virtualized
-component that browser automation struggles to drive reliably. It also aligns with the admin-UI-as-
-verification-only discipline (§4): driving the AppStore via automation to install the AddIn treats the
-admin UI as an action surface; a `PackageReference` does not.
+component that browser automation struggles to drive reliably.
 
 Pin the version deliberately — `Dynamicweb.MCP` is a beta-track package, and the version must be
 compatible with the Suite version the host resolves.
 
 **Last resort: the admin AppStore.** Only when you genuinely cannot edit the host csproj (e.g. a locked,
-already-deployed host). Don't drive that install via browser automation — ask the user to click it.
+already-deployed host). This is a scaffold-phase bootstrap one-click: drive it via the Browser MCP,
+expecting retries on the virtualized grid, and ask the user to click it only when automation can't land
+it after a few attempts.
 
 ## 2. Auth model — prefer API Key over Claude.ai OAuth
 

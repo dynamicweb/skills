@@ -3,6 +3,42 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.5.0]
+
+### Changed
+- **Replaced the blanket "admin UI is never an action surface" guardrail with a phase-scoped
+  surface contract.** Root cause of demo builds stalling on human intervention during local
+  installation: the verification-only rule had no scaffold carve-out — six statements across the
+  demo chain routed every awkward admin-UI operation to "ask the user", and `mcp-setup.md` Step 3
+  mandated creating the MCP configuration *by hand* even though the shown-once API key is readable
+  off the page by browser automation. The original intent of the guardrail — no admin-UI actions
+  for operations MCP or the Admin API can perform, especially on hosted/headless installs — is
+  kept and enforced *more* strictly, but scoped to the build phase. The new contract
+  (`surface-priority.md` is the canonical statement, with a phase × instance-type matrix):
+  - **Two phases, split by the MCP verification gate.** *Scaffold* (local, before the gate): the
+    admin UI via the Browser MCP **is an action surface** for the bootstrap one-clicks — create
+    the MCP configuration + capture the shown-once key (Step 3 is now agent-driven end-to-end),
+    create the Management API key (Step 6 likewise), AppStore install when the csproj route is
+    closed, portal downloads. Ladder: script/CLI → Admin API → Browser MCP on the admin UI →
+    headless code recipe → ask the user (last resort only). *Build* (after the gate): strict —
+    every change lands on MCP → Admin API → direct SQL (local last resort); the admin UI is
+    verification-only with **no** "ask the user to click" rung; endpoint discovery goes through
+    `/admin/api/docs/`, `dw10source`, or read-only Playwright network watching.
+  - **Surfaces by instance type made explicit**: local = MCP + Admin API + direct SQL;
+    hosted (cloud) and headless = MCP-if-present + Management API, **no SQL ever**; hosted/headless
+    have no scaffold phase (credentials are handed over), so build rules apply from the first
+    request.
+  - **Install ordering fixed**: the Browser MCP moves to the front of the scaffold sequence
+    (machine-level, idempotent) so its tools exist when Step 3 needs them; its fresh-session
+    constraint is called out with the restart/headless fallbacks.
+  - `dw-setup-install`'s three pause-and-wait clauses become self-service recovery ladders
+    (re-bootstrap → recreate config via browser automation → verify; escalate only when every
+    automated route is exhausted), and failed portal downloads are fetched via browser automation.
+  - Files: `surface-priority.md` (rewritten), `dw-demo-base/SKILL.md` (phase-scoped summary +
+    step-3 reorder), `mcp-setup.md` (Steps 0/3/5/6), `browser-automation.md` (scope guard),
+    `online-mode.md`, `foundational/extend-mcp-tools.md` §1, `dw-setup-install/SKILL.md`,
+    `dw-demo-swift/references/admin-ui-authoring.md` (pointer).
+
 ## [3.4.4]
 
 ### Fixed

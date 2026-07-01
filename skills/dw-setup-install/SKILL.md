@@ -14,8 +14,10 @@ and installing the latest Swift 2 packages from the official Dynamicweb download
 If the workflow continues into MCP bootstrap, the Dynamicweb MCP server must be added to the
 config used by the current agent before the environment is considered ready.
 
-If MCP attachment fails, the agent must pause, tell the user exactly what to update, and resume
-after the config has been fixed and connectivity has been verified.
+If MCP attachment fails, work the automated recovery ladder first: re-run the bootstrap call,
+recreate the MCP configuration through the admin UI via browser automation (capturing the fresh
+key), update the agent config, and re-verify. Ask the user to intervene only after every
+automated route is exhausted, telling them exactly what to update.
 
 ## What Gets Installed
 The Swift 2 packages (downloaded from `https://doc.dynamicweb.com/downloads/swift`) include:
@@ -132,8 +134,10 @@ current agent and verifying the connection before continuing.
 This step is mandatory. Treat the installation as ready for agent use only once the MCP server
 entry exists in the active agent config.
 
-If the script cannot attach automatically, stop the automation, explain the exact manual config
-change needed for the current agent, and resume only after the server entry is present and working.
+If the script cannot attach automatically, run the degraded path below yourself — read the
+secret, call bootstrap, write the server entry into the agent config, and verify. Escalate to
+the user only when the config file cannot be edited from this session, explaining the exact
+entry to add.
 
 ### Degraded Path (manual attach)
 1. Read the secret from `Files/System/mcp-bootstrap.json`
@@ -151,8 +155,9 @@ Agent-specific expectation:
 - in Codex, update `.codex/config.toml`
 - in Claude Code, update the config file Claude uses for MCP servers
 
-If this manual step is required, pause the workflow and tell the user to come back after updating
-the config. Resume only after verifying the entry exists and the agent can connect.
+Perform these steps yourself — they are one curl call plus config-file edits — and verify the
+entry exists and the agent can connect before continuing. If the agent's config file cannot be
+edited from this session, tell the user the exact entry to add and resume after verifying.
 
 ---
 
@@ -186,7 +191,8 @@ sqlcmd -S localhost -Q "DROP DATABASE [swift2]"
 Or use a different database name.
 
 ### Download fails
-Visit `https://doc.dynamicweb.com/downloads/swift` manually and download the packages.
+Fetch `https://doc.dynamicweb.com/downloads/swift` via browser automation and download the
+packages from there. Ask the user to download only if the portal blocks automated access.
 
 ### Bootstrap secret expired
 Use `reset-mcp-bootstrap-manifest.ps1` when you only need a fresh secret and do not want to rerun the full installer.
