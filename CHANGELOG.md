@@ -3,6 +3,38 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.6.0]
+
+### Added
+- **Visual QA reference — screenshots become a defect hunt, not a confirmation.** Root cause of
+  demos shipping with whitespace bands, misaligned/stretched images, dead slider arrows, and
+  horizontal scrollbars: the verify-flow recipe checked functional presence only ("N order rows
+  visible", "a change landed") and gave no guidance on what a *failing* screenshot looks like, so
+  Playwright inspection confirmed pages instead of critiquing them. New
+  `dw-demo-base/references/visual-qa.md` owns the polish gate, run on every demo-critical page:
+  - **Programmatic detectors first** (one `browser_evaluate` block): horizontal-overflow offenders
+    (`scrollWidth` delta + the element whose right edge IS the scrollbar), broken images
+    (`naturalWidth === 0` after the lazy-load scroll-sweep), stretched images (natural vs rendered
+    aspect ratio under `object-fit: fill`), and whitespace bands (> 120px gaps between consecutive
+    sections) — plus `browser_console_messages` (template NREs render as silently missing
+    sections) and `browser_network_requests` (404 assets).
+  - **Interaction pass**: a static screenshot cannot verify behaviour — click every visible
+    control type once (arrows, tabs, accordions, add-to-cart) and assert a state change.
+  - **Eyeball checklist** per screenshot (vertical rhythm, alignment grid, image crops, text
+    truncation/placeholders, edge padding, control containment, one visual system, empty shells),
+    captured at both desktop and mobile breakpoints via `browser_resize`.
+  - **Symptom → owning-fix routing table** wiring the checklist into the 3.5.x fold knowledge
+    (6rem spacing default, `slider-nav-outside-expand`, `FieldOptionValue` blanks, `ButtonData`
+    error blocks, `DisplayGroups` empty shells, one-paragraph-per-column, `GridRowDefinitionId`,
+    service-page chrome leaks) so findings route to documented fixes instead of re-diagnosis.
+  - **Fix loop + definition of done**: fixes land on the build-phase action surfaces per
+    `surface-priority.md` (Playwright stays verification-only), then re-navigate, re-run
+    detectors, re-screenshot both breakpoints; a page is done at zero detector findings, a passing
+    interaction pass, and a passing checklist at both widths.
+  Wired in: `browser-automation.md` verify-flow gains step 6 (run the visual QA pass);
+  `dw-demo-base/SKILL.md` and `dw-demo-swift/SKILL.md` where-to-find tables gain the polish-gate
+  row.
+
 ## [3.5.11]
 
 ### Fixed
