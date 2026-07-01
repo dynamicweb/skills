@@ -3,6 +3,15 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.13]
+
+### Fixed
+- **`NavigationPlacement: slider-nav-outside-expand` causes page-level horizontal overflow on
+  full-width sliders.** New symptom-table row in
+  `dw-demo-base/references/foundational/swift-building.md` §3: the outside-expand swiffy arrows
+  render past the viewport edge in a full-width row — the arrow IS the horizontal scrollbar. Default
+  to inside placement (empty value) for full-width sliders.
+
 ## [3.4.12]
 
 ### Fixed
