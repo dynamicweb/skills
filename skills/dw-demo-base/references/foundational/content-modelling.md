@@ -402,6 +402,13 @@ worth knowing when authoring content programmatically (validated DW 10.25.x):
   HTML fields persist directly. `ButtonData` fields have a binder asymmetry: GET returns a JSON
   *string*, but the save binder wants the *object*
   (`{"Label": ..., "Link": ..., "LinkType": "page", "Style": "primary"}`).
+  - **Never seed a `ButtonData` field with a plain label string.** The render side deserializes the
+    stored value as ButtonData JSON; a bare `"Shop now"` in `Button`/`FirstButton`/`SecondButton`
+    throws `ConverterException: Cannot deserialize json string to … ButtonData` and replaces the whole
+    paragraph (often the whole section) with a Razor error block. Store a full JSON object
+    (`{"SelectedValue":"","Label":"…","Link":"/…","LinkType":"url","Style":"primary"}`) or an **empty
+    string** for "no button" — templates guard on empty via `TryGetButton`. Seed/import sweeps should
+    treat any non-empty non-JSON value on a `*Button*` item field as a defect.
 - **`ShowParagraph` cannot be changed via the API** — both the `ParagraphSave` round-trip and
   `ParagraphChangeActive` silently no-op (observed on copied / master-linked rows). Hide a paragraph by
   `ParagraphDelete {DeleteWithRows: true, Ids: [...]}` or by blanking its fields instead.

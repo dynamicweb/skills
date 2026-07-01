@@ -89,11 +89,20 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
 ### 2.6 Bundles (BOM) — two concerns
 
 1. **Product is BOM** — `UPDATE EcomProducts SET ProductType = 2` (enum: 0=stock, 1=service, 2=bom, 3=giftcard).
-2. **Components** — rows in `EcomProductItems`:
-   - `ProductItemProductId` = parent bundle
-   - `ProductItemBomProductId` = component product
-   - `ProductItemQuantity`, `ProductItemName`, `ProductItemRequired`, `ProductItemSortOrder`
-   - `ProductItemBomGroupId` = optional (for configurable groups where customer picks)
+2. **Components** — rows in `EcomProductItems`. Two row shapes, split by `ProductItemBomGroupId`:
+   - **Fixed component** (predefined bundle line): `ProductItemBomProductId` = the component product
+     (append the concatenated variant id for a specific variant, e.g. `PRODx` + `VOn` — and set
+     `ProductItemBomVariantId` to the dot-joined variant id), `ProductItemBomGroupId` = `''` empty.
+   - **Configurator slot** (customer picks one): `ProductItemBomGroupId` = an **`EcomGroups`
+     GroupId** — the slot's options are that group's products, the slot label is the group name, and
+     `ProductItemDefaultProductId` picks the pre-selected option. One row per slot, `BomProductId`
+     empty. **The GroupId must resolve to a real ecom group**: a synthetic/unknown id (a GUID that
+     matches nothing) silently degrades every BOM row into its own single-option pseudo-group named
+     after `ProductItemName` — the storefront then shows N one-option "groups" instead of real
+     choices, which reads like a template bug but is this data shape.
+   - Both shapes: `ProductItemProductId` = parent bundle, plus `ProductItemQuantity`,
+     `ProductItemName`, `ProductItemRequired`, `ProductItemSortOrder`. `ProductItemBomProductId` and
+     `ProductItemBomVariantId` are NOT NULL — use `''`, never SQL `NULL`.
 3. **RESTART THE HOST AFTER INSERTING PRODUCTITEMS** — `ProductItem` uses a `Lazy<Dictionary<...>>` cache (see `ProductItem.cs:145`). Raw SQL inserts bypass it. Until restart, the Bundles tab shows empty.
 4. Bundles should get their OWN data model (e.g. a `BundleAttributes` category with bundle-specific fields: UnitsPerCase, RetailerSegment, PlanoReady, etc.). Different products → different data models.
 
@@ -104,6 +113,16 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
 - **`reference_category` is load-bearing and easy to miss** — the hidden template category that powers every admin completeness/rule lookup, plus its blank-panel gotcha and seed SQL, lives in [`pim-completeness.md`](pim-completeness.md).
 - **List field options** = `EcomFieldOption` (FieldOptionId, FieldOptionFieldId, FieldOptionName, FieldOptionValue, FieldOptionIsDefault, FieldOptionSort). Scoped to field, not category.
 - **Field values on products** = `EcomProductCategoryFieldValue` (FieldValueFieldId, FieldValueFieldCategoryId, FieldValueProductId, FieldValueProductVariantId, FieldValueProductLanguageId, FieldValueValue). One row per (product, field).
+- **Dropdown/multi-select values store the option VALUE, never the display name.** For a list-presented
+  field, `FieldValueValue` must equal an `EcomFieldOption.FieldOptionValue` (`NaturalOak`), not the
+  `FieldOptionName` shown in admin (`Natural Oak`); multi-selects store comma-separated option values.
+  A mismatched value renders as a **blank cell with no error** on the storefront spec components even
+  though admin shows the raw text — options where value happens to equal name mask the bug for some
+  rows, which is why it surfaces as "some attributes randomly missing". When seeding, add any missing
+  options first (`create_field_options` takes the reference-field id form
+  `ProductCategory|<CategoryId>|<FieldId>`), then write values. Post-seed sweep: select rows on
+  list-presented fields whose stored value resolves to no `FieldOptionValue` — every hit is a future
+  blank cell.
 - **Custom field system names** in MCP use format `ProductCategory|<CategoryId>|<FieldId>` for category fields, plain FieldId for global product fields. Use this SAME format in completeness rule field lists and in product query `FieldExpression` attributes.
 
 ### 2.10 Assets

@@ -3,6 +3,125 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.5.11]
+
+### Fixed
+- **Scroll-sweep before full-page screenshots and image assertions.**
+  `dw-demo-base/references/browser-automation.md` verify-flow recipe: Swift lazy-loads images, so
+  `fullPage` captures show blank tiles below the fold and `naturalWidth === 0` reads as "broken
+  image" on images that are fine. Sweep the viewport down the page first, then capture/measure;
+  verify any natural-width-0 finding with a direct fetch before filing it as a defect.
+
+## [3.5.10]
+
+### Fixed
+- **`NavigationPlacement: slider-nav-outside-expand` causes page-level horizontal overflow on
+  full-width sliders.** New symptom-table row in
+  `dw-demo-base/references/foundational/swift-building.md` §3: the outside-expand swiffy arrows
+  render past the viewport edge in a full-width row — the arrow IS the horizontal scrollbar. Default
+  to inside placement (empty value) for full-width sliders.
+
+## [3.5.9]
+
+### Fixed
+- **Always-visible spec component + the category-id trap on display groups.**
+  `dw-demo-base/references/foundational/swift-building.md`: the component table now lists
+  `Swift-v2_ProductFieldDisplayGroups` (always visible) beside the accordion — its list field is
+  `DisplayGroups`, not `FieldDisplayGroups` — and the symptom table gains its empty-shell row:
+  product-category ids are NOT display-group system names; a category-id list resolves to nothing
+  and renders an empty shell with no error.
+
+## [3.5.8]
+
+### Fixed
+- **Standard `Swift-v2_Row` grid columns render exactly one paragraph.**
+  `dw-demo-base/references/foundational/swift-building.md` §2: a second paragraph in the same
+  `gridRowColumn` is silently dropped (no error, no admin warning). Compose multi-element sections
+  inside one item's fields (e.g. Text + its `FirstButton`) or use a `*Flex` row definition, which
+  renders one flex column per paragraph.
+
+## [3.5.7]
+
+### Fixed
+- **Component-slider service page: three wirings, three failure smells.**
+  `dw-demo-base/references/foundational/swift-building.md` §1 gains the wiring triad for the page
+  tagged `ProductSliderService`: (1) `Swift-v2_ServicePage.cshtml` layout — missing returns a full
+  HTML document and the injector renders nothing; (2) an `eCom_ProductCatalog` app paragraph in a
+  real grid row — missing returns an empty body; (3) the app list template `ProductSlider.cshtml`
+  (the `ProductListPartial` dispatcher) — left at the shop default the slider leaks facet/sort/
+  load-more PLP chrome into the injected section. Same audit applies to the other service pages.
+
+## [3.5.6]
+
+### Fixed
+- **ButtonData item fields must never be seeded with plain label strings.**
+  `dw-demo-base/references/foundational/content-modelling.md` (Management-API editing section): the
+  render path deserializes stored `*Button*` values as ButtonData JSON; a bare `"Shop now"` throws
+  `ConverterException` and replaces the section with a Razor error block. Store full JSON or an empty
+  string; sweep seeds for non-empty non-JSON button values. Complements the existing GET/save binder
+  asymmetry note.
+
+## [3.5.5]
+
+### Fixed
+- **Dropdown/multi-select category-field values must store `FieldOptionValue`, not the display
+  name.** `dw-demo-base/references/foundational/pim-modelling.md` §2.8: a stored value that does not
+  resolve to an `EcomFieldOption.FieldOptionValue` renders as a blank cell with no error on the
+  storefront spec components (admin still shows the raw text); options whose value equals their name
+  mask the bug for some rows, so it surfaces as "some attributes randomly missing". Documents the
+  comma-separated multi-select convention, `create_field_options` with the
+  `ProductCategory|<CategoryId>|<FieldId>` id form for adding missing options, and a post-seed
+  orphan-value sweep.
+
+## [3.5.4]
+
+### Fixed
+- **BOM configurator data shape: `ProductItemBomGroupId` must be a real `EcomGroups` GroupId.**
+  `dw-demo-base/references/foundational/pim-modelling.md` §2.6 now splits the two `EcomProductItems`
+  row shapes (fixed component vs configurator slot): a configurator slot references an ecom group
+  whose products become the selectable options, with `ProductItemDefaultProductId` as the default; a
+  synthetic/unresolvable id silently degrades every row into a one-option pseudo-group named after
+  `ProductItemName` (looks like a template bug, is a data bug). Also documents the NOT-NULL
+  empty-string convention for `BomProductId`/`BomVariantId` and cross-links the Swift render side
+  (`Swift-v2_ProductBom` component row in `swift-building.md` §1).
+
+## [3.5.3]
+
+### Fixed
+- **Primary-shop trap: a catalog group related to both the storefront shop and a PIM/data shop can
+  resolve its primary shop to the data shop** — the storefront ecom navigation then drops the group
+  and the friendly-URL provider stops generating its slug (subset-of-groups sidebar + 404 slugs while
+  querystring URLs still work). Documented in
+  `dw-demo-base/references/foundational/commerce-catalog.md` §2.3 with the publish-time fix:
+  re-save the group via `save_groups` with the storefront `shopId` (replaces the shop relations),
+  then restart for the nav-tree/URL-provider caches.
+
+## [3.5.2]
+
+### Fixed
+- **Page-state flags: the MCP tool surface cannot express "routable but out of nav".** Sharpened
+  `dw-demo-base/references/foundational/swift-building.md` §6 with experiment-verified DB column
+  mapping (`active` = `PageActive` = nav visibility, `hidden` = `PageHidden` = routing/404;
+  `PageShowInLegend` is legacy and ignored by Swift nav templates). The documented `publish_pages`
+  both-flags gotcha extends to `save_pages(active:...)` and `set_page_menu(showInMenu:...)` — all
+  three couple the columns, so `active:false` also 404s the page. The utility-page state
+  (`PageActive=0, PageHidden=0`) needs Management API `PageSave` or SQL plus a host restart for the
+  nav-tree/friendly-URL caches.
+## [3.5.1]
+
+### Fixed
+- **Grid-row authoring pitfalls from a storefront-polish pass** (a furniture-configurator demo build).
+  In `dw-demo-base/references/foundational/data-access.md`: `GridRowDefinitionId` must name an existing
+  RowDefinition JSON — an unknown id (e.g. a guessed `5Columns`) renders the row and all its paragraphs
+  as **nothing, silently**; and GridRow layout columns (spacing/alignment/gap/colorscheme) are
+  SQL-only — the MCP `save_grid_rows` model doesn't carry them and a later MCP save silently reverts
+  them, while NULL spacing renders as the Swift 6rem default (the single biggest whitespace generator).
+  In `cache-invalidation.md`: the "UPDATE existing row = live" rule is now scoped to CONTENT fields —
+  layout-composition columns (GridRow spacing/valign/colorscheme, `Page.PageItemType/ItemId/PageColorSchemeId`)
+  behave like structure and need a restart; added rows for navigation-flag and group↔shop-relation
+  mutations (nav tree + friendly-URL provider are restart-only); and added the mixed-surface ordering
+  rule: **all MCP writes first, SQL for unexposed columns last, one restart**.
+
 ## [3.5.0]
 
 ### Changed

@@ -111,6 +111,20 @@ INSERT INTO GridRow (
 ) VALUES (<pageId>, 'Grid', '1Column', 'Swift-v2_Row', 1, NEWID());
 ```
 
+`GridRowDefinitionId` must name a RowDefinition JSON that actually exists under
+`Designs/<design>/Grid/Page/RowDefinitions/` — an unknown id renders **nothing, silently** (the row and
+all its paragraphs vanish from the page with no error). Enumerate that folder before composing; Swift v2
+ships `1Column`–`4Columns`, `6Columns`, the `*Flex` variants and asymmetric `2Columns_*` splits — there
+is no `5Columns`.
+
+Layout columns (`GridRowTopSpacing` / `GridRowBottomSpacing` / `GridRowVerticalAlignment` /
+`GridRowGapX/Y` / `GridRowColorSchemeId`) are settable only on this SQL surface — the MCP
+`save_grid_rows` model doesn't carry them **and a later MCP save of the same row silently reverts
+them**. Write them after all MCP saves of the row, then restart; the ordering rule and cache rows live
+in [`cache-invalidation.md`](cache-invalidation.md) "Mixing MCP and SQL on the same rows". NULL spacing
+renders as the Swift row-template default (`?? 6` = 6rem top and bottom) — serialize explicit values
+when composing a page, or every section ships with ~96px bands.
+
 ### Required NOT-NULL columns — `Paragraph`
 
 The most error-prone of the three:

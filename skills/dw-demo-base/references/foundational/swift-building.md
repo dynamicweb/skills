@@ -46,16 +46,43 @@ unmaintainable code that a Serializer re-deploy silently drops.
 | Category image only | `Swift-v2_ProductListGroupImage` | group image asset |
 | Group title + description (no image) | `Swift-v2_ProductListInfo` | `HideGroupTitle`, `HideGroupDescription`, `TitleFontSize` |
 | Subgroup navigation (tiles / list / carousel) | `Swift-v2_ProductGroupGrid` / `ProductGroupList` / `ProductGroupSlider` | needs child groups; see `SelectedGroups` + aspect-ratio pitfalls below |
-| Related / "similar" products | `Swift-v2_ProductComponentSlider` (+ `eCom/ProductCatalog/ProductSlider.cshtml` service) | `RelationType` (variants/most-sold/trending/latest/related-products); lazy-loads from a Catalog-app **service page** — an `eCom_ProductCatalog` app placed in a grid row (an app at `gridRowId=0` never renders, and the service page must be active) |
-| Spec / attribute groups | `Swift-v2_ProductFieldDisplayGroupsAccordion` | `FieldDisplayGroups`, `Layout` (bullets/list/table), `HideFieldLabels` |
-| BOM / assembled-from | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page |
+| Related / "similar" products | `Swift-v2_ProductComponentSlider` (+ `eCom/ProductCatalog/ProductSlider.cshtml` service) | `RelationType` (variants/most-sold/trending/latest/related-products); lazy-loads from a Catalog-app **service page** — see "Component-slider service page" wiring triad right below the table |
+| Spec / attribute groups | `Swift-v2_ProductFieldDisplayGroupsAccordion` (collapsible) / `Swift-v2_ProductFieldDisplayGroups` (always visible — the right pick for an elaborate spec sheet) | `FieldDisplayGroups` on the accordion, `DisplayGroups` on the always-visible variant — both take display-group **system names**, see the symptom table below; `Layout` (bullets/list/table), `HideFieldLabels` |
+| BOM / assembled-from + configurator | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page; renders fixed lines AND select-one radio groups per configurator slot. The data shape that drives the grouping (`ProductItemBomGroupId` must be a real `EcomGroups` id) is owned by [`pim-modelling.md`](pim-modelling.md) §2.6 |
 
 Picking the type is half the job — how many paragraphs a designed section becomes, and what goes in
 fields vs. rich text, is owned by [`content-modelling.md`](content-modelling.md).
 
+### Component-slider service page — the wiring triad and its failure smells
+
+`Swift-v2_ProductComponentSlider` (and the grid variant) POSTs to the page tagged
+`ProductSliderService` and injects the response. That service page needs **three** wirings, and each
+missing one has a distinct smell — diagnose from the smell, fix only the missing leg:
+
+1. **Layout** = `Swift-v2_ServicePage.cshtml` (renders only classic content). Missing → the POST
+   returns a full `<!doctype html>` document; the injector sees non-partial HTML and renders
+   **nothing** (the slider container collapses to empty).
+2. **An `eCom_ProductCatalog` app paragraph on the page**, placed in a real grid row (`gridRowId=0`
+   never renders; copying a working catalog-app paragraph from the shop page is the fast route).
+   Missing → the POST returns an empty body; same empty slider.
+3. **The app's list template** = `ProductSlider.cshtml` (it dispatches on the `ProductListPartial`
+   request param to `ProductGridComponent` / `ProductSliderComponent`). Left at the shop default →
+   the slider "works" but leaks the full PLP chrome — facet bar, sort dropdowns, breadcrumb,
+   "Load more" — into the injected section.
+
+The slider paragraph itself needs `ListComponentSource` = a Product-card component page and, for the
+group-scoped relation types, `RelateTo` group ids. Apply the same triad audit to the other service
+pages (`RelatedProductsListService`, search) when their consumers render empty.
+
 ## 2. Paragraph categories
 
-Paragraphs are added to grid rows on a page; each grid row holds 1+ paragraph. Common categories:
+Paragraphs are added to grid rows on a page; each grid row holds 1+ paragraph — but **standard
+(non-Flex) `Swift-v2_Row` templates render exactly ONE paragraph per grid column**
+(`column.Paragraph` is singular): a second paragraph placed in the same `gridRowColumn` is silently
+dropped from the render, with no error and no admin warning. Compose multi-element sections inside a
+single item's fields instead (e.g. a heading + CTA is one `Swift-v2_Text` with its `FirstButton`
+set, not a Text paragraph plus a `Swift-v2_Button` paragraph), or use a `*Flex` row definition,
+which renders one flex column per paragraph. Common categories:
 
 | Category | Example types | Where used |
 |----------|---------------|------------|
@@ -85,8 +112,10 @@ comes from the item-type's `Title` field.
 | Empty `<h2></h2>` above the block | any product paragraph | `Title` | Must be non-empty unless `HideTitle=True`. `paragraph.header` is unused. |
 | Heading too large/small | any product paragraph | `TitleFontSize` | Static enum: `display-1`..`display-6`, `h1`..`h6`. |
 | Specifications accordion renders empty | `Swift-v2_ProductFieldDisplayGroupsAccordion` | `FieldDisplayGroups` | Comma-separated `EcomFieldDisplayGroups.FieldDisplayGroupSystemName` list. **Empty selection = empty render.** |
+| Always-visible spec block renders an empty shell | `Swift-v2_ProductFieldDisplayGroups` | `DisplayGroups` (note: different field name than the accordion) | Same value rule: `FieldDisplayGroupSystemName`s, comma-separated. **Product-category ids are NOT display-group system names** — a category-id list (`<X>Attributes`-style) resolves to nothing and renders an empty shell with no error; the display groups are their own PIM entities with their own system names. |
 | Specs include "0"/"No"/blank rows | same | `HideFieldsWithZeroValue` | Set `True` to drop falsy values. |
 | Spec layout is bullet/list when you want a table | same | `Layout` | Static enum: `list \| columns \| table \| bullets \| commas`. `table` is cleanest for spec sheets. |
+| Page grows a horizontal scrollbar; slider arrows sit at/beyond the viewport edge | `Swift-v2_ProductComponentSlider` | `NavigationPlacement` | `slider-nav-outside-expand` positions the swiffy arrows OUTSIDE the slider container; in a full-width row the right arrow lands past the viewport and IS the page overflow. Leave empty (inside placement) for full-width sliders; reserve the outside variants for sliders in constrained containers. |
 | Documents paragraph shows product images | `Swift-v2_ProductMediaTable` | `ImageAssets` | Comma-separated `EcomDetailsGroup.EcomDetailsGroupSystemName` list. Stock: `Images`, `Manuals`. Default = all. Set to `Manuals` for downloads-only. |
 | Downloads list shows giant thumbnails | same | `HideThumbnails` | `True` for a clean filename + filetype + size table. |
 | Long description has too-wide lines | `Swift-v2_ProductLongDescription` | `TextReadability` | `max-width-on` (default) constrains to a reading column; `max-width-off` fills the column. |
@@ -290,19 +319,28 @@ variants. Find the live list via Admin UI → Pages → Page presets.
 The page row carries three orthogonal flags; misreading them causes false-alarm "page is broken"
 findings or pollutes the nav menu.
 
-| Flag | What it controls | Default for utility pages |
-|---|---|---|
-| `published` | In the publish graph (live vs draft) | `true` once content is set |
-| `hidden` | **Excluded from frontend routing** entirely | `false` — keep routable |
-| `active` | **Appears in the navigation menu** ("Hidden in Menu" toggle) | `false` for cart steps, product detail, asset info |
+| Flag | DB column | What it controls | Default for utility pages |
+|---|---|---|---|
+| `published` | (derived) | In the publish graph (live vs draft) | `true` once content is set |
+| `hidden` | `Page.PageHidden` | **Excluded from frontend routing** entirely (404) | `false` — keep routable |
+| `active` | `Page.PageActive` | **Appears in the navigation menu** ("Hidden in Menu" toggle) | `false` for cart steps, product detail, asset info |
 
-A page with `published=true, hidden=false, active=false` is **fully reachable** by direct URL and
-JS-driven navigation, and correctly hidden from the top nav — the right state for almost every utility
-page. **Gotcha — `publish_pages` flips both flags** (`Active=true, Hidden=false` together) despite the
-name; calling it on a deliberately `active=false` page adds an unwanted nav entry. To toggle one flag,
-use `save_pages`. When auditing reachability, check `published=true` and `hidden=false`; do NOT flag
-`active=false` on its own. (Full SQL-direct INSERT required-column list, including the
-`PageActiveFrom`/`PageActiveTo` silent-404 vector, lives in [`data-access.md`](data-access.md).)
+(`Page.PageShowInLegend` is the legacy legend flag — the Swift navigation templates ignore it; don't
+reach for it to hide a page from the nav.) The nav additionally hides permission-restricted pages
+regardless of flags, which is why a login-gated page can sit at top level without a nav entry.
+
+A page with `published=true, hidden=false, active=false` (DB: `PageActive=0, PageHidden=0`) is
+**fully reachable** by direct URL and JS-driven navigation, and correctly hidden from the top nav —
+the right state for almost every utility page. **Gotcha — the MCP page tools cannot express that
+state:** `publish_pages`, `save_pages(active:…)` and `set_page_menu(showInMenu:…)` all flip **both**
+columns together (`active/showInMenu: false` writes `PageActive=0` AND `PageHidden=1` — the page
+leaves the nav but also 404s; `true` writes `1/0` — routable but back in the nav). Set the split
+state via Management API `PageSave` or a SQL `UPDATE Page SET PageActive=0, PageHidden=0`, then
+restart the host — the navigation tree and friendly-URL provider cache the old page set (see
+[`cache-invalidation.md`](cache-invalidation.md)). When auditing reachability, check
+`published=true` and `hidden=false`; do NOT flag `active=false` on its own. (Full SQL-direct INSERT
+required-column list, including the `PageActiveFrom`/`PageActiveTo` silent-404 vector, lives in
+[`data-access.md`](data-access.md).)
 
 ## 7. Style assets — `Files/System/Styles/`
 

@@ -16,6 +16,18 @@ Do:
 - Use `INSERT...SELECT` to bulk-populate channel groups from catalog groups
 - Products live in 1+ catalog group (under the ShopType=1 shop) AND 1+ channel group per channel they're published to
 
+**Primary-shop trap — a group in two shops resolves ONE primary shop, and the wrong one silently
+delists it.** A group whose `EcomShopGroupRelation` rows span both the storefront shop and a
+PIM/data shop resolves a single primary shop; when that resolves to the data shop, the storefront's
+ecom navigation drops the group **and** the friendly-URL provider stops generating its slug — the
+symptom is a category sidebar showing only a subset of the shop's groups while the missing groups'
+slugs 404 (querystring URLs `?GroupID=…` still work, which is what makes it look like a nav bug
+instead of a data bug). Relation sorting does not decide the winner — don't try to out-sort it.
+Fix at publish time: re-save the group through `save_groups` with the **storefront** `shopId` — the
+save replaces the shop relations, leaving the storefront as the group's home — then restart (the nav
+tree and URL provider cache the old homing; see the slug gotcha below). If a seeding flow parks
+catalog groups in a data shop first, the publish step owes every storefront group this re-home.
+
 **Group URL slug gotcha — `ShopUrlDataProvider` lazy cache.** When a Swift frontend uses path-based group URLs (e.g. `/swift-2/shop/headsets`), the resolver is `Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider`'s static `Lazy<>` indexes (`InitializeProductUrlDataIndex`, `InitializeGroupProductRelationIndex`). Those indexes are populated at first request and only reset when `Notifications.Ecommerce.Group.AfterSave` fires — which fires from MCP `save_groups` and admin-UI saves but NOT from raw `UPDATE EcomGroups SET GroupMetaUrl = ...` SQL. Symptom: SQL-set slugs work in the DB, but `/shop/<slug>` 404s indefinitely until the host restarts OR a group is re-saved through MCP. Index rebuild via `/admin/api/BuildIndex` does NOT flush this — it's separate from Lucene. Recovery after raw-SQL changes to GroupMetaUrl / GroupNumber / any field used by URL resolution: re-save one group through `mcp__dynamicweb-commerce-mcp__save_groups` (idempotent — same payload pattern, same id), or restart the host.
 
 **Same cache-flush rule applies to `EcomGroupProductRelation` mutations** — fired via the native "Publish to channel" action (§2.3a below): `Notifications.Ecommerce.Group.AfterSave` fires, cache flushes, channel URLs resolve immediately. Fired via raw SQL `INSERT INTO EcomGroupProductRelation`: notification doesn't fire, cache stays stale until host restart. See §2.3a and [`cache-invalidation.md`](cache-invalidation.md).
