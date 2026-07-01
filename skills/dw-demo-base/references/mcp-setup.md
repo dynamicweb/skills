@@ -16,9 +16,10 @@
 
 Wire MCP for the Dynamicweb MCP server (`dynamicweb-commerce-mcp`) bundled with `Dynamicweb.Suite` 10.x. The canonical flow is **API-Key auth with a static bearer in `.mcp.json`** — five steps in **strict order**:
 
+0. On a first-time machine, install the Browser MCP (Step 5) before anything else — Step 3 is driven through its tools.
 1. Write `.mcp.json` with the discovered HTTPS port (bearer placeholder filled in Step 3b).
 2. Verify the two-layer TLS bypass is in place (see `references/tls-bypass.md`).
-3. Create the MCP configuration **MANUALLY** in DW admin UI with **Authentication method = API Key** — DW10 does **not** auto-create one. Step 3 is the most-missed step.
+3. Create the MCP configuration in DW admin UI with **Authentication method = API Key** — DW10 does **not** auto-create one, and the agent drives this itself via the Browser MCP (Playwright). Step 3 is the most-missed step.
 3b. Paste the plaintext API key into `.mcp.json` as the `Authorization: Bearer …` header and save it to per-demo Claude memory.
 4. Verification gate.
 
@@ -97,13 +98,16 @@ The skill's `assets/mcp.json.template` is the parametric source (with literal `<
 
 ## Step 3 — Create the MCP configuration in DW10 admin UI (API Key)
 
-**Create the MCP configuration in DW admin UI** — REQUIRED, and it must be done by hand. DW10 does NOT auto-create a usable MCP config when an HTTP client first connects. `/admin/mcp` will respond `401 Unauthorized` (or `200` with an empty `tools/list` for the legacy Claude.ai OAuth path) until a configuration exists. Create it manually:
+**Create the MCP configuration in DW admin UI** — REQUIRED. DW10 does NOT auto-create a usable MCP config when an HTTP client first connects. `/admin/mcp` will respond `401 Unauthorized` (or `200` with an empty `tools/list` for the legacy Claude.ai OAuth path) until a configuration exists.
 
-- Admin UI → **Settings → Integration → MCP configurations** (exact menu path may vary by DW10 version — look for "MCP" under Integration).
-- **New configuration**, set **Access = Full access**, set **Authentication method = API Key**.
-- Save. The admin UI generates a plaintext API key and **shows it once** — copy it immediately (you cannot retrieve the plaintext later; the DB only stores the hash). Format is the same shape as the Management API token: `CLAUDE.<hex>` (or similar; whatever the admin UI displays is what you paste).
+**The agent drives this step itself via the Browser MCP** — this is a scaffold-phase bootstrap one-click, the sanctioned exception to the build-phase verification-only rule (see `references/surface-priority.md` "Scaffold phase"). Prerequisite: the Browser MCP is installed (Step 5 — machine-level and idempotent; on a first-time machine run Step 5 first). If its `mcp__playwright__browser_*` tools haven't surfaced in this session, restart Claude Code once or use the headless alternative below.
 
-If you don't capture the key on first display, delete the configuration and recreate it — there is no "show again" path.
+1. `browser_navigate` to `https://localhost:<port>/Admin` and log in with the demo's admin credentials (from conversation state / project files — the discover-from-project-files rule).
+2. Navigate to **Settings → Integration → MCP configurations** (exact menu path may vary by DW10 version — look for "MCP" under Integration).
+3. **New configuration**, set **Access = Full access**, set **Authentication method = API Key**. Save.
+4. The admin UI generates a plaintext API key and **shows it once** — read it off the page immediately (`browser_snapshot` / DOM-grep; you cannot retrieve the plaintext later, the DB only stores the hash). Format is the same shape as the Management API token: `CLAUDE.<hex>` (or similar; whatever the admin UI displays is what you use in Step 3b).
+
+If the key wasn't captured on first display, delete the configuration and recreate it — there is no "show again" path. If browser automation can't land the flow after a few attempts, fall back to the headless alternative below; ask the user to click through it only when both routes are exhausted.
 
 After saving, do **not** rerun `/mcp` in Claude Code yet — there's no bearer in `.mcp.json` until Step 3b. The MCP session will pick up the key on the next request after Step 3b completes.
 
@@ -129,7 +133,7 @@ After saving, do **not** rerun `/mcp` in Claude Code yet — there's no bearer i
 
 ## Step 3 (headless alternative) — create the token + MCP config without the admin UI
 
-Steps 3 and 3b assume the admin UI is reachable. When it isn't (a fully headless build / automated provisioning), create both the API token and the MCP configuration **in code** — issue the token via `TokenService.TryCreateToken`, insert the `McpConfiguration` row, and bind them through `McpConfigurationService.LinkToken` (a raw `McpConfigurationCredential` insert returns `401` — the bind must go through the service, invoked by reflection since the type is internal), then restart the host. The full recipe, the reflection snippet, and the brittleness warning are owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §4. Prefer the admin-UI route (Step 3) whenever the UI is reachable.
+Steps 3 and 3b assume the admin UI is reachable and browser tools are available. When they aren't (a fully headless build / automated provisioning / Browser MCP tools not yet surfaced in this session), create both the API token and the MCP configuration **in code** — issue the token via `TokenService.TryCreateToken`, insert the `McpConfiguration` row, and bind them through `McpConfigurationService.LinkToken` (a raw `McpConfigurationCredential` insert returns `401` — the bind must go through the service, invoked by reflection since the type is internal), then restart the host. The full recipe, the reflection snippet, and the brittleness warning are owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §4. Prefer the Playwright-driven admin-UI route (Step 3) whenever the UI is reachable.
 
 ---
 
@@ -166,7 +170,9 @@ The conjunction (Connected AND > 200 tools) catches all three failure shapes: TL
 
 ## Step 5 — Install Browser MCP (machine-level, do once per Windows account)
 
-The Browser MCP (`@playwright/mcp`) gives Claude first-class browser tooling — log in, navigate, click, screenshot, inspect DOM — so verification flows after PIM seeding / template edits / customer-center wiring don't require the user to manually drive a tab. Unlike the Backend MCP (Steps 1–4 above, **per-demo**), the Browser MCP is **per-machine**: install once at user scope, every Dynamicweb demo on this account inherits it.
+The Browser MCP (`@playwright/mcp`) gives Claude first-class browser tooling — log in, navigate, click, screenshot, inspect DOM. During the scaffold phase it is the action surface for the admin-UI bootstrap one-clicks (Step 3, Step 6); during the build it is the verification surface (see `references/surface-priority.md`). Unlike the Backend MCP (Steps 1–4 above, **per-demo**), the Browser MCP is **per-machine**: install once at user scope, every Dynamicweb demo on this account inherits it.
+
+**Ordering note:** on a first-time machine, run this step **before Step 3** — it installs the tools Step 3 is driven through. It is idempotent, so running it first costs nothing on machines that already have it. The tool surface (`mcp__playwright__browser_*`) appears only in a fresh Claude Code session; if the tools are missing mid-session, restart Claude Code once or use Step 3's headless alternative.
 
 The full recipe + flag rationale + verification gate lives in [`references/browser-automation.md`](browser-automation.md). One-line install:
 
@@ -189,11 +195,11 @@ A Dynamicweb demo has **two** bearer tokens, both `CLAUDE.<hex>`-shaped rows in 
 | Token | Issued from | Used for |
 |---|---|---|
 | **MCP API key** | Admin UI → Settings → Integration → MCP configurations → New (Authentication method = API Key). Captured in Step 3 of this file. | `Authorization: Bearer …` header in `.mcp.json` (Step 3b). Validated against `AccessUserTokenHash` by `McpAuthMiddleware`. |
-| **Management API token** | Admin UI → Settings → System → Developer → API keys → New. Captured here in Step 6 via `AskUserQuestion`. | `Authorization: Bearer …` header on `/admin/api/...` calls. Used by Swift's [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) and [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md), and by PIM admin-API calls. |
+| **Management API token** | Admin UI → Settings → System → Developer → API keys → New. Captured here in Step 6 — the agent drives the admin UI via the Browser MCP and reads the displayed key. | `Authorization: Bearer …` header on `/admin/api/...` calls. Used by Swift's [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) and [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md), and by PIM admin-API calls. |
 
 These are distinct rows with different validation paths — don't reuse one for the other unless you've verified empirically. The data-model detail (the `McpConfigurationTokenId` binding, why the validation paths differ) is owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §3.
 
-If you don't have a Management API token in conversation state or memory, capture it via:
+If you don't have a Management API token in conversation state or memory, create one yourself: drive the admin UI via the Browser MCP to **Settings → System → Developer → API keys → New**, and read the displayed key off the page (same scaffold-phase one-click pattern as Step 3). If the browser surface is unavailable in this session, fall back to asking:
 
 > "I need the Management API bearer token for this Dynamicweb host. The format is `CLAUDE.<hex>`. You can find it in the admin UI under **Settings → System → Developer → API keys** (create one if none exists). Please paste the token in chat."
 

@@ -43,7 +43,7 @@ Walk every step in order — skip none. Each step's reference contains its own v
    `dotnet new dw10-suite --name Dynamicweb.Host.Suite`. The `--name Dynamicweb.Host.Suite` is mandatory; sister-skill path discovery depends on this name. Suite version is whatever the template + `dotnet restore` resolve — version policy is out of scope for this skill.
 
 3. **Wire MCP and fix the two-layer TLS bypass** -> [references/mcp-setup.md](references/mcp-setup.md) + [references/tls-bypass.md](references/tls-bypass.md) + [references/browser-automation.md](references/browser-automation.md)
-   Write `.mcp.json`, apply both TLS-bypass layers, create the admin-UI MCP configuration manually (Authentication method = API Key; Claude.ai OAuth is fallback-only), and install the user-scope Browser MCP (`@playwright/mcp`, machine-level and idempotent). The MCP verification gate: `claude mcp list` shows `Connected` AND `ToolSearch +dynamicweb` returns >200 tools.
+   Install the user-scope Browser MCP first (`@playwright/mcp`, machine-level and idempotent — its tools are the scaffold's action surface on the admin UI), write `.mcp.json`, apply both TLS-bypass layers, then drive the admin UI via the Browser MCP to create the MCP configuration and capture the shown-once API key (Authentication method = API Key; Claude.ai OAuth is fallback-only; headless code recipe when the UI is unreachable, ask the user only as last resort). The MCP verification gate: `claude mcp list` shows `Connected` AND `ToolSearch +dynamicweb` returns >200 tools.
 
 4. **Drop the guardrail artefacts** -> `references/customisations.md` + `references/customer-context.md`
    Stage `<demo>\CUSTOMISATIONS.md` (the customisation ledger) and ensure the `<demo>\customer-context\` read-only contract is wired into the per-demo `CLAUDE.md`. The `references/audit-customisations.md` recipe produces paste-ready end-of-phase audit content. When running **without GSD**, also copy the native orchestrator commands from `assets/commands/demo/` into the demo project's `.claude/commands/demo/` so `/demo:scaffold|impact|build|status` are available (see [references/orchestrator.md](references/orchestrator.md)).
@@ -70,7 +70,7 @@ The Serializer install steps live in base so any sister skill can pull them; the
 | Understand the TLS bypass | references/tls-bypass.md |
 | Install Browser MCP (`@playwright/mcp`) for verification flows; recover from `browserType.launchPersistentContext` / browser-launch errors (Chromium channel fallback, Node driver) | references/browser-automation.md |
 | See which vendor skill-repo patterns this plugin adopts vs deviates from | references/vendor-patterns.md |
-| Why SQL-cloning structural trees fails; why the admin UI is verification-only (anti-pattern detail behind the surface-priority rule) | references/surface-priority.md |
+| The surface contract — scaffold vs build phases, the surfaces per instance type (local / hosted / headless), why SQL-cloning structural trees fails, why the admin UI is verification-only during the build | references/surface-priority.md |
 | Generic demo-storytelling tactics (audience framing, one-source-N-shapes, the customer-wording glossary) | references/demo-tactics.md |
 | Manage the customisation budget | references/customisations.md |
 | Audit customisations at end of phase | references/audit-customisations.md |
@@ -119,24 +119,28 @@ This rule is owned by this skill and inherited by every sister skill (`dynamicwe
 
 ## Surface priority for CREATES (always-on rule)
 
-**Creating things in DW10 has a strict surface priority. Violating it has bitten this skill author multiple times — keeping the rule explicit at base level so every sister skill inherits it.**
+**Creating things in DW10 has a strict surface priority, split into two phases by the MCP verification gate. Violating it has bitten this skill author multiple times — keeping the rule explicit at base level so every sister skill inherits it.**
+
+**Scaffold phase** (local installs, before the MCP verification gate passes): the build surfaces don't exist yet — creating them is the point. The admin UI driven via the Browser MCP (Playwright) **is an action surface** here, scoped to the bootstrap one-clicks: create the MCP configuration + capture the shown-once API key, create the Management API key, AppStore install when the csproj route is closed, portal downloads. Ladder: script/CLI/filesystem → Admin API (when a bearer exists) → admin UI via Browser MCP → headless code recipe → ask the user (only when every automated surface is unreachable). Detail: [references/surface-priority.md](references/surface-priority.md).
+
+**Build phase** (after the gate — and hosted/headless installs from the first request):
 
 | Surface | Use for | Why |
 |---------|---------|-----|
 | 1. **MCP (`dynamicweb-commerce-mcp`)** | **Default — try this first for anything that creates a structural row** (pages, paragraphs, areas, products, groups, orders, users, etc.) | Calls DW's domain services. Triggers ALL the bookkeeping a UI click would: ItemRelation cloning, ItemList propagation, sibling-page linking, cache invalidation, index refresh, child-row creation, validation. ~260 tools. |
 | 2. **Management API** (`/admin/api/...`) | Fallback when MCP doesn't expose the operation. Usually admin-grade actions: `BuildIndex`, `CacheInformationRefresh`, `FeatureManagementToggle`, anything in `/admin/api/docs/`. | Same DW domain services as MCP, just a different transport. |
-| 3. **Admin UI** (Playwright) | **Verification only** — navigate, screenshot, DOM-grep to confirm a change landed. Never an action surface. | Every admin-UI click is an Admin API call underneath (the admin SPA is a client of `/admin/api/...`), so a "UI-only" operation means you haven't found the endpoint yet — check `/admin/api/docs/` or watch the SPA's network calls. For a genuinely awkward one-click, ask the user to click manually; don't drive the admin SPA via Playwright to make changes. (The Backend MCP AddIn is *not* one of these cases — install it via a NuGet `PackageReference`, the deterministic default; see [references/foundational/extend-mcp-tools.md](references/foundational/extend-mcp-tools.md) §1. AppStore is its last resort, not its first.) |
-| 4. **Direct SQL** (`sqlcmd ...`) | **LAST RESORT** — only for: (a) cleanup/teardown, (b) bulk schema-drift fixes, (c) reading data, (d) cases where you've confirmed all three higher surfaces don't support the operation and a vendor patch is the only alternative. | Bypasses every DW service. Misses bookkeeping. Creates orphans. Corrupts caches. **You will not figure out the full bookkeeping for a non-trivial create via SQL — DW does too much per service call.** |
+| 3. **Direct SQL** (`sqlcmd ...`, local installs only) | **LAST RESORT** — only for: (a) cleanup/teardown, (b) bulk schema-drift fixes, (c) reading data, (d) cases where you've confirmed both higher surfaces don't support the operation and a vendor patch is the only alternative. | Bypasses every DW service. Misses bookkeeping. Creates orphans. Corrupts caches. **You will not figure out the full bookkeeping for a non-trivial create via SQL — DW does too much per service call.** |
 
-**Pattern to follow:**
+The **admin UI is verification-only during the build** — navigate, screenshot, DOM-grep to confirm a change landed. Every admin-UI click is an Admin API call underneath (the admin SPA is a client of `/admin/api/...`), so a "UI-only" operation means the endpoint hasn't been found yet. (The Backend MCP AddIn install is a scaffold-phase concern — the deterministic default is a NuGet `PackageReference`; see [references/foundational/extend-mcp-tools.md](references/foundational/extend-mcp-tools.md) §1. AppStore is its last resort, not its first.)
+
+**Pattern to follow (build phase):**
 1. Try MCP. If the tool name suggests it (e.g. `copy_area`, `copy_page`, `save_pages`), use it.
-2. If MCP errors or doesn't expose the operation, try the Management API (`/admin/api/docs/` for the catalogue).
-3. If neither seems to expose it, the operation still exists on the Admin API — the admin UI is a SPA over `/admin/api/...`. Find the endpoint the UI calls (`/admin/api/docs/`, or watch the network tab while the user clicks once), then call it as surface 2. If endpoint discovery stalls, pause and ask the user to do the one-click manually. Playwright on `/Admin` is verification-only — never drive the admin UI to make changes.
-4. Only after exhausting 1-3 do you reach for SQL — and even then, prefer SQL for cleanup of a previous bad attempt rather than for the create.
+2. If MCP errors or doesn't expose the operation, work the Management API — the operation exists there. Discover the endpoint via the `/admin/api/docs/` catalogue, the `dw10source` command classes, or read-only Playwright network watching (`mcp__playwright__browser_network_requests`), then call it as surface 2.
+3. Local installs only: after 1-2 are exhausted, reach for SQL — and even then, prefer SQL for cleanup of a previous bad attempt rather than for the create.
 
-Why SQL-cloning structural trees specifically is forbidden (the bookkeeping it misses, the 10-screens-later breakage): [references/surface-priority.md](references/surface-priority.md). The platform mechanism the discipline rests on — what an MCP create's domain-service call actually does (ItemRelation cloning, ItemList propagation, cache/index refresh) and why the admin UI is a SPA over `/admin/api/...` — is in [references/foundational/extend-mcp-tools.md](references/foundational/extend-mcp-tools.md) §5.
+Why SQL-cloning structural trees specifically is forbidden (the bookkeeping it misses, the 10-screens-later breakage), plus the full phase × instance-type matrix: [references/surface-priority.md](references/surface-priority.md). The platform mechanism the discipline rests on — what an MCP create's domain-service call actually does (ItemRelation cloning, ItemList propagation, cache/index refresh) and why the admin UI is a SPA over `/admin/api/...` — is in [references/foundational/extend-mcp-tools.md](references/foundational/extend-mcp-tools.md) §5.
 
-**Hosted/online installs:** surface 4 does not exist and surface 1 is version-dependent (probe first — never assume MCP is present or absent). The priority collapses to MCP-if-present → Management API → ask the user; the API recipes that replace the SQL rungs live in [references/online-mode.md](references/online-mode.md).
+**Hosted/online installs:** there is no scaffold phase (credentials are handed over) and surface 3 does not exist — no SQL, ever. Surface 1 is version-dependent (probe first — never assume MCP is present or absent). The priority collapses to MCP-if-present → Management API → ask the user for the rare operation neither exposes; the API recipes that replace the SQL rungs live in [references/online-mode.md](references/online-mode.md).
 
 This rule is owned by this skill and inherited by every sister skill.
 
