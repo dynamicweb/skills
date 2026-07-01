@@ -137,7 +137,8 @@ After a Dynamicweb demo finishes seeding (PIM content, customer-center pages, pa
      short waits, then back to top), and only then screenshot or measure `naturalWidth`. Treat a
      natural-width-0 finding on an un-swept page as a measurement artifact, not a defect — verify
      with a direct `fetch` of the image URL before filing it.
-6. **Report findings to chat.** Surface mismatches (wrong count, missing element, NRE in template) so the next iteration of the seeding script can patch the root cause.
+6. **Run the visual QA pass** — [`visual-qa.md`](visual-qa.md) owns it: the programmatic detectors (horizontal overflow, broken/stretched images, whitespace bands), the interaction pass, the eyeball checklist, and the symptom→fix routing table. The entity-count check in step 5 proves the data landed; it says nothing about polish, and demo pages are held to "nothing left to fix", not "it renders".
+7. **Report findings to chat.** Surface mismatches (wrong count, missing element, NRE in template, visual-QA findings) so the next iteration of the seeding script can patch the root cause.
 
 This pattern replaces the manual loop of "user logs in, observes symptom, pastes error/screenshot to chat" — which is what the Playwright MCP install is for in the first place. The placeholder fields (`<port>`, `<shop-slug>`, seeded user credentials) are deliberately not filled in here; they belong to the per-demo `<demo>\notes\` working notes, not the cross-demo skill.
 

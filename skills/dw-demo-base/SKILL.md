@@ -69,6 +69,7 @@ The Serializer install steps live in base so any sister skill can pull them; the
 | Get MCP working (and verify it) | references/mcp-setup.md |
 | Understand the TLS bypass | references/tls-bypass.md |
 | Install Browser MCP (`@playwright/mcp`) for verification flows; recover from `browserType.launchPersistentContext` / browser-launch errors (Chromium channel fallback, Node driver) | references/browser-automation.md |
+| **Read a storefront screenshot critically** — programmatic defect detectors (horizontal overflow, broken/stretched images, whitespace bands), the interaction pass for dead controls, the per-screenshot eyeball checklist, symptom→fix routing, and the per-page definition of done. Run on every demo-critical page before declaring it polished. | **references/visual-qa.md** |
 | See which vendor skill-repo patterns this plugin adopts vs deviates from | references/vendor-patterns.md |
 | The surface contract — scaffold vs build phases, the surfaces per instance type (local / hosted / headless), why SQL-cloning structural trees fails, why the admin UI is verification-only during the build | references/surface-priority.md |
 | Generic demo-storytelling tactics (audience framing, one-source-N-shapes, the customer-wording glossary) | references/demo-tactics.md |
