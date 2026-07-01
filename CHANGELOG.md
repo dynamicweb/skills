@@ -3,6 +3,15 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.14]
+
+### Fixed
+- **Scroll-sweep before full-page screenshots and image assertions.**
+  `dw-demo-base/references/browser-automation.md` verify-flow recipe: Swift lazy-loads images, so
+  `fullPage` captures show blank tiles below the fold and `naturalWidth === 0` reads as "broken
+  image" on images that are fine. Sweep the viewport down the page first, then capture/measure;
+  verify any natural-width-0 finding with a direct fetch before filing it as a defect.
+
 ## [3.4.13]
 
 ### Fixed

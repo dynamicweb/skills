@@ -130,6 +130,13 @@ After a Dynamicweb demo finishes seeding (PIM content, customer-center pages, pa
 3. **Log in as a seeded buyer.** Submit credentials via the storefront login form, NOT against `/Admin` (that's the admin UI, not the customer journey). Credentials come from the demo's per-demo Claude memory (the discover-from-project-files rule); never hardcode.
 4. **Walk to the target tab** (e.g. account orders, favorites, recurring orders, checkout).
 5. **Screenshot** (pass an absolute `<demo>\notes\playwright\` filename so the shot lands with the demo, never in the repo root — see "Where screenshots land") + **DOM-grep** for the expected entity count. Example: assert at least N order rows visible, or that a specific SKU appears in favorites.
+   - **Scroll-sweep before any `fullPage` screenshot or image assertion.** Swift lazy-loads images
+     (`loading="lazy"`); a full-page capture stitches below-fold regions whose images never entered
+     the viewport, so tiles render as blank wells, and `img.naturalWidth === 0` reads as "broken
+     image" when the file is fine. Sweep the page first (`window.scrollTo` in ~500px steps with
+     short waits, then back to top), and only then screenshot or measure `naturalWidth`. Treat a
+     natural-width-0 finding on an un-swept page as a measurement artifact, not a defect — verify
+     with a direct `fetch` of the image URL before filing it.
 6. **Report findings to chat.** Surface mismatches (wrong count, missing element, NRE in template) so the next iteration of the seeding script can patch the root cause.
 
 This pattern replaces the manual loop of "user logs in, observes symptom, pastes error/screenshot to chat" — which is what the Playwright MCP install is for in the first place. The placeholder fields (`<port>`, `<shop-slug>`, seeded user credentials) are deliberately not filled in here; they belong to the per-demo `<demo>\notes\` working notes, not the cross-demo skill.
