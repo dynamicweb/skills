@@ -32,6 +32,44 @@
 - MCP `create_or_update_product_queries` saves `.query` XML but leaves `<Source Repository="" Item="" />` empty — fix via `sed` or patch the file before index build.
 - Rebuild the index after ANY product/group/channel mutation.
 
+## MCP product query payload contract
+
+`create_or_update_product_queries` takes a `ProductQueryModel`. Omit `id` when creating; provide `id` when updating. Discover fields first — `get_standard_fields`, `get_product_category_fields`, `get_macro_fields` — and use only the returned field system names. If completeness matters, load real rule IDs from `get_completion_rules`.
+
+Canonical shape (dashboard-backing queries go in the Shared tree — see location rules above):
+
+```json
+{
+  "name": "active_missing_short_description",
+  "sourceIndex": "EcommerceRepository|EcommerceIndex",
+  "folderPath": "/Files/System/SmartSearches/Ecommerce/Shared",
+  "configuration": {
+    "completionRules": [],
+    "completionLanguages": []
+  },
+  "groupExpressions": [
+    {
+      "operator": "And",
+      "negate": false,
+      "rootExpressions": [
+        { "field": "ProductIsActive", "operator": "Equal", "value": "True" },
+        { "field": "ProductShortDescription", "operator": "IsEmpty", "value": "" }
+      ],
+      "expressions": []
+    }
+  ]
+}
+```
+
+Hard constraints:
+- `sourceIndex` is `RepositoryName|IndexName` — a pipe, no spaces (discover valid values via `get_product_queries`)
+- every `value` is a string; `IsEmpty` uses `value: ""`
+- exactly one item in `groupExpressions`
+- the MCP model supports only **constant** test values — for Parameter, Macro, Term, or Code test values, say so explicitly and recommend the Dynamicweb admin UI
+- completion wiring: integer rule IDs in `configuration.completionRules`, language ID strings in `configuration.completionLanguages`
+
+Typical editorial backlog queries: `active_missing_short_description` (`ProductIsActive=True` + `ProductShortDescription IsEmpty`), `active_missing_images` (image field `IsEmpty`), `low_stock_active` (`ProductStock LessThan "5"`), `incomplete_products` (completion rule IDs + languages attached). Remember the saved `.query` leaves `<Source Repository="" Item="" />` empty — patch it before the index build (see above).
+
 ## Dashboard query location — Shared ONLY, never duplicate to Repositories
 
 For dashboard widget queries, put each `.query` + `.configuration` file in **exactly one** place:

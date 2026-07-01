@@ -3,7 +3,7 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
-## [3.4.14]
+## [3.5.11]
 
 ### Fixed
 - **Scroll-sweep before full-page screenshots and image assertions.**
@@ -12,7 +12,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   image" on images that are fine. Sweep the viewport down the page first, then capture/measure;
   verify any natural-width-0 finding with a direct fetch before filing it as a defect.
 
-## [3.4.13]
+## [3.5.10]
 
 ### Fixed
 - **`NavigationPlacement: slider-nav-outside-expand` causes page-level horizontal overflow on
@@ -21,7 +21,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   render past the viewport edge in a full-width row — the arrow IS the horizontal scrollbar. Default
   to inside placement (empty value) for full-width sliders.
 
-## [3.4.12]
+## [3.5.9]
 
 ### Fixed
 - **Always-visible spec component + the category-id trap on display groups.**
@@ -31,7 +31,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   product-category ids are NOT display-group system names; a category-id list resolves to nothing
   and renders an empty shell with no error.
 
-## [3.4.11]
+## [3.5.8]
 
 ### Fixed
 - **Standard `Swift-v2_Row` grid columns render exactly one paragraph.**
@@ -40,7 +40,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   inside one item's fields (e.g. Text + its `FirstButton`) or use a `*Flex` row definition, which
   renders one flex column per paragraph.
 
-## [3.4.10]
+## [3.5.7]
 
 ### Fixed
 - **Component-slider service page: three wirings, three failure smells.**
@@ -51,7 +51,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   (the `ProductListPartial` dispatcher) — left at the shop default the slider leaks facet/sort/
   load-more PLP chrome into the injected section. Same audit applies to the other service pages.
 
-## [3.4.9]
+## [3.5.6]
 
 ### Fixed
 - **ButtonData item fields must never be seeded with plain label strings.**
@@ -61,7 +61,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   string; sweep seeds for non-empty non-JSON button values. Complements the existing GET/save binder
   asymmetry note.
 
-## [3.4.8]
+## [3.5.5]
 
 ### Fixed
 - **Dropdown/multi-select category-field values must store `FieldOptionValue`, not the display
@@ -73,7 +73,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   `ProductCategory|<CategoryId>|<FieldId>` id form for adding missing options, and a post-seed
   orphan-value sweep.
 
-## [3.4.7]
+## [3.5.4]
 
 ### Fixed
 - **BOM configurator data shape: `ProductItemBomGroupId` must be a real `EcomGroups` GroupId.**
@@ -85,7 +85,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   empty-string convention for `BomProductId`/`BomVariantId` and cross-links the Swift render side
   (`Swift-v2_ProductBom` component row in `swift-building.md` §1).
 
-## [3.4.6]
+## [3.5.3]
 
 ### Fixed
 - **Primary-shop trap: a catalog group related to both the storefront shop and a PIM/data shop can
@@ -96,7 +96,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   re-save the group via `save_groups` with the storefront `shopId` (replaces the shop relations),
   then restart for the nav-tree/URL-provider caches.
 
-## [3.4.5]
+## [3.5.2]
 
 ### Fixed
 - **Page-state flags: the MCP tool surface cannot express "routable but out of nav".** Sharpened
@@ -107,8 +107,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   three couple the columns, so `active:false` also 404s the page. The utility-page state
   (`PageActive=0, PageHidden=0`) needs Management API `PageSave` or SQL plus a host restart for the
   nav-tree/friendly-URL caches.
-
-## [3.4.4]
+## [3.5.1]
 
 ### Fixed
 - **Grid-row authoring pitfalls from a storefront-polish pass** (a furniture-configurator demo build).
@@ -123,19 +122,93 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   mutations (nav tree + friendly-URL provider are restart-only); and added the mixed-surface ordering
   rule: **all MCP writes first, SQL for unexposed columns last, one restart**.
 
+## [3.5.0]
+
+### Changed
+- **Replaced the blanket "admin UI is never an action surface" guardrail with a phase-scoped
+  surface contract.** Root cause of demo builds stalling on human intervention during local
+  installation: the verification-only rule had no scaffold carve-out — six statements across the
+  demo chain routed every awkward admin-UI operation to "ask the user", and `mcp-setup.md` Step 3
+  mandated creating the MCP configuration *by hand* even though the shown-once API key is readable
+  off the page by browser automation. The original intent of the guardrail — no admin-UI actions
+  for operations MCP or the Admin API can perform, especially on hosted/headless installs — is
+  kept and enforced *more* strictly, but scoped to the build phase. The new contract
+  (`surface-priority.md` is the canonical statement, with a phase × instance-type matrix):
+  - **Two phases, split by the MCP verification gate.** *Scaffold* (local, before the gate): the
+    admin UI via the Browser MCP **is an action surface** for the bootstrap one-clicks — create
+    the MCP configuration + capture the shown-once key (Step 3 is now agent-driven end-to-end),
+    create the Management API key (Step 6 likewise), AppStore install when the csproj route is
+    closed, portal downloads. Ladder: script/CLI → Admin API → Browser MCP on the admin UI →
+    headless code recipe → ask the user (last resort only). *Build* (after the gate): strict —
+    every change lands on MCP → Admin API → direct SQL (local last resort); the admin UI is
+    verification-only with **no** "ask the user to click" rung; endpoint discovery goes through
+    `/admin/api/docs/`, `dw10source`, or read-only Playwright network watching.
+  - **Surfaces by instance type made explicit**: local = MCP + Admin API + direct SQL;
+    hosted (cloud) and headless = MCP-if-present + Management API, **no SQL ever**; hosted/headless
+    have no scaffold phase (credentials are handed over), so build rules apply from the first
+    request.
+  - **Install ordering fixed**: the Browser MCP moves to the front of the scaffold sequence
+    (machine-level, idempotent) so its tools exist when Step 3 needs them; its fresh-session
+    constraint is called out with the restart/headless fallbacks.
+  - `dw-setup-install`'s three pause-and-wait clauses become self-service recovery ladders
+    (re-bootstrap → recreate config via browser automation → verify; escalate only when every
+    automated route is exhausted), and failed portal downloads are fetched via browser automation.
+  - Files: `surface-priority.md` (rewritten), `dw-demo-base/SKILL.md` (phase-scoped summary +
+    step-3 reorder), `mcp-setup.md` (Steps 0/3/5/6), `browser-automation.md` (scope guard),
+    `online-mode.md`, `foundational/extend-mcp-tools.md` §1, `dw-setup-install/SKILL.md`,
+    `dw-demo-swift/references/admin-ui-authoring.md` (pointer).
+
+## [3.4.4]
+
+### Fixed
+- **Purged the pre-v2 leftovers a style/structure audit found, and refreshed the stale meta-docs.**
+  Supersedes 3.4.3's reconnect approach: linking the leftover references kept stale knowledge
+  reachable — the durable fix is folding their unique content up and deleting the files.
+  The v2 restructure carried four legacy files over verbatim that nothing linked and that newer
+  knowledge had superseded or contradicted:
+  - `dw-pim-completeness/references/dashboard-widgets.md` and
+    `dw-search-indexing/references/product-query-authoring.md` — orphaned MCP payload references
+    from the deleted legacy skills, partly contradicted by the corrections in the
+    `pim-completeness.md` foundational candidate (3.4.2's `userIds` blocker, dead widget types,
+    phantom areas). Their still-unique payload contracts are **folded into the foundational
+    candidates** (`CreateDashboardModel`/`AddWidgetModel`/`RepositoryCountWidget` params into
+    `pim-completeness.md`, reconciled with the blockers — the example now passes `userIds`; the
+    `ProductQueryModel` canonical shape, hard constraints, and typical backlog queries into
+    `search-indexing.md`, reconciled with the Shared-folder location rule); the files are deleted.
+  - `dw-pim-workflow/references/queries-and-dashboards.md` — orphaned, delegated query creation to
+    the deleted `dynamicweb-product-query-creator` skill, and its dashboard half was superseded by
+    the candidate. Deleted; its backlog-query examples moved into the candidate fold above.
+  - `dw-pim-workflow/agents/openai.yaml` — a stray OpenAI-platform agent config referencing the
+    retired `dynamicweb-pim-solution-assistant`. Deleted.
+  - `dw-pim-workflow/references/completeness-and-workflows.md` was kept (unique
+    `create_or_update_workflows` / `create_or_update_completeness` MCP schemas) and is now linked
+    from the SKILL.md instead of orphaned.
+  Also fixed three stale prose pointers to deleted skills ("the dashboard skill", "the product
+  query creator skill" ×2) in `dw-pim-completeness` and `dw-search-indexing`; fixed the
+  Non-triggers routing rows that still pointed at retired pre-v2 skills —
+  `dw-setup-install` (`dynamicweb-business-setup-agent` → `dw-setup-config`) and
+  `dw-swift-building` (`dynamicweb-solution-installer` / `dynamicweb-business-solution-agent` /
+  `dynamicweb-business-setup-agent` → `dw-setup-install` / `dw-pim-modelling` /
+  `dw-commerce-catalog`) — and removed `dw-setup-install`'s foundational→demo routing row
+  (`-> dw-demo-base`, a boundary violation — now "the presales demo bundle"). Meta-docs refreshed to match the repo:
+  `CLAUDE.md` now documents the `type:`/`group:` frontmatter fields all 31 skills carry and uses
+  the real `dw-pim-completeness` description as its example; `dynamicweb-skills-structure.md`
+  catalog/taxonomy/bundle tables updated to the actual skill names (`dw-render-razor`,
+  `dw-render-templatetags`, `dw-render-viewmodels`), the `source` and `demo` areas, all six
+  bundles, and no longer points to a nonexistent `CONVENTIONS.md`; `CONTENT-GAPS.md` rewritten —
+  its coverage table listed only pre-v2 skill names and its top "gaps with no skill" (search,
+  commerce, advanced PIM, upgrades, security) all exist as skills now.
+
 ## [3.4.3]
 
 ### Fixed
-- **Reconnected the two MCP authoring references orphaned by the v2 restructure.** The legacy
-  skills' reference files were carried over verbatim (`dashboard-widgets.md` into
+- **Reconnected the two MCP authoring references orphaned by the v2 restructure.** (Superseded by
+  3.4.4, which folds their unique content into the foundational candidates and deletes the files.)
+  The legacy skills' reference files were carried over verbatim (`dashboard-widgets.md` into
   `dw-pim-completeness`, `product-query-authoring.md` into `dw-search-indexing`) but no SKILL.md
-  linked them, and three prose pointers still named skills that no longer exist ("the dashboard
-  skill", "the product query creator skill"). Both host SKILL.md files now link their reference
-  (dashboards section and Next Steps in `dw-pim-completeness`; Next Steps in `dw-search-indexing`),
-  and the stale pointers are replaced with resolvable links. Also de-duplicated the widget payload
-  content: `product-query-authoring.md` no longer embeds its own copy of the widget attachment
-  steps and `RepositoryCountWidget` payload example — `dw-pim-completeness/references/dashboard-widgets.md`
-  is the single canonical source, preventing silent drift between the two files.
+  linked them, and three prose pointers still named skills that no longer exist. Both host SKILL.md
+  files gained links to their reference, the stale pointers were replaced with resolvable links,
+  and the widget payload duplication between the two references was removed.
 
 ## [3.4.2]
 

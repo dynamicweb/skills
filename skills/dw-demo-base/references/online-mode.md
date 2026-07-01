@@ -23,9 +23,9 @@ Tool availability on hosted installs is **version-dependent and a moving target*
 
 1. **Management API**: `GET https://<host>/Admin/Api/api.json` with `Authorization: Bearer CLAUDE.<hex>`. Returns the full OpenAPI catalogue (~1,900 operations on 10.25.x) including the platform version in `info.version`. Save it locally — it is the working map for everything below.
 2. **MCP**: `POST https://<host>/admin/mcp` with a JSON-RPC `initialize`. A 404 plus zero MCP-related operations in the OpenAPI spec means the install doesn't expose MCP — fall through to the Management API as primary surface. If MCP responds, the normal surface priority applies and most of this file's API recipes become fallbacks.
-3. **Admin UI via Playwright**: needs interactive credentials (ask the user). Third surface, for the rare operation the API doesn't expose.
+3. **Admin UI via Playwright**: needs interactive credentials (ask the user for them). Verification surface only — build-phase rules apply from the first request on a hosted install, since there is nothing to scaffold.
 
-**Surface priority in online mode:** MCP (if the probe finds it) → Management API → admin UI via Playwright → **ask the user**. There is no SQL surface, ever — the "last resort" rung of the local surface-priority table simply does not exist here, which also means every SQL-based sister-skill recipe needs the API equivalent from this file.
+**Surface priority in online mode:** MCP (if the probe finds it) → Management API → **ask the user** for the rare operation neither exposes. There is no SQL surface, ever — the "last resort" rung of the local surface-priority table simply does not exist here, which also means every SQL-based sister-skill recipe needs the API equivalent from this file. The admin UI stays verification-only, same as every build phase (`surface-priority.md`).
 
 ## Management API recipe pack (validated DW 10.25.x)
 
