@@ -76,7 +76,13 @@ pages (`RelatedProductsListService`, search) when their consumers render empty.
 
 ## 2. Paragraph categories
 
-Paragraphs are added to grid rows on a page; each grid row holds 1+ paragraph. Common categories:
+Paragraphs are added to grid rows on a page; each grid row holds 1+ paragraph — but **standard
+(non-Flex) `Swift-v2_Row` templates render exactly ONE paragraph per grid column**
+(`column.Paragraph` is singular): a second paragraph placed in the same `gridRowColumn` is silently
+dropped from the render, with no error and no admin warning. Compose multi-element sections inside a
+single item's fields instead (e.g. a heading + CTA is one `Swift-v2_Text` with its `FirstButton`
+set, not a Text paragraph plus a `Swift-v2_Button` paragraph), or use a `*Flex` row definition,
+which renders one flex column per paragraph. Common categories:
 
 | Category | Example types | Where used |
 |----------|---------------|------------|

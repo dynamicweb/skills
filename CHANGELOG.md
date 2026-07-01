@@ -3,6 +3,15 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.11]
+
+### Fixed
+- **Standard `Swift-v2_Row` grid columns render exactly one paragraph.**
+  `dw-demo-base/references/foundational/swift-building.md` §2: a second paragraph in the same
+  `gridRowColumn` is silently dropped (no error, no admin warning). Compose multi-element sections
+  inside one item's fields (e.g. Text + its `FirstButton`) or use a `*Flex` row definition, which
+  renders one flex column per paragraph.
+
 ## [3.4.10]
 
 ### Fixed
