@@ -3,6 +3,17 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.6]
+
+### Fixed
+- **Primary-shop trap: a catalog group related to both the storefront shop and a PIM/data shop can
+  resolve its primary shop to the data shop** — the storefront ecom navigation then drops the group
+  and the friendly-URL provider stops generating its slug (subset-of-groups sidebar + 404 slugs while
+  querystring URLs still work). Documented in
+  `dw-demo-base/references/foundational/commerce-catalog.md` §2.3 with the publish-time fix:
+  re-save the group via `save_groups` with the storefront `shopId` (replaces the shop relations),
+  then restart for the nav-tree/URL-provider caches.
+
 ## [3.4.5]
 
 ### Fixed
