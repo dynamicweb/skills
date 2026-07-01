@@ -46,12 +46,33 @@ unmaintainable code that a Serializer re-deploy silently drops.
 | Category image only | `Swift-v2_ProductListGroupImage` | group image asset |
 | Group title + description (no image) | `Swift-v2_ProductListInfo` | `HideGroupTitle`, `HideGroupDescription`, `TitleFontSize` |
 | Subgroup navigation (tiles / list / carousel) | `Swift-v2_ProductGroupGrid` / `ProductGroupList` / `ProductGroupSlider` | needs child groups; see `SelectedGroups` + aspect-ratio pitfalls below |
-| Related / "similar" products | `Swift-v2_ProductComponentSlider` (+ `eCom/ProductCatalog/ProductSlider.cshtml` service) | `RelationType` (variants/most-sold/trending/latest/related-products); lazy-loads from a Catalog-app **service page** — an `eCom_ProductCatalog` app placed in a grid row (an app at `gridRowId=0` never renders, and the service page must be active) |
+| Related / "similar" products | `Swift-v2_ProductComponentSlider` (+ `eCom/ProductCatalog/ProductSlider.cshtml` service) | `RelationType` (variants/most-sold/trending/latest/related-products); lazy-loads from a Catalog-app **service page** — see "Component-slider service page" wiring triad right below the table |
 | Spec / attribute groups | `Swift-v2_ProductFieldDisplayGroupsAccordion` | `FieldDisplayGroups`, `Layout` (bullets/list/table), `HideFieldLabels` |
 | BOM / assembled-from + configurator | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page; renders fixed lines AND select-one radio groups per configurator slot. The data shape that drives the grouping (`ProductItemBomGroupId` must be a real `EcomGroups` id) is owned by [`pim-modelling.md`](pim-modelling.md) §2.6 |
 
 Picking the type is half the job — how many paragraphs a designed section becomes, and what goes in
 fields vs. rich text, is owned by [`content-modelling.md`](content-modelling.md).
+
+### Component-slider service page — the wiring triad and its failure smells
+
+`Swift-v2_ProductComponentSlider` (and the grid variant) POSTs to the page tagged
+`ProductSliderService` and injects the response. That service page needs **three** wirings, and each
+missing one has a distinct smell — diagnose from the smell, fix only the missing leg:
+
+1. **Layout** = `Swift-v2_ServicePage.cshtml` (renders only classic content). Missing → the POST
+   returns a full `<!doctype html>` document; the injector sees non-partial HTML and renders
+   **nothing** (the slider container collapses to empty).
+2. **An `eCom_ProductCatalog` app paragraph on the page**, placed in a real grid row (`gridRowId=0`
+   never renders; copying a working catalog-app paragraph from the shop page is the fast route).
+   Missing → the POST returns an empty body; same empty slider.
+3. **The app's list template** = `ProductSlider.cshtml` (it dispatches on the `ProductListPartial`
+   request param to `ProductGridComponent` / `ProductSliderComponent`). Left at the shop default →
+   the slider "works" but leaks the full PLP chrome — facet bar, sort dropdowns, breadcrumb,
+   "Load more" — into the injected section.
+
+The slider paragraph itself needs `ListComponentSource` = a Product-card component page and, for the
+group-scoped relation types, `RelateTo` group ids. Apply the same triad audit to the other service
+pages (`RelatedProductsListService`, search) when their consumers render empty.
 
 ## 2. Paragraph categories
 

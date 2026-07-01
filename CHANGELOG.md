@@ -3,6 +3,17 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.10]
+
+### Fixed
+- **Component-slider service page: three wirings, three failure smells.**
+  `dw-demo-base/references/foundational/swift-building.md` §1 gains the wiring triad for the page
+  tagged `ProductSliderService`: (1) `Swift-v2_ServicePage.cshtml` layout — missing returns a full
+  HTML document and the injector renders nothing; (2) an `eCom_ProductCatalog` app paragraph in a
+  real grid row — missing returns an empty body; (3) the app list template `ProductSlider.cshtml`
+  (the `ProductListPartial` dispatcher) — left at the shop default the slider leaks facet/sort/
+  load-more PLP chrome into the injected section. Same audit applies to the other service pages.
+
 ## [3.4.9]
 
 ### Fixed
