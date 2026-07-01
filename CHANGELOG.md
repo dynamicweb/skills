@@ -3,6 +3,16 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.9]
+
+### Fixed
+- **ButtonData item fields must never be seeded with plain label strings.**
+  `dw-demo-base/references/foundational/content-modelling.md` (Management-API editing section): the
+  render path deserializes stored `*Button*` values as ButtonData JSON; a bare `"Shop now"` throws
+  `ConverterException` and replaces the section with a Razor error block. Store full JSON or an empty
+  string; sweep seeds for non-empty non-JSON button values. Complements the existing GET/save binder
+  asymmetry note.
+
 ## [3.4.8]
 
 ### Fixed
