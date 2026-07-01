@@ -3,6 +3,16 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.12]
+
+### Fixed
+- **Always-visible spec component + the category-id trap on display groups.**
+  `dw-demo-base/references/foundational/swift-building.md`: the component table now lists
+  `Swift-v2_ProductFieldDisplayGroups` (always visible) beside the accordion — its list field is
+  `DisplayGroups`, not `FieldDisplayGroups` — and the symptom table gains its empty-shell row:
+  product-category ids are NOT display-group system names; a category-id list resolves to nothing
+  and renders an empty shell with no error.
+
 ## [3.4.11]
 
 ### Fixed

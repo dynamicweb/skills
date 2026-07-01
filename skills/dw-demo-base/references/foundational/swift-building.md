@@ -47,7 +47,7 @@ unmaintainable code that a Serializer re-deploy silently drops.
 | Group title + description (no image) | `Swift-v2_ProductListInfo` | `HideGroupTitle`, `HideGroupDescription`, `TitleFontSize` |
 | Subgroup navigation (tiles / list / carousel) | `Swift-v2_ProductGroupGrid` / `ProductGroupList` / `ProductGroupSlider` | needs child groups; see `SelectedGroups` + aspect-ratio pitfalls below |
 | Related / "similar" products | `Swift-v2_ProductComponentSlider` (+ `eCom/ProductCatalog/ProductSlider.cshtml` service) | `RelationType` (variants/most-sold/trending/latest/related-products); lazy-loads from a Catalog-app **service page** — see "Component-slider service page" wiring triad right below the table |
-| Spec / attribute groups | `Swift-v2_ProductFieldDisplayGroupsAccordion` | `FieldDisplayGroups`, `Layout` (bullets/list/table), `HideFieldLabels` |
+| Spec / attribute groups | `Swift-v2_ProductFieldDisplayGroupsAccordion` (collapsible) / `Swift-v2_ProductFieldDisplayGroups` (always visible — the right pick for an elaborate spec sheet) | `FieldDisplayGroups` on the accordion, `DisplayGroups` on the always-visible variant — both take display-group **system names**, see the symptom table below; `Layout` (bullets/list/table), `HideFieldLabels` |
 | BOM / assembled-from + configurator | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page; renders fixed lines AND select-one radio groups per configurator slot. The data shape that drives the grouping (`ProductItemBomGroupId` must be a real `EcomGroups` id) is owned by [`pim-modelling.md`](pim-modelling.md) §2.6 |
 
 Picking the type is half the job — how many paragraphs a designed section becomes, and what goes in
@@ -112,6 +112,7 @@ comes from the item-type's `Title` field.
 | Empty `<h2></h2>` above the block | any product paragraph | `Title` | Must be non-empty unless `HideTitle=True`. `paragraph.header` is unused. |
 | Heading too large/small | any product paragraph | `TitleFontSize` | Static enum: `display-1`..`display-6`, `h1`..`h6`. |
 | Specifications accordion renders empty | `Swift-v2_ProductFieldDisplayGroupsAccordion` | `FieldDisplayGroups` | Comma-separated `EcomFieldDisplayGroups.FieldDisplayGroupSystemName` list. **Empty selection = empty render.** |
+| Always-visible spec block renders an empty shell | `Swift-v2_ProductFieldDisplayGroups` | `DisplayGroups` (note: different field name than the accordion) | Same value rule: `FieldDisplayGroupSystemName`s, comma-separated. **Product-category ids are NOT display-group system names** — a category-id list (`<X>Attributes`-style) resolves to nothing and renders an empty shell with no error; the display groups are their own PIM entities with their own system names. |
 | Specs include "0"/"No"/blank rows | same | `HideFieldsWithZeroValue` | Set `True` to drop falsy values. |
 | Spec layout is bullet/list when you want a table | same | `Layout` | Static enum: `list \| columns \| table \| bullets \| commas`. `table` is cleanest for spec sheets. |
 | Documents paragraph shows product images | `Swift-v2_ProductMediaTable` | `ImageAssets` | Comma-separated `EcomDetailsGroup.EcomDetailsGroupSystemName` list. Stock: `Images`, `Manuals`. Default = all. Set to `Manuals` for downloads-only. |
