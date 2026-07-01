@@ -290,19 +290,28 @@ variants. Find the live list via Admin UI → Pages → Page presets.
 The page row carries three orthogonal flags; misreading them causes false-alarm "page is broken"
 findings or pollutes the nav menu.
 
-| Flag | What it controls | Default for utility pages |
-|---|---|---|
-| `published` | In the publish graph (live vs draft) | `true` once content is set |
-| `hidden` | **Excluded from frontend routing** entirely | `false` — keep routable |
-| `active` | **Appears in the navigation menu** ("Hidden in Menu" toggle) | `false` for cart steps, product detail, asset info |
+| Flag | DB column | What it controls | Default for utility pages |
+|---|---|---|---|
+| `published` | (derived) | In the publish graph (live vs draft) | `true` once content is set |
+| `hidden` | `Page.PageHidden` | **Excluded from frontend routing** entirely (404) | `false` — keep routable |
+| `active` | `Page.PageActive` | **Appears in the navigation menu** ("Hidden in Menu" toggle) | `false` for cart steps, product detail, asset info |
 
-A page with `published=true, hidden=false, active=false` is **fully reachable** by direct URL and
-JS-driven navigation, and correctly hidden from the top nav — the right state for almost every utility
-page. **Gotcha — `publish_pages` flips both flags** (`Active=true, Hidden=false` together) despite the
-name; calling it on a deliberately `active=false` page adds an unwanted nav entry. To toggle one flag,
-use `save_pages`. When auditing reachability, check `published=true` and `hidden=false`; do NOT flag
-`active=false` on its own. (Full SQL-direct INSERT required-column list, including the
-`PageActiveFrom`/`PageActiveTo` silent-404 vector, lives in [`data-access.md`](data-access.md).)
+(`Page.PageShowInLegend` is the legacy legend flag — the Swift navigation templates ignore it; don't
+reach for it to hide a page from the nav.) The nav additionally hides permission-restricted pages
+regardless of flags, which is why a login-gated page can sit at top level without a nav entry.
+
+A page with `published=true, hidden=false, active=false` (DB: `PageActive=0, PageHidden=0`) is
+**fully reachable** by direct URL and JS-driven navigation, and correctly hidden from the top nav —
+the right state for almost every utility page. **Gotcha — the MCP page tools cannot express that
+state:** `publish_pages`, `save_pages(active:…)` and `set_page_menu(showInMenu:…)` all flip **both**
+columns together (`active/showInMenu: false` writes `PageActive=0` AND `PageHidden=1` — the page
+leaves the nav but also 404s; `true` writes `1/0` — routable but back in the nav). Set the split
+state via Management API `PageSave` or a SQL `UPDATE Page SET PageActive=0, PageHidden=0`, then
+restart the host — the navigation tree and friendly-URL provider cache the old page set (see
+[`cache-invalidation.md`](cache-invalidation.md)). When auditing reachability, check
+`published=true` and `hidden=false`; do NOT flag `active=false` on its own. (Full SQL-direct INSERT
+required-column list, including the `PageActiveFrom`/`PageActiveTo` silent-404 vector, lives in
+[`data-access.md`](data-access.md).)
 
 ## 7. Style assets — `Files/System/Styles/`
 

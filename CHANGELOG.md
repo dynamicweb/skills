@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.5]
+
+### Fixed
+- **Page-state flags: the MCP tool surface cannot express "routable but out of nav".** Sharpened
+  `dw-demo-base/references/foundational/swift-building.md` §6 with experiment-verified DB column
+  mapping (`active` = `PageActive` = nav visibility, `hidden` = `PageHidden` = routing/404;
+  `PageShowInLegend` is legacy and ignored by Swift nav templates). The documented `publish_pages`
+  both-flags gotcha extends to `save_pages(active:...)` and `set_page_menu(showInMenu:...)` — all
+  three couple the columns, so `active:false` also 404s the page. The utility-page state
+  (`PageActive=0, PageHidden=0`) needs Management API `PageSave` or SQL plus a host restart for the
+  nav-tree/friendly-URL caches.
+
 ## [3.4.4]
 
 ### Fixed
