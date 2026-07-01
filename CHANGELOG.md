@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.4.7]
+
+### Fixed
+- **BOM configurator data shape: `ProductItemBomGroupId` must be a real `EcomGroups` GroupId.**
+  `dw-demo-base/references/foundational/pim-modelling.md` §2.6 now splits the two `EcomProductItems`
+  row shapes (fixed component vs configurator slot): a configurator slot references an ecom group
+  whose products become the selectable options, with `ProductItemDefaultProductId` as the default; a
+  synthetic/unresolvable id silently degrades every row into a one-option pseudo-group named after
+  `ProductItemName` (looks like a template bug, is a data bug). Also documents the NOT-NULL
+  empty-string convention for `BomProductId`/`BomVariantId` and cross-links the Swift render side
+  (`Swift-v2_ProductBom` component row in `swift-building.md` §1).
+
 ## [3.4.6]
 
 ### Fixed

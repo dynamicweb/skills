@@ -89,11 +89,20 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
 ### 2.6 Bundles (BOM) — two concerns
 
 1. **Product is BOM** — `UPDATE EcomProducts SET ProductType = 2` (enum: 0=stock, 1=service, 2=bom, 3=giftcard).
-2. **Components** — rows in `EcomProductItems`:
-   - `ProductItemProductId` = parent bundle
-   - `ProductItemBomProductId` = component product
-   - `ProductItemQuantity`, `ProductItemName`, `ProductItemRequired`, `ProductItemSortOrder`
-   - `ProductItemBomGroupId` = optional (for configurable groups where customer picks)
+2. **Components** — rows in `EcomProductItems`. Two row shapes, split by `ProductItemBomGroupId`:
+   - **Fixed component** (predefined bundle line): `ProductItemBomProductId` = the component product
+     (append the concatenated variant id for a specific variant, e.g. `PRODx` + `VOn` — and set
+     `ProductItemBomVariantId` to the dot-joined variant id), `ProductItemBomGroupId` = `''` empty.
+   - **Configurator slot** (customer picks one): `ProductItemBomGroupId` = an **`EcomGroups`
+     GroupId** — the slot's options are that group's products, the slot label is the group name, and
+     `ProductItemDefaultProductId` picks the pre-selected option. One row per slot, `BomProductId`
+     empty. **The GroupId must resolve to a real ecom group**: a synthetic/unknown id (a GUID that
+     matches nothing) silently degrades every BOM row into its own single-option pseudo-group named
+     after `ProductItemName` — the storefront then shows N one-option "groups" instead of real
+     choices, which reads like a template bug but is this data shape.
+   - Both shapes: `ProductItemProductId` = parent bundle, plus `ProductItemQuantity`,
+     `ProductItemName`, `ProductItemRequired`, `ProductItemSortOrder`. `ProductItemBomProductId` and
+     `ProductItemBomVariantId` are NOT NULL — use `''`, never SQL `NULL`.
 3. **RESTART THE HOST AFTER INSERTING PRODUCTITEMS** — `ProductItem` uses a `Lazy<Dictionary<...>>` cache (see `ProductItem.cs:145`). Raw SQL inserts bypass it. Until restart, the Bundles tab shows empty.
 4. Bundles should get their OWN data model (e.g. a `BundleAttributes` category with bundle-specific fields: UnitsPerCase, RetailerSegment, PlanoReady, etc.). Different products → different data models.
 

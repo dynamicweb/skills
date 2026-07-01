@@ -48,7 +48,7 @@ unmaintainable code that a Serializer re-deploy silently drops.
 | Subgroup navigation (tiles / list / carousel) | `Swift-v2_ProductGroupGrid` / `ProductGroupList` / `ProductGroupSlider` | needs child groups; see `SelectedGroups` + aspect-ratio pitfalls below |
 | Related / "similar" products | `Swift-v2_ProductComponentSlider` (+ `eCom/ProductCatalog/ProductSlider.cshtml` service) | `RelationType` (variants/most-sold/trending/latest/related-products); lazy-loads from a Catalog-app **service page** — an `eCom_ProductCatalog` app placed in a grid row (an app at `gridRowId=0` never renders, and the service page must be active) |
 | Spec / attribute groups | `Swift-v2_ProductFieldDisplayGroupsAccordion` | `FieldDisplayGroups`, `Layout` (bullets/list/table), `HideFieldLabels` |
-| BOM / assembled-from | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page |
+| BOM / assembled-from + configurator | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page; renders fixed lines AND select-one radio groups per configurator slot. The data shape that drives the grouping (`ProductItemBomGroupId` must be a real `EcomGroups` id) is owned by [`pim-modelling.md`](pim-modelling.md) §2.6 |
 
 Picking the type is half the job — how many paragraphs a designed section becomes, and what goes in
 fields vs. rich text, is owned by [`content-modelling.md`](content-modelling.md).
