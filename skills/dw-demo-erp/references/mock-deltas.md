@@ -126,9 +126,11 @@ No live fire. No JSON file open. Data + rule + template tell the story.
 
 ### Step 6 — Between demos: RESET + BuildIndex
 
-1. Settings → System → Scheduled tasks → `<Demo> RESET to clean state` → **Run task now**.
-2. Wait for green status (one SQL transaction, sub-second).
+1. Settings → System → Scheduled tasks → `<Demo> RESET to clean state` → **Run task now** — and confirm the **OK dialog** it opens. The task does not fire until the confirmation is accepted; a dismissed dialog leaves no visible trace, which reads as "the reset silently failed".
+2. The run executes on the scheduler's next poll (typically under a minute), not synchronously with the click. Verify by the task's **Last run** timestamp flipping to now + green status (one SQL transaction, sub-second once it fires) — not by the click itself.
 3. Settings → Search → Repositories → Products → BuildIndex (or `POST /admin/api/BuildIndex` with the management API bearer). Required because raw SQL UPDATEs don't trigger `ShopAutoBuildIndex` — dashboard tiles lag until the index rebuilds.
+
+**Keep exactly one RESET task.** Abandoned earlier registrations leave near-identical siblings in the task list ("`<Demo> RESET…`" vs "`<Demo> Demo RESET…`"), and a presenter under stage pressure will run the stale one. Delete superseded copies as part of Step 3's idempotent re-registration.
 
 ## Do not
 
