@@ -3,6 +3,20 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.7.3]
+
+### Changed
+- **Host lifecycle: `dotnet run` is the only launch surface; two silent-failure triage rules.**
+  `dw-demo-base/SKILL.md` "Host lifecycle authority" gains: (1) launching the built
+  `bin\Debug\<TFM>\Dynamicweb.Host.Suite.exe` directly boots a host that serves pages but is
+  silently degraded — item-based paragraphs fall back to defaults, product lists render empty,
+  nothing is logged; the symptom reads as data loss and cost a demo test run hours of
+  misdiagnosis, so "check how the host was started" is now the first diagnostic for that symptom
+  set. (2) A freshly started host that exits silently minutes after start (no exception, no
+  shutdown log) while sibling DW hosts run on the machine is retested with siblings stopped before
+  deeper diagnosis; demo-day runbook line: run only the demo's own host and confirm sustained
+  uptime before presenting.
+
 ## [3.7.2]
 
 ### Added
