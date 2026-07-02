@@ -1,6 +1,6 @@
 # templates.md
 
-> Swift 2.2 template / page-preset routing. Source-of-truth: `$env:DW_VAULT\serialized-data\Swift2.2\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
+> Swift template / page-preset routing. Source-of-truth: `$env:DW_VAULT\serialized-data\swift-2.3\deploy\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -15,11 +15,12 @@ live here has been folded up into the foundational candidates; the demo skill po
 | SQL-direct Page/GridRow/Paragraph required columns (the `PageActiveFrom`/`PageActiveTo` silent-404 vector et al.) | [`sql-direct-seeding.md`](sql-direct-seeding.md) → [`data-access.md`](../../dw-demo-base/references/foundational/data-access.md) |
 | Paragraph types + the component-first gate | [`paragraphs.md`](paragraphs.md) |
 
-## Swift v2.3.0 vs v2.2 baseline
+## Swift v2.3.0 templates + swift/2.3 baseline
 
-Target **Swift v2.3.0 templates** at the GitHub repo while keeping **Swift 2.2 baseline data** at
-`$env:DW_VAULT\serialized-data\Swift2.2\`. The 2.3.0 release headlines (language selector + improved
-off-canvas nav) don't break 2.2 content; you can pull 2.3.0 template files alongside the 2.2 baseline.
-Pin baseline regeneration to a future polish phase.
+Target **Swift v2.3.0 templates** at the GitHub repo alongside the **swift/2.3 baseline data** at
+`$env:DW_VAULT\serialized-data\swift-2.3\` (a `config/deploy/seed` tree; content lives under
+`deploy\_content\` + `seed\_content\`). The 2.3.0 release headlines (language selector + improved
+off-canvas nav) match this baseline. The legacy content-only `Swift2.2\` slot remains in the vault
+for older demos but is no longer the default.
 
 Reference: https://github.com/dynamicweb/Swift/releases/tag/v2.3.0

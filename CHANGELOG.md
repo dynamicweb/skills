@@ -3,6 +3,22 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.8.3]
+
+### Changed
+- **`dw-demo-swift` deserialize-flow repointed off the retired content-only `Swift2.2` slot to the
+  canonical `swift-2.3` baseline.** The vault's `swift-2.3` slot is a full `config/deploy/seed`
+  tree (framework `_sql/` + content in `deploy/`, catalog `_sql/` + content in `seed/`), not the
+  content-only `_content/`-at-root shape the older `Swift2.2` slot used. Repointed the `$baseline`
+  default and staging snippet in `dw-demo-swift/references/deserialize-flow.md` to stage both mode
+  trees from `swift-2.3`, rewrote the "baseline shape" and §9 schema-drift notes for the
+  `_sql/`-shipping baseline, and swept baseline-slot source-of-truth paths in the companion
+  references (`templates`, `paragraphs`, `customer-center`, `asset-organisation`,
+  `admin-ui-authoring`, `re-skin`, `integrity-sweep`) plus `dw-demo-pim/access-surfaces` and the
+  `dw-demo-base` INDEX template to the `swift-2.3\deploy\_content\` location. Swift-2.2-era
+  mechanics prose left intact (per-hit sweep, not a blanket rename). The two-pass deploy+seed
+  deserialize is flagged for host verification.
+
 ## [3.8.2]
 
 ### Changed

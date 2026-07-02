@@ -226,7 +226,7 @@ $dst = "Dynamicweb.Host.Suite\wwwroot\Files\Images\Icons"
 Copy-Item -Path $src -Destination $dst -Recurse -Force
 ```
 
-Substitute `<swift-baseline-slot>` for whatever the vault's `INDEX.md` names as the Swift baseline slot for this project (e.g. `Swift2.2`). No host restart required — `ReadFile` reads on every render.
+Substitute `<swift-baseline-slot>` for whatever the vault's `INDEX.md` names as the Swift baseline slot for this project (e.g. `swift-2.3`). No host restart required — `ReadFile` reads on every render.
 
 **Pitfall:** if the deserialize used a non-Swift baseline (e.g. a customer-flavoured baseline with a curated icon subset), do NOT blanket-copy from the generic Swift slot — start from the baseline-flavoured slot and merge in any missing files individually. Audit the result with `git status` so the demo's `CUSTOMISATIONS.md` can record the asset-source provenance.
 

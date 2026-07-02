@@ -24,7 +24,7 @@ Two vault-resolved baselines this demo skill leans on (per-project, discovered v
 
 | Ref | How to find it in the current project |
 |---|---|
-| Swift 2.2 baseline (vault) | `$env:DW_VAULT\serialized-data\Swift2.2\` — the canonical Swift 2.2 baseline. Its serialized index XML is the copy-paste source for `Products.index` definitions. |
+| Swift baseline (vault) | `$env:DW_VAULT\serialized-data\swift-2.3\` — the canonical swift/2.3 baseline (a `config/deploy/seed` tree). Its serialized index XML is the copy-paste source for `Products.index` definitions. |
 | DW10 source clone (vault) | `$env:DW_VAULT\dw10source\` — search `src/Features/Ecommerce` for Ecom internals and `Dynamicweb.Products.UI` for admin UI behavior. Otherwise fall back to https://doc.dynamicweb.dev/ |
 
 When the user gives you a token, port, or path in chat, treat it as scoped to the project in the current working directory — save it in conversation state, not as a global default.
