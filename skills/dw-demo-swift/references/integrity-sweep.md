@@ -8,7 +8,7 @@
 - [Check 2: `reference_category` parent row](#check-2-reference_category-parent-row)
 - [Check 3: Query GUID dedup across `Repositories/` and `SmartSearches/Shared/`](#check-3-query-guid-dedup-across-repositories-and-smartsearchesshared)
 - [Check 4: Template-reference walk (defense-in-depth)](#check-4-template-reference-walk-defense-in-depth)
-- [Check 5: BuildIndex Full + wait-for-Idle](#check-5-buildindex-full--wait-for-idle)
+- [Check 5: BuildIndex Full + wait for a fresh successful build](#check-5-buildindex-full--wait-for-a-fresh-successful-build)
 - [Check 6: Icon set populated under `Files/Images/Icons/` (Pitfall: blank-blue-button storefront)](#check-6-icon-set-populated-under-filesimagesicons-pitfall-blank-blue-button-storefront)
 - [Check 7: Raw SQL in paragraph templates (DW10 discipline)](#check-7-raw-sql-in-paragraph-templates-dw10-discipline)
 - [Sweep complete](#sweep-complete)
@@ -31,7 +31,7 @@ Strict mode (in the Serializer) raises four broad categories of failure as `Cumu
 
 - DW10 completeness rules without their `reference_category` parent row (silent invisibility: rules validate, assignments persist, API returns correct data, but admin UI panels render empty).
 - Dashboard query GUIDs duplicated across `Repositories/Products/<sub>/` and `SmartSearches/Ecommerce/Shared/` (the `QueryHelper.InitQueriesCache` overwrite trap — breaks admin's Shared-queries tree and widget drill-through).
-- Index staleness immediately after a deserialize (products invisible until BuildIndex Full + wait-for-Idle).
+- Index staleness immediately after a deserialize (products invisible until a fresh BuildIndex Full completes).
 
 The sweep adds defense-in-depth for these categories. Skipping it produces a deserialized DB that *looks* clean but is silently broken on demo day.
 
@@ -39,14 +39,14 @@ The sweep adds defense-in-depth for these categories. Skipping it produces a des
 
 **What is verified:** No FK orphans were introduced by the deserialize.
 
-**How:** DynamicWeb.Serializer strict mode (default-on for API callers — see [`deserialize-flow.md`](deserialize-flow.md) Section 5) raises FK orphans as `CumulativeStrictModeException` during the deserialize POST. The sweep does NOT run a separate per-pair orphan SQL loop — that would be redundant and costly. Instead, this check is satisfied by:
+**How:** the DW Serializer's strict mode (default-on for API callers — see [`deserialize-flow.md`](deserialize-flow.md) Section 5) raises FK orphans as `CumulativeStrictModeException` during the deserialize POST. The sweep does NOT run a separate per-pair orphan SQL loop — that would be redundant and costly. Instead, this check is satisfied by:
 
 1. [`deserialize-flow.md`](deserialize-flow.md) was followed (strict mode default — disabling strict mode is forbidden by that flow).
 2. The deserialize POST returned HTTP 2xx (no `CumulativeStrictModeException` body).
 
 If both of those are true, Check 1 passes. If either is false, Check 1 fails — return to [`deserialize-flow.md`](deserialize-flow.md) and re-run with strict mode on.
 
-**Why no separate SQL loop:** Strict mode is the canonical FK-orphan detector for DynamicWeb.Serializer. Adding an `INFORMATION_SCHEMA`-driven per-pair count would duplicate work the Serializer already did, with worse performance and worse error messages.
+**Why no separate SQL loop:** Strict mode is the canonical FK-orphan detector for the DW Serializer. Adding an `INFORMATION_SCHEMA`-driven per-pair count would duplicate work the Serializer already did, with worse performance and worse error messages.
 
 **Reference:** [`deserialize-flow.md`](deserialize-flow.md) Section 5 — Strict-mode contract, category 1 of 4.
 
@@ -137,35 +137,59 @@ if ($missing) {
 
 **Note:** If strict-mode Serializer already raised these, Check 4 is a no-op. If Check 4 fires and strict mode did NOT, strict mode missed a category — document it in the per-demo `CUSTOMISATIONS.md` as an environmental drift note so the next deserialize on this machine inherits the warning.
 
-## Check 5: BuildIndex Full + wait-for-Idle
+## Check 5: BuildIndex Full + wait for a fresh successful build
 
-**What is verified:** The `Products` repository's `Products.index` rebuilds end-to-end and reaches `Status = Idle` within 15 minutes. Without a fresh build, products are invisible to dashboards, feeds, and storefront facets even though the deserialize succeeded.
+**What is verified:** The products index rebuilds end-to-end and reaches a successful terminal state within 15 minutes, with a build timestamp newer than this run's trigger. Without a fresh build, products are invisible to dashboards, feeds, and storefront facets even though the deserialize succeeded.
+
+**Repository and index names are solution-specific** — read them from `wwwroot/Files/System/Repositories/<Repository>/<Name>.index` on the host before firing the build (a stock Swift solution ships `ProductsFrontend`/`ProductsBackend` repositories, not a `Products` one). Never hardcode `Repository = "Products"`.
+
+**Status contract (DW 10.26.x):** the index status models carry no `Status`/`Idle` field — the wait-for-Idle recipe predates them. Two status queries exist:
+
+- `GET /admin/api/IndexStatusByRepositoryAndIndexName?Repository=<repo>&IndexName=<name>.index` → model `{ State: Success|Warning|Error, StateDescription, LastRun, ... }`
+- `GET /admin/api/InstanceStatusByName?Repository=<repo>&IndexName=<name>.index&InstanceName=<instance>` → model `{ State: Completed|Failed|Running, LifecycleState: NeverBuilt|Starting|Running|Completed|Failed|Interrupted, LastSuccessfulBuild, CurrentCount, TotalCount }`
+
+Confirm the exact paths against the host's own catalog (`GET /admin/api/api.json`, bearer-authed) when in doubt. Live JSON responses come back **camelCase** even though the catalog declares PascalCase — PowerShell property access is case-insensitive so the probe below is unaffected; case-sensitive consumers must expect camelCase.
 
 **Probe:**
 
 ```powershell
+$repo = '<Repository>'   # read from Files/System/Repositories/ — solution-specific
+$idx  = '<Name>.index'
+$posted = Get-Date
 $buildResp = Invoke-RestMethod `
   -Uri "https://localhost:$port/admin/api/BuildIndex" `
   -Method POST `
   -Headers @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' } `
-  -Body (@{ Repository = "Products"; IndexName = "Products.index"; BuildName = "Full" } | ConvertTo-Json) `
+  -Body (@{ Repository = $repo; IndexName = $idx; BuildName = "Full" } | ConvertTo-Json) `
   -SkipCertificateCheck
 
-# Poll IndexStatus
+# Poll the index status query until Success with a build timestamp fresh against $posted
 $timeout = (Get-Date).AddMinutes(15)
 do {
   Start-Sleep -Seconds 5
   $status = Invoke-RestMethod `
-    -Uri "https://localhost:$port/admin/api/IndexStatus?Repository=Products&IndexName=Products.index" `
+    -Uri "https://localhost:$port/admin/api/IndexStatusByRepositoryAndIndexName?Repository=$repo&IndexName=$idx" `
     -Headers @{ Authorization = "Bearer $token" } `
     -SkipCertificateCheck
-  Write-Host "IndexStatus: $($status.Status)  LastBuildTime: $($status.LastBuildTime)"
-} until ($status.Status -eq 'Idle' -or (Get-Date) -gt $timeout)
+  Write-Host "State: $($status.Model.State)  LastRun: $($status.Model.LastRun)"
+  if ($status.Model.State -eq 'Error') {
+    # A never-built index reports index-level State=Error ("no healthy instance is available")
+    # WHILE its first Full build is still writing — no instance is online until that build
+    # completes. Error is terminal only when the instance's LifecycleState is Failed.
+    $inst = Invoke-RestMethod `
+      -Uri "https://localhost:$port/admin/api/InstanceStatusByName?Repository=$repo&IndexName=$idx&InstanceName=$($idx -replace '\.index$','')" `
+      -Headers @{ Authorization = "Bearer $token" } `
+      -SkipCertificateCheck
+    if ($inst.Model.LifecycleState -eq 'Failed') { throw "BuildIndex failed: instance LifecycleState=Failed." }
+  }
+} until (($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted) -or (Get-Date) -gt $timeout)
 
-if ($status.Status -ne 'Idle') {
-  throw "BuildIndex did not reach Idle within 15 minutes."
+if (-not ($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted)) {
+  throw "BuildIndex did not reach a fresh Success state within 15 minutes."
 }
 ```
+
+**Freshness is part of the pass condition:** a prior run's successful build satisfies a state-only check, so always compare `LastRun`/`LastSuccessfulBuild` against this run's POST timestamp. An instant pass on a large catalog is the smell that you verified a stale build, not this one.
 
 **DoS-bound:** The polling loop is hard-bounded at 15 minutes. On timeout the check throws — there is no infinite-loop path.
 

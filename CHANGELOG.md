@@ -3,6 +3,58 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.8.0]
+
+### Changed
+- **Index build/status contract corrected to the DW 10.26.x models.** The corpus polled
+  `GET /admin/api/IndexStatus` for a `Status` field reaching `Idle` — neither the endpoint shape nor
+  the field exists on 10.26.x, so the recipe could wait out its timeout against a build that actually
+  succeeded. Verified against a live host's `api.json` catalog and end-to-end builds: status is served
+  by `IndexStatusByRepositoryAndIndexName` (`State: Success|Warning|Error`, `LastRun`) and
+  `InstanceStatusByName` (`LifecycleState: NeverBuilt|...|Completed|Failed`, `LastSuccessfulBuild`).
+  Folded into `dw-demo-swift/references/integrity-sweep.md` Check 5, the
+  `foundational/search-indexing.md` rebuild recipe, and the `foundational/data-access.md` endpoint
+  catalog, with three empirically-earned rules: pass = `Success` PLUS a build timestamp fresher than
+  this run's POST (a stale prior build satisfies a state-only check); a never-built index reports
+  index-level `State=Error` while its first build is still writing (terminal only when the instance
+  `LifecycleState` is `Failed`); live JSON responses are camelCase despite the PascalCase catalog.
+  Repository/index names are called out as solution-specific (a stock Swift solution ships
+  `ProductsFrontend`/`ProductsBackend`) — never hardcode `Repository=Products` in gating checks.
+- **The hardcoded Serializer repo path is retired.** A clean-machine standup failed at the Serializer
+  build/copy steps: the install recipe hardcoded a legacy repo directory that no longer exists, and a
+  legacy DLL filename that fails the copy even where a directory resolves (the assembly filename
+  follows the csproj `AssemblyName`, which renamed with the product).
+  `dw-demo-base/references/serializer-reference.md` now resolves the clone root from
+  `$env:DW_SERIALIZER_REPO` (new Step 0, dual-set pattern) and derives the project folder + DLL
+  filename from the repo itself; the upstream docs/source/tools pointers resolve the same way. Prose
+  occurrences of the legacy product name across dw-demo-base and dw-demo-swift are swept to the
+  generic "the DW Serializer".
+- **Vault `databases` slot documented as the canonical in-vault fast-restore source.** The
+  INDEX.md.template row now requires naming the artifact when the slot is populated (never
+  "reserved/empty" while drift detection and the setup-checks probe expect the artifact there);
+  serializer-reference.md routes fast-restore to `$env:DW_VAULT\databases\` instead of a bacpac copy
+  inside the Serializer repo's tools folder.
+- **net8-vs-net10 addon rule stated with its mechanism** (`dw-setup-upgrade/SKILL.md`): TFM-gated
+  addon *loaders* (Backend MCP AddIn) require the **host process** on net10 even though their packages
+  ship net6/net8 binaries (symptom: install 200, files drop, AddIn never registers, `/admin/mcp` 404),
+  while plain net8 class libraries back-load onto a net10 host via standard roll-forward. Replaces the
+  blunt "a .NET 8 addon will not work on a .NET 10 host".
+- **MCP OAuth authenticate named as a hard human gate** (`dw-demo-base/references/mcp-setup.md`): the
+  legacy OAuth path's authenticate click + restart cannot be cleared headlessly and stalled autonomous
+  standups silently — automation must surface "human action required" and stop; the API-Key default
+  (and its headless alternative) is what keeps standup automatable end-to-end. Same file: one-shot
+  `Program.cs` bootstrap branches (password-set / token-mint / MCP-link) are standup scaffolding —
+  remove before final delivery, rebuild, restart; never ship live credential-minting code.
+- **Startup-cached SQL surfaces added to the cache rulebook**
+  (`foundational/cache-invalidation.md` + `foundational/pim-modelling.md` §2.5): missing
+  `EcomVariantOptionsProductRelation` combination rows make a variant add-to-cart POST return HTTP 200
+  while adding nothing, and direct SQL junction INSERTs must be existence-guarded (`IF NOT EXISTS`) so
+  re-runs converge — restart owed after. Credential/token rows written via direct SQL (`AccessUser`
+  password columns, `AccessUserToken`) keep validating the pre-write state until a restart.
+- **PIM catalogue ID discipline** (`dw-demo-pim/references/canonical-setup-order.md`): the MCP
+  `create_*`/`save_*` tools auto-assign entity IDs and ignore requested ones — capture `items[].id`
+  from every response, key subsequent steps off captured ids, and clean up auto-IDed leftovers before
+  any re-run.
 ## [3.7.4]
 
 ### Changed

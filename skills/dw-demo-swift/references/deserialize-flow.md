@@ -13,7 +13,7 @@
 - [8. Mandatory next step](#8-mandatory-next-step)
 - [9. Known schema-drift workaround (Swift 2.2 baseline ↔ DW10)](#9-known-schema-drift-workaround-swift-22-baseline--dw10)
 
-> Deserialize a Swift content baseline from `$env:DW_VAULT\serialized-data\<baseline>\` into the per-demo project DB. Uses `DynamicWeb.Serializer` + Management API. Strict mode is on by default — failures surface as `CumulativeStrictModeException`. Always followed by [`integrity-sweep.md`](integrity-sweep.md).
+> Deserialize a Swift content baseline from `$env:DW_VAULT\serialized-data\<baseline>\` into the per-demo project DB. Uses the DW Serializer + Management API. Strict mode is on by default — failures surface as `CumulativeStrictModeException`. Always followed by [`integrity-sweep.md`](integrity-sweep.md).
 >
 > **Scope: Swift demos only.** PIM demos start from a blank/fresh DB and skip this flow entirely. This file is owned by `dynamicweb-swift-demo`; the underlying Serializer install + background reference live in `dynamicweb-demo-base/references/serializer-reference.md`.
 
@@ -24,7 +24,7 @@
 - [`../../dw-demo-base/references/setup-checks.md`](../../dw-demo-base/references/setup-checks.md) is green (DW_VAULT, NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express, vault slot inventory all probed and resolved).
 - [`../../dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) produced a running `Dynamicweb.Host.Suite` (port reachable, host responds at `/admin`).
 - [`../../dw-demo-base/references/mcp-setup.md`](../../dw-demo-base/references/mcp-setup.md) verification gate passed (`claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND in-conversation `ToolSearch +dynamicweb` returns >200 tools).
-- **DynamicWeb.Serializer is installed in the host** per [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Installation" section (DLL built + copied to `bin/Debug/net10.0/`, `Files/Serializer.config.json` staged, host restarted). This is a one-time-per-host step.
+- **The DW Serializer is installed in the host** per [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Installation" section (DLL built + copied to `bin/Debug/net10.0/`, `Files/Serializer.config.json` staged, host restarted). This is a one-time-per-host step.
 - A Management API bearer token has been captured via `AskUserQuestion` in the current conversation. Format: `CLAUDE.<hex>`. Token lives in conversation state, never persisted to disk. Do not write the token to any file.
 
 If any of those are unmet, return to the relevant reference before attempting a deserialize. A deserialize against a half-wired host is the fastest way to corrupt a demo's state silently.
@@ -180,7 +180,7 @@ The sweep is the second line of defence for the failures strict mode does not ca
 - `reference_category` parent row presence (Check 2).
 - Query GUID dedup across `Repositories/` vs `SmartSearches/Shared/` (Check 3).
 - Defense-in-depth on top of strict mode (Checks 1 and 4).
-- `BuildIndex` Full + wait-for-Idle (Check 5).
+- `BuildIndex` Full + wait for a fresh successful build (Check 5).
 
 ## 9. Known schema-drift workaround (Swift 2.2 baseline ↔ DW10)
 

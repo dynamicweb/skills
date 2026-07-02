@@ -9,41 +9,51 @@
 - [Versioning and baseline-format compatibility](#versioning-and-baseline-format-compatibility)
 - [Cross-references](#cross-references)
 
-> Install + failure-triage reference for `DynamicWeb.Serializer`. Owns: the **fact the Serializer exists** for any Dynamicweb demo, **how to install it in the demo host** (one-time-per-host DLL drop + config staging), **common failure patterns**, and **versioning / baseline compatibility**.
+> Install + failure-triage reference for the DW Serializer. Owns: the **fact the Serializer exists** for any Dynamicweb demo, **how to install it in the demo host** (one-time-per-host DLL drop + config staging), **common failure patterns**, and **versioning / baseline compatibility**.
 >
 > **Operational baseline-deserialize steps** (POST `/Admin/Api/SerializerDeserialize`, integrity sweep, schema-drift workarounds) are owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md). Only Swift demos need that flow — PIM demos start from a blank/fresh DB.
 >
-> **Tool internals live upstream.** The Serializer ships its own canonical docs at `C:\VibeCode\DynamicWeb.Serializer\docs\` — when this reference disagrees with upstream, upstream wins (the baseline-drift self-diagnosis rule: skill text is the second source of truth). See "Internals — upstream pointer block" below.
+> **Tool internals live upstream.** The Serializer ships its own canonical docs at `$env:DW_SERIALIZER_REPO\docs\` — when this reference disagrees with upstream, upstream wins (the baseline-drift self-diagnosis rule: skill text is the second source of truth). See "Internals — upstream pointer block" below.
 
 ## Installation
 
-Three steps. The build is one-time per machine; the DLL copy + config staging are per-host (re-run when scaffolding a new demo host or when the Serializer DLL is rebuilt). Only run these steps on demos that actually need the Serializer — typically Swift demos that will deserialize a baseline. PIM demos that start from a blank DB can skip installation until/unless they later need to serialize their own work back into the vault.
+Resolve the repo first (Step 0), then build, copy, stage. The build is one-time per machine; the DLL copy + config staging are per-host (re-run when scaffolding a new demo host or when the Serializer DLL is rebuilt). Only run these steps on demos that actually need the Serializer — typically Swift demos that will deserialize a baseline. PIM demos that start from a blank DB can skip installation until/unless they later need to serialize their own work back into the vault.
+
+### Step 0 — Resolve the Serializer repo (never hardcode the path or the DLL filename)
+
+The Serializer repo location is machine-specific, and its folder and assembly name have changed across releases — resolve both instead of hardcoding either. Set `$env:DW_SERIALIZER_REPO` (User scope, same dual-set pattern as `DW_VAULT` — see `references/setup-checks.md` §4) to the local clone root, and derive the project folder and DLL filename from the repo itself. A hardcoded directory fails at build time when the repo is renamed; a hardcoded DLL filename fails the copy step even when the directory resolves — the assembly filename follows the csproj `AssemblyName`, which renames with the product. (The Serializer is a tool, not a vault slot; it stays outside `$env:DW_VAULT`.)
+
+```powershell
+if (-not $env:DW_SERIALIZER_REPO -or -not (Test-Path "$env:DW_SERIALIZER_REPO\src")) {
+  throw "DW_SERIALIZER_REPO not set (or not a Serializer clone). Point it at the local Serializer repo root."
+}
+$serializerProj = Get-ChildItem "$env:DW_SERIALIZER_REPO\src" -Directory | Select-Object -First 1
+```
 
 ### Step 1 — Build the Serializer DLL (one-time per machine, when source updates)
 
 ```powershell
-dotnet build C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\ -c Release
+dotnet build $serializerProj.FullName -c Release
 ```
-
-Note: The Serializer source root is currently at `C:\VibeCode\DynamicWeb.Serializer\` — this is a fixed path on the developer's machine, not a vault slot (the Serializer is a tool, not reference content). If the path differs on a fresh machine, update this snippet locally and consider whether the Serializer should be relocated under the vault as a future improvement.
 
 ### Step 2 — Copy DLL to host's TFM-specific bin folder
 
 For a `dotnet run` host, .NET loads assemblies from `bin/Debug/<TFM>/` of the TARGET project, not from a generic `bin/` root. With the host pinned to `net10.0` (per [`foundational/setup-install.md`](foundational/setup-install.md) §2), the destination is `bin/Debug/net10.0/`:
 
 ```powershell
-Copy-Item "C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\bin\Release\net8.0\DynamicWeb.Serializer.dll" `
-          "Dynamicweb.Host.Suite\bin\Debug\net10.0\" -Force
+$dll = Get-ChildItem "$($serializerProj.FullName)\bin\Release\net8.0" -Filter '*Serializer*.dll' |
+       Select-Object -First 1   # derive the filename — it follows the csproj AssemblyName
+Copy-Item $dll.FullName "Dynamicweb.Host.Suite\bin\Debug\net10.0\" -Force
 ```
 
 The DLL is built net8.0 (Serializer ships single-target net8.0 per its csproj). .NET 10's runtime back-loads net8.0 assemblies fine. Restart the host after the copy so the new DLL is picked up. Note: the README and `docs/getting-started.md` still say "copy to `/path/to/your-dw-host/bin/`" — that's the published-deployment shape and does NOT work for local `dotnet run` hosts; always use the TFM subfolder.
 
 ### Step 3 — Stage `Files/Serializer.config.json`
 
-The Serializer requires a config at `<host>/wwwroot/Files/Serializer.config.json`. Without one, `/Admin/Api/SerializerDeserialize` returns `Serializer.config.json not found (also checked ContentSync.config.json)`. The Serializer repo ships a canonical Swift 2.2 baseline config at `<serializer>/src/DynamicWeb.Serializer/Configuration/swift2.2-combined.json` — copy that as the starting point:
+The Serializer requires a config at `<host>/wwwroot/Files/Serializer.config.json`. Without one, `/Admin/Api/SerializerDeserialize` returns `Serializer.config.json not found (also checked ContentSync.config.json)`. The Serializer repo ships a canonical Swift 2.2 baseline config in the project's `Configuration\` folder — copy that as the starting point:
 
 ```powershell
-Copy-Item "C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Configuration\swift2.2-combined.json" `
+Copy-Item "$($serializerProj.FullName)\Configuration\swift2.2-combined.json" `
           "Dynamicweb.Host.Suite\wwwroot\Files\Serializer.config.json" -Force
 ```
 
@@ -64,7 +74,7 @@ Two **conflict strategies** for the same deserialize pipeline, set per predicate
 
 For Swift baseline restore ([`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md)), only Deploy mode is used. Seed mode is out of scope for the canonical Swift baseline-load flow.
 
-Upstream long-form: `C:\VibeCode\DynamicWeb.Serializer\docs\concepts.md` — "Deploy and Seed modes", "The three-bucket split".
+Upstream long-form: `$env:DW_SERIALIZER_REPO\docs\concepts.md` — "Deploy and Seed modes", "The three-bucket split".
 
 ## Vault baseline shape
 
@@ -74,11 +84,11 @@ The vault baseline at `$env:DW_VAULT\serialized-data\Swift2.2\` is **content-onl
 
 Architecture, source layout, pipeline walkthrough, YAML schema details, strict-mode internals, the identity model (GUID-based `PageUniqueId` identity with per-environment numeric ID resolution), link-resolution passes, runtime exclusions, and the tools folder (`purge-cleandb.sql`, `swift22-cleanup/`, e2e harness, smoke tests, the Swift 2.2 bacpac) are all documented canonically in the upstream repo — **do not rely on a paraphrase here; upstream wins**:
 
-- `C:\VibeCode\DynamicWeb.Serializer\docs\` — README → `concepts.md` → `strict-mode.md` (full warning-source table, override precedence, cache-registry extension recipe) → `link-resolution.md` → `troubleshooting.md` → `configuration.md` → `runtime-exclusions.md` → `sql-tables.md` → `permissions.md` → `cicd.md`
-- `C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\` — source; `Providers\SerializerOrchestrator.cs` is the entry point
-- `C:\VibeCode\DynamicWeb.Serializer\tools\` — each tool subfolder carries its own README; the Swift 2.2 bacpac there is the emergency fast-restore alternative to deserialize referenced by `$env:DW_VAULT\INDEX.md`'s `databases` row
+- `$env:DW_SERIALIZER_REPO\docs\` — README → `concepts.md` → `strict-mode.md` (full warning-source table, override precedence, cache-registry extension recipe) → `link-resolution.md` → `troubleshooting.md` → `configuration.md` → `runtime-exclusions.md` → `sql-tables.md` → `permissions.md` → `cicd.md`
+- `$env:DW_SERIALIZER_REPO\src\<project>\` — source (the single project folder under `src\`); `Providers\SerializerOrchestrator.cs` is the entry point
+- `$env:DW_SERIALIZER_REPO\tools\` — each tool subfolder carries its own README. For DB fast-restore, resolve the artifact from the vault's own `databases` slot (`$env:DW_VAULT\databases\` — the canonical in-vault fast-restore source per `$env:DW_VAULT\INDEX.md`'s `databases` row); a bacpac copy inside the Serializer repo's tools folder is a development convenience, not the resolution target
 
-Note: `$env:DW_VAULT\dw10source\` is the DW10 clone, NOT the Serializer — Serializer source lives only at the path above.
+Note: `$env:DW_VAULT\dw10source\` is the DW10 clone, NOT the Serializer — Serializer source lives only under `$env:DW_SERIALIZER_REPO`.
 
 Two operational facts worth keeping in mind without loading upstream docs:
 
@@ -178,6 +188,6 @@ Baseline rolls (the vault's `Swift2.2/` content) happen out-of-band — when Dyn
 | Run a baseline content deserialize (Swift demos only) | [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) |
 | Post-deserialize integrity checks | [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md) |
 | Recover from DW10 update-queue bugs (independent of Serializer) | `references/db-update-recovery.md` |
-| Serializer internals — architecture, YAML schema, strict mode, link resolution, tools (canonical) | `C:\VibeCode\DynamicWeb.Serializer\docs\` + source ("Internals — upstream pointer block" above) |
+| Serializer internals — architecture, YAML schema, strict mode, link resolution, tools (canonical) | `$env:DW_SERIALIZER_REPO\docs\` + source ("Internals — upstream pointer block" above) |
 
 

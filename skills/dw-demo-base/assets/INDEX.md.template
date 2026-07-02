@@ -7,9 +7,9 @@
 |------|------|---------|--------------------|--------------|
 | `dw10source` | `$DW_VAULT\dw10source\` | Local clone of DW10 source for deep schema/internals search | _(version of DW10 source at last sync)_ | _(YYYY-MM-DD)_ |
 | `samples` | `$DW_VAULT\samples\` | Reference admin-UI samples (`dw10adminUI/`) and any future sample bundles | _(applies to dw10adminUI commit hash)_ | _(YYYY-MM-DD)_ |
-| `databases` | `$DW_VAULT\databases\` | Optional .mdf snapshots / clean-DB zips for fast restore (alternative to deserialize) | _(version of DW10 the snapshot targets)_ | _(YYYY-MM-DD)_ |
+| `databases` | `$DW_VAULT\databases\` | Clean-DB zips / .mdf snapshots for fast restore (the escape-hatch alternative to deserialize). When populated, this slot is the **canonical in-vault fast-restore source** — name the artifact in this row and keep the stamps current; never describe the slot as reserved/empty while an artifact sits in it (`compare-vault.md` drift detection and the setup-checks probe expect it here) | _(version of DW10 the snapshot targets)_ | _(YYYY-MM-DD)_ |
 | `docs` | `$DW_VAULT\docs\` | Curated DW10 docs (custom admin screens guide, middleware deep-dive) | _(N/A -- version-agnostic)_ | _(YYYY-MM-DD)_ |
-| `serialized-data` | `$DW_VAULT\serialized-data\` | YAML baselines for `DynamicWeb.Serializer` deserialize. Each subfolder is one baseline (e.g. generic `Swift2.2/`, plus per-demo customer-flavoured baselines named `<demo>-base/` by convention once derived). | _(per-baseline; each subfolder lists its target DW10 version in its own README)_ | _(YYYY-MM-DD)_ |
+| `serialized-data` | `$DW_VAULT\serialized-data\` | YAML baselines for the DW Serializer deserialize. Each subfolder is one baseline (e.g. generic `Swift2.2/`, plus per-demo customer-flavoured baselines named `<demo>-base/` by convention once derived). | _(per-baseline; each subfolder lists its target DW10 version in its own README)_ | _(YYYY-MM-DD)_ |
 
 ## Resolution rule
 

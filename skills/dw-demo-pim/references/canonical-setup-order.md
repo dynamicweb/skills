@@ -8,6 +8,8 @@
 
 > The canonical setup order for a Dynamicweb 10 PIM build. Each step depends on earlier ones — skipping or reordering causes rework. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Cross-references out to `structural-model.md`, `governance.md`, `cache-invalidation.md`, `workflow.md`, `permissions-model.md`.
 
+**ID discipline for every MCP `create_*` / `save_*` step below:** the PIM catalogue tools **auto-assign entity IDs and ignore IDs you pass in** — a requested variant-group id comes back as an auto-generated one, and a partial create can surface as a `JsonException` from the tool. Capture `items[].id` from every create/save response and key all subsequent steps off the captured ids, never the requested ones. On a failed or repeated run, clean up (or rebuild from) the auto-IDed leftovers before re-running — a blind re-run stacks duplicate, mis-IDed entities.
+
 ## 0. Setup-order variants
 
 Two shapes — pick before you start. Storefront-first is the legacy full order (§1 below). PIM-first is a leaner order; it drops the `ShopType=1` SHOP1 + catalog-group tree and routes everything through `SHOP-DATA` (ShopType=4) + Dynamic Workspaces + Channels (ShopType=3).

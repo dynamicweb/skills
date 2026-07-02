@@ -141,20 +141,31 @@ $buildResp = Invoke-RestMethod `
   -Body (@{ Repository = "Products"; IndexName = "Products.index"; BuildName = "Full" } | ConvertTo-Json) `
   -SkipCertificateCheck
 
-# Poll IndexStatus until Idle (15-min timeout)
+# Poll the index status query until Success with a fresh build timestamp (15-min timeout).
+# DW 10.26.x contract: no Status/Idle field — State: Success|Warning|Error on the index query,
+# LifecycleState: NeverBuilt|...|Completed|Failed on the instance query. Live JSON is camelCase
+# (the api.json catalog declares PascalCase); PowerShell access is case-insensitive.
+# A never-built index reports State=Error while its FIRST build is still writing — treat Error
+# as terminal only when the instance query's LifecycleState is Failed; otherwise keep polling.
+$posted = Get-Date
 $deadline = (Get-Date).AddMinutes(15)
 do {
   Start-Sleep -Seconds 5
   $status = Invoke-RestMethod `
-    -Uri "https://localhost:$port/admin/api/IndexStatus" `
+    -Uri "https://localhost:$port/admin/api/IndexStatusByRepositoryAndIndexName?Repository=Products&IndexName=Products.index" `
     -Headers @{ Authorization = "Bearer $token" } `
     -SkipCertificateCheck
-  Write-Host ("IndexStatus: " + $status.Status)
-} while ($status.Status -ne 'Idle' -and (Get-Date) -lt $deadline)
+  Write-Host ("State: " + $status.Model.State + "  LastRun: " + $status.Model.LastRun)
+} while (-not ($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted) -and (Get-Date) -lt $deadline)
 
-if ($status.Status -ne 'Idle') { Write-Warning "BuildIndex did not reach Idle within 15 minutes" }
-else { Write-Host "BuildIndex Full complete." -ForegroundColor Green }
+if ($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted) { Write-Host "BuildIndex Full complete." -ForegroundColor Green }
+else { Write-Warning "BuildIndex did not reach a fresh Success within 15 minutes" }
 ```
+
+The freshness comparison against `$posted` is load-bearing: a prior run's successful build satisfies a
+state-only check, so a state check without the timestamp guard can "pass" on a stale index. Repository
+and index names are solution-specific — read them from `wwwroot/Files/System/Repositories/` instead of
+assuming `Products` (a stock Swift solution ships `ProductsFrontend`/`ProductsBackend`).
 
 **Always re-verify after a value write** — run a `get_products_by_query` against a query that filters
 on the field you just changed and confirm the count matches what you set. If it is still 0/stale, you
@@ -162,4 +173,4 @@ either skipped STEP 0 or flushed the wrong cache — do **not** rebuild again bl
 it an index quirk; flush the three services above and rebuild once more. (Building before flushing is
 the #1 cause of "the dashboard widget shows 0 but the data is right".)
 
-If the build fails or never reaches Idle, check that the index file exists at `wwwroot/Files/System/Repositories/Products/Products.index` and that the Repository name matches the index file's containing folder. The completeness/governance consumers of this index live in [`pim-completeness.md`](pim-completeness.md); the post-mutation cache rules live in [`cache-invalidation.md`](cache-invalidation.md).
+If the build fails or never reaches a fresh Success, check that the index file exists at `wwwroot/Files/System/Repositories/Products/Products.index` and that the Repository name matches the index file's containing folder. The completeness/governance consumers of this index live in [`pim-completeness.md`](pim-completeness.md); the post-mutation cache rules live in [`cache-invalidation.md`](cache-invalidation.md).
