@@ -146,21 +146,29 @@ doesn't list the customer after both, re-check the column direction, then check 
 `AccessUserType` doesn't have the bit-16 *Service* flag (Service-flagged users are filtered out of
 standard form-login flows).
 
-## Reorder a past order — `cartcmd=copyorder` is built in
+## Reorder a past order — built in, but it APPENDS to an existing active cart
 
-DW10 ships a cart command that copies every line of a previous order into the active cart, repricing
-at today's prices. **No backend code, no custom controller, no MCP tool** — the same surface the cart
-uses for add/remove/update:
+DW10 ships two zero-code surfaces that copy a past order's lines into the cart, repricing at
+today's prices. **No backend code, no custom controller, no MCP tool:**
 
 ```
 /Default.aspx?ID=<cart-service-page-id>&cartcmd=copyorder&orderid=<order-id>&redirect=true
+<orders-page-url>?CustomerCenterCmd=Reorder&OrderId=<order-id>
 ```
 
-`ID` = the cart service / cart-handling page id; `orderid` = the order to copy (stock Order paragraphs
-expose `Model.Order.Id`); `redirect=true` returns to the cart. A Reorder button is one line of Razor in
-an Order-detail content-layout — no `.cs`, no preflight. **Related cart commands** (`cartcmd=add` /
-`remove` / `delete` / `empty` / `update`) all flow through the same handler — any `cartcmd=` URL you'd
-construct is structurally identical to what Swift already emits, just different parameters.
+The first is the cart command (`ID` = the cart service / cart-handling page id; `orderid` = the order
+to copy — stock Order paragraphs expose `Model.Order.Id`; `redirect=true` returns to the cart). The
+second is the customer-center command processed by the order-list paragraph's own page — verified on
+DW 10.26 appending the order's lines with quantities merged per product/variant. **Related cart
+commands** (`cartcmd=add` / `remove` / `delete` / `empty` / `update`) all flow through the same
+handler as the first form.
+
+**Both surfaces append to the session's ACTIVE cart and silently no-op when there is none** — neither
+creates a cart, no error is rendered or logged, and valid order lines make no difference. The trap in
+a demo script: a Reorder click right after checkout (the cart was just emptied) does nothing on
+stage. Put any line in the cart first (a normal add-to-cart creates the cart) or place the reorder
+beat before checkout. A Reorder button is one line of Razor in an Order-detail content-layout — no
+`.cs`, no preflight.
 
 ## Seeding the CSR/account section's demo data
 
