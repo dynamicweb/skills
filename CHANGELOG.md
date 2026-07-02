@@ -3,6 +3,20 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.7.1]
+
+### Changed
+- **Reorder appends to the ACTIVE cart — both surfaces silently no-op without one.**
+  `commerce-orders.md` "Reorder a past order" presented `cartcmd=copyorder` as copying lines "into
+  the active cart" without stating the precondition: neither `cartcmd=copyorder` nor the
+  customer-center `CustomerCenterCmd=Reorder&OrderId=` command creates a cart — with no active cart
+  in the session they do nothing, render no error, and log nothing. Surfaced in a B2B demo test run
+  where the scripted Reorder beat sat right after checkout (cart just emptied) and the button
+  no-oped on the very order it had appended correctly minutes earlier. The section now documents
+  both surfaces, the append-with-quantity-merge behaviour verified on DW 10.26, and the demo-script
+  rule: put any line in the cart first or place the reorder beat before checkout.
+  `customer-center.md` §3's pointer line updated to match.
+
 ## [3.7.0]
 
 ### Changed
