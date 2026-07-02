@@ -3,6 +3,34 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.8.1]
+
+### Changed
+- **Page/paragraph render-time permission storage corrected to `UnifiedPermission`.** The corpus
+  described a distinct `Permission` table (`PermissionOwnerName`/`PermissionOwnerKey`/
+  `PermissionExplicitDeny`) as the render-time entity store; live verification on a DW 10.26.x host
+  shows those rows land in the same `UnifiedPermission` table as Layer-A entity grants, keyed
+  `PermissionName='Page'` with role strings (`Anonymous`/`AuthenticatedFrontend`) as
+  `PermissionUserId` and `PermissionLevel` bit values `None=1, Read=4`. Rewrote
+  `dw-demo-base/references/foundational/users-permissions.md` §15 (physical storage, role-string
+  rule, anonymous-deny → auto-redirect to the UserAuthentication page, the signed-in-first
+  storefront recipe, and the write-surface escalation: no MCP tool and no Management API endpoint —
+  drive the admin Permissions panel headless and verify with read-only SQL). Swept the stale
+  `Permission`-table phrasing from `dw-demo-swift` (SKILL router, `dw10-canonical-surfaces.md`,
+  `re-skin.md`, `customer-center.md`), `dw-demo-pim/references/permissions-model.md`,
+  `swift-building.md`, `pim-workflow.md`, `dynamicweb-skills-structure.md`, and qualified
+  the group-grant step in `dw-users-permissions` (group-scoped page rows failed to gate on 10.26.x).
+
+### Added
+- **Single-storefront clean-root recipe** in
+  `dw-demo-base/references/foundational/content-modelling.md` §Friendly URL config:
+  `urlIgnoreForChildren=true` + deactivating leftover sibling areas gives one area ownership of `/`
+  with unprefixed child URLs (restart required — URL provider caches at startup), plus the
+  post-switch rendered-HTML sweep for the three stale-link classes the URL provider cannot rewrite
+  (dead-id item-field links — outside `find_unresolvable_item_pages` scope, which detects
+  unresolvable item *types* only; one logo item per header/footer chrome variant; hand-typed
+  rich-text hrefs) and the benign module-emitted `Default.aspx` lookalikes to leave alone.
+
 ## [3.8.0]
 
 ### Changed

@@ -37,7 +37,7 @@ The pitfalls (now in the foundational skill) — easy to miss on a partial read:
 | 2 | New layout-only `.cshtml` content layouts | Pixel-perfect reshaping of an item type's render | [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9 |
 | 3 | Controller / provider `.cs` (customisations-ledger preflight) | Anything that needs server-side logic | [dynamicweb-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md) |
 
-Before climbing the ladder, run the Pre-escalation "search the source first" check in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9 — most "I need a custom template" reflexes resolve to a canonical surface (Permission table for group gates, `Page.Loaded` subscriber for redirects, `CustomHeadInclude` for a project stylesheet, `Pageview.User.*` for identity).
+Before climbing the ladder, run the Pre-escalation "search the source first" check in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9 — most "I need a custom template" reflexes resolve to a canonical surface (permission entity store for role gates, `Page.Loaded` subscriber for redirects, `CustomHeadInclude` for a project stylesheet, `Pageview.User.*` for identity).
 
 ## The `<customer>_custom.css` naming hard rule
 

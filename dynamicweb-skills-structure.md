@@ -112,7 +112,7 @@ Grouped by pillar; first in each group is the highest-value start.
 - `dw-commerce-orders` — orders, checkout, cart, prices.
 - `dw-commerce-b2b` — B2B patterns: "DC = AccessUser group" → DC-scoped assortments + shipping, CSR/sales-on-behalf.
 - `dw-search-indexing` — repositories, queries, indexes, `BuildIndex` + wait-for-Idle.
-- `dw-users-permissions` — users, groups, the Permission entity store (permissions live in the `Permission` table, not legacy `*Permission` columns); three-layer permission model.
+- `dw-users-permissions` — users, groups, the permission entity store (permissions live in `UnifiedPermission` rows, not legacy `*Permission` columns); three-layer permission model.
 
 ### Extending
 - `dw-extend-csharp-api` — using the C# API (`Dynamicweb.Ecommerce.*`, `Services.*`, `Pageview.*`) when ViewModel properties aren't enough.

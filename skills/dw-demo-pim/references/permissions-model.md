@@ -19,15 +19,15 @@
 | The three-layer model — flag, tables, entity registry, admin bypass, cache flush | [`../../dw-demo-base/references/foundational/users-permissions.md`](../../dw-demo-base/references/foundational/users-permissions.md) |
 | Generic grant mechanics — `PermissionLevel` bits, functional-view checklist, Read→Edit bump, dual-gate, field-level differentiation technique, plaintext-password hatch | same candidate, §7–§13 |
 | Demo persona → grant mapping (Editor / Reviewer / Publisher / Admin) | [`permissions-recipes.md`](permissions-recipes.md) |
-| Render-time permissions (storefront `Page` / `Paragraph`) | [`../../dw-demo-swift/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) §"Permissions — the entity store" |
+| Render-time permissions (storefront `Page` / `Paragraph`) | [`../../dw-demo-base/references/foundational/users-permissions.md`](../../dw-demo-base/references/foundational/users-permissions.md) §15 |
 
 ## Cross-cutting placement note (demo-routing)
 
 Permissions touch every demo surface — PIM, the Swift frontend, ERP integration, and Business Central
 potentially. The vendor-generic model is therefore staged in `dw-demo-base`'s foundational area so all
-sister demo skills point at one copy. The Swift demo's `dw10-canonical-surfaces.md` §"Permissions — the
-entity store" owns the **render-time** half (the `Permission` table read on every paragraph render),
-and cross-references the candidate back. This demo skill's permission story (the persona matrix) lives
+sister demo skills point at one copy. The candidate's §15 owns the **render-time** half (the
+entity-store rows — `UnifiedPermission`, `PermissionName='Page'` — read on every page/paragraph
+render), routed to from the Swift demo's `dw10-canonical-surfaces.md`. This demo skill's permission story (the persona matrix) lives
 in [`permissions-recipes.md`](permissions-recipes.md).
 
 For a PIM demo: decide the `CapabilityControlFeature` flag (candidate §1) BEFORE granting anything —

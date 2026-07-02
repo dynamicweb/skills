@@ -22,7 +22,7 @@
 - [11. Per-role field-level differentiation (the SQL technique)](#11-per-role-field-level-differentiation-the-sql-technique)
 - [12. Hide a UI section per group (`CapabilityLimitation`)](#12-hide-a-ui-section-per-group-capabilitylimitation)
 - [13. Plaintext password storage — `EncryptPassword=False` escape hatch](#13-plaintext-password-storage--encryptpasswordfalse-escape-hatch)
-- [15. Render-time half — the `Permission` entity store (Page/Paragraph)](#15-render-time-half--the-permission-entity-store-pageparagraph)
+- [15. Render-time half — page/paragraph permissions (the entity store)](#15-render-time-half--pageparagraph-permissions-the-entity-store)
 - [16. Customer-number suffix as a role flag (presentation gate)](#16-customer-number-suffix-as-a-role-flag-presentation-gate)
 - [17. Cross-references](#17-cross-references)
 
@@ -34,13 +34,13 @@ orthogonal. The flag's default and its cascade behavior are the load-bearing fac
 "I granted Edit on the Products area but the user still can't see anything" detours.
 
 The **render-time** half of permissions — how the storefront's `Page`/`Paragraph` permissions
-resolve at request time — lives in §15 below ("Render-time half — the `Permission` entity store").
-That section owns the `Permission` table (different from
-`UnifiedPermission`) read on every paragraph render. This ref owns modelling-time concerns (entity
-hierarchy, capability tree, flag decision, grant seeding); that ref owns render-time lookup. Roughly:
-this ref controls who can EDIT a product in admin; that one controls who can SEE a CMS page on the
-storefront. Both ultimately read from a permission table, but the tables, enforcement points, and key
-shapes differ.
+resolve at request time — lives in §15 below ("Render-time half — page/paragraph permissions").
+That section owns the render-time rows — physically `UnifiedPermission` rows keyed
+`PermissionName='Page'` on 10.26.x — read on every page/paragraph render. This ref owns
+modelling-time concerns (entity hierarchy, capability tree, flag decision, grant seeding); that ref
+owns render-time lookup. Roughly: this section's layers control who can EDIT a product in admin; §15
+controls who can SEE a CMS page on the storefront. Both live in `UnifiedPermission`, but the
+`PermissionName` key shape, role semantics, and enforcement points differ.
 
 > **Admin-UI gap warning (verified DW 10.25.8).** The admin UI does NOT expose per-resource
 > Permissions or CapabilityLimitation editing for Dynamic Workspaces, Dashboards, or user-group
@@ -607,60 +607,88 @@ Verify the setting before relying on it — production solutions often flip thes
 plaintext seeded under `False` becomes a stale invalid hash after the flip. (DW10's
 `AuthenticationManager.cs:184` auto-rehashes a plaintext seed on first successful login.)
 
-## 15. Render-time half — the `Permission` entity store (Page/Paragraph)
+## 15. Render-time half — page/paragraph permissions (the entity store)
 
 This is the **render-time** half: how the storefront's `Page` / `Paragraph` permissions resolve at
 request time. The load-bearing fact that prevents the entire "SQL-write to
 `EcomParagraph.ParagraphPermission`, then template-shim because nothing gates" detour: DW10's `Page`
-and `Paragraph` permissions are stored in the **`Permission` table**, not in the legacy
+and `Paragraph` render-time permissions live in the permission **entity store**, not in the legacy
 `Page.PagePermission` / `EcomParagraph.ParagraphPermission` columns. The legacy columns exist for
-back-compat but the runtime renderer reads from `Permission`.
+back-compat but the runtime renderer ignores them.
 
-### Schema
+### Physical storage — `UnifiedPermission` rows keyed `PermissionName='Page'` (verified DW 10.26.x)
+
+The entity store's physical rows land in the **same `UnifiedPermission` table** as the Layer-A
+entity grants (§2), disambiguated by `PermissionName`:
 
 ```
-Permission
-  PermissionOwnerName    ('Page' | 'Paragraph' | ...)
-  PermissionOwnerKey     (entity id, e.g. '24' for paragraph 24)
-  PermissionAccessUserGroupId  OR  PermissionAccessUserId
-  PermissionLevel        (1=Read, 2=Edit, 4=Delete, etc.)
-  PermissionExplicitDeny (0=allow, 1=deny)
+UnifiedPermission
+  PermissionName     'Page'  (render-time page gate; Layer-A grants use entity names instead)
+  PermissionKey      page id as string (e.g. '69')
+  PermissionUserId   role string: 'Anonymous' | 'AuthenticatedFrontend'
+  PermissionLevel    bit values per PermissionLevel.cs — None=1, Read=4, Edit=20, …
 ```
 
-This table is distinct from `UnifiedPermission` (§2) — different columns, different enforcement
-points, different key shape. Roughly: `UnifiedPermission` controls who can EDIT a product in admin;
-the `Permission` table controls who can SEE a CMS page / paragraph on the storefront.
+Verified live on 10.26.x by writing gates through the admin Permissions panel and SELECTing the rows
+back: every grant lands in `UnifiedPermission`. A separate `Permission` table with
+`PermissionOwnerName` / `PermissionOwnerKey` / `PermissionExplicitDeny` columns does not hold these
+rows on that build, and `AccessElementPermission` (which also exists) stays empty throughout. The
+modelling-time / render-time split this ref opens with is **semantic, not physical** — same table,
+different `PermissionName`, key shape, and enforcement points.
+
+**Gate the storefront by role string.** Rows scoped to the frontend role strings `Anonymous` /
+`AuthenticatedFrontend` gate correctly; rows scoped to an `AccessUser` group id failed to gate the
+frontend on a 10.26.x build. Design storefront gates on the role strings, keep group-scoped
+visibility on the surfaces that natively support it (Assortments, DC groups —
+[`commerce-b2b.md`](commerce-b2b.md)), and validate any group-scoped page gate on the target build
+before a demo depends on it.
 
 ### Enforcement points
 
 - Page navigation tree filter: `PageNavigationTreeNodeProvider.cs:161` —
   `page.HasPermission(PermissionLevel.Read)`.
 - Page-level redirect for anon: `PageView.cs:399-427` `CheckPermissionsAndRedirect()` auto-302s anon
-  hits to the area's login module page.
+  hits to the login page (target resolution below).
 - Paragraph render: `Frontend/Content.cs:398` — returns `ContentOutputResult.Empty` when
   `paragraph.HasPermission(PermissionLevel.Read)` fails.
 
+### Anonymous deny → automatic redirect to the UserAuthentication page
+
+When a page-level gate denies an anonymous visitor, the 302 target is **the first page in the
+website that carries the UserAuthentication app** — DW auto-discovers it; there is no area-level
+"login page" setting to point at (the area settings surface exposes none). Keep that page active and
+un-gated, and keep it unique per website.
+
+This enables the signed-in-first storefront (the B2B-portal default): grant
+`AuthenticatedFrontend → Read` and `Anonymous → None` on the storefront entry pages (shop root, cart,
+customer center); leave the sign-in page, its children (forgot password, create profile), and the
+header/footer utility folder un-gated so the login page renders with chrome. An anonymous hit on `/`
+then 302s to sign-in. Page-level gating is the ONLY layer that redirects — assortment scoping and
+paragraph gating just render an empty page (empty catalog / `ContentOutputResult.Empty`), which reads
+as "blank homepage", not "please sign in".
+
 ### How to gate a page subtree (e.g. a role-restricted section)
 
-1. Set `Page.PermissionType = 0` on the root + descendants.
-2. INSERT into `Permission` one row per (page, group) binding read-access.
-3. No template edits needed. Nav, redirect, and child-render all self-filter.
+1. On the subtree root, set role → level via the admin Permissions panel (children inherit;
+   `Page.PermissionType = 0` keeps a page inheriting rather than carrying its own rows).
+2. No template edits needed. Nav, redirect, and child-render all self-filter.
 
 ### How to hide a single paragraph from a role
 
-1. INSERT into `Permission`: `('Paragraph', '<paragraphId>', <groupId>, 1, 0)`.
-2. The frontend renderer's `Content.cs:398` returns empty content for users without that read row.
+Use the paragraph's own Permissions panel — same entity-store mechanics; the frontend renderer's
+`Content.cs:398` returns empty content for users without a read grant. (Only the `PermissionName='Page'`
+row shape is live-verified; drive paragraph gates through the panel rather than hand-writing rows.)
 
 ### Frontend resolution takes the HIGHEST level across a user's identities
 
-Frontend permissions resolve by **role and group**, not by individual `AccessUser` id — a
-specific-user grant is ignored. And resolution takes the **highest** level across all of a user's
-identities (roles + groups), so you **cannot hide a page from a sub-group by giving that group
-`None`** if a broader role the user also holds grants `Read`. To hide a subtree from one persona while
-keeping it for everyone else:
+Frontend permissions resolve by **role**, not by individual `AccessUser` id — a specific-user grant
+is ignored. Resolution takes the **highest** level across all of a user's identities, so you
+**cannot hide a page from a sub-audience by giving it `None`** if a broader role the user also holds
+grants `Read`. To hide a subtree from one persona while keeping it for others:
 
 1. Deny the broad role on the subtree root (e.g. `AuthenticatedFrontend → None`).
-2. Grant the personas that *should* keep it (e.g. the customer/account group → `Read`).
+2. Grant the personas that *should* keep it → `Read` — and per the role-string rule above, verify a
+   group-scoped grant actually gates on the target build before relying on it.
 
 The excluded persona then resolves to `None` (section drops from all nav templates, direct URLs 302);
 others keep it; children inherit the root. (When a CSR-type user **impersonates** a customer the
@@ -669,13 +697,14 @@ session becomes that customer, so the customer-only dashboards correctly reappea
 ### Common misdiagnosis
 
 If a `Page.PagePermission` / `EcomParagraph.ParagraphPermission` UPDATE didn't gate the entity from
-frontend users, you wrote to the **wrong table** — the legacy column is admin-side only; the runtime
-check uses `Permission`. Symptoms: paragraph still renders for anon despite `ParagraphPermission='9'`;
-page still navigable despite `PagePermission='<groupId>'`; admin Permissions panel shows the legacy
-value but the storefront ignores it. Fix: revert the legacy-column write, INSERT the equivalent
-`Permission` row, remove any template shims added to compensate.
+frontend users, you wrote to the **wrong place** — the legacy column is admin-side only; the runtime
+check reads the entity store (`UnifiedPermission`, `PermissionName='Page'`). Symptoms: paragraph
+still renders for anon despite `ParagraphPermission='9'`; page still navigable despite
+`PagePermission='<groupId>'`; admin Permissions panel shows the legacy value but the storefront
+ignores it. Fix: revert the legacy-column write, add the equivalent entity-store grant through the
+Permissions panel, remove any template shims added to compensate.
 
-### Cache caveat when writing `Permission` rows via SQL
+### Cache caveat when writing permission rows via SQL
 
 The admin UI invalidates the permission model for you; a direct SQL INSERT does not (DW caches the
 model in process). A SQL-only grant won't take effect — the nav still shows the pages, the gate still
@@ -692,10 +721,15 @@ looks fixed on desktop and broken in the mobile drawer (or vice versa). Test bot
 **permission gate covers all three** without per-template edits — prefer it over template `foreach`
 filters on `PageNavigationTag` (which fail the discipline grep-pack).
 
-### MCP coverage
+### Write surface — the admin Permissions panel (no MCP tool, no Management API endpoint)
 
-`assign_permissions_to_assortment` writes assortment permissions; there is no equivalent generic MCP
-for page/paragraph yet — SQL or admin UI for now.
+`assign_permissions_to_assortment` writes assortment permissions; there is no page/paragraph
+equivalent in MCP, and the Management API catalog (`/admin/api/openapi.json`) exposes no
+page-permission endpoint either (checked on 10.26.x). The working path: drive the admin UI
+**Permissions** panel — `/Admin/UI/Content/PermissionList?Key=<pageId>&Name=Page` — headless
+(browser automation), once per page, and verify each write with a read-only SELECT on
+`UnifiedPermission`. Direct SQL INSERT stays the last resort; if used, flush the security cache or
+restart before verifying (cache caveat above).
 
 ## 16. Customer-number suffix as a role flag (presentation gate)
 
@@ -728,9 +762,9 @@ badge presentation — that is presentation, not gating; use `GetGroups()` for i
 
 ## 17. Cross-references
 
-- **Render-time half of permissions** — §15 above ("Render-time half — the `Permission` entity
-  store"). Owns the `Permission` table (different from `UnifiedPermission`) which gates `Page` /
-  `Paragraph` render at request time.
+- **Render-time half of permissions** — §15 above ("Render-time half — page/paragraph
+  permissions"). Owns the render-time entity-store rows (`UnifiedPermission`,
+  `PermissionName='Page'`) which gate `Page` / `Paragraph` render at request time.
 - **Workflow transitions** — [`pim-workflow.md`](pim-workflow.md). DW10's workflow engine has NO native per-state role gating (verified gap). The workarounds (subscriber-reject; custom capability key; soft gating via permission-aware surfaces) all build on Layer C entity permissions from this ref.
 - **Publish-to-channel native action** — [`commerce-catalog.md`](commerce-catalog.md). The action's `PermissionLevelRequired = PermissionLevel.Edit` is a Layer C check on the source products + a write-permission check on the target Channel groups.
 - **Dynamic Workspaces entity** (`PermissionName="DynamicStructure"`) — [`pim-modelling.md`](pim-modelling.md). How the workspace entity slots into the three-layer model.

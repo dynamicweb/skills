@@ -363,6 +363,41 @@ UPDATE Area SET AreaActive = 0 WHERE AreaId = <cruftLayerId>;   -- disable faile
 Restart the host (URL provider caches the area URL map at startup). Combined with `LocalizeLink`
 above this makes the language switch behave coherently.
 
+### Single-storefront clean root — one area owning `/`
+
+For a single-storefront site (the common demo shape), make the storefront area answer `/` with no
+`/<area-slug>/` prefix on child URLs:
+
+1. Set `urlIgnoreForChildren = true` on the storefront area (`save_areas` exposes it; admin: Website
+   settings → Domain and URL). Child pages then live at `/` — `/<area-slug>/shop` becomes `/shop`.
+2. Deactivate leftover sibling areas (`active = false`) — e.g. the stock "Standard" area a suite
+   scaffold ships alongside the deserialized storefront — so root routing has one candidate.
+3. Restart the host: the URL provider and nav tree cache the area URL map at startup; the change is
+   invisible until then.
+
+**After the switch, sweep the rendered HTML for legacy links** — the URL provider rewrites only the
+links it generates; three classes of stale link survive it:
+
+- **Item-field links carrying dead page ids** (`Default.aspx?ID=<id>` where the id predates the
+  deserialize). The MCP `find_unresolvable_item_pages` tool does NOT find these — it detects
+  paragraphs whose item *type* no longer resolves, not stale *values* inside link/rich-text fields.
+  Find them by fetching the rendered page (`curl`) and grepping for `Default.aspx`, then tracing each
+  `<a href>` to its paragraph via the paragraph-id attribute DW renders on each grid column.
+- **One item per chrome variant.** Stock Swift ships a separate `Swift-v2_Logo` item per
+  header/footer variant page (desktop header, mobile header, desktop footer, mobile footer) — all
+  carrying the same baked link. Repointing only the one visible in the first scan leaves the rest
+  stale; enumerate every instance with `search_paragraphs` filtered by item type and repoint them
+  all (`set_item_field_values`).
+- **Hand-typed hrefs in rich-text fields.** Editor-authored `<a href="/<area-slug>/...">` markup
+  keeps the old prefix verbatim; update the field value.
+
+Not every `Default.aspx?ID=` hit is cruft: stock module output emits some by design (the
+UserAuthentication app's sign-up / forgot-password / redirect sub-links, Swift's CartSummary AJAX
+endpoint). Verify the target page id exists in the area and leave module-emitted links alone —
+patching them means customizing stock module rendering. A `PageShortCut` holding `Default.aspx?ID=`
+of an id that EXISTS (e.g. a sign-in folder shortcutting to its form page) is likewise intentional;
+only clear shortcuts whose target id is dead (next section).
+
 ### `PageShortCut` baseline cruft — "About Us"/"Privacy" 404 after deserialize
 
 Some baselines ship pages whose `Page.PageShortCut` points at a hardcoded old URL
