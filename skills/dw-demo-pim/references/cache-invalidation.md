@@ -14,5 +14,7 @@ The candidate's table is the rulebook for the **Direct SQL fallback** surface. I
 only land on it when MCP / Management API / admin-UI can't do the mutation — the decision to drop to
 SQL-direct over MCP is governed by [`../../dw-demo-base/SKILL.md` "Surface priority for CREATES"](../../dw-demo-base/SKILL.md).
 When you DO seed via SQL, the candidate's "Restart required?" column tells you what the seed owes you
-afterward; budget the 30-second host bounce (or, on a hosted install, the bulk cache flush) into the
-build step. If you used MCP, you are already done — don't "double-fix" by also restarting.
+afterward — worked in the candidate's flush-first order: targeted flush → bulk cache flush
+(`GetServiceCaches` → `CacheInformationsRefresh`, the hosted-install substitute that works locally
+too) → one **batched** host bounce only for what survives the flushes. If you used MCP, you are
+already done — don't "double-fix" by also restarting.

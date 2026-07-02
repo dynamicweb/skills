@@ -3,6 +3,37 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.7.0]
+
+### Changed
+- **Host lifecycle: flush-first discipline and ownership-verified process stops.** Root cause of
+  agents restarting the local host constantly (instead of cache flushing) and of one agent killing
+  another agent's host on multi-demo machines: `dw-demo-base/SKILL.md`'s always-on "Host lifecycle
+  authority" section ended its stop recipe with *"Use this freely — restart is cheap, locked-in-cache
+  state is the bigger risk"* — a standing license to restart that overrode the flush-first rulebook in
+  `cache-invalidation.md` (a reference that only loads when consulted). And the resolution ladder
+  jumped from targeted flush straight to restart "when you can't identify which cache holds the stale
+  value", even though the bulk flush (`GetServiceCaches` → `CacheInformationsRefresh`) is documented
+  as the mandatory substitute for *every* "YES restart" row on hosted installs. Changes:
+  - `dw-demo-base/SKILL.md` "Host lifecycle authority": the restart-freely line is replaced with the
+    **flush-first ladder** — targeted `CacheInformationRefresh` → bulk flush → restart only when the
+    symptom survives both or the cache is documented as not service-exposed (`Searching:Queries`).
+    Owed restarts (AddIn deploys, TFM changes, restart-only rows) are **batched, one per authoring
+    pass** (MCP-first → SQL-last → one-restart), and verified to have cold-started (the `dotnet run`
+    parent/child trap).
+  - **Stop is now port-scoped AND ownership-verified**: the stop snippet resolves the PID from THIS
+    demo's launchSettings port and confirms the owning process's command line points at THIS demo's
+    solution folder before `Stop-Process`; a mismatch warns and aborts instead of killing. Name/
+    command-line matching (`*Dynamicweb.Host.Suite*`, `Stop-Process -Name dotnet`) named explicitly
+    as the sibling-host killer. The inheritance line now also declares restart-where-a-flush-exists
+    and unverified kills as contract violations.
+  - `cache-invalidation.md` "When a mutation doesn't show up" gains the **bulk-flush rung** between
+    targeted flush and restart (run it locally before any restart — it clears every service-backed
+    cache in one call and covers the can't-identify-the-cache case), and its restart rung now carries
+    the batch + port-scoped/ownership-verified + verify-cold-start discipline.
+  - `dw-demo-pim/references/cache-invalidation.md` demo note reworked to the same flush-first order
+    (it previously told builds to "budget the 30-second host bounce" per SQL seed).
+
 ## [3.6.0]
 
 ### Added

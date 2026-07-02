@@ -99,7 +99,9 @@ The reference owns the full workflow end-to-end, including the load-bearing firs
 
 ## Host lifecycle authority
 
-Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start, stop, restart without asking. The host going up and down is part of the normal build / deserialize / test / template-edit loop; blocking on the user to run `dotnet run` is friction.
+Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start, stop, restart without asking. Blocking on the user to run `dotnet run` is friction.
+
+**Flush first — a restart is the last resort, not the default.** Nearly every "my change doesn't show" symptom is a stale cache with a flush surface, and flushing keeps the warm state a restart throws away. Work the ladder in [references/foundational/cache-invalidation.md](references/foundational/cache-invalidation.md) "When a mutation doesn't show up": (1) the **targeted** `CacheInformationRefresh` named in its post-mutation table → (2) the **bulk flush** (`GET /admin/api/GetServiceCaches` → `POST /admin/api/CacheInformationsRefresh {"Ids":[...]}`) — the same substitution hosted installs are required to use for every "restart required" row → (3) restart only when the symptom survives both flushes or the cache is documented as not service-exposed (e.g. `Searching:Queries`). Restarts that ARE owed (AddIn/`Custom.Mcp` deploys, TFM changes, restart-only cache rows) get **batched — one restart per authoring pass** (the MCP-first → SQL-last → one-restart rule), never one per mutation — and verified to have actually cold-started (the `dotnet run` parent/child trap: killing the parent can leave the real host running with its caches intact).
 
 - Start (durable): use PowerShell `Start-Process` so the host survives the spawning subshell, **and redirect stdout/stderr to log files**. A hidden `Start-Process` *without* redirection has proven flaky — the spawned process can exit right after kickoff; redirecting keeps it stable and leaves a startup log to read (e.g. to confirm the TFM line — see `references/foundational/setup-install.md` §2):
   ```
@@ -108,15 +110,20 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
   Returns PID. After kickoff, poll `/Admin` (or `/admin/api/api.json` with bearer) until 200, then proceed.
   **Do NOT** use plain `dotnet run` via Bash `run_in_background:true` — when the bash subshell ends, dotnet receives SIGHUP and the host dies after the next idle window. We've seen this fail with exit 127 mid-session.
   - **`--no-build` caveat:** `dotnet run --no-build` launches whatever DLL is already in `bin/`. If a prior `dotnet build` *failed*, you silently run the **stale** binary — and a run you intended as a one-shot maintenance arg can instead boot a normal host and lock the exe. Confirm the last build succeeded before relying on `--no-build`.
-- Stop: kill by the **PID returned from Start-Process** when you have it. When you don't, target the host **by its launchSettings port — never by the shared project name**: every demo scaffolds the same `Dynamicweb.Host.Suite` project, so a name / command-line match (`*Dynamicweb.Host.Suite*`) kills *sibling* demos' hosts too. Resolve the PID from the port and stop that:
+- Stop — **port-scoped AND ownership-verified; assume sibling demo hosts are running on this machine.** Kill by the **PID returned from Start-Process** when you have it. When you don't, resolve the PID from **THIS demo's launchSettings port** and confirm the owning process's command line points at THIS demo's solution folder before stopping it — every demo scaffolds the same `Dynamicweb.Host.Suite` project, so a name / command-line match (`*Dynamicweb.Host.Suite*`, `Stop-Process -Name dotnet`, killing every `dotnet` PID) kills *sibling* demos' hosts:
+  ```powershell
+  $port = <PORT>   # HTTPS port from THIS demo's Dynamicweb.Host.Suite/Properties/launchSettings.json
+  $p = Get-NetTCPConnection -LocalPort $port -State Listen | Select-Object -ExpandProperty OwningProcess -Unique
+  if ($p) {
+    $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$p").CommandLine
+    if ($cmd -like "*<absolute-path-to-THIS-demo>*") { Stop-Process -Id $p -Force }
+    else { Write-Warning "Port $port is owned by: $cmd — NOT this demo's host. Re-check the port; do not kill." }
+  }
   ```
-  powershell -Command "$p = Get-NetTCPConnection -LocalPort <PORT> -State Listen | Select-Object -ExpandProperty OwningProcess -Unique; if ($p) { Stop-Process -Id $p -Force }"
-  ```
-  `<PORT>` is the HTTPS port from `Dynamicweb.Host.Suite/Properties/launchSettings.json` (the discover-from-project-files source of truth — see `references/scaffold.md`).
-  Use this freely — restart is cheap, locked-in-cache state is the bigger risk.
+  `<PORT>` is the HTTPS port from `Dynamicweb.Host.Suite/Properties/launchSettings.json` (the discover-from-project-files source of truth — see `references/scaffold.md`). The ownership check costs one command and is what keeps a two-agent, two-host machine safe; a warning from it means the port assumption is wrong — rediscover the port from THIS demo's project files, never widen the kill.
 - Visibility ≠ permission: still announce in one line ("starting host…", "host up at :31873", "restarting to clear plugin cache"). Authorization removes the *ask*, not the *narration*.
 
-This rule is owned by this skill and inherited by every sister skill (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`, `dynamicweb-pim-for-bc`). A sister skill that pauses mid-flow to ask "please start the host" is violating this contract.
+This rule is owned by this skill and inherited by every sister skill (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`, `dynamicweb-pim-for-bc`). A sister skill that pauses mid-flow to ask "please start the host" is violating this contract — and so is one that restarts the host where the cache table names a flush, or stops a process it hasn't verified as this demo's own.
 
 ## Surface priority for CREATES (always-on rule)
 
