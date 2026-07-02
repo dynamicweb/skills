@@ -15,7 +15,7 @@
 | Surface you're about to hand-roll | Use instead — owned by | Candidate |
 |---|---|---|
 | Read user / user groups (`Pageview.User`, `Pageview.User.GetGroups()`) | `dw-render-viewmodels` | [`render-viewmodels.md`](../../dw-demo-base/references/foundational/render-viewmodels.md) "User identity / groups" |
-| Gate a Page/Paragraph by group (the `Permission` entity store — NOT the legacy `*Permission` columns) | `dw-users-permissions` | [`users-permissions.md`](../../dw-demo-base/references/foundational/users-permissions.md) §15 |
+| Gate a Page/Paragraph by role (the permission entity store — `UnifiedPermission` rows keyed `PermissionName='Page'`, NOT the legacy `*Permission` columns) | `dw-users-permissions` | [`users-permissions.md`](../../dw-demo-base/references/foundational/users-permissions.md) §15 |
 | Read prices (`Services.Prices`, custom `PriceProvider`) | `dw-commerce-catalog` | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.12 |
 | Read customer orders (`Services.Orders.GetCustomerOrdersByType` / `GetOrdersBySearch`) | `dw-commerce-orders` | [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md) "canonical order read surface" |
 | Get product / friendly URLs; `AddStylesheet`/`AddScript` hoisting; cross-cutting redirects (`Page.Loaded` subscriber); per-category behavior; product-field arrays | `dw-render-razor` | [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §1 |

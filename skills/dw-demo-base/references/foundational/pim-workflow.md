@@ -145,7 +145,7 @@ In all three workarounds, **add the audit-log subscriber** anyway: a `Notificati
 ## 7. Cross-references
 
 - **Permissions** — [`users-permissions.md`](users-permissions.md). All three §6 workarounds build on Layer B and Layer C grants from that ref.
-- **Render-time permissions** (Page / Paragraph gating in storefront) — [`users-permissions.md`](users-permissions.md) §15 ("Render-time half — the `Permission` entity store"). Different table (`Permission`, not `UnifiedPermission`), different lookup. Don't confuse — `UnifiedPermission` gates ADMIN actions (the focus of this ref); `Permission` gates STOREFRONT renders.
+- **Render-time permissions** (Page / Paragraph gating in storefront) — [`users-permissions.md`](users-permissions.md) §15 ("Render-time half — page/paragraph permissions"). Same `UnifiedPermission` table as the admin-side grants, different key shape and enforcement points — render-time rows are keyed `PermissionName='Page'` with role strings, and gate STOREFRONT renders; the entity-name-keyed rows this ref focuses on gate ADMIN actions.
 - **Custom code** — `NotificationSubscriber` and scheduled-task surfaces are custom code that ships without a config-surface prompt — §6.1 and the audit-log subscriber ship unprompted.
 - **Cache invalidation** — [`cache-invalidation.md`](cache-invalidation.md). State transitions via `WorkflowStateService.Save` go through the domain service and invalidate caches inline; raw `UPDATE EcomProducts SET ProductWorkflowStateId = …` does NOT fire the `ProductWorkflowStateChanged` notification at all (so emails won't fire either) — use the service, not raw SQL.
 

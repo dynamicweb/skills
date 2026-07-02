@@ -154,7 +154,12 @@ Default: Anonymous users have Read on all pages.
 
 To restrict a page or branch:
 1. Set **Anonymous users (frontend) → None** on the page
-2. Grant **Read** to specific user groups that should have access
+2. Grant **Read** to **Authenticated users (frontend)** — role grants gate reliably. Verify a
+   group-scoped page grant actually gates on the target build before relying on it (group-scoped
+   rows failed to gate the frontend on a 10.26.x install; role-string rows gated correctly).
+
+A denied anonymous visitor is auto-redirected to the first page in the website that carries the
+UserAuthentication app — keep that page active and un-restricted.
 
 This pattern is the standard for member-only pages, B2B portals, and customer extranets.
 
