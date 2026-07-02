@@ -3,6 +3,23 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.8.2]
+
+### Changed
+- **Group-scoped page/paragraph gates work — via the deny+grant pair; 3.8.1's role-string-only rule
+  was a misdiagnosis.** Further live verification on the same 10.26.x host: a **bare** group-id
+  grant does not gate because highest-wins resolution lets the inherited broad
+  `AuthenticatedFrontend` grant override it — which is what previously read as "group gating is
+  non-functional". The working shape (verified at page AND paragraph level): an explicit
+  `AuthenticatedFrontend → None` deny **plus** a `<group id> → Read` grant on the same entity.
+  Also live-verifies the `PermissionName='Paragraph'` row shape (previously hedged), with the
+  deny+grant pair written via the paragraph's Permissions panel or direct SQL + security-cache
+  flush. Rewrote the §15 role-string rule in
+  `dw-demo-base/references/foundational/users-permissions.md` around the pair (including the
+  two-step hide-a-subtree recipe, whose step-2 group grants are effective exactly because of the
+  step-1 deny), the restrict-a-page recipe in `dw-users-permissions/SKILL.md` (the broad-role deny
+  named as load-bearing), and the `dw10-canonical-surfaces.md` routing row.
+
 ## [3.8.1]
 
 ### Changed

@@ -636,12 +636,15 @@ rows on that build, and `AccessElementPermission` (which also exists) stays empt
 modelling-time / render-time split this ref opens with is **semantic, not physical** — same table,
 different `PermissionName`, key shape, and enforcement points.
 
-**Gate the storefront by role string.** Rows scoped to the frontend role strings `Anonymous` /
-`AuthenticatedFrontend` gate correctly; rows scoped to an `AccessUser` group id failed to gate the
-frontend on a 10.26.x build. Design storefront gates on the role strings, keep group-scoped
-visibility on the surfaces that natively support it (Assortments, DC groups —
-[`commerce-b2b.md`](commerce-b2b.md)), and validate any group-scoped page gate on the target build
-before a demo depends on it.
+**Group-scoped gates need the deny+grant pair.** Rows scoped to the frontend role strings
+`Anonymous` / `AuthenticatedFrontend` gate correctly on their own. A **bare** group-id grant does
+NOT gate — highest-wins resolution lets the inherited broad `AuthenticatedFrontend` grant override
+it, which reads as "group gating is non-functional" if that's the only shape tested. The working
+shape (verified live on 10.26.x, page AND paragraph level): an explicit
+`AuthenticatedFrontend → None` deny **plus** a `<group id> → Read` grant **on the same entity** —
+i.e. exactly the two-step recipe under "Frontend resolution" below. For visibility that should
+follow commerce data rather than CMS permissions, prefer the surfaces that natively scope by group
+(Assortments, DC groups — [`commerce-b2b.md`](commerce-b2b.md)).
 
 ### Enforcement points
 
@@ -673,11 +676,14 @@ as "blank homepage", not "please sign in".
    `Page.PermissionType = 0` keeps a page inheriting rather than carrying its own rows).
 2. No template edits needed. Nav, redirect, and child-render all self-filter.
 
-### How to hide a single paragraph from a role
+### How to hide a single paragraph from a persona
 
-Use the paragraph's own Permissions panel — same entity-store mechanics; the frontend renderer's
-`Content.cs:398` returns empty content for users without a read grant. (Only the `PermissionName='Page'`
-row shape is live-verified; drive paragraph gates through the panel rather than hand-writing rows.)
+Same entity-store mechanics with `PermissionName='Paragraph'` and the paragraph id as
+`PermissionKey` (live-verified on 10.26.x): write the deny+grant pair —
+`('AuthenticatedFrontend', '<paragraphId>', 'Paragraph', <None>)` plus
+`('<groupId>', '<paragraphId>', 'Paragraph', <Read>)` — via the paragraph's Permissions panel or
+direct SQL + security-cache flush. The frontend renderer's `Content.cs:398` returns empty content
+for users without a read grant.
 
 ### Frontend resolution takes the HIGHEST level across a user's identities
 
@@ -687,8 +693,8 @@ is ignored. Resolution takes the **highest** level across all of a user's identi
 grants `Read`. To hide a subtree from one persona while keeping it for others:
 
 1. Deny the broad role on the subtree root (e.g. `AuthenticatedFrontend → None`).
-2. Grant the personas that *should* keep it → `Read` — and per the role-string rule above, verify a
-   group-scoped grant actually gates on the target build before relying on it.
+2. Grant the personas that *should* keep it → `Read` (group-id grants work here — the explicit
+   deny in step 1 is what makes them effective; a group grant without it is silently overridden).
 
 The excluded persona then resolves to `None` (section drops from all nav templates, direct URLs 302);
 others keep it; children inherit the root. (When a CSR-type user **impersonates** a customer the
