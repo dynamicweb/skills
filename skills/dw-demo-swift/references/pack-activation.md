@@ -144,6 +144,15 @@ The fragment is serializer YAML that lands the pack's data. Stage each mode tree
 `fragmentModes` into the host's `SerializeRoot`, then POST the deserialize — one POST per mode.
 
 ```powershell
+# Bind the running host's HTTPS port and a Management API token BEFORE the loop.
+# $token is the CLAUDE.hex captured in the current conversation (see §2); $port is
+# the port the host is listening on. Guard both so a copy-paste never POSTs to an
+# empty URI (`https://localhost:/...`) or sends a bare `Bearer ` header.
+$port  = 5001                               # the running host's HTTPS port
+$token = "<CLAUDE.hex from conversation>"   # Management API token captured in §2
+if (-not $token -or $token -like '<*') { throw 'Capture a Management API token (CLAUDE.hex) first' }
+if (-not $port)  { throw 'Set $port to the running host HTTPS port first' }
+
 $serializeRoot = "$hostRoot\wwwroot\Files\System\Serializer\SerializeRoot"
 foreach ($mode in $pack.fragmentModes) {          # e.g. 'seed', or 'deploy','seed'
   $modeSrc = "$slot\baseline-fragment\$mode"
