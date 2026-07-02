@@ -3,6 +3,19 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.8.4]
+
+### Added
+- **`dw-demo-swift/references/pack-activation.md` — install a feature pack into a demo host.** A new
+  consumer-facing reference documenting the L3→demo-host install path: resolve a pack release from the
+  `feature-packs/<name>/<version>` vault slot, read `pack.json`, source-drop the `.cs` into the host's
+  `Packs\<name>\` and rebuild, copy disk-overlay templates/item types, and deserialize the
+  `baseline-fragment` mode trees (seed/deploy) strictly AFTER the base baseline. Documents the confirmed
+  pack zip anatomy (pack.json, src/*.cs, templates/, itemtypes/, baseline-fragment/{seed,deploy}/) and
+  the activation model (code compiles into the host; the fragment is additive and never edits base YAML).
+  Added the router row to `dw-demo-swift/SKILL.md` and completed the swift/2.3 baseline-shape supersede in
+  SKILL.md Step 0 (retiring the content-only `Swift2.2` framing).
+
 ## [3.8.3]
 
 ### Changed

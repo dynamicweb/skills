@@ -142,7 +142,7 @@ Foundation skill for all demos. Scaffolds the dw10-suite host, wires the Backend
 PIM modelling from a blank DB — product data built from scratch via MCP. Use after `dw-demo-base`.
 
 **[dw-demo-swift](skills/dw-demo-swift/SKILL.md)**
-Swift frontend — swift/2.3 baseline deserialize, templates, paragraph types, Visual Editor, and the customer-center playbook. Use after `dw-demo-base`.
+Swift frontend — swift/2.3 baseline deserialize, feature-pack install, templates, paragraph types, Visual Editor, and the customer-center playbook. Use after `dw-demo-base`.
 
 **[dw-demo-erp](skills/dw-demo-erp/SKILL.md)**
 ERP integration demo — DB-staged mock or live BC, Integration Framework rules. Use after `dw-demo-base`.
