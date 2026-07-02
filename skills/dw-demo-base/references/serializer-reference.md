@@ -86,7 +86,7 @@ Architecture, source layout, pipeline walkthrough, YAML schema details, strict-m
 
 - `$env:DW_SERIALIZER_REPO\docs\` — README → `concepts.md` → `strict-mode.md` (full warning-source table, override precedence, cache-registry extension recipe) → `link-resolution.md` → `troubleshooting.md` → `configuration.md` → `runtime-exclusions.md` → `sql-tables.md` → `permissions.md` → `cicd.md`
 - `$env:DW_SERIALIZER_REPO\src\<project>\` — source (the single project folder under `src\`); `Providers\SerializerOrchestrator.cs` is the entry point
-- `$env:DW_SERIALIZER_REPO\tools\` — each tool subfolder carries its own README; the Swift 2.2 bacpac there is the emergency fast-restore alternative to deserialize referenced by `$env:DW_VAULT\INDEX.md`'s `databases` row
+- `$env:DW_SERIALIZER_REPO\tools\` — each tool subfolder carries its own README. For DB fast-restore, resolve the artifact from the vault's own `databases` slot (`$env:DW_VAULT\databases\` — the canonical in-vault fast-restore source per `$env:DW_VAULT\INDEX.md`'s `databases` row); a bacpac copy inside the Serializer repo's tools folder is a development convenience, not the resolution target
 
 Note: `$env:DW_VAULT\dw10source\` is the DW10 clone, NOT the Serializer — Serializer source lives only under `$env:DW_SERIALIZER_REPO`.
 
