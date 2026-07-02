@@ -16,7 +16,8 @@ authenticated with `Authorization: Bearer CLAUDE.xxx` tokens. The interactive sp
 | Endpoint | Method | Purpose |
 |---|---|---|
 | `/admin/api/BuildIndex` | POST | Build a Lucene index. Body: `{"Repository":"Products","IndexName":"Products.index","BuildName":"Full","BuildType":"Full"}`. |
-| `/admin/api/IndexStatus` | GET | Poll index-build status; returns `Status` (e.g. `Idle`) — poll until `Idle`. |
+| `/admin/api/IndexStatusByRepositoryAndIndexName` | GET | Poll index-build status. Query: `?Repository=<repo>&IndexName=<name>.index` → `{ State: Success\|Warning\|Error, LastRun, ... }`. Poll until `State=Success` with `LastRun` newer than your BuildIndex POST (a stale prior build satisfies a state-only check). No `Status`/`Idle` field exists on 10.26.x models. |
+| `/admin/api/InstanceStatusByName` | GET | Poll a single index instance. Query adds `&InstanceName=<instance>` → `{ State, LifecycleState: NeverBuilt\|...\|Completed\|Failed, LastSuccessfulBuild, CurrentCount, TotalCount }`. A never-built index reports index-level `State=Error` while its first build runs — terminal only when `LifecycleState=Failed`. Live JSON is camelCase despite the PascalCase catalog. |
 | `/admin/api/ProductCombine` | POST | Product-combine / variant-combination operations. |
 | `/admin/api/CacheInformationRefresh` | POST | Clear a specific service cache. Body: `{"CacheTypeName":"Dynamicweb.Ecommerce.Shops.ShopService"}`. |
 | `/admin/api/GetServiceCaches` | GET | Enumerate all registered service caches (read-only) — discover cache ids before a targeted refresh. |

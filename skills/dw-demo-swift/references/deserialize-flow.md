@@ -180,7 +180,7 @@ The sweep is the second line of defence for the failures strict mode does not ca
 - `reference_category` parent row presence (Check 2).
 - Query GUID dedup across `Repositories/` vs `SmartSearches/Shared/` (Check 3).
 - Defense-in-depth on top of strict mode (Checks 1 and 4).
-- `BuildIndex` Full + wait-for-Idle (Check 5).
+- `BuildIndex` Full + wait for a fresh successful build (Check 5).
 
 ## 9. Known schema-drift workaround (Swift 2.2 baseline ↔ DW10)
 
