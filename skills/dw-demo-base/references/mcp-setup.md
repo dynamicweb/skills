@@ -137,6 +137,8 @@ After saving, do **not** rerun `/mcp` in Claude Code yet — there's no bearer i
 
 Steps 3 and 3b assume the admin UI is reachable and browser tools are available. When they aren't (a fully headless build / automated provisioning / Browser MCP tools not yet surfaced in this session), create both the API token and the MCP configuration **in code** — issue the token via `TokenService.TryCreateToken`, insert the `McpConfiguration` row, and bind them through `McpConfigurationService.LinkToken` (a raw `McpConfigurationCredential` insert returns `401` — the bind must go through the service, invoked by reflection since the type is internal), then restart the host. The full recipe, the reflection snippet, and the brittleness warning are owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §4. Prefer the Playwright-driven admin-UI route (Step 3) whenever the UI is reachable.
 
+Any such bootstrap branch added to `Program.cs` during standup (a password-set, token-mint, or MCP-link maintenance path) is **one-shot scaffolding, not a permanent feature**: once the credentials/tokens persist in the DB, re-running it is redundant at best and duplicating at worst. Before final delivery, remove these branches, rebuild, and restart the host — shipping them hands the customer live credential-minting code.
+
 ---
 
 ## Step 4 — The MCP verification gate
