@@ -39,14 +39,14 @@ The sweep adds defense-in-depth for these categories. Skipping it produces a des
 
 **What is verified:** No FK orphans were introduced by the deserialize.
 
-**How:** DynamicWeb.Serializer strict mode (default-on for API callers — see [`deserialize-flow.md`](deserialize-flow.md) Section 5) raises FK orphans as `CumulativeStrictModeException` during the deserialize POST. The sweep does NOT run a separate per-pair orphan SQL loop — that would be redundant and costly. Instead, this check is satisfied by:
+**How:** the DW Serializer's strict mode (default-on for API callers — see [`deserialize-flow.md`](deserialize-flow.md) Section 5) raises FK orphans as `CumulativeStrictModeException` during the deserialize POST. The sweep does NOT run a separate per-pair orphan SQL loop — that would be redundant and costly. Instead, this check is satisfied by:
 
 1. [`deserialize-flow.md`](deserialize-flow.md) was followed (strict mode default — disabling strict mode is forbidden by that flow).
 2. The deserialize POST returned HTTP 2xx (no `CumulativeStrictModeException` body).
 
 If both of those are true, Check 1 passes. If either is false, Check 1 fails — return to [`deserialize-flow.md`](deserialize-flow.md) and re-run with strict mode on.
 
-**Why no separate SQL loop:** Strict mode is the canonical FK-orphan detector for DynamicWeb.Serializer. Adding an `INFORMATION_SCHEMA`-driven per-pair count would duplicate work the Serializer already did, with worse performance and worse error messages.
+**Why no separate SQL loop:** Strict mode is the canonical FK-orphan detector for the DW Serializer. Adding an `INFORMATION_SCHEMA`-driven per-pair count would duplicate work the Serializer already did, with worse performance and worse error messages.
 
 **Reference:** [`deserialize-flow.md`](deserialize-flow.md) Section 5 — Strict-mode contract, category 1 of 4.
 

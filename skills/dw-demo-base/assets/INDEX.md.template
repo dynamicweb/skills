@@ -9,7 +9,7 @@
 | `samples` | `$DW_VAULT\samples\` | Reference admin-UI samples (`dw10adminUI/`) and any future sample bundles | _(applies to dw10adminUI commit hash)_ | _(YYYY-MM-DD)_ |
 | `databases` | `$DW_VAULT\databases\` | Optional .mdf snapshots / clean-DB zips for fast restore (alternative to deserialize) | _(version of DW10 the snapshot targets)_ | _(YYYY-MM-DD)_ |
 | `docs` | `$DW_VAULT\docs\` | Curated DW10 docs (custom admin screens guide, middleware deep-dive) | _(N/A -- version-agnostic)_ | _(YYYY-MM-DD)_ |
-| `serialized-data` | `$DW_VAULT\serialized-data\` | YAML baselines for `DynamicWeb.Serializer` deserialize. Each subfolder is one baseline (e.g. generic `Swift2.2/`, plus per-demo customer-flavoured baselines named `<demo>-base/` by convention once derived). | _(per-baseline; each subfolder lists its target DW10 version in its own README)_ | _(YYYY-MM-DD)_ |
+| `serialized-data` | `$DW_VAULT\serialized-data\` | YAML baselines for the DW Serializer deserialize. Each subfolder is one baseline (e.g. generic `Swift2.2/`, plus per-demo customer-flavoured baselines named `<demo>-base/` by convention once derived). | _(per-baseline; each subfolder lists its target DW10 version in its own README)_ | _(YYYY-MM-DD)_ |
 
 ## Resolution rule
 

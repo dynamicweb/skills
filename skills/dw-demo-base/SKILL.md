@@ -77,7 +77,7 @@ The Serializer install steps live in base so any sister skill can pull them; the
 | Audit customisations at end of phase | references/audit-customisations.md |
 | Honor the customer-context read-only contract | references/customer-context.md |
 | Recover from silent AddIn install failure (stuck `UpdateManager` queue) | references/db-update-recovery.md |
-| Install `DynamicWeb.Serializer` in the demo host; triage Serializer failure patterns; check baseline compatibility | references/serializer-reference.md ("Installation") |
+| Install the DW Serializer in the demo host; triage Serializer failure patterns; check baseline compatibility | references/serializer-reference.md ("Installation") |
 | Understand Serializer internals — these live upstream in the Serializer repo's own docs; the reference carries the pointer block | references/serializer-reference.md ("Internals — upstream pointer block") |
 | Run a Swift baseline deserialize (Swift demos only) | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) |
 | Verify post-deserialize integrity (Swift demos only) | [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md) |
