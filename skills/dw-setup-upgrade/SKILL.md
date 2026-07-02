@@ -149,7 +149,7 @@ The old `@1@,@2@` format for user-group relations in `AccessUser` is auto-migrat
 3. **Update package references:**
    - Wildcard `Version="10.*-*"` → just rebuild: `dotnet build`
    - Pinned minor → `dotnet install Dynamicweb.Suite`
-4. **Update addons via the Appstore** — addons are runtime-specific; a .NET 8 addon will not work on a .NET 10 host
+4. **Update addons via the Appstore** — addon *loaders* can be gated on the **host process TFM**, not on the packaged binaries: the Backend MCP AddIn registers only when the host process runs net10, even though its package ships net6/net8 lib binaries (symptom: install POST returns 200, files drop under `Files/System/AddIns/Installed/`, the AddIn never registers, `/admin/mcp` returns 404). Plain net8 class libraries dropped into a net10 host's `bin\` back-load fine via standard .NET roll-forward — the constraint is the host process TFM, not every DLL in the folder. State the rule with that nuance: host = net10 (mandatory for TFM-gated addon loaders), library = net8 back-loads (supported, forward-compatible). Host start-on-net10 detail: [`../dw-setup-install/SKILL.md`](../dw-setup-install/SKILL.md) "After Installation — Bootstrap and Attach".
 
 ## Post-Upgrade Steps
 
