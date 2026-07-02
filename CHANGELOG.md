@@ -3,6 +3,17 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.7.4]
+
+### Changed
+- **RESET runbook: the admin "Run task now" needs its confirmation dialog, fires on the next
+  scheduler poll, and stale duplicate tasks get deleted.** `mock-deltas.md` Step 6 rewritten: the
+  Run-task-now click opens an OK dialog and does nothing until confirmed (a dismissed dialog leaves
+  no trace — it reads as "the reset silently failed"); execution happens on the scheduler's next
+  poll, so success is verified by the task's Last-run timestamp flipping, not by the click; and
+  abandoned earlier registrations leave near-identical sibling tasks a presenter will mis-fire
+  under stage pressure — superseded copies are deleted as part of the idempotent re-registration.
+
 ## [3.7.3]
 
 ### Changed
