@@ -29,6 +29,8 @@ The verification gate (Step 4) refuses to declare 'setup complete' until BOTH `c
 
 For Claude Code + a local Dynamicweb host, **default to API Key auth.** It is restart-resilient (the bearer is DB-backed and revalidated against `AccessUserToken` on every request — no interactive `/mcp` re-auth when the host bounces), has no OAuth client to register, and rides the same `AccessUserToken` model as the Management API token. Use Claude.ai OAuth only when connecting the hosted claude.ai web client (which can't read a local `.mcp.json`). The platform-level auth model (the four `McpAuthMiddleware` handlers, why DCR breaks on restart) is owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §2.
 
+For autonomous/headless standup flows this default is load-bearing: the OAuth path's authenticate step is an interactive click (callback on `localhost:<port>`) + token mint + Claude Code restart — a hard human gate no headless workaround clears, and the single biggest blocker for unattended standup. An automation that reaches it must surface "human action required: click Authenticate, then restart Claude Code from a fresh shell" and stop, never hang waiting for tools that will not load. The API-Key flow (and its Step 3 headless alternative below) is what keeps a standup automatable end-to-end.
+
 ---
 
 ## Step 1 — Discover port from `launchSettings.json`
