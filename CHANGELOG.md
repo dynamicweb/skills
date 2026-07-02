@@ -3,6 +3,23 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.7.2]
+
+### Added
+- **Two re-skin CSS pitfalls in `render-razor.md` §5** (both hit in a B2B demo visual audit):
+  - *Colorscheme rules out-specify simple header/footer brand rules.* `.navbar` paints the desktop
+    category sidebar (not the page header); header grid-row sections carrying a colorscheme repaint
+    their own background over `header[data-swift-page-header]` at specificity (0,3,0); link colours
+    inside colorscheme scopes come from a ~(0,5,1) swift.css rule. Worked selectors provided for
+    all three layers, including the structural `.offcanvas */.dropdown-menu *` exclusions that keep
+    header menus readable.
+  - *Declared typography fonts must be vendored — Swift ships no webfont files.* A bare
+    `--dw-font-family: <Font>` renders the browser default serif when the font isn't installed;
+    CDN `@import` masks it until the demo runs offline, and removing the import without vendoring
+    reintroduces the serif fallback. Recipe: local woff2 + `@font-face` (`font-display: swap`),
+    generic-terminated stacks, canvas-width verification (`document.fonts.check()` alone is
+    misleading). `re-skin.md`'s pitfall index gained pointer lines for both.
+
 ## [3.7.1]
 
 ### Changed

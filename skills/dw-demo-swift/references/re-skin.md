@@ -24,6 +24,8 @@ The pitfalls (now in the foundational skill) — easy to miss on a partial read:
 - Over-broad `[data-dw-button]` selectors paint outline/ghost/icon buttons solid brand colour → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
 - Bare `footer { }` selectors clobber card-internal action-bars → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
 - Emoji codepoints render in color regardless of CSS `color:` (OS color-font fallback) → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
+- Header brand-bar paint loses to colorscheme rules: `.navbar` hits the category sidebar, section colorscheme backgrounds repaint over `header[data-swift-page-header]`, link colours need a stacked `:is()/:not()` override → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
+- A Typography style's `--dw-font-family` renders the browser default serif unless the font is vendored (`@font-face` + woff2 — Swift ships no webfonts) and the stack ends in a generic family → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
 - Custom variant `.cshtml` whose filename sorts before stock variants hijacks empty-`ParagraphTemplate` paragraphs → [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §4. The verification step for any re-skin that adds a custom variant must check this.
 
 ## The escalation ladder

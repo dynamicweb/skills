@@ -248,6 +248,63 @@ body > footer,
 `main`, `section`) for paint is a bug-in-waiting — Swift uses HTML5 landmarks semantically throughout.
 Scope by class, ID, parent selector, or data-attribute instead.
 
+### Colorscheme rules out-specify simple header/footer brand rules
+
+Painting the page header via the landmark attribute is necessary but not sufficient — three
+swift.css cascade layers bite in order:
+
+1. **Target `header[data-swift-page-header]`, never `.navbar`.** Swift also renders the desktop
+   category sidebar as `nav.navbar.d-none.d-lg-block` on product-list pages. A `.navbar` brand-bar
+   rule paints that sidebar solid brand colour while its text keeps the default dark foreground
+   (unreadable) — and the real page header stays unpainted, so a white-on-transparent logo SVG
+   simply disappears into the white header. The breakage is invisible at mobile widths where the
+   sidebar is `d-none` — check desktop.
+2. **Child grid-row sections repaint over the header.** Header rows carrying a colorscheme match
+   swift.css's `[data-dw-colorscheme]:not([data-dw-colorscheme=""]):not([data-swift-gridcolumn])`
+   — specificity (0,3,0) — which sets its own `background-color` on top of the header paint. A
+   plain `header[…] section[…]` override at (0,2,2) loses silently. Clear them with a selector at
+   or above (0,3,0), scoped to the header:
+
+   ```css
+   header[data-swift-page-header] section[data-swift-gridrow][data-dw-colorscheme] {
+       background-color: transparent;
+   }
+   ```
+
+3. **Link colours inside colorscheme scopes come from a ~(0,5,1) swift.css rule**
+   (`[data-dw-colorscheme]:not(…) a:not(.btn):not(.page-link):not(.dropdown-item)…`). Out-specify
+   it with a stacked `:is()/:not()` selector, and exclude menu content *structurally* so offcanvas
+   and dropdown panels rendered inside the header keep their own dark-on-light text:
+
+   ```css
+   header[data-swift-page-header] :is(a, .nav-link, button.nav-link):not(.btn):not(.page-link):not(.dropdown-item):not(.offcanvas *):not(.dropdown-menu *) {
+       color: #fff;
+   }
+   ```
+
+Diagnostic: DevTools computed-style on the losing element names the winning swift.css selector;
+match or exceed its attribute+`:not()` count (each counts at class level). Reach for `!important`
+only when a later guard rule in the same sheet must still be able to override.
+
+### Declared typography fonts must be vendored — Swift ships no webfont files
+
+`--dw-font-family: <Font>` in a Typography style is a *request*, not a font. Swift's asset
+pipeline bundles no webfont files, so unless the font is installed on the demo machine or the
+project vendors it, the browser falls back to its default — Times New Roman on Windows — and the
+whole storefront quietly renders serif. A CDN `@import` (Google Fonts) masks the gap until the
+demo runs offline; removing that import for offline-safety *without vendoring the files* is the
+same serif fallback with extra steps. Recipe:
+
+1. Vendor the woff2 files (from the font's official distribution) under the design's
+   `Custom/fonts/` and declare `@font-face` blocks (`font-display: swap`) with site-absolute
+   `/Files/…` src paths in the Typography CSS — zero runtime CDN references.
+2. End every `--dw-font-family` stack with a generic family —
+   `--dw-font-family: <Font>, 'Segoe UI', system-ui, sans-serif;` — so a font-file failure
+   degrades to a sans-serif, never a serif.
+3. Verify empirically, not via `document.fonts.check()` alone (it also returns true for
+   system-installed fonts): compare canvas text widths — `ctx.font = '32px <Font>'` vs
+   `'32px "Times New Roman"'` on the same string; equal widths mean the font never loaded.
+
 ### Emoji codepoints render in color regardless of CSS `color:`
 
 Unicode emoji codepoints (`📞`, `✉`, `🚛`, `▲`) drop into Razor and inline-HTML fields freely as
