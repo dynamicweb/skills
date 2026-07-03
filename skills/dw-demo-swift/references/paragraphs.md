@@ -1,6 +1,6 @@
 # paragraphs.md
 
-> Swift 2.2 paragraph guardrails for demos. Source-of-truth: paragraphs are exposed in admin UI under each page; backing definitions live in `wwwroot/Files/Templates/Paragraph/` (built-in — read-only) and the page-preset YAML at `$env:DW_VAULT\serialized-data\Swift2.2\_content\Swift 2\<area>\<page>\<grid-row>\paragraph-*.yml`.
+> Swift 2.2 paragraph guardrails for demos. Source-of-truth: paragraphs are exposed in admin UI under each page; backing definitions live in `wwwroot/Files/Templates/Paragraph/` (built-in — read-only) and the page-preset YAML at `<demo-root>\baselines\swift-2.3\deploy\_content\Swift 2\<area>\<page>\<grid-row>\paragraph-*.yml`.
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -16,14 +16,14 @@ here is the demo guardrail: the paragraph types you must NOT replace.
 | ProductHeader **ProductViewModel field inventory** (`ManufacturerName` not `Manufacturer.Name`; what's available vs what only looks like it is) | [`render-viewmodels.md`](../../dw-demo-base/references/foundational/render-viewmodels.md) |
 | SQL-direct Paragraph INSERT required columns | [`sql-direct-seeding.md`](sql-direct-seeding.md) |
 
-## Where to find a paragraph's wiring (read-only vault inspection)
+## Where to find a paragraph's wiring (read-only baseline inspection)
 
 To trace what a specific paragraph does on a Swift 2.2 page: note the page in admin (e.g.
 `Customer center/CSR/Orders`); the corresponding YAML lives at
-`$env:DW_VAULT\serialized-data\Swift2.2\_content\Swift 2\Customer center\CSR\Orders\grid-row-1\paragraph-c1-1.yml`;
+`<demo-root>\baselines\swift-2.3\deploy\_content\Swift 2\Customer center\CSR\Orders\grid-row-1\paragraph-c1-1.yml`;
 the YAML's `Type` field names the paragraph definition and the rest carries its configured properties.
-This is read-only inspection — you don't edit the vault YAML; you edit paragraph properties via the
-Admin UI Visual Editor on the live host (which writes to the host's project DB, not back to the vault).
+This is read-only inspection — you don't edit the downloaded baseline YAML; you edit paragraph properties via the
+Admin UI Visual Editor on the live host (which writes to the host's project DB, not back to the baseline copy).
 
 ## "Don't customise this paragraph" callouts
 

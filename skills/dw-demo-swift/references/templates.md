@@ -1,6 +1,6 @@
 # templates.md
 
-> Swift 2.2 template / page-preset routing. Source-of-truth: `$env:DW_VAULT\serialized-data\Swift2.2\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
+> Swift template / page-preset routing. Source-of-truth: `<demo-root>\baselines\swift-2.3\deploy\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -9,17 +9,18 @@ live here has been folded up into the foundational candidates; the demo skill po
 
 | If you need… | Read |
 |---|---|
-| Template categories (vault baseline), page presets (the Theme primitive), and the **page-state flags** (`published` / `hidden` / `active` = "Hidden in Menu" semantics; the `publish_pages` both-flags gotcha) | [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §6 |
+| Template categories (baseline), page presets (the Theme primitive), and the **page-state flags** (`published` / `hidden` / `active` = "Hidden in Menu" semantics; the `publish_pages` both-flags gotcha) | [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §6 |
 | `ViewModelTemplate<>` Razor pitfalls — `@Html.Raw()` absent, `product.ProductFieldValues` not on `ProductViewModel` (raw-source-renders-on-PDP), `ToggleFavorite.cshtml` no-op at `FavoriteListId=0` | [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §2 |
 | Customer-number-suffix-as-role-flag (`CUST-…-BROWSE` read off `Pageview.User.CustomerNumber` to hide price / gate a storefront affordance) | [`users-permissions.md`](../../dw-demo-base/references/foundational/users-permissions.md) §16 |
 | SQL-direct Page/GridRow/Paragraph required columns (the `PageActiveFrom`/`PageActiveTo` silent-404 vector et al.) | [`sql-direct-seeding.md`](sql-direct-seeding.md) → [`data-access.md`](../../dw-demo-base/references/foundational/data-access.md) |
 | Paragraph types + the component-first gate | [`paragraphs.md`](paragraphs.md) |
 
-## Swift v2.3.0 vs v2.2 baseline
+## Swift v2.3.0 templates + swift/2.3 baseline
 
-Target **Swift v2.3.0 templates** at the GitHub repo while keeping **Swift 2.2 baseline data** at
-`$env:DW_VAULT\serialized-data\Swift2.2\`. The 2.3.0 release headlines (language selector + improved
-off-canvas nav) don't break 2.2 content; you can pull 2.3.0 template files alongside the 2.2 baseline.
-Pin baseline regeneration to a future polish phase.
+Target **Swift v2.3.0 templates** at the GitHub repo alongside the **swift/2.3 baseline data** at
+`<demo-root>\baselines\swift-2.3\` (a `config/deploy/seed` tree; content lives under
+`deploy\_content\` + `seed\_content\`). The 2.3.0 release headlines (language selector + improved
+off-canvas nav) match this baseline. Legacy content-only Swift2.2 baselines predate this model and
+are no longer the default.
 
 Reference: https://github.com/dynamicweb/Swift/releases/tag/v2.3.0

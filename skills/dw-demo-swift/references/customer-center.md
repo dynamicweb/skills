@@ -26,7 +26,7 @@ Rebuilding is never the right answer. The stock section already supports imperso
 
 ## 2. Page-tree map
 
-Source-of-truth: `$env:DW_VAULT\serialized-data\Swift2.2\_content\Swift 2\Customer center\` deserialized into a running host. Backtick-quote any path string when copying into other tools -- folder names contain spaces.
+Source-of-truth: `<demo-root>\baselines\swift-2.3\deploy\_content\Swift 2\Customer center\` deserialized into a running host. Backtick-quote any path string when copying into other tools -- folder names contain spaces.
 
 ```
 Customer center/
@@ -61,7 +61,7 @@ Symptom: CSR Overview page has empty grid rows, or `CSR/Orders/` shows no orders
 3. **CSR ↔ customer grants not wired** -- `AccessUserSecondaryRelation` is empty for this CSR, or the column direction is inverted, or the required index-rebuild + cache-clear follow-up was skipped. See [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md) "`AccessUserSecondaryRelation` — the impersonation grant".
 4. **Index not built or cache stale after wiring the grant** -- see [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md). For Products-index rebuilds, see [dynamicweb-pim-demo/references/governance.md "Recovery recipe: Rebuild Products index"](../../dw-demo-pim/references/governance.md).
 
-What is NOT the cause: missing paragraphs / broken templates / Swift 2.3 incompatibility. The Swift2.2 baseline is verified working by [`deserialize-flow.md`](deserialize-flow.md); if the page renders at all, the structure is intact and the issue is data-side.
+What is NOT the cause: missing paragraphs / broken templates / Swift 2.3 incompatibility. The swift/2.3 baseline is verified working by [`deserialize-flow.md`](deserialize-flow.md); if the page renders at all, the structure is intact and the issue is data-side.
 
 ## 5. Persona presentation: avatar + role badge
 

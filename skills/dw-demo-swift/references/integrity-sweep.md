@@ -214,21 +214,21 @@ $missing = $probe | Where-Object { -not (Test-Path (Join-Path $iconRoot $_)) }
 if ($missing) {
     Write-Host "Missing icons under $iconRoot :"
     $missing | ForEach-Object { Write-Host "  $_" }
-    throw "Icon set incomplete. Copy from $env:DW_VAULT\<swift-baseline-slot>\Dynamicweb.Host.Suite\wwwroot\Files\Images\Icons\ before declaring deserialize complete."
+    throw "Icon set incomplete. Copy from the local Swift clone's Files\Images\Icons\ (e.g. <demo-root>\dw-swift\Files\Images\Icons\) before declaring deserialize complete."
 }
 ```
 
-**Recovery if Check 6 fails:** Copy the entire icon directory from a known-good Swift baseline. The vault's Swift baseline carries the canonical set (~80 files including `Flags/` and `LoginProviders/` subdirs):
+**Recovery if Check 6 fails:** Copy the entire icon directory from the local Swift repo clone — the SAME clone [`deserialize-flow.md`](deserialize-flow.md) §"Design-package deploy" copies templates and styles from (`<demo-root>\dw-swift\`, a clone of `https://github.com/dynamicweb/Swift`). It carries the canonical set (~80 files including `Flags/` and `LoginProviders/` subdirs):
 
 ```powershell
-$src = "$env:DW_VAULT\<swift-baseline-slot>\Dynamicweb.Host.Suite\wwwroot\Files\Images\Icons"
+$src = "<demo-root>\dw-swift\Files\Images\Icons"
 $dst = "Dynamicweb.Host.Suite\wwwroot\Files\Images\Icons"
 Copy-Item -Path $src -Destination $dst -Recurse -Force
 ```
 
-Substitute `<swift-baseline-slot>` for whatever the vault's `INDEX.md` names as the Swift baseline slot for this project (e.g. `Swift2.2`). No host restart required — `ReadFile` reads on every render.
+No host restart required — `ReadFile` reads on every render.
 
-**Pitfall:** if the deserialize used a non-Swift baseline (e.g. a customer-flavoured baseline with a curated icon subset), do NOT blanket-copy from the generic Swift slot — start from the baseline-flavoured slot and merge in any missing files individually. Audit the result with `git status` so the demo's `CUSTOMISATIONS.md` can record the asset-source provenance.
+**Pitfall:** if the deserialize used a non-Swift baseline (e.g. a customer-flavoured baseline with a curated icon subset), do NOT blanket-copy the generic Swift icon set — start from the baseline's own asset set and merge in any missing files individually. Audit the result with `git status` so the demo's `CUSTOMISATIONS.md` can record the asset-source provenance.
 
 ## Check 7: Raw SQL in paragraph templates (DW10 discipline)
 
@@ -268,6 +268,6 @@ pack covers URL substring scans, hard-coded slugs, category-name branching, mast
 
 When all seven checks pass, deserialize is verified complete. The skill may now declare "baseline restored" to the user.
 
-Log the result + baseline name + timestamp in the per-demo `CUSTOMISATIONS.md` as a deserialize event row. This is structural — every deserialize is reproducible by re-running this flow against the same baseline plus the vault commit recorded in `$env:DW_VAULT\INDEX.md`'s `serialized-data` row.
+Log the result + baseline name + timestamp in the per-demo `CUSTOMISATIONS.md` as a deserialize event row, and record the baseline's release tag/commit there too. This is structural — every deserialize is reproducible by re-running this flow against the same baseline name + release tag recorded in `CUSTOMISATIONS.md`.
 
 

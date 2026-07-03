@@ -1,6 +1,6 @@
 # asset-organisation.md
 
-> `wwwroot/Files/` asset organisation for a Swift 2.2 / Dynamicweb 10 demo. Reference layouts at `$env:DW_VAULT\serialized-data\Swift2.2\` and Swift v2.3.0 at https://github.com/dynamicweb/Swift.
+> `wwwroot/Files/` asset organisation for a Swift 2.2 / Dynamicweb 10 demo. Reference layouts at `<demo-root>\baselines\swift-2.3\` and Swift v2.3.0 at https://github.com/dynamicweb/Swift.
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 

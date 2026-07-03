@@ -5,15 +5,15 @@
 - [1. Prerequisites](#1-prerequisites)
 - [Design-package deploy (before any deserialize)](#design-package-deploy-before-any-deserialize)
 - [2. Step 0 — Discover project context](#2-step-0--discover-project-context)
-- [3. Step 1 — Stage baseline YAML from vault](#3-step-1--stage-baseline-yaml-from-vault)
+- [3. Step 1 — Stage baseline YAML from the demo's baselines folder](#3-step-1--stage-baseline-yaml-from-the-demos-baselines-folder)
 - [4. Step 2 — POST against running host](#4-step-2--post-against-running-host)
 - [5. Strict-mode contract](#5-strict-mode-contract)
 - [6. Identity model](#6-identity-model)
 - [7. Post-deserialize host restart guidance](#7-post-deserialize-host-restart-guidance)
 - [8. Mandatory next step](#8-mandatory-next-step)
-- [9. Known schema-drift workaround (Swift 2.2 baseline ↔ DW10)](#9-known-schema-drift-workaround-swift-22-baseline--dw10)
+- [9. Known schema-drift workaround (Swift 2.3 baseline ↔ DW10)](#9-known-schema-drift-workaround-swift-23-baseline--dw10)
 
-> Deserialize a Swift content baseline from `$env:DW_VAULT\serialized-data\<baseline>\` into the per-demo project DB. Uses the DW Serializer + Management API. Strict mode is on by default — failures surface as `CumulativeStrictModeException`. Always followed by [`integrity-sweep.md`](integrity-sweep.md).
+> Deserialize a Swift content baseline from the demo's own `<demo-root>\baselines\<baseline>\` folder into the per-demo project DB. Uses the DW Serializer + Management API. Strict mode is on by default — failures surface as `CumulativeStrictModeException`. Always followed by [`integrity-sweep.md`](integrity-sweep.md).
 >
 > **Scope: Swift demos only.** PIM demos start from a blank/fresh DB and skip this flow entirely. This file is owned by `dynamicweb-swift-demo`; the underlying Serializer install + background reference live in `dynamicweb-demo-base/references/serializer-reference.md`.
 
@@ -21,7 +21,8 @@
 
 `dynamicweb-demo-base` setup is complete:
 
-- [`../../dw-demo-base/references/setup-checks.md`](../../dw-demo-base/references/setup-checks.md) is green (DW_VAULT, NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express, vault slot inventory all probed and resolved).
+- [`../../dw-demo-base/references/setup-checks.md`](../../dw-demo-base/references/setup-checks.md) is green (NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express all probed and resolved).
+- The baseline release has been downloaded from the baseline distribution repo your team designates into the demo's own `baselines\` folder (see §3 — the staging snippet downloads it on first run if a distribution repo is configured).
 - [`../../dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) produced a running `Dynamicweb.Host.Suite` (port reachable, host responds at `/admin`).
 - [`../../dw-demo-base/references/mcp-setup.md`](../../dw-demo-base/references/mcp-setup.md) verification gate passed (`claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND in-conversation `ToolSearch +dynamicweb` returns >200 tools).
 - **The DW Serializer is installed in the host** per [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Installation" section (DLL built + copied to `bin/Debug/net10.0/`, `Files/Serializer.config.json` staged, host restarted). This is a one-time-per-host step.
@@ -33,11 +34,11 @@ If any of those are unmet, return to the relevant reference before attempting a 
 
 The baseline's content predicates reference `Swift-v2_*` item types whose XML definitions ship with the **Swift design package**, NOT with the data baseline. Deploy the design package BEFORE running the deserialize — without the XMLs on disk every page row fails with `Unable to resolve the item type. The item cannot be saved.` (see §9.1).
 
-**Source.** The `dw-swift` vault slot at `$env:DW_VAULT\dw-swift\` (local clone of `https://github.com/dynamicweb/Swift` v2.3.0+; if missing, clone it there).
+**Source.** A local clone of `https://github.com/dynamicweb/Swift` (v2.3.0+). Clone it into `<demo-root>\dw-swift\`, or reuse an existing local clone if one is already on the machine.
 
-**Build first.** The repo ships only source SCSS/JS — `Assets/css/` and `Assets/js/` are gitignored. Run `npm install` then `npm run build` in `$env:DW_VAULT\dw-swift\` BEFORE copying assets (`node_modules/` is per-machine and not vault-transferred — rebuild on each machine). Verify post-build: `Files/Templates/Designs/Swift-v2/Assets/css/swift.css` (~340KB) and `Assets/js/swift.js` (~45KB) plus `Assets/lib/` (Bootstrap/htmx/Alpine vendored deps, 200+ JS files) all exist on disk. Skipping the build leaves the storefront unstyled — pages render text-only with broken layout because every Swift template references `/Files/Templates/Designs/Swift-v2/Assets/css/swift.css` which 404s.
+**Build first.** The repo ships only source SCSS/JS — `Assets/css/` and `Assets/js/` are gitignored. Run `npm install` then `npm run build` in the Swift clone BEFORE copying assets (`node_modules/` is per-machine — rebuild on each machine). Verify post-build: `Files/Templates/Designs/Swift-v2/Assets/css/swift.css` (~340KB) and `Assets/js/swift.js` (~45KB) plus `Assets/lib/` (Bootstrap/htmx/Alpine vendored deps, 200+ JS files) all exist on disk. Skipping the build leaves the storefront unstyled — pages render text-only with broken layout because every Swift template references `/Files/Templates/Designs/Swift-v2/Assets/css/swift.css` which 404s.
 
-**Copy list.** From `$env:DW_VAULT\dw-swift\` to the host's `wwwroot/`:
+**Copy list.** From the Swift clone (`<demo-root>\dw-swift\`) to the host's `wwwroot/`:
 
 - `Files/System/Items/*.xml` (the item-type definitions the content predicates need)
 - `Files/Templates/Designs/Swift-v2/`
@@ -85,27 +86,40 @@ Write-Host "Discovered DB: $db"
 
 Captured via `AskUserQuestion` in the current conversation. Format: `CLAUDE.<hex>`. Keep in conversation state only; never persist. The token is a credential and must not be committed, logged to a file, or echoed into a transcript that survives the session.
 
-## 3. Step 1 — Stage baseline YAML from vault
+## 3. Step 1 — Stage baseline YAML from the demo's baselines folder
 
-Vault path resolution: every baseline path resolves through `$env:DW_VAULT` (base's path-resolution rule). No hardcoded literals.
+Baseline path resolution: every baseline path resolves under the demo's own `<demo-root>\baselines\` folder — the per-demo copy downloaded from the baseline distribution repo your team designates. No hardcoded machine-wide literals.
 
 **The Serializer reads from `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/<deploy|seed>/`** (joined from `outputDirectory: "Serializer"` in `Files/Serializer.config.json` + `outputSubfolder` per mode). It does NOT read from a project-root `baselines/` folder. A `baselines/` copy is invisible to the deserialize endpoint and any "121 updated" you see comes from whatever else is already in `SerializeRoot/deploy/` (typically a previous serialize roundtripping itself). Verified during a Swift2 baseline import — the original recipe pointed at `baselines/` and silently no-op'd.
 
-**Baseline shape — content-only.** The canonical Swift2.2 vault baseline contains ONLY `_content/` (Area + pages + grid-rows + paragraphs + master items, ~640 YAML files). It does **NOT** ship `_sql/`. Framework data (shops, currencies, countries, languages, manufacturers, payments, shippings, VAT groups) must already exist in the target DB before this deserialize runs. The area's YAML hardcodes `"AreaEcomShopId": "SHOP1"` and `"AreaEcomCountryCode": "DE"` as **string FKs** — they resolve against whatever rows have those surrogate ids in target. A PIM-set-up host (`dynamicweb-pim-demo`'s blank-DB flow that creates SHOP1, DE, EUR, LANG1) is therefore a clean baseline target — the deserialize lands content additively without conflicting with the PIM-curated framework. Hosts missing the framework must run the relevant `dynamicweb-pim-demo` setup steps (`canonical-setup-order.md` Steps 1-4) first.
+**Baseline shape — full deploy + seed (swift/2.3).** The canonical `swift-2.3` baseline release is a full `config/deploy/seed` tree, NOT the content-only shape the older `Swift2.2` baselines used. `deploy/` ships framework `_sql/` (EcomCountries, EcomCurrencies, EcomLanguages, EcomShops, EcomPayments, EcomShippings, EcomVatGroups, AccessUser, UrlPath, order flow/states) alongside `_content/` (the `Swift 2` + `Swift 2 Nederlands` areas); `seed/` ships catalog `_sql/` (EcomGroups, EcomProducts, EcomPrices, EcomGroupProductRelation, variant + discount tables) alongside its own `_content/`; `config/swift-2.3.json` carries the predicate config. Because the framework rows now ship WITH the baseline (deploy `_sql/`), a `swift-2.3` deserialize no longer requires the target DB to be pre-seeded with shops/currencies/countries the way the content-only `Swift2.2` baselines did. The area YAML still hardcodes `"AreaEcomShopId": "SHOP1"` and `"AreaEcomCountryCode": "DE"` as **string FKs**; with swift/2.3 those FKs resolve against the framework rows the deploy pass lands. A PIM-set-up host that already holds SHOP1/DE/EUR/LANG1 stays a clean target — `seed` mode is destination-wins, so existing framework rows are preserved. **Verify the two-pass (deploy then seed) deserialize against a running host before relying on it — this repoint was prepared without a host run; confirm counts against the baseline's `deploy-manifest.json` / `seed-manifest.json`.**
 
 ```powershell
-$baseline = "Swift2.2"  # or a customer-flavoured "<demo>-base" baseline once it has been derived (see $env:DW_VAULT\INDEX.md serialized-data row for available baselines)
-if (-not (Test-Path "$env:DW_VAULT\serialized-data\$baseline\_content")) {
-  throw "Baseline '$baseline' not found (or missing _content/) at `$env:DW_VAULT\serialized-data\$baseline`. Check INDEX.md serialized-data row."
+$baseline = "swift-2.3"  # the canonical swift/2.3 baseline; per-demo "<demo>-base" baselines live alongside it under baselines\
+$demoRoot = (Get-Location).Path                    # the demo project root
+$slot     = "$demoRoot\baselines\$baseline"        # the demo's own downloaded copy
+if (-not (Test-Path "$slot\deploy\_content")) {
+  # Download the baseline release (e.g. tag swift/2.3) from the baseline distribution
+  # repo your team designates, then expand it so config/deploy/seed sit at $slot root.
+  $repo = $env:DW_BASELINE_REPO   # set once per machine to the team's baseline distribution repo (owner/name)
+  if (-not $repo) { throw "Baseline '$baseline' not present at $slot and no distribution repo configured. Download the baseline release into $slot first." }
+  New-Item -ItemType Directory -Path $slot -Force | Out-Null
+  gh release download "swift/2.3" --repo $repo --pattern '*.zip' --dir "$demoRoot\baselines"
+  Expand-Archive -Path "$demoRoot\baselines\*.zip" -DestinationPath $slot -Force
+  Remove-Item "$demoRoot\baselines\*.zip"
 }
-$deployRoot = "Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/deploy"
-New-Item -ItemType Directory -Path "$deployRoot/_content" -Force | Out-Null
-Copy-Item -Recurse "$env:DW_VAULT\serialized-data\$baseline\_content\*" "$deployRoot/_content/" -Force
-# Note: no `_sql/` to copy — current baseline is content-only by design.
-# If a future baseline reintroduces `_sql/`, add the corresponding copy + framework-conflict reasoning back.
+$serializeRoot = "Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot"
+# swift/2.3 is a full deploy + seed baseline: stage BOTH mode trees (each ships _content/ + _sql/).
+foreach ($mode in 'deploy','seed') {
+  if (Test-Path "$slot\$mode") {
+    New-Item -ItemType Directory -Path "$serializeRoot/$mode" -Force | Out-Null
+    Copy-Item -Recurse "$slot\$mode\*" "$serializeRoot/$mode/" -Force
+  }
+}
+# Unlike the content-only Swift2.2 baselines, swift/2.3 ships framework + catalog `_sql/` in deploy/ and seed/.
 ```
 
-**Pre-import: re-serialize before merging vault YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/SerializerSerialize` FIRST so the deploy folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
+**Pre-import: re-serialize before merging baseline YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/SerializerSerialize` FIRST so the deploy folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
 
 **Predicate config: each `_content/<AreaName>/` folder needs a matching predicate.** Add a content predicate to `Files/Serializer.config.json` per area you want imported:
 ```json
@@ -126,9 +140,9 @@ Copy-Item -Recurse "$env:DW_VAULT\serialized-data\$baseline\_content\*" "$deploy
 **Strategy note (verified during a Swift2 baseline import):** Two strategies were considered —
 
 - **(a)** Copy YAML directly into `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/deploy/` (this snippet — verified working).
-- **(b)** Configure `Files/Serializer.config.json` `outputDirectory` to point at `$env:DW_VAULT\serialized-data\<baseline>\` directly. Faster (no copy), but the running host's serialize would also write back into the vault — destination contamination risk. Not recommended; (a) is the canonical approach.
+- **(b)** Configure `Files/Serializer.config.json` `outputDirectory` to point at `<demo-root>\baselines\<baseline>\` directly. Faster (no copy), but the running host's serialize would also write back into the downloaded baseline copy — contaminating your pristine reference of what the release shipped. Not recommended; (a) is the canonical approach.
 
-**Single canonical Swift2.2 path:** `$baseline = "Swift2.2"` resolves to `$env:DW_VAULT\serialized-data\Swift2.2\` — the single canonical generic baseline. Per-demo customer-flavoured baselines (named `<demo>-base/` by convention) live alongside `Swift2.2/` in the same `serialized-data/` slot once they have been derived; both share this flow.
+**Single canonical swift/2.3 path:** `$baseline = "swift-2.3"` resolves to `<demo-root>\baselines\swift-2.3\` — the single canonical generic baseline (a `config/deploy/seed` tree). Per-demo customer-flavoured baselines (named `<demo>-base/` by convention) live alongside `swift-2.3/` under the same `baselines\` folder once they have been derived; both share this flow. Legacy content-only `Swift2.2` baselines predate this model and are no longer the default.
 
 ## 4. Step 2 — POST against running host
 
@@ -144,7 +158,7 @@ $resp = Invoke-RestMethod `
 
 **Keep strict mode on; never disable it** by passing a `strictMode` query parameter or body field set to a falsy value. Strict mode is the first line of defence (FK orphans, missing templates, cache failures, schema drift). Disabling it produces a deserialized DB that *looks* succeeded but is silently inconsistent — the deserialize-blind failure mode in its purest form.
 
-If the POST returns 4xx with a `CumulativeStrictModeException` body, the body itself is the diagnostic. Read the listed FK orphans / missing templates / schema drift entries; the fix is almost always upstream (the baseline YAML), not on the host. Cross-check `$env:DW_VAULT\INDEX.md`'s `serialized-data` row version stamp to confirm the baseline version matches the host's DW10 version (the baseline-drift self-diagnosis rule).
+If the POST returns 4xx with a `CumulativeStrictModeException` body, the body itself is the diagnostic. Read the listed FK orphans / missing templates / schema drift entries; the fix is almost always upstream (the baseline YAML), not on the host. Cross-check the downloaded baseline's release tag/version against the host's DW10 version (the baseline-drift self-diagnosis rule).
 
 ## 5. Strict-mode contract
 
@@ -182,12 +196,11 @@ The sweep is the second line of defence for the failures strict mode does not ca
 - Defense-in-depth on top of strict mode (Checks 1 and 4).
 - `BuildIndex` Full + wait for a fresh successful build (Check 5).
 
-## 9. Known schema-drift workaround (Swift 2.2 baseline ↔ DW10)
+## 9. Known schema-drift workaround (Swift 2.3 baseline ↔ DW10)
 
-With the **content-only** baseline shape, one drift point remains.
+The `swift-2.3` baseline ships framework + catalog `_sql/` in its `deploy/` and `seed/` trees (unlike the content-only `Swift2.2` baselines). Re-verify the former `_sql/`-era drift points against a host when adopting swift/2.3 — the two workarounds below were retired under the content-only shape and may re-apply now that `_sql/` ships again.
 
-Superseded: the baseline ships no `_sql/`, so the former `EcomCurrencies.CurrencyUseCurrencyCodeForFormat` column-strip workaround is obsolete — reconstruct from git history if a future baseline reintroduces `_sql/`.
-Superseded: same for the former `EcomShopGroupRelation/GROUP253$$SHOP19.yml` orphan-YAML workaround.
+Superseded (content-only era): the `EcomCurrencies.CurrencyUseCurrencyCodeForFormat` column-strip and the `EcomShopGroupRelation/GROUP253$$SHOP19.yml` orphan-YAML workarounds were retired when the baseline dropped `_sql/`. With swift/2.3 shipping `_sql/` again, confirm during a host deserialize whether either recurs; reconstruct specifics from git history if needed.
 
 ### 9.1 — Content predicates require Swift v2 item-type XMLs
 
@@ -195,13 +208,13 @@ The baseline's `Content - Swift 2 (...)` predicates reference item types like `S
 
 Superseded: deploy-design-first is the only viable path — the former Approach A ("strip Content predicates") no longer applies with a content-only baseline, and running with strict mode off remains forbidden per §4.
 
-### 9.2 — Verified clean outcome (content-only)
+### 9.2 — Verified clean outcome (legacy content-only Swift2.2 baseline)
 
 For a content-only baseline against a PIM-set-up host (SHOP1 + DE + EUR + LANG1 already present), the deserialize POST returns **HTTP 200 with 0 failed predicates**. Counts will be in the shape: ~640 content rows created/updated (one Area row "Swift 2", ~50 Pages, ~150 grid-rows, ~440 paragraphs — exact numbers depend on baseline version), 0 framework rows touched. Verify post-deserialize:
 - `SELECT COUNT(*) FROM Areas` → +1 (the new "Swift 2" area)
 - `SELECT COUNT(*) FROM Page` → ~+50
 - Existing PIM data (products, manufacturers, catalog groups, data models, custom field values, EcomDetails image/asset rows) → **untouched**
 
-If the deserialize reports any `EcomShopGroupRelation` / `EcomCurrencies` / `EcomCountries` predicate touching rows, the baseline has reverted to the legacy `_sql/`-shipping shape — re-read this file's top-of-§3 "Baseline shape" note and reconcile.
+Note (swift/2.3): unlike the content-only `Swift2.2` baseline described in this §9.2, the `swift-2.3` baseline legitimately touches framework rows (`EcomShops`, `EcomCurrencies`, `EcomCountries`, …) via its `deploy/_sql/` pass and catalog rows via `seed/_sql/` — that is expected, not a reversion. The counts above characterise the legacy content-only outcome; capture the swift/2.3 deploy+seed counts from a host run and record them here once verified.
 
 

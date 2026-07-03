@@ -3,6 +3,54 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.8.5]
+
+### Changed
+- **Baseline and feature-pack distribution repointed from personal vault slots to per-demo
+  downloads.** The `dw-demo-swift` deserialize and pack-activation flows no longer resolve
+  baselines, packs, or Swift-repo assets from `$env:DW_VAULT` slots. Instead, a demo build
+  downloads the baseline release (e.g. tag `swift/2.3`) and any pack releases (tag
+  `packs/<name>/<version>`) from the distribution repo the team designates into the demo's own
+  `baselines\` folder (`<demo-root>\baselines\swift-2.3\`,
+  `<demo-root>\baselines\feature-packs\<name>\<version>\`), and the Swift design package comes from
+  a local clone of `https://github.com/dynamicweb/Swift` (`<demo-root>\dw-swift\`). Swept the
+  read-only inspection paths in the companion references (`templates`, `paragraphs`,
+  `customer-center`, `asset-organisation`, `admin-ui-authoring`, `re-skin`), repointed
+  `integrity-sweep.md` Check 6 icon recovery at the same Swift clone the deserialize flow copies
+  assets from (reproducibility now recorded as baseline name + release tag in the per-demo
+  `CUSTOMISATIONS.md`), updated the `dw-demo-pim/access-surfaces` baseline row, and noted in the
+  `dw-demo-base` INDEX template that the `serialized-data` vault slot is a legacy/local mirror.
+
+## [3.8.4]
+
+### Added
+- **`dw-demo-swift/references/pack-activation.md` — install a feature pack into a demo host.** A new
+  consumer-facing reference documenting the L3→demo-host install path: download the pack release
+  (tag `packs/<name>/<version>`) from the feature-pack distribution repo into the demo's
+  `baselines\feature-packs\` folder, read `pack.json`, source-drop the `.cs` into the host's
+  `Packs\<name>\` and rebuild, copy disk-overlay templates/item types, and deserialize the
+  `baseline-fragment` mode trees (seed/deploy) strictly AFTER the base baseline. Documents the confirmed
+  pack zip anatomy (pack.json, src/*.cs, templates/, itemtypes/, baseline-fragment/{seed,deploy}/) and
+  the activation model (code compiles into the host; the fragment is additive and never edits base YAML).
+  Added the router row to `dw-demo-swift/SKILL.md` and completed the swift/2.3 baseline-shape supersede in
+  SKILL.md Step 0 (retiring the content-only `Swift2.2` framing).
+
+## [3.8.3]
+
+### Changed
+- **`dw-demo-swift` deserialize-flow repointed off the retired content-only `Swift2.2` baselines to
+  the canonical `swift-2.3` baseline.** The `swift-2.3` baseline is a full `config/deploy/seed`
+  tree (framework `_sql/` + content in `deploy/`, catalog `_sql/` + content in `seed/`), not the
+  content-only `_content/`-at-root shape the older `Swift2.2` baselines used. Repointed the `$baseline`
+  default and staging snippet in `dw-demo-swift/references/deserialize-flow.md` to stage both mode
+  trees from `swift-2.3`, rewrote the "baseline shape" and §9 schema-drift notes for the
+  `_sql/`-shipping baseline, and swept baseline-slot source-of-truth paths in the companion
+  references (`templates`, `paragraphs`, `customer-center`, `asset-organisation`,
+  `admin-ui-authoring`, `re-skin`, `integrity-sweep`) plus `dw-demo-pim/access-surfaces` and the
+  `dw-demo-base` INDEX template to the `swift-2.3\deploy\_content\` location. Swift-2.2-era
+  mechanics prose left intact (per-hit sweep, not a blanket rename). The two-pass deploy+seed
+  deserialize is flagged for host verification.
+
 ## [3.8.2]
 
 ### Changed
