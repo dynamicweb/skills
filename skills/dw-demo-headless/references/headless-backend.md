@@ -91,9 +91,16 @@ Content-Type: application/json
 Response: `{ "token": "<jwt>" }`. Send it as `Authorization: Bearer <jwt>`. (`POST /dwapi/users/token`
 is the equivalent path; it also exchanges an existing `Dynamicweb.Extranet` cookie for a JWT.)
 
-**Symptom → cause:** anonymous catalog reads work but every user-scoped call 401s → you are sending
+**Symptom → cause:** anonymous catalog reads work but every user-scoped call fails → you are sending
 the admin token (or no token) instead of a frontend JWT. Mint the JWT via `/dwapi/users/authenticate`
 first. Never write either token to disk; keep it in conversation/session state only.
+
+> **Don't pin the failure to a code — it is version-dependent.** The exact non-success status a
+> wrong/absent token (or an unsupported request shape) returns on `/dwapi` **moves across DW
+> versions** — the same trap was observed as **404 on 10.26.x** and **400 on 10.27.x**, not a stable
+> 401. Detect the trap by "**a non-401 error**" (equivalently: anything but the anonymous `200`), and
+> assert the *shape* — auth works vs it doesn't — rather than matching a fixed HTTP code that a minor
+> platform bump will change out from under the check.
 
 For SSR/build-time server fetches where no user is involved, `POST /dwapi/serviceauth/token`
 `{ "apiKey": "…" }` issues a short-lived service JWT — keep the API key server-side, never expose it
@@ -115,6 +122,14 @@ Areas carry the shop/language/currency bindings (`AreaEcomShopId` / `AreaEcomLan
 `AreaEcomCurrencyId`). Those binding columns are **per-environment** and are excluded from
 serialization — set them at provisioning, do not expect them to arrive in a baseline. An EN area and
 its NL sibling each bind to the same shop and their own language.
+
+**An area can ship with the ecom bindings empty** (`ecomShopId=""`, and likewise language/currency) —
+provisioning simply never set them, and nothing forces them non-empty. So the provider **must pass
+`LanguageId` and `ShopId` explicitly on every Delivery API call** and must **never** fall back to "the
+area's default context", because that default may be blank. Treat the storefront's configured
+`ShopId`/`LanguageId` (the `DW_SHOP_ID` / `DW_LANGUAGE_ID` env of
+[`headless-frontend.md`](headless-frontend.md) §3) as authoritative and send them on each request; read
+the area bindings only as a *seed* for those env values, not as a runtime source of truth.
 
 ## 5. Product search needs a repository + named query
 
@@ -139,6 +154,11 @@ Returns `200` with:
 - A stock/harness `Products` repository typically ships an index with **no resolvable query** (probes
   → 400/404). A headless demo ships its **own** complete search surface (index + query + facets) —
   see [`headless-baseline.md`](headless-baseline.md) §"Product search surface".
+- **`RepositoryName` and `QueryName` are per-environment — the storefront must read them from env, not
+  hardcode them.** Pass the `QueryName` **without** the `.query` file extension (the endpoint wants the
+  bare query name). Wiring them as env (`DW_REPOSITORY_NAME` / `DW_QUERY_NAME`, see
+  [`headless-frontend.md`](headless-frontend.md) §3) is what makes a swap to a second backend a
+  pure-env change with no code edit.
 
 **Index-free fallback:** `GET /dwapi/ecommerce/products/search?ProductIds=…` (and `GroupId=…`)
 returns products without any repository query — use it for PDP-by-id and simple collection lists

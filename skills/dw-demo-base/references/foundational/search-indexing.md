@@ -70,6 +70,10 @@ Hard constraints:
 
 Typical editorial backlog queries: `active_missing_short_description` (`ProductIsActive=True` + `ProductShortDescription IsEmpty`), `active_missing_images` (image field `IsEmpty`), `low_stock_active` (`ProductStock LessThan "5"`), `incomplete_products` (completion rule IDs + languages attached). Remember the saved `.query` leaves `<Source Repository="" Item="" />` empty — patch it before the index build (see above).
 
+### Custom product fields index as `CustomField_<SystemName>`
+
+A **custom** product field (a category field or a custom `EcomProductField`, as opposed to a standard one) lands in the Lucene index under the field name **`CustomField_<SystemName>`** — e.g. a custom field `RoomType` is queryable/facetable as `CustomField_RoomType`, not as `RoomType`, not as `ProductCategory|<Cat>|RoomType` (that pipe form is the *authoring/value* system name from [`pim-modelling.md`](pim-modelling.md) §2.8, not the *index* name). Referencing it by any other plausible pattern **fails silently** — the facet renders empty and the query returns nothing, with **no error** to point at the wrong name. When a facet you added is defined but always empty, check the index field name is `CustomField_<SystemName>` first. Confirm the exact indexed name against the built segment (or the index schema's field list) rather than guessing the casing/prefix.
+
 ## Dashboard query location — Shared ONLY, never duplicate to Repositories
 
 For dashboard widget queries, put each `.query` + `.configuration` file in **exactly one** place:
@@ -142,6 +146,9 @@ $buildResp = Invoke-RestMethod `
   -SkipCertificateCheck
 
 # Poll the index status query until Success with a fresh build timestamp (15-min timeout).
+# `synchronous: true` in the BuildIndex body does NOT actually block — the POST returns before the
+# build finishes regardless, so treating a 2xx as "built" indexes against a stale/empty segment.
+# ALWAYS poll the instance/index status below; never rely on the request to be synchronous.
 # DW 10.26.x contract: no Status/Idle field — State: Success|Warning|Error on the index query,
 # LifecycleState: NeverBuilt|...|Completed|Failed on the instance query. Live JSON is camelCase
 # (the api.json catalog declares PascalCase); PowerShell access is case-insensitive.

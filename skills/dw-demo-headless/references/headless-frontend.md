@@ -56,11 +56,18 @@ Structure of the DW module:
 
 | Normalized type | DW source | Key field mapping |
 |---|---|---|
-| `Product` | `GET /ecommerce/products/{id}`, `products[]` of the search result | `handle ← number`; `title ← name`; `descriptionHtml ← longDescription`; `priceRange ← price`/`prices[]`; `variants ← variantInfo` + `/variants/{id}`; `images ← imagePatternImages`; `availableForSale ← active && (neverOutOfstock || stockLevel>0)` |
+| `Product` | `GET /ecommerce/products/{id}`, `products[]` of the search result | `handle ← number`; `title ← name`; `descriptionHtml ← longDescription`; `priceRange ← price`/`prices[]`; `variants ← variantInfo` + `/variants/{id}`; `images ← assetCategories` **OR** `imagePatternImages` (**read both** — see note); `availableForSale ← active && (neverOutOfstock || stockLevel>0)` |
 | `Collection` | `GET /ecommerce/groups`, `/groups/{groupId}` | `handle ← id` (e.g. `GROUP1`); `title ← name`; `path ← '/search/'+id`; `products ← search?GroupId=id` |
 | `Cart` | `carts/create`, `/carts/{secret}`, `/{secret}/items`, `/{secret}/checkout` | `id ← secret`; `checkoutUrl ← /carts/{secret}/checkout`; `lines ← cart lines`; `cost.* ← cart price fields` |
 | `Menu` | `GET /frontend/navigations/{areaId}` | `Menu[] ← nodes[]` recursively → `{ title ← node.title, path ← node.link }` |
 | `Page` | `GET /content/pages/{id}`, `/pages/url`; body via `/content/rows/{pageId}/{device}` | `handle ← path`; `title ← title`; `body ← rows/paragraphs`; `seo ← {title,description}` |
+
+**Images live under one of two keys — read both.** Depending on how the product's assets were
+authored, the Delivery API product model exposes images under **`assetCategories`** (grouped asset
+records) **or** under **`imagePatternImages`** (the pattern-image set) — a product may populate one and
+leave the other empty. The reshaper must read **both** and merge/fall back, not assume a single key, or
+products authored the other way render imageless. Coalesce to the normalized `images[]` and pick the
+default per [`headless-backend.md`](headless-backend.md)'s product model.
 
 All DW coupling (endpoints, view-model quirks, price/VAT handling, the search-query dependency)
 lives in this one folder — easy to gate, mock, and evolve as the headless baseline matures.
@@ -77,9 +84,20 @@ is hardcoded:
 | `DW_LANGUAGE_ID` | language context — `ENU` (**not** `LANG1`) |
 | `DW_CURRENCY_CODE` | currency for price display |
 | `DW_AREA_ID` | area id for `GET /frontend/navigations/{areaId}` (menu) |
+| `DW_REPOSITORY_NAME` | product-search repository name (§5 of [`headless-backend.md`](headless-backend.md)) — **must be env, never hardcoded** |
+| `DW_QUERY_NAME` | product-search named query — **without the `.query` extension** (the search endpoint wants the bare query name, not the filename) |
+
+**The repository and query names MUST be env-configurable — a second-backend swap should be pure
+env.** The PLP/search endpoint (`?RepositoryName=…&QueryName=…`) names are environment-specific: a demo
+that points the storefront at a *different* DW backend (a second host, a re-provisioned baseline) should
+need **only** an env change — set `DW_REPOSITORY_NAME` and `DW_QUERY_NAME` (query name **without** the
+`.query` file extension) — with **no code edit**. Hardcoding either name in `lib/dynamicweb/` is the bug
+that turns a one-line backend swap into a code change; keep both in env and read them in `dwapi.ts`.
 
 Seed the shop/language/currency/area defaults from `GET /dwapi/content/areas` — the area carries the
-`ecomShopId` / `ecomLanguageId` / `ecomCurrencyCode` bindings the provider should default to. Remove
+`ecomShopId` / `ecomLanguageId` / `ecomCurrencyCode` bindings the provider *may* default to. **But an
+area can ship with empty ecom bindings** (`ecomShopId=""`; see [`headless-backend.md`](headless-backend.md)
+§4) — do not depend on the area supplying them; keep the explicit env values authoritative. Remove
 the `SHOPIFY_*` vars and the Shopify webhook revalidation route (`app/api/revalidate` keyed on
 Shopify topics) when you delete `lib/shopify/`.
 
@@ -96,6 +114,15 @@ This is the same class of bypass `dynamicweb-demo-base` wires for the MCP/browse
 **dev-only**. Never set it on a hosted/production storefront — it disables all TLS verification for
 the process. For a hosted demo, terminate TLS with a real certificate and drop this var. Confine it
 to the storefront's local `.env`/shell; do not commit it into any deploy config.
+
+**Sibling gotcha — `next/image` refuses local backends (SSRF guard).** On Next 15.6+, the image
+optimizer rejects any upstream whose host resolves to a loopback/private IP with
+`400 "url" parameter is not allowed` — **even when the host matches `images.remotePatterns`**. So a
+storefront pointed at a DW backend on `localhost`/a LAN IP renders every `/Files/**` product image
+broken while the same URL serves 200 directly. Fix in `next.config.ts`: set
+`images.dangerouslyAllowLocalIP: true`, but gate it on the backend host actually being
+local/private (derive from the API-base env var) so a public backend keeps its SSRF protection.
+The flag is baked into the build — rebuild after changing it; a restart alone flips nothing.
 
 ## 5. Build-time RSC fetch caveat
 

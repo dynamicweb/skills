@@ -37,6 +37,8 @@ A demo engagement has two phases with different surface rules, split by the **MC
 | 2. **Management API** (`/admin/api/...`) | Fallback when MCP doesn't expose the operation. Usually admin-grade actions: `BuildIndex`, `CacheInformationRefresh`, `FeatureManagementToggle`, anything in `/admin/api/docs/`. | Same DW domain services as MCP, just a different transport. |
 | 3. **Direct SQL** (`sqlcmd ...`, local installs only) | **LAST RESORT** — only for: (a) cleanup/teardown, (b) bulk schema-drift fixes, (c) reading data, (d) cases where you've confirmed both higher surfaces don't support the operation and a vendor patch is the only alternative. | Bypasses every DW service. Misses bookkeeping. Creates orphans. Corrupts caches. **You will not figure out the full bookkeeping for a non-trivial create via SQL — DW does too much per service call.** |
 
+**Clause (a) covers brand re-content removal — do not mis-route it as create-shaped work.** BULK REMOVAL of the generic/sample rows a baseline ships (the stock demo catalog, sample pages, placeholder groups) while re-contenting a host to a brand is exactly case (a) cleanup/teardown — SQL is sanctioned for it on a local install, subject to the cache/restart the removed table owes (see [`foundational/cache-invalidation.md`](foundational/cache-invalidation.md)). Removal is not a create, so it is not gated by the "MCP-first for structural creates" rule and there is no MCP/recipe prerequisite to clear first. The create-shaped discipline (and the SQL-cloning ban below) governs what you *build* to replace the sample data, not the teardown that clears it. Track what you delete so a re-run converges.
+
 Pattern to follow:
 
 1. Try MCP. If the tool name suggests it (e.g. `copy_area`, `copy_page`, `save_pages`), use it.

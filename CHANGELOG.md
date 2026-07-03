@@ -3,6 +3,59 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.1.0]
+
+### Added
+- **next/image SSRF guard vs local DW backends** (`dw-demo-headless` headless-frontend.md): Next
+  15.6+ rejects loopback/private upstream hosts with a 400 even when `remotePatterns` match; gate
+  `images.dangerouslyAllowLocalIP` on the backend host being local, and rebuild — the flag is baked
+  into the build.
+- **Autonomous/headless MCP transport fallback.** The Claude-client project-server approval is an
+  interactive-only gate — an unattended agent can wait on "Pending approval" forever. `dw-demo-base`
+  `mcp-setup.md` now documents the sanctioned fallback: the DW MCP endpoint (`/admin/mcp`) is plain
+  **JSON-RPC 2.0 over HTTPS**, so with the API-Key bearer the full tool surface (~393 tools on DW
+  10.27.x) is directly callable (`initialize` → `tools/list` → `tools/call`) — with the caution that
+  it bypasses the client's approval layer, so the same guarded-writes discipline still applies.
+- **Root `/` binding on DW 10.27.x.** After a baseline deserialize the site root can 404; the binding
+  is `Area.AreaDomain` + `Area.AreaFrontpage` (there is **no `AreaDns` table** on 10.27.x), host
+  restart required. Folded into `dw-demo-swift` `deserialize-flow.md` §7, cross-linked from the
+  `Area`-row cache row.
+- **Area/style/item-type restart semantics + nav-label-is-data.** `dw-demo-base`
+  `foundational/cache-invalidation.md` now carries three restart-only rows (`Area` row / style asset /
+  item-type XML — all startup-materialised, `CacheInformationRefresh` insufficient), the caveat that a
+  whole-`Ids` bulk `GetServiceCaches` flush can `500`, and a diagnostic note that nav/menu **labels**
+  render live from the **group tree** (group rows, sibling item fields like `Subtitle`), so an
+  un-clearable label is usually data, not a "nav cache".
+- **Index-instance Warning is benign.** An index-level `State=Warning` caused solely by an unbuilt
+  secondary balancer instance is a false alarm — judge by the primary instance's build result + doc
+  count. Folded into `dw-demo-pim` `canonical-setup-order.md` Step 16 (both variants).
+- **Isolated pack-fragment staging.** Staging a pack fragment into a `SerializeRoot` that still holds
+  the base baseline trees **re-deserializes the base seed** — on a re-contented demo that resurrects
+  the whole purged sample catalog. `dw-demo-swift` `pack-activation.md` §8 now parks/clears base trees,
+  stages the fragment isolated, and restores — stated loudly.
+- **MCP recipe gotchas batch** (from live brand-build recipes): `create_variant_combinations` leaves
+  `ProductActive`/`ProductPrice` NULL on combos → variants invisible (`foundational/pim-modelling.md`
+  §2.5); custom fields index as `CustomField_<SystemName>`, other patterns fail silently
+  (`foundational/search-indexing.md`); `import_product_images_from_urls` sets no default image and the
+  Swift card NREs on images-but-no-default, degrading the whole PLP (`foundational/pim-modelling.md`
+  §2.10); `synchronous: true` on index builds does not actually block — poll
+  (`foundational/search-indexing.md`); `save_pages` ignores `urlName` (slug derives from `menuText`) —
+  added to the silent-no-op tables in `foundational/extend-mcp-tools.md` §5 + `foundational/content-modelling.md`.
+- **Product-completeness checklist.** `dw-demo-pim` `canonical-setup-order.md` now closes with a
+  per-product (and per-variant) gate — Active, priced, stocked-or-NeverOutOfStock, a default image,
+  texts in every language layer — each with its frontend symptom, run as a SQL sweep.
+- **`dw-demo-headless` drift notes.** The two-token trap's failure status is **version-dependent**
+  (404 on 10.26.x, 400 on 10.27.x) — assert "a non-401 error", don't pin a code (`headless-backend.md`
+  §3); product images live under `assetCategories` **or** `imagePatternImages` — read both
+  (`headless-frontend.md` §2); repository/query names must be env-configurable (query name **without**
+  the `.query` extension) so a second-backend swap is pure env (`headless-frontend.md` §3 +
+  `headless-backend.md` §5); areas can ship with empty ecom bindings (`ecomShopId=""`) so the provider
+  must pass `LanguageId`/`ShopId` explicitly on every call (`headless-backend.md` §4).
+
+  All nine folds come from the same autonomous partner-simulation build as [4.0.2] (fresh DW 10.27.4,
+  skills followed verbatim), carried through full brand re-content, catalog authoring via MCP recipes,
+  feature-pack install, and a headless storefront on a second backend — each verified live.
+
 ## [4.0.2]
 
 ### Fixed
