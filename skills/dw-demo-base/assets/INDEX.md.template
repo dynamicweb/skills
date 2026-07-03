@@ -11,6 +11,11 @@
 | `docs` | `$DW_VAULT\docs\` | Curated DW10 docs (custom admin screens guide, middleware deep-dive) | _(N/A -- version-agnostic)_ | _(YYYY-MM-DD)_ |
 | `serialized-data` | `$DW_VAULT\serialized-data\` | YAML baselines for the DW Serializer deserialize. Each subfolder is one baseline (e.g. generic `swift-2.3/`, plus per-demo customer-flavoured baselines named `<demo>-base/` by convention once derived). | _(per-baseline; each subfolder lists its target DW10 version in its own README)_ | _(YYYY-MM-DD)_ |
 
+> **Note (baselines):** demo builds download baselines per-demo into the demo's own `baselines\`
+> folder (see `dw-demo-swift/references/deserialize-flow.md`) from the baseline distribution repo
+> the team designates. The `serialized-data` slot above is a legacy/local mirror, not the
+> resolution path for new demo builds.
+
 ## Resolution rule
 
 Every Dynamicweb skill resolves vault content via `$env:DW_VAULT` joined with a slot name from this table. Hardcoded literal-path fallbacks (e.g., `C:\VibeCode\dw-vault\dw10source\`) are documented as bootstrap-only / emergency-only. See `dynamicweb-demo-base/references/setup-checks.md` for the verify-and-fix walkthrough; see `dynamicweb-demo-base/references/compare-vault.md` for cross-machine drift detection.

@@ -20,11 +20,11 @@ Surface choice is task-driven, not preference-driven. Common shortcuts: bulk sch
 
 The Management API admin-endpoint catalog (BuildIndex, IndexStatus, CacheInformationRefresh, GetServiceCaches, FeatureManagementToggle, CompletionSettingsSourceById), the runtime OpenAPI-discovery probe, and the per-project discovery table (host URL/port, SQL Server, DB name, API token) are vendor-generic platform facts — see [`../../dw-demo-base/references/foundational/data-access.md`](../../dw-demo-base/references/foundational/data-access.md).
 
-Two vault-resolved baselines this demo skill leans on (per-project, discovered via `$env:DW_VAULT`):
+Two reference sources this demo skill leans on (per-project):
 
 | Ref | How to find it in the current project |
 |---|---|
-| Swift baseline (vault) | `$env:DW_VAULT\serialized-data\swift-2.3\` — the canonical swift/2.3 baseline (a `config/deploy/seed` tree). Its serialized index XML is the copy-paste source for `Products.index` definitions. |
+| Swift baseline (per-demo download) | `<demo-root>\baselines\swift-2.3\` — the demo's downloaded copy of the canonical swift/2.3 baseline (a `config/deploy/seed` tree, fetched from the baseline distribution repo your team designates). Its serialized index XML is the copy-paste source for `Products.index` definitions. |
 | DW10 source clone (vault) | `$env:DW_VAULT\dw10source\` — search `src/Features/Ecommerce` for Ecom internals and `Dynamicweb.Products.UI` for admin UI behavior. Otherwise fall back to https://doc.dynamicweb.dev/ |
 
 When the user gives you a token, port, or path in chat, treat it as scoped to the project in the current working directory — save it in conversation state, not as a global default.

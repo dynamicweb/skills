@@ -5,7 +5,7 @@
 - [1. What a feature pack is](#1-what-a-feature-pack-is)
 - [2. Prerequisites](#2-prerequisites)
 - [3. Pack zip anatomy](#3-pack-zip-anatomy)
-- [4. Step 1 — Resolve and unzip the pack from the vault](#4-step-1--resolve-and-unzip-the-pack-from-the-vault)
+- [4. Step 1 — Download and unzip the pack release](#4-step-1--download-and-unzip-the-pack-release)
 - [5. Step 2 — Read pack.json](#5-step-2--read-packjson)
 - [6. Step 3 — Source-drop the .cs and build the host](#6-step-3--source-drop-the-cs-and-build-the-host)
 - [7. Step 4 — Copy disk overlays](#7-step-4--copy-disk-overlays)
@@ -17,15 +17,16 @@
 > Install a feature pack into a demo host that already has the `swift-2.3` baseline deserialized
 > (per [`deserialize-flow.md`](deserialize-flow.md)). A pack layers a self-contained capability —
 > source code, disk-overlay templates/item types, and a data fragment — onto the base Swift baseline
-> **without editing the base**. This is the consumer-side install path; the harness gate automates
-> the same steps for validation, but a demo builder can install a pack by hand with the recipe here.
+> **without editing the base**. This is the consumer-side install path; the pack publisher's
+> automated validation gate runs the same steps before a release ships, but a demo builder can
+> install a pack by hand with the recipe here.
 >
 > **Scope: Swift demos only.** Run this AFTER the base baseline deserialize, never before.
 
 ## 1. What a feature pack is
 
-A pack is a released `.zip` under the vault's `feature-packs/<name>/<version>/` slot. It carries three
-kinds of thing, each landing in a different place on the host:
+A pack is a released `.zip` (release tag `packs/<name>/<version>`) from the feature-pack distribution
+repo your team designates. It carries three kinds of thing, each landing in a different place on the host:
 
 - **`.cs` source** — compiles INTO the demo host's own build (source-drop, never a separate DLL).
 - **Disk overlays** — Razor templates and item-type XML that live on disk under `wwwroot\Files`.
@@ -43,8 +44,9 @@ baseline improvement, not a pack.
 - The Serializer installed in the host (same one-time install the deserialize flow depends on).
 - A Management API bearer token captured in the current conversation (format `CLAUDE.<hex>`; keep it
   in conversation state, never write it to a file).
-- The `feature-packs` vault slot synced into `$env:DW_VAULT` (landed by the harness vault-sync; see
-  the vault `INDEX.md` `feature-packs` row).
+- The pack release downloaded from the feature-pack distribution repo your team designates and
+  unpacked into the demo's own `baselines\feature-packs\<name>\<version>\` folder, `pack.json` at the
+  folder root — see §4, which downloads it on first run.
 
 ## 3. Pack zip anatomy
 
@@ -73,20 +75,29 @@ The release `.zip` unpacks with everything at the root (no wrapper folder):
 tree carries its own hand-authored manifest. A pack that ships no code has an empty `src/`; a pack
 that ships no overlays still keeps the `templates/` and `itemtypes/` folders present.
 
-## 4. Step 1 — Resolve and unzip the pack from the vault
+## 4. Step 1 — Download and unzip the pack release
 
-Resolve the release from the `feature-packs` slot and expand it into a working directory. No hardcoded
-literals — the vault root is `$env:DW_VAULT`.
+Download the pack's release `.zip` from the feature-pack distribution repo your team designates and
+expand it into the demo's own `baselines\feature-packs\` folder. No hardcoded machine-wide literals —
+everything lands under the demo root.
 
 ```powershell
 $packName = "reordering-pricing"    # the pack you are installing
 $packVer  = "1.0.0"
-$slot     = "$env:DW_VAULT\feature-packs\$packName\$packVer"
-if (-not (Test-Path "$slot\pack.json")) {
-  throw "Pack '$packName/$packVer' not found (missing pack.json) at `$slot. Check INDEX.md feature-packs row."
+$demoRoot = (Get-Location).Path     # the demo project root
+$packDir  = "$demoRoot\baselines\feature-packs\$packName\$packVer"
+if (-not (Test-Path "$packDir\pack.json")) {
+  # Download the pack release (tag packs/<name>/<version>) from the feature-pack
+  # distribution repo your team designates, then unzip so pack.json sits at the folder root.
+  $repo = $env:DW_PACKS_REPO   # set once per machine to the team's feature-pack distribution repo (owner/name)
+  if (-not $repo) { throw "Pack '$packName/$packVer' not present at $packDir and no distribution repo configured. Download the pack release into $packDir first." }
+  New-Item -ItemType Directory -Path $packDir -Force | Out-Null
+  gh release download "packs/$packName/$packVer" --repo $repo --pattern '*.zip' --dir $packDir
+  Expand-Archive -Path "$packDir\*.zip" -DestinationPath $packDir -Force
+  Remove-Item "$packDir\*.zip"
 }
-# The vault slot already holds the unpacked pack (pack.json at slot root). If you have a release .zip
-# instead, expand it first: Expand-Archive -Path <pack>.zip -DestinationPath $slot
+# If you were handed a release .zip directly instead, expand it the same way:
+# Expand-Archive -Path <pack>.zip -DestinationPath $packDir
 ```
 
 ## 5. Step 2 — Read pack.json
@@ -94,7 +105,7 @@ if (-not (Test-Path "$slot\pack.json")) {
 `pack.json` is the manifest that drives the install. Read the fields you need before touching the host:
 
 ```powershell
-$pack = Get-Content "$slot\pack.json" -Raw | ConvertFrom-Json
+$pack = Get-Content "$packDir\pack.json" -Raw | ConvertFrom-Json
 $pack.name; $pack.version; $pack.swiftCompatRange   # confirm this host's Swift version is in range
 $pack.fragmentModes                                 # which mode trees to deserialize (seed / deploy)
 $pack.csLedger                                      # every src/*.cs file + how it registers
@@ -113,7 +124,7 @@ SDK-style implicit `**/*.cs` glob. Copy them to the host's `Packs\<name>\` folde
 $hostRoot = "Dynamicweb.Host.Suite"
 $dropDir  = "$hostRoot\Packs\$packName"
 New-Item -ItemType Directory -Path $dropDir -Force | Out-Null
-Copy-Item -Recurse "$slot\src\*" "$dropDir\" -Force
+Copy-Item -Recurse "$packDir\src\*" "$dropDir\" -Force
 # Stop the host BEFORE building — a running host locks its exe/DLLs on Windows.
 dotnet build $hostRoot -c Debug
 ```
@@ -128,11 +139,11 @@ Templates and item types are disk-overlay files. Copy them into the host's `wwwr
 Razor resolver and item-type loader find them.
 
 ```powershell
-if (Test-Path "$slot\templates") {
-  Copy-Item -Recurse "$slot\templates\*" "$hostRoot\wwwroot\Files\Templates\" -Force
+if (Test-Path "$packDir\templates") {
+  Copy-Item -Recurse "$packDir\templates\*" "$hostRoot\wwwroot\Files\Templates\" -Force
 }
-if (Test-Path "$slot\itemtypes") {
-  Copy-Item -Recurse "$slot\itemtypes\*" "$hostRoot\wwwroot\Files\System\Items\" -Force
+if (Test-Path "$packDir\itemtypes") {
+  Copy-Item -Recurse "$packDir\itemtypes\*" "$hostRoot\wwwroot\Files\System\Items\" -Force
 }
 ```
 
@@ -155,7 +166,7 @@ if (-not $port)  { throw 'Set $port to the running host HTTPS port first' }
 
 $serializeRoot = "$hostRoot\wwwroot\Files\System\Serializer\SerializeRoot"
 foreach ($mode in $pack.fragmentModes) {          # e.g. 'seed', or 'deploy','seed'
-  $modeSrc = "$slot\baseline-fragment\$mode"
+  $modeSrc = "$packDir\baseline-fragment\$mode"
   if (Test-Path $modeSrc) {
     New-Item -ItemType Directory -Path "$serializeRoot\$mode" -Force | Out-Null
     Copy-Item -Recurse "$modeSrc\*" "$serializeRoot\$mode\" -Force
