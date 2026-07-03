@@ -156,6 +156,16 @@ Track exactly what you copy — removing the pack later deletes exactly these fi
 The fragment is serializer YAML that lands the pack's data. Stage each mode tree named in
 `fragmentModes` into the host's `SerializeRoot`, then POST the deserialize — one POST per mode.
 
+> **STAGE THE FRAGMENT ISOLATED — say it loudly.** A `POST /Admin/Api/SerializerDeserialize?mode=<m>`
+> deserializes **everything in `SerializeRoot/<m>/`**, not just the files you copied in. If the base
+> baseline's trees are still sitting in `SerializeRoot/deploy/` and `SerializeRoot/seed/` from the
+> §"deserialize-flow.md" run, dropping the fragment alongside them **re-deserializes the base seed too** —
+> and on a host you have since **re-contented** (purged the sample catalog, authored brand data), the seed
+> pass **resurrects the entire purged sample catalog** on top of your brand content. The fragment install
+> silently turns into a base-baseline re-import. **Park or clear the base trees first, stage the fragment
+> alone, deserialize, then restore the base trees** (or just delete the staged fragment). Never POST a
+> deserialize against a `SerializeRoot` whose contents you have not just verified are fragment-only.
+
 ```powershell
 # Bind the running host's HTTPS port and a Management API token BEFORE the loop.
 # $token is the CLAUDE.hex captured in the current conversation (see §2); $port is
@@ -167,6 +177,12 @@ if (-not $token -or $token -like '<*') { throw 'Capture a Management API token (
 if (-not $port)  { throw 'Set $port to the running host HTTPS port first' }
 
 $serializeRoot = "$hostRoot\wwwroot\Files\System\Serializer\SerializeRoot"
+# ISOLATE: park any base-baseline trees out of SerializeRoot so the deserialize sees ONLY the fragment.
+$parked = "$hostRoot\wwwroot\Files\System\Serializer\_parked-base"
+if (Test-Path $serializeRoot) {
+  New-Item -ItemType Directory -Path $parked -Force | Out-Null
+  Get-ChildItem $serializeRoot -Directory | Move-Item -Destination $parked -Force
+}
 foreach ($mode in $pack.fragmentModes) {          # e.g. 'seed', or 'deploy','seed'
   $modeSrc = "$packDir\baseline-fragment\$mode"
   if (Test-Path $modeSrc) {
@@ -175,8 +191,11 @@ foreach ($mode in $pack.fragmentModes) {          # e.g. 'seed', or 'deploy','se
     $resp = Invoke-RestMethod `
       -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=$mode" `
       -Method POST -Headers @{ Authorization = "Bearer $token" } -SkipCertificateCheck
+    Remove-Item -Recurse -Force "$serializeRoot\$mode"   # clear the staged fragment before the next mode
   }
 }
+# RESTORE the parked base trees so a later base re-serialize/deserialize still has them.
+if (Test-Path $parked) { Get-ChildItem $parked -Directory | Move-Item -Destination $serializeRoot -Force; Remove-Item $parked -Force }
 ```
 
 Keep strict mode on (the default) — the fragment must land cleanly against the base graph. `seed`

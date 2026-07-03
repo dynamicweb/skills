@@ -128,6 +128,7 @@ and silently drops part of the input:
 | Tool (surface) | What gets silently dropped | Verified | Working fallback |
 |---|---|---|---|
 | MCP `save_pages` (update path) | `menuText` — the response even echoes the OLD value | DW 10.25.x | SQL `UPDATE Page SET PageMenuText` + host restart (the nav tree caches menu text) |
+| MCP `save_pages` (create + update) | `urlName` — the slug you pass is **ignored**; DW derives the slug from `menuText` instead | DW 10.27.x | Set the intended `menuText` (the slug follows it), or SQL `UPDATE Page SET PageUrlName` + host restart. Don't expect `urlName` to pin the slug independently. |
 | Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort. `ParagraphSave` IS still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
 
 **Rule:** after any demo-critical update through MCP / Management API, round-trip it — read the value back

@@ -200,6 +200,15 @@ Serializer invalidates caches as part of the strict-mode contract — host resta
 
 If a host restart turns out to be necessary in practice (for a category not covered by strict mode's cache-invalidation contract), document it in the per-demo `CUSTOMISATIONS.md` so the deviation is visible to the next deserialize on this machine.
 
+### Site root `/` 404s after deserialize — bind `AreaDomain` + `AreaFrontpage` (DW 10.27.x)
+
+A clean deserialize can still leave the **site root (`/`) returning 404** even though every page exists and resolves under its own path — the area just has no root binding. On **DW 10.27.x the root binding is two `Area` columns**, set on the area the root should serve:
+
+- **`Area.AreaDomain`** — the host the area answers on (e.g. `localhost`, or `localhost:<port>`).
+- **`Area.AreaFrontpage`** — the numeric page id that `/` renders.
+
+**There is no `AreaDns` table on 10.27.x** — do not look for one; the older DNS-binding table is gone and the binding lives on the `Area` row itself. Set both columns (`UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>`), then **restart the host** — `Area` rows are materialised at startup, so the new root binding is not live until the bounce (see [`../../dw-demo-base/references/foundational/cache-invalidation.md`](../../dw-demo-base/references/foundational/cache-invalidation.md), the `Area`-row row). These binding columns are per-environment and excluded from serialization, so they arrive unset on a fresh host — set them at provisioning, don't expect them from the baseline.
+
 ## 8. Mandatory next step
 
 After this flow returns 2xx, **immediately run [`integrity-sweep.md`](integrity-sweep.md)**. The skill refuses to declare deserialize complete until the sweep passes.
