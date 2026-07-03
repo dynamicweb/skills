@@ -2,7 +2,7 @@
 name: dw-demo-base
 type: flow
 group: demo
-description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (references/online-mode.md). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "run the demo natively", "GSD vs native" route to references/orchestrator.md — and the maintainer fold-back workflow — "fold this into the skill", "save this back to the plugin" route to references/iterate-plugin.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-erp, dw-integration-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
+description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (references/online-mode.md). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "run the demo natively", "GSD vs native" route to references/orchestrator.md — and the maintainer fold-back workflow — "fold this into the skill", "save this back to the plugin" route to references/iterate-plugin.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-erp, dw-integration-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
 ---
 
 # Dynamicweb Demo Base Skill
@@ -50,12 +50,13 @@ Walk every step in order — skip none. Each step's reference contains its own v
 
 ## Baseline data — explicit non-step
 
-Loading reference content into the project DB is **NOT** part of this skill's canonical flow. Two separate paths follow base, depending on demo type:
+Loading reference content into the project DB is **NOT** part of this skill's canonical flow. Three separate paths follow base, depending on demo type:
 
 - **PIM demo** -> start with a blank/fresh demo DB; the PIM skill's modelling recipes build content from scratch via MCP. No deserialize step. See [`dynamicweb-pim-demo/SKILL.md`](../dw-demo-pim/SKILL.md).
-- **Swift demo** -> deserialize the Swift content baseline from `$env:DW_VAULT\serialized-data\<baseline>\` via the Serializer. Owned end-to-end by [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) + [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md). Prerequisite: the Serializer is installed per [`references/serializer-reference.md`](references/serializer-reference.md) "Installation".
+- **Swift demo** -> deserialize the Swift content baseline via the Serializer. Owned end-to-end by [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) + [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md). Prerequisite: the Serializer is installed per [`references/serializer-reference.md`](references/serializer-reference.md) "Installation".
+- **Headless demo** -> deserialize the separate, presentation-agnostic `headless/2.3` baseline (its own product line, no shared item-type rows with Swift) for a Next.js storefront that reads the DW10 Delivery API. Owned by [`dynamicweb-headless-demo/references/headless-baseline.md`](../dw-demo-headless/references/headless-baseline.md); backend config in [`headless-backend.md`](../dw-demo-headless/references/headless-backend.md). Same Serializer prerequisite.
 
-The Serializer install steps live in base so any sister skill can pull them; the act of deserializing is Swift-specific.
+The Serializer install steps live in base so any sister skill can pull them; the act of deserializing is Swift- or headless-specific.
 
 ## Where to find things
 

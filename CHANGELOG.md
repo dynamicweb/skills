@@ -3,6 +3,39 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.9.0]
+
+### Added
+- **New skill `dw-demo-headless` — headless-commerce demos (Next.js storefront + DW10 Delivery
+  API).** A new `flow` demo skill in the presales cluster, sister to `dw-demo-swift` and
+  "Use AFTER `dw-demo-base`", covering the fifth demo consumer: a `vercel/commerce`-based Next.js
+  storefront driven by the Dynamicweb 10 Delivery API (`/dwapi/**`) over a dedicated,
+  presentation-agnostic serialized baseline that is its own product line — fully decoupled from
+  Swift, sharing no item-type rows. Three references:
+  - `references/headless-backend.md` — configure/verify the DW10 backend for headless: the Delivery
+    API surface map (endpoint/auth table; REST/JSON only, no GraphQL/OData), the **two-token trap**
+    (the admin/Management token 401s on `/dwapi`; the frontend needs a JWT from
+    `POST /dwapi/users/authenticate {UserName,Password}` → `{token}`), the locale gotcha (product
+    data lives under `ENU`, not `LANG1` — always pass `LanguageId`+`ShopId`), the PLP
+    repository/named-query requirement (`GET /dwapi/ecommerce/products/search?RepositoryName=…&QueryName=…`;
+    `POST /dwapi/ecommerce/products` 400s — count at `totalProductsCount`, facets at
+    `facetGroups[i].facets[j]`), and the item-type-XML-materialized-at-startup fact.
+  - `references/headless-frontend.md` — work with the Next.js storefront: the provider-module
+    data-layer swap (replace `lib/shopify/` with `lib/dynamicweb/`, keep every UI component), `DW_*`
+    env wiring, the self-signed-TLS dev bypass (`NODE_TLS_REJECT_UNAUTHORIZED=0`, dev-only), the
+    build-time RSC fetch caveat (`next build` needs a reachable provider), slug conventions (product
+    number = handle; group id = collection handle), and `@vercel/*` self-host disposition.
+  - `references/headless-baseline.md` — deserialize the headless baseline: the `Headless_*`
+    presentation-agnostic item-type layer, the `200000–209999` id floor band (an authoring
+    convention verified in YAML — DW reassigns DB ids), EN/NL sibling-area parity (paired manifest
+    entries), disk-overlay staging of `itemtypes/` + `repositories/` BEFORE host start, and the Full
+    index build after deserialize.
+  Registered the skill in `.claude-plugin/marketplace.json` (dynamicweb-presales plugin) and
+  regenerated `manifest.json`. Added the headless demo path to `dw-demo-base` SKILL.md (sister-skill
+  list + the baseline "explicit non-step") so it is discoverable from the foundation skill. Routes
+  to the existing `dw-headless-delivery` knowledge skill for the raw endpoint catalog rather than
+  duplicating it.
+
 ## [3.8.6]
 
 ### Fixed
