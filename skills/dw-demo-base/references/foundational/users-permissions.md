@@ -205,7 +205,7 @@ to `PermissionLevel.Create`).
 ## 4. Layer C — Entity-level permissions
 
 Stored in `UnifiedPermission`; keys come from the entity itself via the `IPermissionEntity` interface.
-The mapping (verified DW 10.25.8 against `$env:DW_VAULT/dw10source/`):
+The mapping (verified DW 10.25.8 against a local clone of the DW10 source):
 
 | Entity | `PermissionName` constant | `PermissionKey` shape | Source citation |
 |---|---|---|---|
@@ -778,4 +778,4 @@ badge presentation — that is presentation, not gating; use `GetGroups()` for i
 - **Cache invalidation after direct-SQL permission seeding** — [`cache-invalidation.md`](cache-invalidation.md), the "Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission` / `CapabilityLimitation` / `CapabilitySetLimitation` / `DashboardAccessUserRelation`" rows. The three caches that need flushing (`DefaultCapabilityService`, `DefaultCapabilitySetService`, `PermissionService`) are listed there with the exact `CacheInformationRefresh` payload.
 - **`AccessUserGroup` membership** — DW10 admin Users → Groups. Group membership is what makes Layer A's "highest level wins" resolution work across users.
 
-Source citations re-verified against `$env:DW_VAULT/dw10source/` on DW 10.25.8.
+Source citations re-verified against a local clone of the DW10 source on DW 10.25.8.

@@ -7,7 +7,7 @@ description: Dynamicweb 10 Swift 2 frontend demos — baseline content deseriali
 
 # Dynamicweb Swift Demo Skill
 
-Baseline content deserialize, frontend / Swift / customer-center playbook, and re-skin recipe for Dynamicweb 10 demo builds. **Use AFTER** `dynamicweb-demo-base` -- assumes a host is running, `$env:DW_VAULT` resolves, and the Serializer is installed in the host (per base's [`../dw-demo-base/references/serializer-reference.md`](../dw-demo-base/references/serializer-reference.md) "Installation").
+Baseline content deserialize, frontend / Swift / customer-center playbook, and re-skin recipe for Dynamicweb 10 demo builds. **Use AFTER** `dynamicweb-demo-base` -- assumes a host is running, the demo's versions are captured, and the Serializer is installed in the host (per base's [`../dw-demo-base/references/serializer-reference.md`](../dw-demo-base/references/serializer-reference.md) "Installation").
 
 This SKILL.md is pure nav. Swift is a knowledge book, not a recipe -- see references for any specific topic.
 
@@ -73,7 +73,7 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 | **Polish gate before "ready"** — hunt every demo-critical page for whitespace bands, misaligned/stretched images, dead arrows, horizontal scrollbars: programmatic detectors + interaction pass + eyeball checklist + symptom routing | [dynamicweb-demo-base/references/visual-qa.md](../dw-demo-base/references/visual-qa.md) |
 | **DW10 canonical surfaces** — the "use X, not Y" cheat sheet for surfaces routinely re-implemented in Razor (user/groups, permissions, prices, orders, products, URLs, redirects, per-category, custom-head includes). Also owns the routing to the **permission entity store** (render-time page/paragraph permissions live in `UnifiedPermission` rows keyed `PermissionName='Page'`, NOT the legacy `*Permission` columns — required reading before any storefront gating work) and the **custom item-type `<Prefix>_*` discipline**. Loaded on every demo build. | **references/dw10-canonical-surfaces.md** |
 | **DW10 discipline audit** — one-shot grep pack to verify a demo's templates against the canonical surfaces before "ready" / fold-back | **references/dw10-canonical-surfaces.md** §"Discipline audit — grep pack" |
-| Drop per-demo Style assets by hand (Color Schemes / Buttons / Typography / Fonts JSON+CSS pairs in `Files/System/Styles/`; Area row wiring; reference vault at `$env:DW_VAULT\dw-swift-styles\`) | references/styles-assets.md |
+| Drop per-demo Style assets by hand (Color Schemes / Buttons / Typography / Fonts JSON+CSS pairs in `Files/System/Styles/`; Area row wiring; style assets from the DemoThemes release, downloaded per-demo into `<demo-root>\baselines\themes\`) | references/styles-assets.md |
 | Add a language layer to a website (sibling `Area` rows, language management settings, OOTB `Swift-v2_LanguageSelector` wiring; sister doc is `dynamicweb-pim-demo/references/localization.md` for the PIM/product side) | references/language-layers.md |
 | Organise assets under `wwwroot/Files/` | references/asset-organisation.md |
 | **SQL-direct seeding** of Page / GridRow / Paragraph / ItemType rows when MCP isn't available (required NOT-NULL columns, `ItemInstanceType=''`, `MAX(Id)` lies → `TRY_CAST`, `GridRowSort × 10` slot reservation, post-INSERT restart rules) | references/sql-direct-seeding.md |
@@ -84,7 +84,7 @@ This skill assumes `dynamicweb-demo-base` ran first. Four rules apply at all tim
 
 | Rule | Owner |
 |------|-------|
-| `$env:DW_VAULT` path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
+| Per-demo artifact download + path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
 | Customer-context read-only contract | [dynamicweb-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
 | Customisations-ledger preflight | [dynamicweb-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
 | Baseline-drift self-diagnosis rule | [dynamicweb-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
@@ -98,7 +98,7 @@ If you find yourself running this skill standalone with no base context, fix tha
 - **`dynamicweb-demo-base`** -- foundation skill (Use FIRST). Owns all setup + path resolution + Serializer install + customisations + customer-context. Does NOT deserialize a baseline — that's owned here.
 - **`dynamicweb-pim-demo`** -- PIM modelling (Use AFTER, can pair with this skill in either order on the host). Starts from a blank/fresh DB and skips the baseline deserialize entirely.
 
-A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`, no resolved `$env:DW_VAULT`) silently no-ops or produces broken artefacts.
+A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
 
 ## Vendor patterns
 

@@ -69,7 +69,7 @@ This skill assumes `dynamicweb-demo-base` ran first. Four rules apply at all tim
 
 | Rule | Owner |
 |------|-------|
-| `$env:DW_VAULT` path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
+| Per-demo artifact download + path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
 | The customer-context read-only contract | [dynamicweb-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
 | The customisations-ledger preflight | [dynamicweb-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
 | The baseline-drift self-diagnosis rule | [dynamicweb-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
@@ -78,12 +78,12 @@ This skill assumes `dynamicweb-demo-base` ran first. Four rules apply at all tim
 
 ## Sister skills
 
-- **`dynamicweb-demo-base`** -- foundation skill (Use FIRST). Owns setup, MCP connection, vault resolution, customisations ledger, customer-context contract.
+- **`dynamicweb-demo-base`** -- foundation skill (Use FIRST). Owns setup, MCP connection, per-demo artifact download, customisations ledger, customer-context contract.
 - **`dynamicweb-pim-demo`** -- PIM modelling (variants, BOM, channels, completeness rules, dashboards). The ERP integrates AGAINST a modelled PIM; you usually want the PIM model in place before wiring the ERP.
 - **`dynamicweb-swift-demo`** -- Swift frontend, customer center, re-skin. Order beats that flow PIM -> Swift -> ERP live in Swift's customer center playbook.
 - **`dynamicweb-pim-for-bc`** -- live BC via ngrok + AppStore PIM-for-BC connector. Use INSTEAD OF this skill's mock-delta flow when a real BC tenant is in scope.
 
-A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`, no resolved `$env:DW_VAULT`) silently no-ops or produces broken artefacts.
+A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
 
 ## Vendor patterns
 

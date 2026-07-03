@@ -22,7 +22,7 @@
 `dynamicweb-demo-base` setup is complete:
 
 - [`../../dw-demo-base/references/setup-checks.md`](../../dw-demo-base/references/setup-checks.md) is green (NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express all probed and resolved).
-- The baseline release has been downloaded from the baseline distribution repo your team designates into the demo's own `baselines\` folder (see §3 — the staging snippet downloads it on first run if a distribution repo is configured).
+- The baseline release has been downloaded from the baseline distribution repo (`justdynamics/Truvio.Commerce.Serializer.Baselines` by default; overridable via `$env:DW_BASELINE_REPO`) into the demo's own `baselines\` folder (see §3 — the staging snippet downloads it on first run).
 - [`../../dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) produced a running `Dynamicweb.Host.Suite` (port reachable, host responds at `/admin`).
 - [`../../dw-demo-base/references/mcp-setup.md`](../../dw-demo-base/references/mcp-setup.md) verification gate passed (`claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND in-conversation `ToolSearch +dynamicweb` returns >200 tools).
 - **The DW Serializer is installed in the host** per [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Installation" section (DLL built + copied to `bin/Debug/net10.0/`, `Files/Serializer.config.json` staged, host restarted). This is a one-time-per-host step.
@@ -89,7 +89,7 @@ Captured via `AskUserQuestion` in the current conversation. Format: `CLAUDE.<hex
 
 ## 3. Step 1 — Stage baseline YAML from the demo's baselines folder
 
-Baseline path resolution: every baseline path resolves under the demo's own `<demo-root>\baselines\` folder — the per-demo copy downloaded from the baseline distribution repo your team designates. No hardcoded machine-wide literals.
+Baseline path resolution: every baseline path resolves under the demo's own `<demo-root>\baselines\` folder — the per-demo copy downloaded from the baseline distribution repo (`justdynamics/Truvio.Commerce.Serializer.Baselines` by default; overridable via `$env:DW_BASELINE_REPO`). No hardcoded machine-wide literals.
 
 **The Serializer reads from `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/<deploy|seed>/`** (joined from `outputDirectory: "Serializer"` in `Files/Serializer.config.json` + `outputSubfolder` per mode). The demo's `baselines/` folder is the **download/staging copy only** — the deserialize endpoint never reads it. The snippet below copies `baselines\<name>\` INTO `SerializeRoot/`; that copy step is what makes the content visible. Skipping the copy (or pointing the flow at `baselines/` directly) silently no-ops — any "121 updated" you then see comes from whatever else is already in `SerializeRoot/deploy/` (typically a previous serialize roundtripping itself). Verified during a Swift2 baseline import — the original recipe pointed at `baselines/` and silently no-op'd.
 
@@ -101,9 +101,9 @@ $demoRoot = (Get-Location).Path                    # the demo project root
 $slot     = "$demoRoot\baselines\$baseline"        # the demo's own downloaded copy
 if (-not (Test-Path "$slot\deploy\_content")) {
   # Download the baseline release (e.g. tag swift/2.3) from the baseline distribution
-  # repo your team designates, then expand it so config/deploy/seed sit at $slot root.
-  $repo = $env:DW_BASELINE_REPO   # set once per machine to the team's baseline distribution repo (owner/name)
-  if (-not $repo) { throw "Baseline '$baseline' not present at $slot and no distribution repo configured. Download the baseline release into $slot first." }
+  # repo, then expand it so config/deploy/seed sit at $slot root.
+  # Defaults to the ecosystem repo; override per machine with $env:DW_BASELINE_REPO (owner/name).
+  $repo = if ($env:DW_BASELINE_REPO) { $env:DW_BASELINE_REPO } else { "justdynamics/Truvio.Commerce.Serializer.Baselines" }
   New-Item -ItemType Directory -Path $slot -Force | Out-Null
   gh release download "swift/2.3" --repo $repo --pattern '*.zip' --dir "$demoRoot\baselines"
   Expand-Archive -Path "$demoRoot\baselines\*.zip" -DestinationPath $slot -Force

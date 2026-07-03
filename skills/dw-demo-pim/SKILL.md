@@ -2,12 +2,12 @@
 name: dw-demo-pim
 type: flow
 group: demo
-description: Dynamicweb 10 PIM modelling -- starts from a blank/fresh DB, building product data from scratch via MCP (no baseline deserialize). Triggers: modelling PIM data structures (shops vs channels, repositories/indexes, variants, BOM, categories, assortments, Dynamic Workspaces), choosing Storefront-first vs PIM-first setup order, fixing "completeness rules don't show", building PIM dashboards, GUID-collision errors in the Products tree, designing the product workflow / approval flow, designing the role/permission matrix for a PIM team, translating products into additional EcomLanguages, recovering from data-load mishaps or stale indexes, post-mutation cache invalidation. Non-triggers: setup/MCP/TLS issues -> dw-demo-base; storefront/content/re-skin -> dw-demo-swift; ERP -> dw-demo-erp. Use AFTER dw-demo-base (assumes MCP connected with >200 tools, vault resolved).
+description: Dynamicweb 10 PIM modelling -- starts from a blank/fresh DB, building product data from scratch via MCP (no baseline deserialize). Triggers: modelling PIM data structures (shops vs channels, repositories/indexes, variants, BOM, categories, assortments, Dynamic Workspaces), choosing Storefront-first vs PIM-first setup order, fixing "completeness rules don't show", building PIM dashboards, GUID-collision errors in the Products tree, designing the product workflow / approval flow, designing the role/permission matrix for a PIM team, translating products into additional EcomLanguages, recovering from data-load mishaps or stale indexes, post-mutation cache invalidation. Non-triggers: setup/MCP/TLS issues -> dw-demo-base; storefront/content/re-skin -> dw-demo-swift; ERP -> dw-demo-erp. Use AFTER dw-demo-base (assumes MCP connected with >200 tools).
 ---
 
 # Dynamicweb PIM Demo Skill
 
-PIM modelling, structural mental model, governance, and recovery for Dynamicweb 10 demo builds. **Use AFTER** `dynamicweb-demo-base` -- this skill assumes MCP is connected with >200 tools and `$env:DW_VAULT` resolves. If MCP isn't connected, fix that there first ([dynamicweb-demo-base/references/mcp-setup.md](../dw-demo-base/references/mcp-setup.md)).
+PIM modelling, structural mental model, governance, and recovery for Dynamicweb 10 demo builds. **Use AFTER** `dynamicweb-demo-base` -- this skill assumes MCP is connected with >200 tools. If MCP isn't connected, fix that there first ([dynamicweb-demo-base/references/mcp-setup.md](../dw-demo-base/references/mcp-setup.md)).
 
 ## How to run me
 
@@ -37,7 +37,7 @@ Trigger shapes, one per thematic reference (the "Where to find things" table bel
 - Translating products / groups / commerce objects into additional `EcomLanguages`.
 - PIM-flavoured demo-storytelling tactics.
 
-If the trigger is setup-shaped (host won't start, MCP empty, TLS handshake failing, vault not resolving), it belongs in `dynamicweb-demo-base`, not here. PIM-skill recipes assume the host is up and MCP returns >200 tools — but **NOT** that a content baseline has been deserialized. PIM demos start from a blank DB.
+If the trigger is setup-shaped (host won't start, MCP empty, TLS handshake failing), it belongs in `dynamicweb-demo-base`, not here. PIM-skill recipes assume the host is up and MCP returns >200 tools — but **NOT** that a content baseline has been deserialized. PIM demos start from a blank DB.
 
 ## Where to find things
 
@@ -72,7 +72,7 @@ This skill assumes `dynamicweb-demo-base` ran first. Four rules apply at all tim
 
 | Rule | Owner |
 |------|-------|
-| `$env:DW_VAULT` path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
+| Per-demo artifact download + path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
 | Customer-context read-only contract | [dynamicweb-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
 | Customisations-ledger preflight | [dynamicweb-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
 | Baseline-drift self-diagnosis rule | [dynamicweb-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
@@ -86,7 +86,7 @@ If you find yourself running this skill standalone with no base context, fix tha
 - **`dynamicweb-demo-base`** -- foundation skill (Use FIRST). Owns all setup + path resolution + Serializer install + customisations + customer-context.
 - **`dynamicweb-swift-demo`** -- Swift frontend + Swift baseline content deserialize + post-deserialize integrity sweep (Use AFTER, can pair with this skill in either order on the host). PIM-only demos can skip this skill entirely.
 
-A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`, no resolved `$env:DW_VAULT`) silently no-ops or produces broken artefacts.
+A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
 
 ## Vendor patterns
 

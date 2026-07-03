@@ -2,7 +2,7 @@
 name: dw-integration-bc
 type: flow
 group: integration
-description: Dynamicweb 10 live "PIM for Business Central connector" demos -- expose the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface. Triggers: "connect BC to the local Dynamicweb host", "give BC a real URL", expose localhost publicly for a connector demo, `Unknown query`/`Unknown command` errors from `BC*` endpoints, connector defaults wrong after AppStore install, BC's Test Connection is green but no products appear, StaticLinkManager errors on "show PIM product page". Non-triggers: PIM data modelling -> dw-demo-pim; DB-mocked ERP sync without a live tenant -> dw-demo-erp; demo setup/MCP/TLS -> dw-demo-base. Use AFTER dw-demo-base (assumes MCP connected, vault resolved, host up).
+description: Dynamicweb 10 live "PIM for Business Central connector" demos -- expose the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface. Triggers: "connect BC to the local Dynamicweb host", "give BC a real URL", expose localhost publicly for a connector demo, `Unknown query`/`Unknown command` errors from `BC*` endpoints, connector defaults wrong after AppStore install, BC's Test Connection is green but no products appear, StaticLinkManager errors on "show PIM product page". Non-triggers: PIM data modelling -> dw-demo-pim; DB-mocked ERP sync without a live tenant -> dw-demo-erp; demo setup/MCP/TLS -> dw-demo-base. Use AFTER dw-demo-base (assumes MCP connected, host up).
 ---
 
 # Dynamicweb PIM for Business Central Connector skill
@@ -32,7 +32,7 @@ These trigger shapes route here:
 - "BC connects (green Test Connection) but no products appear" -- the canonical missing-column-mappings stuck state. BC's connector polls `BCLicense` / `BCSettings` / `BCProductFields` / `BCProductCountByLastModified` indefinitely without ever calling `BCProductIdsByLastModified`. See [references/bc-side-config.md](references/bc-side-config.md) "Field mapping setup -- REQUIRED, not optional".
 - BC's "show PIM product page" feature fails with `Unknown command: 'StaticLinkSave'` (AddIn missing) or a `TypeInitializationException` (AddIn installed but host not restarted). See [references/static-link-manager.md](references/static-link-manager.md). The `StaticLinkManager` AppStore AddIn is a separate package from the BC connector and is NOT installed by default in `dw10-suite` template scaffolds.
 
-If the trigger is setup-shaped (host won't start, MCP empty, TLS handshake failing, vault not resolving), it belongs in `dynamicweb-demo-base`, not here. PIM modelling questions belong in `dynamicweb-pim-demo`. Frontend re-skin and Swift questions belong in `dynamicweb-swift-demo`.
+If the trigger is setup-shaped (host won't start, MCP empty, TLS handshake failing), it belongs in `dynamicweb-demo-base`, not here. PIM modelling questions belong in `dynamicweb-pim-demo`. Frontend re-skin and Swift questions belong in `dynamicweb-swift-demo`.
 
 ## Where to find things
 
@@ -53,7 +53,7 @@ This skill assumes `dynamicweb-demo-base` ran first. Four rules apply at all tim
 
 | Rule | Owner |
 |------|-------|
-| `$env:DW_VAULT` path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
+| Per-demo artifact download + path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
 | The customer-context read-only contract | [dynamicweb-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
 | The customisations-ledger preflight | [dynamicweb-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
 | The baseline-drift self-diagnosis rule | [dynamicweb-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
@@ -62,11 +62,11 @@ This skill assumes `dynamicweb-demo-base` ran first. Four rules apply at all tim
 
 ## Sister skills
 
-- **`dynamicweb-demo-base`** -- foundation skill (Use FIRST). Owns setup, MCP connection, vault resolution, customisations ledger, customer-context contract.
+- **`dynamicweb-demo-base`** -- foundation skill (Use FIRST). Owns setup, MCP connection, per-demo artifact download, customisations ledger, customer-context contract.
 - **`dynamicweb-pim-demo`** -- PIM modelling, structural mental model, completeness rules, dashboards.
 - **`dynamicweb-swift-demo`** -- Swift frontend, customer center, re-skin recipe.
 
-A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`, no resolved `$env:DW_VAULT`) silently no-ops or produces broken artefacts.
+A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
 
 ## Vendor patterns
 

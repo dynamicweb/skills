@@ -150,7 +150,8 @@ ERP integration demo — DB-staged mock or live BC, Integration Framework rules.
 ## Skill dependencies
 
 The **presales demo chain** has a hard order. `dw-demo-base` must run **first** — it scaffolds
-the host, wires MCP + the TLS bypass, and resolves the vault. The sister demo skills
+the host, wires MCP + the TLS bypass, and captures the demo's versions + downloads its artifacts
+per-demo. The sister demo skills
 (`dw-demo-pim`, `dw-demo-swift`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
