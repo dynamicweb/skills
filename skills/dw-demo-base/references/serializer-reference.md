@@ -48,14 +48,18 @@ Copy-Item $dll.FullName "Dynamicweb.Host.Suite\bin\Debug\net10.0\" -Force
 
 The DLL is built net8.0 (Serializer ships single-target net8.0 per its csproj). .NET 10's runtime back-loads net8.0 assemblies fine. Restart the host after the copy so the new DLL is picked up. Note: the README and `docs/getting-started.md` still say "copy to `/path/to/your-dw-host/bin/`" — that's the published-deployment shape and does NOT work for local `dotnet run` hosts; always use the TFM subfolder.
 
-### Step 3 — Stage `Files/Serializer.config.json`
+### Step 3 — Stage `Files/System/Serializer/Serializer.config.json`
 
-The Serializer requires a config at `<host>/wwwroot/Files/Serializer.config.json`. Without one, `/Admin/Api/SerializerDeserialize` returns `Serializer.config.json not found (also checked ContentSync.config.json)`. The Serializer repo ships a canonical Swift 2.2 baseline config in the project's `Configuration\` folder — copy that as the starting point:
+The Serializer requires a config at `<host>/wwwroot/Files/System/Serializer/Serializer.config.json` (version-sensitive — see the path note below). Without one, `/Admin/Api/SerializerDeserialize` returns `Serializer.config.json not found (also checked ContentSync.config.json)`. The Serializer repo ships a canonical Swift 2.2 baseline config in the project's `Configuration\` folder — copy that as the starting point:
 
 ```powershell
+$cfgDir = "Dynamicweb.Host.Suite\wwwroot\Files\System\Serializer"
+New-Item -ItemType Directory -Path $cfgDir -Force | Out-Null
 Copy-Item "$($serializerProj.FullName)\Configuration\swift2.2-combined.json" `
-          "Dynamicweb.Host.Suite\wwwroot\Files\Serializer.config.json" -Force
+          "$cfgDir\Serializer.config.json" -Force
 ```
+
+**Path note (version-sensitive).** On DW **10.27.4** + Serializer engine **0.6.8-beta** the engine reads the config from `Files/System/Serializer/Serializer.config.json`. Older installs staged it at the `Files/` root (`Files/Serializer.config.json`); the engine's actual read location is what wins, so stage it where the running engine looks. Confirm the location on a given host by where the engine creates `SerializeRoot/` — it lands under `Files/System/Serializer/`, alongside the config (the deserialize flow reads `Files/System/Serializer/SerializeRoot/<deploy|seed>/`).
 
 The shipped config uses the current schema: a single flat `predicates: [...]` list with a per-entry `"mode": "Deploy"|"Seed"` field — see "Deploy vs Seed" below for the schema break vs the legacy `deploy: { predicates: [...] }` shape.
 
@@ -152,6 +156,8 @@ WHERE Link LIKE '%Default.aspx?%=3421%';
 1. Align NuGet versions: bump the target's `Dynamicweb.Suite` to match source, `dotnet publish`, restart. DW runs pending `UpdateProvider` classes at startup. (This NuGet-alignment / startup-migration crossover is platform-generic — owned by [`foundational/setup-upgrade.md`](foundational/setup-upgrade.md) "Schema-drift across NuGet versions"; see it too if a `UpdateProvider` itself is broken.)
 2. Drop the column on source: align downward instead of upward.
 3. Accept the drift: the column is silently dropped from MERGE, the rest of the row writes correctly. Lenient mode only.
+
+**Area-column drift specifically (older baseline → newer host).** When the offending column is on `[Area]` (e.g. an `area.yml` captured on an older platform), the predicate's `excludeAreaColumns` setting does NOT help — it governs serialize-OUT (which Area columns get *written*), not deserialize-IN. Strip the offending column from the **staged** `Files/System/Serializer/SerializeRoot/deploy/_content/<Area>/area.yml` (never the downloaded original under `baselines\`) and re-POST. See the deserialize flow's §3 note: [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
 
 ### "template 'T' not found at Files/Templates/T"
 
