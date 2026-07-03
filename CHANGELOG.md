@@ -3,6 +3,16 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.0.1]
+
+### Fixed
+- **Release-tag resolution: tags carry the patch digit.** The versions prompt collects a *minor*
+  Swift version (`2.3`), but distribution release tags are full semver (`swift/2.3.1`) — a literal
+  `gh release download swift/<minor>` fails. `dw-demo-base` SKILL.md now ships a latest-patch-for-
+  the-minor resolution snippet (gh release list + prefix filter + semver sort), setup-checks and
+  styles-assets reference it, and the RESOLVED tag (not the minor) is what gets recorded in
+  `CUSTOMISATIONS.md` as the reproducibility pin.
+
 ## [4.0.0]
 
 ### Changed (BREAKING — distribution model)

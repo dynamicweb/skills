@@ -63,7 +63,21 @@ The Serializer install steps live in base so any sister skill can pull them; the
 Demo artifacts are **not** kept in a shared machine-wide vault. Each demo downloads exactly the versions it targets into its own `<demo-root>\baselines\` folder, so two demos on the same machine can pin different versions without collision. Before any artifact is fetched, ask the user two things (record both in the demo's `CUSTOMISATIONS.md` for reproducibility):
 
 1. **DW10 version** — the platform version the demo host runs (drives baseline/pack compatibility checks).
-2. **Swift version** — e.g. `2.3` (drives the baseline release tag `swift/<version>`, the theme release tag `swift/<version>`, and the Swift design-package clone tag `v<version>.0`).
+2. **Swift version** — e.g. `2.3` (drives the baseline/theme release tags and the Swift design-package clone tag `v<version>.0`).
+
+**Tag resolution — release tags carry the patch digit.** The user answers a *minor* version (`2.3`); actual release tags are full semver (`swift/2.3.1`, `swift/2.3.0`). Never `gh release download swift/2.3` literally — resolve the **latest patch for the requested minor** first, then download that tag:
+
+```powershell
+$minor = "2.3"  # from the versions prompt
+$tag = gh release list --repo <owner/repo> --limit 100 --json tagName -q '.[].tagName' |
+  Where-Object { $_ -like "swift/$minor.*" } |
+  Sort-Object { [version]($_ -replace '^swift/','') } -Descending |
+  Select-Object -First 1
+if (-not $tag) { throw "No swift/$minor.* release found — check the repo's Releases page." }
+gh release download $tag --repo <owner/repo> --dir "<demo-root>\baselines\_dl"
+```
+
+Record the RESOLVED tag (not just the minor) in `CUSTOMISATIONS.md` — that exact tag is the demo's reproducibility pin. The same latest-patch rule applies to theme release tags; feature-pack tags (`packs/<name>/<version>`) are picked as full versions directly.
 
 With those answers, artifacts resolve per-demo from the ecosystem distribution repos:
 

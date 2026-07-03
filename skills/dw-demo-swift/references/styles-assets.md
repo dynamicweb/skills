@@ -13,10 +13,11 @@ Read that section for the asset format and wiring. This file carries the demo-in
 ## Reference source: the DemoThemes release, downloaded per-demo
 
 Canonical Style-asset examples ship as release zips in the **DemoThemes** distribution repo
-`https://github.com/justdynamics/Truvio.Commerce.DemoThemes`, tagged `swift/<version>` (per-theme
-zips). Download the theme for the demo's Swift version into the demo's own
-`<demo-root>\baselines\themes\` folder (the versions prompt in `dw-demo-base` captured the Swift
-version). Themes are pure disk-overlay (styles + CSS + assets) and carry no serialized DB content.
+`https://github.com/justdynamics/Truvio.Commerce.DemoThemes` (per-theme zips; tags are full semver
+like `swift/2.3.0` — resolve the latest patch for the demo's Swift minor per the "Tag resolution"
+snippet in `dw-demo-base/SKILL.md`). Download the theme for the demo's Swift version into the
+demo's own `<demo-root>\baselines\themes\` folder (the versions prompt in `dw-demo-base` captured
+the Swift version). Themes are pure disk-overlay (styles + CSS + assets) and carry no serialized DB content.
 
 ```powershell
 $demoRoot = (Get-Location).Path

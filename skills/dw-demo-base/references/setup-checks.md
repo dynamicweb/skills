@@ -101,7 +101,7 @@ Set-Content -Path $probe -Value "ok"; Remove-Item $probe   # throws if not writa
 
 ### Check: Versions prompt (DW10 + Swift)
 
-**Why this matters:** The version answers drive the baseline release tag (`swift/<version>`), the theme release tag, the Swift design-package clone tag (`v<version>.0`), and pack compatibility checks. Ask **before** downloading anything.
+**Why this matters:** The version answers drive the baseline/theme release-tag resolution, the Swift design-package clone tag (`v<version>.0`), and pack compatibility checks. Ask **before** downloading anything. Note: the user answers a *minor* version; release tags carry the patch digit (`swift/2.3.1`) — resolve the latest patch for the minor per the "Tag resolution" snippet in `dw-demo-base/SKILL.md` and record the resolved tag in `CUSTOMISATIONS.md`.
 
 **Probe:** conversational — ask the user via `AskUserQuestion`:
 
