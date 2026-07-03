@@ -44,7 +44,8 @@ baseline improvement, not a pack.
 - The Serializer installed in the host (same one-time install the deserialize flow depends on).
 - A Management API bearer token captured in the current conversation (format `CLAUDE.<hex>`; keep it
   in conversation state, never write it to a file).
-- The pack release downloaded from the feature-pack distribution repo your team designates and
+- The pack release downloaded from the feature-pack distribution repo
+  (`justdynamics/Truvio.Commerce.FeaturePacks` by default; overridable via `$env:DW_PACKS_REPO`) and
   unpacked into the demo's own `baselines\feature-packs\<name>\<version>\` folder, `pack.json` at the
   folder root — see §4, which downloads it on first run.
 
@@ -77,9 +78,10 @@ that ships no overlays still keeps the `templates/` and `itemtypes/` folders pre
 
 ## 4. Step 1 — Download and unzip the pack release
 
-Download the pack's release `.zip` from the feature-pack distribution repo your team designates and
-expand it into the demo's own `baselines\feature-packs\` folder. No hardcoded machine-wide literals —
-everything lands under the demo root.
+Download the pack's release `.zip` from the feature-pack distribution repo
+(`justdynamics/Truvio.Commerce.FeaturePacks` by default) and expand it into the demo's own
+`baselines\feature-packs\` folder. No hardcoded machine-wide literals — everything lands under the
+demo root.
 
 ```powershell
 $packName = "reordering-pricing"    # the pack you are installing
@@ -88,9 +90,9 @@ $demoRoot = (Get-Location).Path     # the demo project root
 $packDir  = "$demoRoot\baselines\feature-packs\$packName\$packVer"
 if (-not (Test-Path "$packDir\pack.json")) {
   # Download the pack release (tag packs/<name>/<version>) from the feature-pack
-  # distribution repo your team designates, then unzip so pack.json sits at the folder root.
-  $repo = $env:DW_PACKS_REPO   # set once per machine to the team's feature-pack distribution repo (owner/name)
-  if (-not $repo) { throw "Pack '$packName/$packVer' not present at $packDir and no distribution repo configured. Download the pack release into $packDir first." }
+  # distribution repo, then unzip so pack.json sits at the folder root.
+  # Defaults to the ecosystem repo; override per machine with $env:DW_PACKS_REPO (owner/name).
+  $repo = if ($env:DW_PACKS_REPO) { $env:DW_PACKS_REPO } else { "justdynamics/Truvio.Commerce.FeaturePacks" }
   New-Item -ItemType Directory -Path $packDir -Force | Out-Null
   gh release download "packs/$packName/$packVer" --repo $repo --pattern '*.zip' --dir $packDir
   Expand-Archive -Path "$packDir\*.zip" -DestinationPath $packDir -Force

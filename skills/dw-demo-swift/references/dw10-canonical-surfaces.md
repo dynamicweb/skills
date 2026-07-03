@@ -7,7 +7,7 @@
 > **Why this exists.** Every "fake pattern" in a Swift demo (raw SQL probes on
 > `AccessUserGroupRelation`, hard-coded area prefixes, master-template `WriteLiteral` redirects,
 > `EcomOrders` SQL chains in Razor) is a workaround for a surface the demo author didn't know was
-> there. When in doubt, search `dw10source` (`$env:DW_VAULT/dw10source`) for the canonical surface
+> there. When in doubt, search a local clone of the DW10 source (location per machine — ask/discover, never hardcode) for the canonical surface
 > before writing SQL or parsing URLs. Cross-references the escalation ladder in [`re-skin.md`](re-skin.md).
 
 ## Surface → owning candidate

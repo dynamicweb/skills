@@ -8,35 +8,49 @@
 
 Vendor-generic Swift Style-asset knowledge — the four `wwwroot/Files/System/Styles/{ColorSchemes,Buttons,Typography,Fonts}/` directories, the `<brand>.json` + `<brand>.css` pair format, how `Swift-v2_Master.cshtml`'s `Model.TryGet*Style` calls load them, the JSON schemas, the `Area.AreaColorSchemeGroupId` / `AreaButtonStyleId` / `AreaTypographyId` wiring SQL, and the silent empty-state pitfall (`TryGet*Style` returns `false` and adds nothing to `<head>` when the file is absent) — is owned by the `dw-swift-building` foundational skill — staged in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7 ("Style assets").
 
-Read that section for the asset format and wiring. This file carries the demo-infrastructure that sits on top of it: **where the reference vault is** and **how to clone it for a new demo**.
+Read that section for the asset format and wiring. This file carries the demo-infrastructure that sits on top of it: **where the reference style assets come from** and **how to stage them for a new demo**.
 
-## Reference vault: `$env:DW_VAULT\dw-swift-styles\`
+## Reference source: the DemoThemes release, downloaded per-demo
 
-Carries the canonical examples — copy and rename when starting a new demo:
+Canonical Style-asset examples ship as release zips in the **DemoThemes** distribution repo
+`https://github.com/justdynamics/Truvio.Commerce.DemoThemes`, tagged `swift/<version>` (per-theme
+zips). Download the theme for the demo's Swift version into the demo's own
+`<demo-root>\baselines\themes\` folder (the versions prompt in `dw-demo-base` captured the Swift
+version). Themes are pure disk-overlay (styles + CSS + assets) and carry no serialized DB content.
+
+```powershell
+$demoRoot = (Get-Location).Path
+$themes   = "$demoRoot\baselines\themes"
+$swiftVer = "2.3.0"                     # the demo's Swift version (from the versions prompt)
+New-Item -ItemType Directory -Path $themes -Force | Out-Null
+gh release download "swift/$swiftVer" --repo justdynamics/Truvio.Commerce.DemoThemes `
+   --pattern '*.zip' --dir $themes      # per-theme zips for this Swift version
+Get-ChildItem "$themes\*.zip" | ForEach-Object { Expand-Archive $_.FullName -DestinationPath $themes -Force; Remove-Item $_.FullName }
+```
+
+A downloaded theme unpacks with the four Style-asset directories at its root:
 
 ```
-$env:DW_VAULT\dw-swift-styles\
+<demo-root>\baselines\themes\<theme>\
 ├── ColorSchemes\
 │   ├── ColorScheme.config        ← list of predefined scheme NAMES Swift offers in admin UI
 │   ├── swift.{json,css}          ← Swift's own default brand
-│   └── Fixaflex.{json,css}       ← worked example: Fixaflex demo's blue brand
+│   └── <theme>.{json,css}        ← worked example brand
 ├── Buttons\
 │   ├── buttons.{json,css}        ← Swift default (pill, 2.5rem padding)
-│   └── FixaFlex.{json,css}       ← Fixaflex example (slight rounded, 1.5rem padding)
+│   └── <theme>.{json,css}        ← example (slight rounded, 1.5rem padding)
 ├── Typography\
 │   ├── fonts.{json,css}          ← Swift default (Inter 500/600)
-│   └── FixaFlex.{json,css}       ← Fixaflex (Ubuntu local + Google)
+│   └── <theme>.{json,css}        ← example (local + Google fonts)
 └── Fonts\
-    ├── Fixaflex-1.{json,css}     ← Ubuntu-Light @font-face definition
-    ├── Fixaflex-2.{json,css}     ← ...etc
-    ├── Ubuntu-*.ttf              ← actual font files
-    └── neutra-text-*.otf
+    ├── <theme>-*.{json,css}      ← @font-face definitions
+    └── *.ttf / *.otf             ← actual font files
 ```
 
-To clone for a new demo:
+To stage for a new demo, copy from the downloaded theme into the host's Styles folder:
 
 ```powershell
-$src = "$env:DW_VAULT\dw-swift-styles"
+$src = "$themes\<theme>"
 $dst = "<demo>\Dynamicweb.Host.Suite\wwwroot\Files\System\Styles"
 Copy-Item "$src\ColorSchemes\swift.json" "$dst\ColorSchemes\<brand>.json"
 Copy-Item "$src\ColorSchemes\swift.css"  "$dst\ColorSchemes\<brand>.css"
