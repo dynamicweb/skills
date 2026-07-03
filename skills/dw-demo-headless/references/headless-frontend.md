@@ -115,6 +115,15 @@ This is the same class of bypass `dynamicweb-demo-base` wires for the MCP/browse
 the process. For a hosted demo, terminate TLS with a real certificate and drop this var. Confine it
 to the storefront's local `.env`/shell; do not commit it into any deploy config.
 
+**Sibling gotcha — `next/image` refuses local backends (SSRF guard).** On Next 15.6+, the image
+optimizer rejects any upstream whose host resolves to a loopback/private IP with
+`400 "url" parameter is not allowed` — **even when the host matches `images.remotePatterns`**. So a
+storefront pointed at a DW backend on `localhost`/a LAN IP renders every `/Files/**` product image
+broken while the same URL serves 200 directly. Fix in `next.config.ts`: set
+`images.dangerouslyAllowLocalIP: true`, but gate it on the backend host actually being
+local/private (derive from the API-base env var) so a public backend keeps its SSRF protection.
+The flag is baked into the build — rebuild after changing it; a restart alone flips nothing.
+
 ## 5. Build-time RSC fetch caveat
 
 The starter's pages are React Server Components that fetch during rendering — and the App Router
