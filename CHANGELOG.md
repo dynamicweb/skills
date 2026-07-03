@@ -3,6 +3,25 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [3.8.6]
+
+### Fixed
+- **Framework-preservation claim corrected to the mode that actually governs framework rows.**
+  `dw-demo-swift` SKILL.md Step 0 and `deserialize-flow.md` §3 claimed a PIM-set-up host's
+  SHOP1/DE/EUR/LANG1 rows were preserved because "`seed` mode is destination-wins" — but framework
+  `_sql/` travels in the **deploy** tree, and `deploy` is **source-wins**: the baseline's framework
+  rows UPDATE matching curated rows. Both spots now warn to review/trim `deploy/_sql/` before
+  deserializing into a host with hand-curated framework data; only the `seed` (catalog) pass is
+  destination-wins.
+- **`baselines\` staging wording de-contradicted.** `deserialize-flow.md` §3 both designated
+  `<demo-root>\baselines\` as the canonical download/staging location and kept the legacy warning
+  that a `baselines/` copy is "invisible". Reworded: `baselines\` is the staging copy the snippet
+  copies FROM; `SerializeRoot/` remains the only path the deserialize endpoint reads.
+- **Icon set added to the design-package copy list.** `Files/Images/Icons/` (~80 SVGs incl.
+  `Flags/` and `LoginProviders/`) is verified present in the Swift clone and is the set
+  `integrity-sweep.md` Check 6 verifies — it is now an explicit copy-list entry instead of only a
+  recovery path.
+
 ## [3.8.5]
 
 ### Changed
