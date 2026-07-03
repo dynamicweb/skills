@@ -142,10 +142,9 @@ that `marketplace.json` parses and has the required top-level schema (`name`, `o
 `plugins`), that every plugin entry has a `source` and every referenced skill path exists;
 that each skill's folder name, `name:` frontmatter, and marketplace path agree; that every
 relative link in `SKILL.md`/`references` resolves; that each `description` is within the
-1024-char cap; that no markdown file begins with a UTF-8 BOM or contains double-encoded UTF-8
-(mojibake); and that the retired "truvio" codename appears nowhere. It warns (without failing)
-when a description lacks a trigger signal, a SKILL.md body runs past 500 lines, or a reference
-over 100 lines lacks a table of contents.
+1024-char cap; and that no markdown file begins with a UTF-8 BOM or contains double-encoded UTF-8
+(mojibake). It warns (without failing) when a description lacks a trigger signal, a SKILL.md body
+runs past 500 lines, or a reference over 100 lines lacks a table of contents.
 
 For a deeper check against Claude Code's own plugin schema, also run `claude plugin validate ./`.
 

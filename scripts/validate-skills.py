@@ -10,7 +10,6 @@ Checks (errors fail the build, warnings are printed but do not):
   - No markdown file under skills/ begins with a UTF-8 BOM (breaks some
     frontmatter parsers).
   - No markdown file under skills/ contains double-encoded UTF-8 (mojibake).
-  - The string "truvio" (case-insensitive) appears nowhere.
   - WARN if a skill description lacks a trigger signal (Triggers:/Use when/Use FIRST).
   - WARN if a SKILL.md body exceeds 500 lines (split into references/).
   - WARN if a references/ file over 100 lines lacks a top-of-file table of contents.
@@ -34,8 +33,6 @@ MARKETPLACE = REPO / ".claude-plugin" / "marketplace.json"
 errors: list[str] = []
 warnings: list[str] = []
 
-# File types scanned for the "truvio" purge check.
-TEXT_SUFFIXES = {".md", ".json", ".template", ".ps1", ".yaml", ".yml", ".jsonc"}
 # Hard cap on the activation `description` (frontmatter parsers truncate past this).
 DESCRIPTION_MAX = 1024
 # Soft budget for a SKILL.md body — past this, split material into references/.
@@ -222,23 +219,6 @@ def check_no_mojibake() -> None:
                     break  # one report per line is enough
 
 
-def check_no_truvio() -> None:
-    # Scope the purge check to shipped plugin content (skills/ + marketplace).
-    # Root dev docs (CHANGELOG/CLAUDE) may reference the retired codename historically.
-    candidates = [MARKETPLACE, *SKILLS_DIR.rglob("*")]
-    for path in sorted(candidates):
-        if ".git" in path.parts or not path.is_file():
-            continue
-        if path.suffix.lower() not in TEXT_SUFFIXES:
-            continue
-        try:
-            text = path.read_text(encoding=ENCODING)
-        except (UnicodeDecodeError, OSError):
-            continue
-        if "truvio" in text.lower() or "truvio" in path.name.lower():
-            err(f"{rel(path)}: contains 'truvio' (should be purged)")
-
-
 def main() -> int:
     if not SKILLS_DIR.is_dir():
         print(f"ERROR: {rel(SKILLS_DIR)} not found", file=sys.stderr)
@@ -249,7 +229,6 @@ def main() -> int:
     check_no_bom()
     check_reference_tocs()
     check_no_mojibake()
-    check_no_truvio()
 
     for w in warnings:
         print(f"WARN  {w}")

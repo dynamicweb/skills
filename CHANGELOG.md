@@ -3,6 +3,42 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.0.0]
+
+### Changed (BREAKING — distribution model)
+- **`$env:DW_VAULT` removed entirely.** The shared machine-wide vault (five slots
+  `dw10source/samples/databases/docs/serialized-data`, resolved via `$env:DW_VAULT\INDEX.md`) is
+  gone. Demo artifacts are now downloaded **per-demo** into the demo's own `<demo-root>\baselines\`
+  folder, so two demos on one machine can pin different versions without collision. `dw-demo-base`
+  now asks the user for the demo's **DW10 version** and **Swift version** (the versions prompt,
+  recorded in `CUSTOMISATIONS.md`) before any artifact is fetched. `git grep -i dw_vault -- skills/`
+  is now zero.
+- **Ecosystem distribution repos named directly.** Skills now name the public distribution sources
+  instead of "the repo your team designates": serialized baselines from
+  `justdynamics/Truvio.Commerce.Serializer.Baselines`, demo themes / style assets from
+  `justdynamics/Truvio.Commerce.DemoThemes` (release zips tagged `swift/<version>`), and feature
+  packs from `justdynamics/Truvio.Commerce.FeaturePacks` (releases tagged `packs/<name>/<version>`).
+  The `$env:DW_BASELINE_REPO` / `$env:DW_PACKS_REPO` indirection now **defaults** to these URLs and
+  stays overridable per machine. The Swift design package remains a local clone of
+  `https://github.com/dynamicweb/Swift`.
+- **`setup-checks.md` reworked.** Dropped the `DW_VAULT` env probe and the five-slot inventory;
+  added checks that matter for the download model — `gh` CLI present + authenticated, a writable
+  `<demo-root>\baselines\` folder, and the DW10 + Swift versions prompt.
+- **DW10 source is now "a local clone (location per machine — ask/discover, never hardcode)".**
+  Every `$env:DW_VAULT\dw10source\` citation (PIM/permissions/workflow source-dives, online-mode
+  binder disambiguator, canonical-surfaces, surface-priority) was repointed to that wording; the
+  source-diving guidance itself is unchanged. The DB fast-restore escape hatch became a per-machine
+  local-artifact note (no vault slot).
+
+### Removed
+- `dw-demo-base/references/compare-vault.md` (cross-machine vault drift detection — no vault to
+  drift) and `dw-demo-base/assets/INDEX.md.template` (vault index template). All links/cross-refs to
+  both were removed.
+- **Validator `check_no_truvio` purge check removed** (`scripts/validate-skills.py`), per the
+  operator policy lifting the `truvio` scrub for the ecosystem repo URLs. The rest of the validator
+  (schema, links, BOM, mojibake, TOC/trigger warnings) is intact. `truvio`/`Truvio` now appears only
+  in the named distribution-repo URLs.
+
 ## [3.9.0]
 
 ### Added
