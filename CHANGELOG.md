@@ -6,6 +6,10 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 ## [4.1.0]
 
 ### Added
+- **next/image SSRF guard vs local DW backends** (`dw-demo-headless` headless-frontend.md): Next
+  15.6+ rejects loopback/private upstream hosts with a 400 even when `remotePatterns` match; gate
+  `images.dangerouslyAllowLocalIP` on the backend host being local, and rebuild — the flag is baked
+  into the build.
 - **Autonomous/headless MCP transport fallback.** The Claude-client project-server approval is an
   interactive-only gate — an unattended agent can wait on "Pending approval" forever. `dw-demo-base`
   `mcp-setup.md` now documents the sanctioned fallback: the DW MCP endpoint (`/admin/mcp`) is plain
