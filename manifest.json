@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-01T22:46:05.923Z",
+  "generatedAt": "2026-07-03T07:52:43.546Z",
   "skills": [
     {
       "name": "dw-demo-base",
@@ -15,6 +15,13 @@
       "group": "demo",
       "description": "Dynamicweb 10 ERP integration -- owns the always-on rule that an ERP is a source AND target in DW10's Integration Framework, never a `ShopType=3` channel or an `EcomFeed`.",
       "path": "skills/dw-demo-erp/SKILL.md"
+    },
+    {
+      "name": "dw-demo-headless",
+      "type": "flow",
+      "group": "demo",
+      "description": "Dynamicweb 10 headless-commerce demos — a Next.js storefront (vercel/commerce starter) driven by the DW10 Delivery API, plus a dedicated presentation-agnostic serialized baseline.",
+      "path": "skills/dw-demo-headless/SKILL.md"
     },
     {
       "name": "dw-demo-pim",
