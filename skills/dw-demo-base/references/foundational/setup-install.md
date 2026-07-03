@@ -236,3 +236,47 @@ debugger, `dotnet watch`, an IDE-managed reload) is respawning it — stop the u
   Commerce + Users + Files + Settings + Headless.
 - **Do not use the `dotnet new dw10-cms` template** (CMS-only) for a solution that needs Commerce + PIM.
   Use `dw10-suite` (the full Suite template).
+
+## 7. First-run license gate + headless admin-password recovery
+
+On a fresh DW **10.27.x** install the Setup Guide forces `/admin/license` immediately after the
+database step — **before** any admin-user setup. Complete the license step; a **Suite Trial** is fine
+for demos (the trial expiry lands ~30 days out — record it in the demo's `CUSTOMISATIONS.md` so the
+next run knows when the demo goes dark). The `dw-setup-install` skill ships a headless
+trial-activation path (`scripts/activate-free-trial.ps1`, driving `/admin/license/TrialInstallStep`)
+for boxes where the browser flow is not an option.
+
+### 7.1 — The license gate can skip the set-admin-password step
+
+Verified on a fresh 10.27.4 host: when the license step runs first, the Setup Guide can jump straight
+past the "set admin password" prompt. The result is a host whose seeded users are all **inactive with
+empty passwords** — there is NO usable admin login, and the standard first-run flow dead-ends (every
+credential is rejected at `/admin`, with no UI path back to the password prompt).
+
+### 7.2 — Canonical fix: headless password reset via `UserService`
+
+Recover by resetting the admin user in code — a **one-shot** temporary branch in `Program.cs`, removed
+after it runs once. Use `Dynamicweb.Security.UserManagement` (`UserManagementServices.Users`, i.e.
+`Dynamicweb.Security.UserManagement.UserService`): call `ChangePassword(user, newPassword)`, flip
+`user.Active = true`, then `Save(user)`. This API is not on the docs site — it was resolved from the
+platform's bin XML docs.
+
+```csharp
+// TEMPORARY one-shot — place after the host is built, run once, then DELETE this block.
+using Dynamicweb.Security.UserManagement;
+
+var users = UserManagementServices.Users;
+// Resolve the seeded admin (by username/id/email — see dw-users-permissions "Reading Users").
+var admin = users.GetUserByUserName("Administrator");
+if (admin is not null)
+{
+    users.ChangePassword(admin, "<new-strong-password>");
+    admin.Active = true;
+    users.Save(admin);
+}
+```
+
+Restart the host, log in at `/admin` with the new password, then remove the block and restart again so
+the reset cannot re-run. Never leave the reset branch in a committed `Program.cs` — it is a
+plaintext-password write path. The `ChangePassword` / `Save` surface is the same one documented in
+[`../../../dw-users-permissions/SKILL.md`](../../../dw-users-permissions/SKILL.md) ("Writing Users").

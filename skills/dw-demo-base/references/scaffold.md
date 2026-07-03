@@ -56,7 +56,8 @@ The Setup Guide on first run will:
 
 1. Auto-create the demo database under `MSSQL$SQLEXPRESS` if the connecting SQL user has `dbcreator`. The DB name defaults to the solution folder name unless overridden.
 2. Initialise the `Files/` folder under `Dynamicweb.Host.Suite/wwwroot/` with the empty default structure.
-3. Print a one-time admin user prompt (capture the credentials — they're needed for the admin UI walkthrough in `references/mcp-setup.md` Step 3).
+3. **Force the license step.** On DW 10.27.x the Setup Guide redirects to `/admin/license` immediately after the database step, BEFORE any admin-user setup. Complete it — a **Suite Trial** is fine for demos. The trial expiry lands ~30 days out; record it in the demo's `CUSTOMISATIONS.md` so the next run on this box knows when the demo goes dark. Platform-level detail + the headless trial-activation path: [`foundational/setup-install.md`](foundational/setup-install.md) §7.
+4. Print a one-time admin user prompt (capture the credentials — they're needed for the admin UI walkthrough in `references/mcp-setup.md` Step 3). **Gotcha:** the license gate can skip this step entirely, leaving every seeded user inactive with an empty password — no usable admin login, and the standard flow dead-ends. If `/admin` rejects every credential after setup, apply the headless admin-password recovery in [`foundational/setup-install.md`](foundational/setup-install.md) §7 before going further.
 
 Once the Setup Guide completes, the `Properties/launchSettings.json` file has its final `applicationUrl` and the `GlobalSettings.Database.config` has the actual DB name. **These two files are the source of truth for port and DB name from now on** (the discover-from-project-files rule).
 

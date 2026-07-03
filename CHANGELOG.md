@@ -3,6 +3,35 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.0.2]
+
+### Fixed
+- **License step folded into the canonical first-run flow.** On a fresh DW 10.27.x install the Setup
+  Guide forces `/admin/license` immediately after the database step, before any admin-user setup.
+  `dw-demo-base` `scaffold.md` §3 now walks the license step (Suite Trial for demos; ~30-day expiry
+  recorded in `CUSTOMISATIONS.md`), with the platform-level detail + headless trial path in
+  `foundational/setup-install.md` §7.
+- **Headless admin-password recovery documented.** The license gate can skip the set-admin-password
+  step, leaving every seeded user inactive with an empty password and no usable admin login.
+  `foundational/setup-install.md` §7 documents the one-shot `Program.cs` recovery via
+  `Dynamicweb.Security.UserManagement.UserService` (`ChangePassword` + `user.Active = true` + `Save`).
+- **Serializer config path corrected (version-sensitive).** On DW 10.27.4 + engine 0.6.8-beta the
+  engine reads `Files/System/Serializer/Serializer.config.json`, not the `Files/` root.
+  `serializer-reference.md` Step 3 (and the config-path mentions in `deserialize-flow.md`) now stage
+  and cite the `Files/System/Serializer/` location; the engine's actual read location wins, confirmed
+  by where `SerializeRoot/` is created.
+- **Deserialize is a two-POST sequence.** A bare `POST /Admin/Api/SerializerDeserialize` runs the
+  Deploy pass only; the Seed pass must be requested explicitly with `?mode=Seed`. `deserialize-flow.md`
+  §4 now documents both passes (deploy then seed) for the swift/2.3 deploy+seed baseline.
+- **`excludeAreaColumns` semantics clarified.** The setting governs serialize-OUT (which Area columns
+  are written to YAML), not deserialize-IN — it does not suppress "source column not present on target
+  schema" drift for a baseline captured on an older platform. Recovery (strip the column from the
+  STAGED `area.yml`, never the downloaded original) is documented in `deserialize-flow.md` §3 and the
+  matching failure pattern in `serializer-reference.md`.
+
+  All five folds come from a fresh-DW-10.27.4 autonomous demo build (Serializer engine 0.6.8-beta)
+  following the skills verbatim — each was a real first-run failure.
+
 ## [4.0.1]
 
 ### Fixed
