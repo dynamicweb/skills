@@ -7,7 +7,7 @@ description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-sui
 
 # Dynamicweb Demo Base Skill
 
-The foundation skill for any Dynamicweb 10 demo. **Use FIRST** on every new Dynamicweb demo. Sister skills (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`) inherit the `.mcp.json`, `CUSTOMISATIONS.md`, vault resolution, and TLS bypass that this skill establishes -- they are **Use AFTER**, never standalone.
+The foundation skill for any Dynamicweb 10 demo. **Use FIRST** on every new Dynamicweb demo. Sister skills (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`) inherit the `.mcp.json`, `CUSTOMISATIONS.md`, and TLS bypass that this skill establishes -- they are **Use AFTER**, never standalone.
 
 This SKILL.md is a nav layer only. Each step of the canonical flow links to a `references/<topic>.md` that owns the verbatim recipe, gotchas, and verification gate for that topic.
 
@@ -30,14 +30,14 @@ Every sister demo skill carries the same "how to run me" header and defers to th
 
 ## Environment fork — local install vs hosted (online) install
 
-The canonical flow below assumes a **local install** (scaffold + SQL Express + vault on the demo machine). When the engagement instead hands you a **site URL + Admin API bearer key** — a vendor-hosted/cloud install with no machine to scaffold on — fork to [references/online-mode.md](references/online-mode.md), which owns the deltas: which canonical steps to skip, the session-start probe (tool availability on hosted installs is **version-dependent** — MCP may or may not be exposed; always probe, never assume), the Management API recipe pack that substitutes for MCP/SQL recipes, and the shared-install discipline. The always-on rules (surface priority, guarded writes, customer-context, demo philosophy) apply in both modes.
+The canonical flow below assumes a **local install** (scaffold + SQL Express on the demo machine). When the engagement instead hands you a **site URL + Admin API bearer key** — a vendor-hosted/cloud install with no machine to scaffold on — fork to [references/online-mode.md](references/online-mode.md), which owns the deltas: which canonical steps to skip, the session-start probe (tool availability on hosted installs is **version-dependent** — MCP may or may not be exposed; always probe, never assume), the Management API recipe pack that substitutes for MCP/SQL recipes, and the shared-install discipline. The always-on rules (surface priority, guarded writes, customer-context, demo philosophy) apply in both modes.
 
 ## Canonical end-to-end flow
 
 Walk every step in order — skip none. Each step's reference contains its own verification gate; the skill **refuses to declare setup complete** until every gate passes.
 
 1. **Verify the environment is build-ready** -> [references/setup-checks.md](references/setup-checks.md)
-   Probes env vars (`DW_VAULT`, `NODE_TLS_REJECT_UNAUTHORIZED`), the **.NET 10 SDK** (mandatory — rationale in `references/foundational/setup-install.md` §2), `Dynamicweb.ProjectTemplates`, the SQL Express service, MSDTC, and the five vault slots from `$env:DW_VAULT\INDEX.md`. Posture: verify + opt-in fix for cheap fixes (env vars); print-and-link only for install-grade fixes (SDK, SQL Express).
+   Probes the `NODE_TLS_REJECT_UNAUTHORIZED` env var, the **.NET 10 SDK** (mandatory — rationale in `references/foundational/setup-install.md` §2), `Dynamicweb.ProjectTemplates`, the SQL Express service, MSDTC, the `gh` CLI (present + authenticated — needed to download baseline/pack/theme releases), and that the demo's `<demo-root>\baselines\` folder is writable. Also captures the demo's target **DW10 version** and **Swift version** (the versions prompt — see "Baseline data" below). Posture: verify + opt-in fix for cheap fixes (env var); print-and-link only for install-grade fixes (SDK, SQL Express).
 
 2. **Scaffold the per-demo project** -> [references/scaffold.md](references/scaffold.md)
    `dotnet new dw10-suite --name Dynamicweb.Host.Suite`. The `--name Dynamicweb.Host.Suite` is mandatory; sister-skill path discovery depends on this name. Suite version is whatever the template + `dotnet restore` resolve — version policy is out of scope for this skill.
@@ -53,10 +53,28 @@ Walk every step in order — skip none. Each step's reference contains its own v
 Loading reference content into the project DB is **NOT** part of this skill's canonical flow. Three separate paths follow base, depending on demo type:
 
 - **PIM demo** -> start with a blank/fresh demo DB; the PIM skill's modelling recipes build content from scratch via MCP. No deserialize step. See [`dynamicweb-pim-demo/SKILL.md`](../dw-demo-pim/SKILL.md).
-- **Swift demo** -> deserialize the Swift content baseline via the Serializer. Owned end-to-end by [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) + [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md). Prerequisite: the Serializer is installed per [`references/serializer-reference.md`](references/serializer-reference.md) "Installation".
-- **Headless demo** -> deserialize the separate, presentation-agnostic `headless/2.3` baseline (its own product line, no shared item-type rows with Swift) for a Next.js storefront that reads the DW10 Delivery API. Owned by [`dynamicweb-headless-demo/references/headless-baseline.md`](../dw-demo-headless/references/headless-baseline.md); backend config in [`headless-backend.md`](../dw-demo-headless/references/headless-backend.md). Same Serializer prerequisite.
+- **Swift demo** -> deserialize the Swift content baseline downloaded per-demo into `<demo-root>\baselines\<baseline>\` (see the versions prompt + download model below) via the Serializer. Owned end-to-end by [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) + [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md). Prerequisite: the Serializer is installed per [`references/serializer-reference.md`](references/serializer-reference.md) "Installation".
+- **Headless demo** -> deserialize the separate, presentation-agnostic `headless/2.3` baseline (its own product line, no shared item-type rows with Swift; downloaded per-demo into `<demo-root>\baselines\` like any baseline — see the versions prompt + download model below) for a Next.js storefront that reads the DW10 Delivery API. Owned by [`dynamicweb-headless-demo/references/headless-baseline.md`](../dw-demo-headless/references/headless-baseline.md); backend config in [`headless-backend.md`](../dw-demo-headless/references/headless-backend.md). Same Serializer prerequisite.
 
 The Serializer install steps live in base so any sister skill can pull them; the act of deserializing is Swift- or headless-specific.
+
+### Versions prompt + per-demo artifact download
+
+Demo artifacts are **not** kept in a shared machine-wide vault. Each demo downloads exactly the versions it targets into its own `<demo-root>\baselines\` folder, so two demos on the same machine can pin different versions without collision. Before any artifact is fetched, ask the user two things (record both in the demo's `CUSTOMISATIONS.md` for reproducibility):
+
+1. **DW10 version** — the platform version the demo host runs (drives baseline/pack compatibility checks).
+2. **Swift version** — e.g. `2.3` (drives the baseline release tag `swift/<version>`, the theme release tag `swift/<version>`, and the Swift design-package clone tag `v<version>.0`).
+
+With those answers, artifacts resolve per-demo from the ecosystem distribution repos:
+
+| Artifact | Source (default) | Lands at | Fetched by |
+|---|---|---|---|
+| Serialized baseline | `https://github.com/justdynamics/Truvio.Commerce.Serializer.Baselines` — packages under `packages/<product>/<version>/` on main; per-package release tags | `<demo-root>\baselines\<baseline>\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
+| Demo theme / style assets | `https://github.com/justdynamics/Truvio.Commerce.DemoThemes` — release zips tagged `swift/<version>` (per-theme) | `<demo-root>\baselines\themes\` | [`dynamicweb-swift-demo/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) |
+| Feature pack | `https://github.com/justdynamics/Truvio.Commerce.FeaturePacks` — releases tagged `packs/<name>/<version>` | `<demo-root>\baselines\feature-packs\<name>\<version>\` | [`dynamicweb-swift-demo/references/pack-activation.md`](../dw-demo-swift/references/pack-activation.md) |
+| Swift design package | local clone of `https://github.com/dynamicweb/Swift` (tag `v<version>.0`) | `<demo-root>\dw-swift\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) "Design-package deploy" |
+
+Downloads use the `gh` CLI (`gh release download`) — hence the setup-checks probe that `gh` is present and authenticated. The baseline and feature-pack source repos each default to the URL above and are overridable per machine via `$env:DW_BASELINE_REPO` / `$env:DW_PACKS_REPO` (owner/name form) when a team mirrors or forks the distribution.
 
 ## Where to find things
 
@@ -65,7 +83,7 @@ The Serializer install steps live in base so any sister skill can pull them; the
 | Understand how a demo build is **driven** — the orchestrator abstraction (GSD primary vs the native `/demo:*` command set), GSD detection / deference + `--standalone`, the `agent_skills` keystone, the strictness gradient, and the shared acceptance criteria | references/orchestrator.md |
 | Verify a fresh machine is build-ready (incl. the MSDTC check that AreaCopy `TransactionException`s trace back to) | references/setup-checks.md |
 | **Build on a hosted/cloud install** (URL + Admin API key only — no scaffold, no SQL, no host restart; Management API create-vs-update semantics, binder shapes, upload, variants, cache-refresh-as-restart, known API gaps) | **references/online-mode.md** |
-| Detect vault drift across machines | references/compare-vault.md |
+| Ask the demo's DW10 + Swift versions and download baselines/themes/packs per-demo | "Versions prompt + per-demo artifact download" above + references/setup-checks.md |
 | Scaffold the project | references/scaffold.md |
 | Get MCP working (and verify it) | references/mcp-setup.md |
 | Understand the TLS bypass | references/tls-bypass.md |
@@ -203,15 +221,20 @@ When in doubt: every login / channel / locale / customer-center section must jus
 - **`dynamicweb-erp-demo`** -- ERP integration (source/target rule, DB-staged mock, scenarios-first planning). **Use AFTER** `dynamicweb-demo-base`.
 - **`dynamicweb-pim-for-bc`** -- live BC connector via ngrok + AppStore connector. **Use AFTER** `dynamicweb-demo-base`.
 
-A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`, no resolved `$env:DW_VAULT`) silently no-ops or produces broken artefacts. The "Use FIRST" routing wording in this skill's description and the "Use AFTER" markers in the sister skills are the inoculation.
+A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts. The "Use FIRST" routing wording in this skill's description and the "Use AFTER" markers in the sister skills are the inoculation.
 
-## Vault layout
+## Reference-content layout
 
-The on-disk vault at `$env:DW_VAULT` (default `C:\VibeCode\dw-vault\`) is the single source of truth for reference content. Read `$env:DW_VAULT\INDEX.md` to discover slots; never hardcode paths. The five slots are `dw10source/`, `samples/`, `databases/`, `docs/`, `serialized-data/`.
+Demo artifacts (baselines, themes, feature packs) are downloaded per-demo into the demo's own `<demo-root>\baselines\` folder — see "Versions prompt + per-demo artifact download" above. There is no shared machine-wide vault; each demo owns the exact versions it targets.
+
+Two read-only reference sources are **local clones**, not downloads, and their location is per-machine — **ask or discover it, never hardcode**:
+
+- **DW10 source** — a local clone of the DW10 source, used for deep schema/internals search (`src/Features/Ecommerce`, `Dynamicweb.Products.UI`, etc.). Where a reference says "search the DW10 source", it means this clone.
+- **Swift design package** — a local clone of `https://github.com/dynamicweb/Swift` at the demo's Swift version (`<demo-root>\dw-swift\`), the source of item-type XMLs, templates, styles, and icons for the deserialize.
 
 ## Path-resolution rule
 
-Every path in this skill (and sister skills) resolves via `$env:DW_VAULT` joined with a slot name from `INDEX.md`. Per-machine hardcoded literals (legacy paths under user-specific source folders or sibling solution folders) are a known anti-pattern; the existing `dynamicweb-pim-demo` skill still carries some as a cautionary cleanup target.
+Paths in this skill (and sister skills) resolve under the demo's own root (`<demo-root>\baselines\...`) or a per-machine local clone whose location is asked/discovered. Per-machine hardcoded literals (legacy paths under user-specific source folders or sibling solution folders) are a known anti-pattern; the existing `dynamicweb-pim-demo` skill still carries some as a cautionary cleanup target.
 
 ## Discover-from-project-files rule
 
@@ -226,7 +249,7 @@ Port, DB name, and Management API bearer token vary per project. Read them from 
 
 ## Baseline-drift self-diagnosis rule
 
-When grep results in skill text contradict the live vault, consider "the baseline has rolled since this skill was authored" as a candidate cause. Cross-check `$env:DW_VAULT\INDEX.md`'s version stamp before assuming the skill is correct. Reality wins; the skill is the second source of truth.
+When grep results in skill text contradict the live baseline, consider "the baseline has rolled since this skill was authored" as a candidate cause. Cross-check the downloaded baseline's release tag / version against the demo's Swift version before assuming the skill is correct. Reality wins; the skill is the second source of truth.
 
 
 

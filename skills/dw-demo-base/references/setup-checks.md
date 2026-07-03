@@ -7,7 +7,7 @@
 - [3. Discovery table — read these from project files (the discover-from-project-files rule)](#3-discovery-table--read-these-from-project-files-the-discover-from-project-files-rule)
 - [4. Dual-set env-var propagation pattern — User-scope env-var doesn't propagate](#4-dual-set-env-var-propagation-pattern--user-scope-env-var-doesnt-propagate)
 
-Verification logic lives as fenced PowerShell inside this Markdown reference. Use it to verify, before touching any per-demo work: the two demo-specific env vars (`DW_VAULT`, `NODE_TLS_REJECT_UNAUTHORIZED`) and the five vault slots — owned here — plus the platform install prerequisites (.NET 10 SDK, `Dynamicweb.ProjectTemplates`, SQL Express, MSDTC), whose per-check detail is owned by [`foundational/setup-install.md`](foundational/setup-install.md).
+Verification logic lives as fenced PowerShell inside this Markdown reference. Use it to verify, before touching any per-demo work: the `NODE_TLS_REJECT_UNAUTHORIZED` env var, the `gh` CLI (present + authenticated, for release downloads), a writable `<demo-root>\baselines\` folder, and the demo's DW10 + Swift versions prompt — owned here — plus the platform install prerequisites (.NET 10 SDK, `Dynamicweb.ProjectTemplates`, SQL Express, MSDTC), whose per-check detail is owned by [`foundational/setup-install.md`](foundational/setup-install.md).
 
 **Posture:** verify + opt-in fix.
 
@@ -24,13 +24,13 @@ Run all probes at once. If every line is green, you can skip the per-check secti
 dotnet --list-sdks | Select-String '^10\.'        # .NET 10 SDK present (host targets net10)
 dotnet new list | Select-String 'dw10-suite'       # expect "DynamicWeb 10 Suite Project Template" or similar
 Get-Service "MSSQL`$SQLEXPRESS" | Select-Object Name, Status
-[Environment]::GetEnvironmentVariable("DW_VAULT","User")
 [Environment]::GetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED","User")
+gh auth status                                     # gh CLI installed AND authenticated (release downloads)
 ```
 
 Note the backtick on `MSSQL`$SQLEXPRESS` — `$SQLEXPRESS` is a PowerShell special token unless escaped.
 
-The first three lines are the platform install prerequisites — if any is red, work the per-check sections in [`foundational/setup-install.md`](foundational/setup-install.md) §1 (and §4 for MSDTC). The last two are the demo-specific env vars, owned below.
+The first three lines are the platform install prerequisites — if any is red, work the per-check sections in [`foundational/setup-install.md`](foundational/setup-install.md) §1 (and §4 for MSDTC). The last two are demo-specific, owned below (the TLS env var and the `gh` CLI). The DW10 + Swift versions prompt and the writable-`baselines\` check are also owned here.
 
 ---
 
@@ -40,34 +40,7 @@ Each check follows the same shape: **Why** → **Probe** → **Expected** → **
 
 > **Platform install prerequisites** — the per-check detail for the **.NET 10 SDK**, **`Dynamicweb.ProjectTemplates`**, the **SQL Express service**, and **MSDTC for cross-connection TransactionScope** (with the `enable-msdtc.ps1` admin script) is owned by [`foundational/setup-install.md`](foundational/setup-install.md) §1 and §4. They are platform-generic, not demo-specific — verify them via the ritual above and fix per that reference. The MSDTC requirement pairs with the `Program.cs` `ImplicitDistributedTransactions` opt-in (`setup-install.md` §3.1); both are needed for admin operations like AreaCopy.
 
-The demo-specific checks owned here are the two env vars and the vault inventory.
-
-### Check: DW_VAULT env var (User scope)
-
-**Why this matters:** Every reference in this skill (and every sister skill) resolves vault content via `$env:DW_VAULT`. If the var is unset, `compare-vault.md`, the slot-inventory probe below, and Swift's [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) all fail.
-
-**Probe:**
-
-```powershell
-[Environment]::GetEnvironmentVariable("DW_VAULT","User")
-```
-
-**Expected:** non-empty path that exists on disk.
-
-**Cheap fix (opt-in):** If empty or path doesn't exist, ask the user via `AskUserQuestion`:
-
-> "DW_VAULT is not set at User scope. I can set it to `C:\VibeCode\dw-vault` (or another path you specify) by running:
->
-> ```powershell
-> [Environment]::SetEnvironmentVariable("DW_VAULT", "C:\VibeCode\dw-vault", "User")
-> $env:DW_VAULT = "C:\VibeCode\dw-vault"
-> ```
->
-> After this, you'll need to **close ALL Claude Code instances and reopen from a fresh PowerShell** for the new value to be visible to MCP/Node tooling. Approve? [Set + restart guidance / Specify different path / Skip]"
-
-**Ask before fixing — never auto-apply.** This is a User-scope mutation; user opt-in is the contract.
-
-**Dual-set pattern:** Always set both the User-scope persistent var AND the current-process `$env:VAR`. The two-line setter above does both. See Section 4.
+The demo-specific checks owned here are the TLS env var, the `gh` CLI, the writable `baselines\` folder, and the versions prompt.
 
 ### Check: NODE_TLS_REJECT_UNAUTHORIZED env var (User scope)
 
@@ -81,7 +54,7 @@ The demo-specific checks owned here are the two env vars and the vault inventory
 
 **Expected:** literal `"0"` (string).
 
-**Cheap fix (opt-in):** Same pattern as DW_VAULT. Ask the user:
+**Cheap fix (opt-in):** Set both the User-scope persistent var AND the current-process `$env:VAR` (the dual-set pattern, Section 4). Ask the user:
 
 > "NODE_TLS_REJECT_UNAUTHORIZED is not set to `0` at User scope. The MCP HTTPS handshake will fail without it (see `references/tls-bypass.md`). I can set it by running:
 >
@@ -94,42 +67,47 @@ The demo-specific checks owned here are the two env vars and the vault inventory
 
 **Cross-reference:** `references/tls-bypass.md` is the long-form rationale.
 
-### Check: Vault slot inventory
+### Check: `gh` CLI present and authenticated
 
-**Why this matters:** The skill resolves all reference content via `$env:DW_VAULT` + the slot table in `$env:DW_VAULT\INDEX.md`. The five slots are `dw10source`, `samples`, `databases`, `docs`, `serialized-data`. The vault layout also hard-relocated `dw10adminUI-samples\` → `samples\dw10adminUI\`; if the legacy top-level location is still present, INDEX.md tells two stories and the vault is in a drift state (apply the baseline-drift self-diagnosis rule).
+**Why this matters:** Demo artifacts (baseline, theme, feature-pack releases) are downloaded per-demo via `gh release download` from the ecosystem distribution repos (see the base SKILL "Versions prompt + per-demo artifact download"). If `gh` is missing or unauthenticated, the Swift deserialize and pack-activation flows cannot fetch their releases.
 
 **Probe:**
 
 ```powershell
-$vault = [Environment]::GetEnvironmentVariable("DW_VAULT","User")
-if (-not $vault) { throw "DW_VAULT not set at User scope. See the DW_VAULT check above." }
-
-# 1. INDEX.md presence
-if (-not (Test-Path (Join-Path $vault "INDEX.md"))) {
-  throw "INDEX.md missing at $vault\INDEX.md. Vault is not initialised."
-}
-
-# 2. All five slots present
-$slots = "dw10source","samples","databases","docs","serialized-data"
-$missing = $slots | Where-Object { -not (Test-Path (Join-Path $vault $_)) }
-if ($missing) {
-  Write-Host "Missing slots: $($missing -join ', ')"
-  Write-Host "Recreate the vault layout (see INDEX.md) or copy from a sibling machine."
-}
-
-# 3. Stale-state detection: legacy top-level dw10adminUI-samples\
-$legacy = Join-Path $vault "dw10adminUI-samples"
-if (Test-Path $legacy) {
-  Write-Host "STALE: legacy top-level $legacy still exists alongside $vault\samples\dw10adminUI\."
-  Write-Host "The vault layout hard-relocated this. Run:"
-  Write-Host "  Move-Item -Path '$legacy' -Destination '$vault\samples\dw10adminUI' -Force"
-  Write-Host "or remove the legacy folder if a copy already exists at the new path."
-}
+gh --version          # gh CLI installed
+gh auth status        # authenticated to github.com (non-zero exit / "not logged in" = fix below)
 ```
 
-**Expected:** INDEX.md present, all five slots present, no legacy `dw10adminUI-samples\` at top level.
+**Expected:** `gh` prints a version, and `gh auth status` reports a logged-in account with repo read scope.
 
-**Cheap fix (opt-in, only if individual slots missing):** Offer to `New-Item -ItemType Directory -Force` the missing slot folders. Do NOT seed content automatically — slot population is a vault-bootstrap concern; this check just detects absence.
+**Install-grade fix (print + link):** If `gh` is absent, print `winget install --id GitHub.cli` (or link https://cli.github.com/) and let the user install. If installed but not authenticated, have the user run `gh auth login` in their own shell — never script a credential flow.
+
+### Check: `<demo-root>\baselines\` folder is writable
+
+**Why this matters:** Every downloaded artifact lands under the demo's own `baselines\` folder. A read-only or non-existent parent path makes the first `gh release download` / `Expand-Archive` fail.
+
+**Probe:**
+
+```powershell
+$baselines = Join-Path (Get-Location).Path "baselines"
+New-Item -ItemType Directory -Path $baselines -Force | Out-Null
+$probe = Join-Path $baselines ".write-probe"
+Set-Content -Path $probe -Value "ok"; Remove-Item $probe   # throws if not writable
+```
+
+**Expected:** the folder is created (or already present) and the write probe succeeds.
+
+**Cheap fix (opt-in):** If creation fails, the demo root is likely under a protected path — ask the user to relocate the demo or grant write access. Do not elevate automatically.
+
+### Check: Versions prompt (DW10 + Swift)
+
+**Why this matters:** The version answers drive the baseline release tag (`swift/<version>`), the theme release tag, the Swift design-package clone tag (`v<version>.0`), and pack compatibility checks. Ask **before** downloading anything.
+
+**Probe:** conversational — ask the user via `AskUserQuestion`:
+
+> "Which **DW10 platform version** does this demo target, and which **Swift version** (e.g. `2.3`)? Both get recorded in `CUSTOMISATIONS.md` for reproducibility and select which release tags to download."
+
+**Expected:** two values captured in conversation state and written to the demo's `CUSTOMISATIONS.md`. No default — never guess a version.
 
 ---
 
@@ -155,4 +133,4 @@ When you set any User-scope env var via `[Environment]::SetEnvironmentVariable(n
 
 Use `[Environment]::GetEnvironmentVariable(name, "User")` (not `$env:NAME`) for verification re-reads — `$env:NAME` reads the current-process copy, which is stale after a `setx`/`SetEnvironmentVariable` call.
 
-This pattern applies to **all** User-scope env-var fixes in this file (DW_VAULT, NODE_TLS_REJECT_UNAUTHORIZED, anything else) and is the canonical statement of the dual-set pattern — other files (e.g. `tls-bypass.md` §3) pointer here. The two-line setter (`SetEnvironmentVariable` + `$env:NAME = ...`) covers parts 1 and 2; the user must do part 3.
+This pattern applies to **all** User-scope env-var fixes in this file (NODE_TLS_REJECT_UNAUTHORIZED, anything else) and is the canonical statement of the dual-set pattern — other files (e.g. `tls-bypass.md` §3) pointer here. The two-line setter (`SetEnvironmentVariable` + `$env:NAME = ...`) covers parts 1 and 2; the user must do part 3.

@@ -3,7 +3,7 @@
 ## Contents
 
 - [Installation](#installation)
-- [Vault baseline shape](#vault-baseline-shape)
+- [Baseline shape](#baseline-shape)
 - [Internals — upstream pointer block](#internals--upstream-pointer-block)
 - [Common failure patterns and diagnostics](#common-failure-patterns-and-diagnostics)
 - [Versioning and baseline-format compatibility](#versioning-and-baseline-format-compatibility)
@@ -17,11 +17,11 @@
 
 ## Installation
 
-Resolve the repo first (Step 0), then build, copy, stage. The build is one-time per machine; the DLL copy + config staging are per-host (re-run when scaffolding a new demo host or when the Serializer DLL is rebuilt). Only run these steps on demos that actually need the Serializer — typically Swift demos that will deserialize a baseline. PIM demos that start from a blank DB can skip installation until/unless they later need to serialize their own work back into the vault.
+Resolve the repo first (Step 0), then build, copy, stage. The build is one-time per machine; the DLL copy + config staging are per-host (re-run when scaffolding a new demo host or when the Serializer DLL is rebuilt). Only run these steps on demos that actually need the Serializer — typically Swift demos that will deserialize a baseline. PIM demos that start from a blank DB can skip installation until/unless they later need to serialize their own work.
 
 ### Step 0 — Resolve the Serializer repo (never hardcode the path or the DLL filename)
 
-The Serializer repo location is machine-specific, and its folder and assembly name have changed across releases — resolve both instead of hardcoding either. Set `$env:DW_SERIALIZER_REPO` (User scope, same dual-set pattern as `DW_VAULT` — see `references/setup-checks.md` §4) to the local clone root, and derive the project folder and DLL filename from the repo itself. A hardcoded directory fails at build time when the repo is renamed; a hardcoded DLL filename fails the copy step even when the directory resolves — the assembly filename follows the csproj `AssemblyName`, which renames with the product. (The Serializer is a tool, not a vault slot; it stays outside `$env:DW_VAULT`.)
+The Serializer repo location is machine-specific, and its folder and assembly name have changed across releases — resolve both instead of hardcoding either. Set `$env:DW_SERIALIZER_REPO` (User scope, same dual-set env-var pattern documented in `references/setup-checks.md` §4) to the local clone root, and derive the project folder and DLL filename from the repo itself. A hardcoded directory fails at build time when the repo is renamed; a hardcoded DLL filename fails the copy step even when the directory resolves — the assembly filename follows the csproj `AssemblyName`, which renames with the product. (The Serializer is a tool — a per-machine local clone, its location asked/discovered, never hardcoded.)
 
 ```powershell
 if (-not $env:DW_SERIALIZER_REPO -or -not (Test-Path "$env:DW_SERIALIZER_REPO\src")) {
@@ -76,9 +76,9 @@ For Swift baseline restore ([`../../dw-demo-swift/references/deserialize-flow.md
 
 Upstream long-form: `$env:DW_SERIALIZER_REPO\docs\concepts.md` — "Deploy and Seed modes", "The three-bucket split".
 
-## Vault baseline shape
+## Baseline shape
 
-The vault baseline at `$env:DW_VAULT\serialized-data\Swift2.2\` is **content-only** (the historical `_sql/` framework rows were deliberately removed: they silently overwrote framework data hosts had already built via the PIM-skill flow). One top-level subfolder: `_content/`, a mirror tree of the DW area→page→gridRow→paragraph hierarchy, one YAML file per node (folder = page; files = `area.yml`, `page.yml`, `grid-row.yml`, `paragraph-<col>-<n>.yml`). Hosts that need a baseline framework should run [`../../dw-demo-pim/references/canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md) Steps 1-4 before this deserialize. The runtime contract is [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §3 "Baseline shape".
+The legacy content-only baseline (`Swift2.2`) shape had **no `_sql/`** (the historical `_sql/` framework rows were deliberately removed: they silently overwrote framework data hosts had already built via the PIM-skill flow). One top-level subfolder: `_content/`, a mirror tree of the DW area→page→gridRow→paragraph hierarchy, one YAML file per node (folder = page; files = `area.yml`, `page.yml`, `grid-row.yml`, `paragraph-<col>-<n>.yml`). Hosts that need a baseline framework should run [`../../dw-demo-pim/references/canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md) Steps 1-4 before this deserialize. The runtime contract is [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §3 "Baseline shape".
 
 ## Internals — upstream pointer block
 
@@ -86,9 +86,9 @@ Architecture, source layout, pipeline walkthrough, YAML schema details, strict-m
 
 - `$env:DW_SERIALIZER_REPO\docs\` — README → `concepts.md` → `strict-mode.md` (full warning-source table, override precedence, cache-registry extension recipe) → `link-resolution.md` → `troubleshooting.md` → `configuration.md` → `runtime-exclusions.md` → `sql-tables.md` → `permissions.md` → `cicd.md`
 - `$env:DW_SERIALIZER_REPO\src\<project>\` — source (the single project folder under `src\`); `Providers\SerializerOrchestrator.cs` is the entry point
-- `$env:DW_SERIALIZER_REPO\tools\` — each tool subfolder carries its own README. For DB fast-restore, resolve the artifact from the vault's own `databases` slot (`$env:DW_VAULT\databases\` — the canonical in-vault fast-restore source per `$env:DW_VAULT\INDEX.md`'s `databases` row); a bacpac copy inside the Serializer repo's tools folder is a development convenience, not the resolution target
+- `$env:DW_SERIALIZER_REPO\tools\` — each tool subfolder carries its own README. **DB fast-restore (escape-hatch alternative to deserialize)** is a per-machine local artifact: if you keep a clean-DB bacpac / `.mdf` snapshot on the box, note its location in the demo's own notes and restore from there — there is no shared vault slot for it. A bacpac copy inside the Serializer repo's tools folder is a development convenience, not a canonical resolution target.
 
-Note: `$env:DW_VAULT\dw10source\` is the DW10 clone, NOT the Serializer — Serializer source lives only under `$env:DW_SERIALIZER_REPO`.
+Note: the DW10 source clone (a per-machine local clone, location asked/discovered) is NOT the Serializer — Serializer source lives only under `$env:DW_SERIALIZER_REPO`.
 
 Two operational facts worth keeping in mind without loading upstream docs:
 
@@ -178,7 +178,7 @@ Three signals:
 
 ### How baselines roll
 
-Baseline rolls (the vault's `Swift2.2/` content) happen out-of-band — when Dynamicweb ships a new Swift release, the vault baseline gets re-serialized from a fresh Swift install. The vault's `INDEX.md` `serialized-data` row carries the date stamp; cross-check it against the demo's host DW10 version when triaging schema-drift warnings (the baseline-drift self-diagnosis rule).
+Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release, the baseline gets re-serialized from a fresh Swift install and published as a new release in the baseline distribution repo (`justdynamics/Truvio.Commerce.Serializer.Baselines`). The downloaded baseline's release tag / version is the stamp; cross-check it against the demo's host DW10 version when triaging schema-drift warnings (the baseline-drift self-diagnosis rule).
 
 ## Cross-references
 

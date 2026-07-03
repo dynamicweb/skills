@@ -165,7 +165,7 @@ Triage rules for tool-count outcomes:
 
 - **`count == 0`** → admin-UI MCP config (Step 3) was not created, or `.mcp.json` still has the literal `<MCP_API_KEY>` placeholder (Step 3b not done). Check both.
 - **`count < 50`** (small) → admin-UI config has restrictive scope (not Full access). Re-create with `Access = Full access`.
-- **`50 <= count < 200`** → unusual; likely a DW10 version where the MCP catalogue is partial. Compare against another known-good machine using `compare-vault.md`'s output as a sanity check on `serialized-data/` baseline drift; consult the team.
+- **`50 <= count < 200`** → unusual; likely a DW10 version where the MCP catalogue is partial. Compare the tool count against another known-good machine on the same DW10 version; consult the team.
 - **`count > 200`** → gate passes; proceed to step 4 (drop guardrails) and then to the demo-type-specific path (PIM modelling via `dynamicweb-pim-demo`, or Swift baseline deserialize via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md)).
 
 The conjunction (Connected AND > 200 tools) catches all three failure shapes: TLS bypass missing (Step 4a fails with "Failed to connect"), admin-UI MCP config missing (Step 4a fails with `401 Unauthorized` once the bearer is in place), and the bearer placeholder not substituted (Step 4a fails with `401 Unauthorized` even with a config in place).

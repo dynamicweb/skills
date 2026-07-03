@@ -40,7 +40,7 @@ A demo engagement has two phases with different surface rules, split by the **MC
 Pattern to follow:
 
 1. Try MCP. If the tool name suggests it (e.g. `copy_area`, `copy_page`, `save_pages`), use it.
-2. If MCP errors or doesn't expose the operation, work the Management API. The operation exists there — the admin UI is a SPA over `/admin/api/...`, so every UI click has an endpoint. Discover it via the `/admin/api/docs/` catalogue, the `dw10source` vault slot for binder shapes (see `online-mode.md` "dw10source as binder disambiguator"), or by navigating the admin UI **read-only** with Playwright and reading the SPA's traffic (`mcp__playwright__browser_network_requests`) — reading network calls is verification-grade; clicking Save is not.
+2. If MCP errors or doesn't expose the operation, work the Management API. The operation exists there — the admin UI is a SPA over `/admin/api/...`, so every UI click has an endpoint. Discover it via the `/admin/api/docs/` catalogue, a local clone of the DW10 source for binder shapes (see `online-mode.md` "dw10source as binder disambiguator"), or by navigating the admin UI **read-only** with Playwright and reading the SPA's traffic (`mcp__playwright__browser_network_requests`) — reading network calls is verification-grade; clicking Save is not.
 3. Local installs only: after 1–2 are exhausted, reach for SQL — and even then, prefer SQL for cleanup of a previous bad attempt rather than for the create.
 
 Driving the admin UI to *make* a build-phase change is off-contract on every instance type. A "UI-only" operation means the endpoint hasn't been found yet — go back to step 2.

@@ -83,7 +83,7 @@ Same as §3: `wwwroot/Files/Templates/PIM/Workflow Notifications/<filename>.csht
 
 This is the one place DW10's workflow engine falls short of "out of the box for enterprise approval flows", and the gap is the same shape in every release:
 
-**Confirmed in source** (`$env:DW_VAULT/dw10source/src/Core/Dynamicweb.Core/Security/Workflows/`):
+**Confirmed in source** (a local clone of the DW10 source — location per machine, ask/discover — under `src/Core/Dynamicweb.Core/Security/Workflows/`):
 
 | Table | Columns | Role-aware? | Verification |
 |---|---|---|---|
@@ -149,4 +149,4 @@ In all three workarounds, **add the audit-log subscriber** anyway: a `Notificati
 - **Custom code** — `NotificationSubscriber` and scheduled-task surfaces are custom code that ships without a config-surface prompt — §6.1 and the audit-log subscriber ship unprompted.
 - **Cache invalidation** — [`cache-invalidation.md`](cache-invalidation.md). State transitions via `WorkflowStateService.Save` go through the domain service and invalidate caches inline; raw `UPDATE EcomProducts SET ProductWorkflowStateId = …` does NOT fire the `ProductWorkflowStateChanged` notification at all (so emails won't fire either) — use the service, not raw SQL.
 
-Source-citation line numbers re-verified against `$env:DW_VAULT/dw10source/`.
+Source-citation line numbers re-verified against a local clone of the DW10 source.

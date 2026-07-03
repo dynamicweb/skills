@@ -10,7 +10,7 @@ You are in online mode when the engagement hands you a site URL (`https://<host>
 
 | Canonical step (local) | Online mode |
 |---|---|
-| setup-checks (SDK, SQL Express, vault, MSDTC) | Skip — nothing to install. The vault is still useful read-only if present (see "dw10source as binder disambiguator" below). |
+| setup-checks (SDK, SQL Express, MSDTC) | Skip — nothing to install. A local DW10 source clone, if present, is still useful read-only (see "dw10source as binder disambiguator" below). |
 | scaffold (`dotnet new dw10-suite`) | Skip. The per-demo folder still gets created locally for `CUSTOMISATIONS.md`, `customer-context/`, `extracts/`, `scripts/`, screenshots. |
 | MCP wiring + TLS bypass | Replaced by the **probe** below. No TLS bypass needed (real certificates). |
 | Browser MCP install | Unchanged — Playwright is still the verification surface. |
@@ -38,7 +38,7 @@ The Management API hits the same DW domain services as MCP and the admin UI, so 
 Some commands also mirror a property at BOTH the command level and inside `Model` (e.g. `VariantCombinationCreate`); when a payload bounces with "value is required" for a field you sent, mirror it into/out of `Model`.
 
 ### dw10source as binder disambiguator
-When a payload shape isn't obvious from the OpenAPI spec, read the command class in the `dw10source` vault slot (`Dynamicweb.*.UI/Commands/**/<Name>Command.cs`). Reading the source resolved every binder mystery in the validation build (SelectedImage `Id`, the create/update fork, the variant wizard).
+When a payload shape isn't obvious from the OpenAPI spec, read the command class in a local clone of the DW10 source (location per machine — ask/discover, never hardcode): `Dynamicweb.*.UI/Commands/**/<Name>Command.cs`. Reading the source resolved every binder mystery in the validation build (SelectedImage `Id`, the create/update fork, the variant wizard).
 
 ### File upload (online provisioning)
 `POST /Admin/Api/Upload`, multipart form: field `path` = **relative** directory (no leading slash — leading-slash paths are rejected as "outside allowed root"), repeated `files` fields for the payload. The target directory must already exist physically. **`DirectorySave` is rename-only** (returns ok, creates nothing) — create folders via `DirectoryCopy` of any small existing folder to the new path, then `DirectoryEmpty` on it.
