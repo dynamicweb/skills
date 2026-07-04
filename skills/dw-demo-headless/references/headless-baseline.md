@@ -63,9 +63,12 @@ baseline/headless/2.3/
 
 `_sql/` row files are **not hand-authored** — a serialize pass captures them from the live host, the
 same way the Swift baseline does. A demo can run headless as an **additional leg on top of the
-swift/2.3 catalog** in the same DB (shared-catalog): the headless deploy/seed manifests list only
-`Content` entries, so the `Ecom*` catalog comes from the Swift leg and the headless deserialize never
-touches it. That is the low-friction path until the headless package captures its own `_sql`.
+Swift leg's catalog** in the same DB (shared-catalog): the headless deploy/seed manifests list only
+`Content` entries, so the `Ecom*` catalog comes from whatever the Swift leg's DB holds and the
+headless deserialize never touches it. Note the Swift baseline is scaffolding-only — it ships no
+sample catalog — so "the Swift leg's catalog" means the **per-demo catalog authored** on that leg
+(via `dw-demo-pim`), not baseline-supplied rows. That is the low-friction path until the headless
+package captures its own `_sql`.
 
 ## 3. The `Headless_*` item-type layer
 
