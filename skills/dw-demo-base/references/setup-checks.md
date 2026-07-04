@@ -7,7 +7,7 @@
 - [3. Discovery table — read these from project files (the discover-from-project-files rule)](#3-discovery-table--read-these-from-project-files-the-discover-from-project-files-rule)
 - [4. Dual-set env-var propagation pattern — User-scope env-var doesn't propagate](#4-dual-set-env-var-propagation-pattern--user-scope-env-var-doesnt-propagate)
 
-Verification logic lives as fenced PowerShell inside this Markdown reference. Use it to verify, before touching any per-demo work: the `NODE_TLS_REJECT_UNAUTHORIZED` env var, the `gh` CLI (present + authenticated, for release downloads), a writable `<demo-root>\baselines\` folder, and the demo's DW10 + Swift versions prompt — owned here — plus the platform install prerequisites (.NET 10 SDK, `Dynamicweb.ProjectTemplates`, SQL Express, MSDTC), whose per-check detail is owned by [`foundational/setup-install.md`](foundational/setup-install.md).
+Verification logic lives as fenced PowerShell inside this Markdown reference. Use it to verify, before touching any per-demo work: the `NODE_TLS_REJECT_UNAUTHORIZED` env var, `git` plus the `gh` CLI (present + authenticated, for cloning the distribution repos), a writable `<demo-root>\baselines\` folder, and the demo's DW10 + Swift versions prompt — owned here — plus the platform install prerequisites (.NET 10 SDK, `Dynamicweb.ProjectTemplates`, SQL Express, MSDTC), whose per-check detail is owned by [`foundational/setup-install.md`](foundational/setup-install.md).
 
 **Posture:** verify + opt-in fix.
 
@@ -25,12 +25,13 @@ dotnet --list-sdks | Select-String '^10\.'        # .NET 10 SDK present (host ta
 dotnet new list | Select-String 'dw10-suite'       # expect "DynamicWeb 10 Suite Project Template" or similar
 Get-Service "MSSQL`$SQLEXPRESS" | Select-Object Name, Status
 [Environment]::GetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED","User")
-gh auth status                                     # gh CLI installed AND authenticated (release downloads)
+git --version                                      # git present (clones the distribution repos)
+gh auth status                                     # gh CLI installed AND authenticated (private-repo clone over HTTPS)
 ```
 
 Note the backtick on `MSSQL`$SQLEXPRESS` — `$SQLEXPRESS` is a PowerShell special token unless escaped.
 
-The first three lines are the platform install prerequisites — if any is red, work the per-check sections in [`foundational/setup-install.md`](foundational/setup-install.md) §1 (and §4 for MSDTC). The last two are demo-specific, owned below (the TLS env var and the `gh` CLI). The DW10 + Swift versions prompt and the writable-`baselines\` check are also owned here.
+The first three lines are the platform install prerequisites — if any is red, work the per-check sections in [`foundational/setup-install.md`](foundational/setup-install.md) §1 (and §4 for MSDTC). The last three are demo-specific, owned below (the TLS env var, `git`, and the `gh` CLI). The DW10 + Swift versions prompt and the writable-`baselines\` check are also owned here.
 
 ---
 
@@ -40,7 +41,7 @@ Each check follows the same shape: **Why** → **Probe** → **Expected** → **
 
 > **Platform install prerequisites** — the per-check detail for the **.NET 10 SDK**, **`Dynamicweb.ProjectTemplates`**, the **SQL Express service**, and **MSDTC for cross-connection TransactionScope** (with the `enable-msdtc.ps1` admin script) is owned by [`foundational/setup-install.md`](foundational/setup-install.md) §1 and §4. They are platform-generic, not demo-specific — verify them via the ritual above and fix per that reference. The MSDTC requirement pairs with the `Program.cs` `ImplicitDistributedTransactions` opt-in (`setup-install.md` §3.1); both are needed for admin operations like AreaCopy.
 
-The demo-specific checks owned here are the TLS env var, the `gh` CLI, the writable `baselines\` folder, and the versions prompt.
+The demo-specific checks owned here are the TLS env var, `git` + the `gh` CLI, the writable `baselines\` folder, and the versions prompt.
 
 ### Check: NODE_TLS_REJECT_UNAUTHORIZED env var (User scope)
 
@@ -67,24 +68,25 @@ The demo-specific checks owned here are the TLS env var, the `gh` CLI, the writa
 
 **Cross-reference:** `references/tls-bypass.md` is the long-form rationale.
 
-### Check: `gh` CLI present and authenticated
+### Check: `git` + `gh` CLI present and authenticated
 
-**Why this matters:** Demo artifacts (baseline, theme, feature-pack releases) are downloaded per-demo via `gh release download` from the ecosystem distribution repos (see the base SKILL "Versions prompt + per-demo artifact download"). If `gh` is missing or unauthenticated, the Swift deserialize and pack-activation flows cannot fetch their releases.
+**Why this matters:** Demo artifacts (baseline, theme, feature-pack) are **cloned** per-demo with `git clone` (sparse-checkout of the version/pack subtree) from the ecosystem distribution repos — there are **no releases** to download (see the base SKILL "Versions prompt + per-demo artifact clone"). `git` does the clone; `gh`, authenticated, supplies the credential helper that lets a **private** ecosystem repo clone over HTTPS. If either is missing or unauthenticated, the Swift deserialize and pack-activation flows cannot fetch their sources.
 
 **Probe:**
 
 ```powershell
+git --version         # git installed (clones the distribution repos)
 gh --version          # gh CLI installed
 gh auth status        # authenticated to github.com (non-zero exit / "not logged in" = fix below)
 ```
 
-**Expected:** `gh` prints a version, and `gh auth status` reports a logged-in account with repo read scope.
+**Expected:** `git` and `gh` both print a version, and `gh auth status` reports a logged-in account with repo read scope.
 
-**Install-grade fix (print + link):** If `gh` is absent, print `winget install --id GitHub.cli` (or link https://cli.github.com/) and let the user install. If installed but not authenticated, have the user run `gh auth login` in their own shell — never script a credential flow.
+**Install-grade fix (print + link):** If `git` is absent, print `winget install --id Git.Git` (or link https://git-scm.com/). If `gh` is absent, print `winget install --id GitHub.cli` (or link https://cli.github.com/) and let the user install. If `gh` is installed but not authenticated, have the user run `gh auth login` in their own shell (`gh auth setup-git` wires it as the git credential helper) — never script a credential flow.
 
 ### Check: `<demo-root>\baselines\` folder is writable
 
-**Why this matters:** Every downloaded artifact lands under the demo's own `baselines\` folder. A read-only or non-existent parent path makes the first `gh release download` / `Expand-Archive` fail.
+**Why this matters:** Every cloned artifact lands under the demo's own `baselines\` folder. A read-only or non-existent parent path makes the first `git clone` fail.
 
 **Probe:**
 
@@ -101,11 +103,11 @@ Set-Content -Path $probe -Value "ok"; Remove-Item $probe   # throws if not writa
 
 ### Check: Versions prompt (DW10 + Swift)
 
-**Why this matters:** The version answers drive the baseline/theme release-tag resolution, the Swift design-package clone tag (`v<version>.0`), and pack compatibility checks. Ask **before** downloading anything. Note: the user answers a *minor* version; release tags carry the patch digit (`swift/2.3.1`) — resolve the latest patch for the minor per the "Tag resolution" snippet in `dw-demo-base/SKILL.md` and record the resolved tag in `CUSTOMISATIONS.md`.
+**Why this matters:** The version answers select which baseline **package dir** (`packages/swift/<version>`) the demo clones from `main`, drive the Swift design-package clone tag (`v<version>.0`), and pack compatibility checks. Ask **before** cloning anything. Note: the distribution repos ship **no release tags** — the Swift version picks a directory in `main`, and the reproducibility pin is the **commit SHA** cloned, recorded in `CUSTOMISATIONS.md`.
 
 **Probe:** conversational — ask the user via `AskUserQuestion`:
 
-> "Which **DW10 platform version** does this demo target, and which **Swift version** (e.g. `2.3`)? Both get recorded in `CUSTOMISATIONS.md` for reproducibility and select which release tags to download."
+> "Which **DW10 platform version** does this demo target, and which **Swift version** (e.g. `2.3`)? Both get recorded in `CUSTOMISATIONS.md` for reproducibility and select which baseline package dir (`packages/swift/<version>`) to clone from `main`."
 
 **Expected:** two values captured in conversation state and written to the demo's `CUSTOMISATIONS.md`. No default — never guess a version.
 

@@ -184,7 +184,7 @@ Three signals:
 
 ### How baselines roll
 
-Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release, the baseline gets re-serialized from a fresh Swift install and published as a new release in the baseline distribution repo (`justdynamics/Truvio.Commerce.Serializer.Baselines`). The downloaded baseline's release tag / version is the stamp; cross-check it against the demo's host DW10 version when triaging schema-drift warnings (the baseline-drift self-diagnosis rule).
+Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release, the baseline gets re-serialized from a fresh Swift install and committed to `main` of the baseline distribution repo (`justdynamics/Truvio.Commerce.Serializer.Baselines`), under `packages/swift/<version>/`. The distribution repo ships **no release tags** — the demo pins the exact **commit SHA** it cloned. That SHA (plus the version dir) is the stamp; cross-check it against the demo's host DW10 version when triaging schema-drift warnings (the baseline-drift self-diagnosis rule).
 
 ## Cross-references
 

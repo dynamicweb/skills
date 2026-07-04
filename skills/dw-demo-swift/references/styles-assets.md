@@ -10,23 +10,22 @@ Vendor-generic Swift Style-asset knowledge — the four `wwwroot/Files/System/St
 
 Read that section for the asset format and wiring. This file carries the demo-infrastructure that sits on top of it: **where the reference style assets come from** and **how to stage them for a new demo**.
 
-## Reference source: the DemoThemes release, downloaded per-demo
+## Reference source: the DemoThemes repo, cloned per-demo
 
-Canonical Style-asset examples ship as release zips in the **DemoThemes** distribution repo
-`https://github.com/justdynamics/Truvio.Commerce.DemoThemes` (per-theme zips; tags are full semver
-like `swift/2.3.0` — resolve the latest patch for the demo's Swift minor per the "Tag resolution"
-snippet in `dw-demo-base/SKILL.md`). Download the theme for the demo's Swift version into the
-demo's own `<demo-root>\baselines\themes\` folder (the versions prompt in `dw-demo-base` captured
-the Swift version). Themes are pure disk-overlay (styles + CSS + assets) and carry no serialized DB content.
+Canonical Style-asset examples live on the `main` branch of the **DemoThemes** distribution repo
+`https://github.com/justdynamics/Truvio.Commerce.DemoThemes`. Like the baseline and pack repos, it is
+consumed by **cloning `main`** — there are **no release tags or zips**; the pin is the cloned commit
+SHA, recorded in `CUSTOMISATIONS.md`. Clone the themes into the demo's own
+`<demo-root>\baselines\themes\` folder. Themes are pure disk-overlay (styles + CSS + assets) and carry
+no serialized DB content, so the demo's Swift version (from the versions prompt) is only a
+compatibility check here, not a tag selector.
 
 ```powershell
 $demoRoot = (Get-Location).Path
 $themes   = "$demoRoot\baselines\themes"
-$swiftVer = "2.3.0"                     # the demo's Swift version (from the versions prompt)
-New-Item -ItemType Directory -Path $themes -Force | Out-Null
-gh release download "swift/$swiftVer" --repo justdynamics/Truvio.Commerce.DemoThemes `
-   --pattern '*.zip' --dir $themes      # per-theme zips for this Swift version
-Get-ChildItem "$themes\*.zip" | ForEach-Object { Expand-Archive $_.FullName -DestinationPath $themes -Force; Remove-Item $_.FullName }
+git clone --depth 1 "https://github.com/justdynamics/Truvio.Commerce.DemoThemes" $themes
+$sha = git -C $themes rev-parse HEAD    # record this SHA in CUSTOMISATIONS.md — the theme pin
+Write-Host "Cloned DemoThemes at $sha — record it in CUSTOMISATIONS.md"
 ```
 
 A downloaded theme unpacks with the four Style-asset directories at its root:

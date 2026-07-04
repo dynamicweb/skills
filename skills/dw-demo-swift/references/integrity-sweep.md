@@ -268,6 +268,6 @@ pack covers URL substring scans, hard-coded slugs, category-name branching, mast
 
 When all seven checks pass, deserialize is verified complete. The skill may now declare "baseline restored" to the user.
 
-Log the result + baseline name + timestamp in the per-demo `CUSTOMISATIONS.md` as a deserialize event row, and record the baseline's release tag/commit there too. This is structural — every deserialize is reproducible by re-running this flow against the same baseline name + release tag recorded in `CUSTOMISATIONS.md`.
+Log the result + baseline name + timestamp in the per-demo `CUSTOMISATIONS.md` as a deserialize event row, and record the baseline's cloned commit SHA there too. This is structural — every deserialize is reproducible by re-running this flow against the same baseline name + commit SHA recorded in `CUSTOMISATIONS.md` (the distribution repo ships no release tags; the SHA is the pin).
 
 
