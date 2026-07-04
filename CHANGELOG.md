@@ -3,6 +3,35 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.2.0]
+
+### Changed
+- **Distribution is `git clone`, not releases.** The Baselines
+  (`justdynamics/Truvio.Commerce.Serializer.Baselines`) and FeaturePacks
+  (`justdynamics/Truvio.Commerce.FeaturePacks`) repos are now consumed by **cloning `main`** (or a
+  sparse-checkout of `packages/swift/2.3` / `packs/<name>/`) — all release tags and zips were deleted,
+  so `gh release download` and the `swift/<version>` / `packs/<name>/<version>` tag resolution no
+  longer work. The reproducibility pin is the **commit SHA** the demo cloned, recorded in
+  `CUSTOMISATIONS.md`. Retired the 4.0.1 "Tag resolution / latest-patch" snippet and the `gh release
+  download` recipes; setup-checks now probes `git` (plus `gh` authenticated for private-repo clone
+  over HTTPS). `$env:DW_BASELINE_REPO` / `$env:DW_PACKS_REPO` remain as clone-source overrides. Folded
+  into `dw-demo-base` (`SKILL.md` "Versions prompt + per-demo artifact clone", `references/setup-checks.md`,
+  `references/serializer-reference.md`), `dw-demo-swift` (`references/deserialize-flow.md` §1/§3/§4,
+  `references/integrity-sweep.md`, `references/styles-assets.md` — DemoThemes cloned for consistency).
+- **The Swift baseline is scaffolding-only.** `packages/swift/2.3` ships framework + starter content
+  structure + starter pages and **zero sample catalog** (no EcomProducts/Groups/Prices); a `swift-2.3`
+  deserialize lands framework + pages + starter content and an **empty catalog** by design. Dropped
+  all catalog row-count expectations; the demo's catalog is authored **per-demo** via the `dw-demo-pim`
+  recipes (routed there explicitly). Retired the interim "deploy + seed-content-without-catalog fork"
+  framing. Folded into `dw-demo-swift` (`SKILL.md` Step 0 "Baseline shape", `references/deserialize-flow.md`
+  §3/§4/§9).
+- **Feature packs are catalog-self-sufficient + clone-distributed.** Each pack ships its own demo
+  products (`PACK-<NAME>-*`) and never references base-baseline catalog rows, so pack behaviors have
+  data even against the scaffolding baseline. Packs clone from the FeaturePacks repo `main` (release
+  zip/tag language retired). Documented the subscription-orders disabled `Place recurring orders`
+  scheduled task and the reordering-pricing quick-order deactivate→reactivate known-limitation. Folded
+  into `dw-demo-swift` `references/pack-activation.md`.
+
 ## [4.1.0]
 
 ### Added

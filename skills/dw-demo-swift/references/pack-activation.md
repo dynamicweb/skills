@@ -4,8 +4,8 @@
 
 - [1. What a feature pack is](#1-what-a-feature-pack-is)
 - [2. Prerequisites](#2-prerequisites)
-- [3. Pack zip anatomy](#3-pack-zip-anatomy)
-- [4. Step 1 — Download and unzip the pack release](#4-step-1--download-and-unzip-the-pack-release)
+- [3. Pack folder anatomy](#3-pack-folder-anatomy)
+- [4. Step 1 — Clone the pack from the FeaturePacks repo](#4-step-1--clone-the-pack-from-the-featurepacks-repo)
 - [5. Step 2 — Read pack.json](#5-step-2--read-packjson)
 - [6. Step 3 — Source-drop the .cs and build the host](#6-step-3--source-drop-the-cs-and-build-the-host)
 - [7. Step 4 — Copy disk overlays](#7-step-4--copy-disk-overlays)
@@ -13,6 +13,7 @@
 - [9. Step 6 — Restart and verify](#9-step-6--restart-and-verify)
 - [10. Activation model (why this order)](#10-activation-model-why-this-order)
 - [11. Removing a pack](#11-removing-a-pack)
+- [12. Known per-pack notes](#12-known-per-pack-notes)
 
 > Install a feature pack into a demo host that already has the `swift-2.3` baseline deserialized
 > (per [`deserialize-flow.md`](deserialize-flow.md)). A pack layers a self-contained capability —
@@ -25,36 +26,44 @@
 
 ## 1. What a feature pack is
 
-A pack is a released `.zip` (release tag `packs/<name>/<version>`) from the feature-pack distribution
-repo your team designates. It carries three kinds of thing, each landing in a different place on the host:
+A pack is a subtree (`packs/<name>/`) on the `main` branch of the feature-pack distribution repo
+your team designates — consumed by **cloning `main`** (or a sparse-checkout of that one pack folder).
+The repo ships **no release tags or zips**; the pin is the cloned commit SHA, recorded in
+`CUSTOMISATIONS.md`. A pack carries three kinds of thing, each landing in a different place on the host:
 
 - **`.cs` source** — compiles INTO the demo host's own build (source-drop, never a separate DLL).
 - **Disk overlays** — Razor templates and item-type XML that live on disk under `wwwroot\Files`.
 - **A baseline fragment** — serializer YAML (data only, zero custom code) that deserializes ON TOP
   of the base baseline, adding the pack's rows and pages.
 
-A pack never edits base baseline YAML. If a change would require rewriting base content, it is a
-baseline improvement, not a pack.
+**Packs are catalog-self-sufficient.** Each pack ships its **own demo products** (keyed `PACK-<NAME>-*`)
+in its baseline fragment, and **never references base-baseline catalog rows** — because the
+scaffolding-only `swift-2.3` baseline ships **no sample catalog** (see
+[`deserialize-flow.md`](deserialize-flow.md) §3), a pack that leaned on baseline products would have
+no data to act on. So a pack's behaviors have their own products even against an empty-catalog
+baseline. A pack never edits base baseline YAML. If a change would require rewriting base content, it
+is a baseline improvement, not a pack.
 
 ## 2. Prerequisites
 
 - A running demo host (`Dynamicweb.Host.Suite`) with the `swift-2.3` baseline already deserialized
-  and green per [`deserialize-flow.md`](deserialize-flow.md) — the fragment's FK targets (products,
-  areas, framework rows) must already exist.
+  and green per [`deserialize-flow.md`](deserialize-flow.md) — the fragment's FK targets (areas and
+  framework rows) must already exist. The fragment ships its own products, so it does **not** depend on
+  base catalog rows (there are none on the scaffolding-only baseline).
 - The Serializer installed in the host (same one-time install the deserialize flow depends on).
 - A Management API bearer token captured in the current conversation (format `CLAUDE.<hex>`; keep it
   in conversation state, never write it to a file).
-- The pack release downloaded from the feature-pack distribution repo
-  (`justdynamics/Truvio.Commerce.FeaturePacks` by default; overridable via `$env:DW_PACKS_REPO`) and
-  unpacked into the demo's own `baselines\feature-packs\<name>\<version>\` folder, `pack.json` at the
-  folder root — see §4, which downloads it on first run.
+- The pack **cloned** from the feature-pack distribution repo's `main` branch
+  (`justdynamics/Truvio.Commerce.FeaturePacks` by default; overridable via `$env:DW_PACKS_REPO`) into
+  the demo's own `baselines\feature-packs\<name>\` folder, `pack.json` at the folder root — see §4,
+  which clones it on first run. The repo ships no releases; the pin is the cloned commit SHA.
 
-## 3. Pack zip anatomy
+## 3. Pack folder anatomy
 
-The release `.zip` unpacks with everything at the root (no wrapper folder):
+The pack subtree (`packs/<name>/` on `main`) has everything at its root (no wrapper folder):
 
 ```
-<pack-name>/                       # zip root
+<pack-name>/                       # packs/<name>/ on main
 ├── pack.json                      # manifest — pack identity, modes, ledger, config rows
 ├── README.md                      # human notes
 ├── src/                           # .cs source ONLY (no .csproj, no .dll)
@@ -74,32 +83,32 @@ The release `.zip` unpacks with everything at the root (no wrapper folder):
 
 `baseline-fragment/` ships **only** the mode trees named in `pack.json` `fragmentModes`; each mode
 tree carries its own hand-authored manifest. A pack that ships no code has an empty `src/`; a pack
-that ships no overlays still keeps the `templates/` and `itemtypes/` folders present.
+that ships no overlays still keeps the `templates/` and `itemtypes/` folders present. A pack's own
+demo products live under `baseline-fragment/seed/_sql/EcomProducts/` keyed `PACK-<NAME>-*` — the pack
+is catalog-self-sufficient (§1), so its behaviors have data even against the empty-catalog baseline.
 
-## 4. Step 1 — Download and unzip the pack release
+## 4. Step 1 — Clone the pack from the FeaturePacks repo
 
-Download the pack's release `.zip` from the feature-pack distribution repo
-(`justdynamics/Truvio.Commerce.FeaturePacks` by default) and expand it into the demo's own
-`baselines\feature-packs\` folder. No hardcoded machine-wide literals — everything lands under the
-demo root.
+Clone the feature-pack distribution repo's `main` branch (sparse-checkout the one pack folder) into
+the demo's own `baselines\feature-packs\` folder — the repo ships **no releases**, so there is nothing
+to download or unzip. No hardcoded machine-wide literals — everything lands under the demo root.
 
 ```powershell
 $packName = "reordering-pricing"    # the pack you are installing
-$packVer  = "1.0.0"
 $demoRoot = (Get-Location).Path     # the demo project root
-$packDir  = "$demoRoot\baselines\feature-packs\$packName\$packVer"
+$packDir  = "$demoRoot\baselines\feature-packs\$packName"
 if (-not (Test-Path "$packDir\pack.json")) {
-  # Download the pack release (tag packs/<name>/<version>) from the feature-pack
-  # distribution repo, then unzip so pack.json sits at the folder root.
+  # Clone main and sparse-checkout just packs/<name>/, so pack.json sits at the folder root.
   # Defaults to the ecosystem repo; override per machine with $env:DW_PACKS_REPO (owner/name).
   $repo = if ($env:DW_PACKS_REPO) { $env:DW_PACKS_REPO } else { "justdynamics/Truvio.Commerce.FeaturePacks" }
+  $src  = "$demoRoot\baselines\feature-packs\_src"
+  git clone --depth 1 --filter=blob:none --sparse "https://github.com/$repo" $src
+  git -C $src sparse-checkout set "packs/$packName"
+  $sha = git -C $src rev-parse HEAD                 # record this SHA in CUSTOMISATIONS.md — the pin
   New-Item -ItemType Directory -Path $packDir -Force | Out-Null
-  gh release download "packs/$packName/$packVer" --repo $repo --pattern '*.zip' --dir $packDir
-  Expand-Archive -Path "$packDir\*.zip" -DestinationPath $packDir -Force
-  Remove-Item "$packDir\*.zip"
+  Copy-Item -Recurse "$src\packs\$packName\*" "$packDir\" -Force
+  Write-Host "Cloned pack '$packName' at $sha — record it in CUSTOMISATIONS.md"
 }
-# If you were handed a release .zip directly instead, expand it the same way:
-# Expand-Archive -Path <pack>.zip -DestinationPath $packDir
 ```
 
 ## 5. Step 2 — Read pack.json
@@ -159,12 +168,14 @@ The fragment is serializer YAML that lands the pack's data. Stage each mode tree
 > **STAGE THE FRAGMENT ISOLATED — say it loudly.** A `POST /Admin/Api/SerializerDeserialize?mode=<m>`
 > deserializes **everything in `SerializeRoot/<m>/`**, not just the files you copied in. If the base
 > baseline's trees are still sitting in `SerializeRoot/deploy/` and `SerializeRoot/seed/` from the
-> §"deserialize-flow.md" run, dropping the fragment alongside them **re-deserializes the base seed too** —
-> and on a host you have since **re-contented** (purged the sample catalog, authored brand data), the seed
-> pass **resurrects the entire purged sample catalog** on top of your brand content. The fragment install
-> silently turns into a base-baseline re-import. **Park or clear the base trees first, stage the fragment
-> alone, deserialize, then restore the base trees** (or just delete the staged fragment). Never POST a
-> deserialize against a `SerializeRoot` whose contents you have not just verified are fragment-only.
+> §"deserialize-flow.md" run, dropping the fragment alongside them **re-deserializes the base too** —
+> and the base `deploy` pass is **source-wins**, so it re-applies the baseline's framework rows and
+> starter content **on top of whatever you have since authored** (brand areas, edited pages), silently
+> reverting your per-demo work. The fragment install turns into a base-baseline re-import. (The base
+> ships no sample catalog, so nothing "resurrects" catalog-side — the damage is to your authored
+> framework/content.) **Park or clear the base trees first, stage the fragment alone, deserialize, then
+> restore the base trees** (or just delete the staged fragment). Never POST a deserialize against a
+> `SerializeRoot` whose contents you have not just verified are fragment-only.
 
 ```powershell
 # Bind the running host's HTTPS port and a Management API token BEFORE the loop.
@@ -225,9 +236,10 @@ loads:
 
 - **Code compiles into the host.** There is no separate pack assembly; the `.cs` becomes part of the
   host build. That is why the host must rebuild before the pack's types can run.
-- **The fragment is additive and lands last.** Its FK targets (base products, areas, framework rows)
-  must already exist, so the base baseline deserializes first and the fragment strictly after. The
-  fragment never rewrites base YAML — it only adds its own keyed rows and pages.
+- **The fragment is additive and lands last.** Its FK targets (areas, framework rows) must already
+  exist, so the base baseline deserializes first and the fragment strictly after. The fragment ships
+  its own products (base catalog is empty), and never rewrites base YAML — it only adds its own keyed
+  rows and pages.
 - **Overlays are disk truth.** Templates and item-type XML resolve from disk per request, so they must
   be on disk before the frontend renders the pack's pages.
 
@@ -238,3 +250,16 @@ delete the overlay files you copied into `wwwroot\Files`, delete the fragment ro
 fragment inserted (its `_sql` filenames are the row keys; its `_content` pages key by page unique id),
 rebuild the host, and restart. Because the fragment only ever added its own keyed rows, a keyed delete
 returns the host to its pre-pack state without touching base content.
+
+## 12. Known per-pack notes
+
+Pack-specific behaviors and known limitations to expect after install:
+
+- **subscription-orders** ships its own **disabled** `Place recurring orders` scheduled task in its
+  fragment. It arrives disabled deliberately — enable it only when the demo actually exercises
+  recurring-order generation, so an idle demo host never fires it. Confirm the task exists (a
+  `configRows` probe) and leave it disabled unless the storyline needs it.
+- **reordering-pricing** carries a documented **quick-order known-limitation**: after install the
+  quick-order surface may need a **deactivate → reactivate** cycle (toggle it off, then on) before it
+  picks up the pack's pricing behavior. This is expected; note it in the demo's `CUSTOMISATIONS.md`
+  and cycle the surface as part of the post-install verify (§9) rather than treating it as a failure.
