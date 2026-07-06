@@ -14,6 +14,18 @@ Customisations governance for the per-demo project. Two artefacts: the per-demo 
 
 This file is the long-form contract for **the customisations-ledger preflight**. The orchestrator's summary -- including the canonical preflight prompt -- lives in `SKILL.md` "Two guarded-writes"; see also the sister contract `references/customer-context.md` (the customer-context read-only contract) which shares the *same mental model* -- write-time preflight on a path glob -- with a single hard-abort branch instead of three.
 
+## Never put user passwords (or any secret) in the ledger
+
+`CUSTOMISATIONS.md` is a **git-tracked** file — it must never carry plaintext **user passwords**
+(buyer / CSR / admin persona logins), API keys, or bearer tokens. Keep demo login passwords in the
+**gitignored** `notes/credentials.local.md` only, and reference them from the ledger **by pointer**,
+never by value — e.g. a row reason reading `buyer/CSR logins: see notes/credentials.local.md`, not the
+password itself. (`notes/` is gitignored by construction in a scaffolded demo — same rule as
+[`iterate-plugin.md`](iterate-plugin.md) "What to scrub".) This mirrors the bearer-token storage
+contract in [`mcp-setup.md`](mcp-setup.md) Step 6 (secrets live in per-demo memory / gitignored notes;
+pointers live in tracked files) and the cheat-sheet customer-safety rule. A plaintext password found in
+the tracked ledger is an audit finding — move it to `notes/credentials.local.md` and leave a pointer.
+
 ## What the rule *actually* forbids vs. doesn't forbid
 
 The rule forbids backend C# code under specific globs:
