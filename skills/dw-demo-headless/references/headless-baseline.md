@@ -3,7 +3,7 @@
 ## Contents
 
 - [1. A headless baseline is its own product line](#1-a-headless-baseline-is-its-own-product-line)
-- [2. Package shape (deploy/seed, not a flat content folder)](#2-package-shape-deployseed-not-a-flat-content-folder)
+- [2. Layer shape (replace/merge, not a flat content folder)](#2-layer-shape-replacemerge-not-a-flat-content-folder)
 - [3. The `Headless_*` item-type layer](#3-the-headless_-item-type-layer)
 - [4. Item-instance id floor band](#4-item-instance-id-floor-band)
 - [5. EN/NL sibling-area parity](#5-ennl-sibling-area-parity)
@@ -36,36 +36,36 @@ not port Swift paragraph item types: they are presentation-coupled (template/CSS
 icon fields bound to Razor), and lifting them reintroduces exactly the coupling headless exists to
 avoid.
 
-## 2. Package shape (deploy/seed, not a flat content folder)
+## 2. Layer shape (replace/merge, not a flat content folder)
 
-The serializer keys its merge behaviour off the **mode**, so a headless baseline splits content into
-`deploy/` (source-wins) and `seed/` (field-level merge), each with its own `schemaVersion: 2`
+The serializer keys its merge behaviour off the **mode**, so the headless **surface layer** splits content into
+`replace/` (source-wins) and `merge/` (field-level merge), each with its own `schemaVersion: 2`
 manifest, `_content/` (page trees), and `_sql/` (commerce rows). The disk-overlay surfaces
 (`itemtypes/`, `repositories/`) sit alongside:
 
 ```
-baseline/headless/2.3/
+layers/headless/                     # kind surface, in the Distribution clone
 ├─ BASELINE.md
 ├─ config/headless-2.3.json          # serializer predicate list (Content + SqlTable)
 ├─ itemtypes/Headless_*.json          # D-agnostic item-type defs (disk-overlay, zero code)
 ├─ repositories/Headless/             # product search surface (disk-overlay, zero code)
 │  ├─ Products.index · Products.query · Products.facets
-├─ deploy/                            # source-wins framework (nav, customer-center, area chrome)
-│  ├─ deploy-manifest.json
+├─ replace/                          # source-wins framework (nav, customer-center, area chrome)
+│  ├─ replace-manifest.json
 │  ├─ _content/Headless/ …            # EN
 │  ├─ _content/Headless Nederlands/ … # NL parity
 │  └─ _sql/                           # commerce reference tables (serialize-captured)
-└─ seed/                              # customer-owned bootstrap (home, about, catalog landing)
-   ├─ seed-manifest.json
+└─ merge/                            # customer-owned bootstrap (home, about, catalog landing)
+   ├─ merge-manifest.json
    ├─ _content/Headless/ … + _content/Headless Nederlands/ …
    └─ _sql/                           # catalog/prices (serialize-captured)
 ```
 
 `_sql/` row files are **not hand-authored** — a serialize pass captures them from the live host, the
-same way the Swift baseline does. A demo can run headless as an **additional leg on top of the
-Swift leg's catalog** in the same DB (shared-catalog): the headless deploy/seed manifests list only
+same way the base layer does. A demo can run headless as an **additional leg on top of the
+Swift leg's catalog** in the same DB (shared-catalog): the headless replace/merge manifests list only
 `Content` entries, so the `Ecom*` catalog comes from whatever the Swift leg's DB holds and the
-headless deserialize never touches it. Note the Swift baseline is scaffolding-only — it ships no
+headless deserialize never touches it. Note the base layer is scaffolding-only — it ships no
 sample catalog — so "the Swift leg's catalog" means the **per-demo catalog authored** on that leg
 (via `dw-demo-pim`), not baseline-supplied rows. That is the low-friction path until the headless
 package captures its own `_sql`.
@@ -117,7 +117,7 @@ The baseline ships an English area (`Headless`) and a Dutch layer (`Headless Ned
 the Swift precedent of paired language areas. Two facts to respect:
 
 - **The NL layer needs its own `Content` manifest entry.** A single manifest entry creates only EN;
-  the deploy/seed manifests must carry **paired** EN (`Headless`) + NL (`Headless Nederlands`)
+  the replace/merge manifests must carry **paired** EN (`Headless`) + NL (`Headless Nederlands`)
   entries or NL never lands.
 - **NL is authored as a sibling area** (`AreaMasterAreaId: 0`) for deterministic, environment-
   independent parity. Wiring it as a *true DW language layer* (a host-assigned master id, like the
@@ -171,8 +171,8 @@ The provider consumes this via `GET /dwapi/ecommerce/products/search?RepositoryN
 
 1. **Stage disk overlays before start** (§6) — item-type XML and the repository files.
 2. **Start the host.**
-3. **Deserialize `deploy/` then `seed/`** — POST `/Admin/Api/SerializerDeserialize` per mode, strict
-   mode on. If running shared-catalog, deserialize the Swift baseline's deploy+seed first so the
+3. **Deserialize `replace/` then `merge/`** — POST `/Admin/Api/SerializerDeserialize` per mode, strict
+   mode on. If running shared-catalog, deserialize the base layer's replace+merge first so the
    `Ecom*` catalog exists; the headless leg then lands its `Content` entries on top.
 4. **Full index build** — after products exist in the DB, trigger a **Full** build of the `Headless`
    repository's `Products` index and poll the index/instance status paths until it completes within
@@ -184,7 +184,7 @@ The provider consumes this via `GET /dwapi/ecommerce/products/search?RepositoryN
 
 Clean-room, shared-catalog, on the supported Swift version:
 
-- **Deserialize** — `deploy/` + `seed/` POST return HTTP 200 with zero strict-mode escalations
+- **Deserialize** — `replace/` + `merge/` POST return HTTP 200 with zero strict-mode escalations
   (requires the `Headless_*` item-type XML staged pre-start).
 - **Areas** — both `Headless` and `Headless Nederlands` area rows exist.
 - **Item rows** — rows land across `ItemType_Headless_*` tables with **no `Swift-v2_*` table touched**;

@@ -22,7 +22,7 @@
 `dynamicweb-demo-base` setup is complete:
 
 - [`../../dw-demo-base/references/setup-checks.md`](../../dw-demo-base/references/setup-checks.md) is green (NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express all probed and resolved).
-- The baseline has been **cloned** from the baseline distribution repo's `main` branch (`justdynamics/Truvio.Commerce.Serializer.Baselines` by default; overridable via `$env:DW_BASELINE_REPO`) into the demo's own `baselines\` folder (see §3 — the staging snippet clones it on first run). The repo ships **no releases**; the pin is the cloned commit SHA, recorded in `CUSTOMISATIONS.md`.
+- The `base` layer has been **checked out** from the Distribution repo (`justdynamics/Truvio.Commerce.Distribution` by default; overridable via `$env:DW_DISTRIBUTION_REPO`) at its annotated tag `layers/base/<semver>` into the demo's own `distribution\` folder (see §3 — the staging snippet clones + checks out on first run). The pin is the checked-out tag, recorded in `CUSTOMISATIONS.md`.
 - [`../../dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) produced a running `Dynamicweb.Host.Suite` (port reachable, host responds at `/admin`).
 - [`../../dw-demo-base/references/mcp-setup.md`](../../dw-demo-base/references/mcp-setup.md) verification gate passed (`claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND in-conversation `ToolSearch +dynamicweb` returns >200 tools).
 - **The DW Serializer is installed in the host** per [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Installation" section (DLL built + copied to `bin/Debug/net10.0/`, `Files/System/Serializer/Serializer.config.json` staged, host restarted). This is a one-time-per-host step.
@@ -89,42 +89,42 @@ Captured via `AskUserQuestion` in the current conversation. Format: `CLAUDE.<hex
 
 ## 3. Step 1 — Stage baseline YAML from the demo's baselines folder
 
-Baseline path resolution: every baseline path resolves under the demo's own `<demo-root>\baselines\` folder — the per-demo copy cloned from the baseline distribution repo's `main` branch (`justdynamics/Truvio.Commerce.Serializer.Baselines` by default; overridable via `$env:DW_BASELINE_REPO`). No hardcoded machine-wide literals.
+Layer path resolution: every base path resolves under the demo's own `<demo-root>\distribution\layers\base\` folder — the per-demo checkout of the Distribution repo (`justdynamics/Truvio.Commerce.Distribution` by default; overridable via `$env:DW_DISTRIBUTION_REPO`) at its `layers/base/<semver>` tag. No hardcoded machine-wide literals.
 
-**The Serializer reads from `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/<deploy|seed>/`** (joined from `outputDirectory: "Serializer"` in `Files/System/Serializer/Serializer.config.json` + `outputSubfolder` per mode). The demo's `baselines/` folder is the **cloned/staging copy only** — the deserialize endpoint never reads it. The snippet below copies `baselines\<name>\` INTO `SerializeRoot/`; that copy step is what makes the content visible. Skipping the copy (or pointing the flow at `baselines/` directly) silently no-ops — any "121 updated" you then see comes from whatever else is already in `SerializeRoot/deploy/` (typically a previous serialize roundtripping itself). Verified during a Swift2 baseline import — the original recipe pointed at `baselines/` and silently no-op'd.
+**The Serializer reads from `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/<replace|merge>/`** (joined from `outputDirectory: "Serializer"` in `Files/System/Serializer/Serializer.config.json` + `outputSubfolder` per mode). The demo's `distribution\layers\base\` folder is the **checked-out/staging copy only** — the deserialize endpoint never reads it. The snippet below copies `layers\base\` INTO `SerializeRoot/`; that copy step is what makes the content visible. Skipping the copy (or pointing the flow at `layers\base\` directly) silently no-ops — any "121 updated" you then see comes from whatever else is already in `SerializeRoot/replace/` (typically a previous serialize roundtripping itself). Verified during a Swift2 baseline import — the original recipe pointed at the source tree and silently no-op'd.
 
-**Baseline shape — scaffolding-only (swift/2.3).** The canonical `swift-2.3` baseline is a `config/deploy/seed` tree that ships the Swift **scaffolding + starter content ONLY — no sample catalog.** `deploy/` ships framework `_sql/` (EcomCountries, EcomCurrencies, EcomLanguages, EcomShops, EcomPayments, EcomShippings, EcomVatGroups, AccessUser, UrlPath, order flow/states) alongside `_content/` (the `Swift 2` + `Swift 2 Nederlands` areas, their pages, and the starter content structure); `config/swift-2.3.json` carries the predicate config. It ships **zero `EcomGroups` / `EcomProducts` / `EcomPrices`** — the `seed` tree carries **no catalog rows**. A `swift-2.3` deserialize therefore lands framework + pages + starter content and an **EMPTY catalog** — there is no "~N sample products land" count to expect. The demo's catalog is authored **per-demo** via the PIM modelling recipes ([`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md)); the whole point of the scaffolding-only baseline is that each demo tailors its own catalog rather than inheriting a pre-baked store — route catalog authoring there, do not expect the baseline to supply products. Because the framework rows ship WITH the baseline (deploy `_sql/`), a `swift-2.3` deserialize no longer requires the target DB to be pre-seeded with shops/currencies/countries the way the content-only `Swift2.2` baselines did. The area YAML still hardcodes `"AreaEcomShopId": "SHOP1"` and `"AreaEcomCountryCode": "DE"` as **string FKs**; with swift/2.3 those FKs resolve against the framework rows the deploy pass lands. **Mode-semantics warning for PIM-curated hosts:** framework rows travel in `deploy`, and `deploy` is **source-wins** — the baseline's SHOP1/DE/EUR/LANG1 rows UPDATE matching rows already in the target. A host with hand-curated framework rows is therefore NOT automatically preserved: review (and if needed trim) `deploy/_sql/` against the target's curated framework data before deserializing.
+**Base-layer shape — scaffolding-only (swift/2.3).** The `base` layer is a `config/replace/merge` tree that ships the Swift **scaffolding + starter content ONLY — no sample catalog.** `replace/` ships framework `_sql/` (EcomCountries, EcomCurrencies, EcomLanguages, EcomShops, EcomPayments, EcomShippings, EcomVatGroups, AccessUser, UrlPath, order flow/states) alongside `_content/` (the `Swift 2` + `Swift 2 Nederlands` areas, their pages, and the starter content structure); `config/swift-2.3.json` carries the predicate config. It ships **zero `EcomGroups` / `EcomProducts` / `EcomPrices`** — the `merge` tree carries **no catalog rows**. A `base` deserialize therefore lands framework + pages + starter content and an **EMPTY catalog** — there is no "~N sample products land" count to expect. The demo's catalog comes from a **separate layer/edition** — stage the `fixture-catalog` layer (or check out the `swift-demo` edition) for the ready 20-product demo set — or is authored **per-demo** via the PIM modelling recipes ([`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md)); the whole point of the scaffolding-only base is that each demo tailors its own catalog rather than inheriting a pre-baked store — route catalog authoring there, do not expect the base layer to supply products. Because the framework rows ship WITH the base layer (`replace/_sql/`), a `base` deserialize no longer requires the target DB to be pre-seeded with shops/currencies/countries the way the content-only `Swift2.2` baselines did. The area YAML still hardcodes `"AreaEcomShopId": "SHOP1"` and `"AreaEcomCountryCode": "DE"` as **string FKs**; with swift/2.3 those FKs resolve against the framework rows the replace pass lands. **Mode-semantics warning for PIM-curated hosts:** framework rows travel in `replace`, and `replace` is **source-wins** — the base layer's SHOP1/DE/EUR/LANG1 rows UPDATE matching rows already in the target. A host with hand-curated framework rows is therefore NOT automatically preserved: review (and if needed trim) `replace/_sql/` against the target's curated framework data before deserializing.
 
 ```powershell
-$baseline = "swift-2.3"  # the canonical swift/2.3 baseline; per-demo "<demo>-base" baselines live alongside it under baselines\
 $demoRoot = (Get-Location).Path                    # the demo project root
-$slot     = "$demoRoot\baselines\$baseline"        # the demo's own cloned copy
-if (-not (Test-Path "$slot\deploy\_content")) {
-  # Clone the baseline distribution repo's main branch (no releases exist) and
-  # sparse-checkout just the version dir, so config/deploy/seed sit at $slot root.
-  # Defaults to the ecosystem repo; override per machine with $env:DW_BASELINE_REPO (owner/name).
-  $repo = if ($env:DW_BASELINE_REPO) { $env:DW_BASELINE_REPO } else { "justdynamics/Truvio.Commerce.Serializer.Baselines" }
-  $src  = "$demoRoot\baselines\_src"
-  git clone --depth 1 --filter=blob:none --sparse "https://github.com/$repo" $src
-  git -C $src sparse-checkout set "packages/swift/2.3"
-  $sha = git -C $src rev-parse HEAD                 # record this SHA in CUSTOMISATIONS.md — the reproducibility pin
-  New-Item -ItemType Directory -Path $slot -Force | Out-Null
-  Copy-Item -Recurse "$src\packages\swift\2.3\*" "$slot\" -Force
-  Write-Host "Cloned baseline at $sha — record it in CUSTOMISATIONS.md"
+$dist     = "$demoRoot\distribution"               # the demo's own Distribution checkout
+$slot     = "$dist\layers\base"                    # the base layer working tree
+if (-not (Test-Path "$slot\replace\_content")) {
+  # Clone the single Distribution repo and check out the base layer's annotated tag,
+  # so config/replace/merge sit at $slot root. Defaults to the Distribution repo;
+  # override per machine with $env:DW_DISTRIBUTION_REPO (owner/name).
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
+  git clone "https://github.com/$repo" $dist
+  $tag = git -C $dist tag --list "layers/base/*" |   # latest patch for the target minor (see base SKILL)
+    Where-Object { $_ -like "layers/base/2.3.*" } |
+    Sort-Object { [version]($_ -replace '^layers/base/','') } -Descending | Select-Object -First 1
+  git -C $dist checkout $tag                          # the whole snapshot; base + fixture-catalog + ... all present
+  Write-Host "Checked out $tag — record it in CUSTOMISATIONS.md (the reproducibility pin)"
 }
 $serializeRoot = "Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot"
-# swift/2.3 is scaffolding-only: deploy/ carries framework _sql/ + content; seed/ ships NO catalog rows.
-# Stage whichever mode trees the baseline ships (each ships _content/ + _sql/).
-foreach ($mode in 'deploy','seed') {
+# base is scaffolding-only: replace/ carries framework _sql/ + content; merge/ ships NO catalog rows.
+# Stage whichever mode trees the layer ships (each ships _content/ + _sql/).
+foreach ($mode in 'replace','merge') {
   if (Test-Path "$slot\$mode") {
     New-Item -ItemType Directory -Path "$serializeRoot/$mode" -Force | Out-Null
     Copy-Item -Recurse "$slot\$mode\*" "$serializeRoot/$mode/" -Force
   }
 }
-# The baseline lands framework + pages + starter content and an EMPTY catalog — author the catalog per-demo via dw-demo-pim.
+# The base layer lands framework + pages + starter content and an EMPTY catalog — stage the
+# fixture-catalog layer (or the swift-demo edition), or author the catalog per-demo via dw-demo-pim.
 ```
 
-**Pre-import: re-serialize before merging baseline YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/SerializerSerialize` FIRST so the deploy folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
+**Pre-import: re-serialize before merging baseline YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/SerializerSerialize` FIRST so the replace folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
 
 **Predicate config: each `_content/<AreaName>/` folder needs a matching predicate.** Add a content predicate to `Files/System/Serializer/Serializer.config.json` per area you want imported:
 ```json
@@ -140,32 +140,32 @@ foreach ($mode in 'deploy','seed') {
 ```
 **`areaId` must be > 0** — the validator rejects `0` with `"deploy.predicates[N] is missing required field 'areaId' (must be > 0)"`. For NEW areas not yet in target (e.g. importing Swift2.2's "Swift 2" area onto a host that doesn't have it), pre-create a stub area first via `POST /admin/api/AreaSave` with `Id: 0, Name: "<area name>", ItemType: "Swift-v2_Master", LayoutTemplate: "Designs/Swift-v2/Swift-v2_Page.cshtml"` (and other Swift defaults), capture the assigned numeric id from the response, set the predicate's `areaId` to it, then deserialize. The deserialize will populate the area's pages + paragraphs from the YAML; GUID identity ensures the YAML's `areaId: <GUID>` survives the local numeric-id assignment.
 
-**`excludeAreaColumns` governs serialize-OUT, not deserialize-IN.** The `excludeAreaColumns` field in the predicate above controls which `Area` columns get *written to* `area.yml` when you serialize; it does NOT suppress `source column [Area].[<col>] not present on target schema` drift when *applying* an `area.yml` captured on an older platform to a newer host. Setting it has no effect on an inbound deserialize. Working recovery when an older baseline's `area.yml` carries a column the newer host's schema no longer has: strip the offending column lines from the **staged** copy (`Files/System/Serializer/SerializeRoot/deploy/_content/<Area>/area.yml`), never from the downloaded original under `baselines\`, then re-POST. Baselines captured on older DW versions can legitimately carry a few such Area columns on a newer host — see the failure-pattern entry in [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) ("source column ... not present on target schema").
+**`excludeAreaColumns` governs serialize-OUT, not deserialize-IN.** The `excludeAreaColumns` field in the predicate above controls which `Area` columns get *written to* `area.yml` when you serialize; it does NOT suppress `source column [Area].[<col>] not present on target schema` drift when *applying* an `area.yml` captured on an older platform to a newer host. Setting it has no effect on an inbound deserialize. Working recovery when an older baseline's `area.yml` carries a column the newer host's schema no longer has: strip the offending column lines from the **staged** copy (`Files/System/Serializer/SerializeRoot/replace/_content/<Area>/area.yml`), never from the checked-out original under `distribution\layers\base\`, then re-POST. Baselines captured on older DW versions can legitimately carry a few such Area columns on a newer host — see the failure-pattern entry in [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) ("source column ... not present on target schema").
 
 **Restart the host after editing `Serializer.config.json`** — config is loaded at startup, not on each request.
 
 **Strategy note (verified during a Swift2 baseline import):** Two strategies were considered —
 
-- **(a)** Copy YAML directly into `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/deploy/` (this snippet — verified working).
-- **(b)** Configure `Files/System/Serializer/Serializer.config.json` `outputDirectory` to point at `<demo-root>\baselines\<baseline>\` directly. Faster (no copy), but the running host's serialize would also write back into the cloned baseline copy — contaminating your pristine reference of what the repo shipped at that SHA. Not recommended; (a) is the canonical approach.
+- **(a)** Copy YAML directly into `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/replace/` (this snippet — verified working).
+- **(b)** Configure `Files/System/Serializer/Serializer.config.json` `outputDirectory` to point at `<demo-root>\distribution\layers\base\` directly. Faster (no copy), but the running host's serialize would also write back into the checked-out layer copy — contaminating your pristine reference of what the repo shipped at that tag. Not recommended; (a) is the canonical approach.
 
-**Single canonical swift/2.3 path:** `$baseline = "swift-2.3"` resolves to `<demo-root>\baselines\swift-2.3\` — the single canonical generic baseline (a scaffolding-only `config/deploy/seed` tree, no sample catalog). Per-demo customer-flavoured baselines (named `<demo>-base/` by convention) live alongside `swift-2.3/` under the same `baselines\` folder once they have been derived; both share this flow. Legacy content-only `Swift2.2` baselines predate this model and are no longer the default.
+**Single canonical base path:** `layers/base` resolves to `<demo-root>\distribution\layers\base\` — the single canonical scaffolding-only base layer (a `config/replace/merge` tree, no sample catalog). Per-demo customer-flavoured catalogs are authored on top (via the `fixture-catalog` layer, the `swift-demo` edition, or dw-demo-pim), not by forking the base layer. Legacy content-only `Swift2.2` baselines predate this model and are no longer the default.
 
 ## 4. Step 2 — POST against running host
 
-**Two POSTs — deploy first, then seed.** A bare `POST /Admin/Api/SerializerDeserialize` executes the **Deploy** pass ONLY. The Seed pass is not implicit — it must be requested explicitly with `?mode=Seed` in a **second** POST. For the scaffolding-only swift/2.3 baseline, the deploy pass lands framework + pages + starter content (source-wins); the seed pass carries **no sample catalog** (the baseline ships zero EcomProducts/Groups/Prices — see §3), so it applies only whatever starter-content rows the baseline puts in `seed/`, if any. Either way the storefront comes up with an **empty catalog by design** — that is expected, not a missing-products failure. Author the catalog per-demo via [`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md). (The two-POST mechanic still matters generally: feature-pack fragments deserialize in `seed` mode — see [`pack-activation.md`](pack-activation.md).)
+**Two POSTs — replace first, then merge.** A bare `POST /Admin/Api/SerializerDeserialize` executes the **Replace** pass ONLY (the default mode). The Merge pass is not implicit — it must be requested explicitly with `?mode=merge` in a **second** POST. (The engine also accepts the legacy `Deploy`/`Seed` names as aliases for `replace`/`merge`.) For the scaffolding-only base layer, the replace pass lands framework + pages + starter content (source-wins); the merge pass carries **no sample catalog** (the base ships zero EcomProducts/Groups/Prices — see §3), so it applies only whatever starter-content rows the base puts in `merge/`, if any. Either way the storefront comes up with an **empty catalog by design** — that is expected, not a missing-products failure. Author the catalog per-demo via [`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md) (or stage the `fixture-catalog` layer / `swift-demo` edition). (The two-POST mechanic still matters generally: feature-pack fragments deserialize in `merge` mode — see [`pack-activation.md`](pack-activation.md).)
 
 ```powershell
-# Pass 1 — Deploy (the default mode; framework + content).
-$deploy = Invoke-RestMethod `
+# Pass 1 — Replace (the default mode; framework + content).
+$replace = Invoke-RestMethod `
   -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize" `
   -Method POST `
   -Headers @{ Authorization = "Bearer $token" } `
   -SkipCertificateCheck
 
-# Pass 2 — Seed (catalog). The ?mode=Seed is REQUIRED — omitting it re-runs Deploy, not Seed.
-$seed = Invoke-RestMethod `
-  -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=Seed" `
+# Pass 2 — Merge (catalog). The ?mode=merge is REQUIRED — omitting it re-runs Replace, not Merge.
+$merge = Invoke-RestMethod `
+  -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=merge" `
   -Method POST `
   -Headers @{ Authorization = "Bearer $token" } `
   -SkipCertificateCheck
@@ -173,11 +173,11 @@ $seed = Invoke-RestMethod `
 # On failure: HTTP 4xx with CumulativeStrictModeException details (read the body — it's the diagnostic).
 ```
 
-(A content-only legacy `Swift2.2` baseline ships no `seed/` tree, so the second POST is a no-op there. The scaffolding-only swift/2.3 baseline ships no sample catalog either, so its seed pass lands no products — the catalog is authored per-demo, not deserialized from the baseline.)
+(A content-only legacy `Swift2.2` baseline ships no `merge/` tree, so the second POST is a no-op there. The scaffolding-only base layer ships no sample catalog either, so its merge pass lands no products — the catalog is authored per-demo, not deserialized from the base.)
 
 **Keep strict mode on; never disable it** by passing a `strictMode` query parameter or body field set to a falsy value. Strict mode is the first line of defence (FK orphans, missing templates, cache failures, schema drift). Disabling it produces a deserialized DB that *looks* succeeded but is silently inconsistent — the deserialize-blind failure mode in its purest form.
 
-If the POST returns 4xx with a `CumulativeStrictModeException` body, the body itself is the diagnostic. Read the listed FK orphans / missing templates / schema drift entries; the fix is almost always upstream (the baseline YAML), not on the host. Cross-check the cloned baseline's commit SHA / version dir against the host's DW10 version (the baseline-drift self-diagnosis rule).
+If the POST returns 4xx with a `CumulativeStrictModeException` body, the body itself is the diagnostic. Read the listed FK orphans / missing templates / schema drift entries; the fix is almost always upstream (the baseline YAML), not on the host. Cross-check the checked-out `base` layer's tag against the host's DW10 version (the baseline-drift self-diagnosis rule).
 
 ## 5. Strict-mode contract
 
@@ -196,7 +196,7 @@ The integrity sweep ([`integrity-sweep.md`](integrity-sweep.md)) — specificall
 
 GUID-based identity. Cross-environment `Default.aspx?ID=N` rewriting is handled by Serializer automatically — `ID=` query parameters in YAML are resolved against the destination DB's GUID-to-numeric-id mapping at deserialize time, so the same baseline can be deployed to a fresh DB or to one with existing rows without manual ID surgery.
 
-Use **`Deploy`** mode for the baseline deserialize (baseline overwrites target). **`Seed`** mode is for additive cases — out of scope here; the Seed-mode contract is documented in the Serializer README + [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md), and a follow-up reference can be authored if a per-demo additive seeding step is needed.
+Use **`replace`** mode for the base deserialize (base overwrites target). **`merge`** mode is for additive cases — out of scope here; the merge-mode contract is documented in the Serializer README + [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md), and a follow-up reference can be authored if a per-demo additive seeding step is needed.
 
 ## 7. Post-deserialize host restart guidance
 
@@ -226,7 +226,7 @@ The sweep is the second line of defence for the failures strict mode does not ca
 
 ## 9. Known schema-drift workaround (Swift 2.3 baseline ↔ DW10)
 
-The `swift-2.3` baseline ships framework `_sql/` in its `deploy/` tree (unlike the content-only `Swift2.2` baselines), but **no catalog `_sql/`** — it is scaffolding-only, zero sample products (see §3). Re-verify the former framework `_sql/`-era drift points against a host when adopting swift/2.3 — the two workarounds below were retired under the content-only shape and may re-apply now that framework `_sql/` ships again.
+The `base` layer ships framework `_sql/` in its `replace/` tree (unlike the content-only `Swift2.2` baselines), but **no catalog `_sql/`** — it is scaffolding-only, zero sample products (see §3). Re-verify the former framework `_sql/`-era drift points against a host when adopting swift/2.3 — the two workarounds below were retired under the content-only shape and may re-apply now that framework `_sql/` ships again.
 
 Superseded (content-only era): the `EcomCurrencies.CurrencyUseCurrencyCodeForFormat` column-strip and the `EcomShopGroupRelation/GROUP253$$SHOP19.yml` orphan-YAML workarounds were retired when the baseline dropped `_sql/`. With swift/2.3 shipping `_sql/` again, confirm during a host deserialize whether either recurs; reconstruct specifics from git history if needed.
 
@@ -243,6 +243,6 @@ For a content-only baseline against a PIM-set-up host (SHOP1 + DE + EUR + LANG1 
 - `SELECT COUNT(*) FROM Page` → ~+50
 - Existing PIM data (products, manufacturers, catalog groups, data models, custom field values, EcomDetails image/asset rows) → **untouched**
 
-Note (swift/2.3): unlike the content-only `Swift2.2` baseline described in this §9.2, the scaffolding-only `swift-2.3` baseline legitimately touches framework rows (`EcomShops`, `EcomCurrencies`, `EcomCountries`, …) via its `deploy/_sql/` pass — that is expected, not a reversion. It ships **no catalog rows** (zero EcomProducts/Groups/Prices), so the deserialize leaves the catalog empty by design; the catalog is authored per-demo via `dw-demo-pim`. Capture the swift/2.3 deploy counts from a host run and record them here once verified.
+Note (swift/2.3): unlike the content-only `Swift2.2` baseline described in this §9.2, the scaffolding-only `base` layer legitimately touches framework rows (`EcomShops`, `EcomCurrencies`, `EcomCountries`, …) via its `replace/_sql/` pass — that is expected, not a reversion. It ships **no catalog rows** (zero EcomProducts/Groups/Prices), so the deserialize leaves the catalog empty by design; the catalog is authored per-demo via `dw-demo-pim`. Capture the swift/2.3 replace counts from a host run and record them here once verified.
 
 

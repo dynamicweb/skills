@@ -58,7 +58,7 @@ Fix: define a `<Prefix>_<ConceptName>` custom item type — see [`content-modell
 
 ## Recipe
 
-Operates on a deserialized swift/2.3 baseline at `<demo-root>\baselines\swift-2.3\` (resolved into a running host via this skill's [`deserialize-flow.md`](deserialize-flow.md)). All steps are admin UI only. Throughout: `<customer>` is the demo customer's short slug (lowercase, no spaces).
+Operates on a deserialized swift/2.3 `base` layer at `<demo-root>\distribution\layers\base\` (resolved into a running host via this skill's [`deserialize-flow.md`](deserialize-flow.md)). All steps are admin UI only. Throughout: `<customer>` is the demo customer's short slug (lowercase, no spaces).
 
 ### 1. Logo
 

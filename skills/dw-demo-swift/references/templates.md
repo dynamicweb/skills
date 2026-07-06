@@ -1,6 +1,6 @@
 # templates.md
 
-> Swift template / page-preset routing. Source-of-truth: `<demo-root>\baselines\swift-2.3\deploy\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
+> Swift template / page-preset routing. Source-of-truth: `<demo-root>\distribution\layers\base\replace\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -17,10 +17,10 @@ live here has been folded up into the foundational candidates; the demo skill po
 
 ## Swift v2.3.0 templates + swift/2.3 baseline
 
-Target **Swift v2.3.0 templates** at the GitHub repo alongside the **swift/2.3 baseline data** at
-`<demo-root>\baselines\swift-2.3\` (a `config/deploy/seed` tree; content lives under
-`deploy\_content\` + `seed\_content\`). The 2.3.0 release headlines (language selector + improved
-off-canvas nav) match this baseline. Legacy content-only Swift2.2 baselines predate this model and
+Target **Swift v2.3.0 templates** at the GitHub repo alongside the **`base` layer data** at
+`<demo-root>\distribution\layers\base\` (a `config/replace/merge` tree; content lives under
+`replace\_content\` + `merge\_content\`). The 2.3.0 release headlines (language selector + improved
+off-canvas nav) match this base layer. Legacy content-only Swift2.2 baselines predate this model and
 are no longer the default.
 
 Reference: https://github.com/dynamicweb/Swift/releases/tag/v2.3.0

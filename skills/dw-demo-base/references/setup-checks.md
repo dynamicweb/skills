@@ -7,7 +7,7 @@
 - [3. Discovery table — read these from project files (the discover-from-project-files rule)](#3-discovery-table--read-these-from-project-files-the-discover-from-project-files-rule)
 - [4. Dual-set env-var propagation pattern — User-scope env-var doesn't propagate](#4-dual-set-env-var-propagation-pattern--user-scope-env-var-doesnt-propagate)
 
-Verification logic lives as fenced PowerShell inside this Markdown reference. Use it to verify, before touching any per-demo work: the `NODE_TLS_REJECT_UNAUTHORIZED` env var, `git` plus the `gh` CLI (present + authenticated, for cloning the distribution repos), a writable `<demo-root>\baselines\` folder, and the demo's DW10 + Swift versions prompt — owned here — plus the platform install prerequisites (.NET 10 SDK, `Dynamicweb.ProjectTemplates`, SQL Express, MSDTC), whose per-check detail is owned by [`foundational/setup-install.md`](foundational/setup-install.md).
+Verification logic lives as fenced PowerShell inside this Markdown reference. Use it to verify, before touching any per-demo work: the `NODE_TLS_REJECT_UNAUTHORIZED` env var, `git` plus the `gh` CLI (present + authenticated, for cloning the Distribution repo), a writable `<demo-root>\distribution\` clone target, and the demo's DW10 + Swift versions prompt — owned here — plus the platform install prerequisites (.NET 10 SDK, `Dynamicweb.ProjectTemplates`, SQL Express, MSDTC), whose per-check detail is owned by [`foundational/setup-install.md`](foundational/setup-install.md).
 
 **Posture:** verify + opt-in fix.
 
@@ -31,7 +31,7 @@ gh auth status                                     # gh CLI installed AND authen
 
 Note the backtick on `MSSQL`$SQLEXPRESS` — `$SQLEXPRESS` is a PowerShell special token unless escaped.
 
-The first three lines are the platform install prerequisites — if any is red, work the per-check sections in [`foundational/setup-install.md`](foundational/setup-install.md) §1 (and §4 for MSDTC). The last three are demo-specific, owned below (the TLS env var, `git`, and the `gh` CLI). The DW10 + Swift versions prompt and the writable-`baselines\` check are also owned here.
+The first three lines are the platform install prerequisites — if any is red, work the per-check sections in [`foundational/setup-install.md`](foundational/setup-install.md) §1 (and §4 for MSDTC). The last three are demo-specific, owned below (the TLS env var, `git`, and the `gh` CLI). The DW10 + Swift versions prompt and the writable-`distribution\` check are also owned here.
 
 ---
 
@@ -41,7 +41,7 @@ Each check follows the same shape: **Why** → **Probe** → **Expected** → **
 
 > **Platform install prerequisites** — the per-check detail for the **.NET 10 SDK**, **`Dynamicweb.ProjectTemplates`**, the **SQL Express service**, and **MSDTC for cross-connection TransactionScope** (with the `enable-msdtc.ps1` admin script) is owned by [`foundational/setup-install.md`](foundational/setup-install.md) §1 and §4. They are platform-generic, not demo-specific — verify them via the ritual above and fix per that reference. The MSDTC requirement pairs with the `Program.cs` `ImplicitDistributedTransactions` opt-in (`setup-install.md` §3.1); both are needed for admin operations like AreaCopy.
 
-The demo-specific checks owned here are the TLS env var, `git` + the `gh` CLI, the writable `baselines\` folder, and the versions prompt.
+The demo-specific checks owned here are the TLS env var, `git` + the `gh` CLI, the writable `distribution\` clone target, and the versions prompt.
 
 ### Check: NODE_TLS_REJECT_UNAUTHORIZED env var (User scope)
 
@@ -70,7 +70,7 @@ The demo-specific checks owned here are the TLS env var, `git` + the `gh` CLI, t
 
 ### Check: `git` + `gh` CLI present and authenticated
 
-**Why this matters:** Demo artifacts (baseline, theme, feature-pack) are **cloned** per-demo with `git clone` (sparse-checkout of the version/pack subtree) from the ecosystem distribution repos — there are **no releases** to download (see the base SKILL "Versions prompt + per-demo artifact clone"). `git` does the clone; `gh`, authenticated, supplies the credential helper that lets a **private** ecosystem repo clone over HTTPS. If either is missing or unauthenticated, the Swift deserialize and pack-activation flows cannot fetch their sources.
+**Why this matters:** Demo artifacts (base, catalog, theme, feature layers) are **checked out** per-demo with `git clone` + `git checkout <tag>` from the single Distribution repo (`justdynamics/Truvio.Commerce.Distribution`) — there are **no releases** to download (see the base SKILL "Versions prompt + Distribution clone/checkout"). `git` does the clone; `gh`, authenticated, supplies the credential helper that lets a **private** Distribution repo clone over HTTPS. If either is missing or unauthenticated, the Swift deserialize and pack-activation flows cannot fetch their sources.
 
 **Probe:**
 
@@ -84,16 +84,16 @@ gh auth status        # authenticated to github.com (non-zero exit / "not logged
 
 **Install-grade fix (print + link):** If `git` is absent, print `winget install --id Git.Git` (or link https://git-scm.com/). If `gh` is absent, print `winget install --id GitHub.cli` (or link https://cli.github.com/) and let the user install. If `gh` is installed but not authenticated, have the user run `gh auth login` in their own shell (`gh auth setup-git` wires it as the git credential helper) — never script a credential flow.
 
-### Check: `<demo-root>\baselines\` folder is writable
+### Check: `<demo-root>\distribution\` clone target is writable
 
-**Why this matters:** Every cloned artifact lands under the demo's own `baselines\` folder. A read-only or non-existent parent path makes the first `git clone` fail.
+**Why this matters:** The demo's Distribution checkout lands under the demo's own `distribution\` folder. A read-only or non-existent parent path makes the first `git clone` fail.
 
 **Probe:**
 
 ```powershell
-$baselines = Join-Path (Get-Location).Path "baselines"
-New-Item -ItemType Directory -Path $baselines -Force | Out-Null
-$probe = Join-Path $baselines ".write-probe"
+$dist = Join-Path (Get-Location).Path "distribution"
+New-Item -ItemType Directory -Path $dist -Force | Out-Null
+$probe = Join-Path $dist ".write-probe"
 Set-Content -Path $probe -Value "ok"; Remove-Item $probe   # throws if not writable
 ```
 
@@ -103,11 +103,11 @@ Set-Content -Path $probe -Value "ok"; Remove-Item $probe   # throws if not writa
 
 ### Check: Versions prompt (DW10 + Swift)
 
-**Why this matters:** The version answers select which baseline **package dir** (`packages/swift/<version>`) the demo clones from `main`, drive the Swift design-package clone tag (`v<version>.0`), and pack compatibility checks. Ask **before** cloning anything. Note: the distribution repos ship **no release tags** — the Swift version picks a directory in `main`, and the reproducibility pin is the **commit SHA** cloned, recorded in `CUSTOMISATIONS.md`.
+**Why this matters:** The version answers select which **layer/edition tag** (`layers/base/<version>`, `editions/<name>/<version>`) the demo checks out of the Distribution clone, drive the Swift design-package clone tag (`v<version>.0`), and layer compatibility checks. Ask **before** cloning anything. Note: the Distribution repo pins by **annotated tag** — the Swift version resolves to the latest-patch tag for that minor, and the reproducibility pin is the **checked-out tag**, recorded in `CUSTOMISATIONS.md`.
 
 **Probe:** conversational — ask the user via `AskUserQuestion`:
 
-> "Which **DW10 platform version** does this demo target, and which **Swift version** (e.g. `2.3`)? Both get recorded in `CUSTOMISATIONS.md` for reproducibility and select which baseline package dir (`packages/swift/<version>`) to clone from `main`."
+> "Which **DW10 platform version** does this demo target, and which **Swift version** (e.g. `2.3`)? Both get recorded in `CUSTOMISATIONS.md` for reproducibility and select which layer/edition tag (`layers/base/<version>`) to check out of the Distribution clone."
 
 **Expected:** two values captured in conversation state and written to the demo's `CUSTOMISATIONS.md`. No default — never guess a version.
 

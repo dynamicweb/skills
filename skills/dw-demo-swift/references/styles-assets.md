@@ -10,61 +10,61 @@ Vendor-generic Swift Style-asset knowledge — the four `wwwroot/Files/System/St
 
 Read that section for the asset format and wiring. This file carries the demo-infrastructure that sits on top of it: **where the reference style assets come from** and **how to stage them for a new demo**.
 
-## Reference source: the DemoThemes repo, cloned per-demo
+## Reference source: the theme layers in the Distribution
 
-Canonical Style-asset examples live on the `main` branch of the **DemoThemes** distribution repo
-`https://github.com/justdynamics/Truvio.Commerce.DemoThemes`. Like the baseline and pack repos, it is
-consumed by **cloning `main`** — there are **no release tags or zips**; the pin is the cloned commit
-SHA, recorded in `CUSTOMISATIONS.md`. Clone the themes into the demo's own
-`<demo-root>\baselines\themes\` folder. Themes are pure disk-overlay (styles + CSS + assets) and carry
-no serialized DB content, so the demo's Swift version (from the versions prompt) is only a
-compatibility check here, not a tag selector.
+Canonical Style-asset examples ship as **theme layers** — `layers/theme-<name>/` (kind `theme`) in the
+Distribution repo (`justdynamics/Truvio.Commerce.Distribution`). `Truvio.Commerce.DemoThemes` is
+**archived**; its themes were folded in here. A theme layer is pure disk-overlay (styles + CSS + assets
+under `files/`, mirroring the host's `wwwroot\Files\` tree) with **no serialized DB content**, so the
+demo's Swift version (from the versions prompt) is only a compatibility check here, not a tag selector.
+The theme layer lives in the demo's Distribution checkout at `<demo-root>\distribution\layers\theme-<name>\`;
+pin it by the tag `layers/theme-<name>/<semver>` (or an edition that composes it).
 
 ```powershell
 $demoRoot = (Get-Location).Path
-$themes   = "$demoRoot\baselines\themes"
-git clone --depth 1 "https://github.com/justdynamics/Truvio.Commerce.DemoThemes" $themes
-$sha = git -C $themes rev-parse HEAD    # record this SHA in CUSTOMISATIONS.md — the theme pin
-Write-Host "Cloned DemoThemes at $sha — record it in CUSTOMISATIONS.md"
+$dist     = "$demoRoot\distribution"                 # the Distribution checkout (from deserialize-flow §3)
+$theme    = "$dist\layers\theme-<name>"              # e.g. theme-tech-saas
+if (-not (Test-Path "$theme\theme.json")) {
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
+  if (-not (Test-Path "$dist\.git")) { git clone "https://github.com/$repo" $dist }
+  $tag = git -C $dist tag --list "layers/theme-<name>/*" |
+    Sort-Object { [version]($_ -replace '^layers/theme-<name>/','') } -Descending | Select-Object -First 1
+  git -C $dist checkout $tag
+  Write-Host "Checked out $tag — record it in CUSTOMISATIONS.md (the theme pin)"
+}
 ```
 
-A downloaded theme unpacks with the four Style-asset directories at its root:
+A theme layer's `files/` mirrors the host overlay tree — the Style-asset areas plus brand images and
+custom template overrides (each already branded, named after the theme):
 
 ```
-<demo-root>\baselines\themes\<theme>\
-├── ColorSchemes\
-│   ├── ColorScheme.config        ← list of predefined scheme NAMES Swift offers in admin UI
-│   ├── swift.{json,css}          ← Swift's own default brand
-│   └── <theme>.{json,css}        ← worked example brand
-├── Buttons\
-│   ├── buttons.{json,css}        ← Swift default (pill, 2.5rem padding)
-│   └── <theme>.{json,css}        ← example (slight rounded, 1.5rem padding)
-├── Typography\
-│   ├── fonts.{json,css}          ← Swift default (Inter 500/600)
-│   └── <theme>.{json,css}        ← example (local + Google fonts)
-└── Fonts\
-    ├── <theme>-*.{json,css}      ← @font-face definitions
-    └── *.ttf / *.otf             ← actual font files
+<demo-root>\distribution\layers\theme-<name>\
+├── theme.json                                          ← theme identity / metadata
+├── layer.json                                          ← layer manifest (kind: theme)
+└── files\                                              ← disk overlay — mirrors wwwroot\Files\
+    ├── System\Styles\ColorSchemes\<name>.{json,css}    ← brand colour scheme
+    ├── System\Styles\Buttons\<name>.{json,css}         ← button shape
+    ├── System\Styles\Typography\<name>.{json,css}      ← typography
+    ├── Images\<name>\...                               ← brand images (logo, etc.)
+    └── Templates\Designs\Swift-v2\Custom\
+        ├── <name>_custom.css                           ← Tier-1 custom CSS
+        └── <Name>HeadInclude.cshtml                    ← head include (fonts, meta)
 ```
 
-To stage for a new demo, copy from the downloaded theme into the host's Styles folder:
+To stage for a new demo, overlay the theme layer's `files/` onto the host — it already sits at the
+right sub-paths:
 
 ```powershell
-$src = "$themes\<theme>"
-$dst = "<demo>\Dynamicweb.Host.Suite\wwwroot\Files\System\Styles"
-Copy-Item "$src\ColorSchemes\swift.json" "$dst\ColorSchemes\<brand>.json"
-Copy-Item "$src\ColorSchemes\swift.css"  "$dst\ColorSchemes\<brand>.css"
-Copy-Item "$src\Buttons\buttons.json"    "$dst\Buttons\<brand>.json"
-Copy-Item "$src\Buttons\buttons.css"     "$dst\Buttons\<brand>.css"
-Copy-Item "$src\Typography\fonts.json"   "$dst\Typography\<brand>.json"
-Copy-Item "$src\Typography\fonts.css"    "$dst\Typography\<brand>.css"
+$src = "$theme\files"
+$dst = "<demo>\Dynamicweb.Host.Suite\wwwroot\Files"
+Copy-Item -Recurse "$src\*" "$dst\" -Force   # lands ColorSchemes/Buttons/Typography brand + Images + Custom overrides
 ```
 
 Then hand-edit the JSONs (rename `Id`, swap colors / fonts) and regenerate the CSS following the patterns in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7, and wire the Area columns per the same section.
 
 ## When to use this vs `<customer>_custom.css`
 
-- **Use Style assets (Tier 0) for the brand palette + button shape + typography.** It applies to every paragraph/row that has a scheme attribute, including the deserialized Swift baseline content. Highest leverage per line of CSS.
+- **Use Style assets (Tier 0) for the brand palette + button shape + typography.** It applies to every paragraph/row that has a scheme attribute, including the deserialized Swift base-layer content. Highest leverage per line of CSS.
 - **Use `<customer>_custom.css` (Tier 1) for everything else** — hover effects, navigation polish, footer tweaks, hacks for empty `data-dw-colorscheme=""` paragraphs that the schemes can't reach. Loaded after the Style assets, so `<customer>_custom.css` rules win cascade ties.
 
 ## Cross-references
