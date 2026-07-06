@@ -15,7 +15,7 @@ Suite version is whatever the template + `dotnet restore` resolve. **Version pol
 
 ## 1. Prerequisites
 
-Before running `dotnet new dw10-suite`, the box needs the **.NET 10 SDK**, **`Dynamicweb.ProjectTemplates`**, and a running **SQL Express service** (`MSSQL$SQLEXPRESS`). The platform-level rationale, probes, and install/fix paths for each are owned by [`foundational/setup-install.md`](foundational/setup-install.md) §1. Run the quick verification ritual in `references/setup-checks.md` first — it probes these plus the demo-specific checks (TLS env var, `gh` CLI, writable `baselines\`, versions prompt) in one pass.
+Before running `dotnet new dw10-suite`, the box needs the **.NET 10 SDK**, **`Dynamicweb.ProjectTemplates`**, and a running **SQL Express service** (`MSSQL$SQLEXPRESS`). The platform-level rationale, probes, and install/fix paths for each are owned by [`foundational/setup-install.md`](foundational/setup-install.md) §1. Run the quick verification ritual in `references/setup-checks.md` first — it probes these plus the demo-specific checks (TLS env var, `git` + `gh` CLI, writable `<demo-root>\distribution\` clone target, versions prompt) in one pass.
 
 ---
 

@@ -67,16 +67,16 @@ The shipped config uses the current schema: a single flat `predicates: [...]` li
 
 After steps 1–3, restart the host. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST with no payload typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
 
-### Deploy vs Seed
+### Replace vs Merge (aliases of Deploy/Seed)
 
-Two **conflict strategies** for the same deserialize pipeline, set per predicate (each entry in the flat `predicates: [...]` list carries `"mode": "Deploy"` or `"mode": "Seed"`; the legacy `deploy: { predicates: [...] }` / `seed: { ... }` shape is rejected by `ConfigLoader`).
+Two **conflict strategies** for the same deserialize pipeline, set per predicate (each entry in the flat `predicates: [...]` list carries `"mode": "Deploy"` or `"mode": "Seed"` — the `DeploymentMode` enum names, unchanged in config). Engine `v0.6.9-beta`+ additionally accepts **`replace`** (= Deploy, source-wins) and **`merge`** (= Seed, field-level) as aliases at the `?mode=` endpoint and as the layer mode-dir names `replace/` + `merge/`; the predicate `"mode"` field keeps the enum spelling. (The legacy `deploy: { predicates: [...] }` / `seed: { ... }` shape is rejected by `ConfigLoader`.)
 
-| Mode | Conflict strategy | Use for |
-|---|---|---|
-| **Deploy** | Source-wins. Re-deserialize overwrites target. | Developer-owned deployment data: shop structure, item types, VAT rates, country list, payment method definitions. Identical across envs. |
-| **Seed** | Field-level merge. YAML fills only fields the target has not set; customer edits preserved across re-deploys. | First-run content: Customer Center welcome copy, FAQ body text, newsletter templates. Bootstrap data that transitions to customer ownership. |
+| Mode (dir / alias) | `"mode"` field | Conflict strategy | Use for |
+|---|---|---|---|
+| **replace** | `Deploy` | Source-wins. Re-deserialize overwrites target. | Developer-owned deployment data: shop structure, item types, VAT rates, country list, payment method definitions. Identical across envs. |
+| **merge** | `Seed` | Field-level merge. YAML fills only fields the target has not set; customer edits preserved across re-deploys. | First-run content: Customer Center welcome copy, FAQ body text, newsletter templates. Bootstrap data that transitions to customer ownership. |
 
-For Swift baseline restore ([`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md)), only Deploy mode is used. Seed mode is out of scope for the canonical Swift baseline-load flow.
+For Swift `base` layer restore ([`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md)), the meaningful pass is **replace**; the **merge** pass runs but the base ships no catalog, so it lands nothing (see deserialize-flow §4).
 
 Upstream long-form: `$env:DW_SERIALIZER_REPO\docs\concepts.md` — "Deploy and Seed modes", "The three-bucket split".
 
@@ -140,7 +140,7 @@ WHERE Link LIKE '%Default.aspx?%=3421%';
 
 **Fix paths:**
 
-1. Extend the Content predicate `path` so page 3421 is included in Deploy mode.
+1. Extend the Content predicate `path` so page 3421 is included in Replace mode.
 2. Move the referencing page (or referenced page) into the same mode if they're split across Deploy/Seed.
 3. Clean source: null the dangling reference. For Swift 2.2, `tools/swift22-cleanup/01-null-orphan-page-refs.sql` is the canonical fix.
 4. Acknowledge the orphan (escape hatch): add the ID to the predicate's `acknowledgedOrphanPageIds` array. Demotes the fatal serialize error to a warning. Remove the entry once the data is clean — leaving acknowledged IDs around silences real future drift.
@@ -184,7 +184,7 @@ Three signals:
 
 ### How baselines roll
 
-Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release, the baseline gets re-serialized from a fresh Swift install and committed to `main` of the baseline distribution repo (`justdynamics/Truvio.Commerce.Serializer.Baselines`), under `packages/swift/<version>/`. The distribution repo ships **no release tags** — the demo pins the exact **commit SHA** it cloned. That SHA (plus the version dir) is the stamp; cross-check it against the demo's host DW10 version when triaging schema-drift warnings (the baseline-drift self-diagnosis rule).
+Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release, the `base` layer gets re-serialized from a fresh Swift install and published as a new annotated tag `layers/base/<semver>` in the Distribution repo (`justdynamics/Truvio.Commerce.Distribution`). The demo pins the exact **tag** it checked out. That tag is the stamp; cross-check it against the demo's host DW10 version when triaging schema-drift warnings (the baseline-drift self-diagnosis rule).
 
 ## Cross-references
 

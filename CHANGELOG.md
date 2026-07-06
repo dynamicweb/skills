@@ -3,6 +3,39 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.3.0]
+
+### Changed (BREAKING — distribution model)
+- **One consolidated Distribution repo.** The three clone-source repos of 4.2.0
+  (`Truvio.Commerce.Serializer.Baselines`, `Truvio.Commerce.DemoThemes`, `Truvio.Commerce.FeaturePacks`)
+  collapse into a single repo — `justdynamics/Truvio.Commerce.Distribution`. `DemoThemes` and
+  `FeaturePacks` are **archived**; their themes and packs are now **layers** in the Distribution. Demos
+  clone the one repo (per-demo, into `<demo-root>\distribution\`) instead of three.
+- **Pin moves from commit SHA to an annotated git tag.** 4.2.0 pinned the cloned `main` commit SHA;
+  4.3.0 pins the **annotated tag** `layers/<name>/<semver>` (or `editions/<name>/<semver>` for a whole
+  gate-proven composition). Resolve the latest patch for the target minor, `git checkout` the tag, and
+  record that tag in `CUSTOMISATIONS.md` as the reproducibility pin.
+- **Layer + edition vocabulary.** Artifacts are `layers/<name>/` (each a `kind`: base | catalog | feature
+  | theme | surface | sample-data) plus `editions/<name>.json` (named compositions). The Swift baseline is
+  the `base` layer; a feature pack is a `feature` layer (`pack.json` → `layer.json`); a demo theme is a
+  `theme` layer (disk-overlay `files/`, mirrors `wwwroot\Files\`); headless is the `headless` `surface`
+  layer. Mode dirs `deploy/`+`seed/` are now `replace/`+`merge/` at the layer root (no
+  `baseline-fragment/` wrapper for packs).
+- **Serializer mode names `Deploy`/`Seed` → `replace`/`merge`** (engine `v0.6.9-beta`+; `deploy`/`seed`
+  remain accepted aliases, and the predicate `"mode"` field keeps the `Deploy`/`Seed` enum spelling). The
+  deserialize second pass is `?mode=merge`.
+- **Env vars collapsed.** `$env:DW_BASELINE_REPO` / `$env:DW_PACKS_REPO` are replaced by a single optional
+  `$env:DW_DISTRIBUTION_REPO` pointer; setup-checks probes `git` + a writable `<demo-root>\distribution\`
+  clone target.
+- **Unchanged from 4.2.0:** the `base` layer stays **scaffolding-only** (empty catalog by design) and the
+  demo catalog is still authored **per-demo via `dw-demo-pim`** — now with the `fixture-catalog` layer /
+  `swift-demo` edition as the ready-catalog alternative. Packs remain catalog-self-sufficient (`PACK-<NAME>-*`).
+- Touched: `dw-demo-base` (SKILL.md, references/setup-checks.md, serializer-reference.md, scaffold.md),
+  `dw-demo-swift` (SKILL.md + deserialize-flow.md, pack-activation.md, styles-assets.md, templates.md,
+  paragraphs.md, re-skin.md, asset-organisation.md, customer-center.md, admin-ui-authoring.md,
+  integrity-sweep.md), `dw-demo-pim/references/access-surfaces.md`,
+  `dw-demo-headless/references/headless-baseline.md`.
+
 ## [4.2.0]
 
 ### Changed

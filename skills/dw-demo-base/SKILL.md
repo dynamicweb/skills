@@ -53,41 +53,47 @@ Walk every step in order — skip none. Each step's reference contains its own v
 Loading reference content into the project DB is **NOT** part of this skill's canonical flow. Three separate paths follow base, depending on demo type:
 
 - **PIM demo** -> start with a blank/fresh demo DB; the PIM skill's modelling recipes build content from scratch via MCP. No deserialize step. See [`dynamicweb-pim-demo/SKILL.md`](../dw-demo-pim/SKILL.md).
-- **Swift demo** -> deserialize the Swift content baseline cloned per-demo into `<demo-root>\baselines\<baseline>\` (see the versions prompt + clone model below) via the Serializer. Owned end-to-end by [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) + [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md). Prerequisite: the Serializer is installed per [`references/serializer-reference.md`](references/serializer-reference.md) "Installation".
-- **Headless demo** -> deserialize the separate, presentation-agnostic `headless/2.3` baseline (its own product line, no shared item-type rows with Swift; cloned per-demo into `<demo-root>\baselines\` like any baseline — see the versions prompt + clone model below) for a Next.js storefront that reads the DW10 Delivery API. Owned by [`dynamicweb-headless-demo/references/headless-baseline.md`](../dw-demo-headless/references/headless-baseline.md); backend config in [`headless-backend.md`](../dw-demo-headless/references/headless-backend.md). Same Serializer prerequisite.
+- **Swift demo** -> deserialize the Swift content **`base` layer** checked out per-demo into `<demo-root>\distribution\layers\base\` (see the versions prompt + checkout model below) via the Serializer. Owned end-to-end by [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) + [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md). Prerequisite: the Serializer is installed per [`references/serializer-reference.md`](references/serializer-reference.md) "Installation".
+- **Headless demo** -> deserialize the separate, presentation-agnostic `headless` **surface layer** (its own product line, no shared item-type rows with Swift; checked out per-demo into `<demo-root>\distribution\layers\headless\` like any layer — see the versions prompt + checkout model below) for a Next.js storefront that reads the DW10 Delivery API. Owned by [`dynamicweb-headless-demo/references/headless-baseline.md`](../dw-demo-headless/references/headless-baseline.md); backend config in [`headless-backend.md`](../dw-demo-headless/references/headless-backend.md). Same Serializer prerequisite.
 
 The Serializer install steps live in base so any sister skill can pull them; the act of deserializing is Swift- or headless-specific.
 
-### Versions prompt + per-demo artifact clone
+### Versions prompt + Distribution clone/checkout
 
-Demo artifacts are **not** kept in a shared machine-wide vault. Each demo clones exactly the versions it targets into its own `<demo-root>\baselines\` folder, so two demos on the same machine can pin different SHAs without collision. Before any artifact is fetched, ask the user two things (record both in the demo's `CUSTOMISATIONS.md` for reproducibility):
+Demo artifacts are **not** kept in a shared machine-wide vault. All of them now live in ONE consolidated repo — `justdynamics/Truvio.Commerce.Distribution` — consumed by **`git clone` + checkout of an annotated tag**, never a release zip. The clone holds `layers/<name>/` (each a layer with a `kind` = base | catalog | feature | theme | surface | sample-data) plus `editions/<name>.json` (named, gate-proven compositions of layers). Version pins are annotated git tags `layers/<name>/<semver>` and `editions/<name>/<semver>`. Each demo checks out exactly the tag it targets into its own `<demo-root>\distribution\` folder, so two demos on the same machine can pin different versions without collision. Before any artifact is fetched, ask the user two things (record both in the demo's `CUSTOMISATIONS.md` for reproducibility):
 
-1. **DW10 version** — the platform version the demo host runs (drives baseline/pack compatibility checks).
-2. **Swift version** — e.g. `2.3` (selects which baseline **package dir** — `packages/swift/<version>` — the demo clones, drives compatibility checks, and picks the Swift design-package clone tag `v<version>.0`). It no longer drives a release tag: the ecosystem repos ship no releases.
+1. **DW10 version** — the platform version the demo host runs (drives layer compatibility checks).
+2. **Swift version** — e.g. `2.3` (drives the layer/edition tags and the Swift design-package clone tag `v<version>.0`).
 
-**Distribution is `git clone`, not releases.** The Baselines and FeaturePacks repos are consumed by **cloning their `main` branch** (or a sparse-checkout of just the version/pack subtree) — there are **no release tags or zips** (`gh release download` and any `swift/<version>` / `packs/<name>/<version>` tag resolution no longer exist). The Swift version answer selects a *directory in main*, not a tag. The demo's reproducibility pin is the **commit SHA** it cloned, recorded in `CUSTOMISATIONS.md`:
+**Tag resolution — layer/edition tags carry the patch digit.** The user answers a *minor* version (`2.3`); actual tags are full semver (`layers/base/2.3.1`, `editions/swift-demo/2.3.0`). Never `git checkout layers/base/2.3` literally — clone the Distribution once, then resolve the **latest patch for the requested minor** and check that tag out. An `editions/<name>/<semver>` tag pins a whole gate-proven composition at once (the usual demo pin); a bare `layers/<name>/<semver>` tag pins a single layer:
 
 ```powershell
-$repo = if ($env:DW_BASELINE_REPO) { $env:DW_BASELINE_REPO } else { "justdynamics/Truvio.Commerce.Serializer.Baselines" }
-$src  = "<demo-root>\baselines\_src"
-# Sparse-checkout just the version dir from main (full `git clone` also works for small repos).
-git clone --depth 1 --filter=blob:none --sparse "https://github.com/$repo" $src
-git -C $src sparse-checkout set "packages/swift/2.3"   # the version dir from the versions prompt
-$sha = git -C $src rev-parse HEAD                        # the reproducibility pin
+$repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
+$dist = "<demo-root>\distribution"
+git clone "https://github.com/$repo" $dist               # one repo — all layers + editions live here
+$minor = "2.3"                                            # from the versions prompt
+$ref   = "editions/swift-demo"                            # the edition (or `layers/base`) to pin
+$tag = git -C $dist tag --list "$ref/*" |
+  Where-Object { $_ -like "$ref/$minor.*" } |
+  Sort-Object { [version]($_ -replace "^$ref/",'') } -Descending |
+  Select-Object -First 1
+if (-not $tag) { throw "No $ref/$minor.* tag found — check the Distribution repo's tags." }
+git -C $dist checkout $tag                                # the whole snapshot; consume the layer dirs you need
 ```
 
-Record `$sha` (the cloned commit) in `CUSTOMISATIONS.md` — that SHA is the demo's reproducibility pin; a later rebuild clones the same repo and `git checkout`s that SHA. The same clone-`main` model applies to the theme and feature-pack repos (each has its own subtree — `packs/<name>/` for a pack); the SHA is always the pin.
+Record the RESOLVED tag (not just the minor) in `CUSTOMISATIONS.md` — that exact tag is the demo's reproducibility pin (a later rebuild clones the same repo and `git checkout`s that tag). The checked-out snapshot contains every layer at that commit; read whichever `layers/<name>/` dirs the edition composes.
 
-With those answers, artifacts resolve per-demo from the ecosystem distribution repos:
+With those answers, artifacts resolve from the demo's Distribution checkout. `Truvio.Commerce.DemoThemes` and `Truvio.Commerce.FeaturePacks` are **archived** — their themes and packs are now theme/feature layers in the Distribution:
 
-| Artifact | Source (default) — clone `main` | Lands at | Fetched by |
+| Artifact | Source (in the Distribution clone) | Working tree | Consumed by |
 |---|---|---|---|
-| Serialized baseline | `https://github.com/justdynamics/Truvio.Commerce.Serializer.Baselines` — packages under `packages/<product>/<version>/` on `main` (sparse-checkout `packages/swift/2.3`) | `<demo-root>\baselines\<baseline>\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Demo theme / style assets | `https://github.com/justdynamics/Truvio.Commerce.DemoThemes` — themes on `main` (pure disk-overlay, no serialized DB content) | `<demo-root>\baselines\themes\` | [`dynamicweb-swift-demo/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) |
-| Feature pack | `https://github.com/justdynamics/Truvio.Commerce.FeaturePacks` — packs under `packs/<name>/` on `main` (sparse-checkout `packs/<name>`) | `<demo-root>\baselines\feature-packs\<name>\` | [`dynamicweb-swift-demo/references/pack-activation.md`](../dw-demo-swift/references/pack-activation.md) |
+| Serialized base | `layers/base` (kind base) — **scaffolding-only**: framework + starter pages, **empty catalog by design** | `<demo-root>\distribution\layers\base\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
+| Demo catalog *(optional)* | `layers/fixture-catalog` (kind catalog, EcomProducts 20 / Groups 3) — or check out the `swift-demo` edition for the ready set; otherwise author per-demo via the [`dw-demo-pim`](../dw-demo-pim/SKILL.md) recipes | `<demo-root>\distribution\layers\fixture-catalog\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
+| Demo theme / style assets | `layers/theme-<name>` (kind theme — pure disk-overlay `files/`, no serialized DB content) | `<demo-root>\distribution\layers\theme-<name>\` | [`dynamicweb-swift-demo/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) |
+| Feature pack | `layers/<name>` (kind feature) | `<demo-root>\distribution\layers\<name>\` | [`dynamicweb-swift-demo/references/pack-activation.md`](../dw-demo-swift/references/pack-activation.md) |
 | Swift design package | local clone of `https://github.com/dynamicweb/Swift` (release tag `v<version>.0` — the upstream Swift product still ships releases) | `<demo-root>\dw-swift\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) "Design-package deploy" |
 
-Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh` authenticated so a private ecosystem repo clones over HTTPS via the gh credential helper). The baseline and feature-pack source repos each default to the URL above and are overridable per machine via `$env:DW_BASELINE_REPO` / `$env:DW_PACKS_REPO` (owner/name form) when a team mirrors or forks the distribution.
+Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh` authenticated so a private Distribution repo clones over HTTPS via the gh credential helper). The Distribution repo defaults to the URL above and is overridable per machine via `$env:DW_DISTRIBUTION_REPO` (owner/name form) when a team mirrors or forks it.
 
 ## Where to find things
 
@@ -96,7 +102,7 @@ Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh
 | Understand how a demo build is **driven** — the orchestrator abstraction (GSD primary vs the native `/demo:*` command set), GSD detection / deference + `--standalone`, the `agent_skills` keystone, the strictness gradient, and the shared acceptance criteria | references/orchestrator.md |
 | Verify a fresh machine is build-ready (incl. the MSDTC check that AreaCopy `TransactionException`s trace back to) | references/setup-checks.md |
 | **Build on a hosted/cloud install** (URL + Admin API key only — no scaffold, no SQL, no host restart; Management API create-vs-update semantics, binder shapes, upload, variants, cache-refresh-as-restart, known API gaps) | **references/online-mode.md** |
-| Ask the demo's DW10 + Swift versions and clone baselines/themes/packs per-demo | "Versions prompt + per-demo artifact clone" above + references/setup-checks.md |
+| Ask the demo's DW10 + Swift versions and check out the Distribution layers/editions per-demo | "Versions prompt + Distribution clone/checkout" above + references/setup-checks.md |
 | Scaffold the project | references/scaffold.md |
 | Get MCP working (and verify it) | references/mcp-setup.md |
 | Understand the TLS bypass | references/tls-bypass.md |
@@ -238,7 +244,7 @@ A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.jso
 
 ## Reference-content layout
 
-Demo artifacts (baselines, themes, feature packs) are cloned per-demo into the demo's own `<demo-root>\baselines\` folder — see "Versions prompt + per-demo artifact clone" above. There is no shared machine-wide vault; each demo owns the exact SHA it cloned.
+Demo artifacts (base, catalog, theme, and feature layers) are checked out per-demo from the Distribution clone into the demo's own `<demo-root>\distribution\` folder — see "Versions prompt + Distribution clone/checkout" above. There is no shared machine-wide vault; each demo owns the exact tag it checked out.
 
 Two read-only reference sources are **local clones**, not downloads, and their location is per-machine — **ask or discover it, never hardcode**:
 
@@ -262,7 +268,7 @@ Port, DB name, and Management API bearer token vary per project. Read them from 
 
 ## Baseline-drift self-diagnosis rule
 
-When grep results in skill text contradict the live baseline, consider "the baseline has rolled since this skill was authored" as a candidate cause. Cross-check the cloned baseline's commit SHA / version dir against the demo's Swift version before assuming the skill is correct. Reality wins; the skill is the second source of truth.
+When grep results in skill text contradict the live baseline, consider "the baseline has rolled since this skill was authored" as a candidate cause. Cross-check the checked-out `base` layer's tag against the demo's Swift version before assuming the skill is correct. Reality wins; the skill is the second source of truth.
 
 
 

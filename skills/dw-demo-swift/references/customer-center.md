@@ -26,7 +26,7 @@ Rebuilding is never the right answer. The stock section already supports imperso
 
 ## 2. Page-tree map
 
-Source-of-truth: `<demo-root>\baselines\swift-2.3\deploy\_content\Swift 2\Customer center\` deserialized into a running host. Backtick-quote any path string when copying into other tools -- folder names contain spaces.
+Source-of-truth: `<demo-root>\distribution\layers\base\replace\_content\Swift 2\Customer center\` deserialized into a running host. Backtick-quote any path string when copying into other tools -- folder names contain spaces.
 
 ```
 Customer center/
