@@ -124,10 +124,45 @@ $pack.name; $pack.version; $pack.kind; $pack.swiftVersion   # confirm this host'
 $pack.fragmentModes                                 # which mode trees to deserialize (merge / replace)
 $pack.csLedger                                      # every src/*.cs file + how it registers
 $pack.configRows                                    # rows that must exist after install (your verify list)
+$pack.customCode                                    # compile-optional provider declaration — read BEFORE §6 (it may let you skip the build entirely)
 ```
 
 Confirm the host's Swift version matches the layer's `swiftVersion` — a layer proves the version it
 claims. If your host's version does not match, stop; the layer is not certified for it.
+
+### The `customCode` declaration — the compile is opt-in
+
+The **base layer is zero custom code** — that constraint is unchanged. A **feature layer MAY ship a
+declared, compile-optional provider**: the `.cs` under `src/` is not mandatory to get value from the
+layer. `layer.json` states this machine-readably in a **`customCode` block** — **what works without
+compiling vs. what the compile adds**:
+
+```jsonc
+"customCode": {
+  "compileOptional": true,
+  "providers": [
+    { "file": "src/QtyTierPriceProvider.cs", "registers": "IPriceProvider",
+      "worksWithoutCompile": "Contract price (per-customer EcomPrices row) resolves via the native default provider — zero code.",
+      "requiresCompileFor": "Quantity-tier enforcement (PriceQuantity > 0 rows), which the stock cart ignores until this provider is compiled in." }
+  ]
+}
+```
+
+**Read this block before §6.** If the demo only needs what every `worksWithoutCompile` covers, **skip
+the source-drop + build entirely** — install the layer data-only (overlays + fragment, §7–§8) and stop.
+The §6 compile is the **opt-in** step you take *only* when the storyline needs a `requiresCompileFor`
+behavior. Record the choice in `CUSTOMISATIONS.md`: the compile is a **declared** customisation-budget
+line item (named in `layer.json`), not an ad-hoc controller — that is exactly the boundary the
+zero-custom-code base preserves while letting a feature layer offer more when a demo asks for it.
+
+**Worked example — `reordering-pricing`.** Contract pricing (the per-customer price a buyer sees at cart
+time) is **native default-provider behavior and needs no compile** — the zero-code headline; author the
+per-customer `EcomPrices` row (`PriceUserCustomerNumber`) and it resolves
+([`../../dw-demo-base/references/foundational/commerce-b2b.md`](../../dw-demo-base/references/foundational/commerce-b2b.md) "Customer-scoped contract prices"). **Quantity-tier enforcement** (bulk-break
+pricing off `PriceQuantity > 0` rows) is what the shipped `IPriceProvider` adds — the stock cart ignores
+tier rows until the provider is compiled in
+([`../../dw-demo-base/references/foundational/commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.11). So: install `reordering-pricing` **data-only** to demo contract
+pricing; run the §6 opt-in compile **only** when the demo must show qty-tier enforcement.
 
 ## 6. Step 3 — Source-drop the .cs and build the host
 
@@ -262,7 +297,10 @@ Pack-specific behaviors and known limitations to expect after install:
   fragment. It arrives disabled deliberately — enable it only when the demo actually exercises
   recurring-order generation, so an idle demo host never fires it. Confirm the task exists (a
   `configRows` probe) and leave it disabled unless the storyline needs it.
-- **reordering-pricing** carries a documented **quick-order known-limitation**: after install the
+- **reordering-pricing** ships a **compile-optional `IPriceProvider`** (see §5 "The `customCode`
+  declaration"): **contract pricing works zero-code** (native default provider) and **quantity-tier
+  enforcement requires the §6 opt-in compile**. Install data-only unless the demo needs qty-tier
+  behavior. It also carries a documented **quick-order known-limitation**: after install the
   quick-order surface may need a **deactivate → reactivate** cycle (toggle it off, then on) before it
   picks up the pack's pricing behavior. This is expected; note it in the demo's `CUSTOMISATIONS.md`
   and cycle the surface as part of the post-install verify (§9) rather than treating it as a failure.

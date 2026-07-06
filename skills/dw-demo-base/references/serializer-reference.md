@@ -13,49 +13,32 @@
 >
 > **Operational baseline-deserialize steps** (POST `/Admin/Api/SerializerDeserialize`, integrity sweep, schema-drift workarounds) are owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md). Only Swift demos need that flow — PIM demos start from a blank/fresh DB.
 >
-> **Tool internals live upstream.** The Serializer ships its own canonical docs at `$env:DW_SERIALIZER_REPO\docs\` — when this reference disagrees with upstream, upstream wins (the baseline-drift self-diagnosis rule: skill text is the second source of truth). See "Internals — upstream pointer block" below.
+> **The engine installs from a public NuGet package, not a repo clone.** The Serializer ships as the public NuGet package **`Truvio.Commerce.Serializer`** (**0.6.9-beta or newer**) — add it as a `PackageReference` to the host and restore. There is **no `$env:DW_SERIALIZER_REPO` clone step** and none is required to deserialize; a partner reproduces the whole flow from the package alone. A local clone of the engine repo is **optional**, and only for internals deep-dives — see "Internals — upstream pointer block" below. When this reference disagrees with the engine's published docs, the published docs win (the baseline-drift self-diagnosis rule: skill text is the second source of truth).
 
 ## Installation
 
-Resolve the repo first (Step 0), then build, copy, stage. The build is one-time per machine; the DLL copy + config staging are per-host (re-run when scaffolding a new demo host or when the Serializer DLL is rebuilt). Only run these steps on demos that actually need the Serializer — typically Swift demos that will deserialize a baseline. PIM demos that start from a blank DB can skip installation until/unless they later need to serialize their own work.
+Add the NuGet package (Step 1), then stage the config (Step 2). Both are per-host — re-run when scaffolding a new demo host or when bumping the engine version. Only run these steps on demos that actually need the Serializer — typically Swift demos that will deserialize a baseline. PIM demos that start from a blank DB can skip installation until/unless they later need to serialize their own work.
 
-### Step 0 — Resolve the Serializer repo (never hardcode the path or the DLL filename)
+### Step 1 — Add the `Truvio.Commerce.Serializer` NuGet package to the host
 
-The Serializer repo location is machine-specific, and its folder and assembly name have changed across releases — resolve both instead of hardcoding either. Set `$env:DW_SERIALIZER_REPO` (User scope, same dual-set env-var pattern documented in `references/setup-checks.md` §4) to the local clone root, and derive the project folder and DLL filename from the repo itself. A hardcoded directory fails at build time when the repo is renamed; a hardcoded DLL filename fails the copy step even when the directory resolves — the assembly filename follows the csproj `AssemblyName`, which renames with the product. (The Serializer is a tool — a per-machine local clone, its location asked/discovered, never hardcoded.)
-
-```powershell
-if (-not $env:DW_SERIALIZER_REPO -or -not (Test-Path "$env:DW_SERIALIZER_REPO\src")) {
-  throw "DW_SERIALIZER_REPO not set (or not a Serializer clone). Point it at the local Serializer repo root."
-}
-$serializerProj = Get-ChildItem "$env:DW_SERIALIZER_REPO\src" -Directory | Select-Object -First 1
-```
-
-### Step 1 — Build the Serializer DLL (one-time per machine, when source updates)
+The engine is the public NuGet package **`Truvio.Commerce.Serializer`** (pin **0.6.9-beta or newer** — the version that ships the `?mode=replace` / `?mode=merge` endpoint aliases and the flat `predicates` config schema this file documents). Add it as a `PackageReference` to `Dynamicweb.Host.Suite` and restore — the engine assembly flows into the host build automatically, so there is **no manual DLL build and no copy into `bin/Debug/<TFM>/`**:
 
 ```powershell
-dotnet build $serializerProj.FullName -c Release
+dotnet add Dynamicweb.Host.Suite package Truvio.Commerce.Serializer --prerelease   # resolves 0.6.9-beta+
+dotnet restore Dynamicweb.Host.Suite
 ```
 
-### Step 2 — Copy DLL to host's TFM-specific bin folder
+Pin an exact version in the csproj (`<PackageReference Include="Truvio.Commerce.Serializer" Version="0.6.9-beta" />`) so a demo reproduces on the same engine it was proven against; bump it deliberately when adopting a newer engine. Restart the host after the restore so the new assembly is loaded. (The package targets net8.0; .NET 10's runtime back-loads net8.0 assemblies fine — no TFM juggling, because NuGet resolves the assembly into the host's own build output.)
 
-For a `dotnet run` host, .NET loads assemblies from `bin/Debug/<TFM>/` of the TARGET project, not from a generic `bin/` root. With the host pinned to `net10.0` (per [`foundational/setup-install.md`](foundational/setup-install.md) §2), the destination is `bin/Debug/net10.0/`:
+### Step 2 — Stage `Files/System/Serializer/Serializer.config.json`
 
-```powershell
-$dll = Get-ChildItem "$($serializerProj.FullName)\bin\Release\net8.0" -Filter '*Serializer*.dll' |
-       Select-Object -First 1   # derive the filename — it follows the csproj AssemblyName
-Copy-Item $dll.FullName "Dynamicweb.Host.Suite\bin\Debug\net10.0\" -Force
-```
-
-The DLL is built net8.0 (Serializer ships single-target net8.0 per its csproj). .NET 10's runtime back-loads net8.0 assemblies fine. Restart the host after the copy so the new DLL is picked up. Note: the README and `docs/getting-started.md` still say "copy to `/path/to/your-dw-host/bin/`" — that's the published-deployment shape and does NOT work for local `dotnet run` hosts; always use the TFM subfolder.
-
-### Step 3 — Stage `Files/System/Serializer/Serializer.config.json`
-
-The Serializer requires a config at `<host>/wwwroot/Files/System/Serializer/Serializer.config.json` (version-sensitive — see the path note below). Without one, `/Admin/Api/SerializerDeserialize` returns `Serializer.config.json not found (also checked ContentSync.config.json)`. The Serializer repo ships a canonical Swift 2.2 baseline config in the project's `Configuration\` folder — copy that as the starting point:
+The Serializer requires a config at `<host>/wwwroot/Files/System/Serializer/Serializer.config.json` (version-sensitive — see the path note below). Without one, `/Admin/Api/SerializerDeserialize` returns `Serializer.config.json not found (also checked ContentSync.config.json)`. The predicate config ships **with the layer being deserialized** — the `base` layer carries it under its `config/` tree (`distribution\layers\base\config\swift-2.3.json`); stage that as the starting point (or author one per the flat-`predicates` schema documented in "Replace vs Merge" below):
 
 ```powershell
 $cfgDir = "Dynamicweb.Host.Suite\wwwroot\Files\System\Serializer"
 New-Item -ItemType Directory -Path $cfgDir -Force | Out-Null
-Copy-Item "$($serializerProj.FullName)\Configuration\swift2.2-combined.json" `
+# The base layer's checked-out config tree (see deserialize-flow.md §3 for the Distribution checkout).
+Copy-Item "distribution\layers\base\config\swift-2.3.json" `
           "$cfgDir\Serializer.config.json" -Force
 ```
 
@@ -65,11 +48,13 @@ The shipped config uses the current schema: a single flat `predicates: [...]` li
 
 ### Verification
 
-After steps 1–3, restart the host. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST with no payload typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
+After steps 1–2, restart the host. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
 
 ### Replace vs Merge (aliases of Deploy/Seed)
 
 Two **conflict strategies** for the same deserialize pipeline, set per predicate (each entry in the flat `predicates: [...]` list carries `"mode": "Deploy"` or `"mode": "Seed"` — the `DeploymentMode` enum names, unchanged in config). Engine `v0.6.9-beta`+ additionally accepts **`replace`** (= Deploy, source-wins) and **`merge`** (= Seed, field-level) as aliases at the `?mode=` endpoint and as the layer mode-dir names `replace/` + `merge/`; the predicate `"mode"` field keeps the enum spelling. (The legacy `deploy: { predicates: [...] }` / `seed: { ... }` shape is rejected by `ConfigLoader`.)
+
+**Always pass `?mode=` explicitly on 0.6.9 — both passes.** A mode-less `POST /Admin/Api/SerializerDeserialize` on engine 0.6.9-beta targets the **legacy `deploy` folder** rather than `SerializeRoot/replace/`, and returns **HTTP 400 `deploy contains no YAML files`** against a layer that stages `replace/`+`merge/`. Run `?mode=replace` first, then `?mode=merge` — never a bare POST. The two-pass sequence + snippet is owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §4.
 
 | Mode (dir / alias) | `"mode"` field | Conflict strategy | Use for |
 |---|---|---|---|
@@ -78,7 +63,7 @@ Two **conflict strategies** for the same deserialize pipeline, set per predicate
 
 For Swift `base` layer restore ([`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md)), the meaningful pass is **replace**; the **merge** pass runs but the base ships no catalog, so it lands nothing (see deserialize-flow §4).
 
-Upstream long-form: `$env:DW_SERIALIZER_REPO\docs\concepts.md` — "Deploy and Seed modes", "The three-bucket split".
+Upstream long-form: the engine's published docs — `concepts.md` "Deploy and Seed modes" / "The three-bucket split" (in the `Truvio.Commerce.Serializer` project repo, optional to clone — see the Internals pointer block).
 
 ## Baseline shape
 
@@ -86,13 +71,13 @@ The legacy content-only baseline (`Swift2.2`) shape had **no `_sql/`** (the hist
 
 ## Internals — upstream pointer block
 
-Architecture, source layout, pipeline walkthrough, YAML schema details, strict-mode internals, the identity model (GUID-based `PageUniqueId` identity with per-environment numeric ID resolution), link-resolution passes, runtime exclusions, and the tools folder (`purge-cleandb.sql`, `swift22-cleanup/`, e2e harness, smoke tests, the Swift 2.2 bacpac) are all documented canonically in the upstream repo — **do not rely on a paraphrase here; upstream wins**:
+Architecture, source layout, pipeline walkthrough, YAML schema details, strict-mode internals, the identity model (GUID-based `PageUniqueId` identity with per-environment numeric ID resolution), link-resolution passes, runtime exclusions, and the tools folder (`purge-cleandb.sql`, `swift22-cleanup/`, e2e harness, smoke tests, the Swift 2.2 bacpac) are all documented canonically in the engine's own repository — **do not rely on a paraphrase here; the engine docs win**. Installing the demo host does **not** require this clone (the NuGet package alone deserializes); clone it **only** for an internals deep-dive. If you keep a local clone (set `$env:DW_SERIALIZER_REPO` to its root, User scope, per `references/setup-checks.md` §4), these are the canonical entry points:
 
-- `$env:DW_SERIALIZER_REPO\docs\` — README → `concepts.md` → `strict-mode.md` (full warning-source table, override precedence, cache-registry extension recipe) → `link-resolution.md` → `troubleshooting.md` → `configuration.md` → `runtime-exclusions.md` → `sql-tables.md` → `permissions.md` → `cicd.md`
-- `$env:DW_SERIALIZER_REPO\src\<project>\` — source (the single project folder under `src\`); `Providers\SerializerOrchestrator.cs` is the entry point
-- `$env:DW_SERIALIZER_REPO\tools\` — each tool subfolder carries its own README. **DB fast-restore (escape-hatch alternative to deserialize)** is a per-machine local artifact: if you keep a clean-DB bacpac / `.mdf` snapshot on the box, note its location in the demo's own notes and restore from there — there is no shared vault slot for it. A bacpac copy inside the Serializer repo's tools folder is a development convenience, not a canonical resolution target.
+- `docs\` — README → `concepts.md` → `strict-mode.md` (full warning-source table, override precedence, cache-registry extension recipe) → `link-resolution.md` → `troubleshooting.md` → `configuration.md` → `runtime-exclusions.md` → `sql-tables.md` → `permissions.md` → `cicd.md`
+- `src\<project>\` — source (the single project folder under `src\`); `Providers\SerializerOrchestrator.cs` is the entry point
+- `tools\` — each tool subfolder carries its own README. **DB fast-restore (escape-hatch alternative to deserialize)** is a per-machine local artifact: if you keep a clean-DB bacpac / `.mdf` snapshot on the box, note its location in the demo's own notes and restore from there — there is no shared vault slot for it. A bacpac copy inside the engine repo's tools folder is a development convenience, not a canonical resolution target.
 
-Note: the DW10 source clone (a per-machine local clone, location asked/discovered) is NOT the Serializer — Serializer source lives only under `$env:DW_SERIALIZER_REPO`.
+Note: the DW10 platform source clone is NOT the Serializer — the Serializer source lives only in the `Truvio.Commerce.Serializer` repo (the one the NuGet package is published from), and cloning it is optional.
 
 Two operational facts worth keeping in mind without loading upstream docs:
 
@@ -194,6 +179,7 @@ Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release,
 | Run a baseline content deserialize (Swift demos only) | [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) |
 | Post-deserialize integrity checks | [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md) |
 | Recover from DW10 update-queue bugs (independent of Serializer) | `references/db-update-recovery.md` |
-| Serializer internals — architecture, YAML schema, strict mode, link resolution, tools (canonical) | `$env:DW_SERIALIZER_REPO\docs\` + source ("Internals — upstream pointer block" above) |
+| Install the engine into the host | NuGet `Truvio.Commerce.Serializer` (0.6.9-beta+) — "Installation" Step 1 above (no repo clone) |
+| Serializer internals — architecture, YAML schema, strict mode, link resolution, tools (canonical) | the `Truvio.Commerce.Serializer` engine repo `docs\` + source — an **optional** clone ("Internals — upstream pointer block" above) |
 
 

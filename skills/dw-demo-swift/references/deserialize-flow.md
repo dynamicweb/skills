@@ -126,6 +126,8 @@ foreach ($mode in 'replace','merge') {
 
 **Pre-import: re-serialize before merging baseline YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/SerializerSerialize` FIRST so the replace folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
 
+**Renaming an Area re-slugs its frontend URLs.** The area name drives the URL segment, so renaming an Area changes the public URL of every page under it — any bookmark / link / cheat-sheet URL built against the old slug then 404s. Settle the area name **before** publishing links or building the demo's URL list, not after; if a rename is unavoidable late, re-capture the affected URLs.
+
 **Predicate config: each `_content/<AreaName>/` folder needs a matching predicate.** Add a content predicate to `Files/System/Serializer/Serializer.config.json` per area you want imported:
 ```json
 {
@@ -153,23 +155,25 @@ foreach ($mode in 'replace','merge') {
 
 ## 4. Step 2 — POST against running host
 
-**Two POSTs — replace first, then merge.** A bare `POST /Admin/Api/SerializerDeserialize` executes the **Replace** pass ONLY (the default mode). The Merge pass is not implicit — it must be requested explicitly with `?mode=merge` in a **second** POST. (The engine also accepts the legacy `Deploy`/`Seed` names as aliases for `replace`/`merge`.) For the scaffolding-only base layer, the replace pass lands framework + pages + starter content (source-wins); the merge pass carries **no sample catalog** (the base ships zero EcomProducts/Groups/Prices — see §3), so it applies only whatever starter-content rows the base puts in `merge/`, if any. Either way the storefront comes up with an **empty catalog by design** — that is expected, not a missing-products failure. Author the catalog per-demo via [`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md) (or stage the `fixture-catalog` layer / `swift-demo` edition). (The two-POST mechanic still matters generally: feature-pack fragments deserialize in `merge` mode — see [`pack-activation.md`](pack-activation.md).)
+**Two POSTs — both with an explicit `?mode=`, replace first then merge.** On engine **0.6.9-beta** each pass must name its mode: `?mode=replace` then `?mode=merge`. **Do NOT rely on a bare `POST /Admin/Api/SerializerDeserialize`** — on 0.6.9 a mode-less POST targets the **legacy `deploy` folder** (not `SerializeRoot/replace/`), and against a layer that stages `replace/`+`merge/` it returns **HTTP 400 `deploy contains no YAML files`**. Pass `?mode=replace` explicitly for the first pass so the engine reads `SerializeRoot/replace/`. (The engine also accepts the legacy `Deploy`/`Seed` names as aliases for `replace`/`merge`.) For the scaffolding-only base layer, the replace pass lands framework + pages + starter content (source-wins); the merge pass carries **no sample catalog** (the base ships zero EcomProducts/Groups/Prices — see §3), so it applies only whatever starter-content rows the base puts in `merge/`, if any. Either way the storefront comes up with an **empty catalog by design** — that is expected, not a missing-products failure. Author the catalog per-demo via [`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md) (or stage the `fixture-catalog` layer / `swift-demo` edition). (The two-POST mechanic still matters generally: feature-pack fragments deserialize in `merge` mode — see [`pack-activation.md`](pack-activation.md).)
 
 ```powershell
-# Pass 1 — Replace (the default mode; framework + content).
+# Pass 1 — Replace (?mode=replace is REQUIRED on 0.6.9; a bare POST hits the legacy deploy
+# folder and 400s "deploy contains no YAML files"). Lands framework + content, source-wins.
 $replace = Invoke-RestMethod `
-  -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize" `
+  -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=replace" `
   -Method POST `
   -Headers @{ Authorization = "Bearer $token" } `
   -SkipCertificateCheck
 
-# Pass 2 — Merge (catalog). The ?mode=merge is REQUIRED — omitting it re-runs Replace, not Merge.
+# Pass 2 — Merge (catalog / field-level). ?mode=merge is REQUIRED — omitting it never runs Merge.
 $merge = Invoke-RestMethod `
   -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=merge" `
   -Method POST `
   -Headers @{ Authorization = "Bearer $token" } `
   -SkipCertificateCheck
 # Strict mode is on by default for API callers (per Serializer README).
+# Each pass returns HTTP 200 with 0 failed predicates on success.
 # On failure: HTTP 4xx with CumulativeStrictModeException details (read the body — it's the diagnostic).
 ```
 

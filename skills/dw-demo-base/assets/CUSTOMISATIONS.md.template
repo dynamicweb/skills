@@ -4,6 +4,10 @@
 > without a row below explaining why.
 >
 > Approved by Justin (or designate) at write-time via `dynamicweb-demo-base` AskUserQuestion.
+>
+> **Never record plaintext user passwords, API keys, or tokens here — this file is git-tracked.**
+> Keep demo logins in the gitignored `notes/credentials.local.md` and reference them by pointer
+> (e.g. "buyer/CSR logins: see `notes/credentials.local.md`").
 
 | Date | File | Type | Reason | Approved by |
 |------|------|------|--------|-------------|
