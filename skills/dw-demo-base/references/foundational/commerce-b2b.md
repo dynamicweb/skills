@@ -171,6 +171,12 @@ operator *should not* see in routine browsing.
 
 ## Verification flow
 
+**Prove the cart in a browser, not with curl.** Swift's add-to-cart / cart-update is **client-side JS
+(htmx / AJAX)** — a `curl` / `Invoke-RestMethod` GET or POST does not exercise it and returns the empty
+pre-cart page, which reads as a false "cart is broken". Drive the add-to-cart → cart → price-check flow
+through browser automation (Playwright) signed in as the buyer; the raw-HTTP surfaces only prove
+server-rendered state (PLP, PDP price pane), not the cart round-trip.
+
 After setting up DC groups + Stock Locations + per-DC Assortments + per-DC Shipping methods/fees,
 verify by logging in as a buyer in one DC group and confirming:
 

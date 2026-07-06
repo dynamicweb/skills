@@ -126,6 +126,8 @@ foreach ($mode in 'replace','merge') {
 
 **Pre-import: re-serialize before merging baseline YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/SerializerSerialize` FIRST so the replace folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
 
+**Renaming an Area re-slugs its frontend URLs.** The area name drives the URL segment, so renaming an Area changes the public URL of every page under it — any bookmark / link / cheat-sheet URL built against the old slug then 404s. Settle the area name **before** publishing links or building the demo's URL list, not after; if a rename is unavoidable late, re-capture the affected URLs.
+
 **Predicate config: each `_content/<AreaName>/` folder needs a matching predicate.** Add a content predicate to `Files/System/Serializer/Serializer.config.json` per area you want imported:
 ```json
 {

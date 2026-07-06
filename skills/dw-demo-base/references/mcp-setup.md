@@ -108,7 +108,7 @@ The skill's `assets/mcp.json.template` is the parametric source (with literal `<
 1. `browser_navigate` to `https://localhost:<port>/Admin` and log in with the demo's admin credentials (from conversation state / project files — the discover-from-project-files rule).
 2. Navigate to **Settings → Integration → MCP configurations** (exact menu path may vary by DW10 version — look for "MCP" under Integration).
 3. **New configuration**, set **Access = Full access**, set **Authentication method = API Key**. Save.
-4. The admin UI generates a plaintext API key and **shows it once** — read it off the page immediately (`browser_snapshot` / DOM-grep; you cannot retrieve the plaintext later, the DB only stores the hash). Format is the same shape as the Management API token: `CLAUDE.<hex>` (or similar; whatever the admin UI displays is what you use in Step 3b).
+4. The admin UI generates a plaintext API key and **shows it once** — read it off the page immediately (`browser_snapshot` / DOM-grep; you cannot retrieve the plaintext later, the DB only stores the hash). The prefix is **version-dependent**: on **DW 10.27.4** the MCP API key is prefixed **`mcp.<hex>`** (distinct from the Management API token, which stays `CLAUDE.<hex>`); older builds emitted a `CLAUDE.<hex>`-shaped MCP key too. Whatever prefix the admin UI displays is what you paste in Step 3b — do not assume `CLAUDE.`.
 
 If the key wasn't captured on first display, delete the configuration and recreate it — there is no "show again" path. If browser automation can't land the flow after a few attempts, fall back to the headless alternative below; ask the user to click through it only when both routes are exhausted.
 
@@ -211,7 +211,7 @@ This step is idempotent — safe to skip if `claude mcp list` already shows `pla
 
 ## Step 6 — Discover bearer tokens (the discover-from-project-files rule)
 
-A Dynamicweb demo has **two** bearer tokens, both `CLAUDE.<hex>`-shaped rows in `AccessUserToken`:
+A Dynamicweb demo has **two** bearer tokens, both rows in `AccessUserToken`. The Management API token is `CLAUDE.<hex>`-shaped; the **MCP API key prefix is version-dependent** — `mcp.<hex>` on DW 10.27.4, `CLAUDE.<hex>` on older builds. Use whatever prefix the admin UI displayed, not an assumed one:
 
 | Token | Issued from | Used for |
 |---|---|---|

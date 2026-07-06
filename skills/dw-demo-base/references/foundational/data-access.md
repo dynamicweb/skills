@@ -74,6 +74,13 @@ directory — hold it in conversation state, not as a global default.
 disciplines below. Reach for SQL only once you've decided it's the right surface (bulk seeds, MCP token
 expiry mid-batch, no MCP available, or an item type with no MCP surface).
 
+**`save_pages` does not persist `urlName` / `navigationTag` / `hidden` (verified 10.27.x).** Even the
+MCP-first path needs a SQL touch-up for these three: a page created via `save_pages` lands with a
+derived URL slug, no navigation tag, and default visibility **regardless of what you pass** for those
+fields. After the MCP create, set `Page.PageUrlName`, the navigation-tag column, and `Page.PageHidden`
+via SQL (then restart per the cache rules below), or author the Page row entirely via SQL from the
+start using the required-column list below.
+
 ### Required NOT-NULL columns — `Page`
 
 DW10 returns 404 for a SQL-inserted Page even when the slug resolves, unless every column below carries
