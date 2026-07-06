@@ -54,6 +54,8 @@ After steps 1–2, restart the host. `/Admin/Api/SerializerDeserialize` should r
 
 Two **conflict strategies** for the same deserialize pipeline, set per predicate (each entry in the flat `predicates: [...]` list carries `"mode": "Deploy"` or `"mode": "Seed"` — the `DeploymentMode` enum names, unchanged in config). Engine `v0.6.9-beta`+ additionally accepts **`replace`** (= Deploy, source-wins) and **`merge`** (= Seed, field-level) as aliases at the `?mode=` endpoint and as the layer mode-dir names `replace/` + `merge/`; the predicate `"mode"` field keeps the enum spelling. (The legacy `deploy: { predicates: [...] }` / `seed: { ... }` shape is rejected by `ConfigLoader`.)
 
+**Always pass `?mode=` explicitly on 0.6.9 — both passes.** A mode-less `POST /Admin/Api/SerializerDeserialize` on engine 0.6.9-beta targets the **legacy `deploy` folder** rather than `SerializeRoot/replace/`, and returns **HTTP 400 `deploy contains no YAML files`** against a layer that stages `replace/`+`merge/`. Run `?mode=replace` first, then `?mode=merge` — never a bare POST. The two-pass sequence + snippet is owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §4.
+
 | Mode (dir / alias) | `"mode"` field | Conflict strategy | Use for |
 |---|---|---|---|
 | **replace** | `Deploy` | Source-wins. Re-deserialize overwrites target. | Developer-owned deployment data: shop structure, item types, VAT rates, country list, payment method definitions. Identical across envs. |
