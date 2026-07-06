@@ -115,6 +115,24 @@ ID (e.g. `LANG2`) to write to that language version. Omitting it writes to the d
 language. **First call must be against `LANG1` (master)** before `LANG2` can exist — DW10 forbids
 creating language versions of a product whose master row is missing.
 
+**`create_products` ignores `languageId` — every new product lands on the master (default) language.**
+Unlike `update_products`, the `create_products` tool honors no language parameter: it writes each
+product to the default `EcomLanguages` row (`LanguageIsDefault=1` — typically `LANG1`/en-US, i.e. ENU).
+If the storefront's area serves a **different** language layer, those products are **invisible on that
+PLP** — products are on the must-translate list (above), so a product with no translation row for the
+served language does not render (the PLP comes up empty even though the products exist in admin). Two
+recoveries, depending on intent:
+
+- The product should exist in the served language *in addition* to the default → after `create_products`,
+  add the language version and write name/description via `update_products` with `languageId=<served>`
+  (or SQL on `EcomProductTranslation`), then rebuild the Products index.
+- The served language should itself be the default the products land on → set that `EcomLanguages` row
+  `LanguageIsDefault=1` **before** `create_products`, or SQL-repoint the created rows' language column,
+  then rebuild the index.
+
+**Validate:** after the index rebuild, the product is visible on the served-language PLP (not just in
+the admin product list).
+
 **The group-translation null gotcha (validated DW 10.25.x):** translating group names is **load-bearing,
 not cosmetic.** `Services.ProductGroups.GetGroup(id)` resolves against the CURRENT language context, and
 with no group rows for the new language it returns **null** — group-driven frontend components

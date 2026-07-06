@@ -574,6 +574,14 @@ who should also see it. No cache flush needed — the table is queried per reque
 
 ## 13. Plaintext password storage — `EncryptPassword=False` escape hatch
 
+**The passwordless-user trap.** There is **no MCP password tool** — `create_users` (and the Management
+API `UserSave`) create a login with **no usable password**, so a freshly-seeded buyer / CSR / admin
+persona **cannot sign in** until a password is set out-of-band. Naively adding personas via MCP and
+then trying to demo a login fails at the sign-in screen with no obvious cause. The canonical recovery
+is the SQL escape hatch below (plaintext under `EncryptPassword=False`, which DW auto-rehashes on first
+login). **Validate:** after setting the password, actually sign in as the persona (not as an admin) and
+confirm you reach the account/customer-center landing.
+
 `GlobalSettings.config` (path: `Dynamicweb.Host.Suite/wwwroot/Files/GlobalSettings.config` on a
 standard install) controls password storage mode for both backend admins and extranet users:
 

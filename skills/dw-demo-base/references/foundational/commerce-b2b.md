@@ -32,6 +32,30 @@ wholesale / B2B-distributor scenario that touches DC-aware behavior.
 This is *not* a custom architecture. Each of the four features is a stock DW10 surface that scopes
 by user-group; "DC = user group" is the convention that makes them compose.
 
+## Customer-scoped contract prices — `save_prices` can't set the customer number
+
+A **contract price** scoped to one customer account (not a whole user-group) lives in an `EcomPrices`
+row whose **`PriceUserCustomerNumber`** equals the buyer's `AccessUserCustomerNumber`. The stock price
+resolver applies that row when the signed-in buyer's customer number matches — **contract pricing is
+native default-provider behavior, zero custom code** (no `IPriceProvider`). The gap is authoring: the
+MCP **`save_prices` tool has no `PriceUserCustomerNumber` parameter** — it can set list / currency /
+`PriceCustomerGroup`-scoped rows, but **cannot scope a row to a customer number**. Author the contract
+row via SQL:
+
+```sql
+-- Confirm the row's NOT-NULL columns first:
+--   SELECT name, is_nullable FROM sys.columns WHERE object_id = OBJECT_ID('EcomPrices') AND is_nullable = 0;
+INSERT INTO EcomPrices (PriceProductId, PriceCurrencyCode, PriceAmount, PriceUserCustomerNumber /*, …*/)
+VALUES (N'<productId>', N'<CUR>', <amount>, N'<buyer AccessUserCustomerNumber>' /*, … */);
+```
+
+Restart or flush the price cache after a direct SQL write (see [`cache-invalidation.md`](cache-invalidation.md)).
+**Validate:** sign in as that buyer → the PDP / cart shows the contract price; sign in as a different
+buyer → they see the list price. (Contract price = per-customer; the group-scoped `PriceCustomerGroup`
+resolver of §"Cart-time price resolution" is the per-DC-group counterpart. Quantity-tier
+enforcement — `PriceQuantity > 0` rows — is a separate matter the **stock cart ignores**; see
+[`commerce-catalog.md`](commerce-catalog.md) §2.11.)
+
 ## Naming convention
 
 | Field | Value | Why |
