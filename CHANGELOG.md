@@ -3,6 +3,53 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.4.0]
+
+Folds from a full clone/layers/editions re-validation on the current Swift 2.3 / DW 10.27.x line.
+All demo-side; no bundle or frontmatter changes.
+
+### Changed
+- **The Serializer installs from the public NuGet package `Truvio.Commerce.Serializer` (0.6.9-beta+),
+  not a repo clone.** Load-bearing: the old `$env:DW_SERIALIZER_REPO` clone requirement blocked a
+  verbatim partner at the first deserialize (the engine isn't bundled in the partner toolkit).
+  `serializer-reference.md` "Installation" now adds a `PackageReference` + `dotnet restore` (no manual
+  DLL build, no copy into `bin/Debug/<TFM>/`); the engine-repo clone is **optional**, for internals
+  deep-dives only. The `Serializer.config.json` is staged from the base layer's `config/` tree.
+- **Deserialize requires an explicit `?mode=replace` then `?mode=merge` on engine 0.6.9-beta.** A
+  mode-less POST targets the legacy `deploy` folder and returns HTTP 400 `deploy contains no YAML
+  files`. `deserialize-flow.md` §4 (both passes now name their mode) + `serializer-reference.md`
+  "Replace vs Merge".
+- **No plaintext user passwords in the git-tracked `CUSTOMISATIONS.md`.** Keep demo logins in the
+  gitignored `notes/credentials.local.md` and reference them by pointer. `customisations.md` +
+  `assets/CUSTOMISATIONS.md.template`.
+
+### Added
+- **`ProductsFrontend` catalog-query authoring is a required PIM step.** The Swift catalog app resolves
+  its PLP/PDP index query against a `ProductsFrontend` repository the scaffolding-only `base` layer does
+  not ship — an authored catalog with a working `Products.index` still renders an **empty PLP** until
+  the query exists. `canonical-setup-order.md` step 17 (author it, or point the catalog paragraphs at
+  your own `Products/` repo; no-op if a future base ships a stub).
+- **Three MCP/SQL authoring gaps documented as canonical recoveries.** `create_products` ignores
+  `languageId` → products land on the master language and are invisible on a non-default-language
+  storefront (`pim-localization.md` + `canonical-setup-order.md` steps 9/10); `save_prices` can't scope
+  a contract price by customer number → SQL `PriceUserCustomerNumber` (`commerce-b2b.md`, contract price
+  is native zero-code); no MCP password tool → the passwordless-user trap, recover via plaintext SQL
+  under `EncryptPassword=False` (DW rehashes on first login) (`users-permissions.md` §13).
+- **Feature layers may ship a declared, compile-optional provider** via a `layer.json` `customCode`
+  block stating what works zero-code vs. what the opt-in compile adds. The base layer stays
+  zero-custom-code. `pack-activation.md` §5 + §12 — worked example `reordering-pricing`: contract price
+  is zero-code, quantity-tier enforcement needs the §6 opt-in compile.
+- **Minor recipe notes.** Cart proof needs a browser — Swift's add-to-cart is client-side JS/AJAX, not
+  curl (`commerce-b2b.md`); renaming an Area re-slugs its frontend URLs (`deserialize-flow.md` §3);
+  `save_pages` does not persist `urlName` / `navigationTag` / `hidden` → SQL touch-up (`data-access.md`
+  + `cheat-sheet.md`); the MCP API key prefix is `mcp.<hex>` on DW 10.27.4 (Management API token stays
+  `CLAUDE.<hex>`) (`mcp-setup.md`).
+
+Touched: `dw-demo-base` (`references/serializer-reference.md`, `mcp-setup.md`, `customisations.md`,
+`assets/CUSTOMISATIONS.md.template`, `references/foundational/{pim-localization,commerce-b2b,
+users-permissions,data-access}.md`), `dw-demo-swift` (`references/{deserialize-flow,pack-activation,
+cheat-sheet}.md`), `dw-demo-pim` (`references/canonical-setup-order.md`).
+
 ## [4.3.0]
 
 ### Changed (BREAKING — distribution model)
