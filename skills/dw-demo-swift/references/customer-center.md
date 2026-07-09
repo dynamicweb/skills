@@ -36,9 +36,11 @@ Customer center/
 ├── CSR/                          ← THE STOCK SALES-ON-BEHALF SECTION (never rebuild)
 │   ├── Orders/, Accounts/, Carts/, Users/
 ├── Customer center/              ← legacy/alt nav under same top-level
-│   └── My profile/, My addresses/, Change password/, ...
-└── Overview/                     ← landing page (4 grid rows)
+│   └── My profile/, My addresses/, My carts/, My quotes/, My favorites/, My returns/, Change password/, ...
+└── Overview/                     ← landing page
 ```
+
+From base **2.3.2** the Overview landing is a **tile dashboard** (stock `Swift-v2_Feature` cards linking to Orders / Quotes / Carts / Favorites / Addresses / Profile / Returns), not a bare order list, and a stock **My returns** RMA page (`eCom_CustomerExperienceCenterRma`) ships in the buyer `Customer center/` tree. Seed every list those tiles open onto — see [dashboard-seeding.md](dashboard-seeding.md).
 
 This is the canonical tree any Customer-360 / sales-on-behalf demo references (`Customer center/CSR/{Orders, Accounts, Carts, Users}`). It's pre-built, paragraph-driven, requires no custom Razor.
 
@@ -64,6 +66,8 @@ Symptom: CSR Overview page has empty grid rows, or `CSR/Orders/` shows no orders
 4. **Index not built or cache stale after wiring the grant** -- see [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md). For Products-index rebuilds, see [dynamicweb-pim-demo/references/governance.md "Recovery recipe: Rebuild Products index"](../../dw-demo-pim/references/governance.md).
 
 What is NOT the cause: missing paragraphs / broken templates / Swift 2.3 incompatibility. The swift/2.3 baseline is verified working by [`deserialize-flow.md`](deserialize-flow.md); if the page renders at all, the structure is intact and the issue is data-side.
+
+Once the diagnosis is "data-side", drive the fix from [dashboard-seeding.md](dashboard-seeding.md) — the per-tile seed checklist that makes every buyer and CSR list land (the "no empty lists on demo day" bar).
 
 ## 5. Persona presentation: avatar + role badge
 
