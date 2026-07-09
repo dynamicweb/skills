@@ -120,4 +120,4 @@ Batch at most a handful of fixes between re-checks, and never declare a page don
 - Detectors: `overflowX` 0, `broken`/`stretched` empty, no unexplained gap > 120px, console free of errors, no 404 assets.
 - Interaction pass: every visible control changes state when used.
 - Eyeball checklist: pass at desktop AND mobile widths.
-- Keeper screenshots (both breakpoints) saved under `<demo>\notes\playwright\`.
+- Keeper screenshots (both breakpoints) saved under `<demo>\notes\qa\` (the canonical QA-evidence home — see `SKILL.md` "Artifact hygiene"; never the demo root).

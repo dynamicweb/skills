@@ -73,6 +73,19 @@ $mcpJson = @{
 $mcpJson | Set-Content -Encoding UTF8 ".mcp.json"
 ```
 
+**At the same time, pre-seed `.claude/settings.local.json` with `enabledMcpjsonServers`** so the project MCP server surfaces without an interactive approval. A project-scoped `.mcp.json` server otherwise sits at "⏸ Pending approval (run `claude` to approve)" — an interactive-only gate no headless/unattended run can click through, so native tools never load. Listing the server in `enabledMcpjsonServers` clears that gate up front (the file also carries the `NODE_TLS_REJECT_UNAUTHORIZED` env layer from `references/tls-bypass.md` — same file, merge the keys):
+
+```powershell
+$settings = @{
+  env = @{ NODE_TLS_REJECT_UNAUTHORIZED = "0" }
+  enabledMcpjsonServers = @("dynamicweb-commerce-mcp")
+} | ConvertTo-Json -Depth 5
+New-Item -ItemType Directory -Force -Path ".claude" | Out-Null
+$settings | Set-Content -Encoding UTF8 ".claude/settings.local.json"
+```
+
+This is a friction fix, not the unattended action path: the sanctioned way to drive the server without any client approval is still direct JSON-RPC against `/admin/mcp` with the bearer (see "Autonomous/headless fallback" below). Pre-seeding surfaces the *native* tools when a fresh Claude Code session can be started; JSON-RPC is what runs when it cannot. The `assets/settings.local.json.template` ships both keys.
+
 The skill's `assets/mcp.json.template` is the parametric source (with literal `<PORT>` and `<MCP_API_KEY>` placeholders); the snippet above is the runtime-discovered version that substitutes the actual port. Either route produces the same JSON shape:
 
 ```json

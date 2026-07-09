@@ -82,7 +82,7 @@ Two-part fix:
    claude mcp add --scope user playwright -- npx -y @playwright/mcp@latest --ignore-https-errors --isolated --output-dir "$env:USERPROFILE\.playwright-mcp-output"
    ```
 
-2. **For keeper shots, pass an absolute path under the demo's `notes\`.** Verification screenshots worth keeping belong *with* the demo, not in the cross-demo scratch dir. Pass an absolute `filename` so it bypasses `--output-dir` entirely: `<demo>\notes\playwright\<persona>-<step>.jpeg`. This matches the `<demo>\notes\` output convention the customer-context contract already mandates (`references/customer-context.md`).
+2. **For keeper shots, pass an absolute path under `<demo>\notes\qa\`.** Verification screenshots worth keeping belong *with* the demo, not in the cross-demo scratch dir. Pass an absolute `filename` so it bypasses `--output-dir` entirely: `<demo>\notes\qa\<persona>-<step>.jpeg`. `notes\qa\` is the canonical QA-evidence home from `SKILL.md` "Artifact hygiene"; DOM / accessibility dumps (`browser_snapshot`) go to `<demo>\notes\snapshots\` instead, and each is named for what it IS (`admin-a11y-snapshot-*.md`), never for what it was captured during.
 
 Changing `--output-dir` on an already-registered MCP requires a **fresh Claude Code session** — the running server is pinned to its launch-time argv (same restart rule as Step 3, and the Chromium-fallback gotcha below).
 
@@ -129,7 +129,7 @@ After a Dynamicweb demo finishes seeding (PIM content, customer-center pages, pa
 2. **Navigate to the public storefront** (not `/Admin`). Example: `mcp__playwright__browser_navigate url="https://localhost:<port>/<shop-slug>/"`.
 3. **Log in as a seeded buyer.** Submit credentials via the storefront login form, NOT against `/Admin` (that's the admin UI, not the customer journey). Credentials come from the demo's per-demo Claude memory (the discover-from-project-files rule); never hardcode.
 4. **Walk to the target tab** (e.g. account orders, favorites, recurring orders, checkout).
-5. **Screenshot** (pass an absolute `<demo>\notes\playwright\` filename so the shot lands with the demo, never in the repo root — see "Where screenshots land") + **DOM-grep** for the expected entity count. Example: assert at least N order rows visible, or that a specific SKU appears in favorites.
+5. **Screenshot** (pass an absolute `<demo>\notes\qa\` filename so the shot lands with the demo, never in the repo root — see "Where screenshots land" and `SKILL.md` "Artifact hygiene") + **DOM-grep** for the expected entity count. Example: assert at least N order rows visible, or that a specific SKU appears in favorites.
    - **Scroll-sweep before any `fullPage` screenshot or image assertion.** Swift lazy-loads images
      (`loading="lazy"`); a full-page capture stitches below-fold regions whose images never entered
      the viewport, so tiles render as blank wells, and `img.naturalWidth === 0` reads as "broken
@@ -230,7 +230,7 @@ Plan JSON example (`plan-<persona>.json`):
 {
   "user": "<seeded-username>",
   "pass": "<seeded-password>",
-  "outDir": "<demo>/notes/playwright/<persona>",
+  "outDir": "<demo>/notes/qa/<persona>",
   "steps": [
     { "tag": "01-overview", "goto": "https://localhost:<port>/<shop>/overview", "shot": "01-overview.png", "full": true, "html": "01-overview.html" }
   ]

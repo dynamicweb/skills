@@ -1,10 +1,10 @@
 {
-  "_comment": "Merge this agent_skills block into the demo project's .planning/config.json (GSD mode). Keys are the real GSD agent type names in this install — a fork may differ; run /gsd config or list the install's agent types and re-key. Each value is a list of skill directories (each holds a SKILL.md); GSD reads them into the agent at spawn. Rewrite the skills/dw-demo-* paths to the plugin's install base (e.g. ~/.claude/plugins/marketplaces/dynamicweb-skills/skills/...) or a local clone. See dw-demo-base/references/orchestrator.md.",
+  "_comment": "Merge this agent_skills block into the demo project's .planning/config.json (GSD mode). Keys are the real GSD agent type names in this install — a fork may differ; run /gsd config or list the install's agent types and re-key. Each value is a list of skill directories (each holds a SKILL.md); GSD reads them into the agent at spawn. PATH CONTAINMENT: the gsd-tools agent-skills loader rejects absolute paths ('Absolute paths not allowed') AND resolves junctions/symlinks to their real target then rejects them as outside the project root — both silently inject zero skills. Wire it right: COPY the skill dirs (real copies, not junctions) into <demo>\\.claude\\skills\\dw-demo-* and key the paths project-relative as below. See dw-demo-base/references/orchestrator.md 'The keystone'.",
   "agent_skills": {
-    "gsd-project-researcher": ["skills/dw-demo-base"],
-    "gsd-phase-researcher": ["skills/dw-demo-base"],
-    "gsd-planner": ["skills/dw-demo-base", "skills/dw-demo-pim"],
-    "gsd-executor": ["skills/dw-demo-base", "skills/dw-demo-pim", "skills/dw-demo-swift", "skills/dw-demo-erp", "skills/dw-integration-bc"],
-    "gsd-verifier": ["skills/dw-demo-base", "skills/dw-demo-swift"]
+    "gsd-project-researcher": [".claude/skills/dw-demo-base"],
+    "gsd-phase-researcher": [".claude/skills/dw-demo-base"],
+    "gsd-planner": [".claude/skills/dw-demo-base", ".claude/skills/dw-demo-pim"],
+    "gsd-executor": [".claude/skills/dw-demo-base", ".claude/skills/dw-demo-pim", ".claude/skills/dw-demo-swift", ".claude/skills/dw-demo-erp", ".claude/skills/dw-integration-bc"],
+    "gsd-verifier": [".claude/skills/dw-demo-base", ".claude/skills/dw-demo-swift"]
   }
 }
