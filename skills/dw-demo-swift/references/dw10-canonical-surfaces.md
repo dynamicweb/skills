@@ -22,6 +22,15 @@
 | `ViewModelTemplate<>` Razor pitfalls (`@Html.Raw` absent, `ProductFieldValues`, `ToggleFavorite`) | `dw-render-razor` | [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §2 |
 | Custom item types — the `<Prefix>_*` discipline | `dw-content-modelling` | [`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §2 |
 
+## Legacy dotted-path redirects (`.htm` / `.asp`) — IIS-only; don't fail the polish gate on localhost
+
+Seeded 301 redirects from legacy URLs (e.g. a Volusion migration) behave differently on the dev host than in production, and it reads as "redirects are broken" during polish when it isn't:
+
+- **Extensionless stems 301 correctly on the Kestrel dev host** — `GET /<legacy-stem>` → 301 to the new URL.
+- **Literal `.htm` / `.asp` rows 404 on Kestrel** — ASP.NET Core drops dotted paths before DW's redirect provider sees them. On **production IIS the same rows reach the provider and 301** as intended.
+
+So: **store the literal `.htm` / `.asp` rows for production, demo the extensionless stems on localhost.** The polish gate must assert the extensionless stems 301 on the dev host and must **not** fail on dotted-path 404s — flag those as IIS-only rows, not defects. One sentence in the runbook saves the "redirects are broken" scare during a local polish pass.
+
 ## Discipline audit — grep pack (run before "ready" / before fold-back)
 
 The one-shot grep pack that verifies a Swift demo's templates against the canonical surfaces is owned
