@@ -5,6 +5,9 @@ Checks (errors fail the build, warnings are printed but do not):
   - marketplace.json parses and every referenced skill path exists.
   - Each skill folder name == `name:` frontmatter == marketplace path basename.
   - Each SKILL.md frontmatter has both `name` and `description`.
+  - Each SKILL.md frontmatter parses as strict YAML (a mapping with name +
+    description) — catches unquoted `description:` values carrying a second
+    ": " that fail the real loader with "mapping values are not allowed here".
   - Each skill `description` is within the 1024-char frontmatter cap.
   - Every relative markdown link in SKILL.md / references resolves to a real file.
   - No markdown file under skills/ begins with a UTF-8 BOM (breaks some
@@ -22,6 +25,17 @@ import json
 import re
 import sys
 from pathlib import Path
+
+# A real YAML parser is what the Claude Code skill loader uses to read
+# frontmatter. The homegrown parser below is lenient (it never sees the ": "
+# nested-mapping trap), so a strict YAML pass is required to catch the class of
+# defect where an unquoted `description:` value carries a second ": " (e.g. the
+# "… Triggers: …" pattern) and fails to load with "mapping values are not
+# allowed here". Import is optional so the other checks still run without it.
+try:
+    import yaml  # type: ignore
+except ImportError:  # pragma: no cover
+    yaml = None
 
 # utf-8-sig transparently strips a leading BOM if present, so files authored on
 # Windows (UTF-8 with BOM) parse the same as everything else.
@@ -165,6 +179,48 @@ def check_skills() -> None:
                  f"(>{SKILL_BODY_MAX}) — split material into references/")
 
 
+def check_frontmatter_yaml() -> None:
+    # Strict YAML pass over every SKILL.md frontmatter — this is what the loader
+    # does. A plain (unquoted) scalar value containing ": " parses as a nested
+    # mapping and blows up ("mapping values are not allowed here"); quoting the
+    # value fixes it. Require a mapping carrying both `name` and `description`.
+    for skill_md in sorted(SKILLS_DIR.glob("*/SKILL.md")):
+        text = skill_md.read_text(encoding=ENCODING)
+        m = FRONTMATTER_RE.match(text)
+        if not m:
+            err(f"{rel(skill_md)}: no YAML frontmatter block at top of file")
+            continue
+        block = m.group(1)
+        if yaml is not None:
+            try:
+                data = yaml.safe_load(block)
+            except yaml.YAMLError as e:  # type: ignore[union-attr]
+                first = str(e).splitlines()[0]
+                err(f"{rel(skill_md)}: frontmatter is not valid YAML ({first}) "
+                    "— quote any value containing ': '")
+                continue
+            if not isinstance(data, dict):
+                err(f"{rel(skill_md)}: frontmatter must be a YAML mapping")
+                continue
+            if not data.get("name"):
+                err(f"{rel(skill_md)}: frontmatter YAML missing `name`")
+            if not data.get("description"):
+                err(f"{rel(skill_md)}: frontmatter YAML missing `description`")
+        else:
+            # Fallback when PyYAML is unavailable: flag the exact defect class —
+            # an unquoted top-level value that contains a second ": ".
+            for line in block.splitlines():
+                if line.startswith((" ", "\t")) or ":" not in line:
+                    continue
+                key, _, value = line.partition(":")
+                value = value.strip()
+                if value[:1] in ("'", '"', ">", "|", ""):
+                    continue
+                if ": " in value:
+                    err(f"{rel(skill_md)}: frontmatter `{key.strip()}` value "
+                        "contains an unquoted ': ' (invalid YAML — quote it)")
+
+
 def check_links() -> None:
     for md in sorted(SKILLS_DIR.rglob("*.md")):
         text = md.read_text(encoding=ENCODING)
@@ -225,6 +281,7 @@ def main() -> int:
         return 2
     check_marketplace()
     check_skills()
+    check_frontmatter_yaml()
     check_links()
     check_no_bom()
     check_reference_tocs()

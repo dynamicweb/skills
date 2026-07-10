@@ -2,7 +2,7 @@
 name: dw-search-indexing
 type: knowledge
 group: search
-description: Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, and product index setup. Triggers: set up a product, content, user, or SQL index, configure repositories and index instances, tune analyzers or field boosts, understand Lucene scoring. Non-triggers: PIM data modelling -> dw-pim-modelling; product completeness -> dw-pim-completeness.
+description: 'Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, and product index setup. Triggers: set up a product, content, user, or SQL index, configure repositories and index instances, tune analyzers or field boosts, understand Lucene scoring. Non-triggers: PIM data modelling -> dw-pim-modelling; product completeness -> dw-pim-completeness.'
 ---
 
 # Search Indexing

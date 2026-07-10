@@ -2,7 +2,7 @@
 name: dw-source-explorer
 type: knowledge
 group: source
-description: Browse Dynamicweb source code on GitHub to understand internal APIs, classes, extension points, and patterns. Triggers: understand how a Dynamicweb API works internally, find the right classes or methods to use, discover extension points before building MCP tools or add-ins. Non-triggers: actually adding a new MCP tool -> dw-extend-mcp-tools; running product queries -> dw-search-indexing.
+description: 'Browse Dynamicweb source code on GitHub to understand internal APIs, classes, extension points, and patterns. Triggers: understand how a Dynamicweb API works internally, find the right classes or methods to use, discover extension points before building MCP tools or add-ins. Non-triggers: actually adding a new MCP tool -> dw-extend-mcp-tools; running product queries -> dw-search-indexing.'
 ---
 
 # Dynamicweb Source Explorer

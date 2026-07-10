@@ -2,7 +2,7 @@
 name: dw-swift-building
 type: flow
 group: swift
-description: Customize an existing Swift 2 Dynamicweb site for a specific business without rebuilding it — preserve the working page shell and update area, navigation, category pages, and item values. Triggers: rebrand or repurpose an existing Swift 2 site, update area/page settings and navigation for a new business, adjust category pages and item values. Non-triggers: installing Swift 2 from scratch -> dw-setup-install; modelling PIM data -> dw-pim-modelling; configuring commerce/catalog data -> dw-commerce-catalog.
+description: 'Customize an existing Swift 2 Dynamicweb site for a specific business without rebuilding it — preserve the working page shell and update area, navigation, category pages, and item values. Triggers: rebrand or repurpose an existing Swift 2 site, update area/page settings and navigation for a new business, adjust category pages and item values. Non-triggers: installing Swift 2 from scratch -> dw-setup-install; modelling PIM data -> dw-pim-modelling; configuring commerce/catalog data -> dw-commerce-catalog.'
 ---
 
 # Dynamicweb Swift 2 Site Builder

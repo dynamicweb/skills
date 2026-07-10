@@ -2,7 +2,7 @@
 name: dw-content-modelling
 type: knowledge
 group: content
-description: Design item types, paragraphs, and content models in Dynamicweb 10. Triggers: item type discipline, paragraph structure, field modelling, asset organization. Non-triggers: rendering content -> dw-render-razor; fetching with ViewModels -> dw-render-viewmodels.
+description: 'Design item types, paragraphs, and content models in Dynamicweb 10. Triggers: item type discipline, paragraph structure, field modelling, asset organization. Non-triggers: rendering content -> dw-render-razor; fetching with ViewModels -> dw-render-viewmodels.'
 ---
 
 # Content Modelling

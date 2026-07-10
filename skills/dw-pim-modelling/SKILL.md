@@ -2,7 +2,7 @@
 name: dw-pim-modelling
 type: knowledge
 group: pim
-description: Model Dynamicweb 10 PIM data — Data Models, category fields, variant groups, and global vs category field storage. Triggers: design or refactor a Data Model, choose global vs category fields, structure variant groups, organize category groups vs product folders. Non-triggers: workflow states and transitions -> dw-pim-workflow; completeness rules and scores -> dw-pim-completeness; translating products -> dw-pim-localization.
+description: 'Model Dynamicweb 10 PIM data — Data Models, category fields, variant groups, and global vs category field storage. Triggers: design or refactor a Data Model, choose global vs category fields, structure variant groups, organize category groups vs product folders. Non-triggers: workflow states and transitions -> dw-pim-workflow; completeness rules and scores -> dw-pim-completeness; translating products -> dw-pim-localization.'
 ---
 
 # PIM Data Modelling

@@ -2,7 +2,7 @@
 name: dw-extend-csharp-api
 type: knowledge
 group: extend
-description: Use the Dynamicweb 10 C# API and Services layer for custom backend code. Triggers: C# API, Services.*, Pageview.*, custom business logic, how to call Dynamicweb APIs, Context.Current, UserContext. Non-triggers: ViewModel patterns -> dw-render-viewmodels; notification handling -> dw-extend-providers; scheduled tasks -> dw-extend-scheduled-tasks.
+description: 'Use the Dynamicweb 10 C# API and Services layer for custom backend code. Triggers: C# API, Services.*, Pageview.*, custom business logic, how to call Dynamicweb APIs, Context.Current, UserContext. Non-triggers: ViewModel patterns -> dw-render-viewmodels; notification handling -> dw-extend-providers; scheduled tasks -> dw-extend-scheduled-tasks.'
 ---
 
 # Dynamicweb 10 C# API
