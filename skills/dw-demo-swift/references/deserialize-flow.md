@@ -204,7 +204,7 @@ Use **`replace`** mode for the base deserialize (base overwrites target). **`mer
 
 ## 7. Post-deserialize host restart guidance
 
-Serializer invalidates caches as part of the strict-mode contract — host restart is **not** mandatory. **BUT** `BuildIndex` Full afterwards **IS** mandatory (post-deserialize index staleness) — see [`integrity-sweep.md`](integrity-sweep.md) Check 5.
+Serializer invalidates caches as part of the strict-mode contract — host restart is **not** mandatory. **BUT** a `BuildIndex` afterwards **IS** mandatory (post-deserialize index staleness) — run it by the `.index` Build Name, twice for a 2-instance index, per [`integrity-sweep.md`](integrity-sweep.md) Check 5.
 
 If a host restart turns out to be necessary in practice (for a category not covered by strict mode's cache-invalidation contract), document it in the per-demo `CUSTOMISATIONS.md` so the deviation is visible to the next deserialize on this machine.
 
@@ -221,12 +221,14 @@ A clean deserialize can still leave the **site root (`/`) returning 404** even t
 
 After this flow returns 2xx, **immediately run [`integrity-sweep.md`](integrity-sweep.md)**. The skill refuses to declare deserialize complete until the sweep passes.
 
+**Also bind the site root** (§7 "Site root `/` 404s after deserialize") as an explicit post-deserialize step: `AreaDomain` / `AreaFrontpage` are per-environment and excluded from serialization, so `/` 404s until you set them — `UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>` (or the Management API equivalent), **then restart the host** (Area rows materialise at startup). The integrity sweep's done-condition includes `/` returning 200.
+
 The sweep is the second line of defence for the failures strict mode does not catch:
 
 - `reference_category` parent row presence (Check 2).
 - Query GUID dedup across `Repositories/` vs `SmartSearches/Shared/` (Check 3).
 - Defense-in-depth on top of strict mode (Checks 1 and 4).
-- `BuildIndex` Full + wait for a fresh successful build (Check 5).
+- `BuildIndex` (by the `.index` Build Name, twice for 2-instance indexes) + wait for a fresh successful build on every instance (Check 5).
 
 ## 9. Known schema-drift workaround (Swift 2.3 baseline ↔ DW10)
 

@@ -41,6 +41,18 @@ Every Dynamicweb demo needs the same host-config patches applied at scaffold tim
 
 The distributed-transaction host prereqs (MSDTC, the net10 promotion caveat) only bite specific admin operations like AreaCopy — `setup-install.md` §4 owns them; `references/setup-checks.md` carries the demo-time probe.
 
+- **Seed the demo's `.gitignore` with the artifact-hygiene entries.** Ephemeral build evidence lands under `notes\` (the canonical scratch layout — see `SKILL.md` "Artifact hygiene"), so the scaffolded `.gitignore` must ignore those dirs alongside the standard ones. Ensure it contains:
+  ```gitignore
+  bin/
+  obj/
+  wwwroot/Files/System/
+  notes/credentials.local.md
+  notes/qa/
+  notes/logs/
+  notes/snapshots/
+  ```
+  Keeper screenshots worth committing are copied out of `notes\qa\` explicitly; everything the QA / host-log / snapshot passes emit stays untracked.
+
 ---
 
 ## 3. First run — Setup Guide for DB + Files folder

@@ -141,9 +141,9 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 
 **Flush first — a restart is the last resort, not the default.** Nearly every "my change doesn't show" symptom is a stale cache with a flush surface, and flushing keeps the warm state a restart throws away. Work the ladder in [references/foundational/cache-invalidation.md](references/foundational/cache-invalidation.md) "When a mutation doesn't show up": (1) the **targeted** `CacheInformationRefresh` named in its post-mutation table → (2) the **bulk flush** (`GET /admin/api/GetServiceCaches` → `POST /admin/api/CacheInformationsRefresh {"Ids":[...]}`) — the same substitution hosted installs are required to use for every "restart required" row → (3) restart only when the symptom survives both flushes or the cache is documented as not service-exposed (e.g. `Searching:Queries`). Restarts that ARE owed (AddIn/`Custom.Mcp` deploys, TFM changes, restart-only cache rows) get **batched — one restart per authoring pass** (the MCP-first → SQL-last → one-restart rule), never one per mutation — and verified to have actually cold-started (the `dotnet run` parent/child trap: killing the parent can leave the real host running with its caches intact).
 
-- Start (durable): use PowerShell `Start-Process` so the host survives the spawning subshell, **and redirect stdout/stderr to log files**. A hidden `Start-Process` *without* redirection has proven flaky — the spawned process can exit right after kickoff; redirecting keeps it stable and leaves a startup log to read (e.g. to confirm the TFM line — see `references/foundational/setup-install.md` §2):
+- Start (durable): use PowerShell `Start-Process` so the host survives the spawning subshell, **and redirect stdout/stderr to log files under `<demo>\notes\logs\`** (the canonical log home — see "Artifact hygiene"; never anchor the logs at the Suite folder or the demo root). A hidden `Start-Process` *without* redirection has proven flaky — the spawned process can exit right after kickoff; redirecting keeps it stable and leaves a startup log to read (e.g. to confirm the TFM line — see `references/foundational/setup-install.md` §2):
   ```
-  powershell -Command "Start-Process -FilePath 'dotnet' -ArgumentList 'run','--launch-profile','Dynamicweb.Host.Suite' -WorkingDirectory '<absolute-path-to-Suite>' -WindowStyle Hidden -PassThru -RedirectStandardOutput '<Suite>\out.log' -RedirectStandardError '<Suite>\err.log' | Select-Object -ExpandProperty Id"
+  powershell -Command "Start-Process -FilePath 'dotnet' -ArgumentList 'run','--launch-profile','Dynamicweb.Host.Suite' -WorkingDirectory '<absolute-path-to-Suite>' -WindowStyle Hidden -PassThru -RedirectStandardOutput '<demo>\notes\logs\host-out.log' -RedirectStandardError '<demo>\notes\logs\host-err.log' | Select-Object -ExpandProperty Id"
   ```
   Returns PID. After kickoff, poll `/Admin` (or `/admin/api/api.json` with bearer) until 200, then proceed.
   **Do NOT** use plain `dotnet run` via Bash `run_in_background:true` — when the bash subshell ends, dotnet receives SIGHUP and the host dies after the next idle window. We've seen this fail with exit 127 mid-session.
@@ -161,6 +161,7 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
   }
   ```
   `<PORT>` is the HTTPS port from `Dynamicweb.Host.Suite/Properties/launchSettings.json` (the discover-from-project-files source of truth — see `references/scaffold.md`). The ownership check costs one command and is what keeps a two-agent, two-host machine safe; a warning from it means the port assumption is wrong — rediscover the port from THIS demo's project files, never widen the kill.
+  - **Never force-kill during an index build.** A `Stop-Process -Force` mid-`BuildIndex` corrupts the index instance being written — leaving a "blocking repair candidate" / "must be recovered" state that a single rebuild does not clear (the recovery recipe is `dw-demo-swift/references/integrity-sweep.md` Check 5). Before stopping the host, confirm no Lucene build is in flight (`GET /admin/api/IndexStatusByRepositoryAndIndexName` — not `Running`); if one is, let it finish or use a graceful stop, and only force-kill a host that is genuinely wedged.
 - Visibility ≠ permission: still announce in one line ("starting host…", "host up at :31873", "restarting to clear plugin cache"). Authorization removes the *ask*, not the *narration*.
 
 This rule is owned by this skill and inherited by every sister skill (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`, `dynamicweb-pim-for-bc`). A sister skill that pauses mid-flow to ask "please start the host" is violating this contract — and so is one that restarts the host where the cache table names a flush, or stops a process it hasn't verified as this demo's own.
@@ -217,6 +218,24 @@ These are mandatory write-time preflight rules. They share one mental model -- "
    See `references/customer-context.md` for the long-form rationale.
 
 **Rationale:** Many B2B customers are fleeing heavily-customised legacy commerce/ERP stacks; the customisation budget is itself a pitch beat at the demo's closing slide. Every approved row is a deliberate trade-off; every Cancel/Refactor is a small win.
+
+## Artifact hygiene — the demo root is not a scratchpad (always-on rule)
+
+Ephemeral build evidence (QA screenshots, host logs, Playwright DOM/a11y dumps) has a canonical home under `notes\`; the demo root stays clean. This is the same guarded-write family as the two above — an output-path contract, owned here at base and inherited by every sister skill so every agent writes evidence to the same place instead of defaulting to CWD (the demo root).
+
+1. **Canonical scratch layout under the demo root** — every ephemeral artifact routes to one of these three dirs, named in the verbatim command that produces it:
+
+   | Directory | Holds | Named by |
+   |---|---|---|
+   | `notes\qa\` | QA screenshots + visual-QA evidence | `references/visual-qa.md`, `references/browser-automation.md` |
+   | `notes\logs\` | host stdout/stderr logs | the "Host lifecycle authority" `Start-Process` recipe below |
+   | `notes\snapshots\` | Playwright DOM / accessibility dumps | `references/browser-automation.md` |
+
+2. **Root allowlist.** Only these may sit at the demo root: the plan doc (`DEMO-PLAN.md`), `CLAUDE.md`, `CUSTOMISATIONS.md`, `.gitignore`, `.mcp.json`, and directories. Anything else an agent wants to write at root routes to `notes\` instead — the same redirect wording as the customer-context contract ("did you mean `<demo>\notes\`?"). The harness enforces this end-of-phase (see the Foundry root-allowlist check).
+
+3. **Naming rule — name evidence for what it IS.** An evidence dump is named for its content (`admin-a11y-snapshot-*.md`, `home-desktop-*.jpeg`), never for what it was captured *during*. Security-suggestive names for non-secret dumps (e.g. an accessibility snapshot saved as `apikeylist.md`) are forbidden — they read as leaked-secrets files to any human or scanner.
+
+4. **Scaffold `.gitignore`.** The scaffolded demo's `.gitignore` ignores `notes/qa/`, `notes/logs/`, and `notes/snapshots/` (in addition to the existing `notes/credentials.local.md`, `bin/obj`, `wwwroot/Files/System/`) — see `references/scaffold.md` §2.1. Keeper screenshots worth committing are the deliberate exception: copy them out of `notes\qa\` explicitly.
 
 ## Demo philosophy — go deep, not wide
 

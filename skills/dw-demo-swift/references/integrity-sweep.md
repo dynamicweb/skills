@@ -8,7 +8,7 @@
 - [Check 2: `reference_category` parent row](#check-2-reference_category-parent-row)
 - [Check 3: Query GUID dedup across `Repositories/` and `SmartSearches/Shared/`](#check-3-query-guid-dedup-across-repositories-and-smartsearchesshared)
 - [Check 4: Template-reference walk (defense-in-depth)](#check-4-template-reference-walk-defense-in-depth)
-- [Check 5: BuildIndex Full + wait for a fresh successful build](#check-5-buildindex-full--wait-for-a-fresh-successful-build)
+- [Check 5: BuildIndex (by the `.index` Build Name) + wait for a fresh successful build](#check-5-buildindex-by-the-index-build-name--wait-for-a-fresh-successful-build)
 - [Check 6: Icon set populated under `Files/Images/Icons/` (Pitfall: blank-blue-button storefront)](#check-6-icon-set-populated-under-filesimagesicons-pitfall-blank-blue-button-storefront)
 - [Check 7: Raw SQL in paragraph templates (DW10 discipline)](#check-7-raw-sql-in-paragraph-templates-dw10-discipline)
 - [Sweep complete](#sweep-complete)
@@ -31,7 +31,7 @@ Strict mode (in the Serializer) raises four broad categories of failure as `Cumu
 
 - DW10 completeness rules without their `reference_category` parent row (silent invisibility: rules validate, assignments persist, API returns correct data, but admin UI panels render empty).
 - Dashboard query GUIDs duplicated across `Repositories/Products/<sub>/` and `SmartSearches/Ecommerce/Shared/` (the `QueryHelper.InitQueriesCache` overwrite trap — breaks admin's Shared-queries tree and widget drill-through).
-- Index staleness immediately after a deserialize (products invisible until a fresh BuildIndex Full completes).
+- Index staleness immediately after a deserialize (products invisible until a fresh BuildIndex, by the `.index` Build Name, completes on every instance).
 
 The sweep adds defense-in-depth for these categories. Skipping it produces a deserialized DB that *looks* clean but is silently broken on demo day.
 
@@ -137,11 +137,21 @@ if ($missing) {
 
 **Note:** If strict-mode Serializer already raised these, Check 4 is a no-op. If Check 4 fires and strict mode did NOT, strict mode missed a category — document it in the per-demo `CUSTOMISATIONS.md` as an environmental drift note so the next deserialize on this machine inherits the warning.
 
-## Check 5: BuildIndex Full + wait for a fresh successful build
+## Check 5: BuildIndex (by the `.index` Build Name) + wait for a fresh successful build
 
-**What is verified:** The products index rebuilds end-to-end and reaches a successful terminal state within 15 minutes, with a build timestamp newer than this run's trigger. Without a fresh build, products are invisible to dashboards, feeds, and storefront facets even though the deserialize succeeded.
+**What is verified:** The products index rebuilds end-to-end and reaches a successful terminal state within 15 minutes, with a build timestamp newer than this run's trigger, on **every instance**. Without a fresh build, products are invisible to dashboards, feeds, and storefront facets even though the deserialize succeeded.
 
 **Repository and index names are solution-specific** — read them from `wwwroot/Files/System/Repositories/<Repository>/<Name>.index` on the host before firing the build (a stock Swift solution ships `ProductsFrontend`/`ProductsBackend` repositories, not a `Products` one). Never hardcode `Repository = "Products"`.
+
+**Resolve `BuildName` from the `.index` file — never post the literal string `"Full"`.** The Management API `BuildName` must be the `<Build Name="…">` value declared inside the `.index` XML (e.g. `Content builder`), not a generic label. `POST /admin/api/BuildIndex {"BuildName":"Full"}` returns **500 "Unable to load build 'Full'"** on a solution whose build is named anything else. Read the name off the file:
+
+```powershell
+$idxPath   = "wwwroot/Files/System/Repositories/$repo/$idx"   # $idx already includes .index
+$buildName = ([xml](Get-Content $idxPath -Raw)).SelectSingleNode('//Build/@Name').Value
+if (-not $buildName) { throw "No <Build Name> in $idxPath — cannot resolve BuildName." }
+```
+
+**Multi-instance indexes must be built TWICE.** DW multi-instance Lucene indexes (a `LastUpdated` rolling balancer with 2 instances) refresh **one instance per build run** — a single build leaves the sibling instance stale, reporting "must be recovered". Fire the build once, wait for a fresh Success, then fire it again so both instances become current. The probe below wraps the build-and-wait in a two-pass loop and asserts every instance reports a fresh successful build at the end.
 
 **Status contract (DW 10.26.x):** the index status models carry no `Status`/`Idle` field — the wait-for-Idle recipe predates them. Two status queries exist:
 
@@ -155,45 +165,72 @@ Confirm the exact paths against the host's own catalog (`GET /admin/api/api.json
 ```powershell
 $repo = '<Repository>'   # read from Files/System/Repositories/ — solution-specific
 $idx  = '<Name>.index'
-$posted = Get-Date
-$buildResp = Invoke-RestMethod `
-  -Uri "https://localhost:$port/admin/api/BuildIndex" `
-  -Method POST `
-  -Headers @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' } `
-  -Body (@{ Repository = $repo; IndexName = $idx; BuildName = "Full" } | ConvertTo-Json) `
-  -SkipCertificateCheck
+$idxPath   = "wwwroot/Files/System/Repositories/$repo/$idx"
+$buildName = ([xml](Get-Content $idxPath -Raw)).SelectSingleNode('//Build/@Name').Value  # NEVER "Full"
+if (-not $buildName) { throw "No <Build Name> in $idxPath — cannot resolve BuildName." }
 
-# Poll the index status query until Success with a build timestamp fresh against $posted
-$timeout = (Get-Date).AddMinutes(15)
-do {
-  Start-Sleep -Seconds 5
-  $status = Invoke-RestMethod `
-    -Uri "https://localhost:$port/admin/api/IndexStatusByRepositoryAndIndexName?Repository=$repo&IndexName=$idx" `
-    -Headers @{ Authorization = "Bearer $token" } `
+# Build TWICE — one instance refreshes per run on a 2-instance index.
+foreach ($pass in 1..2) {
+  $posted = Get-Date
+  Invoke-RestMethod `
+    -Uri "https://localhost:$port/admin/api/BuildIndex" `
+    -Method POST `
+    -Headers @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' } `
+    -Body (@{ Repository = $repo; IndexName = $idx; BuildName = $buildName } | ConvertTo-Json) `
     -SkipCertificateCheck
-  Write-Host "State: $($status.Model.State)  LastRun: $($status.Model.LastRun)"
-  if ($status.Model.State -eq 'Error') {
-    # A never-built index reports index-level State=Error ("no healthy instance is available")
-    # WHILE its first Full build is still writing — no instance is online until that build
-    # completes. Error is terminal only when the instance's LifecycleState is Failed.
-    $inst = Invoke-RestMethod `
-      -Uri "https://localhost:$port/admin/api/InstanceStatusByName?Repository=$repo&IndexName=$idx&InstanceName=$($idx -replace '\.index$','')" `
+
+  # Poll the index status query until Success with a build timestamp fresh against $posted
+  $timeout = (Get-Date).AddMinutes(15)
+  do {
+    Start-Sleep -Seconds 5
+    $status = Invoke-RestMethod `
+      -Uri "https://localhost:$port/admin/api/IndexStatusByRepositoryAndIndexName?Repository=$repo&IndexName=$idx" `
       -Headers @{ Authorization = "Bearer $token" } `
       -SkipCertificateCheck
-    if ($inst.Model.LifecycleState -eq 'Failed') { throw "BuildIndex failed: instance LifecycleState=Failed." }
-  }
-} until (($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted) -or (Get-Date) -gt $timeout)
+    Write-Host "Pass $pass  State: $($status.Model.State)  LastRun: $($status.Model.LastRun)"
+    if ($status.Model.State -eq 'Error') {
+      # A never-built index reports index-level State=Error ("no healthy instance is available")
+      # WHILE its first build is still writing — no instance is online until that build
+      # completes. Error is terminal only when the instance's LifecycleState is Failed.
+      $inst = Invoke-RestMethod `
+        -Uri "https://localhost:$port/admin/api/InstanceStatusByName?Repository=$repo&IndexName=$idx&InstanceName=$($idx -replace '\.index$','')" `
+        -Headers @{ Authorization = "Bearer $token" } `
+        -SkipCertificateCheck
+      if ($inst.Model.LifecycleState -eq 'Failed') { throw "BuildIndex failed: instance LifecycleState=Failed." }
+    }
+  } until (($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted) -or (Get-Date) -gt $timeout)
 
-if (-not ($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted)) {
-  throw "BuildIndex did not reach a fresh Success state within 15 minutes."
+  if (-not ($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted)) {
+    throw "BuildIndex pass $pass did not reach a fresh Success state within 15 minutes."
+  }
 }
 ```
+
+**Assert every instance is current, not just one.** After the two passes, confirm each instance of the index reports a fresh successful build — a single healthy instance masks a stale sibling. Query `InstanceStatusByName` per instance and check `LastSuccessfulBuild` is fresh against the run; any instance still reporting "must be recovered" means the second pass didn't take — recover it (below).
 
 **Freshness is part of the pass condition:** a prior run's successful build satisfies a state-only check, so always compare `LastRun`/`LastSuccessfulBuild` against this run's POST timestamp. An instant pass on a large catalog is the smell that you verified a stale build, not this one.
 
 **DoS-bound:** The polling loop is hard-bounded at 15 minutes. On timeout the check throws — there is no infinite-loop path.
 
-**Recovery if Check 5 fails:** the host needs a restart; verify the Lucene index files on disk and re-run Check 5 after the restart.
+**Recovery if Check 5 fails (generic):** the host needs a restart; verify the Lucene index files on disk and re-run Check 5 after the restart.
+
+**Recovery for a corrupt / "blocking repair candidate" instance.** A `Stop-Process -Force` during a build (see `dw-demo-base/SKILL.md` "Host lifecycle authority" — never force-kill mid-build) leaves an instance stale or corrupt: persistent "blocking repair candidate", or a sibling reporting "must be recovered" that a single rebuild won't clear. Recipe:
+
+1. **Stop the host** gracefully (no `-Force`).
+2. **Delete the index instance dirs + the build state:**
+   - `wwwroot/Files/System/Indexes/<Repository>/<index>/` (the Lucene instance directories)
+   - `wwwroot/Files/System/Diagnostics/IndexBuildState/<Repository>/<index>.index` (the stale build-state marker)
+3. **Restart the host** and wait for `/Admin` 200.
+4. **Rebuild twice** via the probe above (both instances current).
+
+Deleting only the instance dirs without the `IndexBuildState` marker re-hydrates the corrupt state on restart — remove both.
+
+### Files.index stuck running/0-0 — known non-blocking, don't chase it mid-deserialize
+
+Stock `Files.index` ships **2 instances with an empty `<Folder>`**; under the concurrent build triggers of the post-deserialize churn its instances can lock-contend and hang at `State=Running` / `CurrentCount-TotalCount = 0-0`. This kills admin **file search** but leaves the **storefront unaffected** — it is a known non-blocking signature, not a generic Check-5 failure. When the sweep sees `Files.index` running/0-0:
+
+- **Classify it as the known case**, report it with the remedy, and do **not** treat it as a blocker or chase it mid-deserialize.
+- **Remedy in a quiet phase:** host restart, then **one sequential build per instance** for `Files.index` (not concurrent) — the sequential build clears the lock contention the concurrent triggers created.
 
 ## Check 6: Icon set populated under `Files/Images/Icons/` (Pitfall: blank-blue-button storefront)
 

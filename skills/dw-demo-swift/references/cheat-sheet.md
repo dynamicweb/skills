@@ -36,6 +36,15 @@ The naive `save_paragraphs` create-with-`itemType=Swift-v2_Text` path does NOT a
 
 **Hosted/API-only installs:** the same clone-then-rewrite chain maps onto the Management API — copy a simple page as the carrier (`PageCopy`; clear the inherited `shortCut`), `ParagraphCopy` an existing Swift-v2_Text paragraph onto it, `GridRowCopy` a 1-column row, then `ParagraphSave` round-trips for content and row attachment. Endpoint shapes in [`dynamicweb-demo-base/references/online-mode.md`](../../dw-demo-base/references/online-mode.md) (validated DW 10.25.x).
 
+## Demo voucher / coupon hygiene (presenter runbook, not page content)
+
+A demo coupon is **single-use per completed order by default** — and a completed rehearsal order silently kills the pricing-cascade beat on demo day (the voucher no longer applies). Note the asymmetry: **applying a voucher at checkout does not consume it; completing an order does.** So a rehearsal that stops before order completion is safe; one that places the order burns the coupon.
+
+Two ways to keep it from biting — record whichever you chose in the demo's runbook (speaker notes / `notes\`, **not** the customer-safe cheat-sheet page, which must stay free of tech-leaking context per "Customer-safety rules"):
+
+- **Seed demo vouchers unlimited-use by default** — the simplest safe posture for a demo coupon that only needs to *show* a discount, not enforce a limit.
+- **When single-use is deliberate** (the story is about redemption limits), the runbook MUST carry the **reset SQL** that re-arms the voucher after a rehearsal order, plus the "applying ≠ consuming" note so the presenter knows exactly when it was spent.
+
 ## Reality-check role
 
 The cheat-sheet page doubles as the "go deep, not wide" gauge (see SKILL.md "Demo philosophy"): if its login table or "key URLs" list doesn't fit on one side-screen at presenter zoom, the demo has gone wide.

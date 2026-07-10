@@ -3,6 +3,39 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.5.0]
+
+Folds the ten `solmetex-impladent` demo-build learnings into the demo skills
+(`dw-demo-base` + `dw-demo-swift`). All demo-side; no bundle or frontmatter changes.
+
+### Added
+- **`dw-demo-base` artifact-hygiene rule (SKILL.md).** New always-on output-path
+  contract: canonical `notes\qa\` / `notes\logs\` / `notes\snapshots\` scratch layout,
+  a demo-root allowlist, and an evidence-naming rule (name for what it IS, never
+  security-suggestive). `visual-qa.md`, `browser-automation.md`, the host
+  `Start-Process` recipe, and `scaffold.md` §2.1 (`.gitignore`) now name their output
+  dirs explicitly. (LRN-01)
+
+### Changed
+- **`dw-demo-base` keystone wiring.** `orchestrator.md` + `assets/agent_skills.config.json`
+  prefer real project-relative copies into `<demo>\.claude\skills\dw-demo-*`; document the
+  gsd-tools loader containment guard (absolute paths and junctions both inject zero skills). (LRN-02)
+- **`dw-demo-base` MCP approval pre-seed.** `mcp-setup.md` writes `.claude/settings.local.json`
+  with `enabledMcpjsonServers` at `.mcp.json` time; template updated. JSON-RPC stays the
+  unattended path. (LRN-03)
+- **`dw-demo-base` host lifecycle + scrape preflight.** Stop recipe gains "never force-kill
+  during an index build" (LRN-04); `demo-tactics.md` gains a redirect-chain scrape preflight
+  into `extracts\` (LRN-10).
+- **`dw-demo-swift` index rebuild (integrity-sweep Check 5).** Resolve `BuildName` from the
+  `.index` `<Build Name>` (never literal `"Full"`), build twice for 2-instance indexes, assert
+  every instance fresh, corrupt-instance recovery recipe. (LRN-04)
+- **`dw-demo-swift` Files.index hang, dotted legacy URLs, PDP master price, site-root bind,
+  voucher multi-use.** integrity-sweep classifies stock `Files.index` running/0-0 as known
+  non-blocking (LRN-05); `dw10-canonical-surfaces` flags `.htm`/`.asp` rows as IIS-only (LRN-06);
+  `customer-center` narrates the PDP "from" price as expected (LRN-07); `deserialize-flow` makes
+  "bind site root" an explicit post-deserialize step (LRN-08 skill half); `cheat-sheet` documents
+  demo-voucher seeding (LRN-09).
+
 ## [4.4.0]
 
 Folds from a full clone/layers/editions re-validation on the current Swift 2.3 / DW 10.27.x line.

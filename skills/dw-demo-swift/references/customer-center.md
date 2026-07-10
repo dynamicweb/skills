@@ -36,9 +36,11 @@ Customer center/
 ├── CSR/                          ← THE STOCK SALES-ON-BEHALF SECTION (never rebuild)
 │   ├── Orders/, Accounts/, Carts/, Users/
 ├── Customer center/              ← legacy/alt nav under same top-level
-│   └── My profile/, My addresses/, Change password/, ...
-└── Overview/                     ← landing page (4 grid rows)
+│   └── My profile/, My addresses/, My carts/, My quotes/, My favorites/, My returns/, Change password/, ...
+└── Overview/                     ← landing page
 ```
+
+From base **2.3.2** the Overview landing is a **tile dashboard** (stock `Swift-v2_Feature` cards linking to Orders / Quotes / Carts / Favorites / Addresses / Profile / Returns), not a bare order list, and a stock **My returns** RMA page (`eCom_CustomerExperienceCenterRma`) ships in the buyer `Customer center/` tree. Seed every list those tiles open onto — see [dashboard-seeding.md](dashboard-seeding.md).
 
 This is the canonical tree any Customer-360 / sales-on-behalf demo references (`Customer center/CSR/{Orders, Accounts, Carts, Users}`). It's pre-built, paragraph-driven, requires no custom Razor.
 
@@ -52,6 +54,8 @@ The vendor-generic mechanics behind this section are owned by foundational skill
 - **Hiding the CSR section from non-CSR users, gating buyer (Account) sections away from a pure CSR persona, the highest-level-wins frontend resolution rule, and the CC-nav-renders-through-three-templates map**: vendor-generic permission-gating is owned by the `dw-users-permissions` foundational skill — staged in [`users-permissions.md`](../../dw-demo-base/references/foundational/users-permissions.md) §15 ("Render-time half — page/paragraph permissions"). The canonical gate is the permission entity store (`UnifiedPermission` rows keyed `PermissionName='Page'`) with zero template edits; never gate via per-template `foreach` filters or raw `SELECT FROM AccessUserGroupRelation`.
 - **Customer-specific (contract) pricing** (scope by customer number not `customerGroupId`; lowest matching price wins; resolves live in cart/checkout not PLP/PDP; the `force_price_recalculation` verification trap): vendor-generic catalog/pricing knowledge is owned by the `dw-commerce-catalog` foundational skill — staged in [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.13.
 
+  **Presenter note — the PDP header "from" price is expected behaviour, not a pricing bug.** Stock Swift's PDP header renders the **master product "from" price**; the resolved variant + customer-affiliation/contract price is computed only in **cart/order context**. So the header price legitimately differs from what the cart later shows for a specific variant or a logged-in contract customer — this is not a defect and does not need debugging during polish. Present it by walking the price down the cascade: show the master "from" price on the PDP, then add to cart / sign in as the contract customer and let the **cart** reveal the resolved price. (This is the PDP-header face of the "resolves live in cart/checkout not PLP/PDP" rule above.)
+
 ## 4. What to do when the section "looks empty"
 
 Symptom: CSR Overview page has empty grid rows, or `CSR/Orders/` shows no orders, or `CSR/Accounts/` is blank. Cause is almost always one of (demo-side diagnosis):
@@ -62,6 +66,8 @@ Symptom: CSR Overview page has empty grid rows, or `CSR/Orders/` shows no orders
 4. **Index not built or cache stale after wiring the grant** -- see [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md). For Products-index rebuilds, see [dynamicweb-pim-demo/references/governance.md "Recovery recipe: Rebuild Products index"](../../dw-demo-pim/references/governance.md).
 
 What is NOT the cause: missing paragraphs / broken templates / Swift 2.3 incompatibility. The swift/2.3 baseline is verified working by [`deserialize-flow.md`](deserialize-flow.md); if the page renders at all, the structure is intact and the issue is data-side.
+
+Once the diagnosis is "data-side", drive the fix from [dashboard-seeding.md](dashboard-seeding.md) — the per-tile seed checklist that makes every buyer and CSR list land (the "no empty lists on demo day" bar).
 
 ## 5. Persona presentation: avatar + role badge
 

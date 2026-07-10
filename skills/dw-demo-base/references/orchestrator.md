@@ -150,19 +150,32 @@ and re-key):
 ```json
 {
   "agent_skills": {
-    "gsd-project-researcher": ["skills/dw-demo-base"],
-    "gsd-phase-researcher":   ["skills/dw-demo-base"],
-    "gsd-planner":            ["skills/dw-demo-base", "skills/dw-demo-pim"],
-    "gsd-executor":           ["skills/dw-demo-base", "skills/dw-demo-pim", "skills/dw-demo-swift", "skills/dw-demo-erp", "skills/dw-integration-bc"],
-    "gsd-verifier":           ["skills/dw-demo-base", "skills/dw-demo-swift"]
+    "gsd-project-researcher": [".claude/skills/dw-demo-base"],
+    "gsd-phase-researcher":   [".claude/skills/dw-demo-base"],
+    "gsd-planner":            [".claude/skills/dw-demo-base", ".claude/skills/dw-demo-pim"],
+    "gsd-executor":           [".claude/skills/dw-demo-base", ".claude/skills/dw-demo-pim", ".claude/skills/dw-demo-swift", ".claude/skills/dw-demo-erp", ".claude/skills/dw-integration-bc"],
+    "gsd-verifier":           [".claude/skills/dw-demo-base", ".claude/skills/dw-demo-swift"]
   }
 }
 ```
 
-Path resolution: the `skills/dw-demo-*` paths resolve against wherever this plugin is installed
-(e.g. `~/.claude/plugins/marketplaces/dynamicweb-skills/skills/...`) or a local clone. Rewrite
-them to that absolute base before GSD spawns agents. The native command set reads the same skill
-directories directly through the installed plugin — no rewrite needed there.
+Path resolution — **prefer real project-relative copies, not absolute paths or junctions.** This
+GSD version's `gsd-tools query agent-skills` loader enforces **path containment**: an absolute
+path is rejected outright ("Absolute paths not allowed"), and a junction/symlink is resolved to
+its real target (the plugin marketplace dir) and then rejected as outside the project root — both
+produce **zero skill injection** with no obvious error. The reliable wiring is:
+
+1. **Copy the skill dirs into the demo project**, project-relative, at `<demo>\.claude\skills\dw-demo-*`
+   (~0.9 MB for the five dirs). A real copy, not a junction — junctions do not satisfy the guard.
+2. **Key `agent_skills` to those project-relative paths** (e.g. `.claude/skills/dw-demo-base`), so
+   every path resolves *inside* the project root the loader allows.
+3. **Verify injection:** `gsd-tools query agent-skills` must list the dw-demo skills for
+   `gsd-executor` (and the correct subsets for planner/verifier/researchers). An empty list means a
+   path escaped containment — recheck for an absolute path or a junction.
+
+The native command set reads the same skill directories directly through the installed plugin — no
+copy needed there; this containment guard is GSD-loader-specific. Refresh the copies from the
+installed plugin (or local clone) when the plugin updates, so the demo doesn't pin a stale skill.
 
 > **Verify against your install before wiring anything.** The agent type names above and the
 > `/gsd-*` command names throughout this reference are the canonical ones; a GSD **fork can rename
