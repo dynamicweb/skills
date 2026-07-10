@@ -3,6 +3,22 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.6.0]
+
+Adds the Swift header-menu affordance playbook to `dw-demo-swift`.
+
+### Added
+- **`dw-demo-swift/references/header-menu.md`** — "Header menu: make it read as a menu."
+  Documents why a fresh Swift bar is flat (childless top nodes → the
+  `Swift-v2_MenuRelatedContent/Menu.cshtml` `nodesExist` gate), the `save_groups`
+  nav-depth authoring recipe (the data prerequisite), the shared `theme-nav-polish`
+  default (composed as an always-on edition `overlays` entry), and the three
+  interaction platform-truths that each cost real debugging time: the Popper-gap
+  `:has(> .show)` bridge (LRN-nav-03), the `::before`=icon / `::after`=underline caret
+  collision (LRN-nav-04), and the dropdown `min-width:100%` reach fix (LRN-nav-05).
+  Opt-in icons are keyed on a neutral `data-nav-icon` hook. Linked from SKILL.md and
+  `references/templates.md`.
+
 ## [4.5.1]
 
 Fixes the frontmatter-load defect that made 31 of 32 skills fail to activate, and
