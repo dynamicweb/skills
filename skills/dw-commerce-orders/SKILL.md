@@ -2,7 +2,7 @@
 name: dw-commerce-orders
 type: knowledge
 group: commerce
-description: Handle orders, checkout, and cart functionality in Dynamicweb 10. Triggers: order management, checkout flow, cart handling, pricing. Non-triggers: product catalog -> dw-commerce-catalog; B2B patterns -> dw-commerce-b2b.
+description: 'Handle orders, checkout, and cart functionality in Dynamicweb 10. Triggers: order management, checkout flow, cart handling, pricing. Non-triggers: product catalog -> dw-commerce-catalog; B2B patterns -> dw-commerce-b2b.'
 ---
 
 # Orders, Checkout, and Cart

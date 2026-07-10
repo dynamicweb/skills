@@ -3,6 +3,35 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.5.1]
+
+Fixes the frontmatter-load defect that made 31 of 32 skills fail to activate, and
+closes the validator gap that let it ship.
+
+### Fixed
+- **31 `skills/*/SKILL.md` frontmatter now parse as valid YAML.** Every affected
+  `description:` value carried a second `": "` (the `… Triggers: … Non-triggers: …`
+  pattern) as an unquoted plain scalar, which a real YAML parser reads as a nested
+  mapping and rejects with "mapping values are not allowed here" — the loader's
+  "error loading frontmatter". Each description is now single-quoted (content
+  verbatim; internal `'` doubled). `dw-demo-base` was already valid and is
+  untouched. The ~3,500 `~/.claude/plugins` cache failures were copies of these 31
+  and clear once the fixed skills reinstall.
+
+### Changed
+- **`scripts/validate-skills.py` gains a strict frontmatter YAML pass.** The prior
+  homegrown parser never surfaced the `": "` trap, so the defect passed validation.
+  A new `check_frontmatter_yaml()` parses each SKILL.md frontmatter with PyYAML
+  (falling back to a targeted `": "` heuristic when PyYAML is absent) and requires a
+  mapping carrying both `name` and `description`. Verified to fail on the pre-fix
+  frontmatter and pass on the fixed tree.
+
+### Note
+- The Verdanta re-validation skill folds (LRN-VRD-03 Swift catalog `ProductsFrontend`
+  query, LRN-VRD-05 recipe notes) were already folded in full by v4.4.0 (PR #48);
+  re-verified accurate on base 2.4.0 (base still references `ProductsFrontend`, so the
+  authoring step stands). No further skill content changes here.
+
 ## [4.5.0]
 
 Folds the ten `solmetex-impladent` demo-build learnings into the demo skills

@@ -2,7 +2,7 @@
 name: dw-setup-install
 type: flow
 group: setup
-description: Install Dynamicweb Swift 2 from scratch — download and import the database, extract files, install the temporary MCP add-ins payload, and write the first-run bootstrap manifest. Triggers: a fresh or empty Dynamicweb instance needs Swift 2 installed, bootstrap the MCP connection on a new install, download and import the Swift 2 baseline. Non-triggers: install exists and needs business configuration -> dw-setup-config; presales demo host scaffolding, TLS, and MCP wiring -> the presales demo bundle.
+description: 'Install Dynamicweb Swift 2 from scratch — download and import the database, extract files, install the temporary MCP add-ins payload, and write the first-run bootstrap manifest. Triggers: a fresh or empty Dynamicweb instance needs Swift 2 installed, bootstrap the MCP connection on a new install, download and import the Swift 2 baseline. Non-triggers: install exists and needs business configuration -> dw-setup-config; presales demo host scaffolding, TLS, and MCP wiring -> the presales demo bundle.'
 ---
 
 # DynamicWeb Swift 2 Installer
