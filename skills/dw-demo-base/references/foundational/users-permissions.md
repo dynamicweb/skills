@@ -624,7 +624,33 @@ and `Paragraph` render-time permissions live in the permission **entity store**,
 `Page.PagePermission` / `EcomParagraph.ParagraphPermission` columns. The legacy columns exist for
 back-compat but the runtime renderer ignores them.
 
-### Physical storage — `UnifiedPermission` rows keyed `PermissionName='Page'` (verified DW 10.26.x)
+### Canonical gate — YAML-carried permissions in the base layer (base ≥ 2.4.0 / serializer ≥ 0.8.0-beta)
+
+**The canonical way to ship a page/grid-row/paragraph gate is IN THE LAYER YAML, not a live post-deserialize step.** From base **2.4.0** on serializer **≥ 0.8.0-beta**, `page.yml`, `grid-row.yml`, and `paragraph-*.yml` each carry an optional `permissions:` block that deserializes straight into the `UnifiedPermission` rows described below — no admin-panel click, no SQL INSERT, no cache flush at demo-build time. The block shape is identical across all three entities:
+
+```yaml
+"permissions":
+- "owner": "Customers"          # group name (informational)
+  "ownerType": "group"          # group | role
+  "ownerId": "1325"             # group id (omitted for roles; role name IS the owner)
+  "level": "all"                # all | read | none
+  "levelValue": 1364            # PermissionLevel bit value (all=1364, read=4, none=1)
+# roles carry no ownerId:
+- "owner": "Anonymous"
+  "ownerType": "role"
+  "level": "none"
+  "levelValue": 1
+```
+
+This makes per-role dashboards **fully derivable from the layer**: base 2.4.0's Customer Center puts buyer tiles and CSR tiles on ONE shared `Overview` page, each tile paragraph (and its grid row) gated `Customers=all / CSR=none` or `CSR=all / Customers=none`, all `Anonymous=none` — a buyer and a CSR open the same URL and see different tiles, zero custom code. (Per-role tiles on one shared page were previously believed impossible via YAML; that was the pre-0.8.0 engine, which serialized permissions page-level only.)
+
+**Engine floor is load-bearing.** An engine **≤ 0.7.1-beta silently drops** the row/paragraph `permissions:` blocks on deserialize (`IgnoreUnmatchedProperties`) → the tiles render **ungated** (a security regression). A base that carries these blocks declares `minSerializerVersion` in its contract; consume it only on ≥ 0.8.0-beta.
+
+**Ordering trap (handled in-engine, ≥ 0.8.0-beta).** AccessUser groups deserialize AFTER the content that references them; the engine defers unresolvable-group permission sets to an end-of-run re-apply pass (with a user-group cache refresh) so group grants land instead of collapsing to the `Anonymous=None` safety fallback. Verify with a permissions-parity check: every serialized `permissions:` block ⇔ matching `UnifiedPermission` rows (count + owner + level + SubName).
+
+**The live post-deserialize seed below (admin Permissions panel / SQL INSERT + cache flush) is now a LEGACY FALLBACK** — use it only for older bases/engines that cannot carry the blocks, or for ad-hoc gating outside a layer. For a base ≥ 2.4.0 the correct action after deserialize is to **verify** the YAML-carried gating applied (parity check), not to re-seed it.
+
+### Physical storage — `UnifiedPermission` rows keyed `PermissionName='Page'`/`'GridRow'`/`'Paragraph'` (verified DW 10.26.x)
 
 The entity store's physical rows land in the **same `UnifiedPermission` table** as the Layer-A
 entity grants (§2), disambiguated by `PermissionName`:
@@ -685,6 +711,8 @@ as "blank homepage", not "please sign in".
 2. No template edits needed. Nav, redirect, and child-render all self-filter.
 
 ### How to hide a single paragraph from a persona
+
+**Canonical path (base ≥ 2.4.0 / serializer ≥ 0.8.0-beta): author the `permissions:` block on the `paragraph-*.yml` in the layer** (see "Canonical gate" above) — it deserializes into the row described here with no live step. The live/SQL recipe below is the legacy fallback for older bases/engines.
 
 Same entity-store mechanics with `PermissionName='Paragraph'` and the paragraph id as
 `PermissionKey` (live-verified on 10.26.x): write the deny+grant pair —
