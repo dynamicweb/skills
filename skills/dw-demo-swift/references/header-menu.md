@@ -11,7 +11,7 @@
 
 - [The default is flat — why](#the-default-is-flat--why)
 - [Data prerequisite: author nav depth (`save_groups`)](#data-prerequisite-author-nav-depth-save_groups)
-- [The shared default: `theme-nav-polish`](#the-shared-default-theme-nav-polish)
+- [The shared default: `theme-default`'s `default_custom.css`](#the-shared-default-theme-defaults-default_customcss)
 - [Platform truth 1 (LRN-nav-03): the Popper-gap bridge](#platform-truth-1-lrn-nav-03-the-popper-gap-bridge)
 - [Platform truth 2 (LRN-nav-04): `::before` = icon, `::after` = underline](#platform-truth-2-lrn-nav-04-before--icon-after--underline)
 - [Platform truth 3 (LRN-nav-05): dropdown `min-width`](#platform-truth-3-lrn-nav-05-dropdown-min-width)
@@ -54,18 +54,21 @@ author child ecom groups under the top groups via the Backend MCP `save_groups` 
 Group nodes carry a `GroupId`, not a page `PropertyItem["Icon"]`, so the page-`Icon` mechanism
 does **not** apply to a group-driven bar (this is why icons are keyed on a neutral hook, below).
 After authoring depth, restart the host (nav is cached at startup). The obligation is recorded
-machine-readably in the Distribution `layers/base/base.contract.json` → `navDepth`: an edition
-that promises a menu-bar default must ship or author nav depth; the base stays content-only.
+machine-readably in the Distribution `layers/surface-swift/surface.contract-notes.json` →
+`navDepth` (content-scoped contract bits moved there in the Swift 2.4 base split): an edition
+that promises a menu-bar default must ship or author nav depth; the base stays framework-only.
 
-## The shared default: `theme-nav-polish`
+## The shared default: `theme-default`'s `default_custom.css`
 
-The affordance CSS is not a per-demo copy step — it is a first-class Distribution default. The
-`theme-nav-polish` layer (kind `theme`, disk-overlay-only per SPEC-06) ships the affordance core
-and is composed into `editions/swift-demo.json` as an always-on `overlays` entry (not a `themes`
-swap — it carries no ColorSchemes/Buttons/Typography, it layers **on top of** whichever demo
-theme is active). Every Swift demo inherits carets/hover/reachable-dropdowns with zero per-demo
-CSS. Point new demos at the layer; only re-author the three truths below if building a bespoke
-skin that cannot use it.
+The affordance CSS is not a per-demo copy step — it is a first-class Distribution default, and it
+is **not a separate layer**: the former `theme-nav-polish` overlay layer is retired, and the
+affordance core (carets, hover states, the reach fixes below) now ships **inside `theme-default`**
+at `Templates/Designs/Swift-v2/Custom/default_custom.css`. There is no overlay concept in the
+Distribution anymore — `theme-default` is the ONE presentation layer every edition composes
+(`themes: ["default"]`), and the customer re-skin ladder starts FROM it ([`re-skin.md`](re-skin.md)).
+Every Swift demo inherits carets/hover/reachable-dropdowns with zero per-demo CSS. Point new demos
+at `theme-default`; only re-author the three truths below if building a bespoke skin that cannot
+use it.
 
 ## Platform truth 1 (LRN-nav-03): the Popper-gap bridge
 
@@ -146,10 +149,11 @@ alone suffices — the pair is the complete reach fix.
 
 Icons are **not** in the default (keying them on customer href slugs breaks on every catalog).
 They are an opt-in add-on keyed on a neutral `data-nav-icon="<name>"` hook set on the nav node's
-CSS-class/attributes field, with mask SVGs under a theme-neutral `Images/nav-icons/`, painted with
-`background-color: currentColor` via `mask-image` so each icon inherits the nav text colour. The
-`theme-nav-polish` core supplies the `[data-nav-icon]::before` box + a starter icon set ready to
-bind; a new icon is one `mask-image` line + the node field. See the layer's `README.md`.
+CSS-class/attributes field, painted with `background-color: currentColor` via `mask-image` so each
+icon inherits the nav text colour. `theme-default` ships **no custom icon set** — the mask SVGs
+bind to the DW stock icons already on disk under `/Files/Images/Icons` (deployed with the Swift
+design package). The `default_custom.css` core supplies the `[data-nav-icon]::before` box ready to
+bind; a new icon is one `mask-image` line (pointing at a stock icon path) + the node field.
 
 ## How to verify (probes)
 
