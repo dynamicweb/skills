@@ -10,45 +10,47 @@ Vendor-generic Swift Style-asset knowledge — the four `wwwroot/Files/System/St
 
 Read that section for the asset format and wiring. This file carries the demo-infrastructure that sits on top of it: **where the reference style assets come from** and **how to stage them for a new demo**.
 
-## Reference source: the theme layers in the Distribution
+## Reference source: `theme-default` in the Distribution
 
-Canonical Style-asset examples ship as **theme layers** — `layers/theme-<name>/` (kind `theme`) in the
-Distribution repo (`justdynamics/Truvio.Commerce.Distribution`). `Truvio.Commerce.DemoThemes` is
-**archived**; its themes were folded in here. A theme layer is pure disk-overlay (styles + CSS + assets
+The Distribution ships **one theme layer** — `layers/theme-default/` (kind `theme`) in
+`justdynamics/Truvio.Commerce.Distribution`. There is no theme choice and no overlay layers: every
+edition composes `theme-default` (`themes: ["default"]`), and customer re-skins start FROM it
+([`re-skin.md`](re-skin.md)). `Truvio.Commerce.DemoThemes` is **archived**; the former
+`theme-nav-polish` overlay is retired — its header-nav affordance CSS is folded into
+`theme-default`'s `default_custom.css`. A theme layer is pure disk-overlay (styles + CSS + assets
 under `files/`, mirroring the host's `wwwroot\Files\` tree) with **no serialized DB content**, so the
 demo's Swift version (from the versions prompt) is only a compatibility check here, not a tag selector.
-The theme layer lives in the demo's Distribution checkout at `<demo-root>\distribution\layers\theme-<name>\`;
-pin it by the tag `layers/theme-<name>/<semver>` (or an edition that composes it).
+The layer lives in the demo's Distribution checkout at `<demo-root>\distribution\layers\theme-default\`;
+pin it by the tag `layers/theme-default/<semver>` (or an edition that composes it — the usual pin).
 
 ```powershell
 $demoRoot = (Get-Location).Path
 $dist     = "$demoRoot\distribution"                 # the Distribution checkout (from deserialize-flow §3)
-$theme    = "$dist\layers\theme-<name>"              # e.g. theme-tech-saas
-if (-not (Test-Path "$theme\theme.json")) {
+$theme    = "$dist\layers\theme-default"
+if (-not (Test-Path "$theme\layer.json")) {
   $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
   if (-not (Test-Path "$dist\.git")) { git clone "https://github.com/$repo" $dist }
-  $tag = git -C $dist tag --list "layers/theme-<name>/*" |
-    Sort-Object { [version]($_ -replace '^layers/theme-<name>/','') } -Descending | Select-Object -First 1
+  $tag = git -C $dist tag --list "layers/theme-default/*" |
+    Sort-Object { [version]($_ -replace '^layers/theme-default/','') } -Descending | Select-Object -First 1
   git -C $dist checkout $tag
   Write-Host "Checked out $tag — record it in CUSTOMISATIONS.md (the theme pin)"
 }
 ```
 
-A theme layer's `files/` mirrors the host overlay tree — the Style-asset areas plus brand images and
-custom template overrides (each already branded, named after the theme):
+The layer's `files/` mirrors the host overlay tree — the Style-asset areas plus the default custom
+CSS and head include (no custom icon set: nav icons bind to the DW stock `/Files/Images/Icons` —
+see [`header-menu.md`](header-menu.md)):
 
 ```
-<demo-root>\distribution\layers\theme-<name>\
-├── theme.json                                          ← theme identity / metadata
+<demo-root>\distribution\layers\theme-default\
 ├── layer.json                                          ← layer manifest (kind: theme)
 └── files\                                              ← disk overlay — mirrors wwwroot\Files\
-    ├── System\Styles\ColorSchemes\<name>.{json,css}    ← brand colour scheme
-    ├── System\Styles\Buttons\<name>.{json,css}         ← button shape
-    ├── System\Styles\Typography\<name>.{json,css}      ← typography
-    ├── Images\<name>\...                               ← brand images (logo, etc.)
+    ├── System\Styles\ColorSchemes\default.{json,css}   ← colour scheme
+    ├── System\Styles\Buttons\default.{json,css}        ← button shape
+    ├── System\Styles\Typography\default.{json,css}     ← typography
     └── Templates\Designs\Swift-v2\Custom\
-        ├── <name>_custom.css                           ← Tier-1 custom CSS
-        └── <Name>HeadInclude.cshtml                    ← head include (fonts, meta)
+        ├── default_custom.css                          ← Tier-1 CSS incl. the header-nav affordance core
+        └── DefaultHeadInclude.cshtml                   ← head include (fonts, meta)
 ```
 
 To stage for a new demo, overlay the theme layer's `files/` onto the host — it already sits at the
@@ -57,10 +59,12 @@ right sub-paths:
 ```powershell
 $src = "$theme\files"
 $dst = "<demo>\Dynamicweb.Host.Suite\wwwroot\Files"
-Copy-Item -Recurse "$src\*" "$dst\" -Force   # lands ColorSchemes/Buttons/Typography brand + Images + Custom overrides
+Copy-Item -Recurse "$src\*" "$dst\" -Force   # lands ColorSchemes/Buttons/Typography + Custom defaults
 ```
 
-Then hand-edit the JSONs (rename `Id`, swap colors / fonts) and regenerate the CSS following the patterns in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7, and wire the Area columns per the same section.
+For a customer re-skin, leave `theme-default`'s files as staged and add the customer's own Styles
+JSON+CSS pairs plus `<customer>_custom.css` on top ([`re-skin.md`](re-skin.md)); hand-edit patterns
+and Area-column wiring follow [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7.
 
 ## When to use this vs `<customer>_custom.css`
 

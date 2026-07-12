@@ -3,6 +3,38 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.7.0]
+
+Folds the last three Truvio Distribution release cycles into the demo skills
+(Swift 2.4 base split, sample-data 2.0.x, theme-default consolidation) plus the
+wizardless host bootstrap.
+
+### Changed
+- **Staging story rewrite — the Swift 2.4 base split** (`dw-demo-swift/SKILL.md`,
+  `references/deserialize-flow.md`, `dw-demo-base/SKILL.md` artifact table): `base` is
+  now FRAMEWORK-ONLY (16 SQL sets in `replace/_sql/`, replace-only, zero content/pages);
+  ALL Swift content deserializes from the new `surface-swift` surface layer (both areas +
+  merge tree + `UrlPath` + its own 128 item-type XMLs); demo catalog + identities ship as
+  `sample-data` `merge/_sql` (`catalog.sql` + `identities.sql`). Composition order:
+  base → sample-data catalog → content surface(s) → feature fragments. Current cycle:
+  Swift 2.4 / DW 10.28.1-PreRelease (stable re-prove pending).
+- **Mandatory area binding on DW 10.28+** (`deserialize-flow.md` §7/§8, `customer-center.md`
+  pricing notes): bind `AreaEcomShopId`/`AreaEcomCurrencyId`/`AreaEcomLanguageId` after
+  deserialize + restart — DW 10.28 resolves an unbound area's currency from the area
+  CULTURE (en-US → USD), not `CurrencyIsDefault`.
+- **Wizardless host bootstrap** (`dw-demo-base/references/scaffold.md` §3): the setup
+  wizard is fully HTTP-drivable (Step2 files → Step3 schema ~6 s / ~260 tables → Step4
+  admin), trial license via `POST /Admin/License/TrialInstallStep` — no browser step
+  anywhere in bootstrap; ~40 s total vs ~20 min manual. Never pre-provision
+  `GlobalSettings.Database.config` against an empty DB (it hides the schema step); the
+  DB state (schema + active Administrator) is what decides wizard-or-no-wizard.
+- **theme-default consolidation** (`header-menu.md`, `re-skin.md`, `styles-assets.md`):
+  the overlay concept is retired — `theme-nav-polish` is folded into `theme-default`'s
+  `default_custom.css`; `theme-default` is the ONE presentation layer and the re-skin
+  ladder starts FROM it; opt-in nav icons bind to DW stock `/Files/Images/Icons` (no
+  custom icon set); the navDepth obligation moved to
+  `layers/surface-swift/surface.contract-notes.json`.
+
 ## [4.6.0]
 
 Adds the Swift header-menu affordance playbook to `dw-demo-swift`.

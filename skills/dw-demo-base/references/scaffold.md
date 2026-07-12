@@ -4,7 +4,7 @@
 
 - [1. Prerequisites](#1-prerequisites)
 - [2. Scaffold the per-demo project](#2-scaffold-the-per-demo-project)
-- [3. First run — Setup Guide for DB + Files folder](#3-first-run--setup-guide-for-db--files-folder)
+- [3. First run — wizardless bootstrap (HTTP-driven, ~40 s)](#3-first-run--wizardless-bootstrap-http-driven-40-s)
 - [4. Discover-from-project-files rule](#4-discover-from-project-files-rule)
 
 Scaffold a new Dynamicweb 10 demo project. Walk `dotnet new dw10-suite --name Dynamicweb.Host.Suite`. The `--name Dynamicweb.Host.Suite` is **mandatory** — sister-skill path discovery (`Dynamicweb.Host.Suite/Properties/launchSettings.json`, `Dynamicweb.Host.Suite/GlobalSettings.Database.config`) depends on this name.
@@ -55,23 +55,24 @@ The distributed-transaction host prereqs (MSDTC, the net10 promotion caveat) onl
 
 ---
 
-## 3. First run — Setup Guide for DB + Files folder
+## 3. First run — wizardless bootstrap (HTTP-driven, ~40 s)
 
-```powershell
-cd Dynamicweb.Host.Suite
-dotnet run
-# Open the printed https://localhost:<PORT>/ URL; complete the Setup Guide.
-# SQL user needs `dbcreator` for first-run DB auto-creation.
-```
+The setup wizard is plain ASP.NET MVC forms and is **fully HTTP-drivable** — drive it with `Invoke-WebRequest`/`Invoke-RestMethod` instead of walking it in a browser. Measured on DW 10.28.1: host cold start ~25 s, the schema step ~6 s (~260 tables), trial license + token auth < 5 s — **~40 s total** after the one-time scaffold + build, versus ~20 minutes of manual setup-guide clicking. There is **no browser-only step anywhere in host bootstrap** — license activation included.
 
-The Setup Guide on first run will:
+1. **Create an empty database** first (`CREATE DATABASE [<demo-db>]` against `MSSQL$SQLEXPRESS`). Do **NOT** pre-provision `GlobalSettings.Database.config` against an empty DB — a pre-provisioned connection makes the wizard skip its own Step3 (the step that owns schema creation), and Step4 then faults with `Invalid object name 'AccessUser'`. DW10 does not migrate an empty DB on startup; with GlobalSettings pre-provisioned and an empty DB the wizard can never finish. **What decides "wizard or no wizard" is the DATABASE state, not the config**: a DB that already carries schema + an active Administrator row boots straight past the wizard.
+2. **Start the host** (`dotnet run` — the "Host lifecycle authority" `Start-Process` recipe in `SKILL.md`), then drive the wizard over HTTPS:
+   - `GET /Admin/Installation/Start` — captures the session cookie + antiforgery token.
+   - `POST /Admin/Installation/Step2` with `{MapFilesToExistingFolder=True, FilesPath=<wwwroot\Files>, ResetSettings=false}` — the files repository.
+   - `POST /Admin/Installation/Step3` with `{DatabaseType=sql, Server, Database, CreateDatabase=false, Encrypt=false, IntegratedSecurity=true}` — **this is the schema step**: ~6 s, ~260 tables migrated, and DW itself writes `GlobalSettings.Database.config`.
+   - **Admin user:** the schema seed creates an inactive `Administrator` (id 2, empty password). Either `POST /Admin/Installation/Step4` with `{Name, Email, Username, Password, PasswordConfirm}`, or activate it via SQL (set active + copy a password hash from a known-good host's Administrator row — keeps the secret out of logs). Capture the credentials for `references/mcp-setup.md` Step 3.
+3. **License — also plain HTTP.** Probe `/Admin/` for the `/admin/license` redirect, then `GET` + `POST /Admin/License/TrialInstallStep` (antiforgery token + the preselected trialId radio). A **Suite Trial** is fine for demos; expiry lands ~30 days out — record it in the demo's `CUSTOMISATIONS.md`. Platform-level detail: [`foundational/setup-install.md`](foundational/setup-install.md) §7.
+4. **Verify:** a Management API token auth returns 200, and `/Admin/` redirects to the login screen (`/Admin/UI`), not to `/Admin/Installation/Start`.
 
-1. Auto-create the demo database under `MSSQL$SQLEXPRESS` if the connecting SQL user has `dbcreator`. The DB name defaults to the solution folder name unless overridden.
-2. Initialise the `Files/` folder under `Dynamicweb.Host.Suite/wwwroot/` with the empty default structure.
-3. **Force the license step.** On DW 10.27.x the Setup Guide redirects to `/admin/license` immediately after the database step, BEFORE any admin-user setup. Complete it — a **Suite Trial** is fine for demos. The trial expiry lands ~30 days out; record it in the demo's `CUSTOMISATIONS.md` so the next run on this box knows when the demo goes dark. Platform-level detail + the headless trial-activation path: [`foundational/setup-install.md`](foundational/setup-install.md) §7.
-4. Print a one-time admin user prompt (capture the credentials — they're needed for the admin UI walkthrough in `references/mcp-setup.md` Step 3). **Gotcha:** the license gate can skip this step entirely, leaving every seeded user inactive with an empty password — no usable admin login, and the standard flow dead-ends. If `/admin` rejects every credential after setup, apply the headless admin-password recovery in [`foundational/setup-install.md`](foundational/setup-install.md) §7 before going further.
+**Restore flavor — skipping the wizard entirely.** When a clean-template `.bak`/bacpac with schema + an active Administrator is available, restore it and pre-provision only: `wwwroot\Files\` (any skeleton — DW fills `System/`, `Images/`, `Files/`) plus `wwwroot\Files\GlobalSettings.Database.config` (`<Globalsettings><System><Database>`: `Type=ms_sqlserver`, `SQLServer`, `Database`, `IntegratedSecurity=True`). The restored DB is the actual wizard-skipper; `GlobalSettings.config` is optional (DW writes one on first run).
 
-Once the Setup Guide completes, the `Properties/launchSettings.json` file has its final `applicationUrl` and the `GlobalSettings.Database.config` has the actual DB name. **These two files are the source of truth for port and DB name from now on** (the discover-from-project-files rule).
+(The interactive Setup Guide in a browser still works as a fallback — same steps, ~20 minutes of clicking — but the HTTP recipe is the default. **Gotcha** either way: the license gate can leave every seeded user inactive with an empty password — no usable admin login. If `/admin` rejects every credential after setup, apply the headless admin-password recovery in [`foundational/setup-install.md`](foundational/setup-install.md) §7.)
+
+Once bootstrap completes, the `Properties/launchSettings.json` file has its final `applicationUrl` and the `GlobalSettings.Database.config` has the actual DB name. **These two files are the source of truth for port and DB name from now on** (the discover-from-project-files rule).
 
 ---
 

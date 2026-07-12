@@ -30,6 +30,8 @@ The pitfalls (now in the foundational skill) — easy to miss on a partial read:
 
 ## The escalation ladder
 
+**The ladder starts FROM `theme-default`** — the single presentation layer every edition composes (there is no theme choice and no overlay layers in the Distribution). Stage `theme-default`'s `files/` onto the host first ([`styles-assets.md`](styles-assets.md)); it already carries the default Styles JSON+CSS pairs, `default_custom.css` (including the header-nav affordance core — [`header-menu.md`](header-menu.md)), and `DefaultHeadInclude.cshtml`. Every customer re-skin then climbs the tiers below **on top of** that baseline — customer overrides go in `<customer>_custom.css`, never by editing `theme-default`'s own files.
+
 | Tier | Surface | What it touches | Owner |
 |------|---------|-----------------|-------|
 | 0 | Admin UI Style Tools (Settings → Content → Styles) | Color schemes, button shape, typography — generates the `Styles/*.{json,css}` pairs | [styles-assets.md](styles-assets.md) + [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7 |
@@ -58,7 +60,7 @@ Fix: define a `<Prefix>_<ConceptName>` custom item type — see [`content-modell
 
 ## Recipe
 
-Operates on a deserialized swift/2.3 `base` layer at `<demo-root>\distribution\layers\base\` (resolved into a running host via this skill's [`deserialize-flow.md`](deserialize-flow.md)). All steps are admin UI only. Throughout: `<customer>` is the demo customer's short slug (lowercase, no spaces).
+Operates on a deserialized Swift 2.4 composition (framework-only `base` + `surface-swift` content, resolved into a running host via this skill's [`deserialize-flow.md`](deserialize-flow.md)) with `theme-default` staged. All steps are admin UI only. Throughout: `<customer>` is the demo customer's short slug (lowercase, no spaces).
 
 ### 1. Logo
 
