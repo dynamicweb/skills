@@ -3,6 +3,40 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.7.1]
+
+Folds the learnings from a 2026-07 dual demo-host UI pass: two hosts had shipped
+with silently-missing Style assets, and several MCP write tools were caught
+reporting success without acting.
+
+### Changed
+- **Theme staging is now a mandatory deserialize step + readiness gate**
+  (`dw-demo-swift/references/deserialize-flow.md` "Stage the theme's Style assets",
+  new `integrity-sweep.md` Check 8, `dw-demo-base/references/visual-qa.md`
+  definition-of-done): the Swift repo ships only `ColorScheme.config` — no
+  `<id>.{json,css}` pairs — while serialized Area rows arrive wired to
+  `swift`/`buttons`/`fonts`, so `TryGet*Style` silently emits nothing and the
+  storefront renders in serif fallback that "looks almost right". Stage
+  theme-default's three pairs + rewire Areas, and gate readiness on the three
+  emitted style links plus a designed-looking full-page screenshot.
+- **Silent no-op catalogue extended to deletes, index builds and passwords**
+  (`foundational/extend-mcp-tools.md` §5, `surface-priority.md`): `delete_area` /
+  `delete_users` / `delete_paragraphs` return `succeeded:1` and delete nothing;
+  `build_product_index` reports a completed build while writing only the
+  `LastUpdated` marker (Admin UI Repositories → Build Full is the working path;
+  verify by shard-file mtimes); `update_users` accepts and drops a `password`
+  property. Round-trip every demo-critical write.
+- **PLP list layout + thumbnail lever** (`foundational/swift-building.md` §3
+  symptom table): the surface-serialized shop repeater ships
+  `GridLayoutDesktop='list'` — list is the intended layout, keep it; the
+  full-bleed-image failure mode is the card image item's `Width='auto'` (→
+  `w-100`), and a px value is the thumbnail lever. Also documents the
+  `ShowAlternativeImageOnHover` NRE on products without a `DefaultImage`.
+- **Local demo-host bootstrap conventions** (`dw-demo-base/references/scaffold.md`
+  §3): admin login on local demo hosts is always `Admin`/`Admin1` (zero-lookup
+  during live demos; hosted installs keep real secrets), and the wizard-seeded
+  `Standard` area (AreaId 1) is deleted before the host counts as scaffolded
+  (SQL — MCP `delete_area` is a silent no-op).
 ## [4.7.0]
 
 Folds the last three Truvio Distribution release cycles into the demo skills
