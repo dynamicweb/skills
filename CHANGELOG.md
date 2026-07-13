@@ -3,6 +3,28 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.10.0]
+
+Retires the external scrub-list file: the fold-back's sanitize gate now derives the
+engagement-token list in-session, from the material being folded, instead of reading a
+per-engagement file that routinely did not exist at the documented path.
+
+### Changed
+- **`dw-demo-base/references/iterate-plugin.md`** (Step 1a): the grep pack's token list is
+  enumerated in-conversation each fold — any token that could leak is by construction present
+  in the material being folded (notes, learnings file, demo folder, `CUSTOMISATIONS.md`).
+  The enumeration checklist now names the shapes to cover: brand names incl. misspellings and
+  slugs, hostnames, persona/account names, engagement domain vocabulary (field names, example
+  products), and demo-minted ids/paths/credentials. The constant packs (session-relative time,
+  customer-path shape) are unchanged.
+- Added a mandatory **adversarial re-read** of the staged diff: for every concrete string, ask
+  "Dynamicweb-generic, or engagement-derived?" — the grep catches only enumerated tokens; the
+  re-read catches the rest.
+
+### Removed
+- The `scrub-list.txt` file mechanism (location contract, stub-creation step, "when to expand
+  the known-names list" section) and its `Get-Content` in the final pre-commit grep.
+
 ## [4.9.0]
 
 Splits the publish path into its own reference and folds a second hosted-publish build's

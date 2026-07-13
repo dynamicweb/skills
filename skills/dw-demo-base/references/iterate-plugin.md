@@ -122,29 +122,28 @@ squash-merged to the integration branch the recovery is the expensive history re
 ### The grep pack — run BEFORE the file gets edited AND in the PR gate
 
 A learning's drafted text often sits in `./notes/skill-learnings-*.md` first; that's where to
-scrub. The same grep runs against the staged edit before commit. The pack ships in a
-per-engagement scrub-list file, NOT committed into the repo — keeping the actual tokens out of
-public blobs.
+scrub. The same grep runs against the staged edit before commit.
 
-**Location of the scrub-list file:** `$DYNAMICWEB_SKILLS_REPO\..\..\scrub-list.txt` (one level
-above the local clone, gitignored by construction since it lives outside the repo). One token
-per line; blank lines and `#` comments allowed. The file ships seeded with the known
-historical leaks from prior engagements + the current engagement's slug.
+**There is no scrub-list file — the token list is derived in-session, every fold.** Any token
+that could leak into the edit is, by construction, present in the material being folded (the
+session notes, the learnings file, the demo folder, `CUSTOMISATIONS.md`). Before drafting,
+enumerate the engagement's tokens explicitly and write the list out in the conversation so the
+user can review it. Enumerate at least:
 
-If the file doesn't exist, the fold-back creates a stub on first run and asks the user to add
-the current engagement's tokens before proceeding.
+- customer / brand / engagement names, **including misspellings and slugs** (folder names,
+  hostnames, `<sub>.mydwsiteN.com` subdomains);
+- persona and account names (buyers, CSRs, admins, distributor/dealer accounts);
+- engagement domain vocabulary — field names, category names, example products only this
+  customer would use. A winery demo's `GrapeVariety` field or a "Reserve Pinot" example
+  product identifies the engagement as surely as its name does;
+- ids, paths, and credentials minted for the demo.
 
 ```powershell
-# Build the regex pack from the external list (paths shown — adapt to where you cloned).
-$scrubList = "$env:DYNAMICWEB_SKILLS_REPO\..\..\scrub-list.txt"
-if (-not (Test-Path $scrubList)) {
-    Write-Error "Scrub-list missing at $scrubList — create it (one token per line) before folding."
-    return
-}
-$tokens = Get-Content $scrubList | Where-Object { $_ -and -not $_.StartsWith('#') }
+# 1. Engagement tokens — enumerated from the session context above, never read from a file.
+$tokens = @('BrandName', 'brand-slug', 'brand.mydwsiteN.com', 'Persona Name' <# … #>)
 $nameRx = ($tokens | ForEach-Object { [regex]::Escape($_) }) -join '|'
 
-# 1. Source notes
+# Source notes
 Select-String -Path .\notes\skill-learnings-*.md -Pattern $nameRx
 # Staged edit (run from $DYNAMICWEB_SKILLS_REPO before commit)
 git diff --staged | Select-String -Pattern $nameRx
@@ -165,6 +164,13 @@ derivative learning that's vendor-generic — then carry only the vendor-generic
 the edit. Two paragraphs side-by-side in the conversation is fine: "what happened (named)" →
 "what's the durable lesson (generic)". Only the generic side gets committed.
 
+**The grep only catches tokens you enumerated; the re-read catches the rest.** After drafting,
+read the staged diff once as an outsider and ask of every concrete string — every name, field,
+example value, path, id — "is this Dynamicweb-generic, or did it come from the engagement?"
+Anything engagement-derived gets genericized even if it looks harmless in isolation. This
+re-read is mandatory, not a nicety: enumeration misses exactly the tokens you didn't think of,
+and those are the ones that leak.
+
 ### When the structural learning seems to depend on the customer's name
 
 It almost never does. If the rule is "demo X did Y and learned Z", `Z` is the durable part.
@@ -175,14 +181,6 @@ The same rule applies to vendor / partner / customer **individuals**. Architectu
 "blessed by `<named architect>` at vendor X on `<date>`" loses nothing structural when
 rewritten as "vendor-blessed by the `<role>` (`<date>` architecture call)". The provenance
 value is the role + date, not the person.
-
-### When to expand the known-names list
-
-When a new customer engagement opens, add the customer slug (and any personal names in play)
-to the off-repo scrub-list file BEFORE the first fold for that demo. The fold-back should ask
-once per session: *"Any new customer/personal names to add to the scrub pack for this
-engagement?"* — additions go to the scrub-list file, never into the repo. Future folds inherit
-the expanded pack.
 
 ## Step 1b — Content-hygiene gate (load-bearing — this is how the corpus stays correct)
 
@@ -346,8 +344,7 @@ Do **not** add `Co-Authored-By` or any self-attribution line (repo rule, `CLAUDE
 staged change including the message):
 
 ```powershell
-$tokens = Get-Content "$env:DYNAMICWEB_SKILLS_REPO\..\..\scrub-list.txt" |
-          Where-Object { $_ -and -not $_.StartsWith('#') }
+$tokens = @('BrandName', 'brand-slug' <# the same in-session token list from Step 1a #>)
 $nameRx = ($tokens | ForEach-Object { [regex]::Escape($_) }) -join '|'
 $timeRx = "Today's |today's |This morning|this morning|Yesterday[^\s]"
 
