@@ -44,22 +44,31 @@ Copy-Item "distribution\layers\base\config\swift-2.3.json" `
 
 **Path note (version-sensitive).** On DW **10.27.4** + Serializer engine **0.6.8-beta** the engine reads the config from `Files/System/Serializer/Serializer.config.json`. Older installs staged it at the `Files/` root (`Files/Serializer.config.json`); the engine's actual read location is what wins, so stage it where the running engine looks. Confirm the location on a given host by where the engine creates `SerializeRoot/` — it lands under `Files/System/Serializer/`, alongside the config (the deserialize flow reads `Files/System/Serializer/SerializeRoot/<deploy|seed>/`).
 
-The shipped config uses the current schema: a single flat `predicates: [...]` list with a per-entry `"mode": "Deploy"|"Seed"` field — see "Deploy vs Seed" below for the schema break vs the legacy `deploy: { predicates: [...] }` shape.
+The config is a single flat `predicates: [...]` list with a per-entry `"mode"` field. **Read the engine version before trusting a shipped config's `mode` spelling** — the enum was renamed, and the loader rejects the other spelling outright rather than aliasing it (see "Replace vs Merge" below).
+
+**Validate the staged config with one call before deserializing anything:** `GET /Admin/Api/SerializerSettings` must return 200 with a non-empty `predicatesSummary`. On a config the loader rejects, *every* Serializer call 500s — including this read-only one — so a config authored for the wrong engine major is indistinguishable from a broken install until you make this probe.
 
 ### Verification
 
 After steps 1–2, restart the host. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
 
-### Replace vs Merge (aliases of Deploy/Seed)
+### Replace vs Merge (the predicate `mode` enum — version-sensitive)
 
-Two **conflict strategies** for the same deserialize pipeline, set per predicate (each entry in the flat `predicates: [...]` list carries `"mode": "Deploy"` or `"mode": "Seed"` — the `DeploymentMode` enum names, unchanged in config). Engine `v0.6.9-beta`+ additionally accepts **`replace`** (= Deploy, source-wins) and **`merge`** (= Seed, field-level) as aliases at the `?mode=` endpoint and as the layer mode-dir names `replace/` + `merge/`; the predicate `"mode"` field keeps the enum spelling. (The legacy `deploy: { predicates: [...] }` / `seed: { ... }` shape is rejected by `ConfigLoader`.)
+Two **conflict strategies** for the same deserialize pipeline, set per predicate. **The enum spelling depends on the engine major, and the loader rejects the other spelling — it does not alias it:**
+
+| Engine | Predicate `"mode"` accepts | Notes |
+|---|---|---|
+| **0.8.x**+ | **`"Replace"` / `"Merge"`** | `Deploy`/`Seed` are **rejected**: `ConfigLoader.ValidatePredicates` throws `Unknown mode 'Deploy' for predicate '<name>' — valid values: Replace, Merge`. The mode for a run is passed in the **JSON body** — `POST /Admin/Api/SerializerDeserialize {"Mode":"Replace","StrictMode":false,"IsDryRun":false}`. `IsDryRun` reports the `created / updated / skipped / failed` counts without writing — use it before every hosted deserialize. |
+| **≤ 0.6.9-beta** | `"Deploy"` / `"Seed"` | `replace`/`merge` are accepted as aliases at the `?mode=` endpoint and as the layer mode-dir names `replace/` + `merge/`, but the predicate field keeps the enum spelling. Flow owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §4. |
+
+A config authored for one engine major therefore **500s the other on every call** — including `GET /Admin/Api/SerializerSettings`. When a layer ships a config, check its `mode` spelling against the engine the host actually runs before staging it. (The legacy `deploy: { predicates: [...] }` / `seed: { ... }` *shape* is rejected by `ConfigLoader` on every version.)
 
 **Always pass `?mode=` explicitly on 0.6.9 — both passes.** A mode-less `POST /Admin/Api/SerializerDeserialize` on engine 0.6.9-beta targets the **legacy `deploy` folder** rather than `SerializeRoot/replace/`, and returns **HTTP 400 `deploy contains no YAML files`** against a layer that stages `replace/`+`merge/`. Run `?mode=replace` first, then `?mode=merge` — never a bare POST. The two-pass sequence + snippet is owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §4.
 
 | Mode (dir / alias) | `"mode"` field | Conflict strategy | Use for |
 |---|---|---|---|
-| **replace** | `Deploy` | Source-wins. Re-deserialize overwrites target. | Developer-owned deployment data: shop structure, item types, VAT rates, country list, payment method definitions. Identical across envs. |
-| **merge** | `Seed` | Field-level merge. YAML fills only fields the target has not set; customer edits preserved across re-deploys. | First-run content: Customer Center welcome copy, FAQ body text, newsletter templates. Bootstrap data that transitions to customer ownership. |
+| **replace** | `Replace` (0.8.x) / `Deploy` (≤0.6.9) | Source-wins. Re-deserialize overwrites target. | Developer-owned deployment data: shop structure, item types, VAT rates, country list, payment method definitions. Identical across envs. |
+| **merge** | `Merge` (0.8.x) / `Seed` (≤0.6.9) | Field-level merge. YAML fills only fields the target has not set; customer edits preserved across re-deploys. | First-run content: Customer Center welcome copy, FAQ body text, newsletter templates. Bootstrap data that transitions to customer ownership. |
 
 For Swift `base` layer restore ([`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md)), the meaningful pass is **replace**; the **merge** pass runs but the base ships no catalog, so it lands nothing (see deserialize-flow §4).
 
@@ -126,7 +135,7 @@ WHERE Link LIKE '%Default.aspx?%=3421%';
 **Fix paths:**
 
 1. Extend the Content predicate `path` so page 3421 is included in Replace mode.
-2. Move the referencing page (or referenced page) into the same mode if they're split across Deploy/Seed.
+2. Move the referencing page (or referenced page) into the same mode if they're split across the replace/merge modes.
 3. Clean source: null the dangling reference. For Swift 2.2, `tools/swift22-cleanup/01-null-orphan-page-refs.sql` is the canonical fix.
 4. Acknowledge the orphan (escape hatch): add the ID to the predicate's `acknowledgedOrphanPageIds` array. Demotes the fatal serialize error to a warning. Remove the entry once the data is clean — leaving acknowledged IDs around silences real future drift.
 
@@ -164,7 +173,7 @@ The Serializer's API surface (Management API commands, predicate shape, YAML for
 Three signals:
 
 1. **`SourcePageId` missing** from page YAML → baseline pre-dates the Serializer's cross-environment link-rewriting support. Re-serialize from a current Serializer version.
-2. **Legacy `deploy: { predicates: [...] }` / `seed: { ... }` config shape** → older config schema. ConfigLoader rejects with a clear error pointing at the current flat `predicates: [...]` list with per-predicate `"mode": "Deploy" | "Seed"`. Migrate the config; YAML payloads are unchanged.
+2. **Legacy `deploy: { predicates: [...] }` / `seed: { ... }` config shape** → older config schema. ConfigLoader rejects it in favour of the flat `predicates: [...]` list. Migrate the config; YAML payloads are unchanged. A config carrying the *right* shape can still be rejected for the wrong `mode` spelling — match the enum to the engine major ("Replace vs Merge" above).
 3. **`UpdateVersion_ecom.xml` style update tracking** → pre-DW-9.14 era. Not a Serializer issue per se; affects the host DW10's update-manager queue (see `references/db-update-recovery.md`).
 
 ### How baselines roll

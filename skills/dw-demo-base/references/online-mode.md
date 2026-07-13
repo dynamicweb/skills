@@ -1,6 +1,8 @@
-# online-mode.md — building on, and publishing to, a hosted (cloud) install
+# online-mode.md — building on a hosted (cloud) install
 
-> Owns the **online/cloud variant** of the demo-base flow: what changes when the demo runs on a vendor-hosted DW10 install reached only by URL + Admin API bearer key — no local scaffold, no SQL, no filesystem. Two shapes are covered: **building** a demo directly on a hosted install (Management API only), and **publishing** an existing local demo onto one (the migration playbook at the bottom).
+> Owns the **online/cloud variant** of the demo-base flow: what changes when the demo runs on a vendor-hosted DW10 install reached only by URL + Admin API bearer key — no local scaffold, no SQL, no filesystem. This reference covers **building** a demo directly on a hosted install (Management API only).
+>
+> **Publishing an existing local demo onto a hosted install** is a migration, not a build, and has its own failure modes — it is owned by [publish-to-hosted.md](publish-to-hosted.md). Everything below (the probe, the API recipe pack, the upload mechanics, the flush/restart ladder, shared-install discipline) applies to both.
 >
 > Local installs remain the default; this reference is the fork target from [SKILL.md](../SKILL.md) "Environment fork". The four always-on guardrails (customisations ledger, customer-context read-only, demo philosophy, discover-from-project-files) apply unchanged.
 
@@ -11,13 +13,7 @@
 - [Management API recipe pack](#management-api-recipe-pack-validated-dw-1025x)
   - [dw10source as binder disambiguator](#dw10source-as-binder-disambiguator)
   - [File upload — and why an "ok" upload can change nothing](#file-upload--and-why-an-ok-upload-can-change-nothing)
-  - [Flush first; a cloud install CAN be restarted](#flush-first-a-cloud-install-can-be-restarted)
-- [Publishing an existing local demo to a hosted install](#publishing-an-existing-local-demo-to-a-hosted-install)
-  - [Transport map](#transport-map)
-  - [Order of operations](#order-of-operations)
-  - [Deserialize semantics that decide the outcome](#deserialize-semantics-that-decide-the-outcome)
-  - [What never rides the content export](#what-never-rides-the-content-export)
-  - [Verify with a browser, not just status codes](#verify-with-a-browser-not-just-status-codes)
+  - [Flush first; a cloud install can usually be restarted](#flush-first-a-cloud-install-can-usually-be-restarted)
 - [What stays the same](#what-stays-the-same)
 
 ## Recognising online mode
@@ -31,7 +27,7 @@ You are in online mode when the engagement hands you a site URL (`https://<host>
 | MCP wiring + TLS bypass | Replaced by the **probe** below. No TLS bypass needed (real certificates). |
 | Browser MCP install | Unchanged — Playwright is still the verification surface. |
 | Guardrail artefacts | Unchanged. |
-| Host lifecycle authority | You do not own a host process, but a cloud install is **not** un-restartable — drive it through the CloudHosting control files. Work the flush-first ladder below. |
+| Host lifecycle authority | You do not own a host process. Most hosted installs still restart — drive it through the CloudHosting control files — but confirm the file is consumed; some partner-hosted installs never act on it. Work the flush-first ladder below. |
 
 ## Probe order at session start
 
@@ -59,80 +55,30 @@ Some commands also mirror a property at BOTH the command level and inside `Model
 When a payload shape isn't obvious from the OpenAPI spec, read the command class in a local clone of the DW10 source (location per machine — ask/discover, never hardcode): `Dynamicweb.*.UI/Commands/**/<Name>Command.cs`. Reading the source resolved every binder mystery in the validation build (SelectedImage `Id`, the create/update fork, the variant wizard).
 
 ### File upload — and why an "ok" upload can change nothing
-`POST /Admin/Api/Upload`, multipart form: field `path` = **relative** directory (no leading slash — leading-slash paths are rejected as "outside allowed root"), repeated `files` fields for the payload. The target directory must already exist physically. **`DirectorySave` is rename-only** (returns ok, creates nothing) — create folders via `DirectoryCopy` of any small existing folder to the new path, then `DirectoryEmpty` on it.
+`POST /Admin/Api/Upload`, multipart form: field `path` = **relative** directory (no leading slash — leading-slash paths are rejected as "outside allowed root"), repeated `files` fields for the payload. Many files per request is fine — one request per directory. The target directory must already exist physically. **`DirectorySave` is rename-only** (returns ok, creates nothing) — create folders via `DirectoryCopy` of any small existing folder to the new path, then `DirectoryEmpty` on it.
 
-**Upload never overwrites.** When a file of that name already exists, the response is still `{"status":"ok"}` — with the skipped names in `model.duplicates` — and the file on disk is unchanged. Treat `model.duplicates` as a failure, and **delete before re-uploading** so an overwrite actually lands:
+**Send `allowOverwrite=true` on every upload.** Without it the endpoint refuses to replace an existing file and reports the refusal as *success*: `{"status":"ok","model":{"duplicates":["<name>"]}}`, with the file on disk unchanged. The refusal takes the **whole batch** — one pre-existing name in a multi-file request and the request's *new* files do not land either. `allowOverwrite` is a working form field that is absent from the OpenAPI schema; add it as an ordinary multipart field:
 
 ```
-POST /Admin/Api/FileDelete  {"DirectoryPath":"/Files/<dir>","Ids":["/Files/<dir>/<name>"]}
-POST /Admin/Api/Upload      (multipart: path=<dir>, files=<name>)
+POST /Admin/Api/Upload   (multipart: path=<dir>, allowOverwrite=true, files=<name> [, files=<name> …])
+  → {"status":"ok","model":["/Files/<dir>/<name>", …]}      # wrote
+  → {"status":"ok","model":{"duplicates":[…]}}              # wrote NOTHING (no allowOverwrite)
 ```
 
-A push that reports `ok` for every batch while silently keeping the target's old templates is the failure this catches — assert on `duplicates`, not on `status`.
+**Success is the shape of `model`, not `status`.** Assert that `model` is a **list whose length equals the batch size**; a `duplicates` object — or an empty list, which is what a 0-byte file returns — means nothing was written. A design push that reports `ok` for every batch while silently keeping the target's old templates is exactly what this catches.
 
-### Flush first; a cloud install CAN be restarted
-Wherever a sister-skill recipe says "restart the host" (variant seeding, BOM inserts, asset bulk loads), you have no host process — but a cloud install still has a restart surface. Work the ladder:
+### Flush first; a cloud install can usually be restarted
+Wherever a sister-skill recipe says "restart the host" (variant seeding, BOM inserts, asset bulk loads), you have no host process — but a hosted install usually still has a restart surface. Work the ladder:
 
 1. **Targeted flush** — `CacheInformationRefresh` (singular) with one `CacheTypeName`.
-2. **Bulk flush** — `GET /Admin/Api/GetServiceCaches` → collect the `modelIdentifier`s → `POST /Admin/Api/CacheInformationsRefresh {"Ids": [...]}`. This clears the stale-read class of symptom: a row written through the API that a later query still reports with its old value (a shop that "doesn't exist", a group tree missing a node), and the stale disabled add-to-cart after variant seeding.
+2. **Bulk flush** — `GET /Admin/Api/GetServiceCaches` → collect the `modelIdentifier`s → `POST /Admin/Api/CacheInformationsRefresh {"Ids": [...]}`. This clears the stale-read class of symptom: a row written through the API that a later query still reports with its old value (a shop that "doesn't exist", a group tree missing a node, a catalog group still under its pre-publish name), and the stale disabled add-to-cart after variant seeding.
 3. **Real restart** — drop a control file in `Files/System/CloudHosting/` (`recycle.txt`, `restart.txt`; `changeversion.txt` also switches release ring). Canonical table: [`dw-setup-config`](../../dw-setup-config/SKILL.md) "cloud control files". Some **global settings do not take effect on a cache flush alone** — a URL-generation change can keep serving the old shape until the app restarts. If a setting reads back correctly from the API but the storefront still renders the old behaviour, restart before diagnosing further.
+
+**Confirm the restart actually happened — the control files are a Dynamicweb Cloud affordance, not a property of every hosted install.** The platform *consumes* the file: it disappears once acted on. On a partner-hosted install that does not run the watcher, `recycle.txt` and `restart.txt` upload happily, sit there unconsumed, and nothing restarts. So after dropping one, re-list `Files/System/CloudHosting/`; a file still present means **rung 3 does not exist on this host**. That is worth knowing early, because a few things are only reachable by restart — notably a repository whose definition was uploaded into an already-running app ([publish-to-hosted.md](publish-to-hosted.md) "Indexes"). Bulk cache flush does not reach them.
 
 ## Publishing an existing local demo to a hosted install
 
-There is no local→hosted "deploy" in DW10. Publishing a built local demo is a **migration across three transports**, and its failure modes differ from a from-scratch online build. Scope this honestly with the user before starting — it is not a button.
-
-**Align the platform version first.** Put `changeversion.txt` (release ring) in `Files/System/CloudHosting/` and let the site recycle, so source and target run the same DW10 build before any content moves. Serialized content deserializing *backwards* across a minor version is a strict-mode drift risk you can simply remove.
-
-### Transport map
-
-| Layer | Transport |
-|---|---|
-| Content — pages, paragraphs, grid rows, item XMLs | Serializer `Replace` + `Merge` passes. Push the serialized tree to the target's `Files/System/Serializer/SerializeRoot`, then `POST /Admin/Api/SerializerDeserialize`. |
-| Files — brand CSS, fonts, imagery, templates, index/repository definitions | `/Admin/Api/Upload`, delete-before-upload (above) |
-| Commerce — catalog, pricing, stock, variants, discounts, orders, logins | Serializer `SqlTable` predicates. Add the tables to the config rather than re-authoring rows through the API — it preserves ids and relations that hand-authoring drifts on. |
-
-The Serializer AddIn must be installed on the target, and **its version must match the source's**: the mode names were renamed (`Deploy`/`Seed` → `Replace`/`Merge`) between builds, so a config authored against one 500s the other with `Unknown mode '<name>' for predicate`. Translate the config per side, or align the AddIn versions.
-
-Password hashes ride the `AccessUser` row, so **demo logins survive the move** — but only if the predicate's `where` clause actually selects them. A base-layer config filtered to customer-center *groups* silently leaves the personas behind; widen the clause and re-check.
-
-### Order of operations
-
-1. Align the platform version (above); confirm `info.version` matches on both sides.
-2. Push files **before** content — item-type XMLs and templates must exist before the content that references them.
-3. **Empty the target area, then deserialize** (see below).
-4. Deserialize content (`Replace`, then `Merge`), then the commerce tables.
-5. Re-apply the per-environment bindings the export deliberately excludes (below).
-6. Flush caches, rebuild every index, clear the sitemap cache.
-7. Verify in a browser (below).
-
-### Deserialize semantics that decide the outcome
-
-- **`Replace` upserts; it never deletes.** Deserializing onto an install that already has content produces a *hybrid* — the target's stock paragraphs survive underneath yours, and the page renders as a mix. The fix is a clean room: delete the target area's pages (they go to the recycle bin) and deserialize into the empty area. That reproduces the source exactly, which is what the source's own first deserialize did.
-- **The deserializer creates missing areas itself.** Do not pre-create the target area by hand: the export carries the source area id, and a hand-made area takes the next free id instead, so the content lands in the wrong place. Let the deserialize create it.
-- **Orphaned rows can hide behind a missing area.** Entries skipped with *"Area with ID `<n>` not found"* may still have written pages carrying that `AreaId`. They are invisible while no such area exists — and surface as a fully-populated ghost area the moment an area takes that id. If a language layer or second area was dropped from the payload, check for orphans before reusing its id.
-- **Only ACTIVE grid rows are exported.** A deliberately parked row — a staged promo banner the demo activates live — never transfers. Rebuild it on the target (copy an existing row of the same shape, repoint its fields, set the row inactive).
-- **Identity-PK relation tables do not insert cleanly** (shop↔group relations, variant↔product relations). Rows collide by auto-id against the target's own rows, so the insert lands as an update on an unrelated row. Purge the colliding target rows first, then re-deserialize.
-- **A row referencing a parent that doesn't exist fails the whole batch.** Shipping shop↔group rows for shops absent on the target leaves the FK re-enable failing (`Could not re-enable FK constraints for [<table>]`) and the batch's *good* rows missing too — categories quietly never appear. Scope the predicate with a `where` clause to what the target actually has.
-- **Cross-install id remapping is yours to do.** Page ids differ between installs. Anything storing a raw page id — redirect targets (`UrlPath`), button links, policy-link fields — must be remapped against a source→target map (match pages by name/path) before it is pushed.
-
-### What never rides the content export
-
-The serializer config deliberately excludes per-environment fields, and several **global** settings are not content at all. Each of these silently changes rendering on the target:
-
-| Setting | Symptom when missed |
-|---|---|
-| Area `CustomHeadInclude` | Brand CSS never loads — the site renders in stock theme colours. |
-| Area frontpage / domain / shop / currency / country / language | Root serves the target's old frontpage; prices and market are wrong. |
-| `SettingsSystemCustomizedURLs.urlInlcudeAreaType` | Area path source. On `UseAreaRegionalInPath` the path comes from the **culture**, so two areas sharing a culture collide and the second is unreachable (404). `UseAreaNameInPath` gives each area its own segment. |
-| `SettingsSystemCustomizedURLs.includeProductIdInUrlNames` | Product URLs render as `?ProductID=<id>` instead of friendly slugs, so friendly PDP URLs — and any redirect pointing at one — 404. |
-| Area `includeProductsInSitemap` + the on-disk sitemap cache | Sitemap serves stale content; product URLs missing. Clear `Files/System/SitemapXml/` to force a rebuild. |
-| `Files/Icons/1_none.svg` | The "no icon" sentinel. It 404s on an install that never had it (rendering nothing, as intended) but **exists on a stock cloud install**, where it renders a literal **NO ICON** box on every link using the sentinel. Delete it on the target. |
-
-Rebuild every index after the commerce load. A stale Lucene index keeps serving the target's *old* catalog — the storefront navigation shows the pre-migration categories, and category URLs 404 — long after the DB is correct.
-
-### Verify with a browser, not just status codes
-
-An HTTP sweep can return 200 on every page while the site is visibly broken. A field that fails to deserialize (a logo width) can leave an image rendering at its natural size — thousands of pixels wide — blowing out the layout on a page that still reports 200. **Screenshot the storefront** and run [visual-qa.md](visual-qa.md) before declaring a publish done; drive one real login and one real add-to-cart. Assert parity on the numbers that matter (page count, product count, variant count on a known master product) against the source install.
+Moving a demo that was built locally onto a hosted install is a **migration across three transports**, not a deploy — and its failure modes are not this reference's. It has its own playbook: [publish-to-hosted.md](publish-to-hosted.md) — pre-flight (custom product fields must exist on the target **before** the first deserialize), the transport map, clean-room deserialize semantics, publishing onto an install that already has content (id collisions), the settings that never ride a content export, indexes, and the browser-verified parity sweep.
 
 ## What stays the same
 
