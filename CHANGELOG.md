@@ -3,6 +3,38 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.8.0]
+
+Adds the local→hosted **publish path** to the online-mode reference and retracts the
+claim that a cloud install cannot be restarted.
+
+### Added
+- **Publishing an existing local demo to a hosted install** (`dw-demo-base/references/online-mode.md`):
+  the three-transport migration (content via Serializer passes, files via `/Admin/Api/Upload`,
+  commerce via `SqlTable` predicates), order of operations, and the deserialize semantics that
+  decide the outcome — `Replace` upserts but never deletes (deserialize into an emptied area or
+  get a hybrid page tree), the deserializer creates missing areas itself (do not pre-create one),
+  orphaned rows hide behind a missing area id, only ACTIVE grid rows are exported, identity-PK
+  relation tables collide by auto-id, and a row referencing an absent parent fails the whole batch.
+  Plus the settings that never ride a content export (`CustomHeadInclude`, area/market bindings,
+  `urlInlcudeAreaType`, `includeProductIdInUrlNames`, sitemap cache, the `1_none.svg` icon sentinel)
+  and cross-install page-id remapping.
+
+### Changed
+- **`/Admin/Api/Upload` never overwrites** (`online-mode.md` file-upload recipe): an existing name
+  comes back as `status: ok` with the skipped names in `model.duplicates` and the file unchanged.
+  Delete before re-uploading; assert on `duplicates`, not on `status`. Generalised to list-command
+  ids: every `*Delete` taking `Ids` wants the `modelIdentifier` shape, not a bare name.
+- **Serializer AddIn versions must match across installs** — the mode names were renamed
+  (`Deploy`/`Seed` → `Replace`/`Merge`), so a config authored against one build 500s the other.
+
+### Removed
+- **Retracted: "you cannot restart a hosted site"** (`online-mode.md`, `dw-demo-base/SKILL.md`
+  routing row). A cloud install has a restart surface — the `Files/System/CloudHosting/` control
+  files (`recycle.txt`, `restart.txt`, `changeversion.txt`), canonical in `dw-setup-config`. The
+  cache-refresh recipe stays as the first rungs of a flush-then-restart ladder, because some global
+  settings do not take effect on a flush alone.
+
 ## [4.7.1]
 
 Folds the learnings from a 2026-07 dual demo-host UI pass: two hosts had shipped
@@ -37,6 +69,7 @@ reporting success without acting.
   during live demos; hosted installs keep real secrets), and the wizard-seeded
   `Standard` area (AreaId 1) is deleted before the host counts as scaffolded
   (SQL — MCP `delete_area` is a silent no-op).
+
 ## [4.7.0]
 
 Folds the last three Truvio Distribution release cycles into the demo skills
