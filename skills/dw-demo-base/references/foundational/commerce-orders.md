@@ -48,6 +48,28 @@ currency. If the `Area` row defaults to one currency/country and orders are seed
 order list renders empty silently. Align the area's default currency to the seeded
 `OrderCurrencyCode` (or seed orders in the area's default) **before** backfilling completion.
 
+## Order-line prices: seed after the currency restart, then backfill totals
+
+`add_products` (the order-line seeding tool) writes **only the unit-price columns**
+(`OrderLineUnitPriceWithoutVAT`/`WithVAT`) — it computes neither the line totals
+(`OrderLinePriceWithoutVAT`/`WithVAT`) nor the order totals. And the unit price you pass is not
+always the one that lands:
+
+- **Change the default currency → restart → THEN seed.** A changed default currency only
+  materializes on restart; order lines seeded before that restart can land with unit prices
+  **×100** (a two-decimal exponent artifact — e.g. an explicit `12.50` stored as `1250`).
+- **Qty-tier `EcomPrices` rows silently reprice seeded lines.** A line whose product/quantity
+  matches a tier row is repriced to the tier price, ignoring the explicit `unitPriceWithoutVat`
+  passed to the tool.
+- **After seeding, run a sanity sweep + backfill in SQL:** flag any
+  `OrderLineUnitPriceWithoutVAT` above a plausible maximum and ÷100-normalize it; then backfill
+  the line totals (unit × quantity into `OrderLinePriceWithoutVAT`/`WithVAT`) and the order
+  totals (`OrderPriceWithVAT`, `OrderPriceWithoutVAT`, `OrderPriceBeforeFees*`).
+
+**Verify:** seed one order post-restart with an explicit price; assert
+`OrderLineUnitPriceWithoutVAT` equals the requested value and the account-side order list shows a
+non-zero total after an `OrderService` cache flush.
+
 ## SQL backfills vs runtime subscribers
 
 The bulk SQL backfills above (`OrderComplete=1`, `OrderCustomerNumber`, and the related

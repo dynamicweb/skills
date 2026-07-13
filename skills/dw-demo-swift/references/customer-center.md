@@ -7,8 +7,9 @@
 - [3. CSR sales-on-behalf mechanics — foundational](#3-csr-sales-on-behalf-mechanics--foundational)
 - [4. What to do when the section "looks empty"](#4-what-to-do-when-the-section-looks-empty)
 - [5. Persona presentation: avatar + role badge](#5-persona-presentation-avatar--role-badge)
+- [6. Sign-in profiles / switch user (Swift 2.4) — not impersonation](#6-sign-in-profiles--switch-user-swift-24--not-impersonation)
 
-> The Swift 2.2 customer-center frontend playbook for Dynamicweb 10 demos. Covers the page-tree map (Account vs CSR vs legacy nav vs Overview), the stock-CSR rule rationale (inoculation against the rebuild-the-CSR-section trap in sales-on-behalf demos), and the persona presentation layer. The deeper, vendor-generic mechanics (impersonation, the `AccessUserSecondaryRelation` grant, reorder, seeding filters, permission gating, contract pricing) are owned by foundational skills — see §3.
+> The Swift customer-center frontend playbook for Dynamicweb 10 demos. Covers the page-tree map (Account vs CSR vs legacy nav vs Overview), the stock-CSR rule rationale (inoculation against the rebuild-the-CSR-section trap in sales-on-behalf demos), the persona presentation layer, and the Swift 2.4 sign-in profiles / switch-user recipe (§6). The deeper, vendor-generic mechanics (impersonation, the `AccessUserSecondaryRelation` grant, reorder, seeding filters, permission gating, contract pricing) are owned by foundational skills — see §3.
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -83,3 +84,65 @@ A demo with multiple personas (customer admin / buyer / browse / CSR) lands hard
 - Add the user's `Company` field below the role badge — distinguishes one buyer's company name from another's at a glance.
 
 The avatar ring is best done with `box-shadow: 0 0 0 3px <color>` on the wrapper rather than `border` (border affects layout; box-shadow doesn't). The badge is a single `<span class="badge">` with inline `style=` for color tokens; consume from `--<brand>-primary` / `--<brand>-charcoal` style vars per [re-skin.md](re-skin.md) so the brand layer flows through.
+
+## 6. Sign-in profiles / switch user (Swift 2.4) — not impersonation
+
+Swift 2.4's "Sign in with multiple Profiles" is a **second user-on-user mechanism, separate from
+impersonation** — the two are easy to conflate and are wired through entirely different tables:
+
+1. **Profiles / switch user** (Swift 2.4 UI): multiple `AccessUser` rows sharing one
+   `AccessUserUserName`, disambiguated by the `AccessUserIsLogin` flag. Templates
+   `Users/UserAuthentication/Login/SelectableUsers.cshtml` and `SelectableUsersDirectLogin.cshtml`;
+   app settings on the *Users - Authentication* paragraph: `ListUserProfiles` (bool) +
+   `UserProfilesTemplate`. Switching posts `DwSwitchUserUniqueId` →
+   `AuthenticationManager.StartSwitchUser`, which hard-requires the target user's `UserName` to
+   equal the current user's (case-insensitive) — no password re-entry, no banner, no
+   `CanImpersonate` check. **The same-username rule IS the authorization**, and the switch is a
+   full session identity change.
+2. **Impersonation** (existing): `AccessUserSecondaryRelation` + `CanImpersonate`,
+   `DWExtranetSecondaryUserSelector` / `DwExtranetRemoveSecondaryUser`, ImpersonationBar templates
+   — owned by [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md)
+   "CSR sales-on-behalf — impersonation mechanics". A CSR demo uses impersonation; a
+   one-buyer-many-accounts demo (one login serving several customer accounts) uses profiles.
+
+A third, legacy branch exists in `GetProfilesListOutput`: same-username users with *different
+ShopID* and no `IsLogin` row anywhere, reachable only with `?ShowProfiles=1` (shop-scoped
+profiles). Don't mistake it for the 2.4 mechanism.
+
+### Platform gate — state the platform honestly
+
+The release notes gate same-username profiles on **DW 10.29+**. The full mechanism is present and
+working on a 10.28.1-PreRelease build (the `AccessUserIsLogin` column, the duplicate-username
+validation in `UserService.IsValidUserName` — at most one `IsLogin=1` row per shop, distinct
+non-empty customer numbers — and the login resolution that prefers the `IsLogin=1` row): a
+PreRelease is effectively a build of the *next* stream, so the caveat is real for 10.28.x
+**stable**. When a demo host is pinned to a PreRelease, say so when presenting the feature — a
+demo can otherwise show capabilities the customer's GA version lacks.
+
+### Zero-custom-code picker recipe (SQL + one restart)
+
+1. **Clone the buyer's `AccessUser` row per profile:** same `AccessUserUserName`, new
+   `AccessUserUniqueId = NEWID()`, `AccessUserIsLogin = 0`, a **distinct non-empty
+   `AccessUserCustomerNumber`**, and distinct company/address values (the picker renders name,
+   address, company, and customer number). Copy the group relations — the B2B price gate and
+   customer-center access follow the group.
+2. **Set `AccessUserIsLogin = 1` on the master row** — password login resolves to it; the clone
+   rows' passwords are never used.
+3. **Paragraph settings** on the UserAuthentication paragraph:
+   `<ListUserProfiles>True</ListUserProfiles>` +
+   `<UserProfilesTemplate>SelectableUsers.cshtml</UserProfilesTemplate>`.
+4. **Restart once** (user + paragraph caches).
+
+Per-profile data isolation comes free: contract prices key on `PriceUserCustomerNumber` and the
+My-orders list filters on `RetrieveListBasedOn=UseUserID` — both differ per profile row.
+**Verify end-to-end:** log in → the picker lists every profile → per-profile contract price on
+the cart and per-profile order lists with no cross-visibility, in both switch directions.
+
+### Picker-trigger UX quirk
+
+With `ListUserProfiles=True` the login form rewrites its redirect to
+`?ShowProfiles=1&RedirectAfterSwitchUser=...` **back to the sign-in page** — after login the user
+lands on the picker on the sign-in page, then is redirected onward. Re-visiting the sign-in page
+while signed in shows the picker again; that IS the in-session account switcher. Stock Swift has
+no header/avatar entry point for switching, so link the sign-in page from the account menu when
+the demo storyline needs a visible switch affordance.

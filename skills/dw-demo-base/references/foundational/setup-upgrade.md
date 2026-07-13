@@ -147,6 +147,25 @@ cluster-index UpdateId are then marked already-run.
   including data migrations; on a populated DB this can corrupt. Mode A is safe only on a fresh DB with
   no real data. For a populated/production DB, talk to Dynamicweb Service Desk first.
 
+## In-place platform update — the pre-update backup + content-count gate
+
+Before ANY in-place platform update on a host whose DB content is not regenerable (a
+`Dynamicweb.Suite` version bump, a design/item-type re-deploy, an update cycle that runs
+deserializes against the live DB), take two snapshots:
+
+```sql
+SELECT COUNT(*) FROM ItemList;          -- and ItemListRelation
+BACKUP DATABASE [<db>] TO DISK = '<path>\<db>-pre-update.bak';
+```
+
+After the update, **the counts must match the snapshot**. `ItemList` / `ItemListRelation` rows
+back every repeatable-item component (slider slides, accordion items, named lists) and their loss
+renders as silent empty bands, not errors — an in-place update cycle has been observed to leave
+`ItemList`, `ItemListRelation`, `ItemNamedItemList`, and the `ItemType_*_Item` child tables empty
+with no error surfaced anywhere, and without a backup the only recovery is re-authoring the
+content by hand. Treat a count mismatch as a stop-the-line failure: restore the backup, then
+isolate which update step dropped the rows before re-running.
+
 ## Schema-drift across NuGet versions (Serializer / migration crossover)
 
 When a deserialize or cross-host data move warns `source column [T].[C] not present on target schema —
