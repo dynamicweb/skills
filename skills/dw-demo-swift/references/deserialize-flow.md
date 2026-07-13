@@ -47,8 +47,23 @@ From the **`surface-swift` layer** (`<demo-root>\distribution\layers\surface-swi
 From the **Swift clone** (`<demo-root>\dw-swift\`) to the host's `wwwroot/`:
 
 - `Files/Templates/Designs/Swift-v2/`
-- `Files/System/Styles/`
+- `Files/System/Styles/` (this lands `ColorScheme.config` ONLY — see the theme-staging step below)
 - `Files/Images/Icons/` (~80 SVGs incl. `Flags/` and `LoginProviders/` — the set integrity-sweep Check 6 verifies; verified present in the Swift clone. These stock icons are also what `theme-default`'s opt-in nav icons bind to — see [`header-menu.md`](header-menu.md))
+
+**Stage the theme's Style assets (mandatory — the Swift clone ships none).** The Swift repo's
+`Files/System/Styles/` contains only `ColorSchemes/ColorScheme.config` — NO `<id>.{json,css}`
+pairs — while the surface's serialized `Area` rows arrive wired to
+`AreaColorSchemeGroupId='swift'` / `AreaButtonStyleId='buttons'` / `AreaTypographyId='fonts'`.
+`TryGet*Style` fails silently when the file behind an id is absent (the empty-state pitfall,
+[`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7), so a
+host built without this step renders every page in the browser's serif fallback with unstyled
+buttons and a `Styles/Buttons/buttons.css` 404 — and it looks "almost right", which is exactly
+why it ships unnoticed. Stage `theme-default`'s three pairs
+(`ColorSchemes/Buttons/Typography` `default.{json,css}`) per
+[`styles-assets.md`](styles-assets.md) and rewire the Areas to `default` (keep
+`AreaColorSchemeId='light'`). Verify: the home page `<head>` emits all three
+`/Files/System/Styles/{ColorSchemes,Buttons,Typography}/…css` links and each returns 200 —
+integrity-sweep Check 8 owns the gate.
 
 **Repositories skip rule.** For `Files/System/Repositories/`, copy **everything EXCEPT `ProductsBackend/` and `ProductsFrontend/`** — those two index Swift's bike-demo custom fields (`PlantHardiness`, `BikeFrameSize`, plant/bike-specific facets, etc.). Copying them into a host whose products use a different data-model causes `BuildIndex` Full to fail with "field not found in products" — the index builder validates every field reference against the live `EcomProductCategoryField` table. The other Swift-shipped indexes (`Content/`, `Files/`, `Post/`, `Secondary users/`) are demo-data-agnostic — they index Pages/Files/blog Posts/Users via standard fields plus item-type fields that DO resolve cleanly; copy those alongside. Hand-write a per-demo Products index targeting the demo's actual data-model fields instead — see [`../../dw-demo-pim/references/canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md) Step 16. (For PIM-data + Swift-frontend hybrid demos with N categories × M custom fields each, pick 5-10 demo-relevant fields per category for the index — not the full set; index size is rarely the constraint, but maintenance and admin-UI clarity are.)
 

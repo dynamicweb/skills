@@ -11,9 +11,10 @@
 - [Check 5: BuildIndex (by the `.index` Build Name) + wait for a fresh successful build](#check-5-buildindex-by-the-index-build-name--wait-for-a-fresh-successful-build)
 - [Check 6: Icon set populated under `Files/Images/Icons/` (Pitfall: blank-blue-button storefront)](#check-6-icon-set-populated-under-filesimagesicons-pitfall-blank-blue-button-storefront)
 - [Check 7: Raw SQL in paragraph templates (DW10 discipline)](#check-7-raw-sql-in-paragraph-templates-dw10-discipline)
+- [Check 8: Style assets staged + emitted (the theme gate)](#check-8-style-assets-staged--emitted-the-theme-gate)
 - [Sweep complete](#sweep-complete)
 
-> Mandatory post-deserialize integrity sweep. Seven sequential checks. Run after [`deserialize-flow.md`](deserialize-flow.md) returns 2xx. The skill refuses to declare deserialize complete until ALL seven pass. Strict-mode Serializer is the first line of defence — this sweep is the second, catching DW10-specific failures strict mode does not detect.
+> Mandatory post-deserialize integrity sweep. Eight sequential checks. Run after [`deserialize-flow.md`](deserialize-flow.md) returns 2xx. The skill refuses to declare deserialize complete until ALL eight pass. Strict-mode Serializer is the first line of defence — this sweep is the second, catching DW10-specific failures strict mode does not detect.
 
 ## Prerequisites
 
@@ -301,9 +302,48 @@ skill — staged in [`swift-building.md`](../../dw-demo-base/references/foundati
 pack covers URL substring scans, hard-coded slugs, category-name branching, master-inline
 `AddStylesheet`, etc.
 
+## Check 8: Style assets staged + emitted (the theme gate)
+
+**What is verified:** the Areas' style wiring resolves to real files, and the storefront actually
+emits the three style links. `TryGet*Style` fails **silently** when the file behind an Area's
+style id is absent, and `swift.css` alone renders a page that looks "almost right" — structural
+layout intact, every font in the browser's serif fallback, buttons unstyled. Hosts have shipped
+in that state without anyone noticing, because nothing errors.
+
+**Probe:**
+
+```powershell
+# 1. Files on disk match the Area wiring
+$styles = "Dynamicweb.Host.Suite\wwwroot\Files\System\Styles"
+$wiring = sqlcmd -S $server -E -d $db -h -1 -Q "SET NOCOUNT ON;
+  SELECT AreaColorSchemeGroupId + '|' + AreaButtonStyleId + '|' + AreaTypographyId
+  FROM Area WHERE AreaId = <main-area-id>"
+$ids = $wiring.Trim() -split '\|'
+foreach ($pair in @("ColorSchemes\$($ids[0])", "Buttons\$($ids[1])", "Typography\$($ids[2])")) {
+    if (-not (Test-Path "$styles\$pair.css") -or -not (Test-Path "$styles\$pair.json")) {
+        throw "Style asset missing: $pair.{json,css} — stage the theme (deserialize-flow 'Stage the theme') before continuing."
+    }
+}
+# 2. The rendered page emits all three links, each returning 200
+$html = (Invoke-WebRequest "https://localhost:$port/" -SkipCertificateCheck -UseBasicParsing).Content
+foreach ($dir in 'ColorSchemes','Buttons','Typography') {
+    if ($html -notmatch "Styles/$dir/[^""]+\.css") { throw "Home <head> emits no $dir stylesheet — empty-state pitfall." }
+}
+```
+
+**Beyond the mechanical probe:** a full-page screenshot of the home page must read as a
+*designed* page — brand or neutral-theme typography, styled buttons, coherent color schemes.
+A page in serif fallback with browser-default buttons fails this check even when it renders
+without errors. Run the polish gate in
+[`visual-qa.md`](../../dw-demo-base/references/visual-qa.md) before declaring the host ready.
+
+**Recovery:** stage the theme's three pairs and rewire the Areas per
+[`deserialize-flow.md`](deserialize-flow.md) "Stage the theme's Style assets" +
+[`styles-assets.md`](styles-assets.md); restart so the resolved style URLs reload.
+
 ## Sweep complete
 
-When all seven checks pass, deserialize is verified complete. The skill may now declare "baseline restored" to the user.
+When all eight checks pass, deserialize is verified complete. The skill may now declare "baseline restored" to the user.
 
 Log the result + layer name + timestamp in the per-demo `CUSTOMISATIONS.md` as a deserialize event row, and record the checked-out layer/edition tag there too. This is structural — every deserialize is reproducible by re-running this flow against the same layer name + tag recorded in `CUSTOMISATIONS.md` (the Distribution repo pins by annotated tag `layers/<name>/<semver>`).
 

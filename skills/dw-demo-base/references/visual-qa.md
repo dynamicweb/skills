@@ -118,6 +118,7 @@ Batch at most a handful of fixes between re-checks, and never declare a page don
 ## Definition of done (per demo-critical page)
 
 - Detectors: `overflowX` 0, `broken`/`stretched` empty, no unexplained gap > 120px, console free of errors, no 404 assets.
+- **Theme gate:** the page `<head>` emits all three `Files/System/Styles/{ColorSchemes,Buttons,Typography}` links and the computed body font is the theme's, not the browser's serif fallback. A serif-fallback page renders "almost right" and still fails — that is the silent Style-asset empty-state (`foundational/swift-building.md` §7); the full-page screenshot must read as a *designed* page before the host counts as ready.
 - Interaction pass: every visible control changes state when used.
 - Eyeball checklist: pass at desktop AND mobile widths.
 - Keeper screenshots (both breakpoints) saved under `<demo>\notes\qa\` (the canonical QA-evidence home — see `SKILL.md` "Artifact hygiene"; never the demo root).
