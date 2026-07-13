@@ -3,6 +3,55 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.11.0]
+
+Folds eight learnings from two 2026-07 demo-build runs (a customer build dispatch and a
+Swift 2.4 profiles key test) into the demo and staged-foundational skills. (4.9.0 and
+4.10.0 are claimed by concurrently open PRs; this entry sits above 4.8.0 because the
+version sequence is independent of merge order.)
+
+### Added
+- **Swift 2.4 sign-in profiles / switch user** (`dw-demo-swift/references/customer-center.md`
+  §6, routing row + description trigger): profiles (same-username `AccessUser` rows +
+  `AccessUserIsLogin`, `ListUserProfiles`/`UserProfilesTemplate` paragraph settings,
+  `DwSwitchUserUniqueId` → `StartSwitchUser`) vs impersonation
+  (`AccessUserSecondaryRelation` + `CanImpersonate`) — two separate mechanisms, easy to
+  conflate; the zero-custom-code picker recipe (clone rows + `NEWID()` unique ids + distinct
+  customer numbers, master `IsLogin=1`, one restart; per-profile isolation free via
+  `PriceUserCustomerNumber` + `UseUserID`); the `?ShowProfiles=1` sign-in-page picker quirk
+  (no stock header entry point); and the platform-honesty rule — the 10.29+ gate does not
+  bite on a 10.28.1-PreRelease build (a PreRelease is effectively the next stream), so say
+  so when a demo shows features the customer's GA version lacks.
+- **Checkout delivery date / custom order fields**
+  (`dw-demo-swift/references/checkout-order-fields.md`, new reference + routing row): the
+  stock delivery-date beat needs NO custom order field (`EnableDeliveryDate` on the
+  checkout paragraph posts into the native `OrderShippingDate` column); order-field values
+  live in per-system-name `EcomOrders` columns, so an `EcomOrderField` definition without
+  its matching column breaks every order read (`IndexOutOfRangeException` in
+  `ExtractOrderFieldValues`); MCP `create_order_field` always violates
+  `DW_FK_EcomOrderField_EcomFieldType` (upstream bug — use the SQL contract).
+- **Order-line price seeding rules**
+  (`dw-demo-base/references/foundational/commerce-orders.md`, pointer from the dw-demo-pim
+  order-seeding appendix): change the default currency → restart → THEN seed (pre-restart
+  seeding produces ×100 unit-price artifacts); qty-tier `EcomPrices` rows silently reprice
+  explicit unit prices; `add_products` writes only unit-price columns, so backfill line and
+  order totals in SQL and sanity-sweep for exponent artifacts.
+- **In-place platform update: pre-update backup + content-count gate**
+  (`dw-demo-base/references/foundational/setup-upgrade.md`, `dw-demo-base/SKILL.md` routing
+  row): before any in-place update on a host with non-regenerable content,
+  `SELECT COUNT(*) FROM ItemList` + `BACKUP DATABASE`; after, counts must match — an
+  in-place update cycle has been observed to empty `ItemList`/`ItemListRelation`/child item
+  tables with no error, and without a backup the content is a hand re-author.
+
+### Changed
+- **Silent no-op catalogue extended** (`foundational/extend-mcp-tools.md` §5):
+  `patch_products_safe` against a variant `EcomProducts` row echoes the requested values
+  (the echo is the input model, not a post-write read) while the row stays NULL — the SQL
+  sweep is the canonical variant-enrichment surface; `copy_page` with
+  `destinationParentPageId=0` lands the copy in area 1 unless `areaId` is passed
+  explicitly. `dw-demo-pim/references/canonical-setup-order.md` step 14 now names the SQL
+  sweep as canonical and the never-trust-the-echo rule.
+
 ## [4.8.0]
 
 Adds the local→hosted **publish path** to the online-mode reference and retracts the
