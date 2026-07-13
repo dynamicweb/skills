@@ -25,8 +25,55 @@ per-engagement file that routinely did not exist at the documented path.
 - The `scrub-list.txt` file mechanism (location contract, stub-creation step, "when to expand
   the known-names list" section) and its `Get-Content` in the final pre-commit grep.
 
-(4.9.0 is claimed by the in-flight publish-to-hosted fold, PR #58 — the two entries are
-independent.)
+## [4.9.0]
+
+Splits the publish path into its own reference and folds a second hosted-publish build's
+learnings into it — including a serializer gap that silently empties every product index.
+
+### Added
+- **`dw-demo-base/references/publish-to-hosted.md`** (new): the local→hosted publish playbook,
+  moved out of `online-mode.md` (which now owns the hosted *build* only) and extended with:
+  - **Pre-flight: create custom product fields on the target before the first deserialize.**
+    Product fields are column-backed (`EcomProductField` = a column on `EcomProducts`), and the
+    engine's schema-sync only walks `EcomProductGroupField` — so a deserialize lands definitions
+    whose columns do not exist. The result is a 500 on every product read *and* a `Full` index
+    build that returns `status: ok` while indexing **zero documents**, install-wide. Includes the
+    deadlock (the field can then be neither dropped nor created) and its only exit, plus the
+    duplicate-SystemName trap that re-creates the same zero-document failure.
+  - **Publishing onto an install that already has content**: id collisions on a stock Swift
+    catalog — a variant group whose target twin is a colour group swallows the demo's options and
+    renders no selector at all while the variant products index perfectly; and the variant
+    *combination* table is identity-PK, so its rows never land and **every add-to-cart is silently
+    refused** (the only trace is `Not a valid variant combination` in the event log — the POST still
+    returns 200). Rebuilding the combinations then overwrites the variant rows' own weight/price from
+    the master, which `ProductSave` cannot put back (it no-ops on variant rows) — only a re-deserialize
+    can.
+  - **Indexes**: the repository *definition* travels, the built segments do not (copying them gives
+    a PLP with a product count and no cards); a repository uploaded into a running app needs a
+    restart before its facets resolve.
+  - **Derive-on-save item fields** do not survive a deserialize (the logo-width canary), and the
+    repair must be the **last** write — it is a plain `ParagraphSave`, so any later deserialize
+    reverts it and a publish that ends with "re-deserialize to fix X" undoes every such repair.
+    Plus `IsDryRun` before every hosted deserialize.
+  - Orders ride a plain `SqlTable` predicate, though no shipped example config includes them.
+
+### Changed
+- **`online-mode.md`** — now scoped to building on a hosted install; the publish section moved to
+  the new reference. Two corrections:
+  - **Upload**: `allowOverwrite=true` (an undocumented form field) replaces the delete-before-upload
+    workaround. Success is `model` being a **list**, never `status: ok` — a refused batch reports
+    `ok` with a `duplicates` object and writes nothing, and one pre-existing name drops the batch's
+    new files too.
+  - **Restart ladder**: the CloudHosting control files are a Dynamicweb Cloud affordance, not a
+    property of every hosted install. Confirm the file is *consumed*; a partner-hosted install can
+    accept `recycle.txt`/`restart.txt` and never act on them, which means rung 3 does not exist there.
+- **`serializer-reference.md`** — the predicate `mode` enum is version-scoped: **`Replace`/`Merge` on
+  0.8.x** (`Deploy`/`Seed` are *rejected*, not aliased — `ConfigLoader.ValidatePredicates` throws), the
+  run's mode moves into the JSON body, and `IsDryRun` is available. A config authored for the wrong
+  engine major 500s **every** Serializer call, including the read-only settings query — so
+  `GET /Admin/Api/SerializerSettings` is now prescribed as the one-call config-validity probe.
+- **`dw-demo-swift/references/deserialize-flow.md`** — the 0.6.9-stamped two-pass `?mode=` flow now
+  carries a pointer for 0.8.x callers.
 
 ## [4.8.0]
 
