@@ -3,6 +3,41 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.11.1]
+
+Folds a demo-build session's design-quality-gate learnings into the demo skills' visual-QA,
+orchestrator, and re-skin references: a mechanical definition-of-done that catches the polish
+defects a screenshot glance skips, plus the authoring traps that make such a gate pass silently.
+
+### Added
+- **Image-band height is a Tier-1 visual-QA item, mechanically gated**
+  (`dw-demo-base/references/visual-qa.md` detector + eyeball + symptom table + DoD;
+  `dw-demo-swift/references/re-skin.md` verification): stock image components carry no
+  serialized height field, so a swapped-in portrait crop or slider cover-card renders at full
+  column-width height and dominates the fold — a defect distinct from a stretched image. A new
+  `tall` detector flags any image band taller than a configured fraction of the viewport; the
+  durable fix is a Tier-1 theme-CSS cap (`aspect-ratio` + `max-height` + `object-fit: cover`).
+- **PLP list asserts row-presence AND per-row content, not HTTP 200**
+  (`dw-demo-base/references/visual-qa.md`): a list-mode product page can return 200 while
+  rendering zero rows (empty/not-yet-repopulated index, mis-scoped shop). A new detector asserts
+  row count ≥ `minRows` and that each row carries its required-field selectors (thumbnail / SKU /
+  price / add-to-cart); an empty or field-short list behind 200 is a named finding, never a pass.
+- **The programmatic detectors are the mechanical definition-of-done**
+  (`dw-demo-base/references/visual-qa.md`): the `overflowX` / section-gap / stretched-image /
+  placeholder detectors are framed as a blocking pass/fail run before eyeballing, not a checklist
+  the agent may skip.
+- **Design sign-off — taste stays human without blocking automation**
+  (`dw-demo-base/references/orchestrator.md` acceptance criteria; `visual-qa.md` DoD): a stamped,
+  non-blocking sign-off leg that reports SKIP ("awaiting human sign-off") until a sign-off
+  artifact exists, then PASS — so visual taste gets a human decision on the keeper screenshots
+  without a build-blocking pause (the one blocking human gate stays the impact sign-off).
+- **Authoring detector/probe scripts — three silent-false-green traps**
+  (`dw-demo-base/references/visual-qa.md`): Playwright `page.evaluate` passes exactly one arg
+  (pass an options object); PowerShell `ConvertTo-Json` unwraps a single-element array to a scalar
+  (normalise scalar-or-array on the JS side); and a PowerShell local that is a case-variant of a
+  parameter silently aliases it (`$Body`/`$body` — name the local distinctly). A probe run that
+  emits zero probes must never be reported as PASS.
+
 ## [4.11.0]
 
 Folds eight learnings from two 2026-07 demo-build runs (a customer build dispatch and a
