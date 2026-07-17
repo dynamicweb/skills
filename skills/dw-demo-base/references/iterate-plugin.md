@@ -187,7 +187,7 @@ value is the role + date, not the person.
 Sanitization protects the customer; this step protects the *corpus*. Fold-backs that skip it
 produced, historically: a pivot that left the retracted model live in five other files, a
 retracted API claim that survived three releases next to the file that retracted it, and the
-same lesson recorded four times in different words. Run all three checks BEFORE drafting the
+same lesson recorded four times in different words. Run these checks BEFORE drafting the
 edit:
 
 ### 1. Supersede sweep — when the learning corrects, retracts, or pivots existing guidance
@@ -238,6 +238,29 @@ append a new dated subsection below it. Specifically:
   on the next fold. Use count-free phrasing.
 - If the target reference would exceed ~20KB after the edit, stop and propose a split (or a
   different home) to the user instead of appending.
+
+### 5. Dead-layer-name sweep — when the fold references a Distribution layer
+
+Demo-skill folds routinely name Distribution layers (`base`, `surface-swift`, `feature-*`,
+`theme-default`, editions). A layer name that was renamed or retired since the skill was authored
+becomes a **latch-on target** — an instruction that tells a future demo to build from a layer that
+no longer exists (the staleness this discipline exists to prevent). Before folding, sweep every
+Distribution layer name the edit mentions against the **distribution's layer index**
+(`layers/INDEX.json` on the latest gate-proven `main` — the source of truth for what layers exist and
+what a retired name was superseded by):
+
+- **Live (`status: active`/`deprecated`)** — use it; prefer the successor over a `deprecated` layer
+  for new instructions.
+- **Retired (an `INDEX.json` `retired` entry)** — rewrite the instruction to the entry's
+  `supersededBy` successor. A retirement *note* ("X was retired, use Y") may stay only where it
+  genuinely helps the reader; an *instruction* that builds from the dead name goes.
+- **Absent entirely** — stop; the name is wrong. Resolve it against `INDEX.json` before folding.
+
+Keep the retired-name list in `INDEX.json`, never hardcoded into `scripts/validate-skills.py` — a
+blocklist in the skills repo forks a second source of truth from the index and drifts the moment a
+layer is renamed. The index is authoritative; this sweep is the release-time check that consults it.
+(The Distribution side enforces the mirror rule in its own CI — its validator rejects a retired layer
+name in its living docs.)
 
 ## Step 2 — Make the edit
 
@@ -417,7 +440,9 @@ genuine first install on a fresh machine.
    source notes, the staged diff, AND the commit message / PR body.
 6. **Content-hygiene gate passed (Step 1b)** — supersede sweep run over `skills/` if the
    learning corrects anything; no second copy of an existing lesson; owning SKILL.md routing
-   row updated if scope changed.
+   row updated if scope changed; every Distribution layer name the fold mentions checked against
+   `INDEX.json` (a retired name rewritten to its `supersededBy` successor, never left as an
+   instruction).
 7. The branch is pushed and a **PR is open** against the integration branch (not pushed
    directly).
 8. After merge: the marketplace clone is at the new commit, and the user has the
@@ -495,6 +520,9 @@ The cost of this dance is high enough that the Step 1a + final pre-commit grep p
   all of `skills/` (Step 1b §1).
 - **Recording the same lesson in a second home.** If a grep finds the lesson already exists,
   sharpen the canonical copy and pointer to it (Step 1b §2).
+- **Leaving a retired layer name as a build instruction.** A renamed/retired Distribution layer
+  name in an instruction sends a future demo to a layer that no longer exists. Sweep layer names
+  against `INDEX.json` and rewrite to the `supersededBy` successor (Step 1b §5).
 
 ## Reference: file layout
 

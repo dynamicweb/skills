@@ -22,7 +22,7 @@
 `dynamicweb-demo-base` setup is complete:
 
 - [`../../dw-demo-base/references/setup-checks.md`](../../dw-demo-base/references/setup-checks.md) is green (NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express all probed and resolved).
-- The Distribution has been **checked out** (`justdynamics/Truvio.Commerce.Distribution` by default; overridable via `$env:DW_DISTRIBUTION_REPO`) at an annotated tag — usually an edition tag like `editions/swift-demo/<semver>`, which pins the `base` + `surface-swift` + `sample-data` + theme layers together — into the demo's own `distribution\` folder (see §3 — the staging snippet clones + checks out on first run). The pin is the checked-out tag, recorded in `CUSTOMISATIONS.md`.
+- The Distribution has been **cloned** (repo URL from `$env:DW_DISTRIBUTION_REPO`, default below) and pulled `--ff-only` up to `origin/main` into the demo's own `distribution\` folder (see §3 — the staging snippet clones + fast-forwards on first run). **Main IS the version**: consume the latest gate-proven `main` (assert `layers/INDEX.json` `gateProven` is present) and compose the edition's layers from the live `INDEX.json` `layers` entries. The reproducibility pin is the resolved commit SHA, recorded in `CUSTOMISATIONS.md`.
 - [`../../dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) produced a running `Dynamicweb.Host.Suite` (port reachable, host responds at `/admin`).
 - [`../../dw-demo-base/references/mcp-setup.md`](../../dw-demo-base/references/mcp-setup.md) verification gate passed (`claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND in-conversation `ToolSearch +dynamicweb` returns >200 tools).
 - **The DW Serializer is installed in the host** per [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Installation" section (the `Truvio.Commerce.Serializer` NuGet package added as a `PackageReference` + restored, `Files/System/Serializer/Serializer.config.json` staged, host restarted). This is a one-time-per-host step.
@@ -109,7 +109,7 @@ Captured via `AskUserQuestion` in the current conversation. Format: `CLAUDE.<hex
 
 ## 3. Step 1 — Stage baseline YAML from the demo's baselines folder
 
-Layer path resolution: every layer path resolves under the demo's own `<demo-root>\distribution\layers\<name>\` folder — the per-demo checkout of the Distribution repo (`justdynamics/Truvio.Commerce.Distribution` by default; overridable via `$env:DW_DISTRIBUTION_REPO`) at the pin tag. No hardcoded machine-wide literals.
+Layer path resolution: every layer path resolves under the demo's own `<demo-root>\distribution\layers\<name>\` folder — the per-demo clone of the Distribution repo (URL from `$env:DW_DISTRIBUTION_REPO`, default below), pulled `--ff-only` up to `origin/main`. No hardcoded machine-wide literals.
 
 **The Serializer reads from `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/<replace|merge>/`** (joined from `outputDirectory: "Serializer"` in `Files/System/Serializer/Serializer.config.json` + `outputSubfolder` per mode). The demo's `distribution\layers\base\` folder is the **checked-out/staging copy only** — the deserialize endpoint never reads it. The snippet below copies `layers\base\` INTO `SerializeRoot/`; that copy step is what makes the content visible. Skipping the copy (or pointing the flow at `layers\base\` directly) silently no-ops — any "121 updated" you then see comes from whatever else is already in `SerializeRoot/replace/` (typically a previous serialize roundtripping itself). Verified during a Swift2 baseline import — the original recipe pointed at the source tree and silently no-op'd.
 
@@ -126,17 +126,17 @@ Layer path resolution: every layer path resolves under the demo's own `<demo-roo
 ```powershell
 $demoRoot = (Get-Location).Path                    # the demo project root
 $dist     = "$demoRoot\distribution"               # the demo's own Distribution checkout
-if (-not (Test-Path "$dist\.git")) {
-  # Clone the single Distribution repo and check out the pin tag (usually an edition tag —
-  # see base SKILL "Tag resolution"). Defaults to the Distribution repo; override per
-  # machine with $env:DW_DISTRIBUTION_REPO (owner/name).
-  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
-  git clone "https://github.com/$repo" $dist
-  $tag = git -C $dist tag --list "editions/swift-demo/*" |
-    Sort-Object { [version]($_ -replace '^editions/swift-demo/','') } -Descending | Select-Object -First 1
-  git -C $dist checkout $tag                          # the whole snapshot; base + surface-swift + sample-data + ... all present
-  Write-Host "Checked out $tag — record it in CUSTOMISATIONS.md (the reproducibility pin)"
+if (Test-Path "$dist\.git") {
+  git -C $dist pull --ff-only origin main             # main IS the version — fast-forward to the gate-proven tip
+} else {
+  # Clone the single Distribution repo (URL from $env:DW_DISTRIBUTION_REPO, owner/name form).
+  # See base SKILL "Layer resolution" — pin origin/main + read layers/INDEX.json, never a tag.
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
+  git clone "https://github.com/$repo" $dist          # base + surface-swift + sample-data + ... + INDEX.json all present
 }
+$index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
+if (-not $index.gateProven) { throw "INDEX.json has no gateProven marker — main is not gate-proven; do not deserialize." }
+Write-Host "On main $(git -C $dist rev-parse --short HEAD) — record the commit SHA in CUSTOMISATIONS.md (reproducibility stamp)"
 $serializeRoot = "Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot"
 # Stage BOTH layers' mode trees: base (framework-only, replace/ only) + surface-swift
 # (replace/ + merge/ — all content + UrlPath). The trees are disjoint, so they overlay cleanly.

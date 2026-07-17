@@ -345,6 +345,6 @@ without errors. Run the polish gate in
 
 When all eight checks pass, deserialize is verified complete. The skill may now declare "baseline restored" to the user.
 
-Log the result + layer name + timestamp in the per-demo `CUSTOMISATIONS.md` as a deserialize event row, and record the checked-out layer/edition tag there too. This is structural — every deserialize is reproducible by re-running this flow against the same layer name + tag recorded in `CUSTOMISATIONS.md` (the Distribution repo pins by annotated tag `layers/<name>/<semver>`).
+Log the result + layer name + timestamp in the per-demo `CUSTOMISATIONS.md` as a deserialize event row, and record the resolved commit SHA there too. This is structural — every deserialize is reproducible by re-running this flow against the same layer name at the commit SHA recorded in `CUSTOMISATIONS.md` (consumers pin `origin/main`; the SHA is the forensic reproducibility stamp).
 
 

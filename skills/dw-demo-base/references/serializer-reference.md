@@ -178,7 +178,7 @@ Three signals:
 
 ### How baselines roll
 
-Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release, the `base` layer gets re-serialized from a fresh Swift install and published as a new annotated tag `layers/base/<semver>` in the Distribution repo (`justdynamics/Truvio.Commerce.Distribution`). The demo pins the exact **tag** it checked out. That tag is the stamp; cross-check it against the demo's host DW10 version when triaging schema-drift warnings (the baseline-drift self-diagnosis rule).
+Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release, the `base` layer gets re-serialized from a fresh Swift install and lands on the Distribution repo's `main` (annotated tags are cut as provenance/audit history, not a consumer checkout target). The demo consumes the latest gate-proven `main` and records the resolved **commit SHA**. That SHA is the stamp; cross-check the checked-out `base` layer's `swiftVersion` against the demo's host DW10 version when triaging schema-drift warnings (the baseline-drift self-diagnosis rule).
 
 ## Cross-references
 

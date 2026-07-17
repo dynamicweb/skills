@@ -12,29 +12,31 @@ Read that section for the asset format and wiring. This file carries the demo-in
 
 ## Reference source: `theme-default` in the Distribution
 
-The Distribution ships **one theme layer** — `layers/theme-default/` (kind `theme`) in
-`justdynamics/Truvio.Commerce.Distribution`. There is no theme choice and no overlay layers: every
-edition composes `theme-default` (`themes: ["default"]`), and customer re-skins start FROM it
-([`re-skin.md`](re-skin.md)). `Truvio.Commerce.DemoThemes` is **archived**; the former
-`theme-nav-polish` overlay is retired — its header-nav affordance CSS is folded into
-`theme-default`'s `default_custom.css`. A theme layer is pure disk-overlay (styles + CSS + assets
+The Distribution ships **one theme layer** — `layers/theme-default/` (kind `theme`). There is no
+theme choice and no overlay layers: every edition composes `theme-default` (`themes: ["default"]`),
+and customer re-skins start FROM it ([`re-skin.md`](re-skin.md)). The former standalone demo-theme
+repo is **archived**; the header-nav affordance CSS ships **inside** `theme-default`'s
+`default_custom.css`. A theme layer is pure disk-overlay (styles + CSS + assets
 under `files/`, mirroring the host's `wwwroot\Files\` tree) with **no serialized DB content**, so the
-demo's Swift version (from the versions prompt) is only a compatibility check here, not a tag selector.
-The layer lives in the demo's Distribution checkout at `<demo-root>\distribution\layers\theme-default\`;
-pin it by the tag `layers/theme-default/<semver>` (or an edition that composes it — the usual pin).
+demo's Swift version (from the versions prompt) is only a compatibility check here, not a version selector.
+The layer lives in the demo's Distribution clone at `<demo-root>\distribution\layers\theme-default\`;
+it resolves from the live `layers/INDEX.json` on the latest gate-proven `main` (the usual demo consume).
 
 ```powershell
 $demoRoot = (Get-Location).Path
-$dist     = "$demoRoot\distribution"                 # the Distribution checkout (from deserialize-flow §3)
+$dist     = "$demoRoot\distribution"                 # the Distribution clone (from deserialize-flow §3)
 $theme    = "$dist\layers\theme-default"
-if (-not (Test-Path "$theme\layer.json")) {
-  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
-  if (-not (Test-Path "$dist\.git")) { git clone "https://github.com/$repo" $dist }
-  $tag = git -C $dist tag --list "layers/theme-default/*" |
-    Sort-Object { [version]($_ -replace '^layers/theme-default/','') } -Descending | Select-Object -First 1
-  git -C $dist checkout $tag
-  Write-Host "Checked out $tag — record it in CUSTOMISATIONS.md (the theme pin)"
+if (Test-Path "$dist\.git") {
+  git -C $dist pull --ff-only origin main             # main IS the version — fast-forward to the gate-proven tip
+} else {
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
+  git clone "https://github.com/$repo" $dist
 }
+$index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
+if (-not ($index.layers | Where-Object { $_.name -eq 'theme-default' })) {
+  throw "theme-default absent from INDEX.json — check the retired tombstones for its successor."
+}
+Write-Host "On main $(git -C $dist rev-parse --short HEAD) — record the commit SHA in CUSTOMISATIONS.md (theme reproducibility stamp)"
 ```
 
 The layer's `files/` mirrors the host overlay tree — the Style-asset areas plus the default custom

@@ -3,6 +3,41 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.11.2]
+
+Makes the demo consumption contract mechanical about version currency: the demo skills now pin the
+Distribution's latest gate-proven `main` and resolve layers from its machine-readable layer index,
+instead of resolving and checking out the newest git tag. A stale or retired layer reference now
+fails loudly or auto-corrects to its successor rather than silently materializing a removed layer —
+the failure class behind a demo that consumed a layer removed several releases earlier.
+
+### Changed
+- **Consumption contract: pin `origin/main` + read `layers/INDEX.json`, never resolve a git tag**
+  (`dw-demo-base/SKILL.md` "Versions prompt + Distribution clone/checkout";
+  `dw-demo-swift/references/{deserialize-flow,pack-activation,styles-assets}.md`;
+  `dw-demo-base/references/{setup-checks,serializer-reference}.md`;
+  `dw-demo-swift/references/integrity-sweep.md`): the clone/checkout flow drops the
+  `git tag --list … | Sort [version]` newest-tag resolver. Consumers clone once,
+  `git pull --ff-only origin main`, assert the index's `gateProven` marker is present, and resolve
+  each layer from the live `layers` entries — a name absent from `layers` is looked up under
+  `retired` and resolved to its `supersededBy` successor (loud, never silent). Reproducibility is the
+  resolved commit SHA recorded in `CUSTOMISATIONS.md`, not a tag.
+- **Retired-layer names purged from build instructions** (`dw-demo-swift/references/pack-activation.md`,
+  `styles-assets.md`, `header-menu.md`; `dw-demo-base/SKILL.md`): the pack-activation worked example
+  and per-pack notes move off the retired `reordering-pricing` / `subscription-orders` bundle names
+  onto the live `feature-pricing` / `feature-subscription-orders` layers; the header-nav affordance is
+  described as shipping inside `theme-default` without latching onto the retired `theme-nav-polish` /
+  overlay names. Retirement notes stay only where they help the reader; instructions no longer build
+  from a dead name.
+
+### Added
+- **Dead-layer-name sweep in the fold-back content-hygiene gate**
+  (`dw-demo-base/references/iterate-plugin.md` Step 1b §5 + verification gate + anti-patterns): every
+  fold that names a Distribution layer sweeps the name against `INDEX.json` (the source of truth) and
+  rewrites a retired name to its `supersededBy` successor. Deliberately kept out of
+  `scripts/validate-skills.py` so the index stays the single source of truth rather than forking a
+  retired-name blocklist that drifts on the next rename.
+
 ## [4.11.1]
 
 Folds a demo-build session's design-quality-gate learnings into the demo skills' visual-QA,
