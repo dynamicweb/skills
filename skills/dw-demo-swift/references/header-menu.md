@@ -61,8 +61,8 @@ that promises a menu-bar default must ship or author nav depth; the base stays f
 ## The shared default: `theme-default`'s `default_custom.css`
 
 The affordance CSS is not a per-demo copy step — it is a first-class Distribution default, and it
-is **not a separate layer**: the former `theme-nav-polish` overlay layer is retired, and the
-affordance core (carets, hover states, the reach fixes below) now ships **inside `theme-default`**
+is **not a separate layer**: the header-nav affordance core (carets, hover states, the reach
+fixes below) ships **inside `theme-default`**
 at `Templates/Designs/Swift-v2/Custom/default_custom.css`. There is no overlay concept in the
 Distribution anymore — `theme-default` is the ONE presentation layer every edition composes
 (`themes: ["default"]`), and the customer re-skin ladder starts FROM it ([`re-skin.md`](re-skin.md)).

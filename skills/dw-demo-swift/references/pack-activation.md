@@ -26,11 +26,11 @@
 
 ## 1. What a feature pack is
 
-A pack is a **feature layer** — `layers/<name>/` (kind `feature`) in the Distribution repo
-(`justdynamics/Truvio.Commerce.Distribution`), pinned by the annotated tag `layers/<name>/<semver>`
-(or composed into an `editions/<name>` tag). It lives in the demo's Distribution checkout at
-`<demo-root>\distribution\layers\<name>\`; the pin is the checked-out tag, recorded in
-`CUSTOMISATIONS.md`. A pack carries three kinds of thing, each landing in a different place on the host:
+A pack is a **feature layer** — `layers/<name>/` (kind `feature`) in the Distribution repo,
+resolved from the live `layers/INDEX.json` on the latest gate-proven `main` (normally composed into
+an `editions/<name>.json` — the usual demo consume). It lives in the demo's Distribution clone at
+`<demo-root>\distribution\layers\<name>\`; the reproducibility pin is the resolved commit SHA,
+recorded in `CUSTOMISATIONS.md`. A pack carries three kinds of thing, each landing in a different place on the host:
 
 - **`.cs` source** — compiles INTO the demo host's own build (source-drop, never a separate DLL).
 - **Disk overlays** — Razor templates and item-type XML that live on disk under `wwwroot\Files`.
@@ -54,11 +54,11 @@ is a base-layer improvement, not a pack.
 - The Serializer installed in the host (same one-time install the deserialize flow depends on).
 - A Management API bearer token captured in the current conversation (format `CLAUDE.<hex>`; keep it
   in conversation state, never write it to a file).
-- The feature layer present in the demo's Distribution checkout
-  (`justdynamics/Truvio.Commerce.Distribution` by default; overridable via `$env:DW_DISTRIBUTION_REPO`)
-  at `<demo-root>\distribution\layers\<name>\`, `layer.json` at the folder root — deserialize-flow §3
-  already cloned the Distribution; §4 below checks out the layer's tag if it is not in the current
-  snapshot. The pin is the checked-out tag.
+- The feature layer present in the demo's Distribution clone
+  (repo URL from `$env:DW_DISTRIBUTION_REPO`) at `<demo-root>\distribution\layers\<name>\`,
+  `layer.json` at the folder root — deserialize-flow §3 already cloned the Distribution; §4 below
+  fast-forwards to `origin/main` and resolves the layer from `INDEX.json`. The reproducibility pin
+  is the resolved commit SHA.
 
 ## 3. Pack folder anatomy
 
@@ -93,25 +93,32 @@ behaviors have data even against the empty-catalog base.
 
 The Distribution was already cloned by [`deserialize-flow.md`](deserialize-flow.md) §3 into
 `<demo-root>\distribution\`, so the feature layer is normally already present at
-`<demo-root>\distribution\layers\<name>\`. Pin a specific pack version by checking out its tag
-`layers/<name>/<semver>` (or pin an `editions/<name>` tag that composes base + this pack at proven
-versions — the preferred demo pin). No hardcoded machine-wide literals — everything lands under the demo root.
+`<demo-root>\distribution\layers\<name>\`. Fast-forward the clone to `origin/main` (**main IS the
+version**) and resolve the layer from the live `layers/INDEX.json` — a feature layer is normally
+consumed via an `editions/<name>.json` that composes base + this pack at gate-proven versions. No
+hardcoded machine-wide literals — everything lands under the demo root.
 
 ```powershell
-$packName = "reordering-pricing"    # the feature layer you are installing
+$packName = "feature-pricing"       # the feature layer you are installing
 $demoRoot = (Get-Location).Path     # the demo project root
-$dist     = "$demoRoot\distribution"          # the Distribution checkout (from deserialize-flow §3)
+$dist     = "$demoRoot\distribution"          # the Distribution clone (from deserialize-flow §3)
 $packDir  = "$dist\layers\$packName"
-if (-not (Test-Path "$packDir\layer.json")) {
-  # Not in the current snapshot — clone if needed, then check out the layer's latest tag.
-  # (Prefer pinning an edition that composes base + this pack.) Override with $env:DW_DISTRIBUTION_REPO.
-  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
-  if (-not (Test-Path "$dist\.git")) { git clone "https://github.com/$repo" $dist }
-  $tag = git -C $dist tag --list "layers/$packName/*" |
-    Sort-Object { [version]($_ -replace "^layers/$packName/",'') } -Descending | Select-Object -First 1
-  git -C $dist checkout $tag
-  Write-Host "Checked out $tag — record it in CUSTOMISATIONS.md (the pin)"
+# main IS the version — fast-forward the clone, then resolve the layer from INDEX.json.
+if (Test-Path "$dist\.git") {
+  git -C $dist pull --ff-only origin main
+} else {
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
+  git clone "https://github.com/$repo" $dist
 }
+$index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
+$entry = $index.layers | Where-Object { $_.name -eq $packName }
+if (-not $entry) {
+  $tomb = $index.retired | Where-Object { $_.name -eq $packName }
+  if ($tomb) { throw "Feature layer '$packName' is RETIRED -> use $($tomb.supersededBy)" }
+  else       { throw "Feature layer '$packName' not in INDEX.json" }
+}
+if ($entry.status -eq 'deprecated') { Write-Warning "$packName is DEPRECATED -> $($entry.supersededBy); prefer the successor for new demos." }
+Write-Host "Resolved $packName $($entry.version) on main $(git -C $dist rev-parse --short HEAD) — record the SHA in CUSTOMISATIONS.md"
 ```
 
 ## 5. Step 2 — Read layer.json
@@ -155,13 +162,13 @@ behavior. Record the choice in `CUSTOMISATIONS.md`: the compile is a **declared*
 line item (named in `layer.json`), not an ad-hoc controller — that is exactly the boundary the
 zero-custom-code base preserves while letting a feature layer offer more when a demo asks for it.
 
-**Worked example — `reordering-pricing`.** Contract pricing (the per-customer price a buyer sees at cart
+**Worked example — `feature-pricing`.** Contract pricing (the per-customer price a buyer sees at cart
 time) is **native default-provider behavior and needs no compile** — the zero-code headline; author the
 per-customer `EcomPrices` row (`PriceUserCustomerNumber`) and it resolves
 ([`../../dw-demo-base/references/foundational/commerce-b2b.md`](../../dw-demo-base/references/foundational/commerce-b2b.md) "Customer-scoped contract prices"). **Quantity-tier enforcement** (bulk-break
 pricing off `PriceQuantity > 0` rows) is what the shipped `IPriceProvider` adds — the stock cart ignores
 tier rows until the provider is compiled in
-([`../../dw-demo-base/references/foundational/commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.11). So: install `reordering-pricing` **data-only** to demo contract
+([`../../dw-demo-base/references/foundational/commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.11). So: install `feature-pricing` **data-only** to demo contract
 pricing; run the §6 opt-in compile **only** when the demo must show qty-tier enforcement.
 
 ## 6. Step 3 — Source-drop the .cs and build the host
@@ -293,11 +300,11 @@ returns the host to its pre-pack state without touching base content.
 
 Pack-specific behaviors and known limitations to expect after install:
 
-- **subscription-orders** ships its own **disabled** `Place recurring orders` scheduled task in its
+- **feature-subscription-orders** ships its own **disabled** `Place recurring orders` scheduled task in its
   fragment. It arrives disabled deliberately — enable it only when the demo actually exercises
   recurring-order generation, so an idle demo host never fires it. Confirm the task exists (a
   `configRows` probe) and leave it disabled unless the storyline needs it.
-- **reordering-pricing** ships a **compile-optional `IPriceProvider`** (see §5 "The `customCode`
+- **feature-pricing** ships a **compile-optional `IPriceProvider`** (see §5 "The `customCode`
   declaration"): **contract pricing works zero-code** (native default provider) and **quantity-tier
   enforcement requires the §6 opt-in compile**. Install data-only unless the demo needs qty-tier
   behavior. It also carries a documented **quick-order known-limitation**: after install the

@@ -70,7 +70,7 @@ The demo-specific checks owned here are the TLS env var, `git` + the `gh` CLI, t
 
 ### Check: `git` + `gh` CLI present and authenticated
 
-**Why this matters:** Demo artifacts (base, catalog, theme, feature layers) are **checked out** per-demo with `git clone` + `git checkout <tag>` from the single Distribution repo (`justdynamics/Truvio.Commerce.Distribution`) — there are **no releases** to download (see the base SKILL "Versions prompt + Distribution clone/checkout"). `git` does the clone; `gh`, authenticated, supplies the credential helper that lets a **private** Distribution repo clone over HTTPS. If either is missing or unauthenticated, the Swift deserialize and pack-activation flows cannot fetch their sources.
+**Why this matters:** Demo artifacts (base, catalog, theme, feature layers) are consumed per-demo with `git clone` + `git pull --ff-only origin main` from the single Distribution repo (URL from `$env:DW_DISTRIBUTION_REPO`) — **main IS the version**; there are **no releases** to download and no tag checkout (see the base SKILL "Versions prompt + Distribution clone/checkout"). `git` does the clone; `gh`, authenticated, supplies the credential helper that lets a **private** Distribution repo clone over HTTPS. If either is missing or unauthenticated, the Swift deserialize and pack-activation flows cannot fetch their sources.
 
 **Probe:**
 
@@ -103,11 +103,11 @@ Set-Content -Path $probe -Value "ok"; Remove-Item $probe   # throws if not writa
 
 ### Check: Versions prompt (DW10 + Swift)
 
-**Why this matters:** The version answers select which **layer/edition tag** (`layers/base/<version>`, `editions/<name>/<version>`) the demo checks out of the Distribution clone, drive the Swift design-package clone tag (`v<version>.0`), and layer compatibility checks. Ask **before** cloning anything. Note: the Distribution repo pins by **annotated tag** — the Swift version resolves to the latest-patch tag for that minor, and the reproducibility pin is the **checked-out tag**, recorded in `CUSTOMISATIONS.md`.
+**Why this matters:** The version answers drive the Swift design-package clone tag (`v<version>.0`) and layer-compatibility checks (each layer's `layer.json` declares the `swiftVersion` it targets). Ask **before** cloning anything. Note: the demo consumes the latest gate-proven `main` of the Distribution (resolved from `layers/INDEX.json`, not a tag), and the reproducibility pin is the **resolved commit SHA**, recorded in `CUSTOMISATIONS.md`.
 
 **Probe:** conversational — ask the user via `AskUserQuestion`:
 
-> "Which **DW10 platform version** does this demo target, and which **Swift version** (e.g. `2.3`)? Both get recorded in `CUSTOMISATIONS.md` for reproducibility and select which layer/edition tag (`layers/base/<version>`) to check out of the Distribution clone."
+> "Which **DW10 platform version** does this demo target, and which **Swift version** (e.g. `2.4`)? Both get recorded in `CUSTOMISATIONS.md` for reproducibility and drive layer-compatibility checks against the Distribution's latest gate-proven `main`."
 
 **Expected:** two values captured in conversation state and written to the demo's `CUSTOMISATIONS.md`. No default — never guess a version.
 

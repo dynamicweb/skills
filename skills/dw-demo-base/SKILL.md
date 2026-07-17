@@ -60,37 +60,44 @@ The Serializer install steps live in base so any sister skill can pull them; the
 
 ### Versions prompt + Distribution clone/checkout
 
-Demo artifacts are **not** kept in a shared machine-wide vault. All of them now live in ONE consolidated repo — `justdynamics/Truvio.Commerce.Distribution` — consumed by **`git clone` + checkout of an annotated tag**, never a release zip. The clone holds `layers/<name>/` (each a layer with a `kind` = base | catalog | feature | theme | surface | sample-data) plus `editions/<name>.json` (named, gate-proven compositions of layers). Version pins are annotated git tags `layers/<name>/<semver>` and `editions/<name>/<semver>`. Each demo checks out exactly the tag it targets into its own `<demo-root>\distribution\` folder, so two demos on the same machine can pin different versions without collision. Before any artifact is fetched, ask the user two things (record both in the demo's `CUSTOMISATIONS.md` for reproducibility):
+Demo artifacts are **not** kept in a shared machine-wide vault. All of them live in ONE consolidated Distribution repo (its URL is per-machine — a default plus the `$env:DW_DISTRIBUTION_REPO` override, below), consumed by **`git clone` + `git pull --ff-only` on `origin/main`** — never a release zip, never a tag checkout. The clone holds `layers/<name>/` (each a layer with a `kind` = base | catalog | feature | theme | surface | sample-data), `editions/<name>.json` (named, gate-proven compositions of layers), and **`layers/INDEX.json`** — the distribution's machine-readable **layer index**, the source of truth for what layers exist, their kind/version/status, and what any retired name was superseded by. **Main IS the version:** consumers pin the latest gate-proven `main`, not a frozen tag. The Distribution supports the current latest Swift release only and rolls forward with it, so there is no re-consumable old state to pin — annotated tags survive as provenance/audit history, never a consumer checkout target. Each demo clones into its own `<demo-root>\distribution\` folder, so two demos on the same machine stay isolated. Reproducibility is the resolved **commit SHA** recorded in `CUSTOMISATIONS.md` (forensics), not a tag. Before any artifact is fetched, ask the user two things (record both in the demo's `CUSTOMISATIONS.md`):
 
 1. **DW10 version** — the platform version the demo host runs (drives layer compatibility checks).
-2. **Swift version** — e.g. `2.4` (drives the layer/edition tags and the Swift design-package clone tag `v<version>.0`). The Distribution supports the **current latest Swift release only** and rolls forward with it; the current cycle is **Swift 2.4 on DW 10.28.1-PreRelease** (editions attested there; stable re-prove pending).
+2. **Swift version** — e.g. `2.4` (drives the Swift design-package clone tag `v<version>.0`). The Distribution supports the **current latest Swift release only** and rolls forward with it; the current cycle is **Swift 2.4 on DW 10.28.1-PreRelease** (editions attested there; stable re-prove pending).
 
-**Tag resolution — layer/edition versions are their own semver, not the Swift minor.** Actual tags are full semver (`layers/base/3.0.0`, `editions/swift-demo/3.0.0`); each layer/edition declares the Swift release it targets via `swiftVersion` in its `layer.json` (the Distribution tracks one Swift release at a time — latest-only). Never guess a tag from the Swift minor — clone the Distribution once, resolve the **latest tag for the ref**, check it out, and verify the checked-out `layer.json`'s `swiftVersion` matches the versions prompt. An `editions/<name>/<semver>` tag pins a whole gate-proven composition at once (the usual demo pin); a bare `layers/<name>/<semver>` tag pins a single layer:
+**Layer resolution — read `INDEX.json`, never resolve a git tag.** Clone the Distribution once, or `git pull --ff-only` an existing clone up to `origin/main`; then read `layers/INDEX.json`. Assert its `gateProven` block is present — that marker is what says `main` is at a gate-proven tip, not mid-release — and resolve each layer/edition you need from the **live `layers` entries** (`status: active` or `deprecated`). Verify the checked-out `layer.json`'s `swiftVersion` matches the versions prompt (each layer declares the Swift release it targets — the Distribution tracks one at a time, latest-only). If a name you reach for is absent from `layers`, look it up under `retired`: a retired entry names its **`supersededBy`** successor — resolve to that successor, never the dead name (a retired reference must resolve loudly to its successor, never to silence):
 
 ```powershell
-$repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
+$repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
 $dist = "<demo-root>\distribution"
-git clone "https://github.com/$repo" $dist               # one repo — all layers + editions live here
-$ref  = "editions/swift-demo"                             # the edition (or `layers/base`) to pin
-$tag = git -C $dist tag --list "$ref/*" |
-  Sort-Object { [version]($_ -replace "^$ref/",'') } -Descending |
-  Select-Object -First 1
-if (-not $tag) { throw "No $ref/* tag found — check the Distribution repo's tags." }
-git -C $dist checkout $tag                                # the whole snapshot; consume the layer dirs you need
-# Verify the Swift target: (Get-Content "$dist\layers\base\layer.json" | ConvertFrom-Json).swiftVersion
-# must equal the versions-prompt answer (e.g. 2.4.0).
+if (Test-Path "$dist\.git") {
+  git -C $dist pull --ff-only origin main         # main IS the version — fast-forward to the gate-proven tip
+} else {
+  git clone "https://github.com/$repo" $dist       # one repo — all layers + editions + INDEX.json live here
+}
+$index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
+if (-not $index.gateProven) { throw "INDEX.json has no gateProven marker — main is not at a gate-proven tip; do not consume." }
+# Resolve a layer from the live index (retired -> follow supersededBy, never the dead name):
+$name  = "surface-swift"                            # the layer (or edition) the demo composes
+$entry = $index.layers | Where-Object { $_.name -eq $name }
+if (-not $entry) {
+  $tomb = $index.retired | Where-Object { $_.name -eq $name }
+  if ($tomb) { throw "Layer '$name' is RETIRED -> use $($tomb.supersededBy)" } else { throw "Layer '$name' not in INDEX.json" }
+}
+# Consume $dist\layers\$name\ ; verify (Get-Content "$dist\layers\$name\layer.json" | ConvertFrom-Json).swiftVersion
+# equals the versions-prompt answer (e.g. 2.4.0).
 ```
 
-Record the RESOLVED tag (not just the minor) in `CUSTOMISATIONS.md` — that exact tag is the demo's reproducibility pin (a later rebuild clones the same repo and `git checkout`s that tag). The checked-out snapshot contains every layer at that commit; read whichever `layers/<name>/` dirs the edition composes.
+Record the resolved **commit SHA** (`git -C $dist rev-parse HEAD`) in `CUSTOMISATIONS.md` — that SHA is the demo's forensic reproducibility stamp (a later rebuild pulls `main` and reads the current `INDEX.json`; the SHA says which gate-proven tip this demo was built against). The clone contains every live layer at that commit; read whichever `layers/<name>/` dirs the edition composes.
 
-With those answers, artifacts resolve from the demo's Distribution checkout. `Truvio.Commerce.DemoThemes` and `Truvio.Commerce.FeaturePacks` are **archived** — their themes and packs are now theme/feature layers in the Distribution:
+With those answers, artifacts resolve from the demo's Distribution checkout. The former standalone demo-theme and feature-pack repos are **archived** — their themes and packs are now theme/feature layers in the Distribution:
 
 | Artifact | Source (in the Distribution clone) | Working tree | Consumed by |
 |---|---|---|---|
 | Serialized base | `layers/base` (kind base) — **framework-only**: 16 framework SQL sets in `replace/_sql/` (countries, currencies, languages, shops, payments, shippings, VAT, order flow/states, AccessUser), **zero content, zero pages, empty catalog by design** | `<demo-root>\distribution\layers\base\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
 | Swift content surface | `layers/surface-swift` (kind surface) — ALL Swift content: both areas (`Swift 2` + `Swift 2 Nederlands`) in `replace/_content/` + `merge/_content/`, `UrlPath` in `replace/_sql/`, and its **own item-type XMLs** (`itemtypes/`, 128 `ItemType_Swift-v2_*.xml`) | `<demo-root>\distribution\layers\surface-swift\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
 | Demo catalog + identities *(optional)* | `layers/sample-data` (kind sample-data) — ships ALL demo content as SQL files (`merge/_sql/catalog.sql`: products / groups / prices; `merge/_sql/identities.sql`: buyer + CSR); editions activate it via `sampleData: true` (e.g. `swift-demo`); otherwise author per-demo via the [`dw-demo-pim`](../dw-demo-pim/SKILL.md) recipes | `<demo-root>\distribution\layers\sample-data\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Demo theme / style assets | `layers/theme-default` (kind theme — pure disk-overlay `files/`, no serialized DB content). **The ONE presentation layer** — every Swift demo starts from `theme-default` and re-skins on top of it; there is no theme choice and no separate overlay layers (the former `theme-nav-polish` affordance CSS is folded into `theme-default`'s `default_custom.css`) | `<demo-root>\distribution\layers\theme-default\` | [`dynamicweb-swift-demo/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) |
+| Demo theme / style assets | `layers/theme-default` (kind theme — pure disk-overlay `files/`, no serialized DB content). **The ONE presentation layer** — every Swift demo starts from `theme-default` and re-skins on top of it; there is no theme choice and no separate overlay layers (the header-nav affordance CSS ships inside `theme-default`'s `default_custom.css`) | `<demo-root>\distribution\layers\theme-default\` | [`dynamicweb-swift-demo/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) |
 | Feature pack | `layers/<name>` (kind feature) | `<demo-root>\distribution\layers\<name>\` | [`dynamicweb-swift-demo/references/pack-activation.md`](../dw-demo-swift/references/pack-activation.md) |
 | Swift design package | local clone of `https://github.com/dynamicweb/Swift` (release tag `v<version>.0` — the upstream Swift product still ships releases) | `<demo-root>\dw-swift\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) "Design-package deploy" |
 
@@ -266,7 +273,7 @@ A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.jso
 
 ## Reference-content layout
 
-Demo artifacts (base, catalog, theme, and feature layers) are checked out per-demo from the Distribution clone into the demo's own `<demo-root>\distribution\` folder — see "Versions prompt + Distribution clone/checkout" above. There is no shared machine-wide vault; each demo owns the exact tag it checked out.
+Demo artifacts (base, catalog, theme, and feature layers) are checked out per-demo from the Distribution clone into the demo's own `<demo-root>\distribution\` folder — see "Versions prompt + Distribution clone/checkout" above. There is no shared machine-wide vault; each demo consumes the latest gate-proven `main` and records the resolved commit SHA as its reproducibility stamp.
 
 Two read-only reference sources are **local clones**, not downloads, and their location is per-machine — **ask or discover it, never hardcode**:
 
@@ -290,7 +297,7 @@ Port, DB name, and Management API bearer token vary per project. Read them from 
 
 ## Baseline-drift self-diagnosis rule
 
-When grep results in skill text contradict the live baseline, consider "the baseline has rolled since this skill was authored" as a candidate cause. Cross-check the checked-out `base` layer's tag against the demo's Swift version before assuming the skill is correct. Reality wins; the skill is the second source of truth.
+When grep results in skill text contradict the live baseline, consider "the baseline has rolled since this skill was authored" as a candidate cause. Cross-check the checked-out `base` layer's `swiftVersion` (from its `layer.json`) against the demo's Swift version before assuming the skill is correct. Reality wins; the skill is the second source of truth.
 
 
 
