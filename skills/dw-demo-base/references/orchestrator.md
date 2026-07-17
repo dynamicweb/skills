@@ -264,7 +264,20 @@ native single pass produced it. Per phase:
   the cart; the re-skin reads as the customer's brand; the `CUSTOMISATIONS.md` ledger accounts
   for every custom-code row.
 - **Polish** — no broken links on the storyline path; no placeholder/lorem content on visited
-  pages; the demo runs end-to-end in one pass without a dead end.
+  pages; the demo runs end-to-end in one pass without a dead end; the mechanical visual-QA gate
+  passes on every demo-critical page (see `references/visual-qa.md` "Definition of done") **and**
+  the design has a human taste sign-off.
+
+**Design sign-off — taste stays human without blocking automation.** Mechanical asserts prove
+structure (image-band caps, PLP row-presence + content, no overflow/gaps — `references/visual-qa.md`);
+they cannot judge visual hierarchy or brand fit, so an all-green mechanical run can still ship a
+page that reads wrong. Reserve that judgement as a **stamped, non-blocking** leg rather than a
+human pause: the design sign-off check reports **SKIP ("awaiting human sign-off")** until a
+sign-off artifact (e.g. `home/<slug>/design-signoff.json` — `{ signed_off_by, ts, notes }`,
+written by an approve-design step) exists, then **PASS**. A SKIP is stamped, never a FAIL, so it
+records "taste not yet reviewed" without failing the build or forcing an execution pause — the one
+*blocking* human gate remains the impact sign-off. The keeper screenshots at both breakpoints are
+the artifact the human signs off on.
 
 A demo that needs different criteria edits this list in its own roadmap; the orchestrator reads
 the project's copy, so both orchestrators stay in agreement.
