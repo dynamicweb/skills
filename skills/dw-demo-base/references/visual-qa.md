@@ -25,6 +25,8 @@ Order of operations per page: scroll-sweep (lazy-load — see `browser-automatio
 
 Capture and check at minimum two widths via `browser_resize`: **desktop (1440 or 1920)** and **mobile (390)**. Most overflow, stacking, and touch-target defects only exist at one of the two — a desktop-only pass routinely ships a broken mobile view, and demos get projected at both.
 
+**On mobile, measure the *canvas*, not the viewport.** `overflow-x: hidden` on `body` — which Swift ships — hides horizontal stretch from a viewport check: a document stretched to 1356px at 390 still reports a clipped `documentElement`. Assert **`document.body.scrollWidth <= innerWidth` at 390** (the detector below carries `bodyCanvas` for exactly this). And a single 390 pass is not enough for per-row alignment: a CTA that fits inline at 430 but wraps at 390 — only on rows with long content — leaves some trailing pills left-anchored and some right. **Screenshot at 390 AND 430** (or finish on a real device); two widths catch the wrap-state divergence one width cannot. The Swift-specific canvas-stretch traps (fixed-width mega-menu, non-wrapping `NColumnsFlex` rows, `.flex-fill` beating fixed bases) and their fixes live in [`../../dw-demo-swift/references/mobile-pass.md`](../../dw-demo-swift/references/mobile-pass.md).
+
 ## Programmatic detectors — run before eyeballing
 
 One `browser_evaluate` call returns the mechanical findings. Adjust the section selector to the page's actual container structure when the generic one returns nothing useful:
@@ -32,7 +34,9 @@ One `browser_evaluate` call returns the mechanical findings. Adjust the section 
 ```js
 () => {
   const de = document.documentElement, vw = de.clientWidth;
-  const out = { overflowX: Math.max(0, de.scrollWidth - vw), offenders: [], broken: [], stretched: [], tall: [], gaps: [] };
+  // overflowX reads documentElement; bodyCanvas reads body.scrollWidth — the latter is the ONLY one that
+  // survives `overflow-x:hidden` on body (Swift ships it), which masks a stretched canvas from de.scrollWidth.
+  const out = { overflowX: Math.max(0, de.scrollWidth - vw), bodyCanvas: Math.max(0, document.body.scrollWidth - vw), offenders: [], broken: [], stretched: [], tall: [], gaps: [] };
   const vh = window.innerHeight, bandCap = 0.85 * vh; // 0.85 = the demo's configured band-cap fraction
   // 1. Horizontal-overflow offenders — the element whose right edge IS the scrollbar
   for (const el of document.querySelectorAll('body *')) {
@@ -126,6 +130,7 @@ Most recurring findings have a *known* cause with a documented fix — route the
 | Finding | Likely cause | Fix lives in |
 |---|---|---|
 | Horizontal scrollbar; slider arrow at/past the viewport edge | `NavigationPlacement: slider-nav-outside-expand` on a full-width slider | [`foundational/swift-building.md`](foundational/swift-building.md) §3 symptom table |
+| Canvas stretched at 390 (`bodyCanvas` > 0) while `overflowX` reads 0; "missing PLP images" / blank right margin on mobile | Fixed-width mega-menu / non-wrapping `NColumnsFlex` row / `.flex-fill` beating a fixed base — stretch hidden behind body `overflow-x:hidden` | [`../../dw-demo-swift/references/mobile-pass.md`](../../dw-demo-swift/references/mobile-pass.md) (trap catalogue + Tier-1 fixes) |
 | Uniform oversized whitespace bands between sections | GridRow `NULL` spacing → Swift 6rem default; layout columns are SQL-only and reverted by later MCP saves | [`foundational/data-access.md`](foundational/data-access.md) "SQL-direct content seeding" + [`foundational/cache-invalidation.md`](foundational/cache-invalidation.md) |
 | Towering image band / slider cover-card eating the fold (`tall` detector) | Stock image component has no serialized height field; a tall crop renders full column-width height, uncapped | theme-CSS cap (`aspect-ratio` + `max-height` + `object-fit: cover`), Tier-1 in [`dw-demo-swift/re-skin.md`](../../dw-demo-swift/references/re-skin.md) |
 | PLP list renders zero rows behind HTTP 200 (`empty`/`missing` finding) | Empty or not-yet-repopulated index, or a mis-scoped shop; 200 proves the shell, not the fill | [`foundational/commerce-catalog.md`](foundational/commerce-catalog.md) + [`foundational/search-indexing.md`](foundational/search-indexing.md) (rebuild/repopulate the index) |
@@ -154,6 +159,7 @@ Batch at most a handful of fixes between re-checks, and never declare a page don
 The detectors above are the **mechanical gate**, not a checklist the agent may skip — every one of them is deterministic, so run them as a hard pass/fail before any eyeballing. The eyeball checklist and interaction pass sit on top; they never substitute for a clean detector run.
 
 - Detectors: `overflowX` 0, `broken`/`stretched`/`tall` empty, no unexplained gap > 120px, console free of errors, no 404 assets. No image band taller than the configured fraction of the viewport (`tall`).
+- **Mobile canvas fit:** `bodyCanvas` 0 at 390 — `document.body.scrollWidth <= innerWidth` (measure body, not documentElement; `overflow-x:hidden` masks a stretched canvas from the `overflowX` check). Screenshot pair at **390 and 430** so per-row wrap-state divergence (pills left- vs right-anchored across the wrap boundary) is visible — a single-width pass ships it. Swift trap catalogue + fixes: [`../../dw-demo-swift/references/mobile-pass.md`](../../dw-demo-swift/references/mobile-pass.md).
 - PLP pages: row count ≥ the demo's `minRows` AND every row carries its required-field selectors (thumbnail / SKU / price / add-to-cart) — an empty or field-short list behind HTTP 200 is a failure, not a pass.
 - **Theme gate:** the page `<head>` emits all three `Files/System/Styles/{ColorSchemes,Buttons,Typography}` links and the computed body font is the theme's, not the browser's serif fallback. A serif-fallback page renders "almost right" and still fails — that is the silent Style-asset empty-state (`foundational/swift-building.md` §7); the full-page screenshot must read as a *designed* page before the host counts as ready.
 - Interaction pass: every visible control changes state when used.

@@ -3,6 +3,36 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.11.3]
+
+Folds the marine mobile-theming learnings into the demo skills: a new mobile-pass reference for
+the Swift frontend, the canvas-fit gate implication in the base visual-QA gate, and routing so
+"mobile view" / "canvas stretch" / "overflow at 390" reach it. The through-line is verify-first —
+theme-default ≥1.2.0 already ships most of these fixes structurally, so a current-Distribution demo
+runs the method to *confirm*, not to re-derive.
+
+### Added
+- **Mobile pass reference** (`dw-demo-swift/references/mobile-pass.md`, new): the canvas-fit
+  debugging method (measure `document.body.scrollWidth`, NOT `documentElement` — `overflow-x:hidden`
+  on body masks a stretched canvas; walk widest-offender-first; finish on a real 390+430 device),
+  the Swift 2.4 trap catalogue (fixed-width `swift-v2_menurelatedcontent` mega-menu; non-wrapping
+  `NColumnsFlex` rows + the `definitionId`-without-`flexibleColumns` sub-trap; Bootstrap `.flex-fill`
+  beating fixed bases → `!important` bases + fixed thumb dims + right-anchored pill; force-open
+  `swift-v2_productfielddisplaygroupsaccordion` spec rows; inline-hardcoded logo width with
+  SVG-aware `figure`/`svg` selectors; anon CTA living in `swift-v2_productPRICE`), and the
+  **verify-first caveat** — theme-default ≥1.2.0 ships most fixes, so patch only the delta.
+  Routed from `dw-demo-swift/SKILL.md` (description triggers + "Where to find things" row) and
+  cross-linked from `re-skin.md` (the Tier-1 `<customer>_custom.css` slot every fix lands in).
+
+### Changed
+- **Mobile canvas-fit is now part of the visual-QA gate**
+  (`dw-demo-base/references/visual-qa.md` breakpoints + detector + symptom table + DoD): the
+  detector emits `bodyCanvas` (`document.body.scrollWidth - vw`) alongside `overflowX` — the only
+  measure that survives body `overflow-x:hidden`; the Definition of done requires `bodyCanvas` 0 at
+  390 AND a 390+430 screenshot pair (a single-width pass misses per-row wrap-state divergence — the
+  430/390 pill-alignment bug that shipped 14/14 smoke-green on marine). A symptom row routes canvas
+  stretch to `dw-demo-swift/references/mobile-pass.md`.
+
 ## [4.11.2]
 
 Makes the demo consumption contract mechanical about version currency: the demo skills now pin the
