@@ -3,6 +3,41 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.11.4]
+
+Folds the risewell-e2e full-gate run learnings into `dw-demo-base`. The headline is a platform-pinning
+correctness rule: a scaffold that validates Distribution content must pin `Dynamicweb.Suite` to the
+Distribution's gate-proven platform version — floating `10.*` resolves to latest stable and version-coupled
+layers fail *sideways*, green in the static gate and silently broken at runtime. The rest are host-lifecycle,
+shell, DB-wizard, and API-key traps that cost real time on a fresh workstation.
+
+### Added
+- **Platform pin for content-validating scaffolds** (`dw-demo-base/references/scaffold.md` new §2.2): a scaffold
+  that deserializes/validates the Distribution's layers/editions MUST pin `Dynamicweb.Suite` to
+  `layers/INDEX.json` `gateProven.dwPlatformVersion` (currently `10.28.1-PreRelease`, == the versions-prompt DW10
+  answer). Floating `Dynamicweb.Suite 10.*` resolves to the latest **stable** (`10.27.6`), NOT the gate-proven
+  prerelease — `feature-b2b-comms`' flow SQL uses `10.28.1` unprefixed column names that `10.27.6` lacks, so
+  strict mode rejects the table and the flow silently can't exist, with the static file-tree gate still green.
+  The single exception is a **platform-currency probe** (deliberately floats to test a newer platform). The
+  §top "version policy out of scope" note now carries this one carve-out; `SKILL.md` scaffold step, description
+  ("pin the platform"), and the "Where to find things" table route to it.
+- **pwsh 7+ requirement** (`dw-demo-base/references/setup-checks.md` §1 ritual + note): every recipe/harness verb
+  must run from **pwsh 7+**, never Windows PowerShell 5.1 — the null-coalescing `??` (e.g. in `Telemetry.Common.ps1`)
+  makes 5.1 parse-fail the whole script before line one. Adds `$PSVersionTable.PSVersion` to the readiness probe.
+
+### Changed
+- **Host-launch traps** (`dw-demo-base/SKILL.md` Host lifecycle authority): a **multi-target** scaffold
+  (`net8.0;net10.0`) blocks first boot on bare `dotnet run` — pass `--framework <tfm>` (single-target net10 pin
+  sidesteps it); and **never capture the PID into `$pid`** — it's a read-only automatic variable, so
+  `$pid = (Start-Process …).Id` throws (use `$hostPid`).
+- **DB-wizard "Login failed" race + pre-create method** (`dw-demo-base/references/scaffold.md` §3 step 1): the
+  setup wizard's "Create database" can report `Login failed` while the DB was in fact created — re-POST Step3 or
+  (preferred) pre-create with `Invoke-Sqlcmd -TrustServerCertificate`, **not** `sqlcmd -E -i` (current builds
+  reject the `-E`/`-i` combination as mutually exclusive).
+- **API-keys are two admin surfaces** (`dw-demo-base/references/mcp-setup.md` Step 6): made explicit that the
+  Management API bearer (`CLAUDE.*`) comes from **Settings → System → Developer → Api Keys** while the MCP key
+  (`mcp.*` on 10.27.4+/10.28.1) comes from the separate **Settings → Integration → MCP Configurations** surface.
+
 ## [4.11.3]
 
 Folds the marine mobile-theming learnings into the demo skills: a new mobile-pass reference for

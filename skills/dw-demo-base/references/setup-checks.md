@@ -21,6 +21,7 @@ Verification logic lives as fenced PowerShell inside this Markdown reference. Us
 Run all probes at once. If every line is green, you can skip the per-check sections below and head to `references/scaffold.md`.
 
 ```powershell
+$PSVersionTable.PSVersion                          # pwsh 7+ REQUIRED — run every recipe/verb from pwsh, not Windows PowerShell 5.1
 dotnet --list-sdks | Select-String '^10\.'        # .NET 10 SDK present (host targets net10)
 dotnet new list | Select-String 'dw10-suite'       # expect "DynamicWeb 10 Suite Project Template" or similar
 Get-Service "MSSQL`$SQLEXPRESS" | Select-Object Name, Status
@@ -30,6 +31,8 @@ gh auth status                                     # gh CLI installed AND authen
 ```
 
 Note the backtick on `MSSQL`$SQLEXPRESS` — `$SQLEXPRESS` is a PowerShell special token unless escaped.
+
+**Run everything from pwsh 7+, never Windows PowerShell 5.1.** The skill's PowerShell recipes and any harness verbs (the standalone lightweight harness, DemoAgent `bin/` verbs) use the null-coalescing operator `??` and other pwsh-7 syntax — **5.1 parse-fails the whole script before the first line runs** (`Telemetry.Common.ps1` is the canonical offender). `$PSVersionTable.PSVersion.Major` must be `≥ 7`; if a verb dies with a parser error on `??`, you are in 5.1 — relaunch in `pwsh`.
 
 The first three lines are the platform install prerequisites — if any is red, work the per-check sections in [`foundational/setup-install.md`](foundational/setup-install.md) §1 (and §4 for MSDTC). The last three are demo-specific, owned below (the TLS env var, `git`, and the `gh` CLI). The DW10 + Swift versions prompt and the writable-`distribution\` check are also owned here.
 

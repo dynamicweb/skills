@@ -224,7 +224,7 @@ This step is idempotent — safe to skip if `claude mcp list` already shows `pla
 
 ## Step 6 — Discover bearer tokens (the discover-from-project-files rule)
 
-A Dynamicweb demo has **two** bearer tokens, both rows in `AccessUserToken`. The Management API token is `CLAUDE.<hex>`-shaped; the **MCP API key prefix is version-dependent** — `mcp.<hex>` on DW 10.27.4, `CLAUDE.<hex>` on older builds. Use whatever prefix the admin UI displayed, not an assumed one:
+A Dynamicweb demo has **two** bearer tokens, both rows in `AccessUserToken`, **issued from two different admin surfaces** — do not conflate them. The Management API bearer comes from **Settings → System → Developer → Api Keys** and is `CLAUDE.<hex>`-shaped (the `CLAUDE.` prefix is visible in the list). The MCP key comes from a *separate* surface, **Settings → Integration → MCP Configurations**, which issues its own `mcp.<hex>` key; its prefix is **version-dependent** — `mcp.<hex>` on DW 10.27.4+ (incl. 10.28.1), `CLAUDE.<hex>` on older builds. Use whatever prefix the admin UI displayed, not an assumed one:
 
 | Token | Issued from | Used for |
 |---|---|---|
