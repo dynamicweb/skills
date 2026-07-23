@@ -128,6 +128,8 @@ Re-enable individually via admin after verifying each task is still valid.
 
 ## Pitfalls
 
+**`RunSqlScheduledTaskAddIn` is write-only — it surfaces no resultset and no message text.** A `SELECT` produces no readable output, and `TaskById` exposes only `Success`/`Exception` run-state with an empty `lastException` even for a guaranteed error (`SELECT 1/0` runs to `Exception` with nothing in `lastException`). To **read-verify** through this surface — confirm a schema shape, a row count, an exact before/after delta — encode the assertion in the SQL and let a deliberate failure carry the signal: `IF (<condition>) RAISERROR('assert failed',16,1)` flips the run to `Exception`, its absence leaves it `Success`. Pair matched probes (`IF (SELECT COUNT(*) FROM T) <> <n> RAISERROR(...)`) to pin an exact count. This assertion-SQL pattern is the read path when SQL is only reachable through the task addin (a hosted install with no direct SQL surface).
+
 **`Context.Current` is null inside a scheduled task** — tasks run outside an HTTP request. Use static service facades or `DependencyResolver` for data access, not request context. See [dw-data-access](../dw-data-access).
 
 **`[AddInName]` must be unique** — if two task classes share the same name, one silently shadows the other.

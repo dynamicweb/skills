@@ -120,11 +120,21 @@ comes from the item-type's `Title` field.
 | Downloads list shows giant thumbnails | same | `HideThumbnails` | `True` for a clean filename + filetype + size table. |
 | Long description has too-wide lines | `Swift-v2_ProductLongDescription` | `TextReadability` | `max-width-on` (default) constrains to a reading column; `max-width-off` fills the column. |
 | Paragraph renders as empty `<div>` after SQL-direct seed | `Swift-v2_ProductGroupGrid` | `SelectedGroups` | See `SelectedGroups` below — SQL CSV/JSON inserts silently return `null`. |
+| PLP filters render as a horizontal pill bar; no setting yields a left sidebar | `Swift-v2_ProductListFacets` | `Layout` | `horizontal` = pill bar, `vertical` = accordion — this styles the panel ONLY; sidebar **position** is pure grid. See the facet-sidebar recipe below. |
 | PLP renders one product per row with a giant full-bleed image | `Swift-v2_ProductListItemRepeater` + `Swift-v2_ProductDefaultImage` | `GridLayoutDesktop` / `Width` | The surface-serialized shop repeater ships `GridLayoutDesktop='list'` — **list IS the intended shipped layout**, so keep it rather than "fixing" it to a column grid. The full-bleed image is the card image item's `Width='auto'`, which the template renders as `w-100`; a **px value** (e.g. `160`) is the thumbnail lever (`style="width:<N>px"`). Column variants (`2-columns`…`6-columns` → `g-col-lg-*`) remain available when a grid is the deliberate choice. In list mode the row must earn its width — pair the thumbnail with decision-driving fields (price, and e.g. the default-unit shipping weight when the buying story is logistics-led). |
 | Every PLP tile renders a Razor NRE error block | `Swift-v2_ProductDefaultImage` | `ShowAlternativeImageOnHover` | With hover-swap on, the stock template's `allAssetsImages.RemoveAll(x => x.Value == product.DefaultImage.Value)` throws when a product has no `DefaultImage` (common on data-first catalogs without imagery). Either turn the field off, or null-guard the predicate (`x?.Value == product?.DefaultImage?.Value`) as a logged template adjustment. |
 
 For `IEnumerable<string>` fields (checkbox-list editors — `FieldDisplayGroups`, `ImageAssets`), pass a
 **comma-separated string**. Bracketed-array / JSON encodings are NOT recognised by the stock editors.
+
+### Facet sidebar — the `Layout` field styles, the grid row positions
+
+A left-sidebar PLP filter panel is two independent settings; the common mistake is hunting for a single "sidebar" toggle that doesn't exist. `Swift-v2_ProductListFacets` has a `Layout` item field (`horizontal` → pill bar above the list, `vertical` → accordion) but that field only styles the panel — it never moves it. **Position is grid:** the facets paragraph and the product-list (repeater) paragraph must share a **2-column row**, one paragraph per column. Recipe:
+
+1. Set the facets paragraph `Layout=vertical` (`ParagraphSave` / `set_item_field_values`).
+2. Convert the row the facets sit in from a 1-column row to a `Swift-v2_Row/2Columns_4-8` definition (`GridRowSave`), then re-column the facets into col 1 and the product-list repeater into col 2 → the live DOM renders `g-col-lg-4` / `g-col-lg-8`.
+3. **Keep the facets paragraph on the list page** — the AJAX `ProductList` context that drives facet filtering is scoped to that page; moving facets off it breaks the filter form.
+4. Set `mobileLayout=12,12` on the row so the two columns stack full-width on phones; the built-in `d-lg-none` filter button + modal is unaffected and still drives filtering at mobile widths.
 
 ### `EcomFieldDisplayGroups` cache invalidation
 

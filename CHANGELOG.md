@@ -3,6 +3,50 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.11.5]
+
+Folds a hosted-demo polish session's learnings across `dw-demo-base`, `dw-extend-scheduled-tasks`, and
+`dw-demo-swift`. The through-line is *lying-success on hosted/ACL-locked installs*: several Management API
+and SQL surfaces report `ok` while writing nothing, and the fix is always read-after-write verification plus
+the right recycle ordering. The rest are Swift 2.4 authoring recipes (facet sidebar, repeater-child editing,
+conditional-collapse CSS) that had no documented home.
+
+### Added
+- **Hosted index/repository writes report `ok` while the host ACL drops them** (`dw-demo-base/references/online-mode.md`):
+  `IndexBuilderSave` is a lying-success surface — `ShopsToIndex` and other builder fields round-trip `ok`
+  while the `/Files/System/Repositories/**` XML write is ACL-denied; assert the `IndexBuilderByName` readback,
+  not the `ok`. And a Full `BuildIndex` reads `EcomGroupProductRelation` through an app-lifetime cache, so after
+  a relation write the canonical order is **recycle first, then Full build** — the rebuild alone is a no-op and
+  reads as "API index builds are dead on this host".
+- **`RunSqlScheduledTaskAddIn` is write-only** (`dw-extend-scheduled-tasks/SKILL.md`): it surfaces no resultset
+  and no message text (`TaskById` gives only `Success`/`Exception`, `lastException` empty even for `SELECT 1/0`).
+  Read-verify through it with assertion SQL — `IF (<condition>) RAISERROR(...)` flips the run to `Exception`;
+  matched-count probes pin an exact row count. The read path when SQL is only reachable through the task addin.
+- **Read a shop with `GetShopByIdQuery` before a round-trip `ShopSave`; set `UsageType` explicitly**
+  (`dw-demo-base/references/foundational/commerce-catalog.md`): `GetShopById` returns a `{id,name,permission}`
+  stub — the full model comes only from the namespaced `GetShopByIdQuery`, and saving the stub clobbers the
+  omitted fields. A `ShopSave` without an explicit `UsageType` defaults `ShopType=0` (none), which hides the
+  shop from every typed admin list. Pointer added from `dw-demo-pim/references/canonical-setup-order.md` step 2.
+- **Facet sidebar recipe** (`dw-demo-base/references/foundational/swift-building.md` §3): `Swift-v2_ProductListFacets`
+  `Layout` (`horizontal`/`vertical`) styles the panel only; sidebar **position** is a 2-column grid row
+  (`2Columns_4-8`, facets col 1 / repeater col 2), facets kept on the list page for the AJAX context,
+  `mobileLayout=12,12` for phone stacking.
+- **Repeater-child storage + the Management-API-unreachable edit path** (`dw-demo-base/references/foundational/content-modelling.md`
+  §2): repeater children live in `ItemType_*_Item` rows via `ItemList` + `ItemListRelation`; `GetParagraphById`
+  collapses the repeater to `Items=<listId>` and no item-content save command exists, so on ACL hosts the edit
+  path is guarded SQL (`IF NOT EXISTS` guards) against the child table plus a recycle. The button/link column is
+  a plain `{Label,Link,LinkType,Style}` JSON binder, not an opaque blob.
+- **Conditional-collapse CSS with sibling `:has()` pairs** (`dw-demo-swift/references/re-skin.md`): nesting
+  `:has()` inside `:has()` is invalid CSS and the browser drops the whole rule silently (`Element.matches` throws
+  `SyntaxError`); use flat `:has()`/`:not(:has())` pairs. Swift grid attribute selectors
+  (`[gridrow][container][gridcolumn]`, specificity `0,3,0`) beat a plain `display:none`, so a collapse override
+  must be `!important`.
+
+### Changed
+- **`changeversion.txt` fires on a CHANGED token, not on presence** (`dw-demo-base/references/online-mode.md`
+  restart ladder rung 3): re-uploading the value the file already holds is a silent no-op; write a distinct
+  value every time and record the last-used token so the next restart bumps past it.
+
 ## [4.11.4]
 
 Folds the risewell-e2e full-gate run learnings into `dw-demo-base`. The headline is a platform-pinning

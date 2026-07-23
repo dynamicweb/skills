@@ -103,6 +103,25 @@ Reference: stock `Swift-v2_Accordion.xml` + `Swift-v2_Accordion_Item.xml`. **Giv
 numeric item ids** when seeding — string ids are the natural hand-seeding choice and the one that
 breaks every future AreaCopy (§3 "What a full-content AreaCopy does NOT carry").
 
+#### How repeater children are stored — and why the Management API can't reach them
+
+A repeater's children (e.g. `Swift-v2_Slider` slides, accordion items) live in `ItemType_<Prefix>_<Concept>_<Child>` rows, joined to the parent through an `ItemList` + `ItemListRelation`. The Management API **cannot edit a child's content**: `GetParagraphById` collapses the whole repeater to `Items=<listId>` without expanding the children, and there is no item-content save command for the child rows. So on a filesystem-ACL host (where the admin Visual Editor's file writes are blocked too), the only edit path to a slide/item is **guarded SQL against the child table, followed by a recycle** — item content is served through an app-lifetime cache that a process recycle clears (drop a rung-3 CloudHosting control file on a hosted install; see [`online-mode.md`](../online-mode.md)).
+
+Trace and edit:
+
+- `GetParagraphById <pid>` → `Items=<listId>` (the collapsed repeater).
+- `ItemListRelation` for `<listId>` → the child ids; the rows live in `ItemType_<Prefix>_<Concept>_<Child>`.
+- A "button"/"link" column on a child is a **plain transparent JSON link-binder** — `{Label, Link, LinkType, Style}` — not an opaque encoded blob; edit its `Link`/`Label` in place.
+- Guard every write so the recipe is idempotent and never invents rows:
+  ```sql
+  IF NOT EXISTS (SELECT 1 FROM ItemType_<Prefix>_<Concept>_<Child> WHERE Id = '<childId>')
+      -- do not blind-INSERT a missing child; investigate the ItemListRelation instead
+  UPDATE ItemType_<Prefix>_<Concept>_<Child> SET <col> = '<value>' WHERE Id = '<childId>';
+  ```
+- Recycle, then verify: the repointed items render and a link sweep across the affected pages returns 200s.
+
+Watch for red-herring empty tables — a concept can have a similarly-named `ItemType_<Prefix>_<Concept>` (e.g. a `Card` table) that is empty because the real content lives in the `_Item`/`_<Child>` rows. Confirm which table `ItemListRelation` points at before editing.
+
 ### What to put where
 
 1. **Editor copy** (labels, microcopy, hero copy, fineprint, CTA labels) → ALWAYS a field. Even
