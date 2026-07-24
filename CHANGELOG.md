@@ -31,11 +31,18 @@ conditional-collapse CSS) that had no documented home.
   `Layout` (`horizontal`/`vertical`) styles the panel only; sidebar **position** is a 2-column grid row
   (`2Columns_4-8`, facets col 1 / repeater col 2), facets kept on the list page for the AJAX context,
   `mobileLayout=12,12` for phone stacking.
-- **Repeater-child storage + the Management-API-unreachable edit path** (`dw-demo-base/references/foundational/content-modelling.md`
-  §2): repeater children live in `ItemType_*_Item` rows via `ItemList` + `ItemListRelation`; `GetParagraphById`
-  collapses the repeater to `Items=<listId>` and no item-content save command exists, so on ACL hosts the edit
-  path is guarded SQL (`IF NOT EXISTS` guards) against the child table plus a recycle. The button/link column is
-  a plain `{Label,Link,LinkType,Style}` JSON binder, not an opaque blob.
+- **Repeater-child storage + the Management API edit path** (`dw-demo-base/references/foundational/content-modelling.md`
+  §2): repeater children live in `ItemType_*_Item` rows via `ItemList` + `ItemListRelation`, and
+  `GetParagraphById` collapses the repeater to `Items=<listId>` — but that is a read-shape detail, **not** an
+  unreachable edit path. Children are created and edited through `POST /Admin/Api/ParagraphSave`: the parent's
+  `ContentItem|<Parent>|<Group>|Items` array carries child entries keyed by `ItemId` (empty creates, an existing
+  id edits in place), field values ride in the `ModelRawData` JSON string keyed
+  `RelationItem|<ChildType>|<Group>|<Field>`, and no recycle is needed (the save fires cache invalidation).
+  Proven end-to-end against a Swift 2.4 `Swift-v2_Slider` on DW 10.28.1 (headless create + in-place edit, no
+  SQL, storefront rendered the change). `ParagraphSave` is a lying-success surface for this shape — a malformed
+  child returns `ok` while creating nothing and can zero the parent list pointer, so round-trip-verify. The
+  button/link column is a plain `{Label,Link,LinkType,Style}` JSON binder. (Supersedes the earlier
+  "unreachable via API / guarded SQL + recycle" claim, which was wrong.)
 - **Conditional-collapse CSS with sibling `:has()` pairs** (`dw-demo-swift/references/re-skin.md`): nesting
   `:has()` inside `:has()` is invalid CSS and the browser drops the whole rule silently (`Element.matches` throws
   `SyntaxError`); use flat `:has()`/`:not(:has())` pairs. Swift grid attribute selectors

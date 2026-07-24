@@ -103,24 +103,77 @@ Reference: stock `Swift-v2_Accordion.xml` + `Swift-v2_Accordion_Item.xml`. **Giv
 numeric item ids** when seeding — string ids are the natural hand-seeding choice and the one that
 breaks every future AreaCopy (§3 "What a full-content AreaCopy does NOT carry").
 
-#### How repeater children are stored — and why the Management API can't reach them
+#### How repeater children are stored — and the Management API edit path
 
-A repeater's children (e.g. `Swift-v2_Slider` slides, accordion items) live in `ItemType_<Prefix>_<Concept>_<Child>` rows, joined to the parent through an `ItemList` + `ItemListRelation`. The Management API **cannot edit a child's content**: `GetParagraphById` collapses the whole repeater to `Items=<listId>` without expanding the children, and there is no item-content save command for the child rows. So on a filesystem-ACL host (where the admin Visual Editor's file writes are blocked too), the only edit path to a slide/item is **guarded SQL against the child table, followed by a recycle** — item content is served through an app-lifetime cache that a process recycle clears (drop a rung-3 CloudHosting control file on a hosted install; see [`online-mode.md`](../online-mode.md)).
+A repeater's children (e.g. `Swift-v2_Slider` slides, accordion items) live in
+`ItemType_<Prefix>_<Concept>_<Child>` rows, joined to the parent through an `ItemList` +
+`ItemListRelation`. `GetParagraphById` returns the parent's `contentItem` with the repeater **collapsed**
+to a single scalar — the `Items` field holds the `ItemList` id, not the expanded children. That collapse
+is a read-shape detail, **not** a dead end: the children are edited through the Management API like any
+other paragraph item content. The admin Visual Editor's slide editor is a SPA client of `/Admin/Api`, and
+its save is a plain HTTP call you can capture and replay (surface-priority rule: "no operation exists only
+in the UI" — [`../surface-priority.md`](../surface-priority.md)). **This was proven end-to-end against a
+Swift 2.4 `Swift-v2_Slider` on DW 10.28.1: a headless `POST /Admin/Api/ParagraphSave` created a slide and
+then edited it in place — no SQL, no recycle — and the storefront rendered the change on the next GET.**
 
-Trace and edit:
+The edit path — `POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById` (Bearer token):
 
-- `GetParagraphById <pid>` → `Items=<listId>` (the collapsed repeater).
-- `ItemListRelation` for `<listId>` → the child ids; the rows live in `ItemType_<Prefix>_<Concept>_<Child>`.
-- A "button"/"link" column on a child is a **plain transparent JSON link-binder** — `{Label, Link, LinkType, Style}` — not an opaque encoded blob; edit its `Link`/`Label` in place.
-- Guard every write so the recipe is idempotent and never invents rows:
-  ```sql
-  IF NOT EXISTS (SELECT 1 FROM ItemType_<Prefix>_<Concept>_<Child> WHERE Id = '<childId>')
-      -- do not blind-INSERT a missing child; investigate the ItemListRelation instead
-  UPDATE ItemType_<Prefix>_<Concept>_<Child> SET <col> = '<value>' WHERE Id = '<childId>';
-  ```
-- Recycle, then verify: the repointed items render and a link sweep across the affected pages returns 200s.
+- The parent paragraph's list field is `ContentItem|<ParentItemType>|<Group>|<ListField>` — an **array of
+  child entries** (for the slider: `ContentItem|Swift-v2_Slider|General|Items`). You send the full desired
+  child set; DW reconciles the `ItemList` / `ItemListRelation` / child rows for you.
+- Each child entry identifies itself by **`ItemId`**: an **empty string creates** a new child (DW assigns
+  the id and wires the relation); an **existing id edits that child in place** (verified: the child count
+  stayed constant and the row's fields changed — it is a true update, not a duplicate).
+- The child's field values ride in **`ModelRawData`** — a JSON *string* whose keys are
+  `RelationItem|<ChildItemType>|<Group>|<Field>` (e.g. `RelationItem|Swift-v2_Slider_Item|General|Title`,
+  `|Subtitle`, `|Text`, `|Image`, `|Text_LinkEditor`, `|Button`). The sibling `RelationItem.Groups` array
+  is sent **empty** by the UI — the values live in `ModelRawData`, so populate that.
+- A "button"/"link" field on a child (`Text_LinkEditor` / `Button`) is a **plain transparent JSON
+  link-binder** — `{Label, Link, LinkType, Style}` — not an opaque encoded blob.
+- **No recycle.** `ParagraphSave` runs DW's domain service, which invalidates the render cache; the slide
+  renders on the next storefront GET. (MCP `set_item_field_values` on the child's `(itemType, itemId)` is
+  the equivalent surface-1 path once the child exists.)
 
-Watch for red-herring empty tables — a concept can have a similarly-named `ItemType_<Prefix>_<Concept>` (e.g. a `Card` table) that is empty because the real content lives in the `_Item`/`_<Child>` rows. Confirm which table `ItemListRelation` points at before editing.
+Minimal payload (edit the existing child `1`; use `"ItemId": ""` to create):
+
+```jsonc
+POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
+{
+  "QueryData": { "Id": <paragraphId> },
+  "model": {
+    "ItemType": "Swift-v2_Slider",
+    "Layout": "CardCoverNavInline.cshtml",
+    "ContentItem|Swift-v2_Slider|General|Items": [
+      {
+        "ItemId": "1",                       // "" creates; an existing id edits in place
+        "ItemType": "Swift-v2_Slider_Item",
+        "Label": "<slide label>",
+        "ContentInfo": { "AreaId": 3, "PageId": 153, "GridRowId": 185, "ParagraphId": <paragraphId> },
+        "RelationItem": { "Groups": [] },
+        "ModelRawData": "{\"RelationItem|Swift-v2_Slider_Item|General|Title\":\"<p>…</p>\", \"RelationItem|Swift-v2_Slider_Item|General|Text\":\"<p>…</p>\", \"RelationItem|Swift-v2_Slider_Item|General|Button\":null}"
+      }
+    ]
+  }
+}
+```
+
+- **Round-trip-verify — `ParagraphSave` is a lying-success surface for this shape.** A malformed child
+  entry (e.g. field values missing from `ModelRawData`) still returns `status: ok` while creating nothing —
+  and can reset the parent's `Items` list pointer to `0`, silently emptying the repeater. Confirm the edit
+  through a second surface after every save: re-`GetParagraphById` and check the child count, or curl the
+  rendered page and assert the new text. This is the same round-trip discipline the `ParagraphSave`
+  item-field no-op carries (see "Saves that report success but silently drop a field" below and
+  [`../surface-priority.md`](../surface-priority.md) "Silent no-ops").
+
+Watch for red-herring empty tables — a concept can have a similarly-named `ItemType_<Prefix>_<Concept>`
+(e.g. a `Card` table) that is empty because the real content lives in the `_Item`/`_<Child>` rows. Confirm
+which table `ItemListRelation` points at before reasoning about the shape.
+
+> Historical note: earlier revisions of this section claimed the child rows were "unreachable through the
+> Management API — editable only by guarded SQL plus a recycle." That was wrong; the SQL-plus-recycle
+> motion is retired. The storage shape above is correct and useful for understanding, but the **edit path is
+> the API** — capture the UI's `/Admin/Api` call and replay it; if a payload seems impossible, file a
+> learning rather than escaping to SQL.
 
 ### What to put where
 
