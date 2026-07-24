@@ -43,9 +43,11 @@ conditional-collapse CSS) that had no documented home.
   must be `!important`.
 
 ### Changed
-- **`changeversion.txt` fires on a CHANGED token, not on presence** (`dw-demo-base/references/online-mode.md`
-  restart ladder rung 3): re-uploading the value the file already holds is a silent no-op; write a distinct
-  value every time and record the last-used token so the next restart bumps past it.
+- **`changeversion.txt`: only a CHANGED token switches the release ring — a same-value re-upload is not a
+  reliable no-op** (`dw-demo-base/references/online-mode.md` restart ladder rung 3): observed on an
+  `R0-NET…` ring token, re-uploading the current value still recycles the app but leaves the version
+  unchanged. Write a distinct token to actually switch (confirm via `info.version`), never re-upload the
+  current value expecting a no-op, and record the last-used token so the next switch bumps past it.
 
 ## [4.11.4]
 

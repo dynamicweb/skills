@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-12T15:04:56.619Z",
+  "generatedAt": "2026-07-24T09:52:36.862Z",
   "skills": [
     {
       "name": "dw-demo-base",
@@ -34,7 +34,7 @@
       "name": "dw-demo-swift",
       "type": "flow",
       "group": "demo",
-      "description": "'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, and the customer re-skin ladder.",
+      "description": "'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, the customer re-skin ladder, and the ",
       "path": "skills/dw-demo-swift/SKILL.md"
     },
     {
