@@ -61,7 +61,7 @@ No `ShopType=1` shop. Products live on `EcomGroupProductRelation` rows under `SH
 ## 1. Canonical setup order (Variant A — Storefront-first)
 
 1. **Currencies, Countries, Languages** — `save_currencies`, `save_countries`; languages usually pre-seeded (LANG1 = en-US). PriceContext needs a non-null Country entity — seed US if it isn't already.
-2. **Keep SHOP1** — rename via `UPDATE EcomShops SET ShopName` if save_shops is perm-blocked.
+2. **Keep SHOP1** — rename via `UPDATE EcomShops SET ShopName` if save_shops is perm-blocked. If you instead create a storefront shop through `ShopSave`, set `UsageType=shop` explicitly — the API default `ShopType=0` (none) hides the shop from every typed admin list (see [`../../dw-demo-base/references/foundational/commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) "Set `UsageType` explicitly on `ShopSave`").
 3. **Language relation for SHOP1** — `INSERT INTO EcomShopLanguageRelation (ShopId, LanguageId, IsDefault) VALUES ('SHOP1','LANG1',1)`.
 4. **Units, Manufacturers** — `save_units`, `save_manufacturers`.
 5. **DataStructure shop** (ShopType=4) + its language relation — owns data models.

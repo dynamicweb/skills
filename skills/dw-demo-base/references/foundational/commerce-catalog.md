@@ -185,3 +185,11 @@ entity.
 `ShopSave` never persists `Model.Languages` (only `CompletionLanguages`); `EcomShopLanguageRelation`
 cannot be written through this API version. A shop created via the API has no language relation until
 someone ticks it in the admin UI — a hand-off step, not a bug to debug.
+
+### Read a shop with `GetShopByIdQuery` before any round-trip `ShopSave`
+
+There are two shop-read surfaces and they return different models. **`GetShopById` returns a stub** — `{id, name, permission}` only. The full model (`usageType`, `autoBuildIndex`, and the rest) comes only from the namespaced `Dynamicweb.Products.UI.Queries.Settings.GetShopByIdQuery`. **Read through `GetShopByIdQuery` before a round-trip `ShopSave`**: a save built on the stub write-backs empty values over every field the stub omitted. Verified by readback — a `ShopSave` carrying the full `GetShopByIdQuery` model changes the one target field (e.g. `usageType`) while preserving `name` and `autoBuildIndex`.
+
+### Set `UsageType` explicitly on `ShopSave` — the default `ShopType=0` hides the shop
+
+A `ShopSave` that creates a shop without an explicit `UsageType` leaves `EcomShops.ShopType = 0` (none). The 10.28 admin lists shops by usage-type bucket — the Channels tree filters `UsageType is ShopType.Shop or ShopType.Channel` (`ChannelNodeProvider.GetCatalogShops`), Data models filters `ShopType.DataStructure` — so an untyped shop shows up in **no** typed list, even with a correct area binding and a working storefront (the symptom reads as "the webshop shop is missing from Channels"). **Always set `UsageType` on `ShopSave`:** `shop` for a storefront channel, `channel` for a feed target, `dataStructure` for a data-model shop. Re-typing an existing untyped shop to `shop` makes it reappear in `ShopAll` with storefront checkout/PLP behaviour unchanged. (ShopType enum + admin-nav mapping: [`pim-modelling.md`](pim-modelling.md) §2.1.)

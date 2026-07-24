@@ -4,6 +4,17 @@
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
+## Contents
+
+- [What this file owns vs. what moved to the foundational skill](#what-this-file-owns-vs-what-moved-to-the-foundational-skill)
+- [Pitfall index](#pitfall-index)
+- [The escalation ladder](#the-escalation-ladder)
+- [The `<customer>_custom.css` naming hard rule](#the-customer_customcss-naming-hard-rule)
+- [Re-skin smell: "Swift-v2_Text shim + foreign cshtml"](#re-skin-smell-swift-v2_text-shim--foreign-cshtml)
+- [Recipe](#recipe)
+- [Conditional-collapse CSS — hide empty bands with sibling `:has()` pairs, not nested `:has()`](#conditional-collapse-css--hide-empty-bands-with-sibling-has-pairs-not-nested-has)
+- [What this recipe does NOT do](#what-this-recipe-does-not-do)
+
 ## What this file owns vs. what moved to the foundational skill
 
 Vendor-generic Swift re-skin doctrine is now owned by the foundational skills:
@@ -85,6 +96,17 @@ Operates on a deserialized Swift 2.4 composition (framework-only `base` + `surfa
 - If a `<customer>_custom.css` was edited: that's the doc-canonical override slot, expected. Verify it lives at `Files/Templates/Designs/Swift-v2/Custom/<customer>_custom.css` and is loaded by a `Custom/<customer>HeadInclude.cshtml` wired to the Master area's `CustomHeadInclude` field. Stock `Custom/custom.css` must remain the hotpink placeholder — run `git diff --name-only -- '*custom.css'` and confirm the only hit is `<customer>_custom.css`.
 - **Image-band height is a Tier-1 (hard) re-skin item — cap it, do not eyeball it.** The stock `Swift-v2_Image` band and the slider cover-card carry no serialized height field, so a swapped-in photo renders at full column-width height, uncapped, and towers over the fold. Every re-skin that changes photography reproduces this. The durable fix is a Tier-1 (`<customer>_custom.css`) CSS cap on the image wrapper and the slider cover-card — `aspect-ratio` + `max-height: min(60vh, 640px)` + `object-fit: cover`. A full-bleed hero may legitimately fill the fold; a content-band image must not. Definition of done: no image band taller than the configured fraction of the viewport, measured by the `tall` detector in [`visual-qa.md`](../../dw-demo-base/references/visual-qa.md) — that mechanical check is the sign-off, not a screenshot glance.
 - **Run the mobile pass before "ready".** A re-skin that looks clean at desktop routinely stretches the phone canvas — fixed-width mega-menu, non-wrapping footer/USP rows, `.flex-fill` beating the column bases you just set. The canvas-fit method (measure `document.body.scrollWidth`, not documentElement), the Swift 2.4 trap catalogue, and the Tier-1 fixes (which land in this same `<customer>_custom.css` slot) live in [`mobile-pass.md`](mobile-pass.md). On theme-default ≥1.2.0 most fixes already ship — that pass is a verification, not a re-derivation.
+
+## Conditional-collapse CSS — hide empty bands with sibling `:has()` pairs, not nested `:has()`
+
+When a PDP/PLP band must hide only when it is empty (an empty `productbom` / `productmediatable` shell on a sparse product, while the same band renders on a populated one), write the condition as **sibling `:has()` / `:not(:has())` pairs on one selector** — never one `:has()` nested inside another. A selector that nests `:has()` inside `:has()` (e.g. `section:has(.x:has(a))`) is **invalid per the CSS spec; the browser drops the entire rule silently** — no console error, and adjacent valid rules from the same block (a color tweak, say) still apply, so it reads as a baffling split failure. `Element.matches(<nested-selector>)` throws `SyntaxError` in Chromium — that's the fast confirmation. Use the flat sibling form instead:
+
+```css
+/* collapse the band only when it has the wrapper but no populated child */
+section[gridrow]:has(.productbom):not(:has(.productbom .bom-row)) { display: none !important; }
+```
+
+The `!important` is load-bearing, not lazy: Swift grid rows carry attribute selectors like `[gridrow][container][gridcolumn]{display:flex}` at specificity `0,3,0`, which beats a plain `display:none` (`0,1,0`). A conditional-collapse `display:none` must be `!important` (or match the attribute specificity) to win. Definition of done: empty bands hidden on sparse products, populated bands still render, and zero overflow at 1440 + 390 (the [`mobile-pass.md`](mobile-pass.md) canvas-fit check). This CSS lands in the Tier-1 `<customer>_custom.css` slot.
 
 ## What this recipe does NOT do
 

@@ -69,17 +69,30 @@ directory — hold it in conversation state, not as a global default.
 
 ## SQL-direct content seeding — Page / GridRow / Paragraph
 
-**This is the SQL-fallback surface.** The preferred surface for content seeding is MCP `save_pages` /
-`save_grid_rows` / `save_paragraphs` — those invalidate caches inline and don't require the field
-disciplines below. Reach for SQL only once you've decided it's the right surface (bulk seeds, MCP token
-expiry mid-batch, no MCP available, or an item type with no MCP surface).
+> **Retired as a seeding motion — kept as a forensic / teardown schema reference.** "Seed content by
+> writing rows directly (SQL-direct, or SQL via `RunSqlScheduledTaskAddIn`) because the API is out of
+> reach" is no longer a sanctioned demo recipe. The admin UI is **API-first**: every UI action lands on
+> `/Admin/Api`, so if the UI can do it an endpoint exists — capture the SPA's network call (read-only
+> Playwright) and replay it (MCP → Management API). **Do not reach for SQL when the API gets hard; file a
+> learning instead.** The column schema below stays only to *diagnose* rows that were already SQL-seeded
+> (why a hand-INSERTed row renders wrong) and for the narrow, still-sanctioned local-only SQL cases —
+> cleanup/teardown and reads — per [`../surface-priority.md`](../surface-priority.md). It is **not** a
+> content-authoring path.
+
+**The preferred surface for content is MCP** `save_pages` / `save_grid_rows` / `save_paragraphs` /
+`set_item_field_values` — those run the domain services (cache invalidation, `ItemList`/`ItemListRelation`
+wiring, sibling links) that raw SQL skips. When MCP doesn't expose an operation, the Management API does
+(the admin UI proves the endpoint exists). Repeater/slider children, once thought SQL-only, edit cleanly
+through `POST /Admin/Api/ParagraphSave` — see
+[`content-modelling.md`](content-modelling.md) §2.
 
 **`save_pages` does not persist `urlName` / `navigationTag` / `hidden` (verified 10.27.x).** Even the
-MCP-first path needs a SQL touch-up for these three: a page created via `save_pages` lands with a
-derived URL slug, no navigation tag, and default visibility **regardless of what you pass** for those
-fields. After the MCP create, set `Page.PageUrlName`, the navigation-tag column, and `Page.PageHidden`
-via SQL (then restart per the cache rules below), or author the Page row entirely via SQL from the
-start using the required-column list below.
+MCP-first path needs a **targeted** SQL touch-up for these three: a page created via `save_pages` lands
+with a derived URL slug, no navigation tag, and default visibility **regardless of what you pass** for
+those fields. This is the sanctioned "confirmed silent no-op → local SQL fallback" case (round-trip-verify
+it): after the MCP create, set `Page.PageUrlName`, the navigation-tag column, and `Page.PageHidden` via SQL
+(then restart per the cache rules below). Keep the page's *creation* on MCP/the API — do not fall back to
+authoring the whole row in SQL.
 
 ### Required NOT-NULL columns — `Page`
 

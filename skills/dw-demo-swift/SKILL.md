@@ -2,7 +2,7 @@
 name: dw-demo-swift
 type: flow
 group: demo
-description: 'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, the customer re-skin ladder, and the mobile pass. Triggers: starting a Swift demo (load the baseline), re-skinning to a customer brand, "where do I edit the header/footer", "mobile view" / "mobile pass" / "canvas stretch" / "overflow at 390" / mega-menu won''t collapse, customer-center / impersonation flows, sign-in profiles / switch user, checkout delivery date or custom order fields, paragraph renders empty or stale, Razor pitfalls in custom layouts, language layers, gating pages or paragraphs by group, SQL-direct content seeding. Non-triggers: demo setup/MCP/TLS -> dw-demo-base; PIM data modelling -> dw-demo-pim; ERP integration -> dw-demo-erp. Swift 2 only -- never follow `doc.dynamicweb.dev/swift/swift-1/` URLs. Use AFTER dw-demo-base (host running, Serializer installed).'
+description: 'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, the customer re-skin ladder, and the mobile pass. Triggers: starting a Swift demo (load the baseline), re-skinning to a customer brand, "where do I edit the header/footer", "mobile view" / "mobile pass" / "canvas stretch" / "overflow at 390" / mega-menu won''t collapse, customer-center / impersonation flows, sign-in profiles / switch user, checkout delivery date or custom order fields, paragraph renders empty or stale, Razor pitfalls in custom layouts, language layers, gating pages or paragraphs by group, editing repeater/slider children via the Admin API. Non-triggers: demo setup/MCP/TLS -> dw-demo-base; PIM data modelling -> dw-demo-pim; ERP integration -> dw-demo-erp. Swift 2 only -- never follow `doc.dynamicweb.dev/swift/swift-1/` URLs. Use AFTER dw-demo-base (host running, Serializer installed).'
 ---
 
 # Dynamicweb Swift Demo Skill
@@ -79,7 +79,7 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 | Drop per-demo Style assets by hand (Color Schemes / Buttons / Typography / Fonts JSON+CSS pairs in `Files/System/Styles/`; Area row wiring; the single `theme-default` layer from the Distribution, checked out per-demo into `<demo-root>\distribution\layers\theme-default\`) | references/styles-assets.md |
 | Add a language layer to a website (sibling `Area` rows, language management settings, OOTB `Swift-v2_LanguageSelector` wiring; sister doc is `dynamicweb-pim-demo/references/localization.md` for the PIM/product side) | references/language-layers.md |
 | Organise assets under `wwwroot/Files/` | references/asset-organisation.md |
-| **SQL-direct seeding** of Page / GridRow / Paragraph / ItemType rows when MCP isn't available (required NOT-NULL columns, `ItemInstanceType=''`, `MAX(Id)` lies → `TRY_CAST`, `GridRowSort × 10` slot reservation, post-INSERT restart rules) | references/sql-direct-seeding.md |
+| Content create/edit is **API-first** — capture the admin UI's `/Admin/Api` call and replay it (MCP → Management API); SQL-direct / `RunSql`-scheduled-task seeding is a **retired** motion (why it's retired + forensic schema for diagnosing already-seeded rows) | references/sql-direct-seeding.md |
 
 ## Inherited from dynamicweb-demo-base
 
