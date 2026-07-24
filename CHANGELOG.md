@@ -50,6 +50,16 @@ conditional-collapse CSS) that had no documented home.
   must be `!important`.
 
 ### Changed
+- **SQL-via-scheduled-task / SQL-direct content seeding is retired as a demo motion — the corpus is
+  API-first** (`dw-demo-swift/references/sql-direct-seeding.md` gutted to a deprecation stub;
+  `dw-demo-swift/SKILL.md` trigger + routing; `dw-demo-base/references/foundational/data-access.md`
+  "SQL-direct content seeding" reframed as a forensic/teardown reference; `dw-extend-scheduled-tasks/SKILL.md`
+  `RunSqlScheduledTaskAddIn` reframed): the admin UI is a SPA over `/Admin/Api`, so if the UI can do it an
+  endpoint exists — capture the UI's network call and replay it (MCP → Management API), and **file a learning
+  rather than escaping to SQL when the API gets hard**. The developer-extension `RunSql` silent-failure /
+  assertion-SQL truth is kept as a diagnostic, with a guard that demo/content work must not use it for edits.
+  The one sanctioned scheduled-task-SQL use — the ERP DB-mock's between-demo RESET fixture (`dw-demo-erp`) — is
+  unchanged (a deliberate state-reset, not a content-authoring escape hatch).
 - **`changeversion.txt`: only a CHANGED token switches the release ring — a same-value re-upload is not a
   reliable no-op** (`dw-demo-base/references/online-mode.md` restart ladder rung 3): observed on an
   `R0-NET…` ring token, re-uploading the current value still recycles the app but leaves the version
