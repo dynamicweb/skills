@@ -3,6 +3,31 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.13.0]
+
+Splits the hosted/cloud install out of `dw-demo-base` into its own skill. `dw-demo-base`'s
+activation description had reached 1006 of the 1024-char cap, where parsers truncate and trigger
+coverage disappears silently — the crowding was the signal that the skill owned unrelated routes,
+so the fix is a split rather than a trim.
+
+### Added
+- **`dw-demo-hosted`** (presales bundle, Use AFTER `dw-demo-base`): hosted/cloud installs reached
+  only by URL + Admin API bearer key. Owns both hosted paths — **building** directly on one
+  (`references/online-mode.md`: session-start probe, Management API recipe pack, lying-success
+  verification, flush-then-restart ladder, shared-install discipline) and **publishing** a
+  locally-built demo onto one (`references/publish-to-hosted.md`: pre-flight, transport map,
+  clean-room deserialize, id collisions, what never rides a content export, index rebuild). Its
+  SKILL.md states the two hosted-specific deltas to the surface-priority rule up front: no scaffold
+  phase, and no SQL floor at all.
+
+### Changed
+- `online-mode.md` and `publish-to-hosted.md` moved from `dw-demo-base/references/` to the new
+  skill; every inbound link updated (`dw-demo-base/SKILL.md`, `surface-priority.md`,
+  `dw-demo-swift/references/cheat-sheet.md`).
+- **`dw-demo-base` description 1006 -> 988 chars** and its "Environment fork" section now hands the
+  whole hosted branch to the sister skill instead of describing it. `dw-demo-hosted` added to the
+  sister-skill list and the README dependency chain.
+
 ## [4.12.3]
 
 Rightsizes `dw-demo-base/SKILL.md` back toward the nav layer it says it is. It had grown to 42k

@@ -2,7 +2,7 @@
 name: dw-demo-base
 type: flow
 group: demo
-description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, when "pinning the platform" for a Distribution-validating scaffold, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (references/online-mode.md). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md — and the maintainer fold-back workflow — "fold this into the skill" routes to references/iterate-plugin.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-erp, dw-integration-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
+description: 'Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, or when "pinning the platform" for a Distribution-validating scaffold. Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md — and the maintainer fold-back workflow — "fold this into the skill" routes to references/iterate-plugin.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-erp, dw-integration-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only. Non-triggers: a hosted/cloud install reached only by URL + Admin API key -> dw-demo-hosted.'
 ---
 
 # Dynamicweb Demo Base Skill
@@ -30,7 +30,7 @@ Every sister demo skill carries the same "how to run me" header and defers to th
 
 ## Environment fork — local install vs hosted (online) install
 
-The canonical flow below assumes a **local install** (scaffold + SQL Express on the demo machine). When the engagement instead hands you a **site URL + Admin API bearer key** — a vendor-hosted/cloud install with no machine to scaffold on — fork to [references/online-mode.md](references/online-mode.md), which owns the deltas: which canonical steps to skip, the session-start probe (tool availability on hosted installs is **version-dependent** — MCP may or may not be exposed; always probe, never assume), the Management API recipe pack that substitutes for MCP/SQL recipes, and the shared-install discipline. Moving a demo that was built locally onto a hosted install is a **migration, not a deploy** — a separate playbook with its own failure modes, owned by [references/publish-to-hosted.md](references/publish-to-hosted.md). The always-on rules (surface priority, guarded writes, customer-context, demo philosophy) apply in both modes.
+The canonical flow below assumes a **local install** (scaffold + SQL Express on the demo machine). When the engagement instead hands you a **site URL + Admin API bearer key** — a vendor-hosted/cloud install with no machine to scaffold on — the build forks to [`dw-demo-hosted`](../dw-demo-hosted/SKILL.md), which owns both hosted paths: building directly on a hosted install, and publishing a locally-built demo onto one (a **migration, not a deploy**, with its own failure modes). Come back here for the guardrails — the always-on rules (surface priority, guarded writes, customer-context, demo philosophy) apply unchanged in both modes.
 
 ## Canonical end-to-end flow
 
@@ -75,8 +75,7 @@ resolved-SHA record, and the artifact-source table are owned by
 |---|---|
 | Understand how a demo build is **driven** — the orchestrator abstraction (GSD primary vs the native `/demo:*` command set), GSD detection / deference + `--standalone`, the `agent_skills` keystone, the strictness gradient, and the shared acceptance criteria | references/orchestrator.md |
 | Verify a fresh machine is build-ready (incl. the MSDTC check that AreaCopy `TransactionException`s trace back to) | references/setup-checks.md |
-| **Build on a hosted/cloud install** (URL + Admin API key only — no scaffold, no SQL; Management API create-vs-update semantics, binder shapes, `allowOverwrite` on upload, variants, the flush-then-restart ladder, known API gaps) | **references/online-mode.md** |
-| **Publish an existing local demo onto a hosted install** ("publish this site", "push the demo to the cloud install", "migrate local → hosted") — pre-flight (custom product fields must exist on the target before the first deserialize), transport map, clean-room deserialize, id collisions on an install that already has content, the global settings that never ride a content export, index rebuild | **references/publish-to-hosted.md** |
+| **Build on, or publish onto, a hosted/cloud install** (URL + Admin API key only — no scaffold, no SQL; the session-start probe, the Management API recipe pack, lying-success verification, the flush-then-restart ladder; and for a publish: pre-flight, transport map, clean-room deserialize, id collisions, index rebuild) | **[`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)** |
 | Ask the demo's DW10 + Swift versions and check out the Distribution layers/editions per-demo | references/distribution-checkout.md + references/setup-checks.md |
 | Scaffold the project | references/scaffold.md |
 | **Pin the platform** — which `Dynamicweb.Suite` version a Distribution-validating scaffold must use (pin to `INDEX.json gateProven.dwPlatformVersion`; why floating `10.*` fails sideways), plus the multi-target `--framework` / `$pid` host-launch traps and the DB-wizard "Login failed" race | references/scaffold.md §2.2 + §3 + references/host-lifecycle.md |
@@ -154,7 +153,7 @@ bootstrap one-clicks (MCP configuration + shown-once API key, Management API key
 install, portal downloads).
 
 **Hosted/online installs** have no scaffold phase and no surface 3 — no SQL, ever — and surface 1
-is version-dependent, so probe rather than assume ([references/online-mode.md](references/online-mode.md)).
+is version-dependent, so probe rather than assume ([`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)).
 
 The phase × instance-type matrix, the scaffold-phase ladder, the SQL-cloning anti-pattern, and the
 silent-no-op verification rule are owned by [references/surface-priority.md](references/surface-priority.md).
@@ -228,12 +227,13 @@ When in doubt: every login / channel / locale / customer-center section must jus
 - **`dynamicweb-swift-demo`** -- Swift frontend (templates, paragraph types, B2B customer-center scaffolding, baseline deserialize). **Use AFTER** `dynamicweb-demo-base`.
 - **`dynamicweb-erp-demo`** -- ERP integration (source/target rule, DB-staged mock, scenarios-first planning). **Use AFTER** `dynamicweb-demo-base`.
 - **`dynamicweb-pim-for-bc`** -- live BC connector via ngrok + AppStore connector. **Use AFTER** `dynamicweb-demo-base`.
+- **`dw-demo-hosted`** -- hosted/cloud installs reached only by URL + Admin API key: building directly on one, and publishing a locally-built demo onto one. **Use AFTER** `dynamicweb-demo-base`.
 
 A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts. The "Use FIRST" routing wording in this skill's description and the "Use AFTER" markers in the sister skills are the inoculation.
 
 ## Reference-content layout
 
-Demo artifacts (base, catalog, theme, and feature layers) are checked out per-demo from the Distribution clone into the demo's own `<demo-root>\distribution\` folder — see "Versions prompt + Distribution clone/checkout" above. There is no shared machine-wide vault; each demo consumes the latest gate-proven `main` and records the resolved commit SHA as its reproducibility stamp.
+Demo artifacts (base, catalog, theme, and feature layers) are checked out per-demo from the Distribution clone into the demo's own `<demo-root>\distribution\` folder — see [references/distribution-checkout.md](references/distribution-checkout.md). There is no shared machine-wide vault; each demo consumes the latest gate-proven `main` and records the resolved commit SHA as its reproducibility stamp.
 
 Two read-only reference sources are **local clones**, not downloads, and their location is per-machine — **ask or discover it, never hardcode**:
 
