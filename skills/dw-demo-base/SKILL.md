@@ -60,48 +60,14 @@ The Serializer install steps live in base so any sister skill can pull them; the
 
 ### Versions prompt + Distribution clone/checkout
 
-Demo artifacts are **not** kept in a shared machine-wide vault. All of them live in ONE consolidated Distribution repo (its URL is per-machine — a default plus the `$env:DW_DISTRIBUTION_REPO` override, below), consumed by **`git clone` + `git pull --ff-only` on `origin/main`** — never a release zip, never a tag checkout. The clone holds `layers/<name>/` (each a layer with a `kind` = base | catalog | feature | theme | surface | sample-data), `editions/<name>.json` (named, gate-proven compositions of layers), and **`layers/INDEX.json`** — the distribution's machine-readable **layer index**, the source of truth for what layers exist, their kind/version/status, and what any retired name was superseded by. **Main IS the version:** consumers pin the latest gate-proven `main`, not a frozen tag. The Distribution supports the current latest Swift release only and rolls forward with it, so there is no re-consumable old state to pin — annotated tags survive as provenance/audit history, never a consumer checkout target. Each demo clones into its own `<demo-root>\distribution\` folder, so two demos on the same machine stay isolated. Reproducibility is the resolved **commit SHA** recorded in `CUSTOMISATIONS.md` (forensics), not a tag. Before any artifact is fetched, ask the user two things (record both in the demo's `CUSTOMISATIONS.md`):
+Before any artifact is fetched, ask the user the **DW10 version** and the **Swift version**, and
+record both in the demo's `CUSTOMISATIONS.md`. Every artifact then resolves from the demo's own
+Distribution checkout — `git clone` / `git pull --ff-only` on `origin/main`, layers resolved
+through `layers/INDEX.json`, never a release zip and never a tag. **Main IS the version.**
 
-1. **DW10 version** — the platform version the demo host runs (drives layer compatibility checks).
-2. **Swift version** — e.g. `2.4` (drives the Swift design-package clone tag `v<version>.0`). The Distribution supports the **current latest Swift release only** and rolls forward with it; the current cycle is **Swift 2.4 on DW 10.28.1-PreRelease** (editions attested there; stable re-prove pending).
-
-**Layer resolution — read `INDEX.json`, never resolve a git tag.** Clone the Distribution once, or `git pull --ff-only` an existing clone up to `origin/main`; then read `layers/INDEX.json`. Assert its `gateProven` block is present — that marker is what says `main` is at a gate-proven tip, not mid-release — and resolve each layer/edition you need from the **live `layers` entries** (`status: active` or `deprecated`). Verify the checked-out `layer.json`'s `swiftVersion` matches the versions prompt (each layer declares the Swift release it targets — the Distribution tracks one at a time, latest-only). If a name you reach for is absent from `layers`, look it up under `retired`: a retired entry names its **`supersededBy`** successor — resolve to that successor, never the dead name (a retired reference must resolve loudly to its successor, never to silence):
-
-```powershell
-$repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
-$dist = "<demo-root>\distribution"
-if (Test-Path "$dist\.git") {
-  git -C $dist pull --ff-only origin main         # main IS the version — fast-forward to the gate-proven tip
-} else {
-  git clone "https://github.com/$repo" $dist       # one repo — all layers + editions + INDEX.json live here
-}
-$index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
-if (-not $index.gateProven) { throw "INDEX.json has no gateProven marker — main is not at a gate-proven tip; do not consume." }
-# Resolve a layer from the live index (retired -> follow supersededBy, never the dead name):
-$name  = "surface-swift"                            # the layer (or edition) the demo composes
-$entry = $index.layers | Where-Object { $_.name -eq $name }
-if (-not $entry) {
-  $tomb = $index.retired | Where-Object { $_.name -eq $name }
-  if ($tomb) { throw "Layer '$name' is RETIRED -> use $($tomb.supersededBy)" } else { throw "Layer '$name' not in INDEX.json" }
-}
-# Consume $dist\layers\$name\ ; verify (Get-Content "$dist\layers\$name\layer.json" | ConvertFrom-Json).swiftVersion
-# equals the versions-prompt answer (e.g. 2.4.0).
-```
-
-Record the resolved **commit SHA** (`git -C $dist rev-parse HEAD`) in `CUSTOMISATIONS.md` — that SHA is the demo's forensic reproducibility stamp (a later rebuild pulls `main` and reads the current `INDEX.json`; the SHA says which gate-proven tip this demo was built against). The clone contains every live layer at that commit; read whichever `layers/<name>/` dirs the edition composes.
-
-With those answers, artifacts resolve from the demo's Distribution checkout. The former standalone demo-theme and feature-pack repos are **archived** — their themes and packs are now theme/feature layers in the Distribution:
-
-| Artifact | Source (in the Distribution clone) | Working tree | Consumed by |
-|---|---|---|---|
-| Serialized base | `layers/base` (kind base) — **framework-only**: 16 framework SQL sets in `replace/_sql/` (countries, currencies, languages, shops, payments, shippings, VAT, order flow/states, AccessUser), **zero content, zero pages, empty catalog by design** | `<demo-root>\distribution\layers\base\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Swift content surface | `layers/surface-swift` (kind surface) — ALL Swift content: both areas (`Swift 2` + `Swift 2 Nederlands`) in `replace/_content/` + `merge/_content/`, `UrlPath` in `replace/_sql/`, and its **own item-type XMLs** (`itemtypes/`, 128 `ItemType_Swift-v2_*.xml`) | `<demo-root>\distribution\layers\surface-swift\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Demo catalog + identities *(optional)* | `layers/sample-data` (kind sample-data) — ships ALL demo content as SQL files (`merge/_sql/catalog.sql`: products / groups / prices; `merge/_sql/identities.sql`: buyer + CSR); editions activate it via `sampleData: true` (e.g. `swift-demo`); otherwise author per-demo via the [`dw-demo-pim`](../dw-demo-pim/SKILL.md) recipes | `<demo-root>\distribution\layers\sample-data\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Demo theme / style assets | `layers/theme-default` (kind theme — pure disk-overlay `files/`, no serialized DB content). **The ONE presentation layer** — every Swift demo starts from `theme-default` and re-skins on top of it; there is no theme choice and no separate overlay layers (the header-nav affordance CSS ships inside `theme-default`'s `default_custom.css`) | `<demo-root>\distribution\layers\theme-default\` | [`dynamicweb-swift-demo/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) |
-| Feature pack | `layers/<name>` (kind feature) | `<demo-root>\distribution\layers\<name>\` | [`dynamicweb-swift-demo/references/pack-activation.md`](../dw-demo-swift/references/pack-activation.md) |
-| Swift design package | local clone of `https://github.com/dynamicweb/Swift` (release tag `v<version>.0` — the upstream Swift product still ships releases) | `<demo-root>\dw-swift\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) "Design-package deploy" |
-
-Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh` authenticated so a private Distribution repo clones over HTTPS via the gh credential helper). The Distribution repo defaults to the URL above and is overridable per machine via `$env:DW_DISTRIBUTION_REPO` (owner/name form) when a team mirrors or forks it.
+The clone model, the `gateProven` assertion, the retired -> `supersededBy` resolution, the
+resolved-SHA record, and the artifact-source table are owned by
+[references/distribution-checkout.md](references/distribution-checkout.md).
 
 ## Where to find things
 
@@ -111,9 +77,9 @@ Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh
 | Verify a fresh machine is build-ready (incl. the MSDTC check that AreaCopy `TransactionException`s trace back to) | references/setup-checks.md |
 | **Build on a hosted/cloud install** (URL + Admin API key only — no scaffold, no SQL; Management API create-vs-update semantics, binder shapes, `allowOverwrite` on upload, variants, the flush-then-restart ladder, known API gaps) | **references/online-mode.md** |
 | **Publish an existing local demo onto a hosted install** ("publish this site", "push the demo to the cloud install", "migrate local → hosted") — pre-flight (custom product fields must exist on the target before the first deserialize), transport map, clean-room deserialize, id collisions on an install that already has content, the global settings that never ride a content export, index rebuild | **references/publish-to-hosted.md** |
-| Ask the demo's DW10 + Swift versions and check out the Distribution layers/editions per-demo | "Versions prompt + Distribution clone/checkout" above + references/setup-checks.md |
+| Ask the demo's DW10 + Swift versions and check out the Distribution layers/editions per-demo | references/distribution-checkout.md + references/setup-checks.md |
 | Scaffold the project | references/scaffold.md |
-| **Pin the platform** — which `Dynamicweb.Suite` version a Distribution-validating scaffold must use (pin to `INDEX.json gateProven.dwPlatformVersion`; why floating `10.*` fails sideways), plus the multi-target `--framework` / `$pid` host-launch traps and the DB-wizard "Login failed" race | references/scaffold.md §2.2 + §3 (and Host lifecycle authority above) |
+| **Pin the platform** — which `Dynamicweb.Suite` version a Distribution-validating scaffold must use (pin to `INDEX.json gateProven.dwPlatformVersion`; why floating `10.*` fails sideways), plus the multi-target `--framework` / `$pid` host-launch traps and the DB-wizard "Login failed" race | references/scaffold.md §2.2 + §3 + references/host-lifecycle.md |
 | Get MCP working (and verify it) | references/mcp-setup.md |
 | Understand the TLS bypass | references/tls-bypass.md |
 | Install Browser MCP (`@playwright/mcp`) for verification flows; recover from `browserType.launchPersistentContext` / browser-launch errors (Chromium channel fallback, Node driver) | references/browser-automation.md |
@@ -148,61 +114,52 @@ The reference owns the full workflow end-to-end, including the load-bearing firs
 
 ## Host lifecycle authority
 
-Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start, stop, restart without asking. Blocking on the user to run `dotnet run` is friction.
+Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start, stop, restart
+without asking. Blocking on the user to run `dotnet run` is friction. Announce each action in one
+line ("starting host…", "host up at :31873"); authorization removes the *ask*, not the narration.
 
-**Flush first — a restart is the last resort, not the default.** Nearly every "my change doesn't show" symptom is a stale cache with a flush surface, and flushing keeps the warm state a restart throws away. Work the ladder in [references/foundational/cache-invalidation.md](references/foundational/cache-invalidation.md) "When a mutation doesn't show up": (1) the **targeted** `CacheInformationRefresh` named in its post-mutation table → (2) the **bulk flush** (`GET /admin/api/GetServiceCaches` → `POST /admin/api/CacheInformationsRefresh {"Ids":[...]}`) — the same substitution hosted installs are required to use for every "restart required" row → (3) restart only when the symptom survives both flushes or the cache is documented as not service-exposed (e.g. `Searching:Queries`). Restarts that ARE owed (AddIn/`Custom.Mcp` deploys, TFM changes, restart-only cache rows) get **batched — one restart per authoring pass** (the MCP-first → SQL-last → one-restart rule), never one per mutation — and verified to have actually cold-started (the `dotnet run` parent/child trap: killing the parent can leave the real host running with its caches intact).
+**Flush before restarting.** Nearly every "my change doesn't show" symptom is a stale cache with a
+flush surface, and flushing keeps warm state a restart throws away — work the targeted → bulk →
+restart ladder in [references/foundational/cache-invalidation.md](references/foundational/cache-invalidation.md).
+Restarts that are genuinely owed get batched: one per authoring pass.
 
-- Start (durable): use PowerShell `Start-Process` so the host survives the spawning subshell, **and redirect stdout/stderr to log files under `<demo>\notes\logs\`** (the canonical log home — see "Artifact hygiene"; never anchor the logs at the Suite folder or the demo root). A hidden `Start-Process` *without* redirection has proven flaky — the spawned process can exit right after kickoff; redirecting keeps it stable and leaves a startup log to read (e.g. to confirm the TFM line — see `references/foundational/setup-install.md` §2):
-  ```
-  powershell -Command "Start-Process -FilePath 'dotnet' -ArgumentList 'run','--launch-profile','Dynamicweb.Host.Suite' -WorkingDirectory '<absolute-path-to-Suite>' -WindowStyle Hidden -PassThru -RedirectStandardOutput '<demo>\notes\logs\host-out.log' -RedirectStandardError '<demo>\notes\logs\host-err.log' | Select-Object -ExpandProperty Id"
-  ```
-  Returns PID. After kickoff, poll `/Admin` (or `/admin/api/api.json` with bearer) until 200, then proceed.
-  **Do NOT** use plain `dotnet run` via Bash `run_in_background:true` — when the bash subshell ends, dotnet receives SIGHUP and the host dies after the next idle window. We've seen this fail with exit 127 mid-session.
-  - **`--no-build` caveat:** `dotnet run --no-build` launches whatever DLL is already in `bin/`. If a prior `dotnet build` *failed*, you silently run the **stale** binary — and a run you intended as a one-shot maintenance arg can instead boot a normal host and lock the exe. Confirm the last build succeeded before relying on `--no-build`.
-  - **Multi-target host → `dotnet run` needs `--framework`.** A single-target net10 pin (`references/scaffold.md` §2.1) sidesteps this, but a **multi-target** scaffold (`<TargetFrameworks>net8.0;net10.0</TargetFrameworks>`, e.g. the DemoAgent harness host) makes bare `dotnet run` **block on first boot** with a framework-ambiguity error — nothing starts, no log. Add `'--framework','<tfm>'` to the `ArgumentList` (the DemoAgent harness boots `net8.0`; a host that must load the Backend MCP AddIn uses `net10.0` — §2.1). Pin single-target where you can; pass `--framework` where you can't.
-  - **Never capture the PID into `$pid`.** `$pid` is a PowerShell **read-only automatic variable** (the current shell's own process id); `$pid = (Start-Process … -PassThru).Id` throws `Cannot overwrite variable pid because it is read-only or constant`. Use any other name (`$hostPid`). The `Select-Object -ExpandProperty Id` form above avoids it — a hand-rolled `$pid = …` capture is the trap.
-  - **Launch through `dotnet run` only — the apphost exe under `bin/` is not a launch surface.** Starting `bin\Debug\<TFM>\Dynamicweb.Host.Suite.exe` directly boots a host that serves pages but is silently **degraded**: item-based paragraphs fall back to defaults (stock logo/text instead of configured content), every product list renders empty, and nothing is logged — the symptom reads as data loss or broken permissions and costs hours of misdiagnosis. If a running host shows that symptom set, check how it was started before debugging anything else.
-  - **Silent early exits while sibling DW hosts run:** a freshly started demo host that disappears minutes after start with no exception and no shutdown line in its log — while other DW10 hosts run on the same machine — should be retested with the sibling hosts stopped before any deeper diagnosis. On demo day, run only the demo's own host and confirm sustained uptime (browse a product list and a cart page) before presenting.
-- Stop — **port-scoped AND ownership-verified; assume sibling demo hosts are running on this machine.** Kill by the **PID returned from Start-Process** when you have it. When you don't, resolve the PID from **THIS demo's launchSettings port** and confirm the owning process's command line points at THIS demo's solution folder before stopping it — every demo scaffolds the same `Dynamicweb.Host.Suite` project, so a name / command-line match (`*Dynamicweb.Host.Suite*`, `Stop-Process -Name dotnet`, killing every `dotnet` PID) kills *sibling* demos' hosts:
-  ```powershell
-  $port = <PORT>   # HTTPS port from THIS demo's Dynamicweb.Host.Suite/Properties/launchSettings.json
-  $p = Get-NetTCPConnection -LocalPort $port -State Listen | Select-Object -ExpandProperty OwningProcess -Unique
-  if ($p) {
-    $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$p").CommandLine
-    if ($cmd -like "*<absolute-path-to-THIS-demo>*") { Stop-Process -Id $p -Force }
-    else { Write-Warning "Port $port is owned by: $cmd — NOT this demo's host. Re-check the port; do not kill." }
-  }
-  ```
-  `<PORT>` is the HTTPS port from `Dynamicweb.Host.Suite/Properties/launchSettings.json` (the discover-from-project-files source of truth — see `references/scaffold.md`). The ownership check costs one command and is what keeps a two-agent, two-host machine safe; a warning from it means the port assumption is wrong — rediscover the port from THIS demo's project files, never widen the kill.
-  - **Never force-kill during an index build.** A `Stop-Process -Force` mid-`BuildIndex` corrupts the index instance being written — leaving a "blocking repair candidate" / "must be recovered" state that a single rebuild does not clear (the recovery recipe is `dw-demo-swift/references/integrity-sweep.md` Check 5). Before stopping the host, confirm no Lucene build is in flight (`GET /admin/api/IndexStatusByRepositoryAndIndexName` — not `Running`); if one is, let it finish or use a graceful stop, and only force-kill a host that is genuinely wedged.
-- Visibility ≠ permission: still announce in one line ("starting host…", "host up at :31873", "restarting to clear plugin cache"). Authorization removes the *ask*, not the *narration*.
+Start durably via `Start-Process` with logs under `<demo>\notes\logs\`; stop **port-scoped and
+ownership-verified**, because every demo on the machine scaffolds the same project name and a
+name-matched kill takes out a sibling demo's host. The commands, the launch traps (`--no-build`
+staleness, `--framework` on a multi-target host, the read-only `$pid` variable, the degraded
+apphost-exe boot), and the never-force-kill-mid-index-build rule are owned by
+[references/host-lifecycle.md](references/host-lifecycle.md).
 
-This rule is owned by this skill and inherited by every sister skill (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`, `dynamicweb-pim-for-bc`). A sister skill that pauses mid-flow to ask "please start the host" is violating this contract — and so is one that restarts the host where the cache table names a flush, or stops a process it hasn't verified as this demo's own.
+This rule is owned by this skill and inherited by every sister skill. A sister skill that pauses
+mid-flow to ask "please start the host" is violating this contract — and so is one that restarts
+where the cache table names a flush, or stops a process it has not verified as this demo's own.
 
 ## Surface priority for CREATES (always-on rule)
 
-**Creating things in DW10 has a strict surface priority, split into two phases by the MCP verification gate. Violating it has bitten this skill author multiple times — keeping the rule explicit at base level so every sister skill inherits it.**
+**Creating things in DW10 has a strict surface priority, and the build phase admits no
+exceptions:** MCP (`dynamicweb-commerce-mcp`) first for anything that creates a structural row →
+Management API (`/admin/api/...`) when MCP does not expose the operation → direct SQL only on a
+local install, only as a last resort, and in practice only for cleanup or reads. MCP and the
+Management API call DW's domain services, so they trigger the bookkeeping a UI click would
+(ItemRelation cloning, ItemList propagation, cache invalidation, index refresh, validation); SQL
+bypasses all of it and leaves orphans that surface ten screens later.
 
-**Scaffold phase** (local installs, before the MCP verification gate passes): the build surfaces don't exist yet — creating them is the point. The admin UI driven via the Browser MCP (Playwright) **is an action surface** here, scoped to the bootstrap one-clicks: create the MCP configuration + capture the shown-once API key, create the Management API key, AppStore install when the csproj route is closed, portal downloads. Ladder: script/CLI/filesystem → Admin API (when a bearer exists) → admin UI via Browser MCP → headless code recipe → ask the user (only when every automated surface is unreachable). Detail: [references/surface-priority.md](references/surface-priority.md).
+The **admin UI is verification-only during the build** — navigate, screenshot, DOM-grep to confirm
+a change landed. Every admin-UI click is an Admin API call underneath, so a "UI-only" operation
+means the endpoint has not been found yet.
 
-**Build phase** (after the gate — and hosted/headless installs from the first request):
+The **scaffold phase** is the one exception: before the MCP verification gate passes, the build
+surfaces do not exist yet, so the admin UI via the Browser MCP *is* an action surface for the
+bootstrap one-clicks (MCP configuration + shown-once API key, Management API key, AppStore
+install, portal downloads).
 
-| Surface | Use for | Why |
-|---------|---------|-----|
-| 1. **MCP (`dynamicweb-commerce-mcp`)** | **Default — try this first for anything that creates a structural row** (pages, paragraphs, areas, products, groups, orders, users, etc.) | Calls DW's domain services. Triggers ALL the bookkeeping a UI click would: ItemRelation cloning, ItemList propagation, sibling-page linking, cache invalidation, index refresh, child-row creation, validation. ~260 tools. |
-| 2. **Management API** (`/admin/api/...`) | Fallback when MCP doesn't expose the operation. Usually admin-grade actions: `BuildIndex`, `CacheInformationRefresh`, `FeatureManagementToggle`, anything in `/admin/api/docs/`. | Same DW domain services as MCP, just a different transport. |
-| 3. **Direct SQL** (`sqlcmd ...`, local installs only) | **LAST RESORT** — only for: (a) cleanup/teardown, (b) bulk schema-drift fixes, (c) reading data, (d) cases where you've confirmed both higher surfaces don't support the operation and a vendor patch is the only alternative. | Bypasses every DW service. Misses bookkeeping. Creates orphans. Corrupts caches. **You will not figure out the full bookkeeping for a non-trivial create via SQL — DW does too much per service call.** |
+**Hosted/online installs** have no scaffold phase and no surface 3 — no SQL, ever — and surface 1
+is version-dependent, so probe rather than assume ([references/online-mode.md](references/online-mode.md)).
 
-The **admin UI is verification-only during the build** — navigate, screenshot, DOM-grep to confirm a change landed. Every admin-UI click is an Admin API call underneath (the admin SPA is a client of `/admin/api/...`), so a "UI-only" operation means the endpoint hasn't been found yet. (The Backend MCP AddIn install is a scaffold-phase concern — the deterministic default is a NuGet `PackageReference`; see [references/foundational/extend-mcp-tools.md](references/foundational/extend-mcp-tools.md) §1. AppStore is its last resort, not its first.)
-
-**Pattern to follow (build phase):**
-1. Try MCP. If the tool name suggests it (e.g. `copy_area`, `copy_page`, `save_pages`), use it.
-2. If MCP errors or doesn't expose the operation, work the Management API — the operation exists there. Discover the endpoint via the `/admin/api/docs/` catalogue, the `dw10source` command classes, or read-only Playwright network watching (`mcp__playwright__browser_network_requests`), then call it as surface 2.
-3. Local installs only: after 1-2 are exhausted, reach for SQL — and even then, prefer SQL for cleanup of a previous bad attempt rather than for the create.
-
-Why SQL-cloning structural trees specifically is forbidden (the bookkeeping it misses, the 10-screens-later breakage), plus the full phase × instance-type matrix: [references/surface-priority.md](references/surface-priority.md). The platform mechanism the discipline rests on — what an MCP create's domain-service call actually does (ItemRelation cloning, ItemList propagation, cache/index refresh) and why the admin UI is a SPA over `/admin/api/...` — is in [references/foundational/extend-mcp-tools.md](references/foundational/extend-mcp-tools.md) §5.
-
-**Hosted/online installs:** there is no scaffold phase (credentials are handed over) and surface 3 does not exist — no SQL, ever. Surface 1 is version-dependent (probe first — never assume MCP is present or absent). The priority collapses to MCP-if-present → Management API → ask the user for the rare operation neither exposes; the API recipes that replace the SQL rungs live in [references/online-mode.md](references/online-mode.md).
+The phase × instance-type matrix, the scaffold-phase ladder, the SQL-cloning anti-pattern, and the
+silent-no-op verification rule are owned by [references/surface-priority.md](references/surface-priority.md).
+The platform mechanism underneath — what an MCP create's domain-service call actually does — is in
+[references/foundational/extend-mcp-tools.md](references/foundational/extend-mcp-tools.md) §5.
 
 This rule is owned by this skill and inherited by every sister skill.
 
@@ -241,7 +198,7 @@ Ephemeral build evidence (QA screenshots, host logs, Playwright DOM/a11y dumps) 
    | Directory | Holds | Named by |
    |---|---|---|
    | `notes\qa\` | QA screenshots + visual-QA evidence | `references/visual-qa.md`, `references/browser-automation.md` |
-   | `notes\logs\` | host stdout/stderr logs | the "Host lifecycle authority" `Start-Process` recipe below |
+   | `notes\logs\` | host stdout/stderr logs | the `Start-Process` recipe in [references/host-lifecycle.md](references/host-lifecycle.md) |
    | `notes\snapshots\` | Playwright DOM / accessibility dumps | `references/browser-automation.md` |
 
 2. **Root allowlist.** Only these may sit at the demo root: the plan doc (`DEMO-PLAN.md`), `CLAUDE.md`, `CUSTOMISATIONS.md`, `.gitignore`, `.mcp.json`, and directories. Anything else an agent wants to write at root routes to `notes\` instead — the same redirect wording as the customer-context contract ("did you mean `<demo>\notes\`?"). The harness enforces this end-of-phase (see the Foundry root-allowlist check).

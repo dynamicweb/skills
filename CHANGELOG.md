@@ -3,6 +3,32 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.12.3]
+
+Rightsizes `dw-demo-base/SKILL.md` back toward the nav layer it says it is. It had grown to 42k
+chars — ~10k tokens injected on every activation of the skill every demo build starts with — while
+passing the 500-line budget on long lines. No content is lost: three sections moved behind links,
+and the one that was duplicated verbatim from a reference is now stated once.
+
+### Added
+- **`dw-demo-base/references/distribution-checkout.md`**: the versions prompt, the clone model
+  (`main` IS the version), the `gateProven` assertion, retired -> `supersededBy` layer resolution,
+  the resolved-SHA forensic record, and the artifact-source table.
+- **`dw-demo-base/references/host-lifecycle.md`**: the `Start-Process` recipe and its launch traps
+  (`--no-build` staleness, `--framework` on a multi-target host, the read-only `$pid` variable, the
+  silently-degraded apphost-exe boot), the port-scoped ownership-verified stop, and the
+  never-force-kill-mid-index-build rule.
+
+### Changed
+- **`dw-demo-base/SKILL.md` 42.1k -> 26.8k chars (-36%).** "Baseline data" and "Host lifecycle authority"
+  keep their rule and hand the mechanics to the new references; "Surface priority for CREATES"
+  keeps the rule and the ladder and drops the build-phase table, the pattern list, and the
+  scaffold-phase detail that `references/surface-priority.md` already carried word-for-word. The
+  always-on rules stay in the body — a guardrail behind a link is a guardrail that may not be read,
+  which is also why this still warns against the 16k budget and is left warning rather than cut
+  further. `dw-demo-base` is the hub of a five-skill chain; its routing table is the nav layer
+  doing its job. The next real reduction is splitting routes off the skill, not trimming prose.
+
 ## [4.12.2]
 
 Settles the "should skills be differentiated per model?" question with a written policy, after
