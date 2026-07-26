@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "4.13.0"
+    "version": "4.14.0"
   },
   "plugins": [
     {
@@ -89,6 +89,7 @@
         "./skills/dw-demo-swift",
         "./skills/dw-demo-headless",
         "./skills/dw-demo-hosted",
+        "./skills/dw-demo-foldback",
         "./skills/dw-demo-erp",
         "./skills/dw-integration-bc",
         "./skills/dw-integration-framework",

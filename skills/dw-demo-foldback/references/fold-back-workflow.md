@@ -1,4 +1,6 @@
-# Folding demo-build learnings back into the dynamicweb/skills repo
+# Fold-back workflow — the full procedure
+
+> The rule and the shape of this workflow are in [`../SKILL.md`](../SKILL.md); this reference owns every step, gate, and recovery path.
 
 ## Contents
 

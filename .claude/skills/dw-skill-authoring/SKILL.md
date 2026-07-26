@@ -1,6 +1,6 @@
 ---
 name: dw-skill-authoring
-description: Author, edit, and register skills in this repository — the frontmatter contract, naming, length budgets, body voice, validation, and the PR workflow. Triggers: add a new skill, edit or restructure an existing SKILL.md, write or split a references/ file, register a skill in a bundle, fix a validator warning, prepare a skills-repo PR. Non-triggers: folding a demo-build learning back into a skill -> skills/dw-demo-base/references/iterate-plugin.md; consuming a skill to build a Dynamicweb solution -> the dw-* skills themselves.
+description: Author, edit, and register skills in this repository — the frontmatter contract, naming, length budgets, body voice, validation, and the PR workflow. Triggers: add a new skill, edit or restructure an existing SKILL.md, write or split a references/ file, register a skill in a bundle, fix a validator warning, prepare a skills-repo PR. Non-triggers: folding a demo-build learning back into a skill -> skills/dw-demo-foldback/SKILL.md; consuming a skill to build a Dynamicweb solution -> the dw-* skills themselves.
 ---
 
 # Authoring skills in this repo
@@ -32,7 +32,7 @@ Settle which one before writing a line: the category decides whether demo/custom
 links into `dw-demo-*` are allowed in the file at all. The rule and its three clauses are in
 [`../../../CLAUDE.md`](../../../CLAUDE.md) ("The one-way boundary"). Learnings travel demo →
 foundational only, sanitized, through
-[`skills/dw-demo-base/references/iterate-plugin.md`](../../../skills/dw-demo-base/references/iterate-plugin.md).
+[`dw-demo-foldback`](../../../skills/dw-demo-foldback/SKILL.md).
 
 ## Naming
 
@@ -84,7 +84,7 @@ the target underspecified. Keep a contrast only when B is the model's natural pu
 predictable failure mode, and prefer the paired form ("serialize with the DW serializer, not a
 raw XML export") over a bare "don't". Few-shot bad→good example pairs are exempt. The full rule,
 with the test for when contrast earns its place, is in
-[`iterate-plugin.md`](../../../skills/dw-demo-base/references/iterate-plugin.md)
+[`fold-back-workflow.md`](../../../skills/dw-demo-foldback/references/fold-back-workflow.md)
 ("Phrase instructions positively").
 
 **Spend hard prohibitions where a violation is unrecoverable, not on procedure.** A capable
@@ -204,5 +204,5 @@ other self-attribution in commit messages or PR bodies.
 
 For folding a demo-build learning back into a skill, the routing, sanitization, and hygiene gates
 are owned by
-[`iterate-plugin.md`](../../../skills/dw-demo-base/references/iterate-plugin.md) — use that
-workflow, not this section.
+[`dw-demo-foldback`](../../../skills/dw-demo-foldback/SKILL.md) — use that skill, not this
+section.

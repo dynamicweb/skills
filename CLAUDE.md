@@ -43,7 +43,7 @@ The dependency direction is **one-way and enforced**:
    foundational ones; never the reverse. A `references/` link or routing row from a foundational
    skill into `dw-demo-*` is a boundary violation.
 3. **Learnings flow demo → foundational only via the sanitized fold-back** (see
-   `skills/dw-demo-base/references/iterate-plugin.md`). A demo-build discovery that is durable
+   `skills/dw-demo-foldback/SKILL.md`). A demo-build discovery that is durable
    and vendor-generic is folded *up* into the right foundational skill, stripped of all
    demo/customer specifics first. A discovery that needs the customer's name to make sense is
    demo-specific and stays in that demo's own notes.
@@ -68,4 +68,4 @@ messages or PR bodies.
 
 Full branch/validate/version/PR sequence: `dw-skill-authoring` ("The PR workflow"). Folding a
 demo-build learning back into a skill has its own workflow with sanitization gates:
-`skills/dw-demo-base/references/iterate-plugin.md`.
+`skills/dw-demo-foldback/SKILL.md`.

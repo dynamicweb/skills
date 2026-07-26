@@ -3,6 +3,27 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.14.0]
+
+Second half of the `dw-demo-base` split: the maintainer fold-back workflow becomes its own skill.
+With this and 4.13.0, `dw-demo-base`'s activation description is down from 1006 to 954 chars and
+routes cleanly to two sisters instead of describing their work inline.
+
+### Added
+- **`dw-demo-foldback`** (presales bundle, Use AFTER `dw-demo-base`): folding a demo-build learning
+  back into this repo. Its SKILL.md states the four-step shape and the rule the workflow exists to
+  enforce — learnings flow demo -> foundational only, and only sanitized;
+  `references/fold-back-workflow.md` (the former `iterate-plugin.md`) owns every step, gate, and
+  recovery path.
+
+### Changed
+- `dw-demo-base/references/iterate-plugin.md` moved to
+  `dw-demo-foldback/references/fold-back-workflow.md`; every inbound reference updated
+  (`dw-demo-base/SKILL.md` description + body + routing table, `customisations.md`, `visual-qa.md`,
+  `CLAUDE.md`, `dw-skill-authoring`).
+- `dw-demo-base`'s "Folding demo-build learnings back into the plugin" section keeps the *why* and
+  the routing decision and hands the trigger list and the procedure to the sister skill.
+
 ## [4.13.0]
 
 Splits the hosted/cloud install out of `dw-demo-base` into its own skill. `dw-demo-base`'s

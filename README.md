@@ -40,7 +40,7 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
 | `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, extend-mcp-tools |
-| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, integration-bc; + foundational skills the demo skills reference (integration-framework, extend-csharp-api) |
+| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-foldback, demo-erp, integration-bc; + foundational skills the demo skills reference (integration-framework, extend-csharp-api) |
 
 ## Skills
 
@@ -147,6 +147,9 @@ Swift frontend — baseline deserialize, feature-pack install, templates, paragr
 **[dw-demo-hosted](skills/dw-demo-hosted/SKILL.md)**
 Hosted/cloud installs reached only by URL + Admin API bearer key — no scaffold, no SQL, no filesystem. Owns both hosted paths: **building** directly on one ([references/online-mode.md](skills/dw-demo-hosted/references/online-mode.md)) — the session-start probe, the Management API recipe pack, lying-success verification, the flush-then-restart ladder — and **publishing** a locally-built demo onto one ([references/publish-to-hosted.md](skills/dw-demo-hosted/references/publish-to-hosted.md)), which is a migration across three transports, not a deploy. Use after `dw-demo-base`.
 
+**[dw-demo-foldback](skills/dw-demo-foldback/SKILL.md)**
+Folding a demo-build learning back into this repo as a sanitized, atomic PR ([references/fold-back-workflow.md](skills/dw-demo-foldback/references/fold-back-workflow.md)) — route the learning foundational-vs-demo, strip customer specifics, pass the content-hygiene gate, validate, bump the version, open the PR. Maintainer flow; an outside contributor follows the same steps and lands an outside PR. Use after `dw-demo-base`.
+
 **[dw-demo-erp](skills/dw-demo-erp/SKILL.md)**
 ERP integration demo — DB-staged mock or live BC, Integration Framework rules. Use after `dw-demo-base`.
 
@@ -155,8 +158,8 @@ ERP integration demo — DB-staged mock or live BC, Integration Framework rules.
 The **presales demo chain** has a hard order. `dw-demo-base` must run **first** — it scaffolds
 the host, wires MCP + the TLS bypass, and captures the demo's versions + downloads its artifacts
 per-demo. The sister demo skills
-(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-erp`, and the
-`dw-integration-bc` connector demo)
+(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-foldback`,
+`dw-demo-erp`, and the `dw-integration-bc` connector demo)
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
 The demo skills hold domain knowledge and carry no build sequencing — that is owned by a
