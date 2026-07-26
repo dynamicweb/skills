@@ -3,6 +3,26 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.12.1]
+
+Applies progressive disclosure to the repo's own maintainer context. `CLAUDE.md` was 11.7k chars
+of authoring procedure loaded on every session in this repo, most of it irrelevant to any given
+edit; it is now 4.5k and carries only what governs *every* edit.
+
+### Added
+- **`dw-skill-authoring` skill** (`.claude/skills/dw-skill-authoring/SKILL.md`): the frontmatter
+  contract, naming, length budgets, body voice, `marketplace.json` registration, validation, and
+  the PR workflow — loaded when authoring work actually starts. Repo-local on purpose: it is
+  maintainer procedure and does not belong in a consumer bundle. Adds one authoring rule that had
+  no written home — *spend hard prohibitions where a violation is unrecoverable, not on
+  procedure* — and points the fold-back case at `iterate-plugin.md` rather than restating it.
+
+### Changed
+- **`CLAUDE.md` reduced to repo overview + the rules that survive delegation**: what the repo is,
+  key files, the one-way foundational/demo boundary, the encoding hazard, and the PR headline.
+  Everything procedural moved to the skill above, single-sourced — no rule is now stated in two
+  places.
+
 ## [4.12.0]
 
 Rightsizes the authoring budgets so they measure what actually costs context, following
