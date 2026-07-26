@@ -3,6 +3,27 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.12.0]
+
+Rightsizes the authoring budgets so they measure what actually costs context, following
+Anthropic's Claude 5 context-engineering guidance (progressive disclosure over front-loading).
+Tooling and authoring-rule change only — no skill content moves in this entry.
+
+### Changed
+- **The SKILL.md length budget now has a character ceiling** (`scripts/validate-skills.py`,
+  `CLAUDE.md`): a line budget alone is gameable — a body of long table rows sits inside the
+  500-line budget while injecting several times the tokens. `SKILL_BODY_CHARS_MAX = 16000`
+  (~4k tokens) is the new ceiling for a body whose job is to route. Warns, does not fail.
+  Two skills currently exceed it: `dw-demo-base` (42k chars, ~10k tokens on activation) and
+  `dw-demo-swift` (16.6k chars).
+
+### Fixed
+- **The reference TOC check skipped nested reference folders** (`scripts/validate-skills.py`):
+  it globbed `*/references/*.md` one level deep, so every file under
+  `dw-demo-base/references/foundational/` was exempt by accident — including the largest
+  references in the repo. Now `rglob`s the tree, surfacing 13 long references with no
+  top-of-file table of contents.
+
 ## [4.11.5]
 
 Folds a hosted-demo polish session's learnings across `dw-demo-base`, `dw-extend-scheduled-tasks`, and
