@@ -3,6 +3,25 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.12.2]
+
+Settles the "should skills be differentiated per model?" question with a written policy, after
+Anthropic's Claude 5 context-engineering guidance raised it. Answer: no — the tier is an
+orchestrator dial, and the skills stay single-sourced.
+
+### Added
+- **Model-tier policy** (`dw-demo-base/references/orchestrator.md`): skills are authored once for
+  the least capable model the chain runs on — no per-tier SKILL.md variants (skill frontmatter has
+  no model gate, and a forked recipe drifts the moment one copy is folded back and the other is
+  not). The tier belongs to the orchestrator's agent definitions (`model:` frontmatter, GSD
+  `model_overrides`), assigned by kind of work: mechanical sweeps cheapest, documented recipe
+  execution mid, impact analysis / brand calls / fold-back authoring top. Carries the rule that
+  keeps it honest — *what a cheaper model cannot be trusted to remember, encode in a script or a
+  detector, not in a longer prose rule*, because a gate written as a validator holds at every tier
+  and the same gate written as prose stops holding the moment someone dials the tier down.
+- The authoring-time half of the same rule in `dw-skill-authoring` ("Writing the instruction
+  body"), pointing at the orchestrator reference rather than restating the table.
+
 ## [4.12.1]
 
 Applies progressive disclosure to the repo's own maintainer context. `CLAUDE.md` was 11.7k chars

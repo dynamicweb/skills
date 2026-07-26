@@ -93,6 +93,16 @@ the machine — publishing, customer data, a destructive DB or file operation, a
 Those get the explicit rule. Ordering, tidiness, and style preferences get the target state and
 the reason, and the model's judgment does the rest.
 
+**Author for the least capable model the skill is expected to run on — once.** These skills ship
+to whoever installs the bundle, on whatever model they happen to be running, so there are no
+per-tier variants of a SKILL.md or a reference; a forked recipe drifts the moment one copy is
+folded back and the other is not. Choosing a cheaper or stronger model for a given step is the
+*orchestrator's* dial, not the skill's — see
+[`orchestrator.md`](../../../skills/dw-demo-base/references/orchestrator.md) ("Model tier"). The
+corollary shapes what you write here: **what a cheaper model cannot be trusted to remember,
+encode in a script or a detector, not in a longer prose rule.** A gate written as a validator
+holds at every tier; the same gate written as three more paragraphs holds only at the top one.
+
 **Concrete commands beat prose.** Include the exact `dotnet`, `git`, `Invoke-RestMethod`,
 `sqlcmd`, or PowerShell snippet that worked — a runnable line instructs more precisely than a
 paragraph describing it.
