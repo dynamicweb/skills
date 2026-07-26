@@ -16,7 +16,8 @@ Checks (errors fail the build, warnings are printed but do not):
   - Bundle closure: no skill in a marketplace bundle hard-depends (links into
     references/ or assets/) on a skill the bundle does not ship.
   - WARN if a skill description lacks a trigger signal (Triggers:/Use when/Use FIRST).
-  - WARN if a SKILL.md body exceeds 500 lines (split into references/).
+  - WARN if a SKILL.md body exceeds 500 lines or 16000 characters (split into
+    references/) — the character budget is what actually bounds activation cost.
   - WARN if a references/ file over 100 lines lacks a top-of-file table of contents.
 
 Run from anywhere: `python3 scripts/validate-skills.py`. Exit code 0 = clean.
@@ -53,6 +54,11 @@ warnings: list[str] = []
 DESCRIPTION_MAX = 1024
 # Soft budget for a SKILL.md body — past this, split material into references/.
 SKILL_BODY_MAX = 500
+# The same budget in characters. A line budget alone is gameable: a body of 300
+# long table rows costs far more context than 490 short ones, so a SKILL.md can
+# sit inside the line budget while injecting three times the tokens. ~16000 chars
+# is roughly 4k tokens — the ceiling for something whose job is to be a nav layer.
+SKILL_BODY_CHARS_MAX = 16000
 # References longer than this should carry a top-of-file TOC (survives partial reads).
 REFERENCE_TOC_MIN = 100
 # Substrings that signal double-encoded UTF-8 (mojibake): a UTF-8 byte sequence
@@ -172,13 +178,20 @@ def check_skills() -> None:
             if not re.search(r"Triggers:|Use when|Use FIRST|Use AFTER", desc):
                 warn(f"{rel(skill_md)}: description lacks a trigger signal "
                      "(Triggers:/Use when/Use FIRST)")
-        # Soft line budget on the body (frontmatter stripped): past it, the body
-        # is doing reference work that belongs in references/.
+        # Soft budgets on the body (frontmatter stripped): past either, the body
+        # is doing reference work that belongs in references/. Both are reported
+        # because they catch different shapes of the same defect — many short
+        # lines trips the line budget, few long ones trips the character budget.
         body = FRONTMATTER_RE.sub("", text, count=1)
         body_lines = len(body.splitlines())
         if body_lines > SKILL_BODY_MAX:
             warn(f"{rel(skill_md)}: body is {body_lines} lines "
                  f"(>{SKILL_BODY_MAX}) — split material into references/")
+        body_chars = len(body)
+        if body_chars > SKILL_BODY_CHARS_MAX:
+            warn(f"{rel(skill_md)}: body is {body_chars} chars "
+                 f"(>{SKILL_BODY_CHARS_MAX}, ~{body_chars // 4000}k tokens on "
+                 "activation) — split material into references/")
 
 
 def check_frontmatter_yaml() -> None:
@@ -254,8 +267,11 @@ def check_no_bom() -> None:
 def check_reference_tocs() -> None:
     # A long reference may be only partially read when reached from a SKILL.md
     # link, so a top-of-file TOC is what survives to map the rest of the file.
+    # rglob, not glob: references/ has nested folders (e.g. references/foundational/),
+    # and a plain one-level glob skipped their files entirely — the largest
+    # references in the repo were exempt from the TOC rule by accident.
     toc_re = re.compile(r"^#{2,}\s+(Contents|Table of [Cc]ontents)\b", re.MULTILINE)
-    for md in sorted(SKILLS_DIR.glob("*/references/*.md")):
+    for md in sorted(SKILLS_DIR.rglob("references/**/*.md")):
         lines = md.read_text(encoding=ENCODING).splitlines()
         if len(lines) <= REFERENCE_TOC_MIN:
             continue

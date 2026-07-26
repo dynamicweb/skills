@@ -123,9 +123,15 @@ rule, with the test for when contrast earns its place, lives in
 
 ### Length budgets and references
 
-Keep a **SKILL.md body under ~500 lines** — past that it is doing reference work, so split the
-overflow into `references/<topic>.md` and link to it (the validator warns over 500). A SKILL.md
-should read as a nav layer over its references, not a manual.
+Keep a **SKILL.md body under ~500 lines *and* under ~16,000 characters** — past either it is
+doing reference work, so split the overflow into `references/<topic>.md` and link to it (the
+validator warns over both). A SKILL.md should read as a nav layer over its references, not a
+manual.
+
+The character budget is the one that matters, and it exists because the line budget is
+gameable: a body of 300 long table rows costs more context than 490 short ones, so a SKILL.md
+can sit inside the line budget while injecting three times the tokens. ~16,000 chars is roughly
+4k tokens — the ceiling for something whose whole job is to route.
 
 Any `references/` file over **100 lines** gets a **top-of-file table of contents** — a
 `## Contents` block linking to its sections. It survives the partial-preview reads Claude does
@@ -169,8 +175,8 @@ relative link in `SKILL.md`/`references` resolves; that each `description` is wi
 1024-char cap; and that no markdown file begins with a UTF-8 BOM or contains double-encoded UTF-8
 (mojibake); and that no skill in a marketplace bundle hard-depends (links into `references/` or
 `assets/`) on a skill the bundle does not ship. It warns (without failing) when a description
-lacks a trigger signal, a SKILL.md body runs past 500 lines, or a reference over 100 lines lacks
-a table of contents.
+lacks a trigger signal, a SKILL.md body runs past 500 lines or 16,000 characters, or a reference
+over 100 lines lacks a table of contents (including references in nested folders).
 
 For a deeper check against Claude Code's own plugin schema, also run `claude plugin validate ./`.
 
