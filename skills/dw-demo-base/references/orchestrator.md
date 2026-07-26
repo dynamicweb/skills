@@ -10,6 +10,7 @@
 - [Reuse mapping (GSD mode) — reuse GSD primitives, do not rebuild them](#reuse-mapping-gsd-mode--reuse-gsd-primitives-do-not-rebuild-them)
 - [Two kinds of gate (why scaffold is gated without pausing for a human)](#two-kinds-of-gate-why-scaffold-is-gated-without-pausing-for-a-human)
 - [Strictness gradient — one human pause, automated quality elsewhere (every mode)](#strictness-gradient--one-human-pause-automated-quality-elsewhere-every-mode)
+- [Model tier — a dial on the orchestrator, never a fork of the skills](#model-tier--a-dial-on-the-orchestrator-never-a-fork-of-the-skills)
 - [Discovery prompts (impact-analysis input — shared by both orchestrators)](#discovery-prompts-impact-analysis-input--shared-by-both-orchestrators)
 - [Acceptance criteria (the shared definition of PASS)](#acceptance-criteria-the-shared-definition-of-pass)
 - ["How to run me" header — the convention every demo skill carries](#how-to-run-me-header--the-convention-every-demo-skill-carries)
@@ -242,6 +243,30 @@ demo, drop the loop depth: GSD `--skip-research` and `/gsd-fast` skip the heavie
 `model_overrides` / the `inherit` profile put cheap models on scaffold verification; the native
 `--standalone` forces the single-pass floor. The one gate that never lifts is the impact sign-off
 — that is the decision a demo lives or dies on. Polish stays free in every mode.
+
+## Model tier — a dial on the orchestrator, never a fork of the skills
+
+A skill is authored **once**, for the least capable model the demo chain is expected to run on.
+There are no per-tier variants of a SKILL.md or a reference, and adding them would be a mistake:
+skill frontmatter carries no model gate (agents have `model:`; skills do not), so a variant
+scheme would rest on convention alone — and a forked recipe drifts the moment one copy is folded
+back and the other is not. The corpus already pays for exactly one source of truth per recipe.
+
+The tier decision belongs one layer up, in the thing that already has the field for it: the
+orchestrator's agent definitions (`model:` frontmatter, GSD `model_overrides` / the `inherit`
+profile). Place it by the *kind* of work, not by the phase name:
+
+| Work | Tier | Why |
+|---|---|---|
+| Mechanical sweeps — validator runs, the integrity sweep, visual-QA detectors, scrub passes | Cheapest (Haiku-class) | the verdict is deterministic; the script holds the judgment, the model only runs it |
+| Documented recipe execution — MCP/Management API recipes that end in a verification gate | Mid (Sonnet-class) | the recipe *is* the plan, and the gate catches drift before it compounds |
+| The fresh-context validator in the automated loop | Mid, top for a high-stakes demo | its whole value is catching what the builder rationalised past |
+| Impact analysis, brand/taste calls, the visual-QA human sign-off, authoring a fold-back | Top (Opus-class) | judgment under ambiguity, where no mechanical check exists to fall back on |
+
+The rule that keeps this honest: **what a cheaper model cannot be trusted to remember, encode in
+a script or a detector — not in a longer prose rule.** A gate written as a validator holds at
+every tier; the same gate written as three more paragraphs of prose holds only at the top one,
+and silently stops holding when someone dials the tier down for cost.
 
 ## Discovery prompts (impact-analysis input — shared by both orchestrators)
 
