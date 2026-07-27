@@ -4,6 +4,14 @@
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
+## Contents
+
+- [Reading a live `.cshtml` off a hosted host — `ContentFileByName`](#reading-a-live-cshtml-off-a-hosted-host--contentfilebyname)
+- [Verifying a template deploy — the procedure, not a hedge](#verifying-a-template-deploy--the-procedure-not-a-hedge)
+- [Branching a template on Visual Editor mode — `Pageview.IsVisualEditorMode`](#branching-a-template-on-visual-editor-mode--pageviewisvisualeditormode)
+- [Image focal points are inert unless the layout transports them](#image-focal-points-are-inert-unless-the-layout-transports-them)
+- [Swift v2.3.0 templates + swift/2.3 baseline](#swift-v230-templates--swift23-baseline)
+
 This file is now a router. The vendor-generic Swift template / page / Razor knowledge that used to
 live here has been folded up into the foundational candidates; the demo skill points at them.
 

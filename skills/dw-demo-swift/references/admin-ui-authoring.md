@@ -4,6 +4,15 @@
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
+## Contents
+
+- [The workflow + Visual Editor surface map live in the foundational skill](#the-workflow--visual-editor-surface-map-live-in-the-foundational-skill)
+- [When to use + executor split](#when-to-use--executor-split)
+- [Management API authoring traps (Swift 2.4 / DW 10.28.x)](#management-api-authoring-traps-swift-24--dw-1028x)
+- [Authoring scripts must ASSERT the shape they expect — a count guard is an anti-pattern](#authoring-scripts-must-assert-the-shape-they-expect--a-count-guard-is-an-anti-pattern)
+- [Verification: did the change land via the admin UI?](#verification-did-the-change-land-via-the-admin-ui)
+- [What this surface does NOT do (escape hatches)](#what-this-surface-does-not-do-escape-hatches)
+
 ## The workflow + Visual Editor surface map live in the foundational skill
 
 Vendor-generic Swift configuration-only authoring — the 5-step Day-1 workflow (mood board → translate into admin Style tools → upload assets → connect styles via Website Settings → build layout in the Visual Editor), the Visual Editor surface map, and the "what the VE covers, and the escalation per gap" table — is owned by the `dw-swift-building` foundational skill — staged in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9 ("Re-skin doctrine"). Read that section for the click-paths and the per-gap escalation.
