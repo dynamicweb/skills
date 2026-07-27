@@ -3,6 +3,56 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.13.0]
+
+Fold-back sprint 2: lands the skill legs of 23 accepted demo-build learnings (Foundry LRN
+issues) across `dw-demo-swift` and `dw-demo-base`. The through-lines: a **capability that has
+no verb of its own is invisible to a verb-registry probe** (the accordion item-list write rides
+inside `ParagraphSave`, which retires a year-old workaround *and* the reasoning that produced
+it); **the surfaces that cannot verify a write** (a `ParagraphSave` response echoes the posted
+model, `GetParagraphById` collapses a repeater, an item-type XML read proves metadata and not
+schema); **rename blast radius** (an ecom-group rename moves every child PDP URL with no
+auto-301, while needing neither a translations save nor a recycle); the **merged page+group
+navigation tree** and its three-surface fan-out; the **product-asset verb set** as a complete
+add/remove/set-default capability; and a **documentation-honesty rule** — never write a comment
+asserting a guard you have not read in the config this session.
+
+### Added
+- **dw-demo-swift**: the merged page+group nav tree — untagged-child membership, `navigationTag`
+  as the suppression flag, shortcut children, pages-always-precede-groups, and the
+  one-`NavigationRoot`-feeds-three-surfaces rule (`header-menu.md`); `ProductCatalogGroupSave`
+  rename blast radius + the no-translations-save/no-recycle correction, and the
+  assert-the-shape-never-guard-past-it rule for authoring scripts (`admin-ui-authoring.md`);
+  `Pageview.IsVisualEditorMode` as the stock editor-mode branch, the admin-editor-chrome recipe
+  (`<body>` hook in the layout master, offset-never-background), and the template-deploy
+  verification procedure with the `FileByName` round-trip (`templates.md`); the destructive
+  `SelectedImage` write asymmetry and the `hideFor*` hide motion (`paragraphs.md`); the
+  `auto-fit` + `1fr` stretch trap on grid galleries (`re-skin.md`); generated-imagery
+  hero-pair review + required prompt/model/quality manifest fields (`asset-organisation.md`).
+- **dw-demo-base**: the product-asset verb set — `AssetAddToMultipleProducts` /
+  `ProductAssetDelete` / `ProductAssetSetAsDefault` vs the file-archive `AssetDelete`, the inert
+  `IsDefault` flag, and the bulk-attach-needs-a-bulk-detach rule
+  (`foundational/commerce-catalog.md`); "a verb-registry brute-force proves a VERB absent, never
+  a CAPABILITY absent" (`surface-priority.md`); the comment-must-not-claim-an-unread-guard rule
+  and its paint-aware clearance assert (`visual-qa.md`); the `CacheTypeName` parameter name
+  (`foundational/cache-invalidation.md`).
+
+### Fixed
+- `dw-demo-swift/references/paragraphs.md`: **deleted** "`Swift-v2_Accordion`: its items may be
+  unreachable from the API" and the hand-authored-Bootstrap-in-a-Text-field workaround it
+  prescribed — the items are writable through `ParagraphSave`, and the workaround was itself the
+  defect an owner review rejected. Replaced with the accordion payload + a pointer to the
+  canonical repeater edit path.
+- `foundational/content-modelling.md` §2: the XML-plus-restart item-type recipe produced a type
+  that reads perfectly and cannot be written at all (`Invalid object name`), with no restart able
+  to fix it — replaced with the `ItemTypeDelete` → `ItemTypeSave` → `ItemFieldSave` → XML-overlay
+  sequence.
+- `foundational/content-modelling.md`: the "re-`GetParagraphById` and check the child count"
+  round-trip guard cannot be performed as written — replaced with the pointer-mint and
+  live-render checks that can.
+- `foundational/cache-invalidation.md`: the ".cshtml edits are *mostly* cache-bypassing" hedge is
+  now a procedure, and the group-rename recycle is scoped to nav membership only.
+
 ## [4.12.0]
 
 Fold-back sprint: lands the skill legs of 81 open demo-build learnings (Foundry LRN issues,
