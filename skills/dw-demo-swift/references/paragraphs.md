@@ -3,7 +3,7 @@
 ## Contents
 
 - [Writing paragraph fields via the Management API (Swift 2.4 / DW 10.28.x)](#writing-paragraph-fields-via-the-management-api-swift-24--dw-1028x)
-- [`Swift-v2_Accordion`: its items may be unreachable from the API](#swift-v2_accordion-its-items-may-be-unreachable-from-the-api)
+- [`Swift-v2_Accordion`: the items ARE writable — the write rides inside `ParagraphSave`](#swift-v2_accordion-the-items-are-writable--the-write-rides-inside-paragraphsave)
 - [Where to find a paragraph's wiring (read-only baseline inspection)](#where-to-find-a-paragraphs-wiring-read-only-baseline-inspection)
 - ["Don't customise this paragraph" callouts](#dont-customise-this-paragraph-callouts)
 
@@ -51,16 +51,45 @@ three stacked traps:
 Verify every ButtonData write against the RENDERED page (expected `href` + label present, old label
 count dropped), never against the API re-read — a re-read proves storage, never effect.
 
-**`SelectedImage` (poster / image paragraph `Image` field)** —
+**`SelectedImage` (poster / image `Image` field, `Swift-v2_Feature.Icon`, any `FileEditor`-backed
+selector) — read-only through `ParagraphSave`, and DESTRUCTIVE on a wrong-shaped write.**
 `Dynamicweb.CoreUI.Editors.Selectors.SelectedImage` does **not** persist through `ParagraphSave`:
 setting the projected field `.value` is ignored (the top-level paragraph `image` / `imageUrl` are
 null on Swift item posters, because the value is stored via the selector), so the field keeps
 whatever a `GridRowCopy` brought in, while sibling `Title` / `Text` / `Eyebrow` / `AltText` on the
-same item persist normally. When the picker is not reachable, place the image as markup in a Text
-field instead — `<figure><img src="/Files/..." style="width:100%;max-height:70vh;object-fit:cover">
-</figure>` (height-capped under the 85vh band limit) renders live on the next request with no
-recycle. Treat that as a recorded exception, not a default — see
-[content-modeling.md](content-modeling.md) §"The escape hatch, and its cost".
+same item persist normally. The round-trip is **asymmetric, and the asymmetry is a trap**:
+
+- A **string** value is discarded and the prior value is retained — a harmless-looking no-op that reads
+  as "the save didn't take".
+- A **non-string** value (any object) is **accepted and stored as empty**. From then on string writes are
+  still discarded, so the field is stuck empty and **no subsequent `ParagraphSave` can restore it** —
+  measured across the bare filename, the `Files/`-relative path, the `/Files/`-absolute path and several
+  object shapes, all reading back `""` every time.
+
+Two rules follow. **(1) Treat every `SelectedImage`-typed field as read-only through `ParagraphSave`** —
+the proven route for paragraph imagery is an inline `<figure><img src="/Files/..."
+style="width:100%;max-height:70vh;object-fit:cover"></figure>` in a Text field (height-capped under the
+85vh band limit), which renders live on the next request with no recycle. Treat that as a recorded
+exception, not a default — see [content-modeling.md](content-modeling.md) §"The escape hatch, and its
+cost". **(2) NEVER probe write shapes against a `SelectedImage` field on live content.** The failure mode
+is destructive and irreversible, so one exploratory payload permanently empties a field a demo is showing:
+probe on an expendable paragraph or not at all. Worth a guard in the shared save helper that refuses to
+write any field whose `typeName` is `SelectedImage` unless explicitly forced — assert the helper throws
+when handed one, and that a round-trip save of a paragraph carrying an icon leaves the icon byte-identical.
+(The **product/logo/favicon** binders are a different surface with a working object shape — `{Id, Name,
+Ratio, FocalX, FocalY}`, `Id` carrying the path — see
+[`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §"Product images".
+Do not carry that shape back to a paragraph item field on the strength of the shared type name.)
+
+**Hiding a paragraph: `showParagraph=false` is inert; the three `hideFor*` flags are the working motion.**
+`ParagraphSave {showParagraph:false}` returns `status: ok`, reads back `showParagraph: True`, and the
+paragraph keeps rendering — the field is not honoured through the headless save. Setting
+`hideForDesktops` + `hideForTablets` + `hideForPhones` all `true` does take effect, and it is **better than
+the `ParagraphDelete` workaround**: identical served-HTML outcome, fully reversible, and no orphaned grid
+row to clean up afterwards. It is a **server-side** suppression, not a CSS hide — the markup is absent from
+the delivered HTML, so content tripwires that grep served HTML do see the change. Verify with both halves:
+all three flags read back `true`, **and** a string unique to that paragraph has zero occurrences in the
+served page.
 
 **List fields (e.g. `FieldDisplayGroups`)** — `GetParagraphById` returns the value as a comma-joined
 STRING (`"specs_a,specs_b"`), while `ParagraphSave` persists whatever it is given as a JSON ARRAY. A
@@ -95,24 +124,53 @@ delete the clone to empty it" recipe looks like it failed: after a successful `P
 listing still returns an object for that row, and a script that verifies its own delete aborts a run
 that in fact worked. Filter to real paragraphs (`id > 0`) before counting emptiness.
 
-## `Swift-v2_Accordion`: its items may be unreachable from the API
+## `Swift-v2_Accordion`: the items ARE writable — the write rides inside `ParagraphSave`
 
-The Accordion paragraph's content lives in `Accordion_Items`, an item LIST. On DW 10.28.x hosts the
-Admin API exposes **no item-list read or write verb** — brute-forcing both verb registries returns
-schema verbs only (`GetItemType` / item-type field metadata); no `ItemEntry*` / `ItemList*` verb
-exists. With no way to add items the paragraph renders ZERO DOM, which reads as a styling or
-visibility bug and is not one.
+> **Correction.** Earlier revisions of this file stated the Accordion's items were unreachable from the
+> Admin API and prescribed hand-authored Bootstrap `.accordion` markup pasted into a `Swift-v2_Text`
+> field. **That workaround is retired — it was itself the defect** (an owner review rejected exactly it:
+> raw HTML and styling in a text field where a Swift item type with styling on top belongs). Do not
+> reach for it, and if you find it on an existing demo, migrate it.
 
-Workaround: author Bootstrap 5 `.accordion` markup directly into a `Swift-v2_Text` paragraph's
-`Text` field — `bootstrap.bundle.min.js` is loaded sitewide, so Collapse works with no new JS. Leave
-the first panel open deliberately: collapsed panels drop out of `innerText`, so a copy/placeholder
-scan sees LESS text after the change and at least one answer must stay visible to it. Verify
-behaviourally (click each header, assert the target panel's `.show` class flips and its height
-changes) — a collapsed-only snapshot cannot tell working markup from dead markup.
+The Accordion's content lives in `Accordion_Items`, an item LIST — the same storage shape as
+`Swift-v2_Slider`'s slides, and the same edit path:
+[`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §"How repeater
+children are stored — and the Management API edit path" is canonical. The accordion-specific bindings:
 
-To hide the now-dead Accordion paragraph: `showParagraph=false` is **silently ignored** via the
-Management API, but `hideForDesktops` / `hideForTablets` / `hideForPhones = true` do take effect.
-Assert the hidden paragraph contributes 0 rendered height.
+- **Parent list field** — `ContentItem|Swift-v2_Accordion|General|Accordion_Items`, an ARRAY of child entries.
+- **Child item type** — `Swift-v2_Accordion_Item`.
+- **Child fields** (group `General`) — `Icon`, `Title`, `Text`, keyed as
+  `RelationItem|Swift-v2_Accordion_Item|General|<Field>` inside `ModelRawData`.
+
+```jsonc
+POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
+{ "QueryData": { "Id": <paragraphId> },
+  "model": { "ItemType": "Swift-v2_Accordion",
+    "ContentItem|Swift-v2_Accordion|General|Accordion_Items": [
+      { "ItemId": "",                       // "" creates; an existing id edits in place
+        "ItemType": "Swift-v2_Accordion_Item",
+        "Label": "<child label>",
+        "ContentInfo": { "AreaId": <areaId>, "PageId": <pageId>, "GridRowId": <rowId>, "ParagraphId": <paragraphId> },
+        "RelationItem": { "Groups": [] },   // the UI sends this empty — values live in ModelRawData
+        "ModelRawData": "{\"RelationItem|Swift-v2_Accordion_Item|General|Icon\":\"\",\"RelationItem|Swift-v2_Accordion_Item|General|Title\":\"<title>\",\"RelationItem|Swift-v2_Accordion_Item|General|Text\":\"<p>…</p>\"}" } ] } }
+```
+
+DW mints the `ItemList` and wires the relation for you — on a fresh Accordion the parent's
+`Accordion_Items` pointer transitions `'0'` → a non-zero list id — and the storefront renders it on the
+next GET with **no recycle**. Verify per
+[`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §"Verifying a
+repeater-child write": the `ParagraphSave` response and `GetParagraphById` **cannot** decide it, so assert
+the pointer mint on a fresh parent and assert the child's field values in a live GET of the rendered page.
+The child-field group is `General` and the field names are confirmed against
+`Files/System/Items/ItemType_Swift-v2_Accordion.xml` + `ItemType_Swift-v2_Accordion_Item.xml` — read the
+XML rather than guessing when adapting this to another repeater.
+
+**Why the wrong belief survived so long, and the general rule it teaches.** The brute-force that produced
+it was *correct*: there is no `ItemEntry*` / `ItemList*` / `ItemEntrySave` verb, and there still is not.
+The inference was wrong. The write is not its own verb — it rides inside `ParagraphSave` as an array on
+the parent's projected list field, so **a verb-registry probe can never find it.** A negative registry
+result proves a VERB absent, never a CAPABILITY absent; the general form of that rule lives in
+[`../../dw-demo-base/references/surface-priority.md`](../../dw-demo-base/references/surface-priority.md).
 
 ## Where to find a paragraph's wiring (read-only baseline inspection)
 

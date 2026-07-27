@@ -180,6 +180,50 @@ entity.
   `{"Id": "/Files/...", "Name": "<file>", "Ratio": "", "FocalX": 0, "FocalY": 0}` — the `Path` property
   is obsolete, **`Id` carries the path**. A string (or `Path`-shaped object) saves silently as empty.
 
+#### The product-asset verb set — add, remove, and set-default are three different calls
+
+Name-matching picks the wrong verb for two of these three, and one of the wrong picks is catastrophic.
+Learn them as a set:
+
+| Intent | Verb | Namespace / scope |
+|---|---|---|
+| Attach files to products | `AssetAddToMultipleProducts {Model:{ProductIds, AssetCategoryGroupId, FilesToAttach, IsDefault}}` | `Dynamicweb.Products.UI.Commands` — product link |
+| **Detach** a file from a product | `ProductAssetDelete {QueryId, ProductId, Ids[]}` | `Dynamicweb.Products.UI.Commands` — product link |
+| Make an attached asset the primary | `ProductAssetSetAsDefault {DetailId, ProductId, VariantId, LanguageId}` (inverse: `ProductAssetRemoveDefault`) | `Dynamicweb.Products.UI.Commands` — product link |
+| Delete FILES from the archive | `AssetDelete {DirectoryPath, Ids}` | `Dynamicweb.Files.UI.Commands.Files` — **the file archive** |
+
+- **`AssetAddToMultipleProducts.IsDefault` is inert — the add verb has no working default flag.** It is
+  silently accepted (`status: ok`, row created) and the `EcomDetails` row lands with `isDefault=false`,
+  every time, across a whole batch. Setting a primary is a **second call**: `ProductAssetSetAsDefault`
+  with the `DetailId` of the row you just created. Read the row back through
+  `GroupedAssetsByProductId` and assert `isDefault` — a `status: ok` echo does not prove it. (Any bulk
+  wiring helper that attaches a primary must do the follow-up call itself. Where you find a raw
+  `UPDATE EcomDetails SET DetailIsDefault=1` in an existing script, this defect is what it was covering
+  for.)
+- **`AssetDelete` is NOT the inverse of an asset attach.** It lives under
+  `Dynamicweb.Files.UI.Commands.Files`, takes `{DirectoryPath, Ids}` and operates on the **file archive**;
+  the product-scoped verb is `ProductAssetDelete {QueryId, ProductId, Ids}`. The two differ by one word
+  and by their entire blast radius: a generic category tile is routinely the DEFAULT image of *thousands*
+  of non-curated products, so deleting three files from the archive to fix twenty-five wrong thumbnails
+  breaks every one of them. A reader must be able to say which of the two is product-scoped **without
+  calling either**.
+- **`ProductAssetDelete` removes the LINK only** — the default row, other asset-category rows (manuals,
+  documents) and the file in the archive are all untouched, and the change is visible in rendered HTML
+  immediately with no cache flush and no recycle. `QueryId` takes the all-zero GUID. Verify per product:
+  row count −1, exactly the intended row gone, default row unchanged, other-category rows unchanged, the
+  file still HTTP 200, and 0 occurrences of the removed path in the rendered PDP.
+- **Standing rule: a bulk attach must ship with its own bulk detach, in the same file, at the same
+  time.** A bulk attach across a whole catalogue takes minutes; the cleanup written later, per-product,
+  inside whichever script replaced the *default* image, covers only that handful. Every other product
+  keeps the attachment **demoted from default to ADDITIONAL** — a gallery slot nobody audits, invisible to
+  every default-image check, and found months later by an owner looking at the site. Grep any bulk-attach
+  helper for a matching detach in the same file; a probe that flags any image path attached to more than
+  N products AND not default on all of them catches the existing tail.
+- **When documenting a write verb, document its inverse in the same edit or mark the capability
+  incomplete.** The remove verb above existed all along and was simply never recorded, so every removal in
+  one project's history went through raw SQL — and when SQL was banned by standing constraint the
+  capability appeared to vanish and blocked a brief.
+
 ### Known commerce API gap — `ShopSave` never persists languages
 
 `ShopSave` never persists `Model.Languages` (only `CompletionLanguages`); `EcomShopLanguageRelation`

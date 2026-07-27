@@ -86,12 +86,52 @@ cshtml" pattern.
 
 ### What this looks like in practice
 
-1. Define `Files\System\Items\<Prefix>\<Prefix>_<ConceptName>.xml`. Schema = same shape as stock
-   `Swift-v2_*.xml` files; copy `Swift-v2_Text.xml` as a starting template.
-2. Place layout at
+**Dropping the XML makes the type fully READABLE but never WRITABLE — and no restart will ever fix it.**
+Two independent subsystems are involved and the file only reaches one of them:
+
+- The item-type **metadata** provider parses the XML **on demand**, which is why every read verb works
+  immediately — `ItemTypeById` returns the type with its `displayName`, category and `fieldsCount`, and
+  `ItemFieldsByItemTypeSystemName` returns every field with its editor and static options. **No restart is
+  needed for discovery** — the restart the old recipe prescribed is not even the thing that made reads
+  work.
+- The item-type **schema** — the `ItemType_<SystemName>` SQL table that stores the field values — is
+  created by the **create command, `ItemTypeSave`**, not by the file provider and not by host startup.
+
+So an XML-only deployment produces a type that is fully introspectable and completely unwritable: a
+`ParagraphSave` of that type returns **HTTP 500 `Invalid object name 'ItemType_<Prefix>_<Concept>'`**, and
+nothing in the system will ever reconcile it. `ItemTypeHealthAll` has no row for an XML-dropped type
+(health only compares types it already knows have schema), `ItemTypeListReload` returns `ok` and changes
+nothing, and repeated sanctioned recycles change nothing. `ItemTypeSave` cannot adopt the orphan either —
+it is create-only and returns **HTTP 400 "System name is used already."** while the XML owns the name.
+**The deadlock: the file owns the name, so the only command that creates the table refuses to run.**
+
+The working sequence — **child type before parent**, so the parent's `ItemRelationListEditor` can
+reference it, and **zero recycles**:
+
+1. `POST ItemTypeDelete {SystemName, DeletePages:false}` — frees the name **and** removes the XML.
+2. `GET ItemTypeNew?Category=<category>` → set `systemName` / `name` / `enabledFor` / `restrictions` on
+   the returned model → `POST ItemTypeSave {Model}` — **this creates the table.**
+3. `GET ItemFieldNew?ItemTypeSystemName=<name>&ItemFieldGroupSystemName=General` → per field →
+   `POST ItemFieldSave {Model}` — **this creates the columns.**
+4. Re-upload the **authored** XML — `Files\System\Items\<Prefix>\<Prefix>_<ConceptName>.xml`, same shape
+   as the stock `Swift-v2_*.xml` files, `Swift-v2_Text.xml` as the starting template — over DW's generated
+   one. Metadata only; the table already exists and the column names are the field `systemName`s, which
+   are unchanged. This restores the restriction rules, the layout groups and any deliberately-empty
+   defaults.
+5. **Verify with a REAL WRITE** (create and delete a throwaway paragraph of the type).
+6. Place the layout at
    `Templates\Designs\Swift-v2\Paragraph\<Prefix>\<Prefix>_<ConceptName>\<Prefix>_<ConceptName>.cshtml`.
-3. Restart host so `ItemTypeProvider` discovers it.
-4. New "Add paragraph" picker entry in Visual Editor under your project's category.
+   The type is then a new "Add paragraph" picker entry in the Visual Editor under your project's category,
+   and the storefront renders it on the next GET.
+
+**A successful `ItemTypeById` / `ItemFieldsByItemTypeSystemName` read is NOT evidence the type is
+usable** — it is exactly the state an XML-only deployment produces. Any new-item-type helper must gate on
+a real write and must refuse to report success on metadata reads alone; make it re-runnable so a second
+run reports "already writable — nothing to do", and record the before/after writable state per type.
+Rejected escapes: hand-writing the `CREATE TABLE` in SQL (leaves DW's own metadata/schema bookkeeping out
+of the loop) and rotating `changeversion.txt` for a "harder" restart (that file is the host's release-ring
+pin, not a restart lever — [`../db-update-recovery.md`](../db-update-recovery.md) — and a restart is not
+the missing ingredient in the first place).
 
 ### Repeater fields
 
@@ -160,10 +200,42 @@ POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
 - **Round-trip-verify — `ParagraphSave` is a lying-success surface for this shape.** A malformed child
   entry (e.g. field values missing from `ModelRawData`) still returns `status: ok` while creating nothing —
   and can reset the parent's `Items` list pointer to `0`, silently emptying the repeater. Confirm the edit
-  through a second surface after every save: re-`GetParagraphById` and check the child count, or curl the
-  rendered page and assert the new text. This is the same round-trip discipline the `ParagraphSave`
-  item-field no-op carries (see "Saves that report success but silently drop a field" below and
+  through a second surface after every save — but **not** through either of the two obvious ones; see the
+  next subsection. This is the same round-trip discipline the `ParagraphSave` item-field no-op carries
+  (see "Saves that report success but silently drop a field" below and
   [`../surface-priority.md`](../surface-priority.md) "Silent no-ops").
+
+#### Verifying a repeater-child write — the two surfaces that cannot decide it
+
+**Neither the `ParagraphSave` response nor `GetParagraphById` can distinguish a successful child write
+from no write at all.** Two individually-harmless projection details combine to make the natural
+round-trip check unperformable, and the natural reading of both is the wrong one — one run came within a
+step of concluding "`ParagraphSave` is a lying success on this payload" and abandoning a migration that
+had in fact worked.
+
+1. **The `ParagraphSave` RESPONSE echoes the model you POSTED**, not a re-read of what was persisted. A
+   created child comes back with `"itemId": ""` exactly as it was sent, whether or not DW created a row.
+   **An empty `itemId` in the response carries NO information** — it is not evidence of failure.
+2. **`GetParagraphById` returns the parent with the repeater COLLAPSED to a scalar** — the field holds the
+   `ItemList` id, not the children — so the child COUNT is not visible from there at all. On an
+   **existing** list that pointer is a stable id: measured constant across create *and* delete of a child
+   (`324` → `324` → `324`). The count never appears.
+
+The two checks that **are** available:
+
+- **(a) On a FRESH parent, assert the list-pointer transition `0` → non-zero.** DW mints the `ItemList`
+  and wires the relation on the first successful child write, and that transition is observable through
+  `GetParagraphById`.
+- **(b) In all cases, assert the child's field values appear in a live GET of the rendered page.**
+
+Note the asymmetry that makes this a trap: **(a) is only informative on a parent whose list did not exist
+yet** — and on every parent you actually want to migrate, the list already exists and the pointer is
+constant. So (b) is the check that generalises. A repeater-write helper should take the expected rendered
+string and perform the live GET itself, so a caller cannot accidentally verify against the echo; log the
+echoed `itemId` alongside the verdict so the false negative stays visible in the artefact rather than
+being re-derived next time. Do **not** answer this by brute-forcing a child-row read verb (none exists —
+the write rides inside `ParagraphSave`, so no registry probe can find one) or by escaping to SQL to
+`COUNT` the rows, which re-establishes exactly the belief this section retires.
 
 Watch for red-herring empty tables — a concept can have a similarly-named `ItemType_<Prefix>_<Concept>`
 (e.g. a `Card` table) that is empty because the real content lives in the `_Item`/`_<Child>` rows. Confirm

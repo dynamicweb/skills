@@ -4,6 +4,15 @@
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
+## Contents
+
+- [The workflow + Visual Editor surface map live in the foundational skill](#the-workflow--visual-editor-surface-map-live-in-the-foundational-skill)
+- [When to use + executor split](#when-to-use--executor-split)
+- [Management API authoring traps (Swift 2.4 / DW 10.28.x)](#management-api-authoring-traps-swift-24--dw-1028x)
+- [Authoring scripts must ASSERT the shape they expect — a count guard is an anti-pattern](#authoring-scripts-must-assert-the-shape-they-expect--a-count-guard-is-an-anti-pattern)
+- [Verification: did the change land via the admin UI?](#verification-did-the-change-land-via-the-admin-ui)
+- [What this surface does NOT do (escape hatches)](#what-this-surface-does-not-do-escape-hatches)
+
 ## The workflow + Visual Editor surface map live in the foundational skill
 
 Vendor-generic Swift configuration-only authoring — the 5-step Day-1 workflow (mood board → translate into admin Style tools → upload assets → connect styles via Website Settings → build layout in the Visual Editor), the Visual Editor surface map, and the "what the VE covers, and the escalation per gap" table — is owned by the `dw-swift-building` foundational skill — staged in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9 ("Re-skin doctrine"). Read that section for the click-paths and the per-gap escalation.
@@ -55,6 +64,32 @@ page list, asserting 200 or 301 — a rename shows up **only** as a 404 on the O
 `status=ok` check and a page-object diff both miss. Also assert `name` still equals what you
 submitted.
 
+**`ProductCatalogGroupSave` regenerates the friendly URL of the group AND of every child product — with
+no automatic 301.** The ecom sibling of the `PageSave` rename above, and the blast radius is larger. A
+rename moves `/<lang>/shop/<old-slug>` to `/<lang>/shop/<new-slug>` and 404s the old path immediately, and
+because product URLs are composed under the group, **every child PDP moves with it** — dozens of paths per
+group. The host mints no redirect for the retired slug, so the damage lands on every authored link,
+canonical, `og:url` and gate page list that named it.
+
+- **Sweep for the old slug FIRST, rename, then repoint in the same run.** A rename split across two runs
+  leaves a window in which half the demo 404s.
+- **Updating a page URL in a gate page list is a POINTER fix, not a weakened assert** — same assertions,
+  same page, same thresholds, new address. Say so explicitly in the run notes: a future agent that reads
+  "the gate config changed during a rename" and treats it as a banned edit will either revert the pointer
+  or leave a whole leg fetching a 404. Where the same slug appears in more than one list (a storyline page
+  set *and* a design page set are the common pair) **both must move in the same run**.
+- Post-rename assertion list, run explicitly rather than implied: old slug → 404, new slug → 200, at least
+  two child PDPs → 200 on the new path, and every URL in every gate page list → 200 or 301.
+
+**A group rename needs no translations save and no recycle.** `ProductCatalogGroupSave` writes the
+localized name for the language carried in `modelIdentifier` (`GROUP1|ENU` shape), so a separate
+`ProductCatalogGroupTranslationsSave` is not part of the motion. The URL is derived **on request**, not
+from a startup-cached table, so the new slug resolves and the storefront serves the new label **before**
+any recycle. Only nav MEMBERSHIP is startup-cached ([header-menu.md](header-menu.md)) — which is what makes
+earlier passes attribute a whole rename to the recycle they happened to run alongside it, and pay ~3
+minutes per rename for it. Verify by asserting the new label in the storefront HTML and the new slug at
+200 **before** restarting anything.
+
 **`showInLegend` is not a navigation filter.** It round-trips `false` through `PageSave` and has
 ZERO effect on rendered navigation — the navigation providers do not consult it. To suppress a
 duplicated nav/footer link, hide it in CSS or remove the page from the menu source; do not spend a
@@ -75,6 +110,43 @@ duplicated nav/footer link, hide it in CSS or remove the page from the menu sour
   HTML for the paragraph ids you expect (breadcrumb / product-list info / component selector / list
   navigation) before and after the edit, assert the ids of the page you did NOT edit stay absent,
   and re-run the count on more than one list URL.
+
+## Authoring scripts must ASSERT the shape they expect — a count guard is an anti-pattern
+
+The traps above all fail loudly enough to be caught by a readback. This one produces **no signal at all**:
+a script aimed at the wrong entity id exits 0, logs nothing, and reports success.
+
+The shape is a filter followed by a guard:
+
+```powershell
+$targets = @($paras | Where-Object { <match> })
+if ($targets.Count -ge 1) { <the entire write block> }     # <-- the anti-pattern
+```
+
+Point that at an id which holds nothing you were looking for — a footer **shortcut** page instead of the
+content page, a grid row that was emptied by an earlier pass — and the filter matches zero, the guard
+skips the write block, and the script exits clean with the prepared copy still sitting unused in the file.
+Nothing throws, there is no status to check, and the defect is invisible until someone reads the live
+site. One recorded case sat on a customer-visible page for weeks after the pass whose whole job was to
+replace it.
+
+**Open every authoring script with an assert on the shape it expects, and throw:**
+
+```powershell
+$page = Invoke-Api "GetParagraphsByPageId?PageId=$PageId"
+if ($page.model.totalCount -ne $ExpectedCount) { throw "page $PageId: expected $ExpectedCount paragraphs, got $($page.model.totalCount)" }
+$actualIds = @($page.model.data | Where-Object { $_.id -gt 0 } | ForEach-Object id | Sort-Object)
+if (Compare-Object $actualIds $ExpectedIds) { throw "page $PageId: paragraph id set drifted" }
+# ...only now the write block, unguarded
+```
+
+Generalise it to every DW authoring script: **a count guard around a write block converts "I targeted the
+wrong thing" into "nothing happened, successfully".** Assert the count, assert the id set, then write
+unconditionally. Prove the assert works by re-pointing the script at a deliberately wrong id and
+confirming it THROWS rather than exiting 0 — an assert that has never been seen red is not a guard
+([`../../dw-demo-base/references/visual-qa.md`](../../dw-demo-base/references/visual-qa.md) "Assert design
+rules"). Empty grid columns come back as synthetic `id=0` placeholders, so filter to `id > 0` before
+counting anything ([paragraphs.md](paragraphs.md)).
 
 ## Verification: did the change land via the admin UI?
 
