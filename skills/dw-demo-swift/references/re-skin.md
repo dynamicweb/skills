@@ -16,6 +16,7 @@
 - [A palette swap is a multi-file, multi-notation sweep](#a-palette-swap-is-a-multi-file-multi-notation-sweep)
 - [CSS that silently never reaches the browser](#css-that-silently-never-reaches-the-browser)
 - [Overriding Swift/Bootstrap-managed layout](#overriding-swiftbootstrap-managed-layout)
+- [Grid galleries and thumbnail strips — `auto-fit` + `1fr` is a STRETCH, not a size](#grid-galleries-and-thumbnail-strips--auto-fit--1fr-is-a-stretch-not-a-size)
 - [Floating / overlay header — hero behind the bar](#floating--overlay-header--hero-behind-the-bar)
 - [Section-boundary decoration — negative-top pseudo-elements](#section-boundary-decoration--negative-top-pseudo-elements)
 - [Utility classes lose to scheme-scoped element rules](#utility-classes-lose-to-scheme-scoped-element-rules)
@@ -155,6 +156,34 @@ Bootstrap utilities are declared `!important` — `.flex-fill` is `flex: 1 1 aut
 - **Mark the counterpart rule in the wider tier `!important` too**, so the later source-order rule still wins. If only one tier is `!important`, the layout tier and the clearance tier disagree across a band of viewport widths: a nav meant to drop onto its own line below a breakpoint instead stays inline until it happens not to fit, while the two-line clearance token already applies — a white gap that appears and disappears over a ~32px band.
 - **Assert the computed value, never the presence of the declaration.** `getComputedStyle(el).display === "grid"`; equal left positions across all rows; and sweep viewports across the breakpoint asserting the number of distinct flex **lines** (count of distinct rounded column tops) flips exactly at the media-query edge, with the clearance token matching the measured bar height at every sampled width on both sides.
 - **Line-view rows need `min-width: 0` and a bounded title.** In a `nowrap` flex row whose other columns are fixed and non-shrinkable (image + SKU + a `flex: 0 0 280px; flex-shrink: 0` description + stock + price + gaps), the product title is the only `flex-shrink: 1` child, so it absorbs the whole overcommit: it collapses to `width: 0` with `overflow: visible`, stacks one word per line (7–9 line-boxes tall) and paints across the description lane. Give the title a real basis and a floor (`flex: 0 1 320px; min-width: 180px`) plus a hard 2-line `-webkit-line-clamp`, and make the description a shrinkable single-line ellipsis lane (`flex: 1 1 140px; min-width: 0`). Assert per row that the title box does **not** intersect the description box and that the title is ≤2 lines, at 1440 and 390.
+
+## Grid galleries and thumbnail strips — `auto-fit` + `1fr` is a STRETCH, not a size
+
+**`grid-template-columns: repeat(auto-fit, minmax(96px, 1fr))` reads as "96px thumbnails" and behaves as
+a ratio.** `auto-fit` collapses the unused tracks and the `1fr` **maximum** then divides all remaining
+column width among the tracks that do have content, so the rendered tile size is a function of the image
+**count**, not of the declared minimum. Measured live at 1440 on a PDP thumbnail strip: 168px square at
+four images and **344px** at two; on a wider media column, 197.7px and 403.3px. Lowering the `minmax`
+minimum changes nothing at all while the track count is below the fit — which is why the obvious fix
+reads as "the CSS didn't apply". Any inline width Swift ships on the children
+(`width: clamp(4.5rem, 18vw, 8rem)` on thumbnails) is usually already neutralised by the
+`width: auto !important` needed to beat Bootstrap, so **the track spec is the only lever left**.
+
+- **A FIXED track is the only count-stable lever** — `repeat(auto-fit, 104px)`. `justify-content` then
+  decides where the slack goes.
+- **State the trade explicitly: with a fixed track, "flush at both edges" and "constant tile size" are
+  mutually exclusive** for any count below the fit. Either give up flush-right or bound the strip with a
+  `max-width`.
+- **`justify-content: space-between` is the intuitive pick and measurably the worst one at low counts** —
+  it holds the tile at 104px but blows the inter-tile gap to 93px at four images and **488px** at two:
+  two thumbnails at opposite ends of the media column. `justify-content: start` was the shipped answer
+  (104px / 132px at *every* count, 8px gutters).
+- A container `max-width` alone does not fix it — the size stays count-dependent (216px at two images) and
+  it wraps a wider strip to two rows at four.
+
+Verify by measuring the rendered tile at **two different image counts** on the same template, at each
+viewport: same box, and the strip height not collapsed to the 2px failure mode. A single-count measurement
+cannot see this defect at all.
 
 ## Floating / overlay header — hero behind the bar
 
