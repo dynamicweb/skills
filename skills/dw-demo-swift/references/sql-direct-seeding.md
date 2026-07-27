@@ -1,4 +1,13 @@
-# sql-direct-seeding.md — DEPRECATED (retired motion)
+# sql-direct-seeding.md — the retired SQL motion, and what replaces it
+
+## Contents
+
+- [The rule that replaces it — the Admin UI is API-first](#the-rule-that-replaces-it--the-admin-ui-is-api-first)
+- [Why an API write and a SQL write are not equivalent — visibility](#why-an-api-write-and-a-sql-write-are-not-equivalent--visibility)
+- [Rebuilding the product index after a membership change](#rebuilding-the-product-index-after-a-membership-change)
+- [Scheduled-task creation semantics (`TaskSaveCommand`)](#scheduled-task-creation-semantics-tasksavecommand)
+- [If you are diagnosing rows that were already SQL-seeded](#if-you-are-diagnosing-rows-that-were-already-sql-seeded)
+- [Cross-references](#cross-references)
 
 > **This recipe is retired.** "Seed / edit content by writing rows directly to the DB (SQL-direct, or
 > SQL through a scheduled task) because MCP/the API is out of reach" is no longer a sanctioned demo
@@ -27,6 +36,70 @@ it, an `/Admin/Api` call exists.** So the path for any content create/edit is:
 The full surface contract (which surface exists on which instance type, and the narrow, still-sanctioned
 SQL cases — cleanup/teardown and reads on a **local** install only) is owned by
 [`../../dw-demo-base/references/surface-priority.md`](../../dw-demo-base/references/surface-priority.md).
+
+## Why an API write and a SQL write are not equivalent — visibility
+
+The reason the rule above is a rule and not a preference: **an API command that owns the entity invalidates
+that entity's in-process cache as part of the write; a SQL row does not, and no API call reliably
+retro-warms a cache the SQL write went behind.** On a host with no self-service recycle, that difference is
+the difference between "seeded" and "staged until someone restarts the app".
+
+- **Group → product membership.** `POST /Admin/Api/ProductGroupRelationSave {GroupIds:[…], Ids:[…]}` (call it
+  for **both** the top group and the subgroup) invalidates the relation cache in-process: `GetCatalogGroupProducts`
+  and a following index build see the new membership immediately, with **no recycle**. A raw `INSERT` into
+  `EcomGroupProductRelation` writes correct rows that stay invisible to the catalog and to the index builder
+  until the process recycles.
+- **Product → product relations.** Same class, worse. Raw `INSERT`s into `EcomProductsRelated` never reach the
+  related-products slider, and `ProductRelatedSave` **cannot** warm the cache afterwards — it resolves through
+  the same stale collection and returns `404 "The related product entry is not found"` for the pairs you just
+  inserted. `CacheInformationRefresh` across every Ecommerce service and repeated Full index rebuilds do not
+  reach it either. Once relations exist only as SQL rows, that data is **restart-gated**: record it as staged in
+  the run notes, not as shipped.
+- **Details groups fail silently.** An `EcomDetailsGroup` created by a raw `INSERT` that names neither
+  `DetailsGroupControlType` nor `DetailsGroupInheritanceType` leaves both `NULL`, and the renderer **skips a
+  NULL-control-type group without logging** — a PDP downloads/media section renders nothing while the
+  `EcomDetails` rows are correct and every file serves `200`. Every group the renderer actually emits carries
+  `DetailsGroupControlType = 0` (stock file groups: control `0`, inheritance `3`). Setting both on the group
+  makes the section render with no recycle. Any raw-SQL details-group insert must name both columns.
+- **Files and images are the exception.** `GetImage.ashx` keys its derived-image (resize/webp) cache on the
+  **source file including its last-modified time**, so a multipart `POST /Admin/Api/Upload` with
+  `allowOverwrite=true` rewrites the file, bumps its mtime, and invalidates the derived entries; the next
+  request re-renders from the new source. Do **not** spend a `CacheInformationRefresh` sweep or wait for a
+  recycle after an image overwrite. Verify by fetching the derived URL
+  (`GetImage.ashx?image=…&width=…&format=webp`) and asserting the decoded dimensions match the new source's
+  aspect ratio.
+
+## Rebuilding the product index after a membership change
+
+- **A Full rebuild must target `Repository='Products'`.** `BuildIndex` with `Repository='ProductsFrontend'` or
+  `'ProductsBackend'` (`IndexName=Products.index`, `BuildName=Full`) returns `status=ok` in under a second
+  because it only **enqueues** — it does **not** refresh the **GroupID facet** that the `GroupID` filter of
+  `QueryName=Products` reads. Only `Repository='Products'` runs the real synchronous Full rebuild, and it
+  routinely exceeds a 120s client timeout; **that timeout is the expected shape of success, not a failure.**
+- **Verify on the Delivery API, never on the POST response.** There is no index-status command on 10.28.x
+  (`IndexStatus` / `GetIndexes` → `400 Unknown query`), so the only signal is
+  `GET /dwapi/ecommerce/products/search?RepositoryName=Products&QueryName=Products&GroupID=<groupid>` →
+  `totalProductsCount` per group, cross-checked against `GetCatalogGroupProducts`.
+- **Re-run the `Repository='Products'` Full build after any recycle or 503 instance swap.** The facet can
+  regress to a pre-expansion snapshot while DB relation truth stays correct — storefront PLPs and headless
+  both under-render, and a repeat `ProductsFrontend`/`ProductsBackend` build has no effect on it. Scoping the
+  builder to the demo's shop (`ShopsToIndex`) hardens against recurrence.
+
+## Scheduled-task creation semantics (`TaskSaveCommand`)
+
+For the tasks a demo legitimately owns — a demo clock, an ERP mock RESET runner. This is not a licence to
+revive the SQL-through-a-task content-seeding motion retired above.
+
+- **A recurring cadence is `RefreshEvery` (int) + `UnitOfTime` (`minute` / `hour` / `day`) — there is no
+  `Schedule` string to set.** `RefreshEvery=1440, UnitOfTime=minute` reads back as *repeat every 1 day* with
+  `nextRun` populated, and the host scheduler then fires it unattended. Confirm with `TaskById`: `schedule`,
+  `refreshEvery`, `unitOfTime`, a populated `nextRun`, and `lastRunState=Success` advancing without a manual
+  trigger.
+- **`TaskRun` silently no-ops a DISABLED task from DW 10.28.3 onward.** Through 10.28.2 `TaskRun` executed a
+  task created with `Enabled=false`; from 10.28.3 it does not, and reports `lastRunState=Exception` with an
+  **empty** `lastLog` and `lastException` — a contentless failure that reads as a dead API. Create every task
+  with `Enabled=true`. An ephemeral one-time task with `Begin` in the past and `Schedule=One time` never
+  self-fires, so enabling it costs nothing.
 
 ## If you are diagnosing rows that were already SQL-seeded
 

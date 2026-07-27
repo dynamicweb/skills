@@ -19,3 +19,22 @@ Dynamicweb demo, the DB is always fresh and never holds real customer data at th
 deserialization happens *after* this skill's setup gates pass — so the "fresh DB" path applies and Mode
 A is safe to run without the production-DB precautions. Reach for Mode A first when the triage points to
 a queue-stuck (not buggy-CREATE) failure.
+
+## Getting the restart this recovery needs — `changeversion.txt` is a version pin, NOT a recycle lever
+
+Mode A ends in "restart the app", and on a cloud-hosted demo you have no process to bounce. Work the control
+files in `Files/System/CloudHosting/` (canonical table: [`dw-setup-config`](../../dw-setup-config/SKILL.md)) —
+but **`changeversion.txt` is not one of your restart options.**
+
+`changeversion.txt` holds the **release-ring / runtime pin the hosting watcher consumes**, not a restart nonce.
+Identical content is ignored — no recycle at all — and **any changed value is a real version migration**. So
+"rotate the token to force a recycle" is a version-change recipe in disguise: it moves the host off its pinned
+ring, and someone has to notice and revert it. **This supersedes any earlier guidance that the token "must
+change" to be effective.**
+
+- Only ever write the host's own pinned ring value, and only when a version change is genuinely intended.
+  Record that value in the demo ledger and make the recycle helper **throw** on any other token.
+- A forced recycle needs a hosting-side bounce (`recycle.txt` / `restart.txt`). Those are a Dynamicweb Cloud
+  watcher affordance: the platform *consumes* the file, so if it is still on disk after upload the watcher is
+  not running and **no self-service recycle exists on that host** — a recipe that depends on one is blocked,
+  not merely slow. Say so rather than reaching for the version pin.
