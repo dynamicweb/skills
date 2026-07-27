@@ -30,6 +30,35 @@ Logo and icon SVGs under `Files/Images/branding/` are typically referenced by **
 - **Measure before mandating that SVG text be outlined.** The usual argument — "if the webfont fails, the fallback reflows the text and a tight `viewBox` clips it" — is an assumption about relative font metrics, and it is cheap to test: render the asset twice, once normally and once with the font host aborted, and compare ink bboxes. A fallback is often *narrower*, and the vertical envelope is frequently set by a non-text element and is font-independent entirely. Size the `viewBox` to the wider of the two states and keep vector text. Outlining is also often not achievable faithfully: a site serving a single **variable** woff2 cannot be parsed by `opentype.js` (Brotli) nor reliably instanced on its axes, so the outline would ship subtly wrong glyph shapes — a worse defect than the one being mitigated. Reserve it for a measured overflow with a faithful static font instance available.
 - Definition of done either way: with the font host aborted, the ink bbox stays inside the `viewBox` on all four sides and the rendered box geometry is identical across both font states.
 
+## Generated product imagery — review against the hero, and record the prompt
+
+Two rules that only bite once a demo starts *generating* product images rather than sourcing them.
+
+**Check a generated ADDITIONAL view against the product's EXISTING hero, not just against the prompt.**
+A generation prompt describes the subject in the abstract; it carries no knowledge of the colourway
+already live on the product's primary image, so the model picks a plausible one — and
+plausible-but-different is exactly the failure the "do these read as several views of ONE thing?" test
+exists to catch. A solo contact sheet cannot see it: reviewing generated images on their own passed 45 of
+46, and placing each beside its product's existing hero failed **four more** — the same product in a
+different colour, reading as two products in one gallery strip (black handheld unit vs yellow/black; navy
+jug vs silver; black panel with amber controls vs brushed stainless with red; navy case vs black).
+
+- Put the primary's **colour, material and form** into the prompt whenever the product already has one.
+- Review as **hero-vs-new PAIRS**, never as a sheet of new images. Build the pair sheet as the artefact;
+  every accepted image must be recognisably the same object as its hero.
+- Keep a subject-level check alongside it — the same batch had one rejection on subject alone (a part
+  rendered with the wrong defining geometry, decorative rather than functional), which the pair test does
+  not catch.
+
+**For a generated asset the PROMPT is the identifier — make it a required manifest field.** An images
+manifest schema written for stock-photo sourcing (where a photo id and URL fully identify the asset) has
+no field for it, so generated entries land carrying only `generator: "<model> (quality high)"` and nothing
+else. Those assets cannot be reproduced, refined or restyled at all — the only option is to start over.
+Record **`prompt` (verbatim), `model` and `quality` as REQUIRED** alongside `generator` for any generated
+asset, and record the prompt **actually sent**, so a regenerated image carries the prompt that produced
+the shipped file rather than the first attempt. Definition of done: a second run can re-issue the recorded
+prompt and get a comparable image.
+
 ## What lives OUTSIDE `wwwroot/Files/` (demo working folders)
 
 A few demo-relevant directories that are NOT under `wwwroot/Files/` (and therefore shell-only — admin
