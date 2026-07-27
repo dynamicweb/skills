@@ -11,6 +11,7 @@
 
 - [The default is flat — why](#the-default-is-flat--why)
 - [Data prerequisite: author nav depth (`save_groups`)](#data-prerequisite-author-nav-depth-save_groups)
+- [The merged page+group tree — how a content page joins a group-driven menu](#the-merged-pagegroup-tree--how-a-content-page-joins-a-group-driven-menu)
 - [The shared default: `theme-default`'s `default_custom.css`](#the-shared-default-theme-defaults-default_customcss)
 - [Platform truth 1 (LRN-nav-03): the Popper-gap bridge](#platform-truth-1-lrn-nav-03-the-popper-gap-bridge)
 - [Platform truth 2 (LRN-nav-04): `::before` = icon, `::after` = underline](#platform-truth-2-lrn-nav-04-before--icon-after--underline)
@@ -58,6 +59,57 @@ After authoring depth, restart the host (nav is cached at startup). The obligati
 machine-readably in the Distribution `layers/surface-swift/surface.contract-notes.json` →
 `navDepth` (content-scoped contract bits moved there in the Swift 2.4 base split): an edition
 that promises a menu-bar default must ship or author nav depth; the base stays framework-only.
+
+## The merged page+group tree — how a content page joins a group-driven menu
+
+A group-driven bar is **one paragraph** (`Swift-v2_MenuRelatedContent`) whose `NavigationRoot` points at
+a `Swift-v2_Shop` page. `Navigation.GetNavigationViewModel(<navRootPageId>, ExpandMode.All)` **merges**
+that page's child PAGES and its ecom GROUPS into a single tree — so the bar is not "groups only", and
+there is a supported way to put a content page in it that needs no template fork.
+
+**A content page joins the menu by being an UNTAGGED child of the `NavigationRoot` page.** The
+suppression flag is `navigationTag`: a child carrying one (`ProductDetailPage`, `ProductListPage`, …) is
+withheld from the rendered nav; a child carrying **none** is published to it. So the recipe for surfacing
+an existing top-level page without moving it in the tree is a **shortcut child**:
+
+```
+PageSave  parentPageId = <navRootPageId>
+          navigationTag = ""                       // empty is what publishes it
+          shortCut      = "Default.aspx?ID=<targetPageId>"
+```
+
+The anchor then renders with the *target's* friendly URL, resolved through the shortcut. Verify by
+fetching `/` and extracting the header anchors in DOM order: the new label must be present with an
+`href` resolving to the shortcut target.
+
+**Pages always precede groups — a page sort value can never push a content page past the catalogue.**
+Sort orders pages among PAGES; the two node classes are not interleaved by one key, and the page block is
+emitted first regardless. A content page given a sort above every group still renders immediately after
+the other content pages. Do not promise a brief a specific menu slot for a content page in a group-driven
+bar, and do not reach for CSS `order` or a template hack to force one — **if a specific slot is genuinely
+required that is a template change, not a sort value.** Assert it the honest way: fetch the rendered
+header anchor list and assert the node's index, expecting it ahead of the first group node.
+
+**One `NavigationRoot` feeds every paragraph that names it — an addition is never a single-surface
+change.** The same shop page is routinely the root of three different paragraphs: the desktop header
+(`Swift-v2_MenuRelatedContent`, `NavigationRoot`), the mobile off-canvas (`Swift-v2_OffCanvasNavigation`,
+`MainNavigationRoot` + a separate `SecondaryNavigationRoot`) and a footer column
+(`Swift-v2_Navigation`, `NavigationRoot`, `ShowOnlyFirstNavLevel=true`). **Any untagged child of that page
+appears in all three.** The usual damage is a footer that now names the same destination twice, one column
+away from an existing heading with the same word.
+
+- **Before adding a node, enumerate every paragraph whose `NavigationRoot` / `MainNavigationRoot` points
+  at the same page, and state the intended outcome per surface.** There is no per-page exclusion to fall
+  back on: `showInLegend` is inert ([admin-ui-authoring.md](admin-ui-authoring.md)) and a `navigationTag`
+  suppresses the node from **all** the surfaces, including the one you wanted. De-duplication is therefore
+  a CSS or information-architecture decision, not a page-flag one.
+- Validation is per surface, not per page: assert the rendered node list of the header anchors, the
+  off-canvas anchors and each footer column against the intended outcome for that surface.
+
+**Nav MEMBERSHIP is the startup-cached part.** Adding or removing a node needs a host recycle before the
+bar reflects it. Label and URL changes do **not** — see the group-rename rule in
+[admin-ui-authoring.md](admin-ui-authoring.md), which is the truth earlier passes mis-attributed to the
+recycle they happened to run in the same session.
 
 ## The shared default: `theme-default`'s `default_custom.css`
 
