@@ -116,6 +116,8 @@ Operates on a deserialized Swift 2.4 composition (framework-only `base` + `surfa
 
 Definition of done for a split like this is a computed-style **leak check in both directions** (a catalog-only property must not move on a content page, and vice versa), not a screenshot of each side.
 
+There is a third discriminator for **admin-editor-only** chrome: a `body` hook emitted from the layout master under `Pageview.IsVisualEditorMode`, styled as `body.dw-ve …` here. It is server-side and auth-gated, so it cannot leak to visitors — and admin-only rules must add **offset, never background**, or they flip a design gate's overlay-header classification on the live storefront. Full recipe: [templates.md](templates.md) §"Branching a template on Visual Editor mode".
+
 ## A palette swap is a multi-file, multi-notation sweep
 
 Editing the accent tokens in `<customer>_custom.css` recolours eyebrows, links, underlines and icon tiles — and leaves every primary button, every low-alpha tint and every fallback on the outgoing colour. That reads as a half-finished rebrand, and the buttons are the largest single colour area on the site. Chase all five copies:

@@ -32,11 +32,106 @@ GET /Admin/Api/ContentFileByName?FilePath=/Files/Templates/Designs/<design>/Para
 
 That makes templates fully round-trippable: pull → sha256-diff against the local staging mirror
 (record the drift; live wins) → edit → upload → verify. On upload, the response `model` is a **LIST
-whose length equals the batch size** — not `status:ok`; assert the length. Then fetch a page that
-renders the template with `Cache-Control: no-cache`: a `Paragraph/*.cshtml` change is live on the
-FIRST request after upload — no recycle, no `changeversion.txt` touch (the `DashboardTile.cshtml`
-hot-reload precedent extends to `Paragraph/`). `FileDownload` exists but is a POST *command*, not a
-query — never fire write verbs speculatively while probing a verb registry.
+whose length equals the batch size** — not `status:ok`; assert the length. `FileDownload` exists but is a
+POST *command*, not a query — never fire write verbs speculatively while probing a verb registry.
+
+### Verifying a template deploy — the procedure, not a hedge
+
+**`.cshtml` edits are cache-bypassing on a DW10 cloud host — but prove it per deploy rather than
+assuming it, and never recycle "to be safe".** Measured on the layout master itself (upload via
+`Dw-UploadFiles -RelDir "Templates/Designs/<design>"`, a multipart `POST /Admin/Api/Upload` with
+`allowOverwrite=true`): the very next request rendered the new template, with no recycle, no cache flush,
+and `changeversion.txt` untouched. That was demonstrated **positively** — a newly added attribute
+appeared in the response — not inferred from an absence. The `DashboardTile.cshtml` / `Paragraph/`
+hot-reload precedent extends to `Designs/<design>/` root templates. A needless recycle is not free: on a
+cloud host the only "restart" levers are the control files, and reaching for `changeversion.txt` is a
+version migration in disguise
+([`db-update-recovery.md`](../../dw-demo-base/references/db-update-recovery.md)).
+
+The procedure replaces the hedge:
+
+1. **Deploy, then prove the new template is live by asserting on an OBSERVABLE the edit introduces** — a
+   new attribute, a new class, a changed string in the delivered HTML. Only if that observable is
+   **absent** do you escalate to a recycle.
+2. **Round-trip the upload with `FileByName`.** Templates are **not servable over HTTP** — a GET of
+   `/Files/Templates/Designs/<design>/<file>.cshtml` 404s — so the re-download-and-compare check that CSS
+   deploys use is unavailable, and a run that skips this is trusting the upload response. The metadata
+   read is the proof that *is* available:
+
+   ```
+   GET /Admin/Api/FileByName?name=Templates/Designs/<design>/<file>.cshtml
+     -> model.sizeInBytes, model.updatedAt
+   ```
+
+   Assert `sizeInBytes == the local byte count` **and** that `updatedAt` moved. Together those catch a
+   silently-dropped upload, which the upload response alone does not. Worth a shared template-deploy
+   helper that does upload + `FileByName` assert in one call, mirroring the CSS deploy scripts.
+
+## Branching a template on Visual Editor mode — `Pageview.IsVisualEditorMode`
+
+**`Pageview.IsVisualEditorMode` is the stock, `@using`-free way to tell editor mode from a visitor
+request.** It is a `bool` on `Dynamicweb.Frontend.PageView`, inherited via `ViewModelTemplate<T>`, so it is
+available in **every** Swift template with no import and no custom code. The canonical example already
+ships in the layout master Swift installs — `Swift-v2_Master.cshtml` gates the GTM snippet on it:
+
+```cshtml
+@if (!string.IsNullOrWhiteSpace(googleTagManagerID) && !Pageview.IsVisualEditorMode) { … }
+```
+
+Reach for it before querystring sniffing, referrer inspection or header parsing — all of which are
+reachable first and all of which are wrong.
+
+**It is server-side and auth-gated, which is what makes it safe for admin-only chrome.** An anonymous
+`GET /Default.aspx?ID=<pageId>&visualedit=true` renders **byte-identically** to the friendly URL (only
+per-request facet GUIDs differ), and so does the same request carrying an admin API bearer — the API key
+buys `/Admin/Api`, not a backend UI session (`/Admin/` 302s to the login form even with the bearer set).
+**A visitor cannot provoke an editor-only branch by any querystring.** The two URLs worth knowing:
+
+```
+admin screen : /Admin/UI/Content/PageVisualEdit?Id=<pageId>&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+the iframe it loads, usable standalone with a backend session:
+               /Default.aspx?ID=<pageId>&visualedit=true
+```
+
+(`/Admin/Authentication/Login` is a **two-step** form — `#Username` → submit → password → submit — which
+matters when scripting a headed verification run.)
+
+### The recipe: admin-editor chrome fixes go in the layout master, never the header template
+
+When the ask is "the header floats over the breadcrumb **in the Visual Editor**", the header template is
+the obvious edit site and the wrong one — it changes the LIVE SITE for every visitor. Note in particular
+that `Swift-v2_Page.cshtml` does not hard-code the header class; it reads it from the **header page's own
+item field**:
+
+```cshtml
+if ((headerPage.Item?.TryGetString("HeaderPosition", out string headerPosition) ?? false) && …) { headerCss = headerPosition; }
+<header data-swift-page-header="@(headerLink.PageId)" class="@headerCss d-print-none">
+```
+
+So editing `HeaderPosition` to "fix the editor" silently removes the sticky header for every visitor, and
+forking the vendor header template forks a file Swift upgrades overwrite. The correct, smaller, reversible
+edit site is the **layout master**, which already carries the flag — one attribute on `<body>`:
+
+```cshtml
+class="@(Pageview.IsVisualEditorMode ? "dw-ve" : null)"
+```
+
+then style under `body.dw-ve …` in the site custom sheet. A null-valued attribute emits **no attribute at
+all** when false, so the visitor's markup is *unchanged* rather than merely equivalent. The header
+template is never touched, the `HeaderPosition` item field is never touched, and the whole change is one
+line in a file the demo already mirrors and deploys.
+
+**The load-bearing second half: admin-only CSS must add OFFSET, never BACKGROUND.** A design gate
+typically classifies a header as an "overlay" via `(position === "absolute" || position === "fixed") &&
+bgAlpha < 0.5`, and only applies its clearance floor when that is false. Putting *any* background with
+alpha ≥ 0.5 on the header — even inside an admin-only scope, if that scope were ever mis-written — flips
+the classification and fails the clearance asserts on the LIVE storefront, for a change that was supposed
+to be admin-only. Write the rule so it **names no header element at all**, so it cannot flip the flag by
+construction, and make the deploy script refuse to upload if any `body.dw-ve` rule mentions the header
+element, a background or a position. Verify both directions: the hook present in an editor-mode response,
+**and** anonymous header fingerprints (computed position, background alpha, height, bounding rect, the
+verbatim `<header>` open tag) byte-for-byte identical before vs after, across the demo's page set × both
+viewports.
 
 ## Image focal points are inert unless the layout transports them
 
