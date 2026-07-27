@@ -15,6 +15,7 @@
 - [Platform truth 1 (LRN-nav-03): the Popper-gap bridge](#platform-truth-1-lrn-nav-03-the-popper-gap-bridge)
 - [Platform truth 2 (LRN-nav-04): `::before` = icon, `::after` = underline](#platform-truth-2-lrn-nav-04-before--icon-after--underline)
 - [Platform truth 3 (LRN-nav-05): dropdown `min-width`](#platform-truth-3-lrn-nav-05-dropdown-min-width)
+- [Header height: count grid rows before hunting padding](#header-height-count-grid-rows-before-hunting-padding)
 - [Icons: opt-in, keyed on `data-nav-icon`](#icons-opt-in-keyed-on-data-nav-icon)
 - [How to verify (probes)](#how-to-verify-probes)
 
@@ -144,6 +145,27 @@ dead strip (31px measured) a downward path lands in.
 
 This is the **horizontal** half of the reach fix; LRN-nav-03 is the **vertical** half. Neither
 alone suffices — the pair is the complete reach fix.
+
+## Header height: count grid rows before hunting padding
+
+A tall header pill that is **width-invariant** (e.g. 157px of chrome around 44px of real content, so
+no breakpoint work shrinks it) is not a padding problem. Row COUNT is the dominant term: every extra
+grid row on the header page costs its own row spacing plus container padding regardless of content
+height, so squeezing container padding to ~2px per row buys nothing. The classic shape is the nav
+and the search field each sitting in their OWN row (a `2ColumnsFlex`) beneath the logo/icons row;
+the same root cause produces the ~470px mobile header (a cart icon alone in its own row).
+
+So before writing CSS, `GET /Admin/Api/GridRowsByPageId?pageId=<header page>` and count the rows,
+then look for a multi-column row with EMPTY columns sized for exactly the paragraphs that force the
+extra row — empty columns come back as synthetic `id=0` placeholder paragraphs, not as nothing (see
+[`paragraphs.md`](paragraphs.md)). The fix is a paragraph MOVE (`ParagraphSave` with `gridRowId` +
+`gridRowColumn`) plus `GridRowDelete`: folding nav + search into the empty columns of a
+`6ColumnsFlex` row took a measured pill from 157.3px to 84.6px with ZERO CSS changed. Column widths
+inside the merged row are then governed by `flexibleColumns`, whose `0`/`1` semantics are inverted —
+see [`admin-ui-authoring.md`](admin-ui-authoring.md).
+
+Verify by asserting the count of `<section>` children under `[data-swift-page-header]` equals the
+intended row count, and that the pill height drops **before** any stylesheet is deployed.
 
 ## Icons: opt-in, keyed on `data-nav-icon`
 

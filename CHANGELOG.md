@@ -3,6 +3,43 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.12.0]
+
+Fold-back sprint: lands the skill legs of 81 open demo-build learnings (Foundry LRN issues,
+filed 2026-07-23..27) across `dw-demo-swift` and `dw-demo-base`. The through-lines: Admin-API
+round-trip asymmetries that silently no-op or clobber (ButtonData, item lists, Title-derived
+names), the palette/token-swap completeness checklist (generated colour-scheme sheets, rgba
+literals, var() fallbacks, alias-not-delete), the floating/overlay-header recipe with its
+UA-selected-header and container-cap traps, a "CSS that silently never reaches the browser"
+catalogue (comment terminators, digit-leading ids, :has() ancestor collapse, nested sentinels),
+API-write vs SQL-write cache visibility, and an assert-design ruleset (a green assert proves
+nothing until it has been seen red; geometry never proves legibility; clipping is paint, not
+layout).
+
+### Added
+- **dw-demo-swift**: ButtonData/ParagraphSave/PageSave/PageCopy round-trip semantics and the
+  `Swift-v2_Accordion` unreachable-item-list workaround (`paragraphs.md`,
+  `admin-ui-authoring.md`); focal-point inertness + `ContentFileByName` live-template reads
+  (`templates.md`); header-height-as-grid-rows recipe (`header-menu.md`); the token-swap
+  checklist, floating-header recipe, silent-CSS-drop catalogue, and Bootstrap-`!important`
+  override rules (`re-skin.md`, `styles-assets.md`); no-crop-hero mobile stacking + real-device-UA
+  probe rule (`mobile-pass.md`); shared-SVG edit-in-place ban + fallback-font measurement
+  (`asset-organisation.md`); API-vs-SQL visibility split, `Repository='Products'` rebuild truth,
+  scheduled-task semantics (`sql-direct-seeding.md`); anonymous-price analytics leak + cart-probe
+  control selection (`b2b-dc-pattern.md`); email-marketing stats/flow/demo-clock seeding
+  (`dashboard-seeding.md`).
+- **dw-demo-base**: assert-design rules ("what a green assert does not prove") and probe-harness
+  discipline (`visual-qa.md`, `browser-automation.md`); blocked-reference re-labelling,
+  cap-replacement, and label-vs-CTA process tactics (`demo-tactics.md`); `changeversion.txt` is
+  the release-ring pin, never a restart lever (`db-update-recovery.md`, corrected in
+  `online-mode.md` too).
+
+### Fixed
+- `cheat-sheet.md` wrongly claimed `ParagraphDelete` is the only route around a `ShowParagraph`
+  no-op — corrected with the hide-per-device path.
+- `online-mode.md` recycle-before-rebuild rule was over-broad — now scoped to raw-SQL relation
+  writes; API relation saves are live immediately.
+
 ## [4.11.5]
 
 Folds a hosted-demo polish session's learnings across `dw-demo-base`, `dw-extend-scheduled-tasks`, and

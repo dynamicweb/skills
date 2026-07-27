@@ -68,10 +68,18 @@ For a customer re-skin, leave `theme-default`'s files as staged and add the cust
 JSON+CSS pairs plus `<customer>_custom.css` on top ([`re-skin.md`](re-skin.md)); hand-edit patterns
 and Area-column wiring follow [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7.
 
+## Hand-editing a generated Style asset — edit the `.json` model too
+
+The `<design>.css` under `System/Styles/ColorSchemes/` is **generated output**, not the source of truth: the sibling `<design>.json` holds the same values as a model (`Schemes[].{Id, BackgroundColor, ForegroundColor, PrimaryButtonColor, SecondaryButtonColor, CustomColors}`) and the admin Styles editor writes both in a single operation — the two files carry the same `Last-Modified` to the second. Edit only the emitted `.css` and the model still carries the old value, so any regeneration (the next time anyone opens and saves the design) silently reverts the site, days later, with no deploy to blame.
+
+So: when a demo must hand-edit a Style asset, **edit the `.json` in the same pass and upload both**; pre-flight should parse the `.json` and assert every scheme carries the new value, and the post-upload check should re-fetch both files and confirm zero literals of the retired value.
+
+This is not an edge case for a palette change: primary buttons paint from `--dw-color-button-primary`, which is declared **only** in the generated colour-scheme CSS (as a hex *and* an `rgb` triplet, once per scheme). A `<customer>_custom.css` loaded afterwards cannot override a variable it never mentions, and declaring the variable there instead is the wrong fix — it leaves the model lying and the admin swatch stale. Full sweep: [`re-skin.md`](re-skin.md) §"A palette swap is a multi-file, multi-notation sweep".
+
 ## When to use this vs `<customer>_custom.css`
 
 - **Use Style assets (Tier 0) for the brand palette + button shape + typography.** It applies to every paragraph/row that has a scheme attribute, including the deserialized Swift base-layer content. Highest leverage per line of CSS.
-- **Use `<customer>_custom.css` (Tier 1) for everything else** — hover effects, navigation polish, footer tweaks, hacks for empty `data-dw-colorscheme=""` paragraphs that the schemes can't reach. Loaded after the Style assets, so `<customer>_custom.css` rules win cascade ties.
+- **Use `<customer>_custom.css` (Tier 1) for everything else** — hover effects, navigation polish, footer tweaks, hacks for empty `data-dw-colorscheme=""` paragraphs that the schemes can't reach. Loaded after the Style assets, so `<customer>_custom.css` rules win cascade ties — *except* against variables the Style assets declare and the custom sheet does not (see above).
 
 ## Cross-references
 

@@ -18,6 +18,64 @@ The configuration-only approach is the default starting point for any Swift 2 de
 
 Escalate to [re-skin.md](re-skin.md) §`<customer>_custom.css` only when the admin Style tools cannot express the visual you need; escalate further (content-layout `.cshtml`) only when a tailored screen requires a new rendering — see [re-skin.md](re-skin.md) §Pixel-perfect escalation. Only the controller/provider `.cs` tier triggers base's customisations-ledger preflight ([dynamicweb-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md)).
 
+## Management API authoring traps (Swift 2.4 / DW 10.28.x)
+
+Because every Visual-Editor / Style-tools save resolves to an Admin API call, Claude writes through
+those calls directly — and several of them report success in ways that are not true. Standing rule:
+**after any write, re-read the entity AND fetch the rendered page. `status=ok` and the POST response
+model are not evidence.**
+
+**`GridRowSave` — the response model lies.** It *does* accept and persist `colorSchemeId` (stock
+Swift vocabulary: `light|lightgrey1|lightgrey2|dark|darksubtle|primary|secondary`), but the POST
+response `.model` returns a stale/empty `colorSchemeId` and a blank `successful` flag even on a
+successful write. Only a fresh `GET /Admin/Api/GridRowById?Id=<id>` reflects the committed value —
+poll it until it equals the target before the next save (serialise + verify), and confirm the live
+section wrapper carries `data-dw-colorscheme="<id>"`. Strip `modelIdentifier` from the model before
+posting. Section colour-scheme rhythm needs no admin-UI capture/replay; the API is fully sufficient.
+Related shape: `GET /Admin/Api/GridRowsByPageId?PageId=<id>` is paginated — the rows live under
+`model.data` (already in render/sort order), not `model[]`.
+
+**`flexibleColumns` is inverted: `0` = flexible, `1` = fit-to-content.** In the `GridRowSave`
+`flexibleColumns` array the column listed `0` silently absorbs all remaining horizontal space
+(computes `flex: 1 1 auto`, `class="flex-fill"`); entries of `1` compute `flex: 0 1 auto` and size
+to content. `[0,1,1,1,1,1]` reads as "column 1 is not flexible" and does the opposite — a logo
+column swallowing ~960px for a 264px logo is the usual symptom. To make column N flexible, set index
+N-1 to `0` and every other entry to `1`, then assert the intended column carries Bootstrap's
+`flex-fill` and the others compute content-sized widths.
+
+**`PageSave` re-derives the page `name` from the item `Title`.** When `name` is not supplied in the
+same call, DW overwrites the page name from the item `Title` field and then regenerates
+`friendlyUrl` from the new name — 404-ing the old URL. This bites hardest on duplicated pages, whose
+item `Title` still carries the source page's title while the page `name` was renamed by hand: a save
+that touched an unrelated flag renames the page and breaks a URL the demo's gate asserts.
+**Never `PageSave` a page without setting `name` AND `Title` in the same call**, and keep the item
+`Title` aligned with the page name afterwards or the next save renames it again. Verification: after
+any `PageSave`, re-fetch (a) the saved page's own `friendlyUrl` and (b) every URL in the demo's gate
+page list, asserting 200 or 301 — a rename shows up **only** as a 404 on the OLD url, which a
+`status=ok` check and a page-object diff both miss. Also assert `name` still equals what you
+submitted.
+
+**`showInLegend` is not a navigation filter.** It round-trips `false` through `PageSave` and has
+ZERO effect on rendered navigation — the navigation providers do not consult it. To suppress a
+duplicated nav/footer link, hide it in CSS or remove the page from the menu source; do not spend a
+`PageSave` (with the rename risk above) on this flag.
+
+**`PageCopy` inherits more than you want, and the copy can win the render.**
+
+- Copies carry the source page's paragraph `Button` fields verbatim, with no reset offered. One
+  source CTA reappears once per copied paragraph — e.g. a single "Discover more" `FirstButton`
+  duplicated across every copied row, on top of each row's own correct inline link. Blank or repoint
+  `FirstButton` on every copied paragraph afterwards (as an object with blank members — see
+  [paragraphs.md](paragraphs.md) §ButtonData), and assert the source label's rendered count is 0.
+- A copy made as a header shortcut (`shortCut=/Default.aspx?ID=<target>`, `publicationState=
+  published`) can be the page that actually renders the storefront chrome, while the page carrying
+  the `navigationTag` (e.g. `ProductListPage`) sits `hideInMenu` and inert. Editing the tagged page
+  then changes nothing while every API read-back reports success — a teaser authored there is
+  invisible. **Resolve chrome pages by RENDERED PARAGRAPH ID, never by nav tag**: grep the delivered
+  HTML for the paragraph ids you expect (breadcrumb / product-list info / component selector / list
+  navigation) before and after the edit, assert the ids of the page you did NOT edit stay absent,
+  and re-run the count on more than one list URL.
+
 ## Verification: did the change land via the admin UI?
 
 After any Visual Editor / Style-tools edit on a running host, `git status` should show ONLY:

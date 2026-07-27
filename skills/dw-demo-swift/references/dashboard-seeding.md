@@ -7,7 +7,10 @@
 - [3. What the base 2.3.2 dashboard expects](#3-what-the-base-232-dashboard-expects)
 - [4. Per-tile seed checklist (buyer)](#4-per-tile-seed-checklist-buyer)
 - [5. CSR view seed](#5-csr-view-seed)
-- [6. Deterministic recipe preference + idempotency](#6-deterministic-recipe-preference--idempotency)
+- [6. Email-marketing stats seed — the backend Marketing dashboards](#6-email-marketing-stats-seed--the-backend-marketing-dashboards)
+- [7. Email flow bootstrap — folders and the fully-prefixed schema](#7-email-flow-bootstrap--folders-and-the-fully-prefixed-schema)
+- [8. Keeping seeded dates current — the demo clock](#8-keeping-seeded-dates-current--the-demo-clock)
+- [9. Deterministic recipe preference + idempotency](#9-deterministic-recipe-preference--idempotency)
 
 > The demo-context seeding step that makes the Swift Customer Center land. From base **2.3.2**, the Customer Center **Overview** is a tile dashboard (Orders, Quotes, Carts, Favorites, Addresses, Profile, Returns) instead of a bare order list, and a stock **"My returns"** RMA page ships in the buyer tree. Tiles route to real function pages — but a tile that opens onto an empty list reads as a broken demo. This step seeds every list the buyer (and the CSR) will open. The underlying seeding *mechanics* are foundational; this file is the demo-swift *orchestration* that sequences them and states the coverage bar.
 >
@@ -16,6 +19,8 @@
 ## 1. The standing rule — no empty lists on demo day
 
 **Every dashboard list a persona can open must show real, demo-relevant rows.** No empty Orders tile, no empty Quotes, no "you have no favorites", no blank Returns. An empty list on the projector reads as a bug even when the wiring is perfect — and the tile dashboard makes each list one click from the landing page, so there is nowhere to hide an unseeded section.
+
+The same bar applies to the **backend** dashboards a marketer persona opens — an email campaign with no send/click history, or a flow folder that renders "No results found", is the same defect one screen further back (§6, §7).
 
 This is the demo-day acceptance bar for the Customer Center. Treat a tile that opens onto an empty list as a build defect, not a cosmetic gap. The rebuild-the-section trap that [customer-center.md](customer-center.md) §1 inoculates against is almost always triggered by exactly this symptom — see [customer-center.md](customer-center.md) §4 for the "looks empty" diagnosis before you seed.
 
@@ -63,8 +68,50 @@ The CSR persona opens `Customer center/CSR/{Accounts, Orders, Carts, Users}` (an
 
 Do **not** rebuild the CSR section to force data into it — the empty-section symptom is a seeding gap, never a structural one ([customer-center.md](customer-center.md) §1, §4).
 
-## 6. Deterministic recipe preference + idempotency
+## 6. Email-marketing stats seed — the backend Marketing dashboards
+
+A campaign email that shows 0 sent / 0 clicked reads exactly like an unfinished build. The stats grids are fed by the send engine and the tracking pixel, and **no MCP or Admin API surface creates send history** — this is a fixture backfill into telemetry tables, not a content edit. Keep it strictly inside the statistics/tracking tables; the emails, flows and pages themselves stay on the API surfaces ([sql-direct-seeding.md](sql-direct-seeding.md)).
+
+**The join keys the grids actually use** (each one was a dead end until proven):
+
+- `RecipientStatisticsByEmail?EmailId=<n>` resolves its recipients through **`EmailMarketingEmail.EmailOriginalMessageId` = `EmailRecipient.RecipientMessageId`** — *not* `EmailMessageId`. Setting `EmailMessageId` and inserting `EmailRecipient` rows returns 0 rows forever; setting `EmailOriginalMessageId` makes the same grid return the recipients **live, without a recycle**.
+- Per-recipient **`clicked`** is a COUNT over `OMCLinkClick` joined to `OMCLink` where `OMCLink.LinkReferenceKey = CAST(<MessageId> AS varchar)` **and** `OMCLinkClick.LinkClickClickerKey = CAST(<RecipientId> AS varchar)`. Both halves must match — either key alone yields 0. `LinkClicksByEmail` (per-link performance) reads the same pair, so one correct click row feeds both grids.
+- **`opened` is pixel-only.** The per-recipient `opened` column and the `EmailById` opened/clicked aggregates are materialized by the live open-tracking pixel handler / statistics job and are **not reproducible from raw SQL** — proven negative across every `OMCLink` link type and 12 `EmailAction` ActionTypes. Do not burn a build cycle on it: script the demo around sends, bounces, clicks and link performance, or generate real opens by loading the tracking pixel.
+
+**Per campaign email, seed in this order:**
+
+1. One `EmailMessage` row for the email.
+2. Set that message id on `EmailMarketingEmail.EmailOriginalMessageId`.
+3. One `EmailRecipient` row per send, `RecipientMessageId` = that message id — this is the *sent* count.
+4. Bounces: a non-empty `RecipientErrorMessage` on the recipient rows you want to show as failed.
+5. Clicks + link performance: `OMCLink` rows for the tracked links (`LinkReferenceKey` = the message id as varchar) plus `OMCLinkClick` rows (`LinkClickClickerKey` = the recipient id as varchar).
+
+Verify by calling `RecipientStatisticsByEmail?EmailId=<n>` and `LinkClicksByEmail` for each seeded email and checking the numbers match the seed — a green insert proves nothing, the grid query is the test.
+
+## 7. Email flow bootstrap — folders and the fully-prefixed schema
+
+Two failure modes that both present as "the flow isn't there":
+
+- **`EmailMarketingFlow` columns are fully table-prefixed.** The real schema is `EmailMarketingFlowId`, `EmailMarketingFlowFolderId`, `EmailMarketingFlowName`, `EmailMarketingFlowRecipientsIds`, … — there are no bare `FolderId` / `Name` / `RecipientsIds` columns. Bare-name SQL is a compile error, and the `RunSql` add-in surfaces it as a **contentless Exception** with no message to diagnose from. Dump `sys.columns` for `OBJECT_ID('EmailMarketingFlow')` before writing anything, and never trust an abbreviated column list in a hand-written schema note.
+- **A flow must carry its folder id or the folder node renders empty.** `FlowListScreen` queries `FlowsByFolderId?FolderId=<n>`, so a flow left at folder `0` (top level) shows "No results found" under the folder you created for it — even though the flow exists, is active, and has steps and recipients. Create the `FlowFolder` row **first**, then set `EmailMarketingFlowFolderId` to that folder's id on the flow.
+
+Validate after a recycle: `FlowsByFolderId?FolderId=<folder>` returns `totalCount >= 1` and the admin flow list for that folder shows the row.
+
+## 8. Keeping seeded dates current — the demo clock
+
+Every seeded dashboard decays. Orders, carts, email send/click history and campaign windows all carry absolute dates, so a demo that is a few weeks old shows stale orders and expired campaigns — the §1 bar fails again without anyone touching the build.
+
+The mechanic that fixes it is an **anchor table + a whole-day uniform shift**:
+
+- A one-row `_demoClock(Id, AnchoredTo)` table records the date the fixtures were authored for.
+- A recurring task shifts every operational date column by `DATEDIFF(day, AnchoredTo, <today>)`, then re-anchors. A reference build shifted **142 date columns across 49 tables** (order headers/lines, the email statistics, send-log and click tables, campaign windows).
+- **Whole-day, uniform** is the whole trick: shifting every column by the same integer number of days preserves intra-day ordering and every relative gap, so order → ship → click sequences stay coherent. It is idempotent and catch-up safe (a `+1` then `-1` test nets zero), and it runs unattended after idle days.
+- **Exclude config and logging tables** from the shift — only operational/fixture dates move. Audit and scheduled-task logs must keep their real timestamps or the task's own history becomes unreadable.
+
+Verify by reading order dates back through the delivery API after idle days and confirming the marketing dashboards read as current, and that the recurring task reports Success with `nextRun` advancing.
+
+## 9. Deterministic recipe preference + idempotency
 
 - Prefer recipes an agent can run **deterministically** and re-run safely: Management API commands and idempotent SQL (`WHERE NOT EXISTS` / stable seed ids) over UI clicking. Several of these have **no MCP surface** (favorites, `AccessUserSecondaryRelation`, order-state backfills) and are SQL-only — see the owners above.
-- Make the seed **idempotent**: key rows on stable ids/order numbers (e.g. `OrderID LIKE 'ORDER%'`) so a second run does not double-seed. The demo is re-provisioned often; a seed that only works on a virgin DB is a liability.
+- Make the seed **idempotent**: key rows on stable ids/order numbers (e.g. `OrderID LIKE 'ORDER%'`) so a second run does not double-seed. The demo is re-provisioned often; a seed that only works on a virgin DB is a liability. For the email stats seed (§6) key on the message id — one `EmailMessage` per campaign email — so a re-run replaces its recipient/click rows instead of doubling the counts.
 - After seeding orders, **complete them** (`OrderComplete=1` + `OrderCompletedDate`) and, where you raised returns, confirm the RMA row exists — then rebuild the order/products indexes and clear the user cache so the storefront lists and the CSR impersonation views pick the rows up in the same session.
