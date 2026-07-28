@@ -214,6 +214,17 @@ read surface only. Write the `layout` property instead, then read `template` bac
 landed. The same pair appears on the page save model. (This is why the repeater payload above sets
 `Layout`, not the `template` a reader would expect.)
 
+**A field you never set is not a field that renders nothing — `Swift-v2_Text` ships a lorem default on
+`Subtitle`.** The item type declares a placeholder default value, so a paragraph created and populated
+normally renders lorem ipsum under its heading on the live page, from a field the author never opened. It
+is not a leftover from seed content and it survives every save that does not name the field. **Blank
+`Subtitle` explicitly on every `Swift-v2_Text` create** (the same discipline as trap 2 above: name the
+field, do not rely on what the create path leaves behind), and keep the content tripwire that flags
+placeholder prose pointed at the rendered page — this is exactly the state it exists to catch
+([`../../dw-demo-base/references/visual-qa.md`](../../dw-demo-base/references/visual-qa.md), and note the
+stock filler is verb-opener ipsum containing no "lorem" at all). An edition should strip the defaults from
+the shipped type rather than leaving every build to blank them.
+
 ## `Swift-v2_Accordion`: the items ARE writable — the write rides inside `ParagraphSave`
 
 > **Correction.** Earlier revisions of this file stated the Accordion's items were unreachable from the

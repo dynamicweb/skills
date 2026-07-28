@@ -205,6 +205,24 @@ relations that were never missing — the same queries returned 756, 31 and 2,92
 supplied. **Always pass `Path`**, and any harness leg that probes workspace membership must assert `Path`
 is set before it asserts anything about the count, or it asserts on a lie.
 
+**An empty workspace has three candidate causes and they compose — walk the checklist in order rather
+than hunting relations.** Two independent faults produced the same "renders no data despite matching
+products existing" state on one build, and fixing either alone left it empty:
+
+1. **`Path` missing on the probe** (above) — rule it out first; it is free and it is the one that makes a
+   healthy workspace look broken.
+2. **The workspace's `queryId` points at a query that does not exist.** The workspace saves and renders
+   with a dead reference — nothing validates the pointer — so re-resolve the GUID against the live query
+   list before believing anything downstream of it.
+3. **The index builder is skipping the terms the workspace projects on.** Both `Products.index` builders
+   carried `SkipCompletionRules=True` and `SkipDataModels=True`, so the completeness and data-model terms a
+   `DataModelKey` level matches on were never written to the index — the levels had nothing to match and
+   returned empty for every product. Read the builder flags, clear them, and **rebuild**; a flag change
+   without a rebuild changes nothing. After the repoint + flags + rebuild the three workspaces returned
+   756 / 31 / 2,929.
+
+A PIM edition whose demo leans on workspaces should not ship builders that skip completion rules.
+
 **When workspaces are NOT the right answer:**
 - Permission boundary. Workspaces are gated by the `/Products/DynamicWorkspaces` capability key (single on/off across all workspaces of that capability scope), not per workspace. Per-product permissions still come from group-level grants — see [`users-permissions.md`](users-permissions.md) for the full picture.
 - Originating products without a catalog group. Without `UseRelationOnProductCreate=true` on at least one level, the workspace's "Create product" UI produces orphans.

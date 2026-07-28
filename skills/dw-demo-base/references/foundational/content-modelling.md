@@ -146,6 +146,14 @@ your authored XML as authored:
 `POST ItemTypeDelete {SystemName, DeletePages:false}` frees the name **and** removes the XML — it is the
 reset lever when a type is genuinely mis-authored, not a required step on the way to a working table.
 
+**The editor you pick becomes a column type — a `TextEditor` field materialises as `nvarchar(255)`.**
+`ItemFieldSave` issues the DDL from the editor, and a value longer than the column is a **hard error, not
+a truncation**: a 259-character alt text bounced the whole `ParagraphSave` with a **500**, while 250
+characters landed. Nothing in the field definition surfaces the limit. Choose `TextArea` / `RichText` for
+anything that can grow (descriptions, alt text, any authored prose) and keep `TextEditor` for values you
+can guarantee ≤ 255 — and note that the choice is baked at field-create time, so changing it later is the
+create-alongside-and-migrate motion ([`pim-modelling.md`](pim-modelling.md) §2.8), not an edit.
+
 **A successful `ItemTypeById` / `ItemFieldsByItemTypeSystemName` read is NOT evidence the type is
 usable** — it is exactly the state an XML-only deployment produces. Any new-item-type helper must gate on
 a real write and must refuse to report success on metadata reads alone; make it re-runnable so a second
