@@ -3,6 +3,93 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.15.0]
+
+Fold-back sprint 4: lands the skill legs of 77 accepted demo-build learnings (Foundry LRN issues)
+across `dw-demo-base` and `dw-demo-swift`, in two parts. The through-lines: **the response model is
+an ECHO** (a save that reports `ok` and drops the field, a read verb that serves a cache the write
+verb never invalidated, and a *different* read verb that agrees with the lie — so the store or the
+rendered screen is the oracle); **write shapes are per field type, and per engine** (the
+string-vs-object family stated once, two coexisting discount engines one character apart, an
+assembly-qualified condition type whose error echoes nothing); **the platform owns ids, timestamps
+and ordering** (`*Save` mints its own id and discards yours; a recalculate re-saves the cached
+entity over your SQL; an absolute sort posted from a non-unique key flattens a curated page);
+**a verb-registry probe is not free and not conclusive** (every wrong guess writes an Error row onto
+the customer's Monitoring dashboard, while the screen route's own `Type=` parameter hands you the
+right query); **the numbers on the dashboards are read live from tables nobody looks at**, behind
+two shipped settings that discard or degrade all of it; **a clone copies the artefact but not the
+ownership, the path or the endpoint that made it work**; and — the loudest one — **a demo host
+serves real people's personal data and the vendor's own legal copy until someone sweeps for it, and
+a name-based grep reports clean.**
+
+### Added
+- **dw-demo-base — new references**: `foundational/promotions-engines.md` (the two discount engines
+  and which verb writes the one the admin screen reads, the voucher grid's legacy-row projection,
+  v2 condition/reward payload shapes, voucher code constraints, loyalty names living in the
+  translation table, encrypted gift-card codes); `foundational/tracking-insights.md` (Insights reads
+  `Tracking*` and `Statv2*` is a decoy, `DoNotTrackConnectionCloseHeader` discarding 100% of proxied
+  traffic, tracking cookies written after the response has started so 10.28.x can never record a
+  returning visitor, a `Tracking/Level` value outside its own enum, the `TrackingSession%` naming
+  ban, the three `/Admin/Api` health-provider verbs and the `checkWhatWasRun` technique,
+  `ContentDataHealthProvider` 500ing on partially-contained databases, and the log tables nothing
+  ever trims); **`pii-sweep.md`** (anonymisation as a whole-database string sweep re-run after every
+  pass, stock Swift shipping the platform vendor's own PII and legal copy, and the locale-shaped
+  patterns a term-grep can never find) — plus its always-on block in `SKILL.md` and the rendered-page
+  PII pass in `visual-qa.md`.
+- **dw-demo-base — clone/host posture** (`online-mode.md`): the inherited-clone remediation
+  playbook — middleware exceptions escaping DW logging entirely, the create-probe that separates a
+  real ACL lockout from a clone-ownership fossil, `Files\System` artefacts owned by the source host
+  (delete the fossil, do not edit ACLs), stale scheduled-task import paths, the checks that make
+  *disabling* an inherited integration task the correct fix, the GlobalSettings apply-without-
+  persisting / persist-without-applying split on an ACL-locked host, and the `Move-Item`-loses-the-ACE
+  ban with `Translations.xml` as the DW-owned self-modifying artifact behind it.
+- **dw-demo-base — platform surfaces**: admin-screen discovery via the route `Type=` parameter and
+  the dashboard cost of every guessed verb name (`foundational/data-access.md`), the legacy
+  `text`/`ntext` columns a bulk sweep silently skips, `[ordered]@{}` integer keys indexing by
+  position, the `DataRow` single-row indexing footgun fixed inside the helper, and the AMSI-blocked
+  dot-source that leaves every comparison reading empty; currency integrity as an index-build
+  precondition (`foundational/search-indexing.md`); the unflushable `AccessUser` cache split brain
+  (`foundational/cache-invalidation.md`); orders, invoices, subscriptions, RMA and the
+  `GetOrderList`↔`EcomShops` inner join (`foundational/commerce-orders.md`); product-field
+  registration, per-language and facet-label write surfaces (`foundational/pim-localization.md`);
+  `ProductSave` without `RunUpdateIndex` (`foundational/commerce-catalog.md`);
+  `UserAddressDelete` resolving through the owning user (`foundational/users-permissions.md`).
+- **dw-demo-swift**: the paragraph and page write contracts — the field key shape, item-list arrays
+  replacing the whole list, one over-long field aborting every other field, the read verb that
+  collapses a repeater (`paragraphs.md`); the `GridRowSort` safety rules — absolute ordering, verify
+  against the DB or the DOM rather than the API model, and insert-at-a-position instead of
+  re-deriving a total order (`admin-ui-authoring.md`); the demo-clock rules — one anchor row per
+  shifter, rewind-and-run as the only proof, discovered date columns, and per-column guards for
+  dates a cancel operation overloads as a state marker (`dashboard-seeding.md`); persona sign-in
+  field names with the right assertion target, and persona renames as a sweep of every generator
+  that can put the name back (`customer-center.md`); case-sensitive `Translations.xml` keys with the
+  89 shipped case-variant pairs (`language-layers.md`); two missing guards in stock Swift 2.4
+  templates — `GetPage(0)` throwing on the `?? 0` sentinel, and `AssetCategories` null on a stub
+  ProductViewModel (`templates.md`); a master-layer `ParagraphSave` writing through to the language
+  layers (`language-layers.md`); asset-reference auditing where filenames lie in both directions
+  (`asset-organisation.md`).
+
+### Fixed
+- `paragraphs.md`: `ButtonData.Label` on a language-version paragraph **is** writable — the
+  sprint 1-3 "not writable, record it as a known residual" text is replaced by an explicit
+  correction, and the "item-list children carry STRING fields only" claim is narrowed to
+  `SelectedImage`.
+- `paragraphs.md`: the read-shape-is-a-string / write-shape-is-an-object split is now stated **once**
+  as a family rule above the write-shape table, generalising the two earlier single-field notes.
+- `paragraphs.md`: supersedes the earlier "`GetParagraphById` is dead on 10.28 / 400 means not
+  found" reading — the parameter name was the fault.
+- `admin-ui-authoring.md`: corrects "verify a re-sort by re-reading `model.data`". That model is
+  served from a cache `GridRowSort` does not invalidate, so the API read-back is stale while the DB
+  and the rendered page are correct — and a retry or revert on that basis destroys the correct state.
+- `surface-priority.md` + `foundational/commerce-orders.md`: the ordering rule is generalised — any
+  API verb that **re-saves** an entity reverts raw-SQL edits made behind it, including verbs that do
+  not look like writes (`OrderRecalculate`). API writes first, SQL last, never re-save afterwards.
+- `sql-direct-seeding.md` + `foundational/search-indexing.md`: the sprint-3 index-build text absorbs
+  the argument-shape `404` rule rather than contradicting it.
+- `foundational/users-permissions.md`: the standing do-not-rename-users-via-raw-SQL rule now names
+  its mechanism — an in-process user cache reachable by no invalidation verb, failing three
+  endpoints away as a `403` on profile switch.
+
 ## [4.14.0]
 
 Fold-back sprint 3: lands the skill legs of 60 accepted demo-build learnings (Foundry LRN issues)
