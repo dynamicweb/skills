@@ -8,6 +8,8 @@
 - [4. What to do when the section "looks empty"](#4-what-to-do-when-the-section-looks-empty)
 - [5. Persona presentation: avatar + role badge](#5-persona-presentation-avatar--role-badge)
 - [6. Sign-in profiles / switch user (Swift 2.4) — not impersonation](#6-sign-in-profiles--switch-user-swift-24--not-impersonation)
+- [7. Signing in AS a persona — the field names, and the right assertion target](#7-signing-in-as-a-persona--the-field-names-and-the-right-assertion-target)
+- [8. Renaming a persona is a sweep, not a user edit](#8-renaming-a-persona-is-a-sweep-not-a-user-edit)
 
 > The Swift customer-center frontend playbook for Dynamicweb 10 demos. Covers the page-tree map (Account vs CSR vs legacy nav vs Overview), the stock-CSR rule rationale (inoculation against the rebuild-the-CSR-section trap in sales-on-behalf demos), the persona presentation layer, and the Swift 2.4 sign-in profiles / switch-user recipe (§6). The deeper, vendor-generic mechanics (impersonation, the `AccessUserSecondaryRelation` grant, reorder, seeding filters, permission gating, contract pricing) are owned by foundational skills — see §3.
 >
@@ -174,3 +176,61 @@ lands on the picker on the sign-in page, then is redirected onward. Re-visiting 
 while signed in shows the picker again; that IS the in-session account switcher. Stock Swift has
 no header/avatar entry point for switching, so link the sign-in page from the account menu when
 the demo storyline needs a visible switch affordance.
+
+## 7. Signing in AS a persona — the field names, and the right assertion target
+
+**A login that returns HTTP 200 and is not signed in reads as a broken login or a bad password. It is almost
+always the field names.** The Swift 2.4 sign-in form takes **lowercase** `username`, `password` and
+`redirect`. Posting the classic Dynamicweb names (`Username` / `Password` / `LoginAction`) is **accepted and
+ignored** — 200, no session, no error. That shape produced a false FAIL in one authentication proof.
+
+**The assertion target matters as much as the field names: assert against the customer-centre page fetched
+WITH the session cookie, never against the POST response**, which is 200 either way.
+
+The API side is a separate shape, measured separately:
+
+```
+storefront form :  POST <sign-in page>        username / password / redirect        (lowercase)
+storefront API  :  POST /dwapi/users/authenticate   { userName, password }          (capital N)
+                   /dwapi/users/token -> 401 — it is not the storefront route
+```
+
+**The dwapi session is carried by a COOKIE, not a bearer**, so every subsequent cart / customer-centre call
+must reuse the same web session. A persona-login gate should assert a **signed-in marker on the
+customer-centre page**, not a POST status code.
+
+## 8. Renaming a persona is a sweep, not a user edit
+
+**A persona is not a user-table row.** It is referenced by hardcoded credentials in shared harnesses, by
+generator scripts that write live pages and dashboards, by data seeders, by build specs consumed by *other*
+agents, and by gate persona secrets — none of which a user rename touches.
+
+Measured blast radius of one rename: a standing regression harness went **14/14 → 1/14 within seconds** (every
+scenario failing with `400` downstream of an authentication that returned an empty token), and a workstream
+running in parallel read that RED as evidence of *its own* damage. Dozens of files under the demo home still
+referenced the old username — shared verification scripts, an inventory JSON, and around twenty probe scripts.
+
+**The latent half was worse than the visible half:**
+
+- **Generators re-publish the retired identity.** Re-running the cheat-sheet, inventory, about-page and
+  quote/order/address seeders would have put the old name back onto live pages, onto an external dashboard,
+  and onto orders and addresses. One inventory generator both rewrites its JSON *and* POSTs the row to a live
+  external endpoint — so fixing only the JSON is undone on the next run.
+- **A build spec consumed by a separate frontend agent** instructed hardcoding the old credentials into a
+  shipped login screen.
+- **The gate config showed ZERO matches** and was still broken: gate personas resolve by *secret key*, so the
+  credential lives in the secret store, which had to be updated or the closeout personas leg would fail on a
+  login that no longer exists.
+
+**Treat a rename as a sweep of every surface that can put the name back**, in this order: shared harnesses →
+generators (the dangerous class) → seeders → build specs consumed by other agents → the gate secret store.
+Then **parameterise the persona** in shared harnesses instead of hardcoding it, so the next rename is a config
+edit. Gate: the personas leg authenticates **using the secret store**, and a repo-wide grep for the retired
+identity returns only documented evidence-file exemptions.
+
+When the rename is being done for **privacy** reasons rather than storyline reasons, the user-table edit is
+also only one of five database layers — see
+[`../../dw-demo-base/references/pii-sweep.md`](../../dw-demo-base/references/pii-sweep.md). And never repair
+a user row by raw SQL: the in-process user cache is unflushable and the failure surfaces three endpoints away
+([`../../dw-demo-base/references/foundational/cache-invalidation.md`](../../dw-demo-base/references/foundational/cache-invalidation.md)
+"Raw-SQL `AccessUser` writes create a split brain").

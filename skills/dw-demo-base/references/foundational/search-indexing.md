@@ -105,6 +105,35 @@ diff /tmp/repo.txt /tmp/shared.txt  # identical lines = duplicates
 
 **Does widget drill-through need the query in `Repositories`?** No. Widgets look up queries by GUID through the global cache, which is populated from SmartSearches. Drill-through navigation uses `ProductListNodePathProvider.GetPath` which requires the query's `FolderPath` to start with `SharedQueriesPath` — so Shared is actually the REQUIRED location for drill-through to work at all. Repositories is wrong on both fronts.
 
+## Currency integrity is an index-build precondition — `DivideByZeroException` names neither the currency nor the country
+
+**Price calculation divides by the currency rate, so a currency with rate `0` — or an `EcomCountries` row
+pointing at a currency that does not exist at all — crashes the product index build.** The exception is
+opaque: `DivideByZeroException` "Error processing prices" during the build, fired by both the scheduled build
+and a `BuildIndex` POST, naming **neither** the offending currency **nor** the country. It reads as a corrupt
+product and it lands on the Monitoring dashboard as a steady daily error count.
+
+Two independent causes produce the identical exception, which is why fixing only the one the error *seems* to
+point at leaves it firing:
+
+```sql
+SELECT COUNT(*) FROM EcomCurrencies WHERE CurrencyRate = 0;                    -- must be 0
+SELECT COUNT(*) FROM EcomCountries c                                           -- must be 0
+ WHERE c.CountryCurrencyCode NOT IN (SELECT CurrencyCode FROM EcomCurrencies);
+```
+
+One host carried a zero rate on all 16 language rows of a single currency **and** three countries pointing at
+currencies that had never been created. Clearing both took the build from 30 errors/day to a clean full
+rebuild with zero `DivideByZero` and zero `NullReference` across the whole log.
+
+- **Write currencies through `CurrencySave`, never raw SQL** — currencies are cache-coupled.
+- **`CurrencyByCode` answers `400`.** Read the model from `CurrenciesAll`, and use `CurrencyNew` to get the
+  blank create model.
+- **Functional check beyond the log:** price a cart line in **every** currency the demo exposes. A currency
+  that silently threw before will price cleanly after.
+- Make this a **precondition of the demo build**, not a symptom to chase: no zero rates, and every
+  `EcomCountries` currency code exists.
+
 ## Recovery recipe: Rebuild Products index
 
 After any mutation that touches products, groups, categories, fields, completeness rules, or queries, the Lucene index must be rebuilt — otherwise dashboard widget counts stay stale and product queries return zero rows.

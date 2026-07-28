@@ -239,6 +239,32 @@ had to re-prove that bug afterwards with an explicit single-field save. **Quote 
 hashtable, or iterate `.GetEnumerator()`** — and a `-WhatIf` dry run that prints resolved target values is what
 catches it, since empty values are the only signal.
 
+### A dot-sourced helper can fail to load while the calling script keeps running
+
+The third member of the silent-wrong-answer family, and the only one whose cause is outside the script. **A
+shared SQL helper can be blocked by AMSI as malicious content** — a false positive, almost certainly triggered
+by an inline connection string carrying credentials:
+
+```
+. .\_sql.ps1
+  -> "This script contains malicious content and has been blocked by your antivirus software"
+  -> the dot-source fails, the SURROUNDING script keeps running
+  -> every call to the helper is "not recognized"; every DB comparison silently reads EMPTY
+```
+
+Same helper, same host, **intermittent** — a re-run works. The failure is indistinguishable from real data
+drift unless the load is asserted: one verification pass produced four bogus `STALE` verdicts because it had
+been comparing against empty strings the whole time.
+
+- **Assert the helper actually loaded, immediately after every dot-source** — a trivial `Sql-Scalar "SELECT 1"`
+  probe (or a sentinel variable the helper sets) — and **fail loudly** rather than comparing against empty
+  output.
+- **Move credentials out of the inline literal** to reduce the false positive.
+
+Same failure shape as the two traps above: a comparison that returns a plausible wrong answer with no error
+is worse than no comparison, because it makes "the write did not land" and "my reader is broken" the same
+observation.
+
 ### Bulk string edits: DW 10 still ships legacy `text` / `ntext` columns
 
 `REPLACE` refuses `ntext` as its first argument, so a straightforward bulk string fix fails on exactly the

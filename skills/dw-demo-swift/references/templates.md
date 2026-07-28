@@ -10,6 +10,7 @@
 - [Verifying a template deploy — the procedure, not a hedge](#verifying-a-template-deploy--the-procedure-not-a-hedge)
 - [Branching a template on Visual Editor mode — `Pageview.IsVisualEditorMode`](#branching-a-template-on-visual-editor-mode--pageviewisvisualeditormode)
 - [Image focal points are inert unless the layout transports them](#image-focal-points-are-inert-unless-the-layout-transports-them)
+- [Two missing guards in stock Swift 2.4 templates — a card that vanishes and a card that throws](#two-missing-guards-in-stock-swift-24-templates--a-card-that-vanishes-and-a-card-that-throws)
 - [Swift v2.3.0 templates + swift/2.3 baseline](#swift-v230-templates--swift23-baseline)
 
 This file is now a router. The vendor-generic Swift template / page / Razor knowledge that used to
@@ -160,6 +161,54 @@ then only ever trims height. If neither transport exists, either set `Ratio` on 
 crop is baked server-side, or express the correction as CSS `object-position`, keyed on the image
 file name rather than `nth-of-type` so it survives a row reorder. Assert the **computed**
 `object-position` on the target `<img>`; a binder read-back proves storage, never effect.
+
+## Two missing guards in stock Swift 2.4 templates — a card that vanishes and a card that throws
+
+Both are **vendor template defects**, both present in the shipped Swift 2.4 design (and in the mirrored
+`Swift-v2` copies), and both fail the same way: **DW swallows the exception and emits empty output**, so the
+component simply is not there. Nothing on the page says why. Fix them at the **edition/layer** level so no
+demo inherits them; the demo-side obligation is different for each.
+
+### `GetPage(0)` throws — and `?? 0` is precisely the value that throws
+
+`Dynamicweb.Content.Services.Pages.GetPage(0)` throws `ArgumentException` ("Get page requires a page ID
+greater than zero") — **it does not return `null`**. Every customer-centre `Swift-v2_Dashboard_*` template
+(chart, list, number and product variants — ten files in the live design plus ten mirrored copies) writes:
+
+```cshtml
+var basePageId = baseLinkViewModel?.PageId ?? 0;
+var basePage   = Dynamicweb.Content.Services.Pages.GetPage(basePageId);   // 0 is NOT a safe sentinel
+```
+
+`PageId` is `0` whenever `BaseLink` does not resolve — most often when a **`ButtonEditor` JSON envelope has
+been written into what is actually a `LinkEditor` field**, which the link parser accepts while yielding
+`PageId 0`. Symptom: dashboard cards silently disappear, with dozens of `ArgumentException` rows written into
+`GeneralLog` in a few minutes.
+
+- **Template fix (edition):** `var basePage = basePageId > 0 ? Dynamicweb.Content.Services.Pages.GetPage(basePageId) : null;`
+  — no behaviour change when the id is valid, because the next line already null-checks `basePage?.Icon` and
+  falls back to the stock icon.
+- **Authoring rule (demo):** `BaseLink` is a **`LinkEditor`** and must hold a plain URL string
+  (`Default.aspx?ID=<pageId>`), **never** the `ButtonEditor` envelope. The per-field-type write shapes are in
+  [`paragraphs.md`](paragraphs.md).
+- **Gate:** render a customer-centre dashboard carrying one `Swift-v2_Dashboard_*` paragraph with an **empty**
+  `BaseLink` and assert the card renders **and** `GeneralLog` gains zero `ArgumentException` rows.
+
+### `product.AssetCategories` has no null guard — a stub ProductViewModel passes every non-null check
+
+When a product has **no row for the current ecommerce language**, DW hands the template a **stub**
+`ProductViewModel` — non-null, so it passes an `is object` check — whose `AssetCategories` is `null`. The four
+stock media templates (`Swift-v2_ProductDefaultImage.cshtml`, `ProductMedia`, `ProductMediaGallery`,
+`ProductMediaTable`) enumerate `AssetCategories` with no guard, throwing `ArgumentNullException` **once per
+product card rendered** on any storefront whose catalogue is not language-complete. The stub-model behaviour
+is exactly what makes the usual non-null check useless as a guard.
+
+- **Template fix (edition):** null-guard `product.AssetCategories` in all four templates. This is **upstream
+  robustness**, not the demo fix.
+- **Demo obligation:** **mint the missing language rows** (`ProductSetLanguages`). A template guard would mask
+  a real data gap; the language rows are what makes the localized PLP correct.
+- **Gate:** every product reachable from a localized PLP has a language row for that area's ecom language,
+  and the localized PLP renders with zero `ArgumentNullException` rows in `GeneralLog`.
 
 ## Swift v2.3.0 templates + swift/2.3 baseline
 
