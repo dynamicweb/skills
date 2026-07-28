@@ -44,6 +44,25 @@ posting. Section colour-scheme rhythm needs no admin-UI capture/replay; the API 
 Related shape: `GET /Admin/Api/GridRowsByPageId?PageId=<id>` is paginated — the rows live under
 `model.data` (already in render/sort order), not `model[]`.
 
+**Grid ROW creation: `GridRowSave` has no create mode, `GridRowCopy` only appends, and position is set
+exclusively by `GridRowSort`.** Three verbs, one recipe, and each of the two obvious shortcuts fails in its
+own way — `GridRowSave` with `Id=0` returns **404** (it is update-only, unlike the create/update fork on
+the commerce saves), and `GridRowCopy` always lands the new row at the BOTTOM of the page with no
+positional argument to override it. So inserting a row *between* two existing rows is always
+**copy-then-sort**:
+
+```
+POST /Admin/Api/GridRowCopy  {PageId, Id}            -> new row appended at the bottom
+POST /Admin/Api/GridRowSort  {PageId, Ids: ["<id>", "<id>", …]}   -> Ids[] are STRINGS, in target order
+```
+
+`GridRowSort` takes the complete ordered id array for the page and the ids are **strings**, not ints —
+post them as numbers and the sort is rejected or silently partial. Read the current order from
+`GridRowsByPageId` (`model.data` is already in render order), splice the copied row into the position you
+want, and post the whole array back. Verify by re-reading `model.data` and asserting the row sequence, then
+by the rendered page — a page whose rows are correct in the API and wrong on screen is a sort that did not
+take.
+
 **`flexibleColumns` is inverted: `0` = flexible, `1` = fit-to-content.** In the `GridRowSave`
 `flexibleColumns` array the column listed `0` silently absorbs all remaining horizontal space
 (computes `flex: 1 1 auto`, `class="flex-fill"`); entries of `1` compute `flex: 0 1 auto` and size

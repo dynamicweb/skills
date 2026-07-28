@@ -3,6 +3,7 @@
 ## Contents
 
 - [Writing paragraph fields via the Management API (Swift 2.4 / DW 10.28.x)](#writing-paragraph-fields-via-the-management-api-swift-24--dw-1028x)
+- [Creating a paragraph — the two-step, the 1-based column, and the writable template twin](#creating-a-paragraph--the-two-step-the-1-based-column-and-the-writable-template-twin)
 - [`Swift-v2_Accordion`: the items ARE writable — the write rides inside `ParagraphSave`](#swift-v2_accordion-the-items-are-writable--the-write-rides-inside-paragraphsave)
 - [Where to find a paragraph's wiring (read-only baseline inspection)](#where-to-find-a-paragraphs-wiring-read-only-baseline-inspection)
 - ["Don't customise this paragraph" callouts](#dont-customise-this-paragraph-callouts)
@@ -48,6 +49,15 @@ three stacked traps:
   both confirmed working; `Style: "link"` is in the stock vocabulary and renders
   `class="btn btn-link" data-dw-button="link"`.
 
+- *On a LANGUAGE-VERSION paragraph only `Link` round-trips — `Label` and `SelectedValue` are silently
+  restored from the master.* Translating a CTA on a language copy returns `status: ok`, and the read-back
+  carries the MASTER's English label; the `Link` you set in the same call does stick. So a language pass
+  that translates every text field lands everything except its buttons, and nothing in the run reports it.
+  Reproduce on any language paragraph carrying a `ButtonEditor`: post a translated `Label` + a translated
+  `Link`, re-read, and observe `Link` changed while `Label` reverted. There is no `ParagraphSave` route to a
+  translated CTA label on 10.28.3 — either author it in the admin UI or accept the residual and **record it
+  as a known residual in the run notes**, so the next pass does not spend an hour re-proving it.
+
 Verify every ButtonData write against the RENDERED page (expected `href` + label present, old label
 count dropped), never against the API re-read — a re-read proves storage, never effect.
 
@@ -80,6 +90,51 @@ when handed one, and that a round-trip save of a paragraph carrying an icon leav
 Ratio, FocalX, FocalY}`, `Id` carrying the path — see
 [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §"Product images".
 Do not carry that shape back to a paragraph item field on the strength of the shared type name.)
+
+**Every item-field editor has its OWN write shape, and the four in play are mutually incompatible.**
+The editors share one projected `field.value` slot, so a payload built for the wrong one is accepted by
+the binder and fails downstream — at render, or not at all. Name-matching ("it's a media field, use the
+image shape") is what produces each row's failure column. Read the editor's `typeName` off
+`ItemFieldsByItemTypeSystemName` (or the type's XML) and pick the shape from it:
+
+| Item field editor | Write shape through `ParagraphSave` | What the wrong shape does |
+|---|---|---|
+| `SelectedImage` (on the paragraph's OWN `contentItem`) | `{Id:"/Files/…", Name, Ratio, FocalX, FocalY}` — **`Id` carries the path**, `Path` is obsolete | a plain string is discarded; any object on a *list child* stores empty and is then unrecoverable (below) |
+| Video field | `@{Path="/Files/Videos/<file>.mp4"}` — a **`Path`** object | the `SelectedImage` `Id` shape fails or corrupts the field |
+| `LinkEditor` | a **bare URL string**, e.g. `"/en-us/<page>"` | a `ButtonEditor` JSON envelope stores an unresolvable link → the consuming widget throws `Get page requires a page ID greater than zero` |
+| `ButtonEditor` / `ButtonData` | the full JSON **object** `{SelectedValue, Label, Link, LinkType, Style}` | a bare label string throws `ConverterException` at render and replaces the section with an error block |
+
+`Path` and `Id` are the same one-word difference as the asset verbs — the two media shapes are not
+interchangeable in either direction, so probe on a disposable paragraph, never on live content.
+
+**A `SelectedImage` field inside a PROJECTED ITEM-LIST CHILD is not writable at all — the child carries
+STRING fields only.** Distinct from the paragraph's own `contentItem` above, where the binder object does
+work. A child's values ride in `ModelRawData`, which is a flat `string → string` map and cannot
+structurally carry a binder object; the alternative structured channel (`RelationItem.Groups[].Fields[]`)
+is not honoured for this field either. Four shapes were probed on a disposable slider card — all four
+returned `status: ok`, all four read back `""` from the row, while `Title` / `Subtitle` / `Text` on the
+**same** child in the **same** payload persisted every time:
+
+```
+ModelRawData Image = "/Files/Images/<brand>/<file>.jpg"           -> ""
+ModelRawData Image = "{\"Id\":…,\"Name\":…,\"Ratio\":…,\"FocalX\":…,\"FocalY\":…}"  -> ""
+ModelRawData Image = "/Images/<brand>/<file>.jpg"   (no /Files)   -> ""
+RelationItem.Groups[].Fields[].Value = binder object / plain path -> "" for both
+```
+
+So a card image inside a slider/accordion/repeater is **one click in the admin UI**, and saying so is the
+honest answer. Do not design a data fix around it, do not overwrite the file at the old path to fake one
+(the file is referenced by other surfaces), and do not escape to SQL — the write would be reverted by the
+next `ParagraphSave` anyway ([sql-direct-seeding.md](sql-direct-seeding.md) §"Why an API write and a SQL
+write are not equivalent").
+
+**`ParagraphSave` silently BLANKS module settings it cannot round-trip — page-picker values are the known
+class.** The save model omits settings the API has no representation for, and posting that model back
+writes the omission as blank. One unrelated `ParagraphSave` on a sign-in module wiped three page-picker
+settings with no error and no failed status; they had to be restored by hand from a diff. **Before any
+`ParagraphSave` on a MODULE paragraph, snapshot the paragraph's settings, and diff them after the save** —
+this is not covered by the standard "re-read the entity" check, because the re-read agrees with the model
+you posted. Restore anything the diff shows missing in the same run.
 
 **Hiding a paragraph: `showParagraph=false` is inert; the three `hideFor*` flags are the working motion.**
 `ParagraphSave {showParagraph:false}` returns `status: ok`, reads back `showParagraph: True`, and the
@@ -123,6 +178,41 @@ API describing an empty slot, not a paragraph. So the standard "`GridRowCopy` an
 delete the clone to empty it" recipe looks like it failed: after a successful `ParagraphDelete` the
 listing still returns an object for that row, and a script that verifies its own delete aborts a run
 that in fact worked. Filter to real paragraphs (`id > 0`) before counting emptiness.
+
+## Creating a paragraph — the two-step, the 1-based column, and the writable template twin
+
+`ParagraphNew` + `ParagraphSave` does not produce a finished paragraph in one pass. Three independent
+defects in the create path each end in the same place — a paragraph that saves, reads back correctly, and
+**renders nothing** — so a create helper that checks only `status` and a re-read reports success on all
+three.
+
+**1. `gridRowColumn` is 1-based, and `ParagraphNew` returns `0`.** The Swift grid renderer indexes columns
+from 1, so a paragraph left at the created default sits in a column the renderer never walks. It is not
+dropped and not flagged: the save returns `200`, `GetParagraphById` returns the paragraph with all its
+fields, and the served HTML simply does not contain it.
+
+```
+ParagraphNew                        -> gridRowColumn = 0
+POST ParagraphSave (column left 0)  -> 200, present in GetParagraphById, ABSENT from rendered HTML
+POST ParagraphSave  gridRowColumn=1 -> renders
+```
+
+**Set `gridRowColumn` explicitly to a 1-based index on every create**, and assert the paragraph's own text
+appears in a live GET — no API surface distinguishes column 0 from column 1.
+
+**2. Item field values do NOT bind on create — a second `ParagraphSave` is required.** The create path
+ignores the item-field values in the payload; they bind only on a subsequent save of the now-existing
+paragraph. A required field therefore lands empty even though it was in the create body, which on a widget
+paragraph means the widget throws before it renders. Where the *required* flag blocks the create outright,
+the working sequence is: `ItemFieldSave` to toggle `required` off → create the paragraph → set the value on
+a **second** `ParagraphSave` → `ItemFieldSave` to restore `required`. Assert the value after the second
+save, never after the create.
+
+**3. `template` is read-only; `layout` is the writable twin, and DW mirrors it into `template`.** A
+`ParagraphSave` carrying `template=<file>.cshtml` is rejected or ignored — the API exposes `template` as a
+read surface only. Write the `layout` property instead, then read `template` back to confirm the mirror
+landed. The same pair appears on the page save model. (This is why the repeater payload above sets
+`Layout`, not the `template` a reader would expect.)
 
 ## `Swift-v2_Accordion`: the items ARE writable — the write rides inside `ParagraphSave`
 
