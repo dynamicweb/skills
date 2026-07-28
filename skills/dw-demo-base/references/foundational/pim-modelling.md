@@ -145,6 +145,18 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
   `reference_category` one (same hidden template category that powers the admin completeness/rule lookups —
   [`pim-completeness.md`](pim-completeness.md)). Write options to the `reference_category` path, then assert
   they come back through `ProductFieldOptionsByFieldId`; a returned id is not evidence.
+- **Cloning a reference field's DEFINITION does not clone its OPTIONS — and `EcomFieldOption` primary keys are
+  globally unique, so the rows cannot be copied verbatim.** Cloning reference fields into per-type PIM
+  categories leaves the options behind in the `ProductCategory|reference_category|<fieldId>` bucket, so the
+  editor reads the real category bucket and renders **empty dropdowns** — 11 list fields across six attribute
+  categories on one build, every one of them saving and reading back fine. The obvious fix then violates the
+  PK: `EcomFieldOption`'s key is **`FieldOptionId` ALONE**, globally unique rather than scoped per field
+  (measured: 463/463 distinct), so copying rows verbatim collides. The platform's own precedent settles the
+  shape — a stock per-type spec category mirrors its reference field and carries **its OWN copy of every
+  option: same values, DIFFERENT option ids**. Mint the new ids
+  (`MAX(TRY_CAST(SUBSTRING(FieldOptionId,9,20) AS int)) + ROW_NUMBER()`, the same `TRY_CAST` rule the
+  `nvarchar` id columns need elsewhere). **Make option-set copying an explicit step of any reference-field
+  clone**, and assert every list-type category field has a non-empty option set *in its own bucket*.
 - **`ProductFieldSave` will NOT change `typeId` — it echoes the new type and persists the old.** Worse, the
   *other* edits on the same call **do** persist: rename the field, change its description or display group
   and retype it in one save, and everything except the retype lands. The response carries the new `typeId`,

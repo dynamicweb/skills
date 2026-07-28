@@ -96,6 +96,15 @@ occurrences as completely absent. Every deletion decision downstream of that rea
 noise. Stream the corpus and match with `String.IndexOf` instead — same corpus, same pattern:
 `Select-String` 0, `IndexOf` 656.
 
+**Filenames lie in BOTH directions — only pixels count.** A descriptive filename is authored independently of
+the content and drifts from it, and generated or stock-library assets are the worst offenders. On one audit,
+three plausibly-named subject photos turned out to be a camera on a white sweep, a flat-lay of maps and
+guidebooks, and an underwater shot — while the genuinely off-subject image actually live on the site was named
+`Content/Details/details-8.jpg`. A filename-based audit therefore **both** misses real contamination **and**
+would introduce more by sourcing "matching" replacements from the same pile. Any image audit or asset-reuse
+step must **eyeball or vision-check the file itself**, in both directions, and a folder of plausibly named
+assets is not a trusted source. Record a visual check per swapped image rather than a filename match.
+
 **Resolve the file indexes' `StartFolder`s FIRST — the unindexed sibling is the deletion candidate.**
 A stock install can ship an 8+ GB pile of asset-shaped folders with near-identical names (a `Digital
 assets` tree beside a `Digital assets - DEMO` tree) and nothing in the folder names says which is

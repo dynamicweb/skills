@@ -13,6 +13,10 @@
 - [Backstage data model](#backstage-data-model)
 - [Surfaces — which MCP tools do what](#surfaces--which-mcp-tools-do-what)
 - [Enable per-language editing on standard fields (one-time seed)](#enable-per-language-editing-on-standard-fields-one-time-seed)
+- [Read `EcomProductField` BEFORE planning any per-language or per-variant product write](#read-ecomproductfield-before-planning-any-per-language-or-per-variant-product-write)
+- [Per-product category field VALUES are language-invariant by configuration](#per-product-category-field-values-are-language-invariant-by-configuration--the-language-column-is-a-decoy)
+- [Facet option labels — no per-language verb, and an admin edit destroys the translations](#facet-option-labels--there-is-no-per-language-verb-and-an-admin-edit-destroys-the-translations)
+- [Order / quote / cart state badges — `OrderStateTranslationSave`](#order--quote--cart-state-badges--orderstatetranslationsave-no-sql-needed)
 - [Adding a new language — the platform steps](#adding-a-new-language--the-platform-steps)
 - [Cross-references](#cross-references)
 
@@ -215,6 +219,85 @@ Insert/UPDATE the DB rows directly per the recipe above.
 
 **Cache:** the EcomProductField list is loaded at startup. Restart the host after seeding before
 reopening a product translation page.
+
+## Read `EcomProductField` BEFORE planning any per-language or per-variant product write
+
+`ProductSave` returns `status: ok` for fields it never writes. Three separate registration/flag facts decide
+whether a field can take the value, and none of them produce an error — the save echoes the posted model and
+`ProductById` reads it back, which makes the round trip look convincing.
+
+- **An unregistered field is DISCARDED.** `EcomProductField` ships rows for `ProductMetaTitle` and
+  `ProductMetaUrl` but, on a fresh install, **no row at all for `ProductMetaDescription` or
+  `ProductMetaKeywords`** — and the save pipeline drops fields it has no row for. Measured on one translation
+  run: 148 saves carried translated `metaTitle`, `metaDescription` and `metaKeywords` in the same model;
+  `metaTitle` landed for every language, and **0 of 194 localized rows differed from the master** on either of
+  the other two, anywhere in the table. Net effect on the storefront: localized PDPs serve a translated
+  `<title>` with an untranslated `<meta name="description">` and `og:description`. The fix is **registration**
+  — the seed above already includes `ProductMetaDescription` / `ProductMetaKeywords`, after which the same
+  `ProductSave` path works unchanged.
+- **`AllowChangesAcrossVariants=False` silently ignores a per-variant write of that field.**
+  `ProductShortDescription` ships `False` (while `ProductName` and `ProductLongDescription` ship `True`), so
+  the master value is pushed to every variant row and a per-variant write of that one field is discarded —
+  `ProductSave` returns `ok` and the row keeps the master text. What makes it look arbitrary is that names and
+  long descriptions on the **same rows in the same call** save correctly and stay variant-specific.
+- **`AllowChangesAcrossLanguages=False` does the same for a per-language write** (§"Enable per-language
+  editing on standard fields" above is the seed that flips it).
+
+**Rule: for each field you intend to write, read its `EcomProductField` flags first and verify the result
+against `EcomProducts`, never against the `ok` response.** A harness leg that asserts the flag permits the
+write before attempting it turns a silent no-op into a red step.
+
+## Per-product category field VALUES are language-invariant by configuration — the language column is a decoy
+
+`EcomProductCategoryFieldValue` carries a `FieldValueProductLanguageId` column, which reads as "spec values are
+translatable". They are not, unless the field says so: with `FieldAllowChangesAcrossLanguages=False` on the
+category field, the VALUE is language-invariant by configuration and `ProductById` reports every one of those
+fields `readonly: true`. Measured on one catalogue: 56 attribute fields all carrying the flag `False`, and
+**zero** localized values differing from their master twin anywhere in the table — PDP specification values
+stay in the master language no matter how they are written.
+
+**A language column on a table does not imply a translatable value.** Localizing spec values is a **PIM
+data-model change first** (flip `FieldAllowChangesAcrossLanguages` via `ProductFieldSave`), not a translation
+task — so scope it as a modelling decision, or exclude it explicitly from the language pass rather than
+attempting it and reporting a failure.
+
+## Facet option labels — there is no per-language verb, and an admin edit destroys the translations
+
+Two facts that turn "translate the PLP filters" from a write into a project:
+
+- **The index value is the option KEY and must never be translated** (`StainlessSteel`, `Zinc`) — translating
+  it breaks the filter. The PLP sidebar renders `facetOption.Label`, and the per-language display name lives in
+  **`EcomFieldOptionTranslation`**.
+- **`ProductFieldOptionSave` has no language dimension.** Its model is
+  `{OptionId, FieldId, Name, Value, IsDefault, Sort, Image}` — one `Name`. So there is no verb for a
+  per-language option name, and the rows must go in by SQL. Option ids live in the
+  `ProductCategory|reference_category|<field>` bucket, not the per-type qualified twins
+  ([`pim-modelling.md`](pim-modelling.md) §2.8).
+- **The option collection is cached in-process and does not pick the rows up.** Neither a cache-busted request
+  (`?cb=<guid>`) nor a `ProductFieldOptionSave` round-trip on the same option surfaced the inserted labels —
+  the localized PLP kept rendering master-language options. **Facet option labels require an app-pool recycle
+  to go live**, so sequence any language work that includes them against a recycle window.
+- **STANDING HAZARD: `ProductFieldOptionSave` WIPES that option's other-language rows.** The save replaces the
+  option's translation set from a model carrying a single `Name`, so every other-language row is dropped —
+  measured directly, and it fires on **normal admin use**: an editor tweaking one facet option in the UI
+  silently destroys its localizations. **Re-apply the per-language names after any facet option edit**, and
+  assert the `EcomFieldOptionTranslation` row count per option is unchanged across one.
+
+## Order / quote / cart state badges — `OrderStateTranslationSave` (no SQL needed)
+
+State labels live in `EcomOrderStateTranslations`, which typically ships master-language rows only — so
+localized customer-centre order lists render master-language badges and the fix *looks* SQL-only. It is not:
+there is a first-class verb.
+
+```
+POST OrderStateTranslationSave { Model: { OrderStateId, LanguageId, Name, Description } }
+```
+
+One row per (state × language); on one pass 27 states × 2 languages = 54 rows, all read back from
+`EcomOrderStateTranslations`. It covers order, quote and cart states alike (including the workflow-specific
+and `cart_*` states). **Use the verb — do not reach for SQL on this table.** (`EcomOrderStates` *column*
+changes such as `OrderStateColor` are a different surface and are restart-owed —
+[`cache-invalidation.md`](cache-invalidation.md).)
 
 ## Adding a new language — the platform steps
 
