@@ -97,6 +97,22 @@ This is the one place DW10's workflow engine falls short of "out of the box for 
 
 If a setup needs "only Reviewers may move Pending Approval → Approved", the gate **must live outside the workflow tables**. See §6 for the three workaround patterns.
 
+### `WorkflowUserSave` silently ignores `UserId` — workflow personas cannot be bound through the API
+
+The one surface that looks like it closes the gap does not. `WorkflowUserSave` accepts a row, returns
+success, and **drops `UserId`** — `userId` reads back `0` on create *and* on update, on 10.28.3. The
+sibling members on the same call (`role`, `notify`, `required`, `priority`) all persist, so the row exists
+and looks configured while being bound to nobody. Two further constraints worth knowing before designing
+around it:
+
+- the `role` enum is **`administrator | approver`** only — `"editor"` is rejected;
+- a saved-but-unbound row is worse than no row, because it reads as a configured persona in the admin
+  grid. **Delete the row rather than leaving a blank slot.**
+
+Binding a workflow persona therefore needs the **admin UI**, or a user-group-shaped workaround (§6). Say so
+in the plan rather than scripting it: an API pass over these rows produces a governance model that looks
+staged and gates nothing.
+
 ## 6. Three workaround patterns for per-state role gating
 
 In increasing fidelity. Pick one or compose — they layer.

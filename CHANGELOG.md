@@ -3,6 +3,75 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.14.0]
+
+Fold-back sprint 3: lands the skill legs of 60 accepted demo-build learnings (Foundry LRN issues)
+across `dw-demo-swift` and `dw-demo-base`. The through-lines: **a read model is not a save model**
+(`modelIdentifier` + `emailStateIcon` on `EmailSave`, module page-picker settings on
+`ParagraphSave`, and a `ParagraphSave` response that echoes values the row provably never took);
+**the 0 that means nothing** (`gridRowColumn` returns 0 from `ParagraphNew` and 0 is a column the
+renderer never walks; `ProductsByDynamicStructureLevel` returns 0 for every query missing `Path`;
+`$rows[0].Col` reads column 0 off an unrolled `DataRow`); **per-field-type write shapes are not
+interchangeable** (`SelectedImage` `{Id}` vs video `{Path}` vs `LinkEditor` bare URL vs
+`ButtonEditor` envelope, none of them writable on a projected list child); **verbs that create
+instead of update** (`TaskSave` with `Id=0` minted 1,428 duplicate scheduled tasks;
+`RelationGroupSave` inverts it); and — the design half — **a green gate can lie in ways a byte
+check, a screenshot and a rendered-HTML assert all share**: a rule that parsed and never applied, a
+rule that applied to a page written years later, a wrap that is not an overflow, a colour that
+appears in no sheet, and a proof whose oracle is the artefact under test.
+
+### Added
+- **dw-demo-swift**: the paragraph create contract — 1-based `gridRowColumn`, create-then-save
+  field binding, `layout` as the writable twin of `template`, the `Swift-v2_Text` lorem `Subtitle`
+  default, and the per-field-type write-shape table incl. the `ButtonData` language-version trap
+  (`paragraphs.md`); `GridRowSave` traps (`mobileSortColumns` binds `IEnumerable<ListOption>`, the
+  row-family conversion payload) (`admin-ui-authoring.md`); the SQL-runner retirement evidence,
+  `TaskSaveCommand` create-vs-update semantics and the corrected index-build status route
+  (`sql-direct-seeding.md`); the CSS authoring truths — row colour schemes paint the **section**
+  (a radius on a transparent child rounds nothing), the `!important` tell that names a rule dead
+  since the day it shipped, selector reach (scope every hide rule; comment every positional one;
+  `Row` vs `RowFlex` emit different column markup), effective-alpha contrast, and the
+  name-your-retirement-condition rule for workaround blocks (`re-skin.md`); webfonts arriving as an
+  `@import` inside the generated Typography sheet (`styles-assets.md`); the post-AreaCopy SECURITY
+  checklist, shortcut normalisation, the `GroupMetaPrimaryPage` + `PageNavigationProductPage` pair,
+  and the `primaryPageId`-at-the-shop-page blank-PDP trap (`language-layers.md`); nav visibility is
+  not access control (`header-menu.md`); the gallery-video 3×-preload payload trap and the
+  unused-asset audit method (`asset-organisation.md`).
+- **dw-demo-base**: `FileDelete` ACL denial, `allowOverwrite` on every upload, and the
+  probe-for-a-reachable-site-DB rule with its credential/scope caveats (`online-mode.md`); short
+  command names are not unique, a read model is not a save model, and the `EmailsByFilters` filter
+  pairs (`foundational/data-access.md`); product relations through the Management API, the variant
+  chain, and channel/feed semantics (`foundational/commerce-catalog.md`); the Dynamic-Workspaces
+  empty-state checklist and BOM/category/field contracts (`foundational/pim-modelling.md`);
+  `WorkflowUserSave` (`foundational/pim-workflow.md`); the Swift 2.4 `LanguageSelector` item-type
+  gap with its creation route, the `TextEditor` = `nvarchar(255)` hard error, and the AreaCopy
+  permission SECURITY rewrite (`foundational/content-modelling.md`); the design-gate asserts —
+  wrap-is-not-overflow (rail row count), present-in-HTML-is-not-visible, effective-alpha contrast,
+  and Accept-aware image sizing (`visual-qa.md`).
+
+### Fixed
+- `foundational/content-modelling.md` §2: the item-type recipe attributed table creation to
+  `ItemTypeSave`. `ItemFieldSave` materialises `ItemType_<SystemName>`; activation rewrites the XML
+  in place, so the host identity needs a **write ACE on `Files\System\Items\**`** or activation
+  fails silently (only trace: `Files/System/Log/items/ActivationWorkflow`). Split into Route A
+  (XML on disk) and Route B (author through the API); `ItemTypeDelete` demoted to a reset lever and
+  the "deadlock" framing retired — the 400 "System name is used already" is the file owning the
+  name, not a blocker.
+- `foundational/content-modelling.md` + `paragraphs.md`: the repeater-child verification is
+  re-ranked — the rendered page is the verification, full stop; the `0` → non-zero pointer mint is
+  a **create-only** convenience and must not be what a helper gates on (evidence: pointer constant
+  across four saves on an existing `ItemList`, with the `ParagraphSave` response echoing values
+  that did not persist).
+- `sql-direct-seeding.md` + `foundational/search-indexing.md`: "there is no index-status command on
+  10.28.x" was wrong. `BuildIndex` is synchronous server-side and the 120s client timeout severs the
+  *response*, not the build — swallow it and poll **`IndexStatusesAll`**; the singular
+  `IndexStatus`/`GetIndexes` `400 Unknown query` is what produced the earlier reading.
+- `customer-center.md` §6: the platform gate now states the platform honestly rather than the
+  workaround that was available at the time.
+- `online-mode.md`: "there is no SQL surface, ever" is now "assume none until you probe" — a
+  co-located cloud host can carry the site DB reachably, which retires the `Sql-ReadRaw` workaround
+  family for reads while leaving the write order unchanged.
+
 ## [4.13.0]
 
 Fold-back sprint 2: lands the skill legs of 23 accepted demo-build learnings (Foundry LRN

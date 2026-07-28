@@ -4,6 +4,15 @@
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
+## Contents
+
+- [The format lives in the foundational skill](#the-format-lives-in-the-foundational-skill)
+- [Reference source: `theme-default` in the Distribution](#reference-source-theme-default-in-the-distribution)
+- [Hand-editing a generated Style asset — edit the `.json` model too](#hand-editing-a-generated-style-asset--edit-the-json-model-too)
+- [Webfonts arrive as an `@import` INSIDE the generated Typography sheet](#webfonts-arrive-as-an-import-inside-the-generated-typography-sheet)
+- [When to use this vs `<customer>_custom.css`](#when-to-use-this-vs-customer_customcss)
+- [Cross-references](#cross-references)
+
 ## The format lives in the foundational skill
 
 Vendor-generic Swift Style-asset knowledge — the four `wwwroot/Files/System/Styles/{ColorSchemes,Buttons,Typography,Fonts}/` directories, the `<brand>.json` + `<brand>.css` pair format, how `Swift-v2_Master.cshtml`'s `Model.TryGet*Style` calls load them, the JSON schemas, the `Area.AreaColorSchemeGroupId` / `AreaButtonStyleId` / `AreaTypographyId` wiring SQL, and the silent empty-state pitfall (`TryGet*Style` returns `false` and adds nothing to `<head>` when the file is absent) — is owned by the `dw-swift-building` foundational skill — staged in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7 ("Style assets").
@@ -75,6 +84,30 @@ The `<design>.css` under `System/Styles/ColorSchemes/` is **generated output**, 
 So: when a demo must hand-edit a Style asset, **edit the `.json` in the same pass and upload both**; pre-flight should parse the `.json` and assert every scheme carries the new value, and the post-upload check should re-fetch both files and confirm zero literals of the retired value.
 
 This is not an edge case for a palette change: primary buttons paint from `--dw-color-button-primary`, which is declared **only** in the generated colour-scheme CSS (as a hex *and* an `rgb` triplet, once per scheme). A `<customer>_custom.css` loaded afterwards cannot override a variable it never mentions, and declaring the variable there instead is the wrong fix — it leaves the model lying and the admin swatch stale. Full sweep: [`re-skin.md`](re-skin.md) §"A palette swap is a multi-file, multi-notation sweep".
+
+## Webfonts arrive as an `@import` INSIDE the generated Typography sheet
+
+**A Swift theme injects its webfont with `@import url(https://fonts.googleapis.com/css2?…)` on line 3 of
+`/Files/System/Styles/Typography/<theme>.css` — there is no `<link>` in the head to act on.** A performance
+report attributing ~933ms of render-blocking to `fonts.googleapis.com` therefore has no visible target: the
+rendered HTML contains **zero** references to the font host, so the usual fixes (add a `preconnect` before
+the `css2` link, or self-host and delete the link) find nothing to edit and read as "the tool is wrong".
+
+An `@import` there is the worst case for the critical path — it is discovered only *after* the Typography
+sheet downloads and parses, so the font CSS and then the woff2 files are two further serialised round trips
+to a third party. Strip the `@import` from the generated sheet and declare `@font-face` in the Tier-1
+custom sheet instead, with the woff2 files uploaded beside it (see the online-mode upload rule about
+landing assets in a folder that already exists). Measured on one build: mobile Performance 74 → 82,
+FCP 3.4s → 2.4s, Speed Index 3.4s → 2.4s, third-party font requests 2 → 0. `preconnect` alone saves only
+the DNS/TLS portion and leaves the serialisation intact.
+
+- **Regeneration caveat — this is a hand-edit of generated output.** Opening and saving the theme in admin
+  restores the `@import`, exactly like the palette hand-edit above. Re-check the served Typography sheet
+  after any design save, and record the edit in the demo ledger.
+- **Prove the rendered face is unchanged, not just that the font "still loads".** Compare canvas text-run
+  widths per weight, element geometry, and the browser's loaded-face list before and after — on the run
+  that produced this rule, 13 self-hosted woff2 files reproduced all five weights plus the mono face
+  byte-identically on every measure.
 
 ## When to use this vs `<customer>_custom.css`
 

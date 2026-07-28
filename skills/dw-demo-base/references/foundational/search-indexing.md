@@ -169,6 +169,15 @@ if ($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $
 else { Write-Warning "BuildIndex did not reach a fresh Success within 15 minutes" }
 ```
 
+**On 10.28.x the build is genuinely synchronous and outlives the client, so a timeout is not a failure.**
+A `Repository='Products'` Full build routinely exceeds a 120s HTTP client timeout while completing
+normally — the timeout severs the **response**, not the build. Catch it, do not retry (a retry queues a
+second full rebuild behind a succeeding one), and poll instead. The status verb on 10.28.x is
+**`IndexStatusesAll`**; the singular `IndexStatus` and `GetIndexes` answer `400 Unknown query`, which is
+what produced the earlier reading that no status command existed on that version. The polling loop below is
+unchanged in shape — only the status verb is version-dependent, so read it from `api.json` rather than
+assuming either name.
+
 The freshness comparison against `$posted` is load-bearing: a prior run's successful build satisfies a
 state-only check, so a state check without the timestamp guard can "pass" on a stale index. Repository
 and index names are solution-specific — read them from `wwwroot/Files/System/Repositories/` instead of

@@ -13,6 +13,7 @@
 - [Management API recipe pack](#management-api-recipe-pack-validated-dw-1025x)
   - [dw10source as binder disambiguator](#dw10source-as-binder-disambiguator)
   - [File upload — and why an "ok" upload can change nothing](#file-upload--and-why-an-ok-upload-can-change-nothing)
+  - [`FileDelete` can be ACL-denied for pre-existing files](#filedelete-can-be-acl-denied-for-pre-existing-files--know-the-per-host-answer-before-you-plan-a-cleanup)
   - [Flush first; a cloud install can usually be restarted](#flush-first-a-cloud-install-can-usually-be-restarted)
 - [What stays the same](#what-stays-the-same)
 
@@ -36,8 +37,11 @@ Tool availability on hosted installs is **version-dependent and a moving target*
 1. **Management API**: `GET https://<host>/Admin/Api/api.json` with `Authorization: Bearer CLAUDE.<hex>`. Returns the full OpenAPI catalogue (~1,900 operations on 10.25.x) including the platform version in `info.version`. Save it locally — it is the working map for everything below.
 2. **MCP**: `POST https://<host>/admin/mcp` with a JSON-RPC `initialize`. A 404 plus zero MCP-related operations in the OpenAPI spec means the install doesn't expose MCP — fall through to the Management API as primary surface. If MCP responds, the normal surface priority applies and most of this file's API recipes become fallbacks.
 3. **Admin UI via Playwright**: needs interactive credentials (ask the user for them). Verification surface only — build-phase rules apply from the first request on a hosted install, since there is nothing to scaffold.
+4. **Site database reachability — probe it before assuming API-only reads.** "Cloud-hosted" does not imply "database out of reach": on a co-located host class the site DB is reachable from the VM the agent runs on, and the connection string sits in `Files/GlobalSettings.Database.config`. A plain SqlClient connection with those credentials returns **full result sets** — which retires the whole `Sql-ReadRaw` double-UPDATE / `RAISERROR`-peek family of workarounds that exist only because the API offers no `SELECT` channel. Probe once at session start (read the config, open a connection, run a trivial `SELECT`), record the answer in the demo ledger, and plan the session's verification reads from the result rather than from a remembered host.
 
-**Surface priority in online mode:** MCP (if the probe finds it) → Management API → **ask the user** for the rare operation neither exposes. There is no SQL surface, ever — the "last resort" rung of the local surface-priority table simply does not exist here, which also means every SQL-based sister-skill recipe needs the API equivalent from this file. The admin UI stays verification-only, same as every build phase (`surface-priority.md`).
+   **Caveats, all load-bearing:** the file contains **live credentials for a shared production-class host** — never copy it into the demo folder, an extract, a transcript or a commit, and reference it by path only. A direct connection is outside DW's bookkeeping, so it stays a **read** channel by default: reads through it are the safe, high-value part, while writes re-open every cache/notification hazard the surface-priority rule exists to prevent (`surface-priority.md`, and the API-write-vs-SQL-write visibility split in [`../../dw-demo-swift/references/sql-direct-seeding.md`](../../dw-demo-swift/references/sql-direct-seeding.md)). On a shared install the connection reaches **other tenants' areas** as well as the demo's — scope every query explicitly.
+
+**Surface priority in online mode:** MCP (if the probe finds it) → Management API → **ask the user** for the rare operation neither exposes. Assume there is **no SQL surface** until probe 4 proves otherwise — the "last resort" rung of the local surface-priority table is absent on most hosted installs, which is why every SQL-based sister-skill recipe needs the API equivalent from this file. Where the DB *is* reachable it changes the **verification** picture (a real `SELECT` channel), not the write order: writes stay MCP → Management API. The admin UI stays verification-only, same as every build phase (`surface-priority.md`).
 
 ## Management API recipe pack (validated DW 10.25.x)
 
@@ -56,6 +60,40 @@ When a payload shape isn't obvious from the OpenAPI spec, read the command class
 
 ### File upload — and why an "ok" upload can change nothing
 `POST /Admin/Api/Upload`, multipart form: field `path` = **relative** directory (no leading slash — leading-slash paths are rejected as "outside allowed root"), repeated `files` fields for the payload. Many files per request is fine — one request per directory. The target directory must already exist physically. **`DirectorySave` is rename-only** (returns ok, creates nothing) — create folders via `DirectoryCopy` of any small existing folder to the new path, then `DirectoryEmpty` on it.
+
+**`Upload` will not create a missing directory, and `FilesByDirectory` is NOT an existence check.** The two combine into a confusing failure: the listing query answers happily for a path that does not exist, so the folder looks present right up until the upload throws a 500 naming the missing physical path. There is no directory-create verb hiding under a better name — every obvious candidate is unregistered:
+
+```
+GET  /Admin/Api/FilesByDirectory?…&Path=/Files/System/Styles/Fonts
+  -> well-formed model, totalCount 0            # NOT a 404 — cannot be used as an existence test
+POST /Admin/Api/Upload            (same path)
+  -> 500  "Could not find a part of the path …\Files\System\Styles\Fonts\…"
+POST /Admin/Api/DirectorySave     {Name:"Fonts", Model:{Name:"Fonts", Path:"/Files/System/Styles"}}
+  -> {"status":"ok"}, model null                # no folder on disk; the upload 500s identically
+DirectoryCreate | FolderCreate | DirectoryNew | CreateDirectory | FileManagerCreateFolder
+  -> Unknown command  (all five)
+```
+
+**So land assets in a folder that already exists**, and prefer the folder the referencing file already lives in — self-hosted webfonts belong next to the sheet that `@font-face`s them (`Templates/Designs/<design>/Custom/`), not in a new `System/Styles/Fonts/` tree that has to be conjured first. If a new folder is genuinely required, use the `DirectoryCopy` + `DirectoryEmpty` trick above and verify the path lists before uploading into it.
+
+### `FileDelete` can be ACL-denied for pre-existing files — know the per-host answer before you plan a cleanup
+
+On a cloud-co-located host class the `Files` ACL grants the FTP group `Modify` and `BUILTIN\Users` only `ReadAndExecute`, and the app-pool identity falls in `Users`. Every `FileDelete` against a **pre-existing** (stock or FTP-delivered) file then fails **loudly**:
+
+```
+POST /Admin/Api/FileDelete       -> 400  "Access to the path '…' is denied."
+POST /Admin/Api/DirectoryDelete  -> succeeds ONLY for folders the app pool itself created
+```
+
+This is a different failure from the earlier-recorded host where `FileDelete` silently no-ops — same intent, opposite signal — so **probe one file before scripting a bulk delete** and pick the strategy from the result rather than from a remembered host.
+
+**Strategy: API first; fall back to a disk-side delete when the agent is co-located with the files.** A disk delete under the agent's own account bypasses the app-pool ACL entirely and is the working path on a co-located host. It goes behind DW, so it owes a **three-way verification** on a sample of the batch — anything less can leave a file that is gone from one surface and serving from another:
+
+1. absent on disk,
+2. absent from the DW `FilesByDirectory` listing,
+3. public `GET` returns **404**.
+
+An assets-cleanup leg on a co-located host should carry the disk path as a first-class option, not as an emergency escape.
 
 **Send `allowOverwrite=true` on every upload.** Without it the endpoint refuses to replace an existing file and reports the refusal as *success*: `{"status":"ok","model":{"duplicates":["<name>"]}}`, with the file on disk unchanged. The refusal takes the **whole batch** — one pre-existing name in a multi-file request and the request's *new* files do not land either. `allowOverwrite` is a working form field that is absent from the OpenAPI schema; add it as an ordinary multipart field:
 

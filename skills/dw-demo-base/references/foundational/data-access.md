@@ -29,6 +29,57 @@ Reach for the Management API before restarting the host when a cache flush is al
 without a host bounce. See [`cache-invalidation.md`](cache-invalidation.md) for which cache each
 mutation touches and whether a flush suffices.
 
+### Short command names are not unique — an installed add-in can SHADOW a platform verb
+
+Commands register under a short name, and short-name resolution prefers the add-in. So a solution
+carrying a third-party add-in can answer a platform query with the add-in's entity, at `200`, with a
+well-formed model of the wrong thing — the failure has no error and no version signal. Observed with a
+dealer-portal add-in shadowing the Email-Marketing `Flow*` verbs:
+
+```
+GET /Admin/Api/FlowById?Id=1                                       -> the ADD-IN's flow
+GET /Admin/Api/Dynamicweb.Marketing.UI.Queries.FlowByIdQuery?Id=1  -> the Marketing flow
+```
+
+**When a query returns a plausible model that is the wrong ENTITY, suspect shadowing before suspecting
+your payload, and re-call with the fully-qualified type name.** Shadowing is per-command, not per-family —
+`FlowStepsByFlowId` and `FlowFolderById` were *not* shadowed in the same install — so qualify the specific
+verb that misbehaves rather than rewriting the whole call site. The qualified names come from `api.json`
+(or the command class in a DW10 source clone).
+
+### A read model is not a save model — strip the display-only members before posting it back
+
+The natural round-trip (`GET <Entity>ById` → mutate one field → `POST <Entity>Save`) fails on several
+entities because the read model carries members the save command cannot deserialize. The response is an
+opaque **HTTP 500**, which reads as a server fault rather than a payload defect, and bisecting the model is
+the only way to find the culprit. Two members are known offenders — `modelIdentifier` (already required
+stripping on `GridRowSave`) and any `*Icon` presentation member:
+
+```
+GET EmailById -> POST EmailSave  (verbatim)                        -> 500
+  … minus *ProviderFields                                          -> 500
+  … with emailLastExportDate nulled                                -> 500
+  … minus modelIdentifier AND emailStateIcon                       -> 200
+```
+
+**Delete `modelIdentifier` and any presentation-only member (`*StateIcon`, `*Icon`) from the model before
+any round-trip save**, and when a `Save` 500s on a verbatim round-trip, bisect the model rather than
+hunting the data.
+
+### `EmailsByFilters` treats a missing filter as no-match, and `IsAutomationList` reports a false count
+
+Two filter behaviours on the email grid queries that produce wrong result sets rather than errors:
+
+- **`TopFolderId` and `EmailFolderId` must BOTH be supplied.** A missing `EmailFolderId` is evaluated as
+  *no-match*, not as *any* — the query returns an empty or truncated set for a folder that is fine.
+- **`IsAutomationList=true` returns EVERY email in the install while reporting `totalCount=0`.** Both
+  halves are wrong and they point in opposite directions, so neither the rows nor the count can be trusted
+  from that filter. (`EmailNavigationByPath` is similarly unhelpful — it returns `sections=0` even for a
+  valid `Path=/Marketing/Email`.)
+
+Query with both ids and verify the returned set against the folder you expect; never size an email
+population from a `totalCount` on this surface.
+
 ## OpenAPI discovery
 
 The OpenAPI JSON path on a running DW10 host is not officially documented and varies by Swashbuckle
@@ -93,6 +144,23 @@ those fields. This is the sanctioned "confirmed silent no-op → local SQL fallb
 it): after the MCP create, set `Page.PageUrlName`, the navigation-tag column, and `Page.PageHidden` via SQL
 (then restart per the cache rules below). Keep the page's *creation* on MCP/the API — do not fall back to
 authoring the whole row in SQL.
+
+**Read side — the ADO.NET single-row indexing footgun silently returns a COLUMN where you expected a
+ROW.** This bites the sanctioned use of SQL (verification reads), not the retired one, so it survives the
+retirement above. PowerShell unrolls a one-element `DataRow` collection into the `DataRow` itself, and `[0]`
+on a `DataRow` indexes its first **column**. A verification read against a one-row result therefore returns
+a plausible wrong value — frequently `0` — with no error, and the assert built on it passes or fails for
+reasons unrelated to the data:
+
+```powershell
+$rows = Invoke-SqlQuery "SELECT PageId, PageName FROM Page WHERE …"   # returns exactly 1 row
+$rows[0].PageId        # WRONG — $rows unrolled to the DataRow; [0] is column 0, .PageId then reads off it
+@($rows)[0].PageId     # correct — force the array, then index the row
+```
+
+**Wrap every result in `@()` before indexing, or read scalars through a dedicated `Sql-Scalar` helper**
+that returns `ExecuteScalar` directly. A verification read that can quietly return `0` is worse than no
+verification: it converts "the write did not land" and "my reader is wrong" into the same observation.
 
 ### Required NOT-NULL columns — `Page`
 

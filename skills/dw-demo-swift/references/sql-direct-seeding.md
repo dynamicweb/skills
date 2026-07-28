@@ -61,6 +61,20 @@ the difference between "seeded" and "staged until someone restarts the app".
   `EcomDetails` rows are correct and every file serves `200`. Every group the renderer actually emits carries
   `DetailsGroupControlType = 0` (stock file groups: control `0`, inheritance `3`). Setting both on the group
   makes the section render with no recycle. Any raw-SQL details-group insert must name both columns.
+- **`ItemType_*` values written by SQL are OVERWRITTEN by the paragraph cache on the next `ParagraphSave`.**
+  The worst shape in this family, because it reverts *later*, under someone else's edit. Item field values
+  are cached, that cache **survives `CacheInformationRefresh`**, and the next `ParagraphSave` on the owning
+  paragraph writes the cached pre-SQL values back over your rows. So the sequence reads as three separate
+  bugs: the SQL write is invisible live, a flush does not surface it, and then it silently disappears.
+  ```
+  UPDATE ItemType_<Prefix>_<Concept> SET <field> = …   -> row correct in SQL, absent from the rendered page
+  POST /Admin/Api/CacheInformationRefresh              -> still absent
+  POST /Admin/Api/ParagraphSave  (any unrelated edit)  -> row now shows the PRE-SQL value
+  ```
+  **Never write `ItemType_*` via SQL on a live host.** `ParagraphSave` / `ItemFieldSave` are the only writes
+  the cache stays coherent with; the field-by-field contract is in
+  [`../../dw-demo-base/references/foundational/content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md)
+  §2.
 - **Files and images are the exception.** `GetImage.ashx` keys its derived-image (resize/webp) cache on the
   **source file including its last-modified time**, so a multipart `POST /Admin/Api/Upload` with
   `allowOverwrite=true` rewrites the file, bumps its mtime, and invalidates the derived entries; the next
@@ -76,8 +90,16 @@ the difference between "seeded" and "staged until someone restarts the app".
   because it only **enqueues** — it does **not** refresh the **GroupID facet** that the `GroupID` filter of
   `QueryName=Products` reads. Only `Repository='Products'` runs the real synchronous Full rebuild, and it
   routinely exceeds a 120s client timeout; **that timeout is the expected shape of success, not a failure.**
-- **Verify on the Delivery API, never on the POST response.** There is no index-status command on 10.28.x
-  (`IndexStatus` / `GetIndexes` → `400 Unknown query`), so the only signal is
+- **`BuildIndex` is genuinely SYNCHRONOUS server-side, and the client timeout severs the RESPONSE, not the
+  build.** A `Repository='Products'` Full build routinely exceeds a 120s client timeout — and the build then
+  completes anyway. Reading the timeout as a failure and retrying is the expensive mistake: it queues a
+  second full rebuild behind the one that was already succeeding. **Swallow the timeout and poll**
+  `IndexStatusesAll` for completion. (Correcting an earlier reading that no index-status command existed on
+  10.28.x: the *singular* `IndexStatus` and `GetIndexes` do answer `400 Unknown query`, which is what
+  produced that conclusion — `IndexStatusesAll` is the verb that works, confirmed on 10.28.3 showing the
+  build completing after the client had already given up.)
+- **Verify the EFFECT on the Delivery API, never on the POST response.** Status tells you the build ran;
+  only the query tells you it indexed what you wanted:
   `GET /dwapi/ecommerce/products/search?RepositoryName=Products&QueryName=Products&GroupID=<groupid>` →
   `totalProductsCount` per group, cross-checked against `GetCatalogGroupProducts`.
 - **Re-run the `Repository='Products'` Full build after any recycle or 503 instance swap.** The facet can
@@ -100,6 +122,35 @@ revive the SQL-through-a-task content-seeding motion retired above.
   **empty** `lastLog` and `lastException` — a contentless failure that reads as a dead API. Create every task
   with `Enabled=true`. An ephemeral one-time task with `Begin` in the past and `Schedule=One time` never
   self-fires, so enabling it costs nothing.
+- **`TaskSave` with `Id=0` CREATES A NEW TASK EVERY CALL — it is not an upsert.** A helper that posts
+  `Id=0` on each invocation accretes one scheduled-task row per statement it ever ran. One install reached
+  **1,463 tasks, 1,428 of them identical copies of a single SQL-runner** (a contiguous id block), which
+  makes Settings → Scheduled tasks unusable as a demo screen and buries the handful of real tasks. **Create
+  the runner ONCE, persist its id in the run ledger, and update in place** (`TaskSave` with the stored
+  `Id`) on every subsequent call. Assert it: on a fresh demo, run ten statements through the helper and
+  require the task count to grow by exactly **1**. An install already polluted needs a purge pass keyed on
+  the task name, keeping the genuinely-owned tasks by id.
+- **The SQL runner is WRITE-ONLY and DIAGNOSTIC-BLIND — there is no read channel back.** `Dw-RunSql`
+  swallows batch errors: a failed batch reports `lastRunState=Exception` with `lastException` an **empty
+  string**, the task model carries no `lastLog` member, and a `RAISERROR` peek is not surfaced anywhere
+  either.
+  ```
+  pure SELECT + RAISERROR(N'PEEK<<%s>>', 10, 1, @v) WITH NOWAIT
+    -> lastRunState = Exception,  lastException = "",  no lastLog member on the model
+  ```
+  So `SELECT` output cannot be read back and error text cannot be recovered. **Verify a batch by its
+  API-visible EFFECT, never by task state text** — and treat "the task shows Exception" as carrying no
+  information about *what* failed.
+- **Enumerate tasks with `ScheduledTaskAll`, never a `/Tasks` page-walk.** `/Tasks` paging is backed by a
+  factory that serves rows for **any** `PagingIndex`, including out-of-range ones, so `totalPages` is
+  advisory and a naive walk collects duplicates without ever terminating cleanly — one recon pass collected
+  **17,410 rows for a 1,463-row list**. `ScheduledTaskAll` returns the full list in one shot; cross-check
+  its count against the DB before trusting either. Related: the sort enum is `Ascending` / `Descending` —
+  `SortDirection=Asc` answers **400**.
+- **`TaskById` answers `400`, not `404`, for a missing id — an existence probe must treat ANY throw as
+  absent.** The body is the generic `"Unable to load query parameters"`, indistinguishable from a
+  malformed request, so a probe that only catches 404 misreads a deleted task as a broken call and stalls a
+  cleanup pass. Probe with a try/catch that returns "absent" on any non-200.
 
 ## If you are diagnosing rows that were already SQL-seeded
 

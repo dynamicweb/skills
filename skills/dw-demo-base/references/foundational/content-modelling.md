@@ -86,8 +86,9 @@ cshtml" pattern.
 
 ### What this looks like in practice
 
-**Dropping the XML makes the type fully READABLE but never WRITABLE — and no restart will ever fix it.**
-Two independent subsystems are involved and the file only reaches one of them:
+**Dropping the XML makes the type fully READABLE but never WRITABLE until a FIELD is saved — and no
+restart will ever fix it.** Three independent subsystems are involved and the file only reaches one of
+them:
 
 - The item-type **metadata** provider parses the XML **on demand**, which is why every read verb works
   immediately — `ItemTypeById` returns the type with its `displayName`, category and `fieldsCount`, and
@@ -95,43 +96,73 @@ Two independent subsystems are involved and the file only reaches one of them:
   needed for discovery** — the restart the old recipe prescribed is not even the thing that made reads
   work.
 - The item-type **schema** — the `ItemType_<SystemName>` SQL table that stores the field values — is
-  created by the **create command, `ItemTypeSave`**, not by the file provider and not by host startup.
+  materialised by **`ItemFieldSave`**. The first field save is what issues the DDL. Neither the file drop,
+  nor host startup, nor `ItemTypeSave` on its own puts the table on disk: `ItemTypeSave` registers the type,
+  and a registered type with no saved field still has no table.
+- **Activation REWRITES the XML file in place**, so the process identity running the host (the app-pool
+  account on IIS) needs a **write ACE on `Files\System\Items\**`**. Without it, activation fails **silently**
+  — the command answers, no table appears, and the only trace is a line in
+  `Files/System/Log/items/ActivationWorkflow`. One such denial sat unnoticed for weeks, breaking every write
+  to a single `ItemType_<Prefix>_<Concept>.xml` while every read of it looked perfect.
 
 So an XML-only deployment produces a type that is fully introspectable and completely unwritable: a
-`ParagraphSave` of that type returns **HTTP 500 `Invalid object name 'ItemType_<Prefix>_<Concept>'`**, and
-nothing in the system will ever reconcile it. `ItemTypeHealthAll` has no row for an XML-dropped type
-(health only compares types it already knows have schema), `ItemTypeListReload` returns `ok` and changes
-nothing, and repeated sanctioned recycles change nothing. `ItemTypeSave` cannot adopt the orphan either —
-it is create-only and returns **HTTP 400 "System name is used already."** while the XML owns the name.
-**The deadlock: the file owns the name, so the only command that creates the table refuses to run.**
+`ParagraphSave` of that type returns **HTTP 500 `Invalid object name 'ItemType_<Prefix>_<Concept>'`**.
+`ItemTypeHealthAll` has no row for an XML-dropped type (health only compares types it already knows have
+schema), `ItemTypeListReload` returns `ok` and changes nothing, and repeated sanctioned recycles change
+nothing. `ItemTypeSave` will not adopt the orphan either — it is create-only and returns **HTTP 400 "System
+name is used already."** while the XML owns the name. **That 400 is the file owning the name, not an error
+to debug** — and it is not a deadlock, because the command that actually creates the table is
+`ItemFieldSave`, which does not care who owns the name.
 
-The working sequence — **child type before parent**, so the parent's `ItemRelationListEditor` can
-reference it, and **zero recycles**:
+**Route A — the XML is already on disk (the drop-and-activate path).** Cheapest, and the one that keeps
+your authored XML as authored:
 
-1. `POST ItemTypeDelete {SystemName, DeletePages:false}` — frees the name **and** removes the XML.
-2. `GET ItemTypeNew?Category=<category>` → set `systemName` / `name` / `enabledFor` / `restrictions` on
-   the returned model → `POST ItemTypeSave {Model}` — **this creates the table.**
-3. `GET ItemFieldNew?ItemTypeSystemName=<name>&ItemFieldGroupSystemName=General` → per field →
-   `POST ItemFieldSave {Model}` — **this creates the columns.**
-4. Re-upload the **authored** XML — `Files\System\Items\<Prefix>\<Prefix>_<ConceptName>.xml`, same shape
+1. **Grant the host's process identity write on `Files\System\Items\**`** — activation cannot complete
+   without it, and its absence is silent. Confirm by tailing `Files/System/Log/items/ActivationWorkflow`
+   across the next step.
+2. `GET ItemFieldNew?ItemTypeSystemName=<name>&ItemFieldGroupSystemName=General` → per field →
+   `POST ItemFieldSave {Model}` — **this materialises the `ItemType_<SystemName>` table and its columns.**
+3. **Verify with a REAL WRITE** (create and delete a throwaway paragraph of the type).
+
+**Route B — no XML yet, author the type through the API.** **Child type before parent**, so the parent's
+`ItemRelationListEditor` can reference it, and **zero recycles**:
+
+1. `GET ItemTypeNew?Category=<category>` → set `systemName` / `name` / `enabledFor` / `restrictions` on
+   the returned model → `POST ItemTypeSave {Model}` — this **registers** the type. (If the name is already
+   owned by a dropped XML, this returns the 400 above; switch to Route A rather than deleting the file.)
+2. `GET ItemFieldNew?…` → `POST ItemFieldSave {Model}` per field — **this creates the table and the
+   columns.**
+3. Re-upload the **authored** XML — `Files\System\Items\<Prefix>\<Prefix>_<ConceptName>.xml`, same shape
    as the stock `Swift-v2_*.xml` files, `Swift-v2_Text.xml` as the starting template — over DW's generated
    one. Metadata only; the table already exists and the column names are the field `systemName`s, which
    are unchanged. This restores the restriction rules, the layout groups and any deliberately-empty
-   defaults.
-5. **Verify with a REAL WRITE** (create and delete a throwaway paragraph of the type).
-6. Place the layout at
+   defaults. Same write-ACE requirement as Route A.
+4. **Verify with a REAL WRITE.**
+5. Place the layout at
    `Templates\Designs\Swift-v2\Paragraph\<Prefix>\<Prefix>_<ConceptName>\<Prefix>_<ConceptName>.cshtml`.
    The type is then a new "Add paragraph" picker entry in the Visual Editor under your project's category,
    and the storefront renders it on the next GET.
 
+`POST ItemTypeDelete {SystemName, DeletePages:false}` frees the name **and** removes the XML — it is the
+reset lever when a type is genuinely mis-authored, not a required step on the way to a working table.
+
+**The editor you pick becomes a column type — a `TextEditor` field materialises as `nvarchar(255)`.**
+`ItemFieldSave` issues the DDL from the editor, and a value longer than the column is a **hard error, not
+a truncation**: a 259-character alt text bounced the whole `ParagraphSave` with a **500**, while 250
+characters landed. Nothing in the field definition surfaces the limit. Choose `TextArea` / `RichText` for
+anything that can grow (descriptions, alt text, any authored prose) and keep `TextEditor` for values you
+can guarantee ≤ 255 — and note that the choice is baked at field-create time, so changing it later is the
+create-alongside-and-migrate motion ([`pim-modelling.md`](pim-modelling.md) §2.8), not an edit.
+
 **A successful `ItemTypeById` / `ItemFieldsByItemTypeSystemName` read is NOT evidence the type is
 usable** — it is exactly the state an XML-only deployment produces. Any new-item-type helper must gate on
 a real write and must refuse to report success on metadata reads alone; make it re-runnable so a second
-run reports "already writable — nothing to do", and record the before/after writable state per type.
-Rejected escapes: hand-writing the `CREATE TABLE` in SQL (leaves DW's own metadata/schema bookkeeping out
-of the loop) and rotating `changeversion.txt` for a "harder" restart (that file is the host's release-ring
-pin, not a restart lever — [`../db-update-recovery.md`](../db-update-recovery.md) — and a restart is not
-the missing ingredient in the first place).
+run reports "already writable — nothing to do", record the before/after writable state per type, and read
+`Files/System/Log/items/ActivationWorkflow` on any failure before theorising. Rejected escapes:
+hand-writing the `CREATE TABLE` in SQL (leaves DW's own metadata/schema bookkeeping out of the loop) and
+rotating `changeversion.txt` for a "harder" restart (that file is the host's release-ring pin, not a
+restart lever — [`../db-update-recovery.md`](../db-update-recovery.md) — and a restart is not the missing
+ingredient in the first place).
 
 ### Repeater fields
 
@@ -168,6 +199,11 @@ The edit path — `POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById` (B
   `RelationItem|<ChildItemType>|<Group>|<Field>` (e.g. `RelationItem|Swift-v2_Slider_Item|General|Title`,
   `|Subtitle`, `|Text`, `|Image`, `|Text_LinkEditor`, `|Button`). The sibling `RelationItem.Groups` array
   is sent **empty** by the UI — the values live in `ModelRawData`, so populate that.
+- **`ModelRawData` is a flat `string → string` map, so a child carries STRING fields only.** Any field whose
+  editor needs a binder OBJECT — `SelectedImage` above all — cannot be expressed here and is not writable on
+  a child through the Admin API at any shape; the structured `RelationItem.Groups[].Fields[]` channel is not
+  honoured for it either. The measured shapes and the honest fallback (one click in the admin UI) are in
+  [`../../../dw-demo-swift/references/paragraphs.md`](../../../dw-demo-swift/references/paragraphs.md).
 - A "button"/"link" field on a child (`Text_LinkEditor` / `Button`) is a **plain transparent JSON
   link-binder** — `{Label, Link, LinkType, Style}` — not an opaque encoded blob.
 - **No recycle.** `ParagraphSave` runs DW's domain service, which invalidates the render cache; the slide
@@ -221,21 +257,40 @@ had in fact worked.
    **existing** list that pointer is a stable id: measured constant across create *and* delete of a child
    (`324` → `324` → `324`). The count never appears.
 
-The two checks that **are** available:
+**The rule, stated once: an item-list child write is verified by the RENDERED PAGE, full stop.** The
+list-pointer mint is a **create-only convenience**, not the general check — treat it as a nice-to-have on a
+fresh parent and never as the verification a helper gates on:
 
-- **(a) On a FRESH parent, assert the list-pointer transition `0` → non-zero.** DW mints the `ItemList`
-  and wires the relation on the first successful child write, and that transition is observable through
-  `GetParagraphById`.
-- **(b) In all cases, assert the child's field values appear in a live GET of the rendered page.**
+- **(a) On a FRESH parent only, the list-pointer transition `0` → non-zero is observable** through
+  `GetParagraphById`. DW mints the `ItemList` and wires the relation on the first successful child write.
+- **(b) In every case — and the only check that generalises — assert the child's field values in a live GET
+  of the rendered page.**
 
-Note the asymmetry that makes this a trap: **(a) is only informative on a parent whose list did not exist
-yet** — and on every parent you actually want to migrate, the list already exists and the pointer is
-constant. So (b) is the check that generalises. A repeater-write helper should take the expected rendered
-string and perform the live GET itself, so a caller cannot accidentally verify against the echo; log the
-echoed `itemId` alongside the verdict so the false negative stays visible in the artefact rather than
-being re-derived next time. Do **not** answer this by brute-forcing a child-row read verb (none exists —
-the write rides inside `ParagraphSave`, so no registry probe can find one) or by escaping to SQL to
-`COUNT` the rows, which re-establishes exactly the belief this section retires.
+The asymmetry is what makes (a) a trap, and the far more common editorial case is the one it cannot serve:
+**editing a child of a list that ALREADY EXISTS.** There the pointer is a constant, measured unchanged
+across four separate `ParagraphSave` calls on one slider card, and unchanged across create *and* delete of a
+child on another parent:
+
+```
+GET  /Admin/Api/GetParagraphById?Id=<paragraphId>
+  -> contentItem.groups[0].fields[0] {name: "Items", value: 323}    # before all four saves
+  -> …                               {name: "Items", value: 323}    # after all four saves
+POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
+  -> {status: "ok", exception: null}   with model…Items.value echoing the posted ModelRawData VERBATIM —
+                                       including field values that provably did NOT persist
+```
+
+That last clause is the sharp edge: the echo is not merely uninformative, it is **actively wrong** — it
+reports values back to you that the row never took (see the `SelectedImage`-on-a-child case in
+[`../../../dw-demo-swift/references/paragraphs.md`](../../../dw-demo-swift/references/paragraphs.md), where
+`Title`/`Subtitle`/`Text` persist and `Image` does not, out of one payload that echoes all four). A
+repeater-write helper should take the expected rendered string and perform the live GET itself, so a caller
+cannot accidentally verify against the echo; log the echoed `itemId` alongside the verdict so the false
+negative stays visible in the artefact rather than being re-derived next time. Do **not** answer this by
+brute-forcing a child-row read verb (none exists — the write rides inside `ParagraphSave`, so no registry
+probe can find one) or by escaping to SQL to read `ItemListRelation` joined to the child table: that is the
+only surface that carries ground truth, and reaching for it re-establishes exactly the belief this section
+retires.
 
 Watch for red-herring empty tables — a concept can have a similarly-named `ItemType_<Prefix>_<Concept>`
 (e.g. a `Card` table) that is empty because the real content lives in the `_Item`/`_<Child>` rows. Confirm
@@ -347,7 +402,17 @@ PIM must have the matching `LANG2` row + the products translated to that Languag
 
 `ItemType_Swift-v2_LanguageSelector` renders a list of all active sibling areas for the current
 master. Fields (verify per DW version): `Label`, `Icon`, `ShowLanguageName`, `ShowLanguageCurrency`,
-`HideLanguageFlag`, `LanguageNameFormat` ("Native"/"English"/"Code"). Add it to a header grid row,
+`HideLanguageFlag`, `LanguageNameFormat` ("Native"/"English"/"Code").
+
+**Swift 2.4 ships the selector's Razor but NOT its item type — verify the type exists before planning
+around the paragraph.** The 2.4 deserialize set omits `Swift-v2_LanguageSelector`: the template is present
+under `Designs/Swift24`, there is no item-type XML and no backing table, and the paragraph therefore cannot
+be placed at all. It is not a broken install and no restart produces it. Create the type through the
+normal API route — `ItemTypeNew` → `ItemTypeSave` → `ItemFieldSave` per field (six fields for the shape
+above), per §2 "Route B" — then place it on the header rows. An edition that promises a language selector
+should carry the item type rather than leaving every build to re-derive this.
+
+Add it to a header grid row,
 set fields, restart the host (header grid composition is cached). Clicking an entry navigates to the
 same page on the target sibling area via the clone metadata; if a sibling page doesn't exist, the
 link falls back to the layer's frontpage.
@@ -412,8 +477,16 @@ content silently don't make it — run this as a checklist immediately after eve
    the `ItemList` + child rows + `ItemListRelation` + parent, then re-point the stub paragraph. A
    sanctioned SQL exception (MCP + Management API both proven broken for this shape). **Prevention:
    give repeater children numeric item ids.**
-2. **`UnifiedPermission` rows are NOT cloned.** Anon-gates and role-gates on the Permission entity
-   store silently don't apply to the layer. Mirror every master row onto the layer's sibling page id
+2. **SECURITY — permissions are NOT cloned, and `CopyPermissions: true` does not change that for
+   frontend pages.** Anon-gates and role-gates on the Permission entity store silently don't apply to
+   the layer, so **every protected page in the copy is public until you mirror the rows by hand** — an
+   observed state is a customer-center dashboard served in full to an anonymous visitor on the layer
+   while the master stayed correctly gated. `UnifiedPermission` rows are not cloned and the
+   `CopyPermissions` flag is not the frontend-page-permission switch; nothing in the `status: ok`
+   distinguishes the two. Probe **anonymously, per language, per protected URL** after every copy (the
+   pass state is a redirect to the localised sign-in, not a 200) — demo-side checklist in
+   [`../../../dw-demo-swift/references/language-layers.md`](../../../dw-demo-swift/references/language-layers.md).
+   Mirror every master row onto the layer's sibling page id
    (`Page.PageMasterPageId` gives the mapping), then
    `POST /admin/api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Security.Permissions.PermissionService"}`
    AND restart (the nav tree caches separately). See [`users-permissions.md`](users-permissions.md).
