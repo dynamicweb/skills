@@ -42,7 +42,11 @@ poll it until it equals the target before the next save (serialise + verify), an
 section wrapper carries `data-dw-colorscheme="<id>"`. Strip `modelIdentifier` from the model before
 posting. Section colour-scheme rhythm needs no admin-UI capture/replay; the API is fully sufficient.
 Related shape: `GET /Admin/Api/GridRowsByPageId?PageId=<id>` is paginated — the rows live under
-`model.data` (already in render/sort order), not `model[]`.
+`model.data` (already in render/sort order), not `model[]`. `mobileSortColumns` binds
+`IEnumerable<ListOption>`, so passing it as a comma string **500s** — leave it `null`. A row-family
+conversion (`4Columns` ↔ `4ColumnsFlex`) round-trips through `GridRowSave` with `definitionId`,
+`originalDefinitionId` and `itemType` set **together**, and it changes the emitted column markup — which
+changes which custom CSS can reach the content ([re-skin.md](re-skin.md) §"Selector reach").
 
 **Grid ROW creation: `GridRowSave` has no create mode, `GridRowCopy` only appends, and position is set
 exclusively by `GridRowSort`.** Three verbs, one recipe, and each of the two obvious shortcuts fails in its
