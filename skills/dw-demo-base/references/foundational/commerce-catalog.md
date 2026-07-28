@@ -81,6 +81,11 @@ Cross-ref [`cache-invalidation.md`](cache-invalidation.md) for the full notifica
 - **Template path resolution** — `TemplateProvider` expects paths relative to `wwwroot/Files/Templates/Feeds/`. `XMLProvider` expects XSLT in same folder.
 - Feed template example for Razor: `@inherits ViewModelTemplate<Dynamicweb.Ecommerce.ProductCatalog.ProductListViewModel>` + `@Model.Products` iteration. Field values are accessed via `ProductCategories[].Fields[categoryFieldId].Value`.
 - The `.query` files backing feeds must live at the repository ROOT, not a subfolder — see [`search-indexing.md`](search-indexing.md) for the placement rule.
+- **The public feed endpoint is `GET /dwapi/Feeds/GetFeedOutput?id=<feedId>` — the parameter is the bare
+  `id`.** It is undocumented, and the obvious `feedId` returns **404**, which reads as "the feed isn't
+  published" rather than "the parameter is named differently". This is the URL to put on a slide for a
+  channel/feed demo; all three provider flavours serve from it (verified live: a CSV feed, a JSON feed and
+  an XML feed all `200` on the same shape, differing only in `id`).
 
 ## 2.9 Assortments (customer access) ≠ Channels (publishing)
 
@@ -158,6 +163,58 @@ per-variant `EcomProducts` SQL insert (validated DW 10.25.x):
    cache and persists nothing.
 4. Per-variant stock: round-trip `ProductById?Id=<id>&VariantId=<vid>` → set `stock` /
    `neverOutOfStock` → `ProductSave`. Variants default to 0 stock and render a disabled add-to-cart.
+
+**Per-variant PRICE does not ride `ProductSave` — `DefaultPrice` on a variant row is a silent no-op.**
+The trap is that the *neighbouring* fields on the same call work: `stock`, `active` and `number` all
+persist through `ProductSave` on a variant, so the call is plainly reaching the right row. `DefaultPrice`
+alone is ignored and the variant reads back with the MASTER's price — measured across 22 variants in three
+families, reverting every time. Per-variant pricing is an `EcomPrices` row, so the write is
+**`PriceSave` carrying `VariantId`**; that is the only path that sticks. Verify by re-reading the variant's
+price after the save, not the `ProductSave` response.
+
+**Variant combinations: group-qualified option keys, ONE option per group per call, and the setup cache key
+must be REUSED.** Three separate rejections with plausible-looking payloads, each with its own verbatim
+error:
+
+```
+Ids: ["VO53"]                    -> 500  key VARGRP36 not present          # bare option id
+Ids: ["VARGRP32.VO53"]           -> ok                                     # group-qualified — required
+Ids: ["VARGRP32.VO53","VARGRP32.VO61"]
+                                 -> 400  specify options in each variant group   # two options of ONE group
+```
+
+- **Qualify every option with its group** — `"<VariantGroupId>.<VariantOptionId>"`. A bare option id
+  produces a 500 naming a group that is *not* the one you meant, which sends the reader hunting the wrong
+  group.
+- **One option per group per call.** A combination is a point in the matrix, not a set; passing two options
+  from the same group is the 400 above.
+- **Call `VariantCombinationCreationSetup` ONCE and reuse its cache key across the create and the save.**
+  Re-calling it RESETS the matrix, so a helper that fetches a fresh key per combination silently discards
+  the work in progress. Capture the key with the setup call and thread it through the whole batch.
+
+### Product relations via the Management API — `RelationGroupSave` is update-only, and the maintenance verbs take composite ids
+
+- **Create a relation group with `GroupId: ""` — `RelationGroupSave` has no explicit-id create path.**
+  Posting a chosen id fails; the empty string is the create signal and the server assigns the id. This is
+  the same create/update fork as the commerce saves above, expressed through an empty *string* rather than
+  an empty `Id`.
+- **`SortOrder` is DEAD on both the create and the attach.** It is accepted and ignored by
+  `RelationGroupSave` and by `RelatedProductAttach` alike, so `ProductRelatedSortOrder` never lands and the
+  read-back always shows the default. **Ordering of related-product callouts must live page-side**, not in
+  the relation data — decide that up front rather than after a batch has been written twice.
+- **`ProductRelatedMakeTwoWayRelation` and `ProductRelatedDelete` take `Ids[]` of PIPE-DELIMITED COMPOSITE
+  KEYS**, not a structured payload. A `{ProductId, RelatedProductId, RelatedGroupId}` object — the obvious
+  shape, and the one the create verbs use — fails on both:
+
+  ```
+  POST /Admin/Api/ProductRelatedMakeTwoWayRelation
+  { "Ids": ["<sourceProductId>|<relationGroupId>|<targetProductId>|<variantId>", …] }
+  POST /Admin/Api/ProductRelatedDelete          # same Ids[] shape
+  ```
+
+  The trailing variant segment is present even when empty. This is the same "list-command ids are full
+  paths, not names" rule the `*Delete` family follows ([`../online-mode.md`](../online-mode.md)) — read one
+  row from the matching list query and copy its identifier shape before scripting a batch.
 
 ### Create-vs-update fork on commerce saves
 

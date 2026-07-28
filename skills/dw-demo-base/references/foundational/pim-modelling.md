@@ -106,6 +106,17 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
      `ProductItemName`, `ProductItemRequired`, `ProductItemSortOrder`. `ProductItemBomProductId` and
      `ProductItemBomVariantId` are NOT NULL — use `''`, never SQL `NULL`.
 3. **RESTART THE HOST AFTER INSERTING PRODUCTITEMS** — `ProductItem` uses a `Lazy<Dictionary<...>>` cache (see `ProductItem.cs:145`). Raw SQL inserts bypass it. Until restart, the Bundles tab shows empty.
+   **The API alternative — `ProductItemAdd` — accepts exactly one payload shape, `{ProductId, Model}`**, and
+   both plausible variations throw rather than degrade. It runs the domain service, so it needs no restart
+   and is the correct route on any host where SQL is not sanctioned:
+   ```
+   { "ProductId": "<parentProductId>", "Model": { … the BOM line … } }   -> ok
+   … with ProductOrGroupIds in the payload   -> 500  "Index was outside the bounds of the array"
+   … with Model omitted                      -> 400  "Command.Model cannot be null"
+   ```
+   The 500 is the misleading one: an index-out-of-bounds reads as a platform defect worth reporting, when it
+   is the binder rejecting an extra key. Verify BOM lines on the rendered PDP (a kit's lines are visible
+   there), not on the add response.
 4. Bundles should get their OWN data model (e.g. a `BundleAttributes` category with bundle-specific fields: UnitsPerCase, RetailerSegment, PlanoReady, etc.). Different products → different data models.
 
 ### 2.8 Product Categories + Fields (data model internals)
@@ -126,6 +137,21 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
   list-presented fields whose stored value resolves to no `FieldOptionValue` — every hit is a future
   blank cell.
 - **Custom field system names** in MCP use format `ProductCategory|<CategoryId>|<FieldId>` for category fields, plain FieldId for global product fields. Use this SAME format in completeness rule field lists and in product query `FieldExpression` attributes.
+- **`ProductFieldOptionSave` writes to an INVISIBLE BUCKET unless the path is
+  `ProductCategory|reference_category|<FieldId>`.** Writing options under the *concrete* category
+  (`ProductCategory|<CategoryId>|<FieldId>`) is accepted and returns a real option id — and
+  `ProductFieldOptionsByFieldId` never serves them back, so the field renders with no choices while the
+  write looks perfect. Options belong to the **field**, and a reference field's field-id form is the
+  `reference_category` one (same hidden template category that powers the admin completeness/rule lookups —
+  [`pim-completeness.md`](pim-completeness.md)). Write options to the `reference_category` path, then assert
+  they come back through `ProductFieldOptionsByFieldId`; a returned id is not evidence.
+- **`ProductFieldSave` will NOT change `typeId` — it echoes the new type and persists the old.** Worse, the
+  *other* edits on the same call **do** persist: rename the field, change its description or display group
+  and retype it in one save, and everything except the retype lands. The response carries the new `typeId`,
+  so only an independent re-read catches it. **Never retype a category field in place.** The only route the
+  platform offers is delete + recreate, which discards every stored value — so the safe motion is
+  **create the correctly-typed field alongside, migrate the values, then retire the old field**, and record
+  the retirement so a later reader does not treat the leftover as live.
 
 ### 2.10 Assets
 
@@ -171,6 +197,13 @@ A workspace level rooted on `DataModelKey` projects products by which DataModel 
 - "Show me products by **supplier**" — 1 level, `LevelType=ProductField`, `SourceField=Supplier`.
 - "Show me products by **workflow state**" — 1 level, `LevelType=ProductField`, `SourceField=ProductWorkflowStateId`. Replaces a status dashboard for editors who live in the catalog tree.
 - "Products by spec attribute" — 2 levels, both `LevelType=DataModelKey`, drilling category → sub-category.
+
+**Probing a workspace: `ProductsByDynamicStructureLevel` requires `Path` and returns `0` without it — for
+every query, on a healthy workspace.** The command does not error on the missing parameter; it answers
+`0`, which is exactly the shape of a broken workspace. Diagnosing from that produces a hunt for missing
+relations that were never missing — the same queries returned 756, 31 and 2,929 rows once `Path` was
+supplied. **Always pass `Path`**, and any harness leg that probes workspace membership must assert `Path`
+is set before it asserts anything about the count, or it asserts on a lie.
 
 **When workspaces are NOT the right answer:**
 - Permission boundary. Workspaces are gated by the `/Products/DynamicWorkspaces` capability key (single on/off across all workspaces of that capability scope), not per workspace. Per-product permissions still come from group-level grants — see [`users-permissions.md`](users-permissions.md) for the full picture.
