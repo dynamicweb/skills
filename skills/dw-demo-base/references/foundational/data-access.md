@@ -80,6 +80,51 @@ Two filter behaviours on the email grid queries that produce wrong result sets r
 Query with both ids and verify the returned set against the folder you expect; never size an email
 population from a `totalCount` on this surface.
 
+### Discovering admin screens and their backing queries — and the cost of guessing verb names
+
+**There is no navigation API.** `NavigationTree`, `Navigation`, `AdminNavigation`, `Areas` and `ModuleAll`
+all answer `400 Unknown query`; admin screens are server-rendered routes and cannot be enumerated
+programmatically. The productive trick is one level down:
+
+**Every admin screen route carries a `Type=<query name>` parameter, and that value IS a Management API query
+the bearer token can call directly.** So "does this admin screen show data?" is answerable with no browser in
+the loop:
+
+```
+/Admin/UI/.../<Screen>?…&Type=<QueryName>&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            ^^^^^^^^^^^^  -> GET /Admin/Api/<QueryName>?…
+```
+
+Harvest the route→query map **once**, by driving the real admin under a throwaway account and reading the
+route parameters (the same read-only Playwright motion as capturing the SPA's own HTTP calls — see
+[`../surface-priority.md`](../surface-priority.md) "Admin UI is verification-only"). Observed shape: several
+distinct commerce screens (incomplete orders, subscriptions, ledgers/invoices) all resolve to the **same**
+order-list query with different filters, while discounts, vouchers, loyalty and gift cards each name their
+own. Row counts from those queries matched the rendered screens exactly, before and after seeding — which is
+what makes this a **sanctioned assertion surface** for "the demo's screens are populated".
+
+**Every wrong verb name you try writes an Error row onto the customer's Insights dashboard.** An unresolvable
+command name is logged as an `[Application/AddInManager]` Error — the exact counter the owner-facing
+Monitoring dashboard shows:
+
+```
+Unable to resolve type <GuessedName> with base type Dynamicweb.CoreUI.Data.DataQueryBase
+```
+
+One inherited host carried **71 errors/day that were the agents' own fingerprints**, including 122 rows in 11
+seconds from a single malformed probe loop, with timestamps clustering exclusively inside prior agent session
+windows. So probing is **not free**:
+
+- **Prefer enumerating the API catalogue** (`api.json`) over guessing names one at a time.
+- **Batch verb probing and do it EARLY in a session**, then follow it with a log clear before any demo.
+- **Never fire write verbs speculatively** while probing a registry.
+- Log-clear recipe and the retention gap that lets these accumulate:
+  [`tracking-insights.md`](tracking-insights.md) "Nothing ever trims `GeneralLog`".
+
+Related and equally cheap: `HealthProviderChecksByProviderName` and its two siblings serve the Insights
+health-provider data over the same bearer, with each check returning the literal SQL it ran
+([`tracking-insights.md`](tracking-insights.md) "Health providers are reachable over `/Admin/Api`").
+
 ## OpenAPI discovery
 
 The OpenAPI JSON path on a running DW10 host is not officially documented and varies by Swashbuckle
