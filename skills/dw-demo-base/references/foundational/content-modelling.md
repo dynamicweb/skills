@@ -394,7 +394,17 @@ PIM must have the matching `LANG2` row + the products translated to that Languag
 
 `ItemType_Swift-v2_LanguageSelector` renders a list of all active sibling areas for the current
 master. Fields (verify per DW version): `Label`, `Icon`, `ShowLanguageName`, `ShowLanguageCurrency`,
-`HideLanguageFlag`, `LanguageNameFormat` ("Native"/"English"/"Code"). Add it to a header grid row,
+`HideLanguageFlag`, `LanguageNameFormat` ("Native"/"English"/"Code").
+
+**Swift 2.4 ships the selector's Razor but NOT its item type — verify the type exists before planning
+around the paragraph.** The 2.4 deserialize set omits `Swift-v2_LanguageSelector`: the template is present
+under `Designs/Swift24`, there is no item-type XML and no backing table, and the paragraph therefore cannot
+be placed at all. It is not a broken install and no restart produces it. Create the type through the
+normal API route — `ItemTypeNew` → `ItemTypeSave` → `ItemFieldSave` per field (six fields for the shape
+above), per §2 "Route B" — then place it on the header rows. An edition that promises a language selector
+should carry the item type rather than leaving every build to re-derive this.
+
+Add it to a header grid row,
 set fields, restart the host (header grid composition is cached). Clicking an entry navigates to the
 same page on the target sibling area via the clone metadata; if a sibling page doesn't exist, the
 link falls back to the layer's frontpage.
@@ -459,8 +469,16 @@ content silently don't make it — run this as a checklist immediately after eve
    the `ItemList` + child rows + `ItemListRelation` + parent, then re-point the stub paragraph. A
    sanctioned SQL exception (MCP + Management API both proven broken for this shape). **Prevention:
    give repeater children numeric item ids.**
-2. **`UnifiedPermission` rows are NOT cloned.** Anon-gates and role-gates on the Permission entity
-   store silently don't apply to the layer. Mirror every master row onto the layer's sibling page id
+2. **SECURITY — permissions are NOT cloned, and `CopyPermissions: true` does not change that for
+   frontend pages.** Anon-gates and role-gates on the Permission entity store silently don't apply to
+   the layer, so **every protected page in the copy is public until you mirror the rows by hand** — an
+   observed state is a customer-center dashboard served in full to an anonymous visitor on the layer
+   while the master stayed correctly gated. `UnifiedPermission` rows are not cloned and the
+   `CopyPermissions` flag is not the frontend-page-permission switch; nothing in the `status: ok`
+   distinguishes the two. Probe **anonymously, per language, per protected URL** after every copy (the
+   pass state is a redirect to the localised sign-in, not a 200) — demo-side checklist in
+   [`../../../dw-demo-swift/references/language-layers.md`](../../../dw-demo-swift/references/language-layers.md).
+   Mirror every master row onto the layer's sibling page id
    (`Page.PageMasterPageId` gives the mapping), then
    `POST /admin/api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Security.Permissions.PermissionService"}`
    AND restart (the nav tree caches separately). See [`users-permissions.md`](users-permissions.md).

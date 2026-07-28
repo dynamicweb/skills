@@ -12,6 +12,7 @@
 - [The default is flat — why](#the-default-is-flat--why)
 - [Data prerequisite: author nav depth (`save_groups`)](#data-prerequisite-author-nav-depth-save_groups)
 - [The merged page+group tree — how a content page joins a group-driven menu](#the-merged-pagegroup-tree--how-a-content-page-joins-a-group-driven-menu)
+- [Nav visibility is not access control — a hidden group still serves a live PLP](#nav-visibility-is-not-access-control--a-hidden-group-still-serves-a-live-plp)
 - [The shared default: `theme-default`'s `default_custom.css`](#the-shared-default-theme-defaults-default_customcss)
 - [Platform truth 1 (LRN-nav-03): the Popper-gap bridge](#platform-truth-1-lrn-nav-03-the-popper-gap-bridge)
 - [Platform truth 2 (LRN-nav-04): `::before` = icon, `::after` = underline](#platform-truth-2-lrn-nav-04-before--icon-after--underline)
@@ -110,6 +111,21 @@ away from an existing heading with the same word.
 bar reflects it. Label and URL changes do **not** — see the group-rename rule in
 [admin-ui-authoring.md](admin-ui-authoring.md), which is the truth earlier passes mis-attributed to the
 recycle they happened to run in the same session.
+
+## Nav visibility is not access control — a hidden group still serves a live PLP
+
+**`navigationShowInMenu=false` (and every other menu flag) hides a group from the rendered nav and does
+nothing to its URL.** Reachability and nav membership are independent: the group's URL keeps resolving
+**200** for anyone who has it, so a catalogue tidied by hiding nodes still publishes them. One audit found
+**14** empty groups hidden from the nav, every one of them serving a live PLP reading "0 products" — the
+kind of page that surfaces in a search result or a shared link during a demo.
+
+- **Treat every nav-hidden group as a live surface.** If it must not be reachable, **delete it** (the URL
+  then 404s); hiding is presentation, not removal.
+- Probe shape: enumerate the shop's groups, request each group URL, and report any that answers 200 with a
+  zero-product list — the count is the finding, not the nav flag.
+- The same split applies to pages: a `navigationTag` withholds a page from the bar and leaves it served
+  (see the shortcut-child recipe above, which relies on exactly that).
 
 ## The shared default: `theme-default`'s `default_custom.css`
 
