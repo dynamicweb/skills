@@ -249,8 +249,12 @@ DW mints the `ItemList` and wires the relation for you — on a fresh Accordion 
 `Accordion_Items` pointer transitions `'0'` → a non-zero list id — and the storefront renders it on the
 next GET with **no recycle**. Verify per
 [`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §"Verifying a
-repeater-child write": the `ParagraphSave` response and `GetParagraphById` **cannot** decide it, so assert
-the pointer mint on a fresh parent and assert the child's field values in a live GET of the rendered page.
+repeater-child write": the `ParagraphSave` response and `GetParagraphById` **cannot** decide it — the
+response is a verbatim echo of what you posted (including values that did not persist) and the parent's
+`Items` field is a constant list id on any accordion that already has items. **The verification is the
+child's field values in a live GET of the rendered page, full stop.** The `'0'` → non-zero pointer mint is
+a create-only convenience: it is real on a fresh Accordion and structurally unavailable on the far more
+common case of editing an item in a list that already exists, so never gate a helper on it.
 The child-field group is `General` and the field names are confirmed against
 `Files/System/Items/ItemType_Swift-v2_Accordion.xml` + `ItemType_Swift-v2_Accordion_Item.xml` — read the
 XML rather than guessing when adapting this to another repeater.
