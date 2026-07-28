@@ -127,6 +127,26 @@ When a demo host is pinned to a PreRelease or to 10.29+, say so when presenting 
 *administration* of profiles is what the customer's GA version may lack, and that is a fair thing to
 name on screen.
 
+### Every member of a multi-profile login is permanently UNEDITABLE through `UserSave`
+
+The duplicate-username validation has a second consequence beyond blocking creation: **`UserSave` rejects any
+`userName` already held by another row, and the check does not exclude the row being saved from its own
+duplicate group.** A profile set *is* a group of rows sharing one username — that is what produces the picker —
+so every member of an existing set is unsaveable, even round-tripping its own unmodified model, and even to
+change something unrelated like a surname:
+
+```
+POST UserSave  (own unmodified model, row belongs to a profile set)
+  -> 400 {"status":"invalid","message":"Username already taken by another user."}
+```
+
+Reproduced on both profile sets on one install. **The escape hatch is to make the username momentarily
+unique:** SQL-park the OTHER rows of the set on throwaway usernames so the validator sees the real username as
+free → `UserSave` the target row (which updates the database **and** the cache, which is why this is worth
+doing rather than SQL-editing the row) → SQL-restore the whole set. Repeat per row. Verify afterwards that
+`/dwapi/users/info/profiles/switch` still returns `200` for every profile — the parking step is exactly the
+kind of edit that leaves a set half-restored.
+
 ### Zero-custom-code picker recipe (SQL + one restart)
 
 1. **Clone the buyer's `AccessUser` row per profile:** same `AccessUserUserName`, new
