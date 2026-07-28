@@ -37,6 +37,7 @@ If you used MCP for a row whose mutation type appears in the table below, you sh
 | **Direct SQL INSERT new `EcomPrices` row** | Resolved-price cache | (none) | YES — new price is not picked up by PDP / cart resolution until restart |
 | **Direct SQL INSERT into `EcomVariantGroupProductRelation` / `EcomVariantOptionsProductRelation`** | Variant-combination resolution (read at startup) | (none) | YES — until restart the PDP variant selector misses the new combinations and an add-to-cart POST for them returns HTTP 200 but adds nothing. Existence-guard the INSERTs so re-runs converge instead of duplicating — see [pim-modelling.md §2.5](pim-modelling.md) |
 | **Direct SQL write to credential/token rows** (`AccessUser` password columns, `AccessUserToken`) | Identity/token state cached at host startup | (none) | YES — the pre-write credential keeps validating (and the new one doesn't) until restart. Pair every SQL credential/token write with a restart |
+| **Direct SQL write to any other `AccessUser` column** (username, names, company, customer number) | In-process user cache behind `UserById` and the storefront identity resolvers | **(none — no invalidation verb reaches it)** | **No surface fix.** Only a successful `UserSave` on that exact id clears it — see "Raw-SQL `AccessUser` writes create a split brain" below. Every such write owes a per-row DB-vs-API diff |
 | **Direct SQL UPDATE on an existing `Page` / `Paragraph` / `GridRow` CONTENT field** (e.g. `ParagraphTemplate`, `PageMetaTitle`, item/text fields) | (cache holds the row by id; content fields are read live from DB on next render) | (none needed) | **No** — live, refresh the page. This is the one safe SQL pattern for these tables — but ONLY for content fields; see the two composition rows below. |
 | **Direct SQL UPDATE on `GridRow.GridRowSort` (re-ordering existing rows)** | Page-composition cache holds the ordered list | (none) | YES — the cached ordering wins until restart, even though content-field updates on individual rows go live |
 | **Direct SQL UPDATE on layout-composition columns** — `GridRowTopSpacing` / `GridRowBottomSpacing` / `GridRowVerticalAlignment` / `GridRowGapX/Y` / `GridRowColorSchemeId`, and `Page.PageItemType` / `PageItemId` / `PageColorSchemeId` | Page-composition cache (these feed the rendered `data-dw-row-space-*` / colorscheme / header-item attributes) | (none — MCP paragraph/page touches do NOT flush them) | YES — the cached values win until restart, same as the ordering row above. These columns behave like structure, not content. |
@@ -46,6 +47,7 @@ If you used MCP for a row whose mutation type appears in the table below, you sh
 | **Style-asset change** (Color Scheme / Buttons / Typography / Fonts JSON+CSS in `Files/System/Styles/`, or the `Area`'s style wiring) | Style/theme registry loaded at startup | `CacheInformationRefresh` insufficient | **YES — full host restart.** New/edited style assets are enumerated at startup; the admin Design surface and the rendered `data-*` style attributes hold the old set until restart. |
 | **Item-type XML change** (drop/edit `Files/System/Items/ItemType_*.xml`) | ItemManager type registry (materialised from XML at startup) | `CacheInformationRefresh` insufficient | **YES — full host restart.** The backing `ItemType_*` table + field registry are (re)built from the XML at startup only; content referencing a not-yet-materialised type fails until the bounce. (Same startup-materialisation fact the headless baseline relies on — [`../../../dw-demo-headless/references/headless-backend.md`](../../../dw-demo-headless/references/headless-backend.md) §6.) |
 | **Direct SQL UPDATE on `EcomPrices.PriceAmount` / `PriceCurrency` / scope columns** | Resolved-price cache | (none) | YES — old price wins until restart |
+| **Direct SQL write to RMA rows** (`EcomRma*` — dates, comments, deletions) | `Dynamicweb.Ecommerce.Orders.ReturnMerchandiseAuthorization.ReturnMerchandiseAuthorizationService` (persistent service cache behind `RmaById` / `RmaComments`) | `POST /admin/api/CacheInformationRefresh {CacheTypeName:"Dynamicweb.Ecommerce.Orders.ReturnMerchandiseAuthorization.ReturnMerchandiseAuthorizationService"}` | No — but the flush is **mandatory**: `RmaList` reads SQL directly and shows the new data while the detail view serves the pre-write object graph, so the correct-looking list hides the stale detail. A SQL-only scheduled task cannot call the verb — see [`commerce-orders.md`](commerce-orders.md) §"The RMA read path". |
 | **Direct SQL UPDATE on `EcomOrderStates.OrderStateColor` (or other state-row columns read at render time)** | `OrderStates.GetStateById()` in-memory cache | (none) | YES — the badge's inline-style attribute holds the stale color even after a full page reload; storefront-rendered order-state badges and CSS variables fed by `Services.Orders.GetStateById(...).Color` keep the old hex until restart |
 | MCP `save_paragraphs` / `save_pages` / `save_grid_rows` | Page-composition cache | (auto via MCP) | No — these are the preferred surface for content seeding; the four "Direct SQL INSERT" rows above are the SQL-fallback equivalents |
 | **Paragraph-soft-hide / delete inside a `@RenderGrid(otherPageId)` nested grid** (e.g. Swift's `Swift-v2_ProductListComponentSelector` PLP wrapper) | RenderGrid HTML cache (keyed by source page id) | (none — survives host restart) | **No surface fix** — `ParagraphDeleted=1` / `ParagraphShowParagraph=0` are not observed even after restart. CSS-hide is the only reliable lever; see [`swift-building.md` §5 "ProductListComponentSelector caches even harder"](swift-building.md) for the worked recipe. |
@@ -78,6 +80,37 @@ isn't "merging", it's writing back its stale copy. Sequence a mixed-surface auth
 **all MCP/structural writes first → SQL for the unexposed columns last → one host restart** to flush
 the composition/nav/URL caches together. If an MCP save must happen after the SQL step, re-apply the
 SQL afterwards.
+
+### Raw-SQL `AccessUser` writes create a split brain that nothing can flush — and it surfaces three endpoints away
+
+**This is the concrete mechanism behind the standing "never rename users via raw SQL" rule, and it is the one
+cache in this file with no invalidation surface at all.**
+
+`SELECT` returns the new value while `GET /Admin/Api/UserById` returns the old one. The storefront profile
+listing looks correct, and then the **profile switch** returns `403 Forbidden`, because the switch validates
+against the **cached** username. Every profile switch in a demo can die with nothing wrong at the database
+level.
+
+Proved non-invalidating on one host: a `CacheInformationRefresh` over **every** User / Permission / Security /
+Capability cache, a password-set on the row itself, and a `UserSave` on an *unrelated* user. There is no
+user service among the ~96 `GetServiceCaches` entries (only a user-group-relation service and an
+external-login service), and the memory/static-type cache listings expose nothing user-shaped. **Only a
+successful `UserSave` on that exact id clears it.**
+
+Three rules follow:
+
+- **Every raw-SQL write to an `AccessUser` row owes a per-row DB-vs-API diff afterwards.** The write appearing
+  to succeed proves nothing. On one surname-only fix, `SELECT` returned the new value on all four rows while
+  `UserById` returned the retired surname on **one** of them — caught only by an explicit per-row diff, never
+  by any page check, because the storefront does not render that field.
+- **A repair that re-saves through `UserById` must pass the DB values in EXPLICITLY.** The obvious escape
+  hatch — fetch the model, save it back — fetches the **cached** object, so saving it blindly writes the
+  stale value back into the database and *undoes the fix*. Supply the DB truth as a field override.
+- **Assert the downstream surface, not just the row**: per touched user, `SELECT` and `UserById` agree, and
+  the storefront profile-switch endpoint returns `200`.
+
+(The related "a profile-set member cannot be saved at all" trap, and the parking recipe that works around it,
+are in [`../../../dw-demo-swift/references/customer-center.md`](../../../dw-demo-swift/references/customer-center.md) §6.)
 
 This is **the SQL-fallback rulebook only.** MCP `save_paragraphs` / `save_pages` / `save_grid_rows` / `save_prices` and the admin-UI Visual Editor invalidate the relevant caches for you — none of these rules apply to those surfaces. Choosing SQL-direct over a domain-service surface is a separate decision; when a service surface is available, prefer it and skip this section.
 

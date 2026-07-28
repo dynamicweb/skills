@@ -70,6 +70,136 @@ always the one that lands:
 `OrderLineUnitPriceWithoutVAT` equals the requested value and the account-side order list shows a
 non-zero total after an `OrderService` cache flush.
 
+## The platform OWNS ids and timestamps — a `*Save` discards the ones you send
+
+**`OrderSave` and `InvoiceSave` mint their own id from the `EcomNumbers` counters (`ORDER`,
+`LEDGERENTRIES`) and discard `Model.Id`.** They also ignore a caller-supplied date and stamp *now*;
+`RmaCommentSave` ignores `Model.Created` the same way, and `Model.reference` does not persist through
+`OrderSave` at all. So **any follow-up SQL keyed on the id or reference you sent addresses nothing** — and it
+does so silently, updating zero rows with no error. One pass built twelve invoices with correct due dates,
+keyed its follow-up SQL on the invoice numbers it had supplied, and shipped twelve rows all stamped with the
+same creation minute and none linked to a source order. The row count was never checked; the defect was caught
+by looking at the rendered screen.
+
+- **After any `*Save`, read the id back from the response or a list query** — never assume the id you sent is
+  the id that exists. Where the two keys must be reconciled, join through the list query that carries both
+  (`InvoiceList` returns `id` = the minted ledger id **and** `invoiceNumber` = yours).
+- **No verb anywhere in the order / invoice / RMA families can set a creation timestamp.** Demo backdating is
+  therefore raw SQL **keyed on the minted id** — a sanctioned exception, and the only shape that works.
+- Neighbouring shapes measured on the same pass: `OrderSave` validates the billing address, so a model without
+  `customerCountryCode` answers `400 {"CustomerCountryCode":["Billing country should be set."]}`; and
+  `OrderRecalculate` takes **`OrderId`, singular** — passing `Ids` answers
+  `400 {"OrderId":["The value is required."]}`.
+
+Assert it: every seeded order/invoice row is reachable by the id returned in its own save response, and
+`OrderReference` / `OrderDate` match the intended values after the SQL pass.
+
+## A re-saving verb reverts raw-SQL edits — `OrderRecalculate` writes the CACHED order back
+
+`OrderRecalculate` does not just re-total. **It re-saves the entire entity from Dynamicweb's cached state**,
+which predates any SQL written behind the API — so it silently reverts the backdate/tag/reference pass that
+the section above makes mandatory. No error, no warning; eight orders reverted to creation-time dates and
+empty references on the run that measured it.
+
+```
+FAILS:  OrderNew -> OrderSave -> OrderLineAddProductsBySKU -> SQL line qty -> SQL backdate+tag -> OrderRecalculate
+WORKS:  OrderNew -> OrderSave -> OrderLineAddProductsBySKU -> SQL line qty -> OrderRecalculate -> SQL backdate+tag
+                                                                                  (and nothing re-saves after)
+```
+
+- **The rule generalises past orders:** *any* API verb that re-saves an entity reverts raw-SQL edits made
+  behind it. **API writes first, SQL last, never re-save afterwards** — stated once for every surface in
+  [`../surface-priority.md`](../surface-priority.md) "Silent no-ops on write surfaces". The discount family's
+  instance of the same mechanism is in [`promotions-engines.md`](promotions-engines.md).
+- **The related read-side behaviour needs no intervention.** Immediately after a write the grids serve the
+  cached order model, but it turns over on its own within a couple of minutes and `GetOrderById` reads
+  through to current values — **no recycle and no cache-bust verb is needed**, so do not add one to the
+  recipe and do not read the brief staleness as a failed write.
+
+Assert it: seeded order dates still match the intended backdated values **after the full build sequence
+completes**, not after the SQL step.
+
+## `GetOrderList` inner-joins `EcomShops` — orders on a deleted shop vanish from every Commerce grid
+
+**`GetOrderList` only returns rows whose `OrderShopId` resolves in `EcomShops`.** Orders carrying a shop id
+that no longer exists are not missing — they are **invisible**, and no count, warning or discrepancy anywhere
+in the admin UI reveals it. The Incomplete-orders screen read `0` while ten rows in `EcomOrders` satisfied its
+exact predicate.
+
+The arithmetic across three grids proves the join exactly: on one host the complete-orders SQL count split as
+`live-shop + blank + dead-shop`, and the grid rendered exactly `live-shop + blank`. Blank `OrderShopId` rows
+**do** render; only rows naming a shop that is absent from `EcomShops` disappear.
+
+**Any order backfill must write an `OrderShopId` that exists in `EcomShops`, or leave it blank.** Gate it:
+
+```sql
+SELECT COUNT(*) FROM EcomOrders
+ WHERE OrderShopId <> '' AND OrderShopId NOT IN (SELECT ShopId FROM EcomShops);   -- must be 0
+```
+
+This is a good candidate for the Ecommerce health provider to surface — worth raising with the vendor.
+
+## An invoice is an `EcomOrders` row — and `InvoiceSave` requires `OrderStateId`
+
+**There is no `EcomInvoice*` table.** An invoice is an `EcomOrders` row flagged `OrderIsLedgerEntry=1` with
+`OrderLedgerType=Invoice`, plus `OrderIsPayable`, `OrderDueDate` and `OrderParentOrderId` pointing at the
+source order. `InvoiceSave` wraps all of that.
+
+- **`OrderStateId` is validated as REQUIRED at runtime although the OpenAPI schema marks it an ordinary
+  optional string.** A model built faithfully from the published schema answers
+  `400 {"OrderStateId":["OrderStateId is required"]}`.
+- **The Ledgers grid's `Number` column shows the ledger ORDER id, not the invoice number** — the invoice
+  number appears only in `InvoiceList` and on the detail view. Reconcile the two keys through `InvoiceList`
+  (see the id rule above).
+- **Any recent-orders harvest on a site with ledger rows needs `ISNULL(OrderIsLedgerEntry,0)=0`** — otherwise
+  it counts invoices as orders. This bites sibling scripts (award/report/dashboard passes) that were written
+  before invoices existed on the install.
+
+Assert `InvoiceList` and the Ledgers grid agree on count, and that each invoice resolves to its source order
+via `OrderParentOrderId`.
+
+## Subscriptions have no create verb — the shape is one flag plus an `EcomRecurringOrder` row
+
+The Subscriptions screen cannot be populated through a create command: the only recurring verb in the whole
+catalogue is `OrderCancelRecurring`. Subscriptions are not a first-class creatable entity — they are a
+two-part shape, and both parts matter:
+
+- **`EcomOrders.OrderIsRecurringOrderTemplate = 1`** alone puts a row on the Subscriptions grid (this is what
+  makes a one-part seed look successful).
+- **An `EcomRecurringOrder` row** (`UserID`, `BaseOrderID`, `StartDate`, `EndDate`, `Interval`,
+  `IntervalUnit`, `LastDelivery`) is what makes it *functional* — after which
+  `FutureDeliveriesByRecurringOrderId` computes the forward schedule.
+
+`RecurringOrderIntervalUnit` is an enum: **`0`=days, `1`=weeks, `2`=months, `3`=years**, confirmed by observed
+delivery spacing. The proof that a seed is a working subscription rather than four rows in a table is the
+engine deriving the schedule: four seeded subscriptions produced 5 / 18 / 4 / 12 forward deliveries from their
+own start/end/interval, and the rendered screen showed "Every 1 months" / "Every 3 months" / "Every 6 months"
+correctly. **Assert `FutureDeliveriesByRecurringOrderId` returns a non-empty schedule for every seeded
+subscription.**
+
+## The RMA read path is a persistent service cache that raw SQL cannot invalidate — and `RmaList` masks it
+
+`RmaList` queries SQL directly; **`RmaById` / `RmaComments` serve a persistent
+`ReturnMerchandiseAuthorizationService` cache that no SQL write invalidates.** After a SQL backdate the list
+grid shows the new dates while the detail view keeps serving the pre-SQL object graph — including rows that
+were deleted. **The correct-looking list is what hides the stale detail**, which is why this reads as a
+rendering bug rather than a cache.
+
+```
+POST CacheInformationRefresh
+{ "CacheTypeName": "Dynamicweb.Ecommerce.Orders.ReturnMerchandiseAuthorization.ReturnMerchandiseAuthorizationService" }
+```
+
+- **Any raw-SQL write to RMA data must be followed by that flush** — no recycle needed.
+- **Match FULL type names when hunting a cache id.** Filtering the ~96-entry cache list with `-match "rma"`
+  also matches `inteRMAtional`, `infoRMAtion` and `foRMAt`; the substring hunt is what makes the right entry
+  hard to find.
+- **Consequence for scheduled work: a SQL-only task cannot call that verb**, so a nightly date shift leaves
+  the RMA detail view stale by design until the cache turns over. Say so when designing the beat rather than
+  debugging it later.
+
+Assert `RmaById` returns the same `CreatedAt` as the `RmaList` row after a SQL edit **plus** the flush.
+
 ## SQL backfills vs runtime subscribers
 
 The bulk SQL backfills above (`OrderComplete=1`, `OrderCustomerNumber`, and the related
@@ -213,6 +343,10 @@ of relying on a flavoured baseline, stock filters silently hide otherwise-correc
   "no address selected" on the billing side only. Fix: populate the profile address too (`update_users`
   with `address/zip/city/state/country/countryCode`, mirroring the Billing `UserAddress`). Seed both
   for every buyer.
+
+(Discounts, vouchers, loyalty rewards and gift cards are their own surface — two coexisting discount
+engines, a voucher grid fed by the legacy one, and an encrypted gift-card code — and live in
+[`promotions-engines.md`](promotions-engines.md).)
 
 (Gating the CSR section away from non-CSR users — and gating buyer dashboards away from the CSR — is the
 Permission entity store's job; see [`users-permissions.md`](users-permissions.md) §15. DC-scoped buyer

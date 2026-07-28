@@ -11,6 +11,8 @@
 - [Normalise page shortcuts BEFORE the copy — a leading slash defeats the link remapper](#normalise-page-shortcuts-before-the-copy--a-leading-slash-defeats-the-link-remapper)
 - [Localised ecom URLs need BOTH settings on the layer's shop page](#localised-ecom-urls-need-both-settings-on-the-layers-shop-page)
 - [Audit group `primaryPageId` after every AreaCopy — at the shop page it blanks every PDP](#audit-group-primarypageid-after-every-areacopy--at-the-shop-page-it-blanks-every-pdp)
+- [A master-layer `ParagraphSave` writes THROUGH to the language layers](#a-master-layer-paragraphsave-writes-through-to-the-language-layers)
+- [`Translations.xml` keys are case-sensitive — and the shipped file carries case-variant pairs](#translationsxml-keys-are-case-sensitive--and-the-shipped-file-carries-case-variant-pairs)
 - [Demo judgement — localize the demo path, not the whole site](#demo-judgement--localize-the-demo-path-not-the-whole-site)
 - [Cross-references](#cross-references)
 
@@ -95,6 +97,62 @@ for localised group URLs. That is the wrong lever: the durable fix is `PageNavig
 `primaryPageId` must stay clear. Audit the whole group set after every copy, and make the warmup/gate PDP
 probe assert **non-trivial article content** (byte size or row count), which is what catches the blank
 state before a human does.
+
+## A master-layer `ParagraphSave` writes THROUGH to the language layers
+
+**Language layers are reconciled against the master on every save, and the reconciliation is destructive in
+two different ways.** Neither is announced, and both are easy to mistake for someone else's edit:
+
+- **Item lists are DELETE-AND-RECREATE.** Saving the master's accordion/slider deletes the layers' children
+  and recreates them **carrying the master's copy**, with **new ids**. `ItemId=<existing>` means edit-in-place
+  only for the layer you post to. Measured on one page: saving the master deleted two layers' children and
+  recreated them under a fresh id block with English text, while the master's own children survived in place.
+- **Plain item fields are COPIED DOWN.** On simple types (`Swift-v2_Text`, `Swift-v2_Feature`) the master's
+  value is written into the language layers. On one run, six layer paragraphs had already been rewritten in
+  English *before* their own translation write ran — nothing had touched them but a master-side save.
+
+Two rules follow, and the second is the one that saves a run:
+
+1. **Never cache language-layer child ids across a master save — re-read them.** Any id captured before the
+   save points at a deleted row.
+2. **Guard every language-layer write with a fingerprint of the ORIGINAL text**, read from SQL immediately
+   before the write, and **skip if the fingerprint is gone**. Without it, writing a layer after an unrelated
+   later master edit silently reverts that layer to English. The guard is what turned "six paragraphs
+   mysteriously back in English" into six correctly-skipped writes on the run that measured this.
+
+Sequencing rule for a translation pass: do the master edits first, then the layers — and re-read, never
+assume, the layer state in between. (Item-list saves are authoritative in the other direction too: posting a
+subset deletes the omitted children outright — [`paragraphs.md`](paragraphs.md).)
+
+## `Translations.xml` keys are case-sensitive — and the shipped file carries case-variant pairs
+
+**A translation is present in the file and the page still renders English.** DW matches the `Translate()`
+literal **exactly**, and the shipped Swift file carries **89 pairs of keys differing only in case** — an
+in-stock/in-Stock pair, update/Update, all/All, item/Item, products/Products, and so on. Adding a translation
+to one member of the pair while the template calls the other is a silent no-op that gets recorded as a
+mystery.
+
+**The natural tooling actively hides it, in two independent ways:**
+
+- **A PowerShell hashtable is case-INSENSITIVE**, so a merge reports the case-variant keys as *already done*.
+- **`ConvertFrom-Json` collapses case-variant properties into one member**, so the parsed document is already
+  wrong before any comparison runs.
+
+On one file, a first merge pass would have written 15 translations onto the wrong node.
+
+**Mandate ordinal, case-sensitive handling in any `Translations.xml` tooling:** index into a
+`Dictionary[string,object]` constructed with an **ordinal** string comparer — `[StringComparer]::Ordinal` —
+and parse with `System.Text.Json`, never `ConvertFrom-Json`.
+
+**Assert the RENDERED page contains the translated literal — not merely that the key exists in the file.**
+Key-presence is exactly the check that passes on a case-variant miss. (The shipped duplicate case-variant
+keys are worth raising with the vendor as a shipped-file defect.)
+
+The file is also **DW-owned and self-modifying** — `Translate()` on an unknown literal appends a key at render
+time, which is why it must stay additive and why DW must retain write access to it; that, and the
+`Move-Item`-loses-the-ACE hazard, are in
+[`../../dw-demo-base/references/online-mode.md`](../../dw-demo-base/references/online-mode.md)
+"Never `Move-Item` over a file in a DW-managed folder".
 
 ## Demo judgement — localize the demo path, not the whole site
 

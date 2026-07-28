@@ -22,6 +22,7 @@
 - [11. Per-role field-level differentiation (the SQL technique)](#11-per-role-field-level-differentiation-the-sql-technique)
 - [12. Hide a UI section per group (`CapabilityLimitation`)](#12-hide-a-ui-section-per-group-capabilitylimitation)
 - [13. Plaintext password storage — `EncryptPassword=False` escape hatch](#13-plaintext-password-storage--encryptpasswordfalse-escape-hatch)
+- [14. `UserAddressDelete` resolves through the owning user — orphaned addresses are API-unreachable](#14-useraddressdelete-resolves-through-the-owning-user--orphaned-addresses-are-api-unreachable)
 - [15. Render-time half — page/paragraph permissions (the entity store)](#15-render-time-half--pageparagraph-permissions-the-entity-store)
 - [16. Customer-number suffix as a role flag (presentation gate)](#16-customer-number-suffix-as-a-role-flag-presentation-gate)
 - [17. Cross-references](#17-cross-references)
@@ -615,6 +616,32 @@ Verify the setting before relying on it — production solutions often flip thes
 plaintext seeded under `False` becomes a stale invalid hash after the flip. (DW10's
 `AuthenticationManager.cs:184` auto-rehashes a plaintext seed on first successful login.)
 
+## 14. `UserAddressDelete` resolves through the owning user — orphaned addresses are API-unreachable
+
+**The Ecommerce health check flags orphaned `AccessUserAddress` rows, and the only address-delete verb answers
+`404` for exactly those rows.** `UserAddressDelete` takes a scalar `AddressId` but looks the address up
+**through its owning user**; an orphan carries `AccessUserAddressUserId = 0`, so there is no user to resolve
+through and the lookup fails:
+
+```
+POST UserAddressDelete {AddressId: <orphanId>}  -> 404 {"status":"notFound","message":"Address not found: <orphanId>"}
+```
+
+So the API cannot fix what the health check reports. **Raw SQL `DELETE` is the only route and is sanctioned
+here** — no runtime cache is keyed on `AccessUserAddress`, so the delete needs no flush and no restart. Scope
+it precisely (`AccessUserAddressUserId = 0` **plus** blank address fields): orphans interleave with real
+address ids, so an id-range delete takes live personas' addresses with it.
+
+Two generalisations worth carrying:
+
+- **Health-provider orphan rows are usually API-unreachable by construction** — the verbs resolve through the
+  parent entity that the orphan, by definition, has lost. Expect a sanctioned SQL exception rather than
+  hunting for a verb that does not exist.
+- **Check the provenance before deciding it is fallout.** All 19 rows on one install were completely blank with
+  `UserId 0` — residue of address-save probes that ran with no user id, not deleted-user fallout. Verify
+  afterwards that the health provider's orphaned-address check returns 0 **and** that live personas still have
+  their addresses.
+
 ## 15. Render-time half — page/paragraph permissions (the entity store)
 
 This is the **render-time** half: how the storefront's `Page` / `Paragraph` permissions resolve at
@@ -812,6 +839,7 @@ badge presentation — that is presentation, not gating; use `GetGroups()` for i
 - **Dynamic Workspaces entity** (`PermissionName="DynamicStructure"`) — [`pim-modelling.md`](pim-modelling.md). How the workspace entity slots into the three-layer model.
 - **Access surfaces** (Direct-SQL / Management API) — [`data-access.md`](data-access.md). Per §4c, all three permission tables are Direct-SQL territory in DW 10.25.8 — the admin UI does not expose them for the Dynamic-Workspace / Dashboard / Capability-Set resources.
 - **Cache invalidation after direct-SQL permission seeding** — [`cache-invalidation.md`](cache-invalidation.md), the "Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission` / `CapabilityLimitation` / `CapabilitySetLimitation` / `DashboardAccessUserRelation`" rows. The three caches that need flushing (`DefaultCapabilityService`, `DefaultCapabilitySetService`, `PermissionService`) are listed there with the exact `CacheInformationRefresh` payload.
+- **Never rename or edit an `AccessUser` row by raw SQL** — [`cache-invalidation.md`](cache-invalidation.md), "Raw-SQL `AccessUser` writes create a split brain that nothing can flush". The in-process user cache is reachable by **no** invalidation verb, so `SELECT` and `UserById` disagree indefinitely and the failure surfaces three endpoints away as a `403` on profile switch. Every such write owes a per-row DB-vs-API diff, and any repair that re-saves through `UserById` must supply the DB values explicitly or it writes the stale value back.
 - **`AccessUserGroup` membership** — DW10 admin Users → Groups. Group membership is what makes Layer A's "highest level wins" resolution work across users.
 
 Source citations re-verified against a local clone of the DW10 source on DW 10.25.8.

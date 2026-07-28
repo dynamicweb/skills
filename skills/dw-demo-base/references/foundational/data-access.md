@@ -80,6 +80,51 @@ Two filter behaviours on the email grid queries that produce wrong result sets r
 Query with both ids and verify the returned set against the folder you expect; never size an email
 population from a `totalCount` on this surface.
 
+### Discovering admin screens and their backing queries — and the cost of guessing verb names
+
+**There is no navigation API.** `NavigationTree`, `Navigation`, `AdminNavigation`, `Areas` and `ModuleAll`
+all answer `400 Unknown query`; admin screens are server-rendered routes and cannot be enumerated
+programmatically. The productive trick is one level down:
+
+**Every admin screen route carries a `Type=<query name>` parameter, and that value IS a Management API query
+the bearer token can call directly.** So "does this admin screen show data?" is answerable with no browser in
+the loop:
+
+```
+/Admin/UI/.../<Screen>?…&Type=<QueryName>&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            ^^^^^^^^^^^^  -> GET /Admin/Api/<QueryName>?…
+```
+
+Harvest the route→query map **once**, by driving the real admin under a throwaway account and reading the
+route parameters (the same read-only Playwright motion as capturing the SPA's own HTTP calls — see
+[`../surface-priority.md`](../surface-priority.md) "Admin UI is verification-only"). Observed shape: several
+distinct commerce screens (incomplete orders, subscriptions, ledgers/invoices) all resolve to the **same**
+order-list query with different filters, while discounts, vouchers, loyalty and gift cards each name their
+own. Row counts from those queries matched the rendered screens exactly, before and after seeding — which is
+what makes this a **sanctioned assertion surface** for "the demo's screens are populated".
+
+**Every wrong verb name you try writes an Error row onto the customer's Insights dashboard.** An unresolvable
+command name is logged as an `[Application/AddInManager]` Error — the exact counter the owner-facing
+Monitoring dashboard shows:
+
+```
+Unable to resolve type <GuessedName> with base type Dynamicweb.CoreUI.Data.DataQueryBase
+```
+
+One inherited host carried **71 errors/day that were the agents' own fingerprints**, including 122 rows in 11
+seconds from a single malformed probe loop, with timestamps clustering exclusively inside prior agent session
+windows. So probing is **not free**:
+
+- **Prefer enumerating the API catalogue** (`api.json`) over guessing names one at a time.
+- **Batch verb probing and do it EARLY in a session**, then follow it with a log clear before any demo.
+- **Never fire write verbs speculatively** while probing a registry.
+- Log-clear recipe and the retention gap that lets these accumulate:
+  [`tracking-insights.md`](tracking-insights.md) "Nothing ever trims `GeneralLog`".
+
+Related and equally cheap: `HealthProviderChecksByProviderName` and its two siblings serve the Insights
+health-provider data over the same bearer, with each check returning the literal SQL it ran
+([`tracking-insights.md`](tracking-insights.md) "Health providers are reachable over `/Admin/Api`").
+
 ## OpenAPI discovery
 
 The OpenAPI JSON path on a running DW10 host is not officially documented and varies by Swashbuckle
@@ -158,9 +203,94 @@ $rows[0].PageId        # WRONG — $rows unrolled to the DataRow; [0] is column 
 @($rows)[0].PageId     # correct — force the array, then index the row
 ```
 
-**Wrap every result in `@()` before indexing, or read scalars through a dedicated `Sql-Scalar` helper**
-that returns `ExecuteScalar` directly. A verification read that can quietly return `0` is worse than no
-verification: it converts "the write did not land" and "my reader is wrong" into the same observation.
+**Fix it INSIDE the shared read helper — forcing `@()` at the call site is not a rule that holds.** Four
+independent workstreams hit this on the same day against one shared `_sql.ps1`, and each produced a confident
+page of wrong output rather than an error: a run of bogus "Invalid column name" errors, a payload posted full
+of blanks that invoiced nothing, and a page of zeros printed while the underlying data was perfect. A helper
+that returns `@($table.Rows)` is unrolled by PowerShell whenever the result set has exactly one row, so the
+guarantee has to live where the unrolling happens. **Return the array from inside the helper (and assert it:
+a one-row query returns an array), and read scalars through a dedicated `Sql-Scalar` that returns
+`ExecuteScalar` directly.** A verification read that can quietly return `0` is worse than no verification: it
+converts "the write did not land" and "my reader is wrong" into the same observation.
+
+**Companion trap on the same helper: never `ConvertTo-Json` a raw `DataRow`.** The object graph behind a
+`DataRow` is enormous (table → schema → parent dataset), so the call does not error — it **hangs**, and cost a
+five-minute timeout on the run that measured it. Project into a `pscustomobject` with the columns you want
+before serialising, and document both traps in the helper header where the next caller will read them.
+
+### `[ordered]@{}` with integer keys indexes by POSITION, not by key
+
+The other silent-wrong-answer trap of the same family, and the more dangerous one because DW ids are integers
+and lookup tables keyed on page / paragraph / user ids are the natural shape. **Bare numeric keys in an ordered
+dictionary are `Int32`, and `$table[$id]` with an `Int32` hits `OrderedDictionary`'s POSITIONAL indexer**, not
+the key indexer. The index is out of range, so it returns `$null` with **no error** — or throws a misleading
+"Cannot index into a null array" one line later, pointing at innocent code:
+
+```powershell
+$plan = [ordered]@{ 1293 = @{ … }; 1294 = @{ … } }   # keys are Int32
+$plan[1293]                                          # asks for the 1,294th ENTRY -> $null
+$plan = @{ 1293 = @{ … } }                           # plain hashtable -> keyed lookup, correct
+```
+
+Four workstreams hit this in one day. The most dangerous instance was a rename loop that consequently saved
+every user with an **unmodified** model: it looked like it worked, printed a plausible line per row, and
+changed nothing — and one workstream initially attributed the resulting no-op to an unrelated platform bug and
+had to re-prove that bug afterwards with an explicit single-field save. **Quote the keys, use a plain
+hashtable, or iterate `.GetEnumerator()`** — and a `-WhatIf` dry run that prints resolved target values is what
+catches it, since empty values are the only signal.
+
+### A dot-sourced helper can fail to load while the calling script keeps running
+
+The third member of the silent-wrong-answer family, and the only one whose cause is outside the script. **A
+shared SQL helper can be blocked by AMSI as malicious content** — a false positive, almost certainly triggered
+by an inline connection string carrying credentials:
+
+```
+. .\_sql.ps1
+  -> "This script contains malicious content and has been blocked by your antivirus software"
+  -> the dot-source fails, the SURROUNDING script keeps running
+  -> every call to the helper is "not recognized"; every DB comparison silently reads EMPTY
+```
+
+Same helper, same host, **intermittent** — a re-run works. The failure is indistinguishable from real data
+drift unless the load is asserted: one verification pass produced four bogus `STALE` verdicts because it had
+been comparing against empty strings the whole time.
+
+- **Assert the helper actually loaded, immediately after every dot-source** — a trivial `Sql-Scalar "SELECT 1"`
+  probe (or a sentinel variable the helper sets) — and **fail loudly** rather than comparing against empty
+  output.
+- **Move credentials out of the inline literal** to reduce the false positive.
+
+Same failure shape as the two traps above: a comparison that returns a plausible wrong answer with no error
+is worse than no comparison, because it makes "the write did not land" and "my reader is broken" the same
+observation.
+
+### Bulk string edits: DW 10 still ships legacy `text` / `ntext` columns
+
+`REPLACE` refuses `ntext` as its first argument, so a straightforward bulk string fix fails on exactly the
+tables where long strings live (e.g. `GeneralLog.LogDescription`):
+
+```
+UPDATE GeneralLog SET LogDescription = REPLACE(LogDescription, …)
+  -> Argument data type ntext is invalid for argument 1 of replace function
+```
+
+**`CAST(… AS nvarchar(max))` inside the `REPLACE`** is the fix. Any bulk-content or anonymisation sweep must
+name the legacy column types explicitly, or it silently skips the tables it cannot update — and then reports a
+clean pass. Assert zero remaining hits in the `ntext` columns as well as the `nvarchar` ones.
+
+### Reachability queries over item tables must be TYPE-filtered on every branch
+
+**Item ids are allocated per item TYPE, not globally**, so an id in one `ItemType_*` table routinely collides
+with an unrelated id in another. A `UNION` branch that joins on `PageItemId` (or `ParagraphItemId`) without
+also constraining `PageItemType` / `ParagraphItemType` pulls in any item row whose id merely collides with a
+page item id — one asset sweep was inflated by ~20 phantom hits that resolved to pages not using those items
+at all.
+
+**Every branch of a reachability query needs its own `PageItemType` / `ParagraphItemType` constraint**, not
+just the first one. Verify by asserting each resolved hit page actually references the item type being queried
+— a sweep whose result set is too large is as wrong as one that is too small, and it is the one that gets
+acted on.
 
 ### Required NOT-NULL columns — `Page`
 

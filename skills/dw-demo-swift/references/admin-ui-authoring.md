@@ -63,9 +63,36 @@ POST /Admin/Api/GridRowSort  {PageId, Ids: ["<id>", "<id>", …]}   -> Ids[] are
 `GridRowSort` takes the complete ordered id array for the page and the ids are **strings**, not ints —
 post them as numbers and the sort is rejected or silently partial. Read the current order from
 `GridRowsByPageId` (`model.data` is already in render order), splice the copied row into the position you
-want, and post the whole array back. Verify by re-reading `model.data` and asserting the row sequence, then
-by the rendered page — a page whose rows are correct in the API and wrong on screen is a sort that did not
-take.
+want, and post the whole array back.
+
+**Three safety rules govern that call, and two of them are corrections to the obvious approach.**
+
+**1. `GridRowSort` is an ABSOLUTE ordering — the id set you post must be exactly the live row set.** A missing
+id is how a row silently drops off a page; an extra one is how a sort is rejected. Diff the set you are about
+to post against `GridRowsByPageId` and refuse to post on any difference.
+
+**2. Verify the result against the DATABASE or the RENDERED DOM — never against the API model.**
+*(Correction to the earlier "verify by re-reading `model.data`" instruction above.)* `GridRowsByPageId` is
+served from a cache the sort verb **does not invalidate**, so after a successful `GridRowSort` the DB and the
+rendered page both carry the new order while the API list query still returns the previous one. A script that
+verifies its own re-sort through the API concludes **failure** — and a retry or a revert on that basis
+**destroys the correct state**. The rendered page is the cheapest honest oracle (assert the section's position
+in `main`, e.g. by its offset fraction down the document); the DB row order is the other.
+
+**3. INSERT AT A POSITION — never re-derive a total order from a sort key that is not unique.** Rebuilding the
+whole order with a `sort` + `id` composite sort collapses curated layout wherever rows share a sort value: on
+one page eight rows shared sort values, so the `id` tie-break flattened a curated order into plain ascending
+row-id order. Adding **one** row moved two unrelated sections, shipped the damage across **three language
+layers** through the shared master page, read as a CSS problem, and stood for about nine hours until an owner
+noticed. Measured: the anchor-nav strip (highest id) fell from position 3 to last — 98.8% of the way down the
+page — while a 36-item package-contents row jumped from 7 to 3, so the product page opened with a parts dump
+under the hero.
+
+- **Insert at a position** rather than re-deriving the total order.
+- If a total order genuinely must be posted, **assert the resulting sequence against an expected id list
+  BEFORE posting it**, and compare the rendered section order against a baseline afterwards.
+- A script header comment noting "these sort values are duplicated" is not a guard — the run that caused this
+  had exactly that comment.
 
 **`flexibleColumns` is inverted: `0` = flexible, `1` = fit-to-content.** In the `GridRowSave`
 `flexibleColumns` array the column listed `0` silently absorbs all remaining horizontal space
@@ -86,6 +113,23 @@ any `PageSave`, re-fetch (a) the saved page's own `friendlyUrl` and (b) every UR
 page list, asserting 200 or 301 — a rename shows up **only** as a 404 on the OLD url, which a
 `status=ok` check and a page-object diff both miss. Also assert `name` still equals what you
 submitted.
+
+**On an ITEM-BASED page, `Model.name` alone is a silent no-op — the rendered label comes from the page item's
+`Title` field.** The same-call rule above is not only a rename-safety measure: writing `name` by itself
+returns success and updates a value nothing renders, so navigation keeps showing the old label. Re-confirmed
+across 76 page saves on one chrome pass. **Set `Model.name` AND the item `Title` in every `PageSave` against
+an item-based page**, and assert the *rendered* navigation label, not the API model.
+
+**`GridRowCopy` carries the SOURCE row's spacing tokens — a row-minting helper must reset them.** A page
+generator built on "new row + `GridRowCopy`" inherits whatever spacing the copied row happened to carry, so a
+whole family of generated pages ends with the same wrong band against the footer — and nothing in any model or
+gate reads as wrong. Measured: four pages minted from one generator all carried the breadcrumb row's
+`bottomSpacing=4` (2rem), by accident rather than by design; raising it to the definition default produced
+exactly +64px clearance on every page at both viewports. Swift's token scale is `0=0, 1=.25rem, 2=.5rem,
+3=1rem, 4=2rem, 5=3rem, 6=6rem` — **6 is the Swift default**, which is why an inherited `4` reads as
+"slightly tight" rather than as a bug. **Reset `topSpacing` / `bottomSpacing` to the definition default on
+every minted row** instead of inheriting from whichever row was convenient to copy, and assert newly minted
+content pages end on the default token.
 
 **`ProductCatalogGroupSave` regenerates the friendly URL of the group AND of every child product — with
 no automatic 301.** The ecom sibling of the `PageSave` rename above, and the blast radius is larger. A

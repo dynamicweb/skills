@@ -15,6 +15,7 @@ A page that renders is not a page that is done. The recurring polish gaps on dem
 - [Symptom → owning fix (route findings, don't re-diagnose)](#symptom--owning-fix-route-findings-dont-re-diagnose)
 - [The fix loop](#the-fix-loop)
 - [Definition of done (per demo-critical page)](#definition-of-done-per-demo-critical-page)
+- [The eyeball pass is also the PII pass](#the-eyeball-pass-is-also-the-pii-pass)
 
 ## The mindset rule
 
@@ -189,3 +190,18 @@ The detectors above are the **mechanical gate**, not a checklist the agent may s
 - Eyeball checklist: pass at desktop AND mobile widths.
 - Keeper screenshots (both breakpoints) saved under `<demo>\notes\qa\` (the canonical QA-evidence home — see `SKILL.md` "Artifact hygiene"; never the demo root).
 - **Human sign-off on taste.** The mechanical gate proves structure (caps, rows, no overflow/gaps); it cannot judge hierarchy or brand fit, so an all-green run can still read wrong. Reserve one human decision on the keeper screenshots as the last step. Under an orchestrator this is a stamped sign-off leg (see [`orchestrator.md`](orchestrator.md) "Acceptance criteria"); standalone it is an explicit "does this read as the customer's brand?" review before the page counts as done. Taste stays human without blocking the mechanical gate.
+- **PII / vendor-boilerplate clean** on every page that carries prose — see the section below.
+
+## The eyeball pass is also the PII pass
+
+The rendered-page read is the **only** instrument that catches a class of defect no detector and no term-grep can: **placeholder and vendor residue that matches none of your search terms.** A vocabulary-driven sweep over a whole corpus reported clean while a placeholder phone number in the platform vendor's home locale sat on the contact block of a US company, on two live legal pages, in every language layer.
+
+So when you walk a page for polish, read it for **provenance** as well:
+
+- **Legal / contact / about pages** — is this the customer's privacy, cookie and terms copy, or the platform vendor's? Vendor legal copy is **stock seed data**, present on cleanly built demos, and it names the vendor's own third-party data processors as though they were the customer's.
+- **Contact blocks** — dialling codes, postcodes, street suffixes and registration-number formats from the wrong country.
+- **Any page naming a person** — testimonials, author bylines, sample orders. On an inherited host these are frequently **real people**.
+
+Anything found here routes to [`pii-sweep.md`](pii-sweep.md), which owns the method (whole-database string sweep → classify by sampling values → fix → re-scan) and is a **blocking pre-demo leg**, not a polish item. The relationship is the same as the mechanical-gate-vs-taste split above: the sweep catches volume and hidden layers, the eyeball catches what matches no pattern anyone thought to write, and neither substitutes for the other.
+
+**Do not paste what you find into notes, screenshots-with-captions or commit messages** — record the class and the count.

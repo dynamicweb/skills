@@ -216,6 +216,21 @@ Ids: ["VARGRP32.VO53","VARGRP32.VO61"]
   paths, not names" rule the `*Delete` family follows ([`../online-mode.md`](../online-mode.md)) — read one
   row from the matching list query and copy its identifier shape before scripting a batch.
 
+### `ProductSave` without `RunUpdateIndex` leaves the storefront serving the old value
+
+**The PLP renders from the product search index, not from `EcomProducts`** — so a product copy fix that is
+correct in the database stays wrong on the category page **indefinitely**, until something else triggers a
+full build. `ProductSave` refreshes the product's index entry only when **`RunUpdateIndex`** is set.
+
+- **Make `RunUpdateIndex=true` the default in the documented `ProductSave` shape.** With it, a translated name
+  was live on the localized PLP within ~3 seconds of the save returning `ok` — measured across 194 product-copy
+  saves and 148 meta saves on one pass.
+- **Incremental is also the only practical option.** A full `BuildIndex` takes minutes and outruns the 120s
+  API-client timeout, so reaching for a full build per save is both slow and unreadable
+  ([`search-indexing.md`](search-indexing.md), and the argument shape in
+  [`../../../dw-demo-swift/references/sql-direct-seeding.md`](../../../dw-demo-swift/references/sql-direct-seeding.md)).
+- Verify on the **rendered** PLP within a few seconds of the save, not on the save response.
+
 ### Create-vs-update fork on commerce saves
 
 Most `*Save` commands (`ShopSave`, `ProductSave`, category-field saves, etc.) **UPDATE when `Id` is set

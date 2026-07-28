@@ -8,7 +8,7 @@
 ## Repositories, Indexes, and Queries — file-based
 
 - **Repository** = folder under `wwwroot/Files/System/Repositories/<RepoName>/`
-- **Index** = `.index` XML file inside the repo folder (build via management API `POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}`)
+- **Index** = `.index` XML file inside the repo folder (build via management API `POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}`). **`IndexName` is the index FILE name (`Products.index`, extension included) and `BuildName` is the build's name from inside that XML — the repository name or a friendly label such as `"Build Index"` answers `404`**, which reads as "the verb is unavailable" rather than "the argument is wrong". The `Name`-attribute gotcha below is the same one-value-two-meanings hazard on the file side. A full build also outruns a 120s client timeout, so fire it and verify out of band (see "Recovery recipe" below).
 - **Queries** = `.query` XML files with `<Query ID="guid">` and `<Source Repository="..." Item="..." />`. Query placement rules are SUBTLE:
   - Queries used by **feeds** (`EcomFeed.FeedIndexQueryId`) must live DIRECTLY in the repository root folder: `wwwroot/Files/System/Repositories/<RepoName>/*.query`. **Subfolders are NOT scanned for feed resolution** — admin will show "query does not exist" on the feed if the .query file is in a subfolder.
   - Queries used by **dashboards/widgets** (referenced by GUID) must live in `wwwroot/Files/System/SmartSearches/Ecommerce/Shared/` (or a subfolder of it) — **never GUID-duplicated to `Repositories/<RepoName>/<subfolder>/`**. GUID-collision mechanism + recovery: "Dashboard query location — Shared ONLY" below.
@@ -104,6 +104,35 @@ diff /tmp/repo.txt /tmp/shared.txt  # identical lines = duplicates
 **Fix**: delete the Repositories-side dashboard duplicates (NOT feed queries at repo root). Then **restart the host** — the `Searching:Queries` cache in `Cache.Current` is NOT exposed via `CacheInformationRefresh`, and `InitQueriesCache` never removes entries, only adds/overwrites. Deleting files from disk alone leaves stale entries in memory until restart. No MCP tool flushes this — plan the restart cost into your fix window. See [`cache-invalidation.md`](cache-invalidation.md) for the post-mutation cache table.
 
 **Does widget drill-through need the query in `Repositories`?** No. Widgets look up queries by GUID through the global cache, which is populated from SmartSearches. Drill-through navigation uses `ProductListNodePathProvider.GetPath` which requires the query's `FolderPath` to start with `SharedQueriesPath` — so Shared is actually the REQUIRED location for drill-through to work at all. Repositories is wrong on both fronts.
+
+## Currency integrity is an index-build precondition — `DivideByZeroException` names neither the currency nor the country
+
+**Price calculation divides by the currency rate, so a currency with rate `0` — or an `EcomCountries` row
+pointing at a currency that does not exist at all — crashes the product index build.** The exception is
+opaque: `DivideByZeroException` "Error processing prices" during the build, fired by both the scheduled build
+and a `BuildIndex` POST, naming **neither** the offending currency **nor** the country. It reads as a corrupt
+product and it lands on the Monitoring dashboard as a steady daily error count.
+
+Two independent causes produce the identical exception, which is why fixing only the one the error *seems* to
+point at leaves it firing:
+
+```sql
+SELECT COUNT(*) FROM EcomCurrencies WHERE CurrencyRate = 0;                    -- must be 0
+SELECT COUNT(*) FROM EcomCountries c                                           -- must be 0
+ WHERE c.CountryCurrencyCode NOT IN (SELECT CurrencyCode FROM EcomCurrencies);
+```
+
+One host carried a zero rate on all 16 language rows of a single currency **and** three countries pointing at
+currencies that had never been created. Clearing both took the build from 30 errors/day to a clean full
+rebuild with zero `DivideByZero` and zero `NullReference` across the whole log.
+
+- **Write currencies through `CurrencySave`, never raw SQL** — currencies are cache-coupled.
+- **`CurrencyByCode` answers `400`.** Read the model from `CurrenciesAll`, and use `CurrencyNew` to get the
+  blank create model.
+- **Functional check beyond the log:** price a cart line in **every** currency the demo exposes. A currency
+  that silently threw before will price cleanly after.
+- Make this a **precondition of the demo build**, not a symptom to chase: no zero rates, and every
+  `EcomCountries` currency code exists.
 
 ## Recovery recipe: Rebuild Products index
 

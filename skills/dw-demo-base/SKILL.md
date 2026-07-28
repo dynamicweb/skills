@@ -118,6 +118,7 @@ Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh
 | Understand the TLS bypass | references/tls-bypass.md |
 | Install Browser MCP (`@playwright/mcp`) for verification flows; recover from `browserType.launchPersistentContext` / browser-launch errors (Chromium channel fallback, Node driver) | references/browser-automation.md |
 | **Read a storefront screenshot critically** — programmatic defect detectors (horizontal overflow, broken/stretched images, whitespace bands), the interaction pass for dead controls, the per-screenshot eyeball checklist, symptom→fix routing, and the per-page definition of done. Run on every demo-critical page before declaring it polished. | **references/visual-qa.md** |
+| **Sweep a demo for real-person PII and vendor boilerplate** — the whole-database string sweep (a user rename reaches one layer of five), the stock Swift content that ships the platform vendor's own legal copy and author mailing list, and the locale-shaped patterns a term-grep can never find. **Blocking pre-demo leg on every demo, hardest on a cloned host.** | **references/pii-sweep.md** |
 | See which vendor skill-repo patterns this plugin adopts vs deviates from | references/vendor-patterns.md |
 | The surface contract — scaffold vs build phases, the surfaces per instance type (local / hosted / headless), why SQL-cloning structural trees fails, why the admin UI is verification-only during the build | references/surface-priority.md |
 | Generic demo-storytelling tactics (audience framing, one-source-N-shapes, the customer-wording glossary) | references/demo-tactics.md |
@@ -125,6 +126,8 @@ Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh
 | Audit customisations at end of phase | references/audit-customisations.md |
 | Honor the customer-context read-only contract | references/customer-context.md |
 | Recover from silent AddIn install failure (stuck `UpdateManager` queue) | references/db-update-recovery.md |
+| **Seed discounts, vouchers, loyalty rewards or gift cards** — the two coexisting discount engines (and which verb writes the one the admin screen reads), the voucher grid's legacy-row projection, v2 condition/reward payload shapes, voucher code constraints, and the encrypted gift-card code | references/foundational/promotions-engines.md |
+| **Make an Insights dashboard tell the truth** — which tables the Marketing widgets actually read (`Tracking*`, never `Statv2*`), the two shipped tracking settings that discard 100% of traffic or degrade to the most permissive level, why live tracking on 10.28.x can never produce a returning visitor, the `/Admin/Api` health-provider verbs (each check hands back its own SQL), and the log tables nothing ever trims | references/foundational/tracking-insights.md |
 | Run an **in-place platform update** on an existing demo host (`Dynamicweb.Suite` bump, design/item-type re-deploy): the mandatory pre-update `BACKUP DATABASE` + `ItemList` content-count gate, update-queue mechanics, schema-drift across NuGet versions | references/foundational/setup-upgrade.md |
 | Install the DW Serializer in the demo host; triage Serializer failure patterns; check baseline compatibility | references/serializer-reference.md ("Installation") |
 | Understand Serializer internals — these live upstream in the Serializer repo's own docs; the reference carries the pointer block | references/serializer-reference.md ("Internals — upstream pointer block") |
@@ -249,6 +252,18 @@ Ephemeral build evidence (QA screenshots, host logs, Playwright DOM/a11y dumps) 
 3. **Naming rule — name evidence for what it IS.** An evidence dump is named for its content (`admin-a11y-snapshot-*.md`, `home-desktop-*.jpeg`), never for what it was captured *during*. Security-suggestive names for non-secret dumps (e.g. an accessibility snapshot saved as `apikeylist.md`) are forbidden — they read as leaked-secrets files to any human or scanner.
 
 4. **Scaffold `.gitignore`.** The scaffolded demo's `.gitignore` ignores `notes/qa/`, `notes/logs/`, and `notes/snapshots/` (in addition to the existing `notes/credentials.local.md`, `bin/obj`, `wwwroot/Files/System/`) — see `references/scaffold.md` §2.1. Keeper screenshots worth committing are the deliberate exception: copy them out of `notes\qa\` explicitly.
+
+## Personal data and vendor boilerplate — a blocking pre-demo leg (always-on rule)
+
+**A Dynamicweb demo host serves real people's personal data and the platform vendor's own legal copy to a customer audience unless someone removes them.** This is true of an inherited/cloned host *and* of a demo built cleanly from stock Swift content — the vendor's privacy/terms copy, corporate addresses and an internal author mailing list are **stock seed data**, not clone residue. Neither exposure is visible from the admin screens a build normally opens.
+
+Three rules, owned in full by [references/pii-sweep.md](references/pii-sweep.md) — read it before any demo is shown, published, screenshared or handed over:
+
+1. **Renaming the user rows fixes nothing.** Order snapshots, address rows, token labels, log text and JSON merge-field snapshots each hold an independent copy. Enumerate by scanning **every string column**, classify by **sampling the values** (not by table name), fix, then **re-scan** — fixing one layer exposes the next.
+2. **Sweep the stock vendor boilerplate too** — privacy / cookie / terms pages, corporate addresses, the email-recipient author list. De-brand the marketing and legal copy; keep genuinely technical vendor references accurate rather than inventing false identifiers.
+3. **A term-grep cannot find placeholder data containing none of your terms.** Add locale-*shaped* patterns (foreign dialling codes, foreign postcodes, registration-number formats) and keep the rendered-page eyeball pass as a **required** step.
+
+**Never copy the leaked values forward** — into notes, commits, tickets, transcripts or skill text. Record the *class* and the count; the data itself stays where it is until it is removed.
 
 ## Demo philosophy — go deep, not wide
 
