@@ -214,6 +214,10 @@ of relying on a flavoured baseline, stock filters silently hide otherwise-correc
   with `address/zip/city/state/country/countryCode`, mirroring the Billing `UserAddress`). Seed both
   for every buyer.
 
+(Discounts, vouchers, loyalty rewards and gift cards are their own surface — two coexisting discount
+engines, a voucher grid fed by the legacy one, and an encrypted gift-card code — and live in
+[`promotions-engines.md`](promotions-engines.md).)
+
 (Gating the CSR section away from non-CSR users — and gating buyer dashboards away from the CSR — is the
 Permission entity store's job; see [`users-permissions.md`](users-permissions.md) §15. DC-scoped buyer
 catalogs/shipping that a CSR impersonates onto are [`commerce-b2b.md`](commerce-b2b.md).)

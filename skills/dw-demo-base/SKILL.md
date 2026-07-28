@@ -125,6 +125,7 @@ Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh
 | Audit customisations at end of phase | references/audit-customisations.md |
 | Honor the customer-context read-only contract | references/customer-context.md |
 | Recover from silent AddIn install failure (stuck `UpdateManager` queue) | references/db-update-recovery.md |
+| **Seed discounts, vouchers, loyalty rewards or gift cards** — the two coexisting discount engines (and which verb writes the one the admin screen reads), the voucher grid's legacy-row projection, v2 condition/reward payload shapes, voucher code constraints, and the encrypted gift-card code | references/foundational/promotions-engines.md |
 | Run an **in-place platform update** on an existing demo host (`Dynamicweb.Suite` bump, design/item-type re-deploy): the mandatory pre-update `BACKUP DATABASE` + `ItemList` content-count gate, update-queue mechanics, schema-drift across NuGet versions | references/foundational/setup-upgrade.md |
 | Install the DW Serializer in the demo host; triage Serializer failure patterns; check baseline compatibility | references/serializer-reference.md ("Installation") |
 | Understand Serializer internals — these live upstream in the Serializer repo's own docs; the reference carries the pointer block | references/serializer-reference.md ("Internals — upstream pointer block") |
