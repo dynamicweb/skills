@@ -94,6 +94,23 @@ it): after the MCP create, set `Page.PageUrlName`, the navigation-tag column, an
 (then restart per the cache rules below). Keep the page's *creation* on MCP/the API — do not fall back to
 authoring the whole row in SQL.
 
+**Read side — the ADO.NET single-row indexing footgun silently returns a COLUMN where you expected a
+ROW.** This bites the sanctioned use of SQL (verification reads), not the retired one, so it survives the
+retirement above. PowerShell unrolls a one-element `DataRow` collection into the `DataRow` itself, and `[0]`
+on a `DataRow` indexes its first **column**. A verification read against a one-row result therefore returns
+a plausible wrong value — frequently `0` — with no error, and the assert built on it passes or fails for
+reasons unrelated to the data:
+
+```powershell
+$rows = Invoke-SqlQuery "SELECT PageId, PageName FROM Page WHERE …"   # returns exactly 1 row
+$rows[0].PageId        # WRONG — $rows unrolled to the DataRow; [0] is column 0, .PageId then reads off it
+@($rows)[0].PageId     # correct — force the array, then index the row
+```
+
+**Wrap every result in `@()` before indexing, or read scalars through a dedicated `Sql-Scalar` helper**
+that returns `ExecuteScalar` directly. A verification read that can quietly return `0` is worse than no
+verification: it converts "the write did not land" and "my reader is wrong" into the same observation.
+
 ### Required NOT-NULL columns — `Page`
 
 DW10 returns 404 for a SQL-inserted Page even when the slug resolves, unless every column below carries
