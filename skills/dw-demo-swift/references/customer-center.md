@@ -111,13 +111,21 @@ profiles). Don't mistake it for the 2.4 mechanism.
 
 ### Platform gate — state the platform honestly
 
-The release notes gate same-username profiles on **DW 10.29+**. The full mechanism is present and
-working on a 10.28.1-PreRelease build (the `AccessUserIsLogin` column, the duplicate-username
-validation in `UserService.IsValidUserName` — at most one `IsLogin=1` row per shop, distinct
-non-empty customer numbers — and the login resolution that prefers the `IsLogin=1` row): a
-PreRelease is effectively a build of the *next* stream, so the caveat is real for 10.28.x
-**stable**. When a demo host is pinned to a PreRelease, say so when presenting the feature — a
-demo can otherwise show capabilities the customer's GA version lacks.
+The release notes gate same-username profiles on **DW 10.29+**. **The 10.29 requirement is
+ADMINISTRATIVE ONLY — the runtime resolver already works on 10.28.x stable.** What 10.29 actually
+unblocks is `UserSave`: pre-10.29 it rejects a duplicate username, so you cannot *create* the profile
+rows from the admin side. Everything downstream of that is present and working on 10.28.3 — the
+`AccessUserIsLogin` column, `GetProfilesListOutput` → `GetUsersByUserName` + `IsLogin`, and the login
+resolution that prefers the `IsLogin=1` row. A 10.28.3 demo host showed **four profiles** at
+`/<lang>/sign-in/sign-in?ShowProfiles=True` and switched between them successfully.
+
+So the demo is not blocked on 10.28.x; only the creation surface is. Seed the rows with
+`AccessUserIsLogin` set via SQL (the recipe below) and the feature runs. The duplicate-username
+validation in `UserService.IsValidUserName` still holds as a data rule — at most one `IsLogin=1` row per
+shop, distinct non-empty customer numbers — so honour it in the seed rather than working around it.
+When a demo host is pinned to a PreRelease or to 10.29+, say so when presenting the feature: the
+*administration* of profiles is what the customer's GA version may lack, and that is a fair thing to
+name on screen.
 
 ### Zero-custom-code picker recipe (SQL + one restart)
 
