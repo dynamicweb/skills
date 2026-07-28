@@ -11,6 +11,7 @@
 - [Normalise page shortcuts BEFORE the copy — a leading slash defeats the link remapper](#normalise-page-shortcuts-before-the-copy--a-leading-slash-defeats-the-link-remapper)
 - [Localised ecom URLs need BOTH settings on the layer's shop page](#localised-ecom-urls-need-both-settings-on-the-layers-shop-page)
 - [Audit group `primaryPageId` after every AreaCopy — at the shop page it blanks every PDP](#audit-group-primarypageid-after-every-areacopy--at-the-shop-page-it-blanks-every-pdp)
+- [A master-layer `ParagraphSave` writes THROUGH to the language layers](#a-master-layer-paragraphsave-writes-through-to-the-language-layers)
 - [Demo judgement — localize the demo path, not the whole site](#demo-judgement--localize-the-demo-path-not-the-whole-site)
 - [Cross-references](#cross-references)
 
@@ -95,6 +96,32 @@ for localised group URLs. That is the wrong lever: the durable fix is `PageNavig
 `primaryPageId` must stay clear. Audit the whole group set after every copy, and make the warmup/gate PDP
 probe assert **non-trivial article content** (byte size or row count), which is what catches the blank
 state before a human does.
+
+## A master-layer `ParagraphSave` writes THROUGH to the language layers
+
+**Language layers are reconciled against the master on every save, and the reconciliation is destructive in
+two different ways.** Neither is announced, and both are easy to mistake for someone else's edit:
+
+- **Item lists are DELETE-AND-RECREATE.** Saving the master's accordion/slider deletes the layers' children
+  and recreates them **carrying the master's copy**, with **new ids**. `ItemId=<existing>` means edit-in-place
+  only for the layer you post to. Measured on one page: saving the master deleted two layers' children and
+  recreated them under a fresh id block with English text, while the master's own children survived in place.
+- **Plain item fields are COPIED DOWN.** On simple types (`Swift-v2_Text`, `Swift-v2_Feature`) the master's
+  value is written into the language layers. On one run, six layer paragraphs had already been rewritten in
+  English *before* their own translation write ran — nothing had touched them but a master-side save.
+
+Two rules follow, and the second is the one that saves a run:
+
+1. **Never cache language-layer child ids across a master save — re-read them.** Any id captured before the
+   save points at a deleted row.
+2. **Guard every language-layer write with a fingerprint of the ORIGINAL text**, read from SQL immediately
+   before the write, and **skip if the fingerprint is gone**. Without it, writing a layer after an unrelated
+   later master edit silently reverts that layer to English. The guard is what turned "six paragraphs
+   mysteriously back in English" into six correctly-skipped writes on the run that measured this.
+
+Sequencing rule for a translation pass: do the master edits first, then the layers — and re-read, never
+assume, the layer state in between. (Item-list saves are authoritative in the other direction too: posting a
+subset deletes the omitted children outright — [`paragraphs.md`](paragraphs.md).)
 
 ## Demo judgement — localize the demo path, not the whole site
 

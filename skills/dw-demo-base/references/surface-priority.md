@@ -91,4 +91,15 @@ Cloning a tree (Area / Page / Paragraph / GridRow / Item) via raw SQL `INSERT IN
 
 A `succeeded` / `status: ok` response from surfaces 1-2 does NOT guarantee the operation happened. Some MCP / Management API writes report success, bump `updatedDate`, and silently drop part of the input (e.g. `save_pages` drops `menuText`; `ParagraphSave` drops item-field value mutations) — and some delete/build tools report success while doing nothing at all (`delete_area` leaves the row; `build_product_index` touches a marker file without writing segments). The catalogue of these version-pinned no-ops and their working fallbacks lives with the tools themselves: [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §5 (MCP/API tool behaviour) and [`foundational/content-modelling.md`](foundational/content-modelling.md) (the same two no-ops framed as paragraph/page save bookkeeping).
 
+**The response model is an ECHO, so a read-back through the same API confirms the write that did not happen.**
+The known drop classes are all silent and all shaped alike: an unknown item-group key, a field with no
+`EcomProductField` registration, a field blocked by `AllowChangesAcrossVariants` / `AllowChangesAcrossLanguages`,
+and a complex editor posted as a JSON string instead of a nested object. Several read verbs additionally serve
+a cached or merged model rather than the stored row, so even a *different* read verb can agree with the lie —
+an API-level verifier once reported 54/54 pass while three paragraphs were still fully untranslated, and only
+the direct SQL read showed it. **The store or the rendered screen is the oracle: re-read the row from the
+database, or render the page.** Corollary: do not raise a residual off a single API read taken immediately
+after a write, and check the persona before calling a feature missing — customer-centre rows are user-group
+gated, so testing as the wrong user looks identical to a feature that is not there.
+
 **The always-on demo discipline:** after any update through MCP/API where the change is demo-critical, round-trip it (read the value back through a different surface, or curl the rendered page) before declaring it done. When a silent no-op is confirmed, the SQL fallback is sanctioned — log it in the demo's `CUSTOMISATIONS.md` and note the cache that needs flushing.

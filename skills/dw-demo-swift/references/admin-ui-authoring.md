@@ -87,6 +87,23 @@ page list, asserting 200 or 301 — a rename shows up **only** as a 404 on the O
 `status=ok` check and a page-object diff both miss. Also assert `name` still equals what you
 submitted.
 
+**On an ITEM-BASED page, `Model.name` alone is a silent no-op — the rendered label comes from the page item's
+`Title` field.** The same-call rule above is not only a rename-safety measure: writing `name` by itself
+returns success and updates a value nothing renders, so navigation keeps showing the old label. Re-confirmed
+across 76 page saves on one chrome pass. **Set `Model.name` AND the item `Title` in every `PageSave` against
+an item-based page**, and assert the *rendered* navigation label, not the API model.
+
+**`GridRowCopy` carries the SOURCE row's spacing tokens — a row-minting helper must reset them.** A page
+generator built on "new row + `GridRowCopy`" inherits whatever spacing the copied row happened to carry, so a
+whole family of generated pages ends with the same wrong band against the footer — and nothing in any model or
+gate reads as wrong. Measured: four pages minted from one generator all carried the breadcrumb row's
+`bottomSpacing=4` (2rem), by accident rather than by design; raising it to the definition default produced
+exactly +64px clearance on every page at both viewports. Swift's token scale is `0=0, 1=.25rem, 2=.5rem,
+3=1rem, 4=2rem, 5=3rem, 6=6rem` — **6 is the Swift default**, which is why an inherited `4` reads as
+"slightly tight" rather than as a bug. **Reset `topSpacing` / `bottomSpacing` to the definition default on
+every minted row** instead of inheriting from whichever row was convenient to copy, and assert newly minted
+content pages end on the default token.
+
 **`ProductCatalogGroupSave` regenerates the friendly URL of the group AND of every child product — with
 no automatic 301.** The ecom sibling of the `PageSave` rename above, and the blast radius is larger. A
 rename moves `/<lang>/shop/<old-slug>` to `/<lang>/shop/<new-slug>` and 404s the old path immediately, and
