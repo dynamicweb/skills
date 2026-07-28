@@ -85,6 +85,15 @@ the difference between "seeded" and "staged until someone restarts the app".
 
 ## Rebuilding the product index after a membership change
 
+- **`BuildIndex` addresses the index FILE name and the named BUILD from the `.index` XML — the repository name
+  alone `404`s.** The obvious argument shape fails in a way that reads as "the verb is unavailable", which is
+  how a working verb gets written off:
+  ```
+  POST BuildIndex {Repository:"Products", IndexName:"Products.index", BuildName:"Full"}   -> ok
+  POST BuildIndex {… IndexName:"Products"}      -> 404      # file name, not repository name
+  POST BuildIndex {… BuildName:"Build Index"}   -> 404      # the build's name in the .index XML, not a label
+  ```
+  Read both values out of the `.index` file rather than composing them from what the admin screen displays.
 - **A Full rebuild must target `Repository='Products'`.** `BuildIndex` with `Repository='ProductsFrontend'` or
   `'ProductsBackend'` (`IndexName=Products.index`, `BuildName=Full`) returns `status=ok` in under a second
   because it only **enqueues** — it does **not** refresh the **GroupID facet** that the `GroupID` filter of
@@ -117,6 +126,16 @@ revive the SQL-through-a-task content-seeding motion retired above.
   `nextRun` populated, and the host scheduler then fires it unattended. Confirm with `TaskById`: `schedule`,
   `refreshEvery`, `unitOfTime`, a populated `nextRun`, and `lastRunState=Success` advancing without a manual
   trigger.
+- **A new daily task RE-ANCHORS to its first actual run, not to the `Begin` you set.** If `Begin` is earlier
+  today, DW computes `nextRun` as a few minutes from now, fires once, and then keeps **that** accidental time
+  forever — so a task created for an overnight slot quietly becomes a mid-afternoon task. **Set `Begin` to
+  TOMORROW at the wanted wall-clock time when creating a daily task** (`RefreshEvery=1440`,
+  `UnitOfTime=minute`), then read `TaskById(id).nextRun` back and assert it equals the intended slot. One
+  affected task self-corrected only because a later `TasksMove` happened to re-save the row — not something to
+  rely on.
+- **Two companion shapes on the task family, both silent:** `TasksMove.Ids` is an array of **STRINGS** (integer
+  ids are ignored, and the move reports success), and **`TaskToggleActive` TOGGLES rather than sets** — read
+  `enabled` before and after, or a "make sure it's on" call turns it off.
 - **`TaskRun` silently no-ops a DISABLED task from DW 10.28.3 onward.** Through 10.28.2 `TaskRun` executed a
   task created with `Enabled=false`; from 10.28.3 it does not, and reports `lastRunState=Exception` with an
   **empty** `lastLog` and `lastException` — a contentless failure that reads as a dead API. Create every task

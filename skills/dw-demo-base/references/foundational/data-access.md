@@ -158,9 +158,68 @@ $rows[0].PageId        # WRONG — $rows unrolled to the DataRow; [0] is column 
 @($rows)[0].PageId     # correct — force the array, then index the row
 ```
 
-**Wrap every result in `@()` before indexing, or read scalars through a dedicated `Sql-Scalar` helper**
-that returns `ExecuteScalar` directly. A verification read that can quietly return `0` is worse than no
-verification: it converts "the write did not land" and "my reader is wrong" into the same observation.
+**Fix it INSIDE the shared read helper — forcing `@()` at the call site is not a rule that holds.** Four
+independent workstreams hit this on the same day against one shared `_sql.ps1`, and each produced a confident
+page of wrong output rather than an error: a run of bogus "Invalid column name" errors, a payload posted full
+of blanks that invoiced nothing, and a page of zeros printed while the underlying data was perfect. A helper
+that returns `@($table.Rows)` is unrolled by PowerShell whenever the result set has exactly one row, so the
+guarantee has to live where the unrolling happens. **Return the array from inside the helper (and assert it:
+a one-row query returns an array), and read scalars through a dedicated `Sql-Scalar` that returns
+`ExecuteScalar` directly.** A verification read that can quietly return `0` is worse than no verification: it
+converts "the write did not land" and "my reader is wrong" into the same observation.
+
+**Companion trap on the same helper: never `ConvertTo-Json` a raw `DataRow`.** The object graph behind a
+`DataRow` is enormous (table → schema → parent dataset), so the call does not error — it **hangs**, and cost a
+five-minute timeout on the run that measured it. Project into a `pscustomobject` with the columns you want
+before serialising, and document both traps in the helper header where the next caller will read them.
+
+### `[ordered]@{}` with integer keys indexes by POSITION, not by key
+
+The other silent-wrong-answer trap of the same family, and the more dangerous one because DW ids are integers
+and lookup tables keyed on page / paragraph / user ids are the natural shape. **Bare numeric keys in an ordered
+dictionary are `Int32`, and `$table[$id]` with an `Int32` hits `OrderedDictionary`'s POSITIONAL indexer**, not
+the key indexer. The index is out of range, so it returns `$null` with **no error** — or throws a misleading
+"Cannot index into a null array" one line later, pointing at innocent code:
+
+```powershell
+$plan = [ordered]@{ 1293 = @{ … }; 1294 = @{ … } }   # keys are Int32
+$plan[1293]                                          # asks for the 1,294th ENTRY -> $null
+$plan = @{ 1293 = @{ … } }                           # plain hashtable -> keyed lookup, correct
+```
+
+Four workstreams hit this in one day. The most dangerous instance was a rename loop that consequently saved
+every user with an **unmodified** model: it looked like it worked, printed a plausible line per row, and
+changed nothing — and one workstream initially attributed the resulting no-op to an unrelated platform bug and
+had to re-prove that bug afterwards with an explicit single-field save. **Quote the keys, use a plain
+hashtable, or iterate `.GetEnumerator()`** — and a `-WhatIf` dry run that prints resolved target values is what
+catches it, since empty values are the only signal.
+
+### Bulk string edits: DW 10 still ships legacy `text` / `ntext` columns
+
+`REPLACE` refuses `ntext` as its first argument, so a straightforward bulk string fix fails on exactly the
+tables where long strings live (e.g. `GeneralLog.LogDescription`):
+
+```
+UPDATE GeneralLog SET LogDescription = REPLACE(LogDescription, …)
+  -> Argument data type ntext is invalid for argument 1 of replace function
+```
+
+**`CAST(… AS nvarchar(max))` inside the `REPLACE`** is the fix. Any bulk-content or anonymisation sweep must
+name the legacy column types explicitly, or it silently skips the tables it cannot update — and then reports a
+clean pass. Assert zero remaining hits in the `ntext` columns as well as the `nvarchar` ones.
+
+### Reachability queries over item tables must be TYPE-filtered on every branch
+
+**Item ids are allocated per item TYPE, not globally**, so an id in one `ItemType_*` table routinely collides
+with an unrelated id in another. A `UNION` branch that joins on `PageItemId` (or `ParagraphItemId`) without
+also constraining `PageItemType` / `ParagraphItemType` pulls in any item row whose id merely collides with a
+page item id — one asset sweep was inflated by ~20 phantom hits that resolved to pages not using those items
+at all.
+
+**Every branch of a reachability query needs its own `PageItemType` / `ParagraphItemType` constraint**, not
+just the first one. Verify by asserting each resolved hit page actually references the item type being queried
+— a sweep whose result set is too large is as wrong as one that is too small, and it is the one that gets
+acted on.
 
 ### Required NOT-NULL columns — `Page`
 
