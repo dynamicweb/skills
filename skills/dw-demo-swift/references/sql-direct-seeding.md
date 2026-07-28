@@ -166,6 +166,12 @@ revive the SQL-through-a-task content-seeding motion retired above.
   **17,410 rows for a 1,463-row list**. `ScheduledTaskAll` returns the full list in one shot; cross-check
   its count against the DB before trusting either. Related: the sort enum is `Ascending` / `Descending` —
   `SortDirection=Asc` answers **400**.
+- **A date-shifting task ("demo clock") has two extra rules that make a bare run useless as proof:** each
+  shifter needs **its own anchor row** (the freshener re-anchors after computing its delta, so a second task
+  reading the shared row sees delta 0 forever), and a new task creates its anchor on first execution, so the
+  proof must be a **rewind-and-run**, never an install-then-run. Columns that a cancel/void/close operation
+  overloads as a state marker need a per-column guard on top. Owned by
+  [`dashboard-seeding.md`](dashboard-seeding.md) §8.
 - **`TaskById` answers `400`, not `404`, for a missing id — an existence probe must treat ANY throw as
   absent.** The body is the generic `"Unable to load query parameters"`, indistinguishable from a
   malformed request, so a probe that only catches 404 misreads a deleted task as a broken call and stalls a

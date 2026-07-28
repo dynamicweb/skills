@@ -107,8 +107,33 @@ The mechanic that fixes it is an **anchor table + a whole-day uniform shift**:
 - A recurring task shifts every operational date column by `DATEDIFF(day, AnchoredTo, <today>)`, then re-anchors. A reference build shifted **142 date columns across 49 tables** (order headers/lines, the email statistics, send-log and click tables, campaign windows).
 - **Whole-day, uniform** is the whole trick: shifting every column by the same integer number of days preserves intra-day ordering and every relative gap, so order → ship → click sequences stay coherent. It is idempotent and catch-up safe (a `+1` then `-1` test nets zero), and it runs unattended after idle days.
 - **Exclude config and logging tables** from the shift — only operational/fixture dates move. Audit and scheduled-task logs must keep their real timestamps or the task's own history becomes unreadable.
+- **Discover the date columns from `sys.columns` at build time; never hardcode the list.** Every commerce feature spells its timestamps differently — one pass hardcoded 18 column names and **12 of them were wrong**. Discovery is also what keeps the shifter correct across a platform upgrade.
 
-Verify by reading order dates back through the delivery API after idle days and confirming the marketing dashboards read as current, and that the recurring task reports Success with `nextRun` advancing.
+### Two silent failure modes when a SECOND shifter is added
+
+Both of these produce a task that reports **Success** while doing nothing, and neither raises an error:
+
+- **A second date-shifting task must own its OWN anchor row.** The existing freshener computes its delta from the anchor row and then **re-anchors that row to today**. A second task reading the same row at a later slot therefore sees `delta = 0` and shifts nothing, forever. Give each shifter its own anchor row (`Id=2`, …) and have it re-anchor **only** its own.
+- **A manual run right after install proves nothing.** A new task creates its anchor row on first execution, so the delta is legitimately `0` on that pass — "the task ran" is not evidence that "the task shifts". **Make the standard proof a rewind-and-run, never a bare run:** rewind that task's anchor by one day, run it, and assert at least one known timestamp advanced by exactly one day while the *other* task's anchor is untouched. Confirm end-to-end from the rendered screen (the same list captured a demo-day apart must show every date moved by one day), not only from the task's `lastRunState`.
+
+### Per-column guards: some date columns are state markers
+
+**Auto-discovering date columns is right for demo data, but any column that a cancel / void / close operation overloads as a state marker needs its own guard** — a blanket `DATEADD` marches the cancelled thing back to life.
+
+The known instance: **`GiftCardCancel` writes no reversing transaction and sets no status flag — it cancels by rewriting `GiftCardExpiryDate` to now and keeping the balance.** On a cancelled card that column is a *cancellation timestamp*, not an expiry, so the same column means two different things depending on state. A nightly shift over it hands a demo viewer a live balance that is meant to be void.
+
+The guard is to shift only rows that are still in the future:
+
+```sql
+UPDATE [EcomGiftCard]
+   SET [GiftCardExpiryDate] = DATEADD(day, @d, [GiftCardExpiryDate])
+ WHERE [GiftCardExpiryDate] IS NOT NULL
+   AND [GiftCardExpiryDate] > GETDATE();
+```
+
+Measured across a rewind-and-run cycle: the live cards moved +1 day while the cancelled one stayed frozen and still read `active=False` through the gift-card list query. **Assert it** — a cancelled gift card still reads inactive after the nightly refresher runs. Gift-card storage semantics (encrypted codes, one bad row 500ing the whole family) are owned by [`../../dw-demo-base/references/foundational/promotions-engines.md`](../../dw-demo-base/references/foundational/promotions-engines.md).
+
+Verify by reading order dates back through the delivery API after idle days and confirming the marketing dashboards read as current, and that the recurring task reports Success with `nextRun` advancing. Task creation semantics (`Begin` re-anchoring, the toggling `TaskToggleActive`, `TaskSave` with `Id=0` creating a new task every call) are owned by [sql-direct-seeding.md](sql-direct-seeding.md) "Scheduled-task creation semantics".
 
 ## 9. Deterministic recipe preference + idempotency
 
