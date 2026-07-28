@@ -94,6 +94,51 @@ by looking at the rendered screen.
 Assert it: every seeded order/invoice row is reachable by the id returned in its own save response, and
 `OrderReference` / `OrderDate` match the intended values after the SQL pass.
 
+## A re-saving verb reverts raw-SQL edits — `OrderRecalculate` writes the CACHED order back
+
+`OrderRecalculate` does not just re-total. **It re-saves the entire entity from Dynamicweb's cached state**,
+which predates any SQL written behind the API — so it silently reverts the backdate/tag/reference pass that
+the section above makes mandatory. No error, no warning; eight orders reverted to creation-time dates and
+empty references on the run that measured it.
+
+```
+FAILS:  OrderNew -> OrderSave -> OrderLineAddProductsBySKU -> SQL line qty -> SQL backdate+tag -> OrderRecalculate
+WORKS:  OrderNew -> OrderSave -> OrderLineAddProductsBySKU -> SQL line qty -> OrderRecalculate -> SQL backdate+tag
+                                                                                  (and nothing re-saves after)
+```
+
+- **The rule generalises past orders:** *any* API verb that re-saves an entity reverts raw-SQL edits made
+  behind it. **API writes first, SQL last, never re-save afterwards** — stated once for every surface in
+  [`../surface-priority.md`](../surface-priority.md) "Silent no-ops on write surfaces". The discount family's
+  instance of the same mechanism is in [`promotions-engines.md`](promotions-engines.md).
+- **The related read-side behaviour needs no intervention.** Immediately after a write the grids serve the
+  cached order model, but it turns over on its own within a couple of minutes and `GetOrderById` reads
+  through to current values — **no recycle and no cache-bust verb is needed**, so do not add one to the
+  recipe and do not read the brief staleness as a failed write.
+
+Assert it: seeded order dates still match the intended backdated values **after the full build sequence
+completes**, not after the SQL step.
+
+## `GetOrderList` inner-joins `EcomShops` — orders on a deleted shop vanish from every Commerce grid
+
+**`GetOrderList` only returns rows whose `OrderShopId` resolves in `EcomShops`.** Orders carrying a shop id
+that no longer exists are not missing — they are **invisible**, and no count, warning or discrepancy anywhere
+in the admin UI reveals it. The Incomplete-orders screen read `0` while ten rows in `EcomOrders` satisfied its
+exact predicate.
+
+The arithmetic across three grids proves the join exactly: on one host the complete-orders SQL count split as
+`live-shop + blank + dead-shop`, and the grid rendered exactly `live-shop + blank`. Blank `OrderShopId` rows
+**do** render; only rows naming a shop that is absent from `EcomShops` disappear.
+
+**Any order backfill must write an `OrderShopId` that exists in `EcomShops`, or leave it blank.** Gate it:
+
+```sql
+SELECT COUNT(*) FROM EcomOrders
+ WHERE OrderShopId <> '' AND OrderShopId NOT IN (SELECT ShopId FROM EcomShops);   -- must be 0
+```
+
+This is a good candidate for the Ecommerce health provider to surface — worth raising with the vendor.
+
 ## An invoice is an `EcomOrders` row — and `InvoiceSave` requires `OrderStateId`
 
 **There is no `EcomInvoice*` table.** An invoice is an `EcomOrders` row flagged `OrderIsLedgerEntry=1` with
