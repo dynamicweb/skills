@@ -51,7 +51,7 @@ to pass. Rungs 1-3 are content truth; 4-6 are design; 7-8 are proof.
 | **4** | **Theme tokens** — palette, typography, buttons, radius, shadow | [`../dw-demo-swift/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) + [`../dw-demo-swift/references/re-skin.md`](../dw-demo-swift/references/re-skin.md) | the palette swap is complete across every notation (a swap is multi-file and multi-notation — `re-skin.md`) |
 | **5** | **Chrome and rhythm** — header that reads as a menu, section gaps, band caps | [`../dw-demo-swift/references/header-menu.md`](../dw-demo-swift/references/header-menu.md) + [`../dw-demo-swift/references/re-skin.md`](../dw-demo-swift/references/re-skin.md) | top nav nodes have children (a childless bar is a data gap, not a CSS defect); no band over the height cap; no dead gap over the section-gap threshold |
 | **6** | **Mobile pass** — fit the phone canvas | [`../dw-demo-swift/references/mobile-pass.md`](../dw-demo-swift/references/mobile-pass.md) | `document.body.scrollWidth <= innerWidth` at 390 **and** 430, measured with a real mobile device descriptor |
-| **7** | **Mechanical asserts** — the whole ladder, re-proven by machine on every run | [`../dw-demo-base/references/visual-qa.md`](../dw-demo-base/references/visual-qa.md) | the design leg runs and reports PASS/FAIL — never SKIP — from the **first** gate run of the demo |
+| **7** | **Mechanical asserts** — the whole ladder, re-proven by machine on every run | **[references/design-gate.md](references/design-gate.md)** + [`assets/gate.config.template.json`](assets/gate.config.template.json); detectors and reading discipline in [`../dw-demo-base/references/visual-qa.md`](../dw-demo-base/references/visual-qa.md) | the design leg runs and reports PASS/FAIL — never SKIP — from the **first** gate run of the demo, and that first run is *supposed* to FAIL |
 | **8** | **Human taste sign-off** — stamped, non-blocking | [`../dw-demo-base/references/orchestrator.md`](../dw-demo-base/references/orchestrator.md) "Design sign-off" | a sign-off artifact exists; until it does the leg stamps SKIP, never FAIL |
 
 ### Why the order is the order
@@ -79,13 +79,20 @@ from run one with no per-demo authoring. Restating the criterion in more prose c
 > paragraphs of prose holds only at the top one."
 
 So the fix for a rung that keeps getting skipped is always the same shape: ship the artifact the
-gate reads, not another sentence telling someone to write one.
+gate reads, not another sentence telling someone to write one. That artifact is
+[`assets/gate.config.template.json`](assets/gate.config.template.json); the discipline for editing
+it is [references/design-gate.md](references/design-gate.md).
 
 ## Known gaps (named, so they are not rediscovered)
 
-- **Rung 7 — a generic design profile.** The executable design gate exists today only as
-  hand-tuned per-demo JSON. There is no template that arms a fresh demo on run one, which is why
-  the leg keeps stamping SKIP for the whole first half of a build.
+Five presentability asserts have no probe in the runner and therefore cannot be armed by config
+alone: **image resolution** (a referenced-but-missing image survives every leg), **alt text**,
+**empty-band child counts**, the **brand tripwire** (wordmark and favicon), and the **mobile canvas
+measure** (`body.scrollWidth`, which `overflow-x: hidden` hides from a `documentElement` check).
+They are named with their implementation shape in
+[references/design-gate.md](references/design-gate.md) "What it does NOT assert". Do not add config
+keys for them until the runner reads them — an unread key is a config that looks armed and executes
+nothing.
 
 ## Sister skills
 

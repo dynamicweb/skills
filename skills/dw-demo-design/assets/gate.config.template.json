@@ -1,0 +1,122 @@
+{
+  "_comment": "BASELINE DESIGN PROFILE — copy to <demo-root>\\gate.config.json and replace every <...> token. This file arms the design leg on RUN ONE, before any styling exists, so the first gate run measures presentability and not just liveness. Every value here is generic Swift; nothing is tuned to one demo. Keys prefixed with _ are notes and are ignored by the runner.",
+  "_arming_rule": "Do NOT leave the design leg unconfigured until the re-skin pass. A leg that arms at re-skin time stamps SKIP for the whole first half of the build, which is how a raw deserialize with skeleton bands and horizontal overflow reaches a PASS verdict. Arm it now; it is SUPPOSED to FAIL on a raw deserialize.",
+
+  "slug": "<demo-slug>",
+  "baseUrl": "<https://host-or-localhost:port>",
+
+  "legs": {
+    "design": true,
+    "design-signoff": true,
+    "storyline": true
+  },
+
+  "storyline": {
+    "pages": ["/", "<area>/shop", "<area>/demo"],
+    "placeholderRegex": "lorem ipsum|\\bTODO\\b|sample[- ]?text|xxxx+|coming soon",
+    "_note": "Bare 'placeholder' is deliberately ABSENT here. This leg scans markup, and Swift emits legitimate HTML placeholder= attributes on search and quantity inputs. It IS present in design.placeholderRegex below, which scans rendered text where attribute values never appear."
+  },
+
+  "design": {
+    "runnerPath": "<path-to>/design-probes.mjs",
+
+    "viewports": [
+      { "width": 1440, "height": 900, "label": "desktop", "expectMobileHeader": false },
+      { "width": 390, "height": 844, "label": "mobile", "device": "iPhone 13", "expectMobileHeader": true }
+    ],
+    "_viewports_note": "A VIEWPORT IS NOT A DEVICE. Dynamicweb picks the header SERVER-SIDE by user-agent, so a 390x844 viewport driven with the default headless desktop UA renders a document no phone user ever receives. Four consecutive gate PASSes were measured against the wrong document that way, and a mobile header height was correctly fitted to it. `device` is spread as a Playwright descriptor (UA + isMobile + hasTouch + DPR) BEFORE the explicit geometry, so the geometry still wins. `expectMobileHeader` asserts the SERVED ARTEFACT (the offcanvas nav marker), not the setting that was asked for -- so if the server stops UA-sniffing, or a later edit drops the descriptor, the leg fails loudly instead of silently reverting to the desktop page.",
+
+    "maxBandHeightFraction": 0.85,
+    "_maxBandHeightFraction_note": "No single image band may exceed 85% of the viewport height. Raise it ONLY for a deliberate full-bleed hero, and record the reason here next to the number -- an unexplained raised threshold is indistinguishable from a weakened one.",
+
+    "sectionGapThreshold": 120,
+    "_sectionGapThreshold_note": "Maximum dead vertical gap between consecutive sections, in px. Catches the whitespace bands a deleted paragraph leaves behind.",
+
+    "placeholderRegex": "lorem ipsum|\\bLorem\\b|\\bdolor sit amet\\b|Phosfluorescently|Holisticly|Authoritatively|Dramatically|Objectively|Synergistically|Monotonectally|Enthusiastically|Compellingly|Intrinsicly|Proactively|Continually transform|vortals|e-enable|team building|evisculate|vis-a-vis|window-licker|brand terrorists|wireless paradigms|Celebrate the beauty of our planet|Nurturing nature|Imagine a world where nature thrives|Embrace the green|Join the movement for a greener tomorrow|Our planet is full of wonder|Embrace a greener tomorrow|The choices we make today shape the world|Celebrating nature|Together for a brighter future|Preserve today, enjoy tomorrow|Respect the Earth|Small changes, big impact|Whether it.s in our homes|Nature.s beauty is in the little things|Sophie Greene|How can I start living a more eco-friendly lifestyle|Begin by making small changes in your daily routine|Discover Nature|Explore the Outdoors|Experience the beauty of nature with our guided tours|Latest travel guides|Explore the World One Pedal at a Time|Share the fun|Swift Frontpage|\\bTODO\\b|sample[- ]?text|xxxx+|coming soon|\\bplaceholder\\b",
+    "_placeholderRegex_note": "THREE BANDS, kept separable so one false positive can be retired without weakening the rest. Band 1 -- the stock corporate-ipsum SENTENCE-OPENER VERBS. Filler is only sometimes the word 'lorem'; the verb signature is what is actually live on a stock PDP and FAQ. Band 2 -- the content item-type defaultValue copy and the stock page copy (the zero-state tripwire; see references/zero-state.md). Regenerate band 2 from the layer's itemtypes/*.xml defaultValue attributes when the layer version rolls, rather than maintaining it by hand. Note `Whether it.s` and `Nature.s`: the shipped strings use a typographic apostrophe (U+2019), so a pattern typed with a straight quote matches NOTHING. Band 3 -- generic filler. DELIBERATELY NOT INCLUDED: bare 'synergy' and bare 'paradigms', which occur in legitimate B2B marketing prose -- 'wireless paradigms' keeps the discriminating half. AN ASSERT THAT FIRES ON GOOD COPY IS A BROKEN ASSERT, NOT A STRICT ONE. If a band-2 alternative collides with this customer's real business (an environmental brand, a travel brand), retire that ONE alternative and record why here.",
+
+    "pages": ["/", "<area>/shop", "<area>/shop/<hero-category>", "<area>/shop/<hero-category>/<hero-sku>", "<area>/cart/", "<area>/sign-in/sign-in"],
+    "_pages_note": "Include a PDP and a category PLP from run one. Those are the two page types where escaped defects actually live -- stock product copy and PLP row-content gaps are invisible on the front page. Add every page the storyline lands on.",
+
+    "plp": {
+      "path": "<area>/shop/<hero-category>",
+      "rowSelector": ".product-list article.product[data-product-id]",
+      "minRows": 3,
+      "_rowSelector_note": "The [data-product-id] qualifier is load-bearing. The Swift item repeater emits one TRAILING <article class=\"product\"> template row with NO data-product-id; an unqualified selector counts it and reports one phantom product on an empty PLP.",
+      "requiredFields": {
+        "thumbnail": "img",
+        "sku": "[itemprop='sku'], [data-dw-itemtype='swift-v2_productnumber']",
+        "price": "[data-dw-itemtype='swift-v2_productprice']",
+        "addToCart": "[data-dw-itemtype='swift-v2_productaddtocart']"
+      },
+      "_requiredFields_note": "Row COUNT is not row CONTENT. A PLP can render the right number of cards with no thumbnail, no SKU and no price on any of them. These four are asserted per row.",
+
+      "p29": {
+        "_transport_note": "This block rides inside design.plp.p29 because the gate wrapper forwards a FIXED key list to the runner (baseUrl / viewports / maxBandHeightFraction / sectionGapThreshold / placeholderRegex / pages / plp) and a new top-level block would be SILENTLY DROPPED -- a config that reads as armed and executes nothing. The runner reads `cfg.p29 ?? cfg.plp.p29`, so the block moves to top level unchanged the moment the wrapper forwards the whole design object.",
+
+        "mobileMarker": "[data-dw-itemtype=\"swift-v2_offcanvasnavigation\"]",
+
+        "cookies": [
+          { "name": "Dynamicweb.CookieOptInLevel", "value": "2", "path": "/" }
+        ],
+        "_cookies_note": "Pre-seed consent, or the site's cookie modal renders over every screenshot. This was found by actually LOOKING at the first screenshots a design leg had ever taken: every one of them was a full-screen picture of the consent dialog, and every assert underneath it had been measuring that dialog.",
+
+        "clearance": { "min": -2, "max": 24 },
+        "_clearance_note": "gap = firstContent.top - header.bottom, at EVERY viewport and page. It asserts the RELATIONSHIP rather than a hand-fitted pixel value, so it is self-maintaining across a header redesign. A large positive value is the white band under a sticky header; a large negative one is content sliding beneath it.",
+
+        "contrast": {
+          "selector": "main a[href], main button, main .btn, main [class*=\"cta\"]",
+          "minContrast": 4.5,
+          "largeTextMinContrast": 3.0
+        },
+        "_contrast_note": "WCAG 2.1 AA, computed colour against the nearest ancestor with background alpha > 0.5. Resolve the EFFECTIVE alpha before treating a value as failing -- a translucent overlay changes the real ratio.",
+
+        "ctas": [
+          {
+            "page": "/",
+            "selector": "main a[data-dw-button], main a.btn, main [class*='cta'] a",
+            "minCount": 1,
+            "minHeight": 40,
+            "minWidth": 44,
+            "requireBackgroundOrBorder": true,
+            "minContrast": 4.5,
+            "_note": "Assert POSITIVELY by selector and count: the CTA must EXIST and BE BUTTON-SHAPED. The anti-pattern this replaces is asserting the ABSENCE OF A STRING and reading it as the PRESENCE OF A BUTTON -- a check written that way passed while seven primary conversion CTAs were live at display:inline, 19px tall, transparent, contrast 1.14."
+          }
+        ],
+
+        "requiredSections": [
+          {
+            "page": "<area>/shop/<hero-category>/<hero-sku>",
+            "sections": [
+              { "label": "product-title", "selector": "main [data-dw-itemtype*='productheader'], main h1", "minHeight": 20 },
+              { "label": "price", "selector": "main [data-dw-itemtype*='productprice']", "minHeight": 16 },
+              { "label": "add-to-cart", "selector": "main [data-dw-itemtype*='productaddtocart']", "minHeight": 30 },
+              { "label": "description-body", "selector": "main [data-dw-itemtype*='productlongdescription'], main [data-dw-itemtype*='productshortdescription']", "minHeight": 60 }
+            ],
+            "_note": "Presence AND rendered height. A collapsed display:none shell satisfies a presence-only check. Height is what catches a section that was silently deleted -- and a HEADING alone would survive deletion of the content beneath it, so measure the CONTENT element, not its label."
+          }
+        ],
+
+        "docHeight": [
+          { "viewport": "mobile", "max": 10000 },
+          { "viewport": "desktop", "max": 10000 }
+        ],
+        "_docHeight_note": "A COMPONENT's height is invisible to every other assert here. A single spec or BOM section rendering ~18 phone screens tall passed required-section, section-gap, text-overlap, overflowX and the CSSOM census simultaneously, because each of those asks whether a thing is PRESENT, ALIGNED or PARSED and none of them asks how TALL the page got.",
+
+        "textOverlap": { "scopeSelector": "main", "maxRatio": 0.25 },
+        "_textOverlap_note": "No two text rects may intersect by more than 25% of the smaller. Ancestor/descendant pairs excluded.",
+
+        "cssom": {
+          "sheets": [{ "hrefMatch": "<customer>_custom\\.css", "minRules": 1 }],
+          "markers": [],
+          "_note": "BYTES IN A FILE ARE NOT PROOF A RULE PARSED. A literal comment terminator inside comment prose closes a banner early and the parser error-recovers by eating the next real rule -- every byte-level check still sees a healthy sheet. Leave `markers` empty until the first styled block ships, then add ONE marker per shipped sentinel block, taken VERBATIM from the live CSSOM (matching is on whitespace-collapsed selectorText, so a one-character difference is a marker that can never be present). Prefer the declaration whose loss would be INVISIBLE -- one whose value a framework default would silently supply."
+        }
+      }
+    }
+  },
+
+  "design-signoff": {
+    "path": "design-signoff.json",
+    "_note": "Taste stays human. This leg reports SKIP ('awaiting human sign-off') until the artifact exists, then PASS. A SKIP is stamped, never a FAIL -- it records 'taste not yet reviewed' without blocking the build. The keeper screenshots at both breakpoints are what the human signs off on."
+  }
+}

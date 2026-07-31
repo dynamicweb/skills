@@ -3,6 +3,46 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.18.0]
+
+Closes rung 7 of the presentability ladder, and closes it as an **asset**. The orchestrator's
+Polish acceptance criterion already demanded a mechanical visual-QA gate on every demo-critical
+page, and `visual-qa.md` already carried the detectors — the criteria were never the problem. The
+problem was that the gate existed as *prose in a skill* while the executable form was a per-demo
+JSON each build had to author from scratch, so it was armed only at the re-skin pass. A leg armed
+that late stamps SKIP for the whole first half of a build: that is how a raw deserialize carrying
+horizontal overflow on every page, skeleton-card bands and stock copy site-wide reaches an overall
+PASS. Changing the acceptance prose again would have changed nothing; `orchestrator.md` argues that
+itself ("a gate written as a validator holds at every tier").
+
+### Added
+- **`dw-demo-design/assets/gate.config.template.json`** — a baseline design profile that arms from
+  run one with no per-demo tuning: two viewports with a real **device descriptor** spread before
+  the geometry, the generalised Swift `placeholderRegex` in three separately retirable bands (the
+  corporate-ipsum sentence-opener verbs, the item-type `defaultValue` copy, generic filler), band
+  height and section-gap thresholds, PLP `rowSelector` with the phantom-repeater-row qualifier and
+  the four per-row `requiredFields`, plus consent pre-seeding, header clearance as a relationship,
+  WCAG contrast, button-shape CTAs, required PDP sections measured by **content** height, document
+  height, text overlap, and the CSSOM sheet check. Every threshold carries its reason inline; every
+  `<...>` token is a per-demo replacement. Nothing marine-specific survives — no per-demo page ids,
+  sentinel names, stylesheet names or category paths.
+- **`dw-demo-design/references/design-gate.md`** — the discipline for editing it. The arming rule
+  (*the first armed run is supposed to FAIL*); the two calibrations that cannot be skipped (a
+  viewport is not a device — DW picks the header server-side by UA, and four consecutive PASSes
+  were measured against a document no phone user receives; scan `textContent`, never `innerText`);
+  a table of what the runner already asserts always-on vs by config; **five named harness gaps**
+  that cannot be armed by config alone — image resolution (and the sharp edge that the one
+  image-shaped probe explicitly *skips* images with `naturalWidth === 0`, so a broken image is
+  excluded from it), alt text, empty-band child counts, the brand tripwire, and the mobile canvas
+  measure (`overflow-x: hidden` on `body` hides stretch from a `documentElement` check) — each with
+  its implementation shape and the standing rule that an unread config key is worse than an honest
+  gap; how to prove a key is live (observe it fail; self-test the detectors); and threshold
+  discipline.
+
+### Changed
+- **`dw-demo-design/SKILL.md`** — ladder rung 7 routes to the template and the new reference;
+  "Known gaps" now names the five missing probes instead of the missing template.
+
 ## [4.17.0]
 
 Closes rung 3 of the presentability ladder. The imagery guidance in the tree covered where files
