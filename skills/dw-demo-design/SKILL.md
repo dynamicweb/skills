@@ -47,7 +47,7 @@ to pass. Rungs 1-3 are content truth; 4-6 are design; 7-8 are proof.
 |---|---|---|---|
 | **1** | **Zero-state pass** — strip the stock, resolve the empty bands, de-brand the chrome | **[references/zero-state.md](references/zero-state.md)** | tripwire regex returns 0 hits across every demo-critical page, in `textContent`; no empty band; no `Swift` wordmark or favicon |
 | **2** | **Content replacement** — real copy in every field the storyline visits, modelled one field per editor concern | [`../dw-demo-swift/references/content-modeling.md`](../dw-demo-swift/references/content-modeling.md) | every visited page's headings and body come from the customer's own material; no field left to its default |
-| **3** | **Imagery** — where product and content images actually come from | [`../dw-demo-swift/references/asset-organisation.md`](../dw-demo-swift/references/asset-organisation.md) (where they go); the autonomous *source* recipe is the known gap — see "Known gaps" | every `<img>` on a demo-critical page resolves 200; no unbranded placeholder tile |
+| **3** | **Imagery** — where product and content images actually come from | **[references/product-imagery.md](references/product-imagery.md)** (the source); [`../dw-demo-swift/references/asset-organisation.md`](../dw-demo-swift/references/asset-organisation.md) (where they go) | every `<img>` on a demo-critical page resolves 200; hero-category PLP >= 80% real images; every remaining card shows the **branded** fallback, never the stock grey tile |
 | **4** | **Theme tokens** — palette, typography, buttons, radius, shadow | [`../dw-demo-swift/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) + [`../dw-demo-swift/references/re-skin.md`](../dw-demo-swift/references/re-skin.md) | the palette swap is complete across every notation (a swap is multi-file and multi-notation — `re-skin.md`) |
 | **5** | **Chrome and rhythm** — header that reads as a menu, section gaps, band caps | [`../dw-demo-swift/references/header-menu.md`](../dw-demo-swift/references/header-menu.md) + [`../dw-demo-swift/references/re-skin.md`](../dw-demo-swift/references/re-skin.md) | top nav nodes have children (a childless bar is a data gap, not a CSS defect); no band over the height cap; no dead gap over the section-gap threshold |
 | **6** | **Mobile pass** — fit the phone canvas | [`../dw-demo-swift/references/mobile-pass.md`](../dw-demo-swift/references/mobile-pass.md) | `document.body.scrollWidth <= innerWidth` at 390 **and** 430, measured with a real mobile device descriptor |
@@ -83,14 +83,9 @@ gate reads, not another sentence telling someone to write one.
 
 ## Known gaps (named, so they are not rediscovered)
 
-These rungs have an owner for the *destination* but no sanctioned recipe for the *source*. Both
-are tracked and land on this skill:
-
-- **Rung 3 — autonomous imagery source.** `asset-organisation.md` covers where files go, never
-  where images come from. A non-interactive dispatched session has no operator-fed inbox, so a
-  seeded catalogue can ship as a wall of grey placeholder tiles.
 - **Rung 7 — a generic design profile.** The executable design gate exists today only as
-  hand-tuned per-demo JSON. There is no template that arms a fresh demo on run one.
+  hand-tuned per-demo JSON. There is no template that arms a fresh demo on run one, which is why
+  the leg keeps stamping SKIP for the whole first half of a build.
 
 ## Sister skills
 

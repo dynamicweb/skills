@@ -3,6 +3,43 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.17.0]
+
+Closes rung 3 of the presentability ladder. The imagery guidance in the tree covered where files
+**go** (`asset-organisation.md`) and how to **attach** them (`commerce-catalog.md`), and nowhere
+answered where images **come from**. A non-interactive dispatched session has no operator-fed image
+inbox, so a build that seeds a real catalogue with no sanctioned source ships it as a wall of grey
+placeholder tiles — hundreds of products, zero images, every PLP card identical. That is a
+*sourcing* gap, and it was the largest single visual delta between a first pass and a finished
+demo.
+
+### Added
+- **`dw-demo-design/references/product-imagery.md`** — the autonomous sourcing recipe. A five-tier
+  source priority (customer asset pack > catalogue PDF > customer site > generated > branded
+  fallback) with the honesty rules attached: never present generated imagery as the customer's own
+  product, and never source stock photography for a real prospect's real SKUs — *a plausible photo
+  of the wrong object is worse than an honest placeholder*. Then the working recipe for tier 2, a
+  print catalogue PDF, which is a near-ideal source because it is already page-ordered against the
+  SKU list: **pin poppler at v23** (v26 crashes `0xC0000005` on Server 2019 — an access violation
+  that reads as a corrupt input rather than a bad binary), `pdftotext -layout` for the page-ordered
+  SKU extract (`-layout` is load-bearing — without it the SKU order stops matching the visual
+  order and the pairing is destroyed), per-page-range `pdfimages` extraction, non-product filters
+  (pixel floor, aspect, content-hash duplicates, soft masks), **page-local pairing** — a page whose
+  tile and SKU counts disagree is unpaired in full, never best-effort shifted, because one early
+  misalignment cascades into confidently wrong pairs — a label-forward selection rule, and the
+  mandatory eyeball reject pass in which a reject falls through to the fallback rather than being
+  substituted with a near-neighbour to keep the coverage number up. Attach routes to the existing
+  verb-set owner, carrying forward the two facts that cost a batch (`IsDefault` is inert on the add
+  verb; images-but-no-default takes down the **whole** PLP, not one card). Ends with the branded
+  CSS fallback (the stock placeholder file is frequently ACL-locked, so the fallback has to be a
+  stylesheet rule, not a file swap), per-page coverage targets, and two design-leg asserts —
+  image-resolution and PLP thumbnail presence — both to be observed failing before being trusted.
+
+### Changed
+- **`dw-demo-design/SKILL.md`** — ladder rung 3 now routes to the new recipe and states its real
+  gate (>= 80% real images on the hero-category PLP, branded fallback everywhere else); the
+  imagery entry is removed from "Known gaps".
+
 ## [4.16.0]
 
 Gives the presentability phase a spine. Four fold-back sprints landed 241 skill legs and the next
