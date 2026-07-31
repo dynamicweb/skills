@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-27T15:45:35.537Z",
+  "generatedAt": "2026-07-31T20:11:59.772Z",
   "skills": [
     {
       "name": "dw-demo-base",
@@ -8,6 +8,13 @@
       "group": "demo",
       "description": "Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails.",
       "path": "skills/dw-demo-base/SKILL.md"
+    },
+    {
+      "name": "dw-demo-design",
+      "type": "flow",
+      "group": "demo",
+      "description": "'Dynamicweb 10 demo presentability — the ordered ladder that takes a freshly deserialized Swift baseline from stock-Swift to a site that reads as this customer''s.",
+      "path": "skills/dw-demo-design/SKILL.md"
     },
     {
       "name": "dw-demo-erp",
@@ -34,7 +41,7 @@
       "name": "dw-demo-swift",
       "type": "flow",
       "group": "demo",
-      "description": "'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, the customer re-skin ladder, and the ",
+      "description": "'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, and the post-baseline zero-state pass",
       "path": "skills/dw-demo-swift/SKILL.md"
     },
     {

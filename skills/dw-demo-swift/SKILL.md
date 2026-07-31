@@ -2,7 +2,7 @@
 name: dw-demo-swift
 type: flow
 group: demo
-description: 'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, the customer re-skin ladder, and the mobile pass. Triggers: starting a Swift demo (load the baseline), re-skinning to a customer brand, "where do I edit the header/footer", "mobile view" / "mobile pass" / "canvas stretch" / "overflow at 390" / mega-menu won''t collapse, customer-center / impersonation flows, sign-in profiles / switch user, checkout delivery date or custom order fields, paragraph renders empty or stale, Razor pitfalls in custom layouts, language layers, gating pages or paragraphs by group, editing repeater/slider children via the Admin API. Non-triggers: demo setup/MCP/TLS -> dw-demo-base; PIM data modelling -> dw-demo-pim; ERP integration -> dw-demo-erp. Swift 2 only -- never follow `doc.dynamicweb.dev/swift/swift-1/` URLs. Use AFTER dw-demo-base (host running, Serializer installed).'
+description: 'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, and the post-baseline zero-state pass. Triggers: starting a Swift demo (load the baseline), re-skinning to a customer brand, "where do I edit the header/footer", "mobile view" / "mobile pass" / "canvas stretch" / "overflow at 390" / mega-menu won''t collapse, customer-center / impersonation flows, sign-in profiles / switch user, checkout delivery date or custom order fields, paragraph renders empty or stale, Razor pitfalls in custom layouts, language layers, gating pages or paragraphs by group, editing repeater/slider children via the Admin API. Non-triggers: demo setup/MCP/TLS -> dw-demo-base; PIM data modelling -> dw-demo-pim; ERP -> dw-demo-erp; presentability ladder -> dw-demo-design. Swift 2 only -- never follow `doc.dynamicweb.dev/swift/swift-1/` URLs. Use AFTER dw-demo-base (host running, Serializer installed).'
 ---
 
 # Dynamicweb Swift Demo Skill
@@ -33,6 +33,49 @@ Before any frontend work (templates, paragraphs, re-skin), load the Swift conten
 5. **Run the post-deserialize integrity sweep** -> [`references/integrity-sweep.md`](references/integrity-sweep.md). The skill refuses to declare baseline restored until all of its checks pass.
 
 PIM-only demos can skip this step entirely — see `dynamicweb-pim-demo` for the blank-DB modelling flow that does NOT need a Swift frontend.
+
+## Step 1 — Zero-state pass (every Swift demo, immediately after Step 0)
+
+A deserialized baseline is **not** a customer-neutral site. It is the vendor's own demo: vendor
+wordmark in four places and in the browser tab, a stock frontpage title, a blog band with skeleton
+cards, an empty FAQ shell, an empty carousel, a PDP slider whose empty relation renders an entire
+product-list page inline, and — the one nothing warns about — **stock demo copy inherited from
+item-type `defaultValue`s on nine of the most-used content item types**. A field that was never
+written renders that default as plausible sentences, so the page looks authored while carrying
+nothing written for this customer, and every liveness check goes green.
+
+This is Step 1 because it is not troubleshooting. It runs on every demo, before any copy is
+written and before any styling, and **it must run again after any bulk paragraph or grid-row
+save** — a single grid-row save re-applies the item-type defaults to fields that were blanked by
+hand, which is why the deliverable is an assert and not a checklist.
+
+The ordered pass, its per-item-type trap table, the exact tripwire strings and the runnable
+asserts are owned by **[`../dw-demo-design/references/zero-state.md`](../dw-demo-design/references/zero-state.md)**.
+In brief, in order:
+
+1. **Arm the tripwire before changing anything** and observe it FAIL on the raw deserialize. Scan
+   `document.body.textContent` (script/style/template/noscript stripped), never `innerText` —
+   `innerText` is render-aware and omits collapsed accordions and inactive tabs, which is exactly
+   where stock copy hides.
+2. **Blank the item-type `defaultValue`s** (the source), then sweep the instances whose stored
+   value still equals the default.
+3. **De-brand the chrome** — all **four** logo paragraphs (desktop + mobile, header + footer),
+   plus `Favicon` and `AppleTouchIcon`.
+4. **Resolve every empty band.** *A band whose data source is empty is rewired or deleted, never
+   left as skeletons* — and deleting a band means deleting its orphaned heading too.
+5. **Page and area identity** — the stock frontpage `metaTitle`, and the empty area
+   title/description/keywords.
+6. **Alt text** (set on zero paragraphs as shipped) and the blank "no products found" string.
+
+**Gate:** the tripwire regex returns 0 hits across every demo-critical page; no rendered
+accordion / slider / post-list / product-slider container has zero children; no vendor wordmark or
+vendor favicon; every `main img` has a non-empty `alt`. Do not advance to re-skin on a failing
+gate — authoring the customer's story onto stock furniture means writing around things that are
+about to be deleted.
+
+The full presentability ladder that this step is rung 1 of — content replacement, imagery, theme
+tokens, chrome and rhythm, mobile, mechanical asserts, human sign-off — is owned by
+[`../dw-demo-design/SKILL.md`](../dw-demo-design/SKILL.md).
 
 ## Always-on convenience: demo cheat-sheet page
 
@@ -100,6 +143,7 @@ If you find yourself running this skill standalone with no base context, fix tha
 
 - **`dynamicweb-demo-base`** -- foundation skill (Use FIRST). Owns all setup + path resolution + Serializer install + customisations + customer-context. Does NOT deserialize a baseline — that's owned here.
 - **`dynamicweb-pim-demo`** -- PIM modelling (Use AFTER, can pair with this skill in either order on the host). Starts from a blank/fresh DB and skips the baseline deserialize entirely.
+- **`dw-demo-design`** -- presentability (Use AFTER Step 0/Step 1 here). Owns the ordered ladder from "the baseline is loaded" to "it reads as this customer's site", and owns the zero-state pass Step 1 routes to. This skill keeps the deserialize and the content/paragraph mechanics; `dw-demo-design` orders the design phase and never duplicates them.
 
 A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
 

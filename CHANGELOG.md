@@ -3,6 +3,51 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.16.0]
+
+Gives the presentability phase a spine. Four fold-back sprints landed 241 skill legs and the next
+build still reported that it does not one-shot — because every landed leg is a *negative fact
+about an API verb*, and what a first pass needs is an **ordered recipe with asserts**. The
+boundaries between the demo skills were right by domain and wrong by build phase: the hardest
+phase — make a loaded baseline look like this customer's site — was spread across seven references
+in two skills, every one of them reachable only from a lookup table, i.e. optional by placement.
+`dw-demo-base` had a numbered canonical flow; `dw-demo-swift` had exactly one numbered step
+(deserialize); the phase between them had none.
+
+The through-line of the new material: **a field you never wrote renders plausible stock copy, so
+the absence of a defect is not evidence of content** — and because a single grid-row save
+re-applies item-type defaults over fields blanked by hand, the deliverable has to be an assert
+rather than a checklist.
+
+### Added
+- **`dw-demo-design`** (new demo skill, presales bundle) — owns the **ordered presentability
+  ladder**: zero-state, content replacement, imagery, theme tokens, chrome and rhythm, mobile,
+  mechanical asserts, human taste sign-off. Eight rungs, each with a named owner and a gate, plus
+  the reasoning for the order (strip before you write; theme tokens over stock content produce a
+  well-branded template). Rungs 2-6 route to their existing owners in `dw-demo-swift` and
+  `dw-demo-base` and are never duplicated. Carries a **Known gaps** section naming the two rungs
+  that have an owner for the destination but no sanctioned recipe for the source. Use AFTER
+  `dw-demo-swift` Step 0.
+- **`dw-demo-design/references/zero-state.md`** — the post-baseline pass that takes a freshly
+  deserialized site from stock to customer-neutral, as six ordered steps with a runnable assert
+  each: arm the tripwire *first* and observe it fail on the raw deserialize (three separately
+  retirable regex bands — stock content copy, the corporate-ipsum sentence-opener signature,
+  generic filler — scanned against `textContent`, never `innerText`); blank the `defaultValue` on
+  the **nine** content item types that ship demo copy, then sweep instances still equal to their
+  default; de-brand all **four** logo paragraphs plus favicon and apple-touch-icon; resolve every
+  empty band under the rule *a band whose data source is empty is rewired or deleted, never left
+  as skeletons* (including the product slider whose empty `most-sold` relation renders an entire
+  product-list page inline, and the orphaned headings deletion leaves behind); page and area
+  identity; alt text and the shipped-blank empty-state string. Calibration rules included: an
+  assert that fires on good copy is a broken assert, not a strict one; the shipped strings use a
+  typographic apostrophe, so a pattern typed with a straight quote matches nothing.
+
+### Changed
+- **`dw-demo-swift/SKILL.md`** — gains **Step 1, Zero-state pass**, as a numbered step in the
+  canonical flow rather than a row in the 19-row lookup table, with its gate stated inline and the
+  detail routed to `dw-demo-design`. Adds the `dw-demo-design` sister-skill row; description
+  re-pointed (`presentability ladder -> dw-demo-design`).
+
 ## [4.15.0]
 
 Fold-back sprint 4: lands the skill legs of 77 accepted demo-build learnings (Foundry LRN issues)
