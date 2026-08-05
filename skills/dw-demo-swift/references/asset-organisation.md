@@ -9,6 +9,7 @@
 - [Subfolder conventions for demos](#subfolder-conventions-for-demos)
 - [Branding assets — a shared SVG is not safe to edit in place](#branding-assets--a-shared-svg-is-not-safe-to-edit-in-place)
 - [Generated product imagery — review against the hero, and record the prompt](#generated-product-imagery--review-against-the-hero-and-record-the-prompt)
+- [Catalogue imagery is its own brief](#catalogue-imagery-is-its-own-brief)
 - [Video in a PDP media gallery — stock Swift preloads it three times](#video-in-a-pdp-media-gallery--stock-swift-preloads-it-three-times)
 - [Auditing which assets are actually referenced](#auditing-which-assets-are-actually-referenced)
 - [What lives OUTSIDE `wwwroot/Files/` (demo working folders)](#what-lives-outside-wwwrootfiles-demo-working-folders)
@@ -67,6 +68,130 @@ Record **`prompt` (verbatim), `model` and `quality` as REQUIRED** alongside `gen
 asset, and record the prompt **actually sent**, so a regenerated image carries the prompt that produced
 the shipped file rather than the first attempt. Definition of done: a second run can re-issue the recorded
 prompt and get a comparable image.
+
+## Catalogue imagery is its own brief
+
+A seeded catalogue with no attached assets renders every PLP and PDP as grey placeholder tiles, and
+the imagery recipes elsewhere assume either an operator-fed image inbox or a generator — neither of
+which a dispatched, non-interactive session has. Most prospects **do** hand over a print catalogue
+PDF, and its product tiles are exactly the label-forward shots a PLP needs. That is a sanctioned
+autonomous source, with one standing caveat: **scope it as its own brief.** Extraction is minutes;
+the per-pair review below is the actual cost, it is judgement per asset, and it does not compress or
+parallelise. An imagery item budgeted alongside header, pricing and redirect work finishes as either
+"not delivered" or, worse, as unreviewed pairings on live PDPs.
+
+### 1. Extract geometry and images in one pass — `pdftohtml -xml`
+
+```bash
+pdftohtml -xml -zoom 1 catalogue.pdf out.xml     # emits out.xml + every embedded image
+```
+
+`pdfimages` gives pixels and page numbers but **no placement**, so it can only support an
+order-based join — and image order matches text order on only some pages of a typical InDesign
+layout, so an order-based join mispairs silently. `pdftohtml -xml` emits every `<image top left
+width height src>` and every `<text top left width height>` on **one coordinate system**, which
+turns a tile grid into a pure geometric join. It also converts CMYK→RGB correctly, so no separate
+colour step is needed. Keep `pdfimages -list` for reconnaissance only (page/colour-space census).
+
+- **Pin poppler to v23.** v26 crashes `0xC0000005` on Windows Server 2019.
+- **Poppler emits `height` before `width` on `<page>`.** A width-first regex matches nothing and the
+  page count comes back `0` — which reads as "the PDF has no pages" rather than "the pattern is
+  wrong". Assert the parsed page count equals the PDF's own.
+
+### 2. Bucket text and images into grid cells
+
+Derive column x-bands and row y-bands from the tile grid (a 4-across layout gives four x-bands and
+as many y-bands as tile rows), then assign every `<text>` and `<image>` node to a `(column, row)`
+cell. The SKU in a cell pairs with the images in that same cell — derived, not guessed.
+
+Assert **zero ambiguous cell assignments** (no node straddling two bands) before joining anything.
+Then join cell SKUs to live products by product number and report the funnel explicitly: tiles found
+→ tiles carrying a SKU → tiles carrying an image → tiles with both → live products matched.
+
+### 3. Recover the images the converter mangles
+
+A **DeviceN / separation** colour space is the one `pdftohtml` gets wrong: it renders as a grey shape
+on solid black, and it would ship as a black rectangle on the PLP. Census the colour spaces with
+`pdfimages -list` first — cmyk, gray and index convert correctly, `devn` does not.
+
+Recover by re-rendering the page and cropping instead of re-extracting the object:
+
+```bash
+pdftoppm -png -r 400 -f <page> -l <page> catalogue.pdf page      # 400 dpi page raster
+# crop the tile bbox from the XML, scaled by dpi/72
+```
+
+Worth knowing generally: **the page raster is a valid source when the embedded object is unusable**,
+and it is frequently *larger* than the embedded original and on clean white. Note that the XML can
+carry a **negative `height`** on a placed image — that is a y-flip, so the real box is
+`top+height .. top`.
+
+### 4. Eyeball every pair — a required stage with its own artefact
+
+**A SKU join cannot detect a wrong photo.** A pairing can be structurally perfect — right page, right
+tile, right SKU — and still be the wrong product, because the source catalogue carries image defects
+alongside its copy defects. Four classes, all invisible to extraction, join and every `status: ok`:
+
+| Class | What it looks like |
+|---|---|
+| Brand mismatch | a different manufacturer's packaging on the tile for this product |
+| Model mismatch | the right brand, the neighbouring model's carton |
+| Section mismatch | a photo from an adjacent product family entirely |
+| Duplicate-SKU collision | two tiles carry one SKU, so an unrelated tile is dragged onto the product |
+
+Plus **burned-in third-party watermarks**, which are invisible at native size.
+
+- Record **one decision row per product-image pair** — subject, verdict, reason — as the stage's own
+  artefact, not as a review of the output. The worksheet is the deliverable; the attachments follow it.
+- **Zoom 4× before accepting or rejecting anything whose label you cannot read at native size.** That
+  is what surfaces watermarks and settles ambiguous pack markings.
+- Report **NOT DELIVERED and ship the branded fallback** rather than attaching unreviewed pairings to
+  hit a coverage target. Attaching everything unreviewed is the defect the coverage target exists to
+  prevent, not a way of meeting it.
+
+### 5. Cap coverage honestly on colour-variant families
+
+**Coverage dies on flat-colour variant families, and the shortfall is per category, never a total.**
+A print catalogue prints ONE photo for a tile that lists every colourway. Two opposite rules, and
+which applies is decided by whether the distinguishing attribute is *legible at rendered size*:
+
+- **The photo makes a visible colour claim** (tags, wraps, crayons, sprays) → it goes to the SKU of
+  that colour only. The same photo across seven SKUs is six wrong-product pairings.
+- **The distinguishing attribute is not legible at any rendered size** (pack count, volume, width, a
+  marking inside a sealed pack) → one family shot honestly serves every variant.
+
+Measure coverage **per category from the live product records and per PLP from the served HTML**, so
+the cost of the rule is visible per screen instead of hidden in a catalogue-wide percentage.
+Categories dominated by colour variants land far below the target while
+single-photo-per-family categories reach 100%, and reporting only the total hides both.
+
+### 6. Size the asset for the FRAME, not for the file
+
+**`GetImage.ashx` returns 0.75× the source pixels on the `webp` path and full size on `png`** — a
+silent 25% resolution loss. Swift requests `format=webp` in its `srcset`, `GetImage.ashx` will not
+upscale, and the `img` carries `mw-100 mh-100` so it caps but never scales up: whatever the handler
+returns is what the visitor sees. A small source asset therefore renders as a postage stamp floating
+in a large PDP frame while the file itself is correct.
+
+Ship a **2× resample of the frame size** (long edge capped, alpha flattened, comfortably under
+300 KB) so the webp path still delivers enough pixels. Verify the same URL with `format=png` to read
+the true source dimensions, and assert `naturalWidth`/`naturalHeight` **and** the rendered bounding
+box off the live PDP — the DPI metadata is not the lever and reading it proves nothing.
+
+### 7. Attach, then verify per product
+
+Upload and attach through the asset verbs, then read the attachment back **per product** rather than
+trusting the attach response — including which asset is primary (`AssetAddToMultipleProducts`'s
+`IsDefault` behaviour is verb-specific; see
+[`../../dw-demo-base/references/foundational/commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md)).
+Unpaired products fall through to a **branded placeholder**: a CSS fallback keyed on the placeholder
+image's own `src` (`.ratio:has(img[src*=nopic])`) paints a brand-tinted tile with the customer mark,
+capped and centred — the shipped placeholder file itself is usually ACL-locked, so the fallback is
+CSS rather than a file swap.
+
+Definition of done: the hero-category PLP renders the agreed share of real label-forward images
+counted **from the served markup**, every remaining card shows the branded fallback rather than the
+stock grey tile, every shipped pairing has a verdict row, and every reject has a stated cause.
 
 ## Video in a PDP media gallery — stock Swift preloads it three times
 

@@ -337,9 +337,16 @@ ships `1Column`–`4Columns`, `6Columns`, the `*Flex` variants and asymmetric `2
 is no `5Columns`.
 
 Layout columns (`GridRowTopSpacing` / `GridRowBottomSpacing` / `GridRowVerticalAlignment` /
-`GridRowGapX/Y` / `GridRowColorSchemeId`) are settable only on this SQL surface — the MCP
-`save_grid_rows` model doesn't carry them **and a later MCP save of the same row silently reverts
-them**. Write them after all MCP saves of the row, then restart; the ordering rule and cache rows live
+`GridRowGapX/Y` / `GridRowColorSchemeId` / `GridRowContainerWidth`) are settable only on this SQL
+surface — the MCP `save_grid_rows` model doesn't carry them **and a later MCP save of the same row
+silently reverts them**. `ContainerWidth` is the per-row **content width** the Swift row template
+renders as `data-dw-container-width`; the MCP model exposes only
+`active`/`backgroundImage`/`colorSchemeId`/`container`/`definitionId`/`id`/`itemType`/`pageId`/`sort`,
+so a site-wide width change cannot be authored as content through that tool at all. Where a row-level
+SQL write is not available, the sanctioned substitute is a CSS override of `--dw-container-width`
+**scoped to `main`** — header and footer read the same token, so an unscoped override moves the
+chrome with the content. Verify by measured band widths at the target viewports plus zero horizontal
+overflow at mobile and desktop, not by the saved value. Write them after all MCP saves of the row, then restart; the ordering rule and cache rows live
 in [`cache-invalidation.md`](cache-invalidation.md) "Mixing MCP and SQL on the same rows". NULL spacing
 renders as the Swift row-template default (`?? 6` = 6rem top and bottom) — serialize explicit values
 when composing a page, or every section ships with ~96px bands.

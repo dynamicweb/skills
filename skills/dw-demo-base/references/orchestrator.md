@@ -268,6 +268,31 @@ native single pass produced it. Per phase:
   passes on every demo-critical page (see `references/visual-qa.md` "Definition of done") **and**
   the design has a human taste sign-off.
 
+**Design asserts arm on the FIRST gate run, not at re-skin time.** Presentability is a property of
+every gate run, not of the design workstream. A design leg left unconfigured stamps `SKIP`, the run
+reports `PASS`, and the build ships horizontal overflow, skeleton bands and shipped stock copy — the
+defect class then surfaces when a human eyeballs the site, which is exactly what a mechanical gate
+exists to prevent. From the scaffold gate onward, three legs run against a raw deserialize with no
+custom design configuration:
+
+1. **Overflow** — `document.body.scrollWidth === window.innerWidth` at desktop and mobile widths.
+2. **Skeleton / empty-band scan** — a band carrying a heading and no content children, or almost no
+   text, is a skeleton.
+3. **Stock-copy tripwire** — the shipped baseline's own copy strings, grepped against the served HTML.
+
+The detectors and the tripwire list live in
+[`../../dw-demo-swift/references/zero-state.md`](../../dw-demo-swift/references/zero-state.md); this
+list is the acceptance contract that says *when* they run. Expect FAIL on run one against a raw
+baseline — the pass is earned by fixing the layer defect and authoring the content, never by leaving
+the leg unconfigured.
+
+**The design page set covers every language prefix the build serves.** Chrome copy is longer in some
+languages than the one the header was laid out in, so a translated area can carry a constant
+horizontal overflow on *every* page while the default-language pages measure clean. A page list of
+default-language URLs cannot see it however correct the assert is — and the constant-per-language,
+content-independent value is the tell that the cause is chrome rather than any one page. Parameterise
+the design page set by the same language prefixes the permission-parity leg already uses.
+
 **Design sign-off — taste stays human without blocking automation.** Mechanical asserts prove
 structure (image-band caps, PLP row-presence + content, no overflow/gaps — `references/visual-qa.md`);
 they cannot judge visual hierarchy or brand fit, so an all-green mechanical run can still ship a
