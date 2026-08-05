@@ -114,7 +114,9 @@ the difference between "seeded" and "staged until someone restarts the app".
 - **Re-run the `Repository='Products'` Full build after any recycle or 503 instance swap.** The facet can
   regress to a pre-expansion snapshot while DB relation truth stays correct — storefront PLPs and headless
   both under-render, and a repeat `ProductsFrontend`/`ProductsBackend` build has no effect on it. Scoping the
-  builder to the demo's shop (`ShopsToIndex`) hardens against recurrence.
+  builder to the demo's shop (`ShopsToIndex`) bounds the index size; it is not the isolation lever — the storefront's own query carries the shop filter (see
+  [`../../dw-demo-base/references/foundational/search-indexing.md`](../../dw-demo-base/references/foundational/search-indexing.md)
+  "Channel isolation is a QUERY-time filter").
 
 ## Scheduled-task creation semantics (`TaskSaveCommand`)
 

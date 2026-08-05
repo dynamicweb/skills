@@ -144,7 +144,7 @@ if ($missing) {
 
 **Repository and index names are solution-specific** — read them from `wwwroot/Files/System/Repositories/<Repository>/<Name>.index` on the host before firing the build (a stock Swift solution ships `ProductsFrontend`/`ProductsBackend` repositories, not a `Products` one). Never hardcode `Repository = "Products"`.
 
-**Resolve `BuildName` from the `.index` file — never post the literal string `"Full"`.** The Management API `BuildName` must be the `<Build Name="…">` value declared inside the `.index` XML (e.g. `Content builder`), not a generic label. `POST /admin/api/BuildIndex {"BuildName":"Full"}` returns **500 "Unable to load build 'Full'"** on a solution whose build is named anything else. Read the name off the file:
+**Resolve `BuildName` from the `.index` file — never post a guessed label.** The Management API `BuildName` must be the `<Build Name="…">` value declared inside the `.index` XML (e.g. `Content builder`), not a generic string. An unresolvable name is **not reliably rejected**: it has answered `404`, `500 "Unable to load build '<name>'"` and — on other hosts and verbs — `200 {"status":"ok"}` while building nothing. Treat the resolve step and the freshness assert below as both mandatory, since the failure mode cannot be predicted from the response. Read the name off the file:
 
 ```powershell
 $idxPath   = "wwwroot/Files/System/Repositories/$repo/$idx"   # $idx already includes .index

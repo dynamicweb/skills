@@ -4,11 +4,17 @@
 > fold-up into `dw-search-indexing`. No demo/customer content. When folded, move this body into
 > `dw-search-indexing` and re-target the pointers in the demo skills. Until then, the demo skills
 > reference this file.
+>
+> The `Query*` **verbs** are owned by two sibling files: [`query-authoring.md`](query-authoring.md)
+> (reading, copying, naming, relocating, deleting, and the restart-free cache flush) and
+> [`query-expressions.md`](query-expressions.md) (expressions, operators, sorting, result paging,
+> inert index fields, and the build verbs' silent-success failure modes). This file owns the index
+> and repository side.
 
 ## Repositories, Indexes, and Queries — file-based
 
 - **Repository** = folder under `wwwroot/Files/System/Repositories/<RepoName>/`
-- **Index** = `.index` XML file inside the repo folder (build via management API `POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}`). **`IndexName` is the index FILE name (`Products.index`, extension included) and `BuildName` is the build's name from inside that XML — the repository name or a friendly label such as `"Build Index"` answers `404`**, which reads as "the verb is unavailable" rather than "the argument is wrong". The `Name`-attribute gotcha below is the same one-value-two-meanings hazard on the file side. A full build also outruns a 120s client timeout, so fire it and verify out of band (see "Recovery recipe" below).
+- **Index** = `.index` XML file inside the repo folder (build via management API `POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}`). **`IndexName` is the index FILE name (`Products.index`, extension included) and `BuildName` names a BUILDER registered inside that XML — not a free label.** Resolve it from `IndexBuildersByRepositoryAndIndexName` rather than posting a guess: an unresolvable `BuildName` has been observed to answer `404`, to answer `500 "Unable to load build '<name>'"`, **and** to answer `200 {"status":"ok"}` and build nothing, on different hosts and verbs. The first two read as "the verb is unavailable" rather than "the argument is wrong"; the third reads as success. Because the failure mode is not predictable, resolving the builder **and** asserting build freshness afterwards is mandatory either way — see [`query-expressions.md`](query-expressions.md) "Build verbs: 200 is not 'built'" for the two sibling traps (building an index the queries do not read, and an instance that never recovers). The `Name`-attribute gotcha below is the same one-value-two-meanings hazard on the file side. A full build also outruns a 120s client timeout, so fire it and verify out of band (see "Recovery recipe" below).
 - **Queries** = `.query` XML files with `<Query ID="guid">` and `<Source Repository="..." Item="..." />`. Query placement rules are SUBTLE:
   - Queries used by **feeds** (`EcomFeed.FeedIndexQueryId`) must live DIRECTLY in the repository root folder: `wwwroot/Files/System/Repositories/<RepoName>/*.query`. **Subfolders are NOT scanned for feed resolution** — admin will show "query does not exist" on the feed if the .query file is in a subfolder.
   - Queries used by **dashboards/widgets** (referenced by GUID) must live in `wwwroot/Files/System/SmartSearches/Ecommerce/Shared/` (or a subfolder of it) — **never GUID-duplicated to `Repositories/<RepoName>/<subfolder>/`**. GUID-collision mechanism + recovery: "Dashboard query location — Shared ONLY" below.
@@ -62,9 +68,10 @@ Canonical shape (dashboard-backing queries go in the Shared tree — see locatio
 ```
 
 Hard constraints:
-- `sourceIndex` is `RepositoryName|IndexName` — a pipe, no spaces (discover valid values via `get_product_queries`)
+- `sourceIndex` is `RepositoryName|IndexName` — a pipe, no spaces (discover valid values via `get_product_queries`). **It also names the index a rebuild must target**: a convenience "build the product index" surface builds its own default pair, not this one ([`query-expressions.md`](query-expressions.md) "Build verbs")
 - every `value` is a string; `IsEmpty` uses `value: ""`
-- exactly one item in `groupExpressions`
+- **exactly one item in `groupExpressions` — a second group is not preserved.** Later groups' conditions are merged into the root `And` and their own `operator`/`negate` are dropped, so an intended OR-list or NOT-group is written as a flat `And` and returns 0 rows with `success: true`. Anything with alternation or negation goes through the expression-replacement surface that takes a real tree ([`query-expressions.md`](query-expressions.md) "Authoring expressions")
+- `folderPath` — the virtual path above is the shape that has been validated on a local install. **On at least one cloud host the same verb requires the server-side ABSOLUTE filesystem path and silently no-ops on anything else** (answering `ok`, persisting nothing). Whichever form you pass, read the query back by name before treating the create as done; that assert is what makes the difference invisible
 - the MCP model supports only **constant** test values — for Parameter, Macro, Term, or Code test values, say so explicitly and recommend the Dynamicweb admin UI
 - completion wiring: integer rule IDs in `configuration.completionRules`, language ID strings in `configuration.completionLanguages`
 
@@ -94,16 +101,39 @@ result = InitQueriesCache(repositoriesPath, cache) && result;                   
 
 So if the same query GUID exists in both locations, `QueryHelper.GetQueryById(guid)` returns the **Repositories** copy. When the admin Products tree renders the Shared queries node, each query's delete action calls `QueryByIdQuery.GetModel()` → gets back the Repositories copy → its `FolderPath` is `/Files/System/Repositories/Products/<subfolder>` → `ProductListNodePathProvider.GetQueryFolderPath()` throws `NotSupportedException` (it only accepts paths starting with `SharedQueriesPath` or `MyQueriesPath`) → the entire Shared queries tree 500s with a `NavigationByPathQuery` error. Same code path also breaks widget drill-through, since clicking a widget routes through `GetQueryFolderPath`.
 
-**Diagnosis tell**: if admin Products → Queries → Shared queries returns a 500 with `System.NotSupportedException` at `ProductListNodePathProvider.GetQueryFolderPath`, grep for duplicate GUIDs across the two folders — that's almost always it:
+**Diagnosis tell — read the frame ABOVE `GetQueryFolderPath` and the `Type=` in the URL first.** A 500 with `System.NotSupportedException` at `ProductListNodePathProvider.GetQueryFolderPath` has two distinct causes and they need different answers:
+
+- **`Type=FavoriteQueries` in the URL, with `QueryFolderNavigationNodePathProvider` in the frame above** — a stock platform bug, not your query tree. `FavoriteQueriesQuery.MakeListModel()` returns a **compile-time-constant** `FolderPath` of `…/SmartSearches/Ecommerce/Favorites`, which matches neither the shared nor the personal path `GetQueryFolderPath` accepts, so the throw is unconditional and no `.query` file placement can cause or cure it. It reproduces on an untouched tree and only when the screen renders as an area-container load (deep link / full area refresh) — reaching "My favorites" by the in-app anchor renders fine. Grepping for duplicate GUIDs here finds nothing and burns the window.
+- **Any other `Type=`, reached from the Shared queries tree** — this is the GUID-duplication case below. Grep the two folders:
 ```bash
 grep -h 'Query ID=' wwwroot/Files/System/Repositories/Products/**/*.query | sort > /tmp/repo.txt
 grep -h 'Query ID=' wwwroot/Files/System/SmartSearches/Ecommerce/Shared/**/*.query | sort > /tmp/shared.txt
 diff /tmp/repo.txt /tmp/shared.txt  # identical lines = duplicates
 ```
 
-**Fix**: delete the Repositories-side dashboard duplicates (NOT feed queries at repo root). Then **restart the host** — the `Searching:Queries` cache in `Cache.Current` is NOT exposed via `CacheInformationRefresh`, and `InitQueriesCache` never removes entries, only adds/overwrites. Deleting files from disk alone leaves stale entries in memory until restart. No MCP tool flushes this — plan the restart cost into your fix window. See [`cache-invalidation.md`](cache-invalidation.md) for the post-mutation cache table.
+**Fix**: relocate with `QueryMove` (which carries the `.configuration` sibling and updates the cache) or delete the Repositories-side dashboard duplicates — NOT feed queries at repo root. Then **flush the query cache; a restart is not required.** The `Searching:Queries` cache is genuinely not reachable through `CacheInformationRefresh` (no `ICacheStorage` implementor owns that key) and `InitQueriesCache` never removes entries — but `QueryHelper.GetQueryById` re-runs `InitQueriesCache` on a cache **miss**, so `GET /Admin/Api/QueryById?Id=<a GUID that does not exist>` re-initialises it as a side effect. The `400` it answers is expected. Full recipe, and the ordering trap that makes it necessary (the file verbs do not update the cache, so the next `QuerySave` writes back to the old path), in [`query-authoring.md`](query-authoring.md) "Flush the query cache without a restart". See [`cache-invalidation.md`](cache-invalidation.md) for the post-mutation cache table.
 
 **Does widget drill-through need the query in `Repositories`?** No. Widgets look up queries by GUID through the global cache, which is populated from SmartSearches. Drill-through navigation uses `ProductListNodePathProvider.GetPath` which requires the query's `FolderPath` to start with `SharedQueriesPath` — so Shared is actually the REQUIRED location for drill-through to work at all. Repositories is wrong on both fronts.
+
+## Channel isolation is a QUERY-time filter, not an index-time one
+
+**The lever that keeps non-shoppable products off the storefront is the query's own shop filter, not
+`ShopsToIndex` on the builder.** The shipped storefront queries carry a mandatory
+`MatchAny(ShopIDs, <shop-context macro>)` binary expression, and each area is bound to one shop — so a
+product whose only shop is a different shop can never match a storefront query even when a nightly full
+build indexed it. `ShopsToIndex` only controls how BIG the index is.
+
+Two consequences worth stating plainly:
+
+- **An empty `ShopsToIndex` is not a defect to fix reflexively.** It is normal on stock solutions and it
+  is not an open leak; treat it as an index-size choice.
+- **The way to make products non-shoppable is a separate shop/channel plus the query-level `ShopIDs`
+  filter the storefront already ships** — not a builder setting.
+
+Prove isolation by what the storefront **renders**, not by an index setting or a substring check: assert
+zero products in the LISTING on every search and PLP surface for the excluded channel, with a calibrated
+control (a probe that returns a known non-zero count for a shoppable group) so a silently broken probe
+cannot read as a pass.
 
 ## Currency integrity is an index-build precondition — `DivideByZeroException` names neither the currency nor the country
 
