@@ -25,7 +25,7 @@ orchestrator abstraction (GSD primary, native command set, and the standalone ha
 These trigger shapes route here:
 
 - "Model the ERP integration for this demo" / "where does the ERP fit in DW10?" -- the canonical use case; start at [references/integration-framework.md](references/integration-framework.md).
-- "Mock the ERP for a partner handover" / "BC sync without a live tenant" / "stage the BC sync state in the DB" / "reset demo data between runs" -- DB-staged mock flavor; read [references/mock-deltas.md](references/mock-deltas.md).
+- "Mock the ERP for a partner handover" / "BC sync without a live tenant" / "stage the BC sync state in the DB" / "reset demo data between runs" / **"run the sync on camera"** -- DB-staged mock flavor; read [references/mock-deltas.md](references/mock-deltas.md).
 - "Is the ERP a channel?" / "should I create a ShopType=3 shop for BC?" -- the answer is NO; read the always-on rule below + [references/integration-framework.md](references/integration-framework.md).
 - "Which fields does the ERP own vs PIM?" -- [references/erp-data-shape.md](references/erp-data-shape.md).
 - "How should I plan the ERP beats before I start building?" -- the scenarios-first habit; read [references/scenarios-first-planning.md](references/scenarios-first-planning.md).
@@ -58,7 +58,7 @@ The two flavors demonstrate DIFFERENT demo beats: mock shows "the PIM responds t
 | If you need to... | Read this reference |
 |---|---|
 | Internalise the source/target rule + anti-patterns + Integration Framework primer | references/integration-framework.md |
-| Stage demo data in the post-BC-sync state and wire the single RESET scheduled task | references/mock-deltas.md |
+| Stage demo data in the post-BC-sync state, wire the RESET scheduled task, and choose an execution option (narrate / RunSql / a real `SqlProvider`→`EcomProvider` activity when the evidence is the storefront) | references/mock-deltas.md |
 | Look up which DW10 fields the ERP typically writes vs reads from PIM (the generic shape) | references/erp-data-shape.md |
 | Plan ERP beats BEFORE the build (the `<demo>-Scenarios.xlsx` pattern) | references/scenarios-first-planning.md |
 | Run the live-BC path (ngrok + ForwardedHeaders + AppStore connector + `/admin/api/BC*`) | [`../dw-integration-bc/SKILL.md`](../dw-integration-bc/SKILL.md) |
