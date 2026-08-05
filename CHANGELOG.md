@@ -3,6 +3,11 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## 4.15.1
+
+- `dw-demo-pim` canonical-setup-order step 14 now forks the variant-enrichment route by install type: the Management API chain (`commerce-catalog.md` §2.14) on hosted/API-only installs, the SQL sweep on local installs. Previously only the SQL route was named, leaving hosted sessions without a canonical path.
+- `dw-demo-base` commerce-catalog §2.14 gains a lying/no-op catalogue for variant writes: the verbs outside the chain answer ok and write nothing, a master-value read-back means NULL-field fallback (enrichable), and `EcomProductField.AllowChangesAcrossVariants` gates per-variant field writes. Added after a hosted session probed only the no-op verbs and concluded per-variant identity was impossible.
+
 ## [4.15.0]
 
 Fold-back sprint 4: lands the skill legs of 77 accepted demo-build learnings (Foundry LRN issues)

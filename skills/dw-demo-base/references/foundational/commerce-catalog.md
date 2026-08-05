@@ -192,6 +192,25 @@ Ids: ["VARGRP32.VO53","VARGRP32.VO61"]
   Re-calling it RESETS the matrix, so a helper that fetches a fresh key per combination silently discards
   the work in progress. Capture the key with the setup call and thread it through the whole batch.
 
+**Run this chain verbatim before concluding a variant row is unwritable.** The verbs *outside* the chain
+answer `status: ok` and change nothing, so a session that probes them in sequence reads like proof that
+per-variant identity is impossible when the real route was simply never exercised. The catalogue of
+success-reporting non-writers, with the working replacement for each:
+
+| Lying/no-op path | What actually writes it |
+|---|---|
+| `patch_products_safe` / `update_products` against a variant id | Full-model round-trip `ProductById?Id&VariantId` → `ProductSave` (step 4) |
+| MCP `create_variant_combinations` (leaves `ProductActive`/`ProductPrice` NULL) | `VariantCombinationSave` — runs `ExtendAllVariants` (step 3) |
+| `ProductSave` with a hand-built **partial** model | The round-trip — `*Save` commands are whole-entity saves |
+| `DefaultPrice` via `ProductSave` on a variant | `PriceSave` carrying `VariantId` |
+| `VariantCombinationCreate`, `VariantCombinationToggleActive`, `VariantCombinationUpdate` | Not part of the chain — `VariantCombinationSave` covers create + persist |
+
+A read that returns the MASTER's values for a combination means the variant row's own fields are NULL and
+the read fell back — the row exists and is enrichable via this chain; it is not evidence the row is
+missing or read-only. And before planning any per-variant write of a specific field, read
+`EcomProductField.AllowChangesAcrossVariants` for it — a `False` flag discards the per-variant value by
+design while the save still answers ok (see [`pim-modelling.md`](pim-modelling.md) §2.5).
+
 ### Product relations via the Management API — `RelationGroupSave` is update-only, and the maintenance verbs take composite ids
 
 - **Create a relation group with `GroupId: ""` — `RelationGroupSave` has no explicit-id create path.**
