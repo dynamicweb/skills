@@ -3,6 +3,95 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.16.0]
+
+Fold-back sprint 4.16.0: lands the skill legs of three triaged learning bundles — zero-state /
+design gate / catalogue imagery, the ERP mock's execution path, and query & index truth. The
+through-line across all three: **a surface answered `ok` and the thing you asked for did not
+happen** — a gate leg that stamps SKIP and reports PASS over a site nobody would show, a RESET that
+restores the database while the storefront serves the pre-write price from a read-through cache, a
+scheduled task the running app cannot see, an unresolvable expression path that appends instead of
+updating, a sort that reads back exactly as saved and is dropped at execution, a rebuild that
+targets an index no query reads, and a `BuildName` that is wrong in three mutually exclusive ways
+depending on the host.
+
+### Added
+- **dw-demo-swift — `references/zero-state.md` (new)**: Step 0 of every re-skin. The stock-copy
+  tripwire grep over the served HTML, the identity strings (frontpage title, area name, header and
+  footer brand) as first-class steps, the `defaultValue` trap resolved per item type (an unwritten
+  field renders shipped marketing copy, which is why three feature cards carry one sentence), "a
+  band whose data source is empty gets rewired or deleted, never left as a skeleton", a catalogue
+  pixel floor, and the three design asserts armed on gate run one.
+- **dw-demo-base — `references/foundational/query-authoring.md` and
+  `references/foundational/query-expressions.md` (new, split at the reference size budget)**: the
+  `Query*` verb surface, which had no coverage at all. Which of the three read verbs is authoritative for which properties;
+  the restart-free query-cache flush (a `QueryById` GET on a throwaway GUID re-runs
+  `InitQueriesCache` on the miss); the `QueryCopy` → save-the-name → rename-both-siblings → flush
+  order that gets past the duplicate-name guard firing on a query's own file; `QueryMove` as the
+  relocation verb that carries the `.configuration` sibling; expression `Path` as a locator, never
+  an insertion point (`Path:"0"` rewrites the ROOT group, and `Negate` there inverts the whole
+  query); why alternation needs an OR group of single-value nodes; the typed-constant gap that makes
+  a numeric predicate hand-authorable only; paging that reports `totalPages` and honours no offset;
+  the complementary-count check for declared-but-unpopulated index fields; the repoint-before-rebuild
+  order that makes a shop rename fail closed; and the three ways a build verb answers 200 and builds
+  nothing.
+- **dw-demo-swift — catalogue imagery** (`asset-organisation.md`): the sanctioned autonomous source
+  for product photography. The geometric `pdftohtml -xml` join (never extraction order), the poppler
+  v23 pin, the `pdftoppm` page-raster fallback for the one colour space the converter mangles, the
+  per-pair eyeball stage with its own decision artefact, `GetImage.ashx` returning 0.75x the source
+  on the webp path, and the colour-variant coverage cap measured per category rather than as a total.
+- **dw-demo-erp — Option 3** (`mock-deltas.md`): DB-staged plus a real Integration Framework
+  activity — a `SqlProvider` source over two staged tables into an `EcomProvider` destination. This
+  is configuration, not code; the earlier wording conflated "no CUSTOM provider class" with "no
+  activity".
+
+### Changed
+- **dw-demo-base `orchestrator.md`**: design verification is a property of every gate run, not of
+  the design workstream. Overflow, empty-band and stock-copy legs arm against a raw deserialize, and
+  the design page set covers every language prefix the build serves — a translated header can carry
+  a constant per-language overflow that a default-language page list cannot see.
+- **dw-demo-swift `header-menu.md`** Platform truth 2 rewritten: Swift mega-menu parents carry
+  `data-bs-toggle` but not `.dropdown-toggle`, so there is no stock caret to restyle, and the
+  nav-link `::after` has three claimants — the underline utility, a `swift.css` hover-bridge, and the
+  custom caret. Pin `width`/`height`, use `px` borders, suppress hover transforms.
+- **dw-demo-swift `re-skin.md`**: a component scoped by a `body` itemtype hook is scoped, not
+  portable; a card grid inside a text paragraph inherits Swift's reading measure, so measure the
+  rendered tile, never the column count.
+- **dw-demo-erp `mock-deltas.md`** Steps 3 and 6 rewritten: `TaskAddInSettings` holds literal XML;
+  a SQL-inserted `ScheduledTask` row is invisible until a recycle (so `TaskRun` 404s on a row that
+  exists); registration is proven from the task list, not the INSERT; and a cache flush sits between
+  RESET and BuildIndex, with definition of done moved from a SQL read to a rendered PDP read.
+- **dw-demo-base `foundational/data-access.md`**: `GridRowContainerWidth` joins the SQL-only column
+  list, with a `main`-scoped `--dw-container-width` override as the sanctioned substitute.
+- **dw-demo-base `foundational/source-explorer.md`**: reflection answers "does the capability exist",
+  never "why is this instance not selected" — grep the references for the affordance and for the
+  artefact it depends on before reflecting, because the deciding input is frequently data (a
+  filesystem-path gate) that a reflection pass cannot see.
+
+### Corrected (published lines that were wrong)
+- `foundational/search-indexing.md` and `foundational/cache-invalidation.md`: flushing the
+  `Searching:Queries` cache was documented as **restart-only** ("plan the restart cost into your fix
+  window"). It is not — the throwaway-GUID `QueryById` GET replaces the restart. Both files corrected
+  together, plus the restart-ladder rung that listed the cache as restart-owed.
+- `foundational/search-indexing.md`: the `NotSupportedException` at `GetQueryFolderPath` was
+  documented as "almost always" a duplicate GUID. With `Type=FavoriteQueries` in the URL it is a
+  stock platform bug on a compile-time-constant path, reproducible on an untouched tree — check the
+  frame above and the `Type=` before reaching for the duplicate-GUID grep.
+- `dw-search-indexing/SKILL.md`: the `In` and `MatchAny` operator rows implied set semantics on an
+  authored value list. A comma-joined right-hand side is matched as one opaque term and returns zero;
+  `In` as an authored constant is normalised into an Or-group of per-value `Equal` nodes on some
+  builds and matches nothing on others.
+- `foundational/search-indexing.md` (plus `online-mode.md` and `sql-direct-seeding.md`):
+  `ShopsToIndex` read as an isolation guarantee. It bounds index SIZE; channel isolation is enforced
+  at query time by the storefront's own `ShopIDs` filter, so an empty value is not a leak to fix.
+- `foundational/extend-mcp-tools.md`: the `build_product_index` row attributed the symptom to "no
+  Lucene segments written". Same incident, wrong end — the tool builds its own default
+  repository/index pair while the queries read a different instance. Row rewritten rather than
+  duplicated.
+- `foundational/search-indexing.md` and `dw-demo-swift/integrity-sweep.md`: an unresolvable
+  `BuildName` was documented as answering `404` in one file and `500` in another. It has also
+  answered `200 {"status":"ok"}` while building nothing, so both now require resolving the builder
+  **and** asserting build freshness.
 ## 4.15.1
 
 - `dw-demo-pim` canonical-setup-order step 14 now forks the variant-enrichment route by install type: the Management API chain (`commerce-catalog.md` §2.14) on hosted/API-only installs, the SQL sweep on local installs. Previously only the SQL route was named, leaving hosted sessions without a canonical path.

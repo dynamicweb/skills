@@ -5,6 +5,29 @@
 > into `dw-source-explorer` and re-target the pointers in the demo skills. Until then, the demo
 > skills reference this file. Do not add demo specifics here.
 
+## Reflection answers "does it exist", never "why is it not selected"
+
+**When a documented admin-UI affordance is measurably dead, grep the reference material for the
+affordance AND for the artefact it depends on BEFORE reflecting over the assemblies.** Reflection
+starts only when that grep comes back empty, and the grep gets recorded next to the reflection so a
+later reader can see it happened.
+
+The reason is structural, not procedural. A reflection pass reads code and can only answer *does the
+capability exist*. It cannot answer *why is this instance of it not selected*, because the selection
+frequently depends on **data** — and data the pass never looked at. The shape that keeps producing
+confident false negatives: a provider chooses whether to attach an action by testing a **filesystem
+path** (`…FileName.StartsWith(MapPath("<a specific folder>"))`), so a capability that plainly exists in
+the DLL is simply never invoked for artefacts stored somewhere else. Reflection then reports "the
+feature does not exist on this version", the finding is recorded as a platform limitation, and a whole
+workstream ships a workaround for something that was never broken.
+
+Two habits close it:
+
+- **Grep first, reflect second.** `grep -rn "<affordance>|<provider class>|<path constant>"` over the
+  reference material. A hit usually carries the fix.
+- **Before writing "platform gap", name the input the conclusion rests on** and check whether it is code
+  or data. If it is data, the reflection pass could not have seen it.
+
 ## Discovering an installed AddIn's query/command surface with `MetadataReader`
 
 When a DW10 AppStore AddIn exposes a `/admin/api/*` call surface that isn't documented anywhere

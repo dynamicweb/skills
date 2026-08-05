@@ -12,6 +12,7 @@
 - [The `<customer>_custom.css` naming hard rule](#the-customer_customcss-naming-hard-rule)
 - [Re-skin smell: "Swift-v2_Text shim + foreign cshtml"](#re-skin-smell-swift-v2_text-shim--foreign-cshtml)
 - [Recipe](#recipe)
+- [Step 0 — the zero-state pass](#step-0--the-zero-state-pass)
 - [Scoping hooks — one content page vs the whole catalog](#scoping-hooks--one-content-page-vs-the-whole-catalog)
 - [A palette swap is a multi-file, multi-notation sweep](#a-palette-swap-is-a-multi-file-multi-notation-sweep)
 - [CSS that silently never reaches the browser](#css-that-silently-never-reaches-the-browser)
@@ -86,6 +87,15 @@ Fix: define a `<Prefix>_<ConceptName>` custom item type — see [`content-modell
 
 Operates on a deserialized Swift 2.4 composition (framework-only `base` + `surface-swift` content, resolved into a running host via this skill's [`deserialize-flow.md`](deserialize-flow.md)) with `theme-default` staged. All steps are admin UI only. Throughout: `<customer>` is the demo customer's short slug (lowercase, no spaces).
 
+## Step 0 — the zero-state pass
+
+**Run [`zero-state.md`](zero-state.md) before step 1.** A freshly deserialized baseline renders as a
+complete site whose stock copy, unwritten `defaultValue` fields, skeleton bands and platform wordmark
+all read as authored content — and every structural gate leg passes over them. The zero-state pass
+retires that content and arms the three asserts (overflow, empty-band scan, stock-copy tripwire) that
+keep it retired, from the first gate run rather than at polish. Brand work on top of an un-zeroed
+baseline just re-paints the shipped demo.
+
 ### 1. Logo
 
 - Drop the customer's logo file into `<demo>\Dynamicweb.Host.Suite\wwwroot\Files\Images\<customer>-logo.svg` (or `.png`).
@@ -120,6 +130,19 @@ Operates on a deserialized Swift 2.4 composition (framework-only `base` + `surfa
 - `body[data-dw-itemtype="swift-v2_shop"]` — the entire catalog in one selector.
 
 Definition of done for a split like this is a computed-style **leak check in both directions** (a catalog-only property must not move on a content page, and vice versa), not a screenshot of each side.
+
+**A component scoped by one of these hooks is scoped, not portable — record the SCOPE SELECTOR next
+to the class names whenever a plan declares a shared component.** Every rule of a component written
+`body[data-dw-itemtype="swift-v2_shop"] main .<component>` genuinely *is* shared across the shop root,
+every PLP and every PDP, because they all carry that hook. Move the same markup onto a content page
+(`swift-v2_page`) and the selector matches nothing: the component emits, the DOM is present, every
+count-based assert passes, and the visitor sees unstyled text beside a bare icon. A brief that says
+"reuse the existing rules" therefore reads as portable when it is not. Before writing the template on
+a new surface, fetch the target page and read its `<body>` tag — the hook is either there or the reuse
+needs a scope extension. Extend by adding a **sentinel block at lower specificity** than the owning
+rules (declarations copied verbatim, scoped to the new component's own class), so the original scope
+still wins wherever both apply, and verify with computed style on the new surface, anonymous and
+signed-in.
 
 There is a third discriminator for **admin-editor-only** chrome: a `body` hook emitted from the layout master under `Pageview.IsVisualEditorMode`, styled as `body.dw-ve …` here. It is server-side and auth-gated, so it cannot leak to visitors — and admin-only rules must add **offset, never background**, or they flip a design gate's overlay-header classification on the live storefront. Full recipe: [templates.md](templates.md) §"Branching a template on Visual Editor mode".
 
@@ -165,6 +188,7 @@ Bootstrap utilities are declared `!important` — `.flex-fill` is `flex: 1 1 aut
 - **Read the COMPUTED value to name the dead rule, and audit duplicated properties mechanically.** `getComputedStyle(nav).columnGap` returning `5px` against a declared `4px` names the loser immediately — trusting the last declaration in the file does not. For each (selector-target, property) pair declared more than once in a custom sheet, report which declaration actually wins in the CSSOM; that surfaces the class instead of leaving it to be discovered by accident.
 - **Mark the counterpart rule in the wider tier `!important` too**, so the later source-order rule still wins. If only one tier is `!important`, the layout tier and the clearance tier disagree across a band of viewport widths: a nav meant to drop onto its own line below a breakpoint instead stays inline until it happens not to fit, while the two-line clearance token already applies — a white gap that appears and disappears over a ~32px band.
 - **Assert the computed value, never the presence of the declaration.** `getComputedStyle(el).display === "grid"`; equal left positions across all rows; and sweep viewports across the breakpoint asserting the number of distinct flex **lines** (count of distinct rounded column tops) flips exactly at the media-query edge, with the clearance token matching the measured bar height at every sampled width on both sides.
+- **A grid dropped into a text paragraph inherits Swift's reading measure — measure the rendered TILE, never the column count.** Swift wraps a paragraph body in a div carrying a prose `max-width` (~757px measured) while its parent container is the full content width (~1408px at 1440). That is right for running text and wrong for a card rack: the grid keeps its declared column count and each card collapses to roughly half the intended width, titles wrap onto three lines, meta wraps mid-phrase, and the page reads as content stuffed into its left half. **A column count is not a size**, so every structural assertion passes. Lift the cap for exactly the element that *directly* contains the grid and leave headings and ledes at their reading measure — `[data-dw-itemtype="swift-v2_text"] :has(> .<grid-class>) { max-width: none }`, the same idiom the sheet already uses for the PDP. Assert the **rendered card width in px** at each breakpoint; re-flowing the grid to fewer columns instead makes the undersized cards look deliberate and leaves half the page empty.
 - **Line-view rows need `min-width: 0` and a bounded title.** In a `nowrap` flex row whose other columns are fixed and non-shrinkable (image + SKU + a `flex: 0 0 280px; flex-shrink: 0` description + stock + price + gaps), the product title is the only `flex-shrink: 1` child, so it absorbs the whole overcommit: it collapses to `width: 0` with `overflow: visible`, stacks one word per line (7–9 line-boxes tall) and paints across the description lane. Give the title a real basis and a floor (`flex: 0 1 320px; min-width: 180px`) plus a hard 2-line `-webkit-line-clamp`, and make the description a shrinkable single-line ellipsis lane (`flex: 1 1 140px; min-width: 0`). Assert per row that the title box does **not** intersect the description box and that the title is ≤2 lines, at 1440 and 390.
 
 ## Grid galleries and thumbnail strips — `auto-fit` + `1fr` is a STRETCH, not a size

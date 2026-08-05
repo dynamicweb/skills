@@ -15,7 +15,7 @@
 - [Nav visibility is not access control — a hidden group still serves a live PLP](#nav-visibility-is-not-access-control--a-hidden-group-still-serves-a-live-plp)
 - [The shared default: `theme-default`'s `default_custom.css`](#the-shared-default-theme-defaults-default_customcss)
 - [Platform truth 1 (LRN-nav-03): the Popper-gap bridge](#platform-truth-1-lrn-nav-03-the-popper-gap-bridge)
-- [Platform truth 2 (LRN-nav-04): `::before` = icon, `::after` = underline](#platform-truth-2-lrn-nav-04-before--icon-after--underline)
+- [Platform truth 2 (LRN-nav-04): the nav-link `::after` has THREE claimants](#platform-truth-2-lrn-nav-04-the-nav-link-after-has-three-claimants)
 - [Platform truth 3 (LRN-nav-05): dropdown `min-width`](#platform-truth-3-lrn-nav-05-dropdown-min-width)
 - [Header height: count grid rows before hunting padding](#header-height-count-grid-rows-before-hunting-padding)
 - [Icons: opt-in, keyed on `data-nav-icon`](#icons-opt-in-keyed-on-data-nav-icon)
@@ -166,38 +166,66 @@ Requires CSS `:has()` (evergreen browsers 2023+). Rejected (all tried, all faile
 (inline transform wins); a `:hover`-gated `::before` bridge; a panel-anchored `.show::before`
 bridge (out-stacked by header layout — hit-tests `DIV.flex-fill`).
 
-## Platform truth 2 (LRN-nav-04): `::before` = icon, `::after` = underline
+## Platform truth 2 (LRN-nav-04): the nav-link `::after` has THREE claimants
 
-A CSS caret drawn on `::after` renders closed, rotates on open — and **disappears the moment the
-panel opens**. An element has exactly one `::after`, and Swift's link utility classes
-(`text-decoration-underline-hover` / `-accent-hover`, present on every `Menu.cshtml` nav-link)
-implement their animated underline on that **same `::after`**. In the open state their rule wins:
-it collapses the caret's side borders to 0 (the pseudo still exists and rotates, it just draws
-nothing) and re-positions it absolutely at the link's bottom-left (the underline's geometry), so a
-border-restored caret then renders **below** the item.
+**There is no stock caret to restyle.** Swift's mega-menu parents carry
+`data-bs-toggle="dropdown"` but **not** the `.dropdown-toggle` class Bootstrap keys its caret on, so
+nothing on screen distinguishes a category that opens a panel from a plain link until a re-skin draws
+one. A caret is therefore always net-new CSS — and the element has exactly one `::after`, which two
+shipped rules already claim:
 
-Fix: the caret rule must re-assert its box **and its position** in **every** open signal with
-`!important` — border alone is not enough:
+| Claimant | Selector shape | What it declares on `::after` |
+|---|---|---|
+| Underline utility | `.text-decoration-underline-hover` / `-accent-hover`, on every `Menu.cshtml` nav-link | an animated underline: absolute at the link's bottom-left, side borders collapsed to `0` |
+| `swift.css` hover-bridge | `.dropdown:has(.dropdown-menu:where(.mouseover)) > [data-bs-toggle=dropdown]::after` | an invisible bridge box: `width:100%; height:var(--swift-dynamic-offset); border:none !important` |
+
+Both fire in the **open** state, which is why a caret that looks right closed misbehaves the moment
+the panel opens. Two distinct symptoms, one shared cause:
+
+- **The caret disappears.** The underline rule wins on the borders (the pseudo still exists and still
+  rotates, it just draws nothing) and re-positions it absolutely at the link's bottom-left, so a
+  border-restored caret renders *below* the item.
+- **The caret becomes a flipping bar.** A custom rule that wins `display`/`position` but declares no
+  `width`/`height` **inherits the hover-bridge's box** — a full-link-width, offset-tall rectangle —
+  while its own `!important` borders beat the bridge's `border:none`. Any `transform: rotate` on
+  hover then flips that whole bar, and the nav row jumps by the bridge height.
+
+Author the caret to leave nothing implicit:
 
 ```css
+/* key on the ATTRIBUTE — Swift parents have no .dropdown-toggle class, and the class
+   Bootstrap does apply mutates on open */
+.megamenu-wrapper > nav > .nav-item.dropdown > .nav-link[data-bs-toggle="dropdown"]::after,
 .megamenu-wrapper > nav > .nav-item.dropdown:hover > .nav-link::after,
 .megamenu-wrapper > nav > .nav-item.dropdown > .nav-link.show::after,
 .megamenu-wrapper > nav > .nav-item.dropdown > .nav-link[aria-expanded="true"]::after {
   position: static !important; inset: auto !important;   /* undo the underline's absolute bottom-left */
   display: inline-block !important;
-  width: .42em !important; height: .42em !important;
+  width: auto !important; height: auto !important;       /* refuse the hover-bridge's box */
   border: 0 !important;
-  border-right: 1.5px solid currentColor !important;
+  border-right: 1.5px solid currentColor !important;     /* PX, never em */
   border-bottom: 1.5px solid currentColor !important;
   transform: translateY(1px) rotate(-135deg);
 }
+.megamenu-wrapper > nav > .nav-item.dropdown > .nav-link:hover::after { transform: translateY(1px) rotate(-135deg); }
 ```
 
-Rule of thumb: **on Swift nav links, `::before` belongs to the icon and `::after` belongs to the
-underline** — a third pseudo-consumer must fight or relocate. Alternative for a bespoke skin: draw
-the caret as a `background-image`/mask on the link and side-step the collision. Debug trap: CSSOM
-sheet-walking (`document.styleSheets` rule enumeration) returns empty for these colliding rules —
-go straight to computed-style state diffs (closed vs real-JS-open) for pseudo-element fights.
+- **Border widths in `px`, not `em`.** `em` widths resolve to `0` in the contested state even where
+  the rule otherwise matches.
+- **Pin `width`/`height` explicitly** (`auto`, or a fixed box) so the bridge's `width:100%` cannot
+  leak in, and **suppress hover transforms** so nothing rotates the inherited box.
+- **Retire the competing underline** when a `border-bottom` is the brand's own affordance: drop
+  `text-decoration-underline-hover` from the nav links rather than fighting it every state.
+- A dropdown fade needs `@keyframes` on `.megamenu.show` — `display:none → block` cannot transition —
+  with a `prefers-reduced-motion` guard.
+
+Rule of thumb: **on Swift nav links, `::before` belongs to the icon and `::after` is contested** — a
+third consumer must out-declare both shipped rules or relocate. Alternative for a bespoke skin: draw
+the caret as a `background-image`/mask on the link and side-step the collision entirely. Debug trap:
+CSSOM sheet-walking (`document.styleSheets` rule enumeration) returns empty for these colliding rules
+— go straight to computed-style state diffs (closed vs real-JS-open) for pseudo-element fights, and
+read the `::after` box: a caret measures single-digit pixels on both axes, and anything link-width is
+the bridge.
 
 ## Platform truth 3 (LRN-nav-05): dropdown `min-width`
 

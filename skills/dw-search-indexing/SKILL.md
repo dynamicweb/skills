@@ -68,7 +68,7 @@ Full process in order: **Repository → Index → Instances → Build configurat
 | `SkipPrices` / `SkipStock` | Skip expensive price/stock loading |
 | `SkipGrouping` / `SkipImages` / `SkipAssortments` | Skip specific data loading |
 | `EmptyStringReplacement` | Value used when a field is NULL (Lucene cannot index NULL) |
-| `ShopsToIndex` | Comma-separated shop IDs to scope the index |
+| `ShopsToIndex` | Comma-separated shop IDs bounding index SIZE. **Not the visibility lever** — the shipped storefront queries carry a `MatchAny(ShopIDs, <shop-context macro>)` filter, so scoping happens when the storefront queries the index, not when the builder fills it. An empty value is normal, not a leak. |
 | `BulkSize` | Products per indexing batch (default 500) |
 
 ## Analyzers
@@ -136,9 +136,20 @@ A query defines how the Product Catalog app retrieves results. Three components:
 |----------|-------------|
 | `Contains` | Prefix match (starts with term) |
 | `ContainsExtended` | Anywhere match (higher performance cost) |
-| `MatchAny` / `MatchAll` | Array matching |
-| `In` | Array — matches any value in set; URL syntax: `&Color=[Red],[Blue]` |
+| `MatchAny` / `MatchAll` | Array matching — **one value per expression**. A comma-joined right-hand side is matched as a single opaque term and returns zero rows |
+| `In` | Set membership from a **request parameter** (URL syntax `&Color=[Red],[Blue]`). As an authored constant it is unreliable: on some builds a comma-separated value matches zero, on others the platform normalises it into an Or-group of per-value `Equal` nodes that the admin UI then renders as N hardcoded literals |
 | `IsEmpty` | Null/empty check |
+
+**Express alternation as an OR group of single-value expressions, not as a comma-separated value.**
+Exact matching on an analysed field (product numbers, codes) needs `Equal` — or an OR group of `Equal`s
+— because the analyser tokenises the field and `MatchAny` over-matches. A query whose alternation is
+written as an authored value list also reads badly in the admin UI, where the expanded per-value form is
+what an editor sees; key defect worklists on a steward-set flag field instead.
+
+**Verify a predicate before shipping it:** `count(field = X) + count(field ≠ X)` must equal
+`count(no predicate)`, with neither side degenerate. A field that fails that check is declared in the
+schema and never populated by the builder — the picker offers it, every operator returns 0 or
+everything, and no error is raised.
 
 ### Expression Groups
 
