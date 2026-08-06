@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dynamicweb PIM Solution Assistant"
+  short_description: "Propose and execute data-driven DW10 PIM structures"
+  default_prompt: "Use $dynamicweb-pim-solution-assistant to profile my product data, ask required setup questions, and propose a one-shot Dynamicweb 10 create_data_model_structure payload."
