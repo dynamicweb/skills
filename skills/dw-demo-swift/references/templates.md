@@ -20,7 +20,7 @@ live here has been folded up into the foundational candidates; the demo skill po
 |---|---|
 | Template categories (baseline), page presets (the Theme primitive), and the **page-state flags** (`published` / `hidden` / `active` = "Hidden in Menu" semantics; the `publish_pages` both-flags gotcha) | [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §6 |
 | `ViewModelTemplate<>` Razor pitfalls — `@Html.Raw()` absent, `product.ProductFieldValues` not on `ProductViewModel` (raw-source-renders-on-PDP), `ToggleFavorite.cshtml` no-op at `FavoriteListId=0` | [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §2 |
-| Customer-number-suffix-as-role-flag (`CUST-…-BROWSE` read off `Pageview.User.CustomerNumber` to hide price / gate a storefront affordance) | [`users-permissions.md`](../../dw-demo-base/references/foundational/users-permissions.md) §16 |
+| Customer-number-suffix-as-role-flag (`CUST-…-BROWSE` read off `Pageview.User.CustomerNumber` to hide price / gate a storefront affordance) | [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §16 |
 | SQL-direct Page/GridRow/Paragraph required columns (the `PageActiveFrom`/`PageActiveTo` silent-404 vector et al.) | [`sql-direct-seeding.md`](sql-direct-seeding.md) → [`data-access.md`](../../dw-demo-base/references/foundational/data-access.md) |
 | Paragraph types + the component-first gate | [`paragraphs.md`](paragraphs.md) |
 | Header nav that reads as a menu — carets/hover/reachable dropdowns, the `save_groups` nav-depth recipe, and the three Razor/Bootstrap interaction platform-truths (Popper-gap bridge, `::after` caret/underline collision, dropdown `min-width`) | [`header-menu.md`](header-menu.md) |

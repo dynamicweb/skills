@@ -15,7 +15,7 @@
 | Surface you're about to hand-roll | Use instead — owned by | Candidate |
 |---|---|---|
 | Read user / user groups (`Pageview.User`, `Pageview.User.GetGroups()`) | `dw-render-viewmodels` | [`render-viewmodels.md`](../../dw-demo-base/references/foundational/render-viewmodels.md) "User identity / groups" |
-| Gate a Page/Paragraph by role or group (the permission entity store — `UnifiedPermission` rows keyed `PermissionName='Page'`/`'Paragraph'`; group gates need the broad-role deny pair; NOT the legacy `*Permission` columns) | `dw-users-permissions` | [`users-permissions.md`](../../dw-demo-base/references/foundational/users-permissions.md) §15 |
+| Gate a Page/Paragraph by role or group (the permission entity store — `UnifiedPermission` rows keyed `PermissionName='Page'`/`'Paragraph'`; group gates need the broad-role deny pair; NOT the legacy `*Permission` columns) | `dw-users-permissions` | [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §15 |
 | Read prices (`Services.Prices`, custom `PriceProvider`) | `dw-commerce-catalog` | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.12 |
 | Read customer orders (`Services.Orders.GetCustomerOrdersByType` / `GetOrdersBySearch`) | `dw-commerce-orders` | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) "canonical order read surface" |
 | Get product / friendly URLs; `AddStylesheet`/`AddScript` hoisting; cross-cutting redirects (`Page.Loaded` subscriber); per-category behavior; product-field arrays | `dw-render-razor` | [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §1 |

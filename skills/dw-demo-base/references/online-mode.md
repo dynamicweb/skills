@@ -58,7 +58,7 @@ The Management API hits the same DW domain services as MCP and the admin UI, so 
 
 - **Create-vs-update fork** (UPDATE when `Id` set, CREATE when empty; `notFound` is the fork talking), the **`SelectedImage` binder asymmetry**, **product images** (`AssetAddToMultipleProducts`, no webp, computed `image`), the **variant chain** (`VariantGroupSave` → `VariantCombinationSave`/`ExtendAllVariants`, skip `VariantCombinationCreate`), and the **`ShopSave` languages gap** → [`foundational/catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.14.
 - **Paragraph / page / grid-row editing** (`ParagraphSave` round-trips, the `ButtonData` object binder, `ShowParagraph` can't be set, `PageCopy` inherits `shortCut`, `GridRowCopy` over `GridRowCreate`) → [`foundational/content-modelling.md`](foundational/content-modelling.md) "Editing page / paragraph / grid-row content through the Management API".
-- **`UserSave` can't set passwords** → [`foundational/users-permissions.md`](foundational/users-permissions.md) §13.
+- **`UserSave` can't set passwords** → [`foundational/permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §13.
 
 Some commands also mirror a property at BOTH the command level and inside `Model` (e.g. `VariantCombinationCreate`); when a payload bounces with "value is required" for a field you sent, mirror it into/out of `Model`.
 

@@ -489,7 +489,7 @@ content silently don't make it — run this as a checklist immediately after eve
    Mirror every master row onto the layer's sibling page id
    (`Page.PageMasterPageId` gives the mapping), then
    `POST /admin/api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Security.Permissions.PermissionService"}`
-   AND restart (the nav tree caches separately). See [`users-permissions.md`](users-permissions.md).
+   AND restart (the nav tree caches separately). See [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md).
 3. **Hardcoded page ids in template role-gates miss the clones.** A gate like
    `if (node.PageId == <dashboardId> && !isRole) continue;` stops working on the layer (the clone has
    its own id). Make it master-aware:
@@ -696,7 +696,7 @@ is in [`extend-mcp-tools.md`](extend-mcp-tools.md) §5.
   URL/redirect surfaces the language switcher relies on.
 - [`render-viewmodels.md`](render-viewmodels.md) — `Pageview.User.GetGroups()` and other viewmodel
   accessors used by template role-gates.
-- [`users-permissions.md`](users-permissions.md) — the Permission entity store that AreaCopy fails to
+- [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) — the Permission entity store that AreaCopy fails to
   clone (point 2 above).
 - [`pim-localization.md`](../../../dw-pim-localization/references/translation-mechanics.md) — the product side (translate product names,
   descriptions, custom fields).

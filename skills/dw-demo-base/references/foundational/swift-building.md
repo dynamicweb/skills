@@ -533,7 +533,7 @@ no `.cs`. If `.cs` appears, you've crossed into controller/provider territory.
 ### Pre-escalation check — search the DW10 source first
 
 Before climbing the ladder, search the DW10 source for the canonical surface. Common false-positive
-escalations: gating paragraphs by role → permission entity store ([`users-permissions.md`](users-permissions.md)),
+escalations: gating paragraphs by role → permission entity store ([`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md)),
 not cshtml SQL; redirect from master by user identity → `Page.Loaded` subscriber, not `WriteLiteral`;
 project-wide stylesheet → `CustomHeadInclude` ([`render-razor.md`](render-razor.md) §3), not inline
 `AddStylesheet`; gate routes for anon → page-permission rows + `Page.PermissionType=0`; read user
@@ -588,7 +588,7 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])
   accessors.
 - [`content-modelling.md`](content-modelling.md) — modelling discipline, custom item-type `<Prefix>_*`
   discipline, language layers (incl. the cross-area component-selector cache).
-- [`users-permissions.md`](users-permissions.md) — the Permission entity store (gate page/paragraph
+- [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) — the Permission entity store (gate page/paragraph
   visibility without template edits).
 - [`data-access.md`](data-access.md) — SQL-direct Page/GridRow/Paragraph seeding required columns.
 - [`index-management.md`](../../../dw-search-indexing/references/index-management.md) — Repositories / queries / index placement.

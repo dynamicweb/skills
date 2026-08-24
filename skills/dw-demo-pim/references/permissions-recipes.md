@@ -6,7 +6,7 @@
 > (`PermissionLevel` bit values, the functional-view entity-type checklist, the Read→Edit action-button
 > bump, the field-editability dual-gate, the per-role field-level differentiation SQL technique, and the
 > plaintext-password escape hatch) are vendor-generic and live in
-> [`../../dw-demo-base/references/foundational/users-permissions.md`](../../dw-demo-base/references/foundational/users-permissions.md)
+> [`../../dw-demo-base/references/foundational/permission-layers.md`](../../dw-users-permissions/references/permission-layers.md)
 > §7–§13. The three-layer **concept** lives in the same candidate (§1–§6); the demo-routing note is in
 > [`permissions-model.md`](permissions-model.md). Loaded from `dw-demo-pim/SKILL.md` "Where to find
 > things" table.

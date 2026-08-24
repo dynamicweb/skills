@@ -199,6 +199,10 @@ service.AddGroupRelations(user, new[] { group });
 service.RemoveGroupRelations(user, new[] { group });
 ```
 
+## Deep reference
+
+[references/permission-layers.md](references/permission-layers.md) — the field-validated permission internals: the three-layer model (Layer A — the `UnifiedPermission` storage table, Layer B — Capability Control UI-section visibility via `CapabilityLimitation`, Layer C — entity-level grants written into Layer A), the `CapabilityControlFeature` flag, per-role field-level differentiation recipes, the caches that must be flushed after direct-SQL permission seeding (`DefaultCapabilityService`, `DefaultCapabilitySetService`, `PermissionService`), the render-time page/grid-row/paragraph entity store (including the layer-YAML `permissions:` block from base 2.4.0), the unflushable `AccessUser` cache split-brain, and frontend-gating composition with DC user groups.
+
 ## Pitfalls
 
 **"Allow backend login" must be checked** — user type alone does not grant backend access. Editors must also have "Allow backend login" checked on their user account.

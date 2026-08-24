@@ -22,7 +22,7 @@
 This accessor is what any template-level role check should use — e.g. resolving a presentation role
 (badge, avatar ring) or deciding whether to render an editor-only affordance. Gating *visibility of a
 page or paragraph* is a different concern owned by the Permission entity store
-([`users-permissions.md`](users-permissions.md)); use `GetGroups()` only for presentation logic, not
+([`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md)); use `GetGroups()` only for presentation logic, not
 as a security gate.
 
 ## The `ProductViewModel` field inventory
@@ -66,5 +66,5 @@ self-contained and the upgrade diff stays one file.
 - [`render-razor.md`](render-razor.md) — the Razor-execution side: `ViewModelTemplate<>` pitfalls
   (`@Html.Raw` absent, `ProductFieldValues` resolution), the canonical `Services.*` accessors, and
   URL/redirect/stylesheet surfaces.
-- [`users-permissions.md`](users-permissions.md) — the Permission entity store; use that, not
+- [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) — the Permission entity store; use that, not
   `GetGroups()`, to gate page/paragraph visibility.

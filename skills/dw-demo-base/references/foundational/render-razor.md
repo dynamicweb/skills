@@ -63,7 +63,7 @@ surfaces in [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-
   [`extend-providers.md`](extend-providers.md).
 - **For "anon hits a permission-required page"**: don't write anything. Configure
   `Page.PermissionType = 0` + a `Permission` row, and `CheckPermissionsAndRedirect()` handles it —
-  see [`users-permissions.md`](users-permissions.md).
+  see [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md).
 - **Use a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` for cross-cutting
   redirects, never `WriteLiteral` + `return;` from inside the master template.**
 
@@ -335,7 +335,7 @@ if they look fine on a Mac (which renders some codepoints monochrome by default)
   `ProductViewModel` vs the underlying entity, and the user/group accessors.
 - [`swift-building.md`](swift-building.md) — the Swift component system, the re-skin escalation ladder,
   Style assets, the `custom.css` naming hard rule, and the discipline grep-pack.
-- [`users-permissions.md`](users-permissions.md) — the Permission entity store for gating
+- [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) — the Permission entity store for gating
   page/paragraph visibility (the canonical alternative to template-side SQL gates).
 - [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) / [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-lifecycle.md) — pricing
   and customer-order read surfaces.

@@ -1,9 +1,8 @@
-# Foundational candidate → dw-users-permissions
+# Permission layers — capability control, entity grants, render-time gates
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 permissions knowledge, staged here for a future
-> fold-up into `dw-users-permissions`. No demo/customer content. When folded, move this body into
-> `dw-users-permissions` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file.
+Field-validated DW10 permissions knowledge: the three storage tables, the `CapabilityControlFeature`
+flag, entity-grant mechanics, per-role field-level differentiation, and the render-time
+page/paragraph entity store.
 
 ## Contents
 
@@ -303,8 +302,8 @@ no PIM data**: empty Products tree, custom dashboards silently fall back to the 
 `ProductEdit?ProductId=<id>` renders an empty "New product" form. This is more restrictive than typical
 PIM expectations and requires direct table seeding (Layer A `UnifiedPermission` + Layer B
 `CapabilityLimitation` + 4b `DashboardAccessUserRelation`) to make a non-admin role functional. There
-is no admin-UI route around this for the resources above; the Direct-SQL surface
-([`data-access.md`](data-access.md)) is the path.
+is no admin-UI route around this for the resources above; direct SQL
+([dw-data-access](../../dw-data-access/SKILL.md)) is the path.
 
 After any direct insert/update on these three tables, flush three caches via Management API before the
 change is visible to logged-in users:
@@ -322,10 +321,7 @@ foreach ($cn in @(
 ```
 
 `DashboardAccessUserRelation` reads bypass the cache (queried per request) — no flush needed for
-dashboard relation changes. New logins always see fresh state regardless. See
-[`cache-invalidation.md`](cache-invalidation.md) — the "Direct SQL INSERT/UPDATE/DELETE on
-`UnifiedPermission`", "…on `CapabilityLimitation`", "…on `CapabilitySetLimitation`", and "…on
-`DashboardAccessUserRelation`" rows — for the full surface.
+dashboard relation changes. New logins always see fresh state regardless.
 
 ## 5. The unified picture
 
@@ -404,9 +400,8 @@ Bit-flag, higher includes lower (`Edit` = `Read | 1<<4` = `4 | 16` = 20). Most a
 editing screens want `Edit`; the toolbar `Permissions` button on each entity wants `All`.
 
 All recipes below assume direct SQL on the permission tables — the admin UI does not expose them for
-the resources these recipes touch (§4c). After any insert/update, flush caches per the "Direct SQL
-INSERT/UPDATE/DELETE on `UnifiedPermission`" / "…on `CapabilityLimitation`" / "…on
-`CapabilitySetLimitation`" rows in [`cache-invalidation.md`](cache-invalidation.md);
+the resources these recipes touch (§4c). After any insert/update, flush the three caches listed in §4c
+(`DefaultCapabilityService`, `DefaultCapabilitySetService`, `PermissionService`);
 `DashboardAccessUserRelation` reads bypass the cache (no flush needed). Never verify a recipe logged in
 as Angel / BuiltInAdmin / Administrator — those user classes bypass every check (§6); always test as a
 Default-type user in the target group.
@@ -476,9 +471,9 @@ and `Section/Assets` (Asset edits flow through the per-product image manager whi
 grant). Bump these only when a role explicitly needs to edit shop configuration or upload to the Assets
 tab directly.
 
-Flush `Dynamicweb.Security.Permissions.PermissionService` after the update (see
-[`cache-invalidation.md`](cache-invalidation.md)) — without the flush, logged-in users still see
-Read-level UI until re-auth.
+Flush `Dynamicweb.Security.Permissions.PermissionService` after the update (via
+`CacheInformationRefresh`, §4c) — without the flush, logged-in users still see Read-level UI until
+re-auth.
 
 ## 10. Field-level editability — the dual-gate trap
 
@@ -567,7 +562,7 @@ steps:
 - Insert one `CapabilityLimitation` row per (group, capability key) to hide — e.g. key `/Products/Feeds` for a group hides the Feeds section while `/Products/AllProducts` stays visible.
 - Limiting a parent key (e.g. `/Products`) hides the entire left-nav section; child grants do not override.
 - There is no per-user override — to hide a capability for one specific user, put them in a dedicated group and limit the group.
-- Flush `Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilityService` afterwards (see [`cache-invalidation.md`](cache-invalidation.md) "Direct SQL INSERT/UPDATE/DELETE on `CapabilityLimitation`" row).
+- Flush `Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilityService` afterwards (via `CacheInformationRefresh`, §4c).
 
 For per-user dashboard pinning via `DashboardAccessUserRelation`: insert one `Default=1` row per
 (dashboard, user) pair to give a user an auto-landing dashboard, plus `Default=0` rows for any users
@@ -578,7 +573,7 @@ who should also see it. No cache flush needed — the table is queried per reque
 **The passwordless-user trap.** There is **no MCP password tool** — `create_users` (and the Management
 API `UserSave`) create a login with **no usable password**, so a freshly-seeded buyer / CSR / admin
 persona **cannot sign in** until a password is set out-of-band. Naively adding personas via MCP and
-then trying to demo a login fails at the sign-in screen with no obvious cause. The canonical recovery
+then trying to sign in as them fails at the sign-in screen with no obvious cause. The canonical recovery
 is the SQL escape hatch below (plaintext under `EncryptPassword=False`, which DW auto-rehashes on first
 login). **Validate:** after setting the password, actually sign in as the persona (not as an admin) and
 confirm you reach the account/customer-center landing.
@@ -653,7 +648,7 @@ back-compat but the runtime renderer ignores them.
 
 ### Canonical gate — YAML-carried permissions in the base layer (base ≥ 2.4.0 / serializer ≥ 0.8.0-beta)
 
-**The canonical way to ship a page/grid-row/paragraph gate is IN THE LAYER YAML, not a live post-deserialize step.** From base **2.4.0** on serializer **≥ 0.8.0-beta**, `page.yml`, `grid-row.yml`, and `paragraph-*.yml` each carry an optional `permissions:` block that deserializes straight into the `UnifiedPermission` rows described below — no admin-panel click, no SQL INSERT, no cache flush at demo-build time. The block shape is identical across all three entities:
+**The canonical way to ship a page/grid-row/paragraph gate is IN THE LAYER YAML, not a live post-deserialize step.** From base **2.4.0** on serializer **≥ 0.8.0-beta**, `page.yml`, `grid-row.yml`, and `paragraph-*.yml` each carry an optional `permissions:` block that deserializes straight into the `UnifiedPermission` rows described below — no admin-panel click, no SQL INSERT, no cache flush at build time. The block shape is identical across all three entities:
 
 ```yaml
 "permissions":
@@ -705,7 +700,7 @@ shape (verified live on 10.26.x, page AND paragraph level): an explicit
 `AuthenticatedFrontend → None` deny **plus** a `<group id> → Read` grant **on the same entity** —
 i.e. exactly the two-step recipe under "Frontend resolution" below. For visibility that should
 follow commerce data rather than CMS permissions, prefer the surfaces that natively scope by group
-(Assortments, DC groups — [`dc-scoping.md`](../../../dw-commerce-b2b/references/dc-scoping.md)).
+(Assortments, DC groups — [`dc-scoping.md`](../../dw-commerce-b2b/references/dc-scoping.md)).
 
 ### Enforcement points
 
@@ -780,7 +775,7 @@ model in process). A SQL-only grant won't take effect — the nav still shows th
 lets the page render — until the cache drops: **refresh the security cache or restart the host**.
 Verify only after the drop, or you'll misread a working gate as broken.
 
-### Where the CC nav renders (theming map, not a gating surface)
+### Where the customer-center nav renders (theming map, not a gating surface)
 
 If re-theming the customer-center nav (not gating it), note it renders through **three** templates by
 viewport / entry point: `Navigation/Navigation.cshtml` (site-wide nav paragraphs);
@@ -788,7 +783,7 @@ viewport / entry point: `Navigation/Navigation.cshtml` (site-wide nav paragraphs
 `Swift-v2_CustomerCenter.cshtml` (desktop CC sidebar `<aside>`). A styling change applied to only one
 looks fixed on desktop and broken in the mobile drawer (or vice versa). Test both widths. The
 **permission gate covers all three** without per-template edits — prefer it over template `foreach`
-filters on `PageNavigationTag` (which fail the discipline grep-pack).
+filters on `PageNavigationTag`.
 
 ### Write surface — the admin Permissions panel (no MCP tool, no Management API endpoint)
 
@@ -820,26 +815,33 @@ parallel role system.
 **When to escalate.** The suffix-as-role pattern is right when the role is a *visibility flag* on the
 storefront templates (hide price, hide add-to-cart) — you're already touching the relevant layout.
 When the role must drive Assortments / Shipping methods / fees / cart-time pricing, escalate to **DC
-user groups** ([`dc-scoping.md`](../../../dw-commerce-b2b/references/dc-scoping.md)) instead. The two compose: a buyer is both a member
-of a DC group (group → unlocks Assortments + Shipping) and carries a `-BROWSE` customer-number suffix
-(suffix → suppresses price display).
+user groups** ([`dc-scoping.md`](../../dw-commerce-b2b/references/dc-scoping.md)) instead. The two
+compose: a buyer is both a member of a DC group (group → unlocks Assortments + Shipping) and carries a
+`-BROWSE` customer-number suffix (suffix → suppresses price display).
 
 A presentation role can also combine the suffix with CSR/staff group membership read via
-`Pageview.User.GetGroups()` ([`render-viewmodels.md`](render-viewmodels.md)) to drive avatar-ring /
-badge presentation — that is presentation, not gating; use `GetGroups()` for it, never raw
-`SELECT FROM AccessUserGroupRelation`.
+`Pageview.User.GetGroups()` ([dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md)) to drive
+avatar-ring / badge presentation — that is presentation, not gating; use `GetGroups()` for it, never
+raw `SELECT FROM AccessUserGroupRelation`.
 
 ## 17. Cross-references
 
 - **Render-time half of permissions** — §15 above ("Render-time half — page/paragraph
   permissions"). Owns the render-time entity-store rows (`UnifiedPermission`,
   `PermissionName='Page'`) which gate `Page` / `Paragraph` render at request time.
-- **Workflow transitions** — [`pim-workflow.md`](../../../dw-pim-workflow/references/workflow-engine.md). DW10's workflow engine has NO native per-state role gating (verified gap). The workarounds (subscriber-reject; custom capability key; soft gating via permission-aware surfaces) all build on Layer C entity permissions from this ref.
-- **Publish-to-channel native action** — [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md). The action's `PermissionLevelRequired = PermissionLevel.Edit` is a Layer C check on the source products + a write-permission check on the target Channel groups.
-- **Dynamic Workspaces entity** (`PermissionName="DynamicStructure"`) — [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md). How the workspace entity slots into the three-layer model.
-- **Access surfaces** (Direct-SQL / Management API) — [`data-access.md`](data-access.md). Per §4c, all three permission tables are Direct-SQL territory in DW 10.25.8 — the admin UI does not expose them for the Dynamic-Workspace / Dashboard / Capability-Set resources.
-- **Cache invalidation after direct-SQL permission seeding** — [`cache-invalidation.md`](cache-invalidation.md), the "Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission` / `CapabilityLimitation` / `CapabilitySetLimitation` / `DashboardAccessUserRelation`" rows. The three caches that need flushing (`DefaultCapabilityService`, `DefaultCapabilitySetService`, `PermissionService`) are listed there with the exact `CacheInformationRefresh` payload.
-- **Never rename or edit an `AccessUser` row by raw SQL** — [`cache-invalidation.md`](cache-invalidation.md), "Raw-SQL `AccessUser` writes create a split brain that nothing can flush". The in-process user cache is reachable by **no** invalidation verb, so `SELECT` and `UserById` disagree indefinitely and the failure surfaces three endpoints away as a `403` on profile switch. Every such write owes a per-row DB-vs-API diff, and any repair that re-saves through `UserById` must supply the DB values explicitly or it writes the stale value back.
+- **Workflow transitions** — [`workflow-engine.md`](../../dw-pim-workflow/references/workflow-engine.md). DW10's workflow engine has NO native per-state role gating (verified gap). The workarounds (subscriber-reject; custom capability key; soft gating via permission-aware surfaces) all build on Layer C entity permissions from this ref.
+- **Publish-to-channel native action** — [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md). The action's `PermissionLevelRequired = PermissionLevel.Edit` is a Layer C check on the source products + a write-permission check on the target Channel groups.
+- **Dynamic Workspaces entity** (`PermissionName="DynamicStructure"`) — [`structural-model.md`](../../dw-pim-modelling/references/structural-model.md). How the workspace entity slots into the three-layer model.
+- **Access surfaces** (Direct-SQL / Management API) — [dw-data-access](../../dw-data-access/SKILL.md). Per §4c, all three permission tables are Direct-SQL territory in DW 10.25.8 — the admin UI does not expose them for the Dynamic-Workspace / Dashboard / Capability-Set resources.
+- **Cache invalidation after direct-SQL permission seeding** — the three caches that need flushing
+  (`DefaultCapabilityService`, `DefaultCapabilitySetService`, `PermissionService`) are listed in §4c
+  with the exact `CacheInformationRefresh` payload; `DashboardAccessUserRelation` reads bypass the
+  cache.
+- **Never rename or edit an `AccessUser` row by raw SQL.** The in-process user cache is reachable by
+  **no** invalidation verb, so `SELECT` and `UserById` disagree indefinitely and the failure surfaces
+  three endpoints away as a `403` on profile switch. Every such write owes a per-row DB-vs-API diff,
+  and any repair that re-saves through `UserById` must supply the DB values explicitly or it writes
+  the stale value back.
 - **`AccessUserGroup` membership** — DW10 admin Users → Groups. Group membership is what makes Layer A's "highest level wins" resolution work across users.
 
 Source citations re-verified against a local clone of the DW10 source on DW 10.25.8.
