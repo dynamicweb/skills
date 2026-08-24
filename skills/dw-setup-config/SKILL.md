@@ -7,6 +7,12 @@ description: 'Configure Dynamicweb 10 environment and connection settings. Trigg
 
 # Dynamicweb 10 Configuration
 
+## Deep reference
+
+| Topic | Where |
+|---|---|
+| Tracking, Insights and health providers — which tables the Marketing widgets actually read (`Tracking*`, not `Statv2*`), the `DoNotTrackConnectionCloseHeader` empty-tracking trap, the 10.28.x cookie-write defect, `Tracking/Level` parse fallback, the `TrackingSession%` table-name resolution hazard, health providers over `/Admin/Api`, the partially-contained-DB `ContentDataHealthProvider` 500, and `GeneralLog`/`ScheduledTaskExecution` retention | [`references/tracking-insights.md`](references/tracking-insights.md) |
+
 ## Configuration Files and Their Priority
 
 Dynamicweb 10 uses a layered configuration system. All `.config` files in `/Files/` are read in **reverse alphabetical order** — files later in the alphabet win. `GlobalSettings.config` is always read last (lowest priority), so any `GlobalSettings.Database.config` or `GlobalSettings.Local.*.config` file overrides it.

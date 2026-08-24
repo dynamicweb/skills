@@ -82,7 +82,7 @@ entire chain is verified end-to-end.
 stuck state for first-time setups. The *why* -- that a connector with no saved mapping sits in a
 discovery-only loop and never fetches ids, plus the on-the-wire "missing-mapping signature" -- is
 vendor-generic and documented in
-[`integration-erp.md`](../../dw-demo-base/references/foundational/integration-erp.md) "The connector
+[`ownership-split.md`](../../dw-integration-erp/references/ownership-split.md) "The connector
 won't pull rows until column mappings are saved". The BC-side steps to fix it:
 
 In BC, navigate to the PIM column-mapping page (label varies by extension version -- "PIM Field
@@ -149,7 +149,7 @@ role as the master data system -- the demo's punchline.
 The BC connector supports BC->PIM, PIM->BC, and mixed flows; the choice is configured BC-side via
 the column mapping, and the DW-side endpoints serve all three transparently. The vendor-generic
 ownership model (which system masters which fields, and why) is in
-[`integration-erp.md`](../../dw-demo-base/references/foundational/integration-erp.md) "Sync direction
+[`ownership-split.md`](../../dw-integration-erp/references/ownership-split.md) "Sync direction
 is an ERP-side mapping choice" and "The ERP ↔ PIM ownership split". For the demo, the punchline is
 simply: BC owns transactional fields (price, stock), PIM owns descriptive/marketing fields, and the
 mapping decides who writes what.

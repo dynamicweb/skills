@@ -5,7 +5,7 @@
 - [Why API Key by default (not Claude.ai OAuth)](#why-api-key-by-default-not-claudeai-oauth)
 - [Step 1 — Discover port from `launchSettings.json`](#step-1--discover-port-from-launchsettingsjson)
 - [Step 1b — Generate `.mcp.json` at solution root (bearer placeholder)](#step-1b--generate-mcpjson-at-solution-root-bearer-placeholder)
-- [Step 2 — Verify the two-layer TLS bypass](#step-2--verify-the-two-layer-tls-bypass)
+- [Step 2 — The two-layer TLS bypass](#step-2--the-two-layer-tls-bypass)
 - [Step 3 — Create the MCP configuration in DW10 admin UI (API Key)](#step-3--create-the-mcp-configuration-in-dw10-admin-ui-api-key)
 - [Step 3b — Paste the bearer into `.mcp.json` and per-demo memory](#step-3b--paste-the-bearer-into-mcpjson-and-per-demo-memory)
 - [Step 3 (headless alternative) — create the token + MCP config without the admin UI](#step-3-headless-alternative--create-the-token--mcp-config-without-the-admin-ui)
@@ -19,7 +19,7 @@ Wire MCP for the Dynamicweb MCP server (`dynamicweb-commerce-mcp`) bundled with 
 
 0. On a first-time machine, install the Browser MCP (Step 5) before anything else — Step 3 is driven through its tools.
 1. Write `.mcp.json` with the discovered HTTPS port (bearer placeholder filled in Step 3b).
-2. Verify the two-layer TLS bypass is in place (see `references/tls-bypass.md`).
+2. Put the two-layer TLS bypass in place (Step 2).
 3. Create the MCP configuration in DW admin UI with **Authentication method = API Key** — DW10 does **not** auto-create one, and the agent drives this itself via the Browser MCP (Playwright). Step 3 is the most-missed step.
 3b. Paste the plaintext API key into `.mcp.json` as the `Authorization: Bearer …` header and save it to per-demo Claude memory.
 4. Verification gate.
@@ -28,7 +28,7 @@ The verification gate (Step 4) refuses to declare 'setup complete' until BOTH `c
 
 ## Why API Key by default (not Claude.ai OAuth)
 
-For Claude Code + a local Dynamicweb host, **default to API Key auth.** It is restart-resilient (the bearer is DB-backed and revalidated against `AccessUserToken` on every request — no interactive `/mcp` re-auth when the host bounces), has no OAuth client to register, and rides the same `AccessUserToken` model as the Management API token. Use Claude.ai OAuth only when connecting the hosted claude.ai web client (which can't read a local `.mcp.json`). The platform-level auth model (the four `McpAuthMiddleware` handlers, why DCR breaks on restart) is owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §2.
+For Claude Code + a local Dynamicweb host, **default to API Key auth.** It is restart-resilient (the bearer is DB-backed and revalidated against `AccessUserToken` on every request — no interactive `/mcp` re-auth when the host bounces), has no OAuth client to register, and rides the same `AccessUserToken` model as the Management API token. Use Claude.ai OAuth only when connecting the hosted claude.ai web client (which can't read a local `.mcp.json`). The platform-level auth model (the four `McpAuthMiddleware` handlers, why DCR breaks on restart) is owned by [`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §2.
 
 For autonomous/headless standup flows this default is load-bearing: the OAuth path's authenticate step is an interactive click (callback on `localhost:<port>`) + token mint + Claude Code restart — a hard human gate no headless workaround clears, and the single biggest blocker for unattended standup. An automation that reaches it must surface "human action required: click Authenticate, then restart Claude Code from a fresh shell" and stop, never hang waiting for tools that will not load. The API-Key flow (and its Step 3 headless alternative below) is what keeps a standup automatable end-to-end.
 
@@ -73,7 +73,7 @@ $mcpJson = @{
 $mcpJson | Set-Content -Encoding UTF8 ".mcp.json"
 ```
 
-**At the same time, pre-seed `.claude/settings.local.json` with `enabledMcpjsonServers`** so the project MCP server surfaces without an interactive approval. A project-scoped `.mcp.json` server otherwise sits at "⏸ Pending approval (run `claude` to approve)" — an interactive-only gate no headless/unattended run can click through, so native tools never load. Listing the server in `enabledMcpjsonServers` clears that gate up front (the file also carries the `NODE_TLS_REJECT_UNAUTHORIZED` env layer from `references/tls-bypass.md` — same file, merge the keys):
+**At the same time, pre-seed `.claude/settings.local.json` with `enabledMcpjsonServers`** so the project MCP server surfaces without an interactive approval. A project-scoped `.mcp.json` server otherwise sits at "⏸ Pending approval (run `claude` to approve)" — an interactive-only gate no headless/unattended run can click through, so native tools never load. Listing the server in `enabledMcpjsonServers` clears that gate up front (the file also carries the `NODE_TLS_REJECT_UNAUTHORIZED` env layer — Layer 1 of the TLS bypass, Step 2; same file, merge the keys):
 
 ```powershell
 $settings = @{
@@ -106,9 +106,27 @@ The skill's `assets/mcp.json.template` is the parametric source (with literal `<
 
 ---
 
-## Step 2 — Verify the two-layer TLS bypass
+## Step 2 — The two-layer TLS bypass
 
-**Both layers from `references/tls-bypass.md` must be in place before continuing.** If `claude mcp list` (run later in Step 4) shows `Failed to connect`, return to `references/tls-bypass.md` and re-verify the User-scope env var (the load-bearing layer) — that's almost always the cause.
+The MCP HTTPS handshake to `https://localhost:<PORT>/admin/mcp` requires a TLS bypass for the self-signed localhost dev cert. **Both layers must be in place before continuing** — project-only configuration is silently insufficient: the symptom is `/mcp` reporting "Authentication successful" (the OAuth handshake uses a different code path) while `claude mcp list` says "Failed to connect", the MCP HTTP requests fail with `unable to verify the first certificate`, and no tools load.
+
+- **Layer 1 — project**: `.claude/settings.local.json` at solution root with `{"env":{"NODE_TLS_REJECT_UNAUTHORIZED":"0"}}` — already written by Step 1b above (merge the key if the file carries other settings; `assets/settings.local.json.template` is the parametric source). This layer **documents intent** and is what Claude Code's own settings reader sees for tools/scripts inside the project. It does **not** propagate reliably into the Node TLS handshake performed by the MCP transport.
+- **Layer 2 — User-scope env var (the load-bearing layer)**:
+
+  ```powershell
+  [System.Environment]::SetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED", "0", "User")
+  $env:NODE_TLS_REJECT_UNAUTHORIZED = "0"   # current process — the dual-set pattern below
+  ```
+
+  then **close ALL Claude Code instances and reopen from a fresh PowerShell**. Node's TLS stack reads `process.env.NODE_TLS_REJECT_UNAUTHORIZED` at handshake time; a User-scope var persists and is inherited by every new process under that user — including the MCP transport Claude Code spawns.
+
+**The dual-set env-var propagation pattern (canonical statement — `setup-checks.md` §4 keeps its check + a pointer here).** A User-scope env var set via `SetEnvironmentVariable`/`setx` is NOT visible to the currently-running Claude Code process or any already-spawned shell. Three parts: (1) set User scope (persistent for future sessions); (2) set the current-process `$env:` copy (visible to the rest of this shell, NOT to Claude Code); (3) restart Claude Code from a fresh shell. Verify re-reads with `[Environment]::GetEnvironmentVariable(name, "User")`, never `$env:NAME` — the process copy is stale after a `setx`. The pattern applies to every User-scope env-var fix in this skill.
+
+**Why not `NODE_EXTRA_CA_CERTS`?** The ASP.NET dev cert is a self-signed leaf, not a CA. `NODE_EXTRA_CA_CERTS` only adds **trusted CAs** — Node will not accept a self-signed leaf cert through it, even when the fingerprint matches, and there is no public Node API to whitelist a specific leaf cert. The bypass is the only documented working method.
+
+**Safe?** Yes, for localhost-only dev boxes: the bypass disables cert validation for the entire Node process, but on a dev box the only HTTPS traffic from Node is to your own `localhost:<PORT>/admin/mcp` plus outbound `npm` calls. **Never set this on a server.**
+
+If `claude mcp list` (run later in Step 4) shows `Failed to connect`, re-verify Layer 2 — that's almost always the cause: does `[Environment]::GetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED","User")` return `"0"`? Did you close ALL Claude Code instances and reopen from a fresh PowerShell? Is the `Dynamicweb.Host.Suite` host actually running on the port `.mcp.json` references? The MCP verification gate (Connected AND >200 tools, Step 4) is the **only** evidence the bypass is functioning — never declare setup complete on an intermediate signal like `/mcp` "Authentication successful".
 
 ---
 
@@ -149,7 +167,7 @@ After saving, do **not** rerun `/mcp` in Claude Code yet — there's no bearer i
 
 ## Step 3 (headless alternative) — create the token + MCP config without the admin UI
 
-Steps 3 and 3b assume the admin UI is reachable and browser tools are available. When they aren't (a fully headless build / automated provisioning / Browser MCP tools not yet surfaced in this session), create both the API token and the MCP configuration **in code** — issue the token via `TokenService.TryCreateToken`, insert the `McpConfiguration` row, and bind them through `McpConfigurationService.LinkToken` (a raw `McpConfigurationCredential` insert returns `401` — the bind must go through the service, invoked by reflection since the type is internal), then restart the host. The full recipe, the reflection snippet, and the brittleness warning are owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §4. Prefer the Playwright-driven admin-UI route (Step 3) whenever the UI is reachable.
+Steps 3 and 3b assume the admin UI is reachable and browser tools are available. When they aren't (a fully headless build / automated provisioning / Browser MCP tools not yet surfaced in this session), create both the API token and the MCP configuration **in code** — issue the token via `TokenService.TryCreateToken`, insert the `McpConfiguration` row, and bind them through `McpConfigurationService.LinkToken` (a raw `McpConfigurationCredential` insert returns `401` — the bind must go through the service, invoked by reflection since the type is internal), then restart the host. The full recipe, the reflection snippet, and the brittleness warning are owned by [`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §4. Prefer the Playwright-driven admin-UI route (Step 3) whenever the UI is reachable.
 
 Any such bootstrap branch added to `Program.cs` during standup (a password-set, token-mint, or MCP-link maintenance path) is **one-shot scaffolding, not a permanent feature**: once the credentials/tokens persist in the DB, re-running it is redundant at best and duplicating at worst. Before final delivery, remove these branches, rebuild, and restart the host — shipping them hands the customer live credential-minting code.
 
@@ -196,7 +214,7 @@ Triage rules for tool-count outcomes:
 - **`count == 0`** → admin-UI MCP config (Step 3) was not created, or `.mcp.json` still has the literal `<MCP_API_KEY>` placeholder (Step 3b not done). Check both.
 - **`count < 50`** (small) → admin-UI config has restrictive scope (not Full access). Re-create with `Access = Full access`.
 - **`50 <= count < 200`** → unusual; likely a DW10 version where the MCP catalogue is partial. Compare the tool count against another known-good machine on the same DW10 version; consult the team.
-- **`count > 200`** → gate passes; proceed to step 4 (drop guardrails) and then to the demo-type-specific path (PIM modelling via `dynamicweb-pim-demo`, or Swift baseline deserialize via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md)).
+- **`count > 200`** → gate passes; proceed to step 4 (drop guardrails) and then to the demo-type-specific path (PIM modelling via `dw-demo-pim`, or Swift baseline deserialize via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md)).
 
 The conjunction (Connected AND > 200 tools) catches all three failure shapes: TLS bypass missing (Step 4a fails with "Failed to connect"), admin-UI MCP config missing (Step 4a fails with `401 Unauthorized` once the bearer is in place), and the bearer placeholder not substituted (Step 4a fails with `401 Unauthorized` even with a config in place).
 
@@ -231,7 +249,7 @@ A Dynamicweb demo has **two** bearer tokens, both rows in `AccessUserToken`, **i
 | **MCP API key** | Admin UI → Settings → Integration → MCP configurations → New (Authentication method = API Key). Captured in Step 3 of this file. | `Authorization: Bearer …` header in `.mcp.json` (Step 3b). Validated against `AccessUserTokenHash` by `McpAuthMiddleware`. |
 | **Management API token** | Admin UI → Settings → System → Developer → API keys → New. Captured here in Step 6 — the agent drives the admin UI via the Browser MCP and reads the displayed key. | `Authorization: Bearer …` header on `/admin/api/...` calls. Used by Swift's [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) and [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md), and by PIM admin-API calls. |
 
-These are distinct rows with different validation paths — don't reuse one for the other unless you've verified empirically. The data-model detail (the `McpConfigurationTokenId` binding, why the validation paths differ) is owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §3.
+These are distinct rows with different validation paths — don't reuse one for the other unless you've verified empirically. The data-model detail (the `McpConfigurationTokenId` binding, why the validation paths differ) is owned by [`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §3.
 
 If you don't have a Management API token in conversation state or memory, create one yourself: drive the admin UI via the Browser MCP to **Settings → System → Developer → API keys → New**, and read the displayed key off the page (same scaffold-phase one-click pattern as Step 3). If the browser surface is unavailable in this session, fall back to asking:
 
@@ -255,11 +273,11 @@ If a token isn't in conversation state and no memory entry exists, capture again
 
 | Symptom | Fix |
 |---|---|
-| `claude mcp list` shows "Failed to connect" | Almost always the TLS bypass: the User-scope `NODE_TLS_REJECT_UNAUTHORIZED=0` env var is missing (project-level config is silently insufficient) — fix per `references/tls-bypass.md`, then fully restart Claude Code from a fresh shell. Also check: is the `Dynamicweb.Host.Suite` host actually running on the port `.mcp.json` references? |
+| `claude mcp list` shows "Failed to connect" | Almost always the TLS bypass: the User-scope `NODE_TLS_REJECT_UNAUTHORIZED=0` env var is missing (project-level config is silently insufficient) — fix per Step 2, then fully restart Claude Code from a fresh shell. Also check: is the `Dynamicweb.Host.Suite` host actually running on the port `.mcp.json` references? |
 | `claude mcp list` shows the server but requests fail `401 Unauthorized` despite a substituted bearer | The bearer in `.mcp.json` is not the EXACT plaintext key the admin UI displayed — check for extra whitespace or a trailing newline introduced when pasting. |
 | `claude mcp list` shows the server but `ToolSearch +dynamicweb` returns 0 / 401 Unauthorized on `/admin/mcp` requests | **Three distinct causes — check in order.** (1) `.mcp.json` still has the literal `<MCP_API_KEY>` placeholder — substitute the plaintext key from the admin UI (Step 3b). (2) No MCP configuration exists on the DW side — admin UI → Settings → Integration → MCP configurations → New, set **Access = Full access**, **Authentication method = API Key**, save, copy the displayed plaintext key (shown once), and paste into `.mcp.json`. (3) Stale bearer (config was deleted/regenerated since the key was last captured) — the configuration row in the admin UI is now linked to a different `AccessUserTokenId`; capture the new key and update `.mcp.json` + per-demo memory. |
-| AppStore install of "Backend MCP" appears to do nothing — no UI confirmation, the MCP configurations menu the app is supposed to add never appears, `/admin/mcp` returns 404 | **Two distinct causes, in order of likelihood.** (1) **Host TFM is net8.** The MCP AddIn loader requires .NET 10 even though the package ships net6/net8 lib binaries. Symptom: install POST returns 200, files drop to `wwwroot/Files/System/AddIns/Installed/Dynamicweb.MCP.<ver>/lib/`, but AddIn never registers. Fix: pin csproj `<TargetFramework>net10.0</TargetFramework>` and restart the host (verify in startup log: `Dynamicweb is running on .NET 10 or greater`). See [`foundational/setup-install.md`](foundational/setup-install.md) §2. (2) **Stuck DB update queue** (or buggy CREATE in update queue). Check `wwwroot/Files/System/Log/EventViewer/*.log` for `Update failed:.*Cannot find the object`. Recovery: `references/db-update-recovery.md` (Mode A or B depending on triage). |
-| Mid-run MCP call fails with `401 Unauthorized` after a host restart | Should be rare with API-Key auth (the bearer is DB-backed, stateless, and the host revalidates against `AccessUserToken` on every request). If it happens: the admin UI's MCP config was likely deleted/recreated, which generates a new `AccessUserTokenId` and invalidates the old plaintext key. Open the admin UI, confirm the MCP configuration still exists, and capture a fresh key if the link is broken. **Do NOT silently pivot to direct-SQL fallbacks** for create/update operations — that bypasses MCP cache invalidation AND leaves required columns unset (e.g. `EcomDetails.DetailLanguageId` defaulting to empty string, see `dynamicweb-pim-demo/references/structural-model.md` §2.10). The MCP-plugin tools (e.g. `import_product_images_from_urls`, `add_product_image`) have NO Management API endpoint backing — there is no plain-HTTP fallback that preserves their column-population guarantees. |
+| AppStore install of "Backend MCP" appears to do nothing — no UI confirmation, the MCP configurations menu the app is supposed to add never appears, `/admin/mcp` returns 404 | **Two distinct causes, in order of likelihood.** (1) **Host TFM is net8.** The MCP AddIn loader requires .NET 10 even though the package ships net6/net8 lib binaries. Symptom: install POST returns 200, files drop to `wwwroot/Files/System/AddIns/Installed/Dynamicweb.MCP.<ver>/lib/`, but AddIn never registers. Fix: pin csproj `<TargetFramework>net10.0</TargetFramework>` and restart the host (verify in startup log: `Dynamicweb is running on .NET 10 or greater`). See [`../../dw-setup-install/references/install-anatomy.md`](../../dw-setup-install/references/install-anatomy.md) §2. (2) **Stuck DB update queue** (or buggy CREATE in update queue). Check `wwwroot/Files/System/Log/EventViewer/*.log` for `Update failed:.*Cannot find the object`. Recovery: `../../dw-setup-upgrade/references/db-update-recovery.md` (Mode A or B depending on triage). |
+| Mid-run MCP call fails with `401 Unauthorized` after a host restart | Should be rare with API-Key auth (the bearer is DB-backed, stateless, and the host revalidates against `AccessUserToken` on every request). If it happens: the admin UI's MCP config was likely deleted/recreated, which generates a new `AccessUserTokenId` and invalidates the old plaintext key. Open the admin UI, confirm the MCP configuration still exists, and capture a fresh key if the link is broken. **Do NOT silently pivot to direct-SQL fallbacks** for create/update operations — that bypasses MCP cache invalidation AND leaves required columns unset (e.g. `EcomDetails.DetailLanguageId` defaulting to empty string, see `dw-demo-pim/references/structural-model.md` §2.10). The MCP-plugin tools (e.g. `import_product_images_from_urls`, `add_product_image`) have NO Management API endpoint backing — there is no plain-HTTP fallback that preserves their column-population guarantees. |
 | Mid-run MCP call fails with `MCP server "..." requires re-authorization (token expired)` | You're on the legacy Claude.ai OAuth auth method, not API Key — that's exactly the failure mode the API-Key default exists to avoid. Switch the admin UI's MCP configuration to `Authentication method = API Key`, capture the plaintext key, and update `.mcp.json` per Step 3b. After that, host restarts and Claude Code restarts no longer trigger re-auth. |
 
 

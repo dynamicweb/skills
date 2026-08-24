@@ -1,8 +1,9 @@
 name: manifest-check
 
-# Fail the build if manifest.json is out of sync with the skills' frontmatter.
-# Dynamo (the Dynamicweb MCP server) fetches manifest.json directly, so a stale
-# manifest ships broken discovery to every Dynamo user.
+# Fail the build if manifest.json is out of sync with the skills' frontmatter,
+# or if the skills fail structural validation (frontmatter, links, bundle
+# closure). Dynamo (the Dynamicweb MCP server) fetches manifest.json directly,
+# so a stale manifest ships broken discovery to every Dynamo user.
 
 on:
   push:
@@ -17,5 +18,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate skills
+        run: |
+          pip install pyyaml
+          python scripts/validate-skills.py
       - name: Verify manifest.json is current
         run: node scripts/build-manifest.mjs --check

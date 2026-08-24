@@ -7,6 +7,12 @@ description: 'Configure ERP connectors and data ownership in Dynamicweb 10. Trig
 
 # ERP Integration
 
+## Deep reference
+
+| Topic | Where |
+|---|---|
+| The field-level ERP↔PIM ownership split, customer-specific contract prices, what NOT to sync back to the ERP, sync direction as an ERP-side mapping choice, and the missing-mapping "connected but empty" stuck state | [`references/ownership-split.md`](references/ownership-split.md) |
+
 ## Integration Approaches
 
 Dynamicweb 10 connects to ERP systems through the **Integration Framework** (activity-based import/export) and through direct OData APIs for supported ERP systems (Business Central, NAV). Most ERP integrations use one or both:

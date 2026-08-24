@@ -20,14 +20,14 @@ future work. It is a planning document, not part of the shipped plugin.
 | Integration (framework, ERP, Business Central) | `dw-integration-framework`, `dw-integration-erp`, `dw-integration-bc` |
 | Data access & source navigation | `dw-data-access`, `dw-source-explorer` |
 | Swift storefront | `dw-swift-building` |
-| Presales demos | `dw-demo-base`, `dw-demo-pim`, `dw-demo-swift`, `dw-demo-erp` |
+| Presales demos | `dw-demo-base`, `dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-erp` |
 
 ## Gaps with no skill (prioritized)
 
 ### High value
 1. **Troubleshooting & diagnostics** — a dedicated cross-role skill for query failures, stale
    indexes, MCP connectivity, permission errors, data-sync problems. Recovery recipes exist
-   scattered across skill references (and the `dw-demo-base` foundational candidates); nothing
+   scattered across skill references; nothing
    routes a raw symptom to the right recipe.
 2. **Payment & shipping providers** — checkout covers cart/orders, but provider configuration
    (payment gateways, shipping calculators) has no dedicated coverage.
@@ -45,10 +45,9 @@ future work. It is a planning document, not part of the shipped plugin.
    (if it is ever in scope alongside Swift).
 
 ## Structural follow-ups (not new content)
-- **Fold up the foundational candidates** — 20+ candidate files under
-  `dw-demo-base/references/foundational/` are staged for fold-up into their named foundational
-  skills (one skill per PR; see CHANGELOG 3.4.0). This is the standing highest-value
-  structural task.
+- ~~**Fold up the foundational candidates**~~ — **done** (4.17.0): all staged files under
+  `dw-demo-base/references/foundational/` have been folded into their named foundational skills
+  and the staging directory is gone.
 - **Operator / administrator role bundle** — monitoring, backups, user/license management,
   system health. No skills exist for this audience yet.
 

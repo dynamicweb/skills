@@ -7,6 +7,12 @@ description: 'Install Dynamicweb Swift 2 from scratch — download and import th
 
 # DynamicWeb Swift 2 Installer
 
+## Deep reference
+
+| Topic | Where |
+|---|---|
+| Host install anatomy — machine prerequisites (.NET 10 SDK, ProjectTemplates, SQL Express), the mandatory `net10.0` TargetFramework, build-time host-config patches (`ImplicitDistributedTransactions`, `Files\System` build exclusion), MSDTC, release rings, install anti-patterns, and the first-run license gate + headless admin-password recovery | [`references/install-anatomy.md`](references/install-anatomy.md) |
+
 ## Objective
 Go from "fresh DynamicWeb 10 application" to "fully working Swift 2 website" by downloading
 and installing the latest Swift 2 packages from the official Dynamicweb downloads portal.
@@ -168,9 +174,9 @@ After installation, verify with these checks:
 2. the host is running on `net10.0` before testing MCP routes
 3. `GET /admin/mcp` returns `401 Unauthorized`
 4. `HEAD /admin/mcp/bootstrap` returns `405 Method Not Allowed`
-5. `GetAreas` returns at least one area with a Swift 2 LayoutTemplate
-6. `GetShops` returns at least one shop
-7. `GetPagesByArea` returns the standard Swift 2 page structure
+5. `get_areas` returns at least one area with a Swift 2 LayoutTemplate
+6. `get_shops` returns at least one shop
+7. `get_pages_by_area_id` returns the standard Swift 2 page structure
 8. the config used by the current agent contains the Dynamicweb MCP server entry
 
 ---

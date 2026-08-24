@@ -1,6 +1,6 @@
 # integration-framework.md
 
-> The canonical "source+target, NOT channel/feed" rule. Loaded from `dynamicweb-erp-demo/SKILL.md` "Always-on rule" and "When to use this skill". Read before deciding how to model an ERP in any Dynamicweb demo.
+> The canonical "source+target, NOT channel/feed" rule. Loaded from `dw-demo-erp/SKILL.md` "Always-on rule" and "When to use this skill". Read before deciding how to model an ERP in any Dynamicweb demo.
 
 ## The rule, one sentence
 
@@ -10,9 +10,8 @@
 
 The Integration Framework architecture — activities, the source-provider / destination-provider pair,
 and field mapping — is owned by
-[`dw-integration-framework`](../../dw-integration-framework/SKILL.md). Read it for the architecture;
-the three approaches (ad-hoc / batch / live) are catalogued in
-[`../../dw-demo-base/references/foundational/integration-framework.md`](../../dw-demo-base/references/foundational/integration-framework.md).
+[`dw-integration-framework`](../../dw-integration-framework/SKILL.md). Read it for the architecture
+and the three approaches (ad-hoc / batch / live).
 This skill covers only how an ERP demo *applies* that framework. The one ERP-specific framing the
 demo adds is the rule above: an ERP is both source and target, never a channel or a feed.
 
@@ -25,7 +24,7 @@ It depends on the direction of the activity. Across the bidirectional set of act
 | BC -> DW | ERP (BC) | Dynamicweb (Ecom/Products) |
 | DW -> BC | Dynamicweb (Ecom/Products) | ERP (BC) |
 
-A given **activity** has exactly one source and one target. The "ERP is source AND target" rule applies at the integration-level (the collection of activities), not at the activity-level. Which fields flow in each direction — the ERP↔PIM ownership split — is in the foundational candidate [`../../dw-demo-base/references/foundational/integration-erp.md`](../../dw-demo-base/references/foundational/integration-erp.md).
+A given **activity** has exactly one source and one target. The "ERP is source AND target" rule applies at the integration-level (the collection of activities), not at the activity-level. Which fields flow in each direction — the ERP↔PIM ownership split — is in [`../../dw-integration-erp/references/ownership-split.md`](../../dw-integration-erp/references/ownership-split.md).
 
 ## The right modelling shape in DW10
 
@@ -34,7 +33,7 @@ with a source provider, a destination provider, a field mapping, and a schedule 
 live). That shape is owned by [`dw-integration-framework`](../../dw-integration-framework/SKILL.md);
 only the *implementation* differs per flavor:
 
-- **Live flavor** (sister skill `dynamicweb-pim-for-bc`): the AppStore "PIM for Business Central connector" registers BC-side endpoints under `/admin/api/BC*` (11 queries + 4 commands). BC polls these on its own schedule; DW responds with the requested data shape. The connector itself is the destination provider FROM BC's perspective; the queries are the source endpoints FROM BC's perspective. See [`../dw-integration-bc/references/connector-endpoints.md`](../../dw-integration-bc/references/connector-endpoints.md).
+- **Live flavor** (sister skill `dw-integration-bc`): the AppStore "PIM for Business Central connector" registers BC-side endpoints under `/admin/api/BC*` (11 queries + 4 commands). BC polls these on its own schedule; DW responds with the requested data shape. The connector itself is the destination provider FROM BC's perspective; the queries are the source endpoints FROM BC's perspective. See [`../dw-integration-bc/references/connector-endpoints.md`](../../dw-integration-bc/references/connector-endpoints.md).
 - **Mock flavor** (this skill, [mock-deltas.md](mock-deltas.md)): no provider class is registered. The database is pre-staged into the **post-BC-sync state** — every value BC would have written is already in `EcomProducts`, as if the delta arrived overnight — and a single built-in `RunSqlScheduledTaskAddIn` RESET task flips it back between demos. The demo narrates "BC sent us this; look at the result", with the data + action-rule definition + email template as evidence. The PIM→BC direction is told via one static field-mapping artefact. The framework concepts (source provider, destination provider, activity, field mapping) are narrated against that staged state, not against live wires. (Superseded: an earlier version of this flavor used inbox/outbox JSON files — see the "Do not" section of mock-deltas.md.)
 
 The mock flavor is a model of the framework, not a bypass of it. The whole point is to make the framework's shape visible without requiring a live BC tenant.

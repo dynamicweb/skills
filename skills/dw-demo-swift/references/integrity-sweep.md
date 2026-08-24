@@ -79,7 +79,7 @@ collision, which 500s the admin Shared-queries tree and breaks widget drill-thro
 cache-invalidation API for `Searching:Queries`, so recovery requires a host restart. The full
 mechanism (and the rule — feed queries → `Repositories/<RepoName>/` only; dashboard queries →
 `SmartSearches/Ecommerce/Shared/` only; never both) is vendor-generic and owned by the
-`dw-search-indexing` foundational skill — staged in [`search-indexing.md`](../../dw-demo-base/references/foundational/search-indexing.md) ("Dashboard query location — Shared ONLY").
+`dw-search-indexing` foundational skill — staged in [`index-management.md`](../../dw-search-indexing/references/index-management.md) ("Dashboard query location — Shared ONLY").
 
 **Probe:**
 
@@ -281,7 +281,7 @@ $hits = Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph" -Recurs
 if ($hits) {
     Write-Host "Raw DB access in paragraph templates:"
     $hits | ForEach-Object { Write-Host "  $($_.Path):$($_.LineNumber)  $($_.Line.Trim())" }
-    throw "Replace each hit with the appropriate Services.* API. See dw10-canonical-surfaces.md."
+    throw "Replace each hit with the appropriate Services.* API. See the canonical-surfaces table in SKILL.md."
 }
 ```
 
@@ -293,11 +293,11 @@ raw SQL with it (e.g. `SELECT FROM AccessUserGroupRelation` → `Pageview.User.G
 `Services.Orders.GetCustomerOrdersByType(...)`; `EcomProducts` → `Services.Products.GetProductById(...)`;
 URL-substring → `GetPageIdByNavigationTag(...)`). The full substitution table and the surface
 inventory are vendor-generic and owned by the `dw-render-razor` foundational skill — staged in
-[`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §1 ("Canonical surfaces
+[`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 ("Canonical surfaces
 — use these, don't re-implement").
 
 Pair with the wider discipline grep pack — vendor-generic, owned by the `dw-swift-building` foundational
-skill — staged in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md)
+skill — owned by [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md)
 §10 ("Discipline audit — grep pack"). Check 7 is the gating subset (raw DB access only); the audit
 pack covers URL substring scans, hard-coded slugs, category-name branching, master-inline
 `AddStylesheet`, etc.

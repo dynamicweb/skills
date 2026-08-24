@@ -34,13 +34,11 @@ Admin path: **Settings > Products > Advanced > Completion Rules** (or via the Wo
 
 ### Assigning Completion Rules to Contexts
 
-Completion rules are assigned at two levels:
+Assign completion rules on the **catalog groups (GroupType=0) that products actually live in** — open the product group → **Workflow tab** → select completion rules. Storage: comma-separated rule IDs in `EcomGroups.GroupCompletionRules` plus matching languages in `GroupCompletionLanguageIds`.
 
-**Data model level:** Open a data model → **Workflow tab** → select which completion rules apply to products of this model
+The UI also offers a Workflow tab on data models, but assignments to data-model groups (GroupType=2) do nothing at evaluation time — field-validated; put the assignment on the catalog group.
 
-**Product group (channel) level:** Open a product group → **Workflow tab** → select completion rules for this group
-
-A product can have different completion requirements depending on which data model or channel context it is evaluated in.
+A product can have different completion requirements depending on which group or channel context it is evaluated in.
 
 ## Completeness as an Automatic Workflow Engine
 
@@ -97,6 +95,10 @@ var modelRules = Services.CompletionRules.GetCompletionRulesByDataModel(dataMode
 // Get completeness score for a product
 double score = Services.CompletionRules.GetCompletenessScore(product, languageId, context);
 ```
+
+## Deep reference
+
+[references/rules-and-dashboards.md](references/rules-and-dashboards.md) — the field-validated internals: the hidden `reference_category` template category (the #1 cause of "rule defined and assigned but no panel renders"), the 7-condition checklist for rules that "don't show", the 7 real dashboard areas, clickable vs dead-end widget types, the MCP dashboard/widget payload contracts and their three invisible-dashboard blockers, and the idempotent `reference_category` seed SQL.
 
 ## Pitfalls
 

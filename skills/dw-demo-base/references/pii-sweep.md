@@ -64,7 +64,7 @@ independent copies, none of which a user-table fix touches:
 5. **Legacy column types must be named explicitly.** `REPLACE` refuses `ntext` as its first argument, so a
    bulk sweep silently skips exactly the tables where long strings live and then reports a clean pass —
    `CAST(… AS nvarchar(max))` inside the `REPLACE`, and assert zero remaining hits in those columns too
-   ([`foundational/data-access.md`](foundational/data-access.md) "Bulk string edits").
+   ([`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) "Bulk string edits").
 
 **Gate:** a clone-time sweep asserts **zero hits** for the configured real-person term list across **all**
 string columns, with documented audit-trail exemptions named explicitly rather than assumed.
@@ -149,7 +149,7 @@ harnesses, generators, seeders and secret stores that will *re-publish* it on th
   bite hardest.
 - [`visual-qa.md`](visual-qa.md) — the rendered-page pass this file makes mandatory, and the same
   mechanical-gate-plus-human-eyeball relationship.
-- [`foundational/data-access.md`](foundational/data-access.md) — legacy `text`/`ntext` columns that silently
+- [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) — legacy `text`/`ntext` columns that silently
   drop out of a bulk string sweep.
 - [`customer-context.md`](customer-context.md) — the read-only contract on customer-supplied materials; this
   file is its mirror on the *host* side.

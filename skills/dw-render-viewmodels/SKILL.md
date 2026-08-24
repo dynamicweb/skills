@@ -141,17 +141,30 @@ Represents a single product with all its data: name, SKU, description, pricing, 
 - `Number` — SKU
 - `Price` → `PriceViewModel` with VAT, currency, discount
 - `PriceBeforeDiscount` → price before any discount applied
-- `DefaultImage` → primary product image (string path)
+- `DefaultImage` → primary product image view model (render via `?.ToString()`), `Images` — collection
 - `VariantName` — human-readable variant label (e.g., "Red, Large")
-- `StockLevel` — quantity available
-- `ProductType` — Stock, Service, NonStock
+- `ManufacturerName` — the manufacturer relation flattened to a single string (see below)
+- `Stock` — stock quantity (decimal)
+- `StockLevel` — stock level label (a string, not the quantity)
 - `NeverOutOfstock` — ignore stock limits if true
+- `ProductType` — Stock, Service, NonStock
 - `HasDiscount()` — check if discounted
 - `GetProductLink(pageId)` — URL to product detail page
 - `FieldDisplayGroups` — custom product fields grouped by category
 - `PurchaseQuantityStep`, `PurchaseMinimumQuantity` — order constraints
 
 **When to use:** Product catalog lists, product detail pages, cart/checkout, recommendations.
+
+#### Fields that flatten differently — or don't exist
+
+Several relations surface on `ProductViewModel` under different names than the underlying entity uses, and the flattening is the trap when enriching a product layout (a richer PDP header, a manufacturer line, a stock pill):
+
+- `ManufacturerName` — **NOT** `Manufacturer.Name`. The manufacturer relation flattens to a single string on the view model; there is no `Manufacturer` navigation property.
+- `product.DefaultUnit` / `product.DefaultUnitName` — neither resolves on `ProductViewModel`. Unit data lives on `product.PriceUnitDescription` if at all; for "per box / each" suffixes prefer a static string in the layout or a custom field via `product.GetField("...")`.
+- `product.ProductFieldValues` — lives on the underlying `Dynamicweb.Ecommerce.Products.Product` **entity**, not on the view model. Reading it off `Model.Product` (a view model) compiles but renders raw Razor source as page text on the PDP. To read the field collection, resolve the entity:
+  `Dynamicweb.Ecommerce.Services.Products.GetProductById(product.Id, product.VariantId ?? "", true)` — the `true` materialises `ProductFieldValues` (without it the property is `null` even on a valid entity). See [dw-render-razor](../dw-render-razor/SKILL.md) for the Razor-side pitfall and the canonical accessor.
+
+**Inline styles vs CSS file (one-paragraph enrichment):** for a single content-layout enrichment, prefer inline `style="..."` that consumes the project's CSS variables (e.g. `style="color: var(--brand)"`) over adding more rules to a project CSS file — the layout file stays self-contained and the upgrade diff stays one file.
 
 ### ProductListViewModel
 Top-level model for a product list page. Contains the current product set, pagination, sorting, facets (filters), and group navigation.
@@ -265,6 +278,15 @@ From Swift's related-products list (simplified):
     <a href="?PageNum=@p" class="@(p == Model.CurrentPage ? "active" : "")">@p</a>
 }
 ```
+
+## User identity / groups — `Pageview.User`
+
+- **Read user**: `Pageview.User` (the model; not a viewmodel). Public properties include `ID`, `Name`, `FirstName`, `LastName`, `UserName`, `Email`, `CustomerNumber`, `PointBalance`.
+- **Read user groups**: `Pageview.User.GetGroups()` returns `IEnumerable<UserGroup>`. Non-obsolete on 10.25+ (`src/Core/Dynamicweb.Core/Security/UserManagement/User.cs:717`). `User.HasGroup(int)` (User.cs:1329) is `[Obsolete]` but compiles.
+- **From the viewmodel side**: `UserViewModelExtensions.GetDirectUserGroups()` (`Frontend/UserViewModelExtensions.cs:54`).
+- **Read user groups via `Pageview.User.GetGroups()`, never a raw `SELECT FROM AccessUserGroupRelation` in Razor.** The raw query bypasses the group-resolution caching.
+
+This accessor is what any template-level role check should use — e.g. resolving a presentation role (badge, avatar ring) or deciding whether to render an editor-only affordance. Gating *visibility of a page or paragraph* is a different concern owned by the Permission entity store ([dw-users-permissions](../dw-users-permissions/SKILL.md)); use `GetGroups()` only for presentation logic, not as a security gate.
 
 ## When to Drop to the C# API
 

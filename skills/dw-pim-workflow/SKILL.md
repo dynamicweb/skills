@@ -27,7 +27,7 @@ Admin path: **Settings > Areas > Products > Productivity > Workflows**
 
 The workflow is now a container for states.
 
-Creating workflows or completion rules via MCP instead? See [references/completeness-and-workflows.md](references/completeness-and-workflows.md) for the `create_or_update_workflows` / `create_or_update_completeness` payload schemas.
+Creating workflows or completion rules via MCP instead? See [references/completeness-and-workflows.md](references/completeness-and-workflows.md) for the `create_or_update_workflow_states` / `create_or_update_completeness_rules` payload schemas.
 
 ## Workflow States
 
@@ -67,7 +67,7 @@ Notifications fire when any product is moved into this state. Useful for alertin
 
 ## Assigning Workflows to Products
 
-Workflows are not assigned to individual products directly. They are assigned at:
+A workflow attaches via a group (`EcomGroups.GroupWorkflowId` — any GroupType is eligible) or directly on a product (`EcomProducts.ProductWorkflowStateId` set to a state of the target workflow — the per-record fallback). The usual assignments are:
 
 ### Data model level
 
@@ -134,9 +134,13 @@ public class WorkflowStateChangedSubscriber : NotificationSubscriber
 }
 ```
 
+## Deep reference
+
+[references/workflow-engine.md](references/workflow-engine.md) — the field-validated engine internals: the 5-table schema (`Workflow`, `WorkflowState`, `WorkflowGoToState`, `WorkflowNotification`, `WorkflowStateNotificationRelation`), the two attachment paths, the `ProductWorkflowStateChangedSubscriber` email pipeline and template tags, the verified no-per-state-role-gating gap (including the `WorkflowUserSave` `UserId`-dropping trap), and three layered workaround patterns for role-gated transitions.
+
 ## Pitfalls
 
-**Workflow states don't enforce permissions** — any user with product edit access can change the workflow state to any available transition. Permissions are not enforced at the state level; they are enforced at the product or product group level.
+**Workflow states don't enforce permissions** — any user with `PermissionLevel.Edit` on a product can change the workflow state to any transition listed in `WorkflowGoToState`. This is a verified platform gap — there is no native column, API, or UI for role-gating transitions; the workaround patterns (subscriber-reject, capability-gated action, permission-scoped surfaces) live in [references/workflow-engine.md](references/workflow-engine.md) §5-6.
 
 **Workflow state ≠ product active** — moving a product to "Approved" does not make it live. You must separately manage the `Active` flag.
 

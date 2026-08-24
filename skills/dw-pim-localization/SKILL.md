@@ -62,8 +62,10 @@ Each field can be set as editable or locked per language. This is configured at:
 - **Settings > Products > Attribute group fields** — control attribute visibility
 
 **Field visibility options:**
-- Editable per language (default) — each language can have its own value
+- Editable per language — each language can have its own value (`EcomProductField.ProductFieldAllowChangesAcrossLanguages = 1`)
 - Locked to master value — field value is shared across all languages; editing on one changes all
+
+**The effective default is locked.** `AllowChangesAcrossLanguages` defaults to `False` for any standard field without an `EcomProductField` row, and a fresh scaffold ships zero standard-field rows — so the side-by-side editor renders every standard text field read-only until the rows are seeded. See the one-time seed SQL in [references/translation-mechanics.md](references/translation-mechanics.md).
 
 Use "Locked to master value" for fields like SKU/Number that must be consistent across languages.
 
@@ -111,6 +113,10 @@ See [dw-pim-completeness](../dw-pim-completeness) for completeness rule setup.
 ## Auto-Translation
 
 Dynamicweb 10 supports auto-translation of product fields. Configuration is at the product or product group level. Useful for creating initial drafts that translators then review and approve.
+
+## Deep reference
+
+[references/translation-mechanics.md](references/translation-mechanics.md) — the field-validated internals: the two-table mental model (`EcomLanguages` vs `Area` language layers), what must be translated vs what falls back, the MCP/SQL surface matrix (`update_products` `languageId`, the `create_products` master-language trap, the group-translation null gotcha), the standard-field `AllowChangesAcrossLanguages` seed SQL, the `EcomProductField` flag gates that make `ProductSave` silently discard writes, the category-field language-column decoy, facet-option label translation (and the `ProductFieldOptionSave` wipe hazard), `OrderStateTranslationSave`, and the add-a-new-language step list.
 
 ## Pitfalls
 

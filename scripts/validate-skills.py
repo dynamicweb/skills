@@ -13,6 +13,8 @@ Checks (errors fail the build, warnings are printed but do not):
   - No markdown file under skills/ begins with a UTF-8 BOM (breaks some
     frontmatter parsers).
   - No markdown file under skills/ contains double-encoded UTF-8 (mojibake).
+  - Bundle closure: no skill in a marketplace bundle hard-depends (links into
+    references/ or assets/) on a skill the bundle does not ship.
   - WARN if a skill description lacks a trigger signal (Triggers:/Use when/Use FIRST).
   - WARN if a SKILL.md body exceeds 500 lines (split into references/).
   - WARN if a references/ file over 100 lines lacks a top-of-file table of contents.
@@ -263,6 +265,52 @@ def check_reference_tocs() -> None:
                  "contents (add a `## Contents` block)")
 
 
+def check_bundle_closure() -> None:
+    # Bundles install only their own `skills` list. A relative link from a
+    # bundled skill into a skill folder the bundle does not ship dangles at
+    # install time — the whole-repo link check above cannot see this. This also
+    # enforces the foundational->demo boundary wherever it matters: a
+    # foundational skill linking dw-demo-* fails here for every bundle that
+    # ships the foundational skill without the demo chain.
+    if not MARKETPLACE.exists():
+        return
+    try:
+        data = json.loads(MARKETPLACE.read_text(encoding=ENCODING))
+    except json.JSONDecodeError:
+        return  # already reported by check_marketplace
+    for plugin in data.get("plugins", []):
+        shipped = {Path(p).name for p in plugin.get("skills", [])}
+        for skill in sorted(shipped):
+            skill_dir = SKILLS_DIR / skill
+            for md in sorted(skill_dir.rglob("*.md")):
+                text = md.read_text(encoding=ENCODING)
+                for target in LINK_RE.findall(text):
+                    target = target.strip()
+                    if target.startswith(("http://", "https://", "#", "mailto:")):
+                        continue
+                    if any(c in target for c in ' "\'\t'):
+                        continue
+                    path_part = target.split("#", 1)[0].split("?", 1)[0]
+                    if not path_part:
+                        continue
+                    resolved = (md.parent / path_part).resolve()
+                    try:
+                        parts = resolved.relative_to(SKILLS_DIR).parts
+                    except ValueError:
+                        continue  # not under skills/
+                    if not parts:
+                        continue
+                    target_skill = parts[0]
+                    # A bare pointer to another skill (its folder or SKILL.md)
+                    # is soft routing and fine to dangle; a link into another
+                    # skill's references/assets is a hard content dependency.
+                    hard = len(parts) > 1 and parts[1] in ("references", "assets")
+                    if hard and target_skill != skill and target_skill not in shipped:
+                        err(f"bundle '{plugin.get('name')}': {rel(md)} depends on "
+                            f"content in '{target_skill}', which the bundle does "
+                            f"not ship -> {target}")
+
+
 def check_no_mojibake() -> None:
     # Double-encoded UTF-8 most often re-enters via a fold-back pasted from a
     # mis-decoded source. Catch it at the door. See CHANGELOG 3.3.7.
@@ -285,6 +333,7 @@ def main() -> int:
     check_links()
     check_no_bom()
     check_reference_tocs()
+    check_bundle_closure()
     check_no_mojibake()
 
     for w in warnings:

@@ -3,13 +3,13 @@
 > Demo routing for the Dynamicweb 10 product workflow. The platform knowledge — the five-table
 > schema, the two attachment paths, the email-firing state-change subscriber, the verified
 > per-state-role-gating gap, and the three workaround patterns — is vendor-generic and lives in
-> [`../../dw-demo-base/references/foundational/pim-workflow.md`](../../dw-demo-base/references/foundational/pim-workflow.md).
-> Read that first. This file holds only the demo-build delta. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table.
+> [`../../dw-pim-workflow/references/workflow-engine.md`](../../dw-pim-workflow/references/workflow-engine.md).
+> Read that first. This file holds only the demo-build delta. Loaded from `~/.claude/skills/dw-demo-pim/SKILL.md` "Where to find things" table.
 
-## Platform knowledge → foundational candidate
+## Platform knowledge → foundational skill
 
 Everything about *how DW10 workflow works* moved to
-[`../../dw-demo-base/references/foundational/pim-workflow.md`](../../dw-demo-base/references/foundational/pim-workflow.md):
+[`../../dw-pim-workflow/references/workflow-engine.md`](../../dw-pim-workflow/references/workflow-engine.md):
 
 - §1 Schema — five tables (`Workflow`, `WorkflowState`, `WorkflowGoToState`, `WorkflowNotification`, `WorkflowStateNotificationRelation`) + the `ProductWorkflowStateId` / `GroupWorkflowId` FK columns.
 - §2 Two attachment paths — group (`EcomGroups.GroupWorkflowId`, any GroupType) vs product (`EcomProducts.ProductWorkflowStateId`).
@@ -37,7 +37,7 @@ bypassing?".
 
 ## Cross-references
 
-- **Platform workflow knowledge** — [`../../dw-demo-base/references/foundational/pim-workflow.md`](../../dw-demo-base/references/foundational/pim-workflow.md).
+- **Platform workflow knowledge** — [`../../dw-pim-workflow/references/workflow-engine.md`](../../dw-pim-workflow/references/workflow-engine.md).
 - **Permissions (persona grants)** — [permissions-recipes.md](permissions-recipes.md); model concept in [permissions-model.md](permissions-model.md).
 - **Setup order** — the workflow step sits in [canonical-setup-order.md](canonical-setup-order.md) (PIM-first §0.B step 12; the DataModelFolder attachment is the recommended shape there).
 - **Cache invalidation** — [cache-invalidation.md](cache-invalidation.md): use `WorkflowStateService.Save` (fires the notification), not raw `UPDATE EcomProducts SET ProductWorkflowStateId`.

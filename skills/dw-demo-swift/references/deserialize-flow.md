@@ -15,11 +15,11 @@
 
 > Deserialize the Swift layers (framework-only `base` + the `surface-swift` content surface) from the demo's own `<demo-root>\distribution\layers\` checkout into the per-demo project DB. Uses the DW Serializer + Management API. Strict mode is on by default — failures surface as `CumulativeStrictModeException`. Always followed by [`integrity-sweep.md`](integrity-sweep.md).
 >
-> **Scope: Swift demos only.** PIM demos start from a blank/fresh DB and skip this flow entirely. This file is owned by `dynamicweb-swift-demo`; the underlying Serializer install + background reference live in `dynamicweb-demo-base/references/serializer-reference.md`.
+> **Scope: Swift demos only.** PIM demos start from a blank/fresh DB and skip this flow entirely. This file is owned by `dw-demo-swift`; the underlying Serializer install + background reference live in `dw-demo-base/references/serializer-reference.md`.
 
 ## 1. Prerequisites
 
-`dynamicweb-demo-base` setup is complete:
+`dw-demo-base` setup is complete:
 
 - [`../../dw-demo-base/references/setup-checks.md`](../../dw-demo-base/references/setup-checks.md) is green (NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express all probed and resolved).
 - The Distribution has been **cloned** (repo URL from `$env:DW_DISTRIBUTION_REPO`, default below) and pulled `--ff-only` up to `origin/main` into the demo's own `distribution\` folder (see §3 — the staging snippet clones + fast-forwards on first run). **Main IS the version**: consume the latest gate-proven `main` (assert `layers/INDEX.json` `gateProven` is present) and compose the edition's layers from the live `INDEX.json` `layers` entries. The reproducibility pin is the resolved commit SHA, recorded in `CUSTOMISATIONS.md`.
@@ -55,7 +55,7 @@ From the **Swift clone** (`<demo-root>\dw-swift\`) to the host's `wwwroot/`:
 pairs — while the surface's serialized `Area` rows arrive wired to
 `AreaColorSchemeGroupId='swift'` / `AreaButtonStyleId='buttons'` / `AreaTypographyId='fonts'`.
 `TryGet*Style` fails silently when the file behind an id is absent (the empty-state pitfall,
-[`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7), so a
+[`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §7), so a
 host built without this step renders every page in the browser's serif fallback with unstyled
 buttons and a `Styles/Buttons/buttons.css` 404 — and it looks "almost right", which is exactly
 why it ships unnoticed. Stage `theme-default`'s three pairs
@@ -258,7 +258,7 @@ A clean deserialize can still leave the **site root (`/`) returning 404** even t
 - **`Area.AreaDomain`** — the host the area answers on (e.g. `localhost`, or `localhost:<port>`).
 - **`Area.AreaFrontpage`** — the numeric page id that `/` renders.
 
-**There is no `AreaDns` table on 10.27.x** — do not look for one; the older DNS-binding table is gone and the binding lives on the `Area` row itself. Set both columns (`UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>`), then **restart the host** — `Area` rows are materialised at startup, so the new root binding is not live until the bounce (see [`../../dw-demo-base/references/foundational/cache-invalidation.md`](../../dw-demo-base/references/foundational/cache-invalidation.md), the `Area`-row row). These binding columns are per-environment and excluded from serialization, so they arrive unset on a fresh host — set them at provisioning, don't expect them from the baseline.
+**There is no `AreaDns` table on 10.27.x** — do not look for one; the older DNS-binding table is gone and the binding lives on the `Area` row itself. Set both columns (`UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>`), then **restart the host** — `Area` rows are materialised at startup, so the new root binding is not live until the bounce (see [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md), the `Area`-row row). These binding columns are per-environment and excluded from serialization, so they arrive unset on a fresh host — set them at provisioning, don't expect them from the baseline.
 
 ## 8. Mandatory next step
 
@@ -277,15 +277,13 @@ The sweep is the second line of defence for the failures strict mode does not ca
 
 ## 9. Known schema-drift workaround (Swift 2.4 layers ↔ DW10)
 
-The `base` layer ships framework `_sql/` in its `replace/` tree (unlike the content-only `Swift2.2` baselines), but **no catalog `_sql/`** — it is framework-only, zero sample products (see §3). Re-verify the framework `_sql/`-era drift points against a host when adopting a new Swift cycle — the two workarounds below were retired under the content-only shape and may re-apply while framework `_sql/` ships.
-
-Superseded (content-only era): the `EcomCurrencies.CurrencyUseCurrencyCodeForFormat` column-strip and the `EcomShopGroupRelation/GROUP253$$SHOP19.yml` orphan-YAML workarounds were retired when the baseline dropped `_sql/`. With framework `_sql/` shipping again, confirm during a host deserialize whether either recurs; reconstruct specifics from git history if needed.
+The `base` layer ships framework `_sql/` in its `replace/` tree (unlike the content-only `Swift2.2` baselines), but **no catalog `_sql/`** — it is framework-only, zero sample products (see §3). Re-verify the framework `_sql/`-era drift points against a host when adopting a new Swift cycle.
 
 ### 9.1 — Content predicates require Swift v2 item-type XMLs
 
 The surface's `Content - Swift 2 (...)` predicates reference item types like `Swift-v2_Master`, `Swift-v2_PageProperties`, `Swift-v2_HomePage`, etc. — XML files that ship **with the `surface-swift` layer** (`itemtypes/`, copied to `Files/System/Items/` during staging — see §3). If the XMLs are not yet on disk, the Content predicates fail with `Unable to resolve the item type. The item cannot be saved.` for every page. Fix: copy the surface's `itemtypes/*.xml` and run §"Design-package deploy (before any deserialize)" above (including the ProductsBackend/ProductsFrontend skip rule stated there), then re-run the deserialize unmodified.
 
-Superseded: deploy-design-first is the only viable path — the former Approach A ("strip Content predicates") no longer applies with a content-only baseline, and running with strict mode off remains forbidden per §4.
+Deploy-design-first is the only viable path; running with strict mode off is forbidden per §4.
 
 ### 9.2 — Verified clean outcome (legacy content-only Swift2.2 baseline)
 

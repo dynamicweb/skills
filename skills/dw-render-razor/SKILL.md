@@ -264,6 +264,16 @@ When you need the current loop position:
 
 **Loop variable scope**: Loop variables (from `@foreach`) are local to that loop. Reference them only inside their loop block.
 
+## Deep reference
+
+[references/razor-surfaces-and-pitfalls.md](references/razor-surfaces-and-pitfalls.md) — field-validated depth on:
+
+- **Canonical `Services.*` surfaces** — get products/URLs/groups the platform way (never raw SQL, URL parsing, or hard-coded area prefixes in templates); `AddStylesheet`/`AddScript` hoisting; cross-cutting redirects via a `Page.Loaded` `NotificationSubscriber`; per-category behavior via `ProductGroupFieldValues`; product field arrays instead of regex on descriptions.
+- **`ViewModelTemplate<>` pitfalls** — `@Html.Raw()` does not exist (and the compile error surfaces under the wrong file); `product.ProductFieldValues` lives on the entity, not `ProductViewModel`; the Swift `ToggleFavorite.cshtml` `FavoriteListId=0` no-op.
+- **Project-scoped stylesheet wiring** — the `Area.Item.CustomHeadInclude` head-include partial, and the `?<ticks>` cache-buster token that can be static on some builds.
+- **Color schemes** — the `ColorScheme.config` / `colorscheme.json` / `colorscheme.css` triad, the area→page→row→paragraph cascade, and the diagnostic playbook when a scheme isn't applying.
+- **CSS pitfalls that bite re-skins** — over-broad `[data-dw-button]` selectors, bare landmark selectors (`footer { }`), colorscheme specificity wars, un-vendored typography fonts, emoji color-font fallback.
+
 ## Next Steps
 
 - **For ViewModel-based rendering:** See [dw-render-viewmodels](../dw-render-viewmodels/SKILL.md) for ItemViewModel, ParagraphViewModel, ProductViewModel examples, and when to drop to C# APIs.

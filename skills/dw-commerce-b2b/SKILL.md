@@ -162,6 +162,10 @@ User groups are the cross-cutting mechanism for B2B access control. Assign group
 
 User groups support **segment search queries** on the Groups tab — users matching the query are dynamically added as members. Use for "all users with order count > 10" or "all users in country DE" membership rules.
 
+## Deep reference
+
+[references/dc-scoping.md](references/dc-scoping.md) — the field-validated distribution-center scoping internals: the DC-as-user-group pattern (one `AccessUserGroup` per DC composing Assortments, group prices, and shipping availability), customer-scoped contract prices (`save_prices` cannot set the customer number — the `EcomPrices.PriceUserCustomerNumber` SQL fallback), the `AccessUser` bulk-seeding schema, the admin Users tree filtering typed groups out of view, the verification flow, and when not to use the pattern.
+
 ## Pitfalls
 
 **Assortment changes aren't live until rebuilt** — editors often add a product and wonder why customers can't see it. Always check rebuild status.

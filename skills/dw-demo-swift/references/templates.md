@@ -13,15 +13,15 @@
 - [Two missing guards in stock Swift 2.4 templates — a card that vanishes and a card that throws](#two-missing-guards-in-stock-swift-24-templates--a-card-that-vanishes-and-a-card-that-throws)
 - [Swift v2.3.0 templates + swift/2.3 baseline](#swift-v230-templates--swift23-baseline)
 
-This file is now a router. The vendor-generic Swift template / page / Razor knowledge that used to
-live here has been folded up into the foundational candidates; the demo skill points at them.
+Vendor-generic Swift template / page / Razor knowledge is owned by the foundational skills —
+routed below. The sections that follow the table are owned here.
 
 | If you need… | Read |
 |---|---|
-| Template categories (baseline), page presets (the Theme primitive), and the **page-state flags** (`published` / `hidden` / `active` = "Hidden in Menu" semantics; the `publish_pages` both-flags gotcha) | [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §6 |
-| `ViewModelTemplate<>` Razor pitfalls — `@Html.Raw()` absent, `product.ProductFieldValues` not on `ProductViewModel` (raw-source-renders-on-PDP), `ToggleFavorite.cshtml` no-op at `FavoriteListId=0` | [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §2 |
-| Customer-number-suffix-as-role-flag (`CUST-…-BROWSE` read off `Pageview.User.CustomerNumber` to hide price / gate a storefront affordance) | [`users-permissions.md`](../../dw-demo-base/references/foundational/users-permissions.md) §16 |
-| SQL-direct Page/GridRow/Paragraph required columns (the `PageActiveFrom`/`PageActiveTo` silent-404 vector et al.) | [`sql-direct-seeding.md`](sql-direct-seeding.md) → [`data-access.md`](../../dw-demo-base/references/foundational/data-access.md) |
+| Template categories (baseline), page presets (the Theme primitive), and the **page-state flags** (`published` / `hidden` / `active` = "Hidden in Menu" semantics; the `publish_pages` both-flags gotcha) | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §6 |
+| `ViewModelTemplate<>` Razor pitfalls — `@Html.Raw()` absent, `product.ProductFieldValues` not on `ProductViewModel` (raw-source-renders-on-PDP), `ToggleFavorite.cshtml` no-op at `FavoriteListId=0` | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §2 |
+| Customer-number-suffix-as-role-flag (`CUST-…-BROWSE` read off `Pageview.User.CustomerNumber` to hide price / gate a storefront affordance) | [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §16 |
+| SQL-direct Page/GridRow/Paragraph required columns (the `PageActiveFrom`/`PageActiveTo` silent-404 vector et al.) | [`sql-direct-seeding.md`](sql-direct-seeding.md) → [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) |
 | Paragraph types + the component-first gate | [`paragraphs.md`](paragraphs.md) |
 | Header nav that reads as a menu — carets/hover/reachable dropdowns, the `save_groups` nav-depth recipe, and the three Razor/Bootstrap interaction platform-truths (Popper-gap bridge, `::after` caret/underline collision, dropdown `min-width`) | [`header-menu.md`](header-menu.md) |
 
@@ -55,7 +55,7 @@ appeared in the response — not inferred from an absence. The `DashboardTile.cs
 hot-reload precedent extends to `Designs/<design>/` root templates. A needless recycle is not free: on a
 cloud host the only "restart" levers are the control files, and reaching for `changeversion.txt` is a
 version migration in disguise
-([`db-update-recovery.md`](../../dw-demo-base/references/db-update-recovery.md)).
+([`db-update-recovery.md`](../../dw-setup-upgrade/references/db-update-recovery.md)).
 
 The procedure replaces the hedge:
 

@@ -17,7 +17,7 @@
 The vendor-generic `wwwroot/Files/` layout (the top-level folder table + edit policies, admin-UI
 upload vs filesystem drop, and the "admin File management surfaces only `wwwroot/Files/`" rule) is
 owned by the `dw-swift-building` foundational skill — staged in
-[`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §8 ("Asset
+[`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §8 ("Asset
 organisation under `wwwroot/Files/`"). This file carries the demo-specific subfolder conventions on top
 of it.
 
@@ -26,7 +26,7 @@ of it.
 When seeding demo content, prefer these subfolder conventions to keep things tidy:
 
 - `Files/Images/products/<sku>/` — per-SKU product images (one folder per hero SKU keeps the demo
-  storytelling clean per `dynamicweb-pim-demo/references/demo-storytelling.md`)
+  storytelling clean per `dw-demo-pim/references/demo-storytelling.md`)
 - `Files/Images/branding/` — logo, favicon, hero imagery for re-skin
 - `Files/Documents/credit-notes/` — placeholder PDFs for off-invoice rebate visualisations
   (project-specific; see the demo's `.planning/REQUIREMENTS.md` for the relevant requirement ID)
@@ -183,7 +183,7 @@ box off the live PDP — the DPI metadata is not the lever and reading it proves
 Upload and attach through the asset verbs, then read the attachment back **per product** rather than
 trusting the attach response — including which asset is primary (`AssetAddToMultipleProducts`'s
 `IsDefault` behaviour is verb-specific; see
-[`../../dw-demo-base/references/foundational/commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md)).
+[`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md)).
 Unpaired products fall through to a **branded placeholder**: a CSS fallback keyed on the placeholder
 image's own `src` (`.ratio:has(img[src*=nopic])`) paints a brand-tinted tile with the customer mark,
 capped and centred — the shipped placeholder file itself is usually ACL-locked, so the fallback is
@@ -246,10 +246,10 @@ A few demo-relevant directories that are NOT under `wwwroot/Files/` (and therefo
 UI File management never surfaces them):
 
 - `<demo>\customer-context\` — read-only customer-supplied artefacts. NEVER write here. See
-  [dynamicweb-demo-base/references/customer-context.md](../../dw-demo-base/references/customer-context.md).
+  [dw-demo-base/references/customer-context.md](../../dw-demo-base/references/customer-context.md).
 - `<demo>\notes\` — your own working notes during the build. Free to write here.
 - `<demo>\extracts\` — transformed / derived data extracted FROM customer-context (write-allowed).
 - `<demo>\CUSTOMISATIONS.md` — the customisation budget ledger. See
-  [dynamicweb-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md).
+  [dw-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md).
 - `<demo>\docs\` — late-phase deliverables (e.g. a demo-day runbook, architectural slides; specific
   filenames and requirement IDs are project-specific).

@@ -2,13 +2,13 @@
 
 > Demo-side guide to scoping ERP beats. The vendor-generic ERP↔PIM ownership *shape* — the
 > field-by-field ownership table, the contract-price data model, and the "what not to sync" rules —
-> is staged in [`../../dw-demo-base/references/foundational/integration-erp.md`](../../dw-demo-base/references/foundational/integration-erp.md)
-> (a foundational candidate → `dw-integration-erp`). Read that first; this file keeps only how a
-> demo *applies* the shape. Loaded from `dynamicweb-erp-demo/SKILL.md` "Where to find things".
+> lives in [`../../dw-integration-erp/references/ownership-split.md`](../../dw-integration-erp/references/ownership-split.md).
+> Read that first; this file keeps only how a
+> demo *applies* the shape. Loaded from `dw-demo-erp/SKILL.md` "Where to find things".
 
 ## Read the shape first
 
-Before picking a flavor, read the ownership shape in the foundational candidate above. Knowing
+Before picking a flavor, read the ownership shape in the ownership reference above. Knowing
 which system owns price, stock, descriptions, categories, and assets is what lets you scope the
 demo's ERP beats — and it is the same whether you build the mock or the live flavor.
 
@@ -22,7 +22,7 @@ demo's ERP beats — and it is the same whether you build the mock or the live f
   Customer Y sees price B" beat, stage TWO pre/post `EcomPrices` row sets in the
   [mock-deltas.md](mock-deltas.md) Step 1 table (or two scheduled batches in the live flavor) — one
   per customer-group price update. The price *data model* (`UserGroupId`/`UserCustomerNumber`,
-  resolution via `PriceManager`) is in the foundational candidate.
+  resolution via `PriceManager`) is in the ownership reference.
 
 - **Batch stock is fine for demos.** Stock is the canonical live-integration case, but for a demo,
   batch/scheduled stock works — stage stock post-states in the DB like prices. Only wire live
@@ -34,7 +34,7 @@ demo's ERP beats — and it is the same whether you build the mock or the live f
 
 ## Cross-references
 
-- ERP↔PIM ownership shape (foundational candidate): [`../../dw-demo-base/references/foundational/integration-erp.md`](../../dw-demo-base/references/foundational/integration-erp.md).
+- ERP↔PIM ownership shape: [`../../dw-integration-erp/references/ownership-split.md`](../../dw-integration-erp/references/ownership-split.md).
 - Wider rule on source/target: [integration-framework.md](integration-framework.md).
 - Staging this shape concretely (pre/post table, RESET task): [mock-deltas.md](mock-deltas.md) Step 1.
 - PIM-side modelling of categories, attributes, and prices: [`../../dw-demo-pim/references/structural-model.md`](../../dw-demo-pim/references/structural-model.md).

@@ -4,9 +4,9 @@
 
 The vendor-generic platform knowledge — the full post-mutation cache table, the edit-vs-insert
 rule for content tables, the index-build-reads-through-cache ordering trap, and the
-"when a mutation doesn't show up" resolution order — lives in the foundational candidate:
+"when a mutation doesn't show up" resolution order — lives in the foundational skill's reference:
 
-**→ [`../../dw-demo-base/references/foundational/cache-invalidation.md`](../../dw-demo-base/references/foundational/cache-invalidation.md)**
+**→ [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)**
 
 ## Demo note — when to reach for the SQL fallback (and pay the cache cost)
 

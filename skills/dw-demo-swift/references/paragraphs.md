@@ -3,6 +3,7 @@
 ## Contents
 
 - [Writing paragraph fields via the Management API (Swift 2.4 / DW 10.28.x)](#writing-paragraph-fields-via-the-management-api-swift-24--dw-1028x)
+- [The unsanitised `Swift-v2_Text` escape hatch](#the-unsanitised-swift-v2_text-escape-hatch)
 - [Reading paragraphs — the parameter is `Id`, and neither read verb is complete](#reading-paragraphs--the-parameter-is-id-and-neither-read-verb-is-complete)
 - [Creating a paragraph — the two-step, the 1-based column, and the writable template twin](#creating-a-paragraph--the-two-step-the-1-based-column-and-the-writable-template-twin)
 - [`Swift-v2_Accordion`: the items ARE writable — the write rides inside `ParagraphSave`](#swift-v2_accordion-the-items-are-writable--the-write-rides-inside-paragraphsave)
@@ -14,15 +15,15 @@
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
 The vendor-generic paragraph survey (component-first gate, paragraph categories, item-field
-configuration, the cache pitfalls) has been folded up into the foundational candidates. What stays
+configuration, the cache pitfalls) has been folded up into the foundational skills. What stays
 here is the demo guardrail: the paragraph types you must NOT replace.
 
 | If you need… | Read |
 |---|---|
-| Component-first gate (map a requirement to a standard `Swift-v2_*` component before customising); paragraph categories; configuring paragraph item-type fields (PDP enrichment, `FieldDisplayGroups`/`SelectedGroups`, `EcomFieldDisplayGroups` cache, aspect-ratio token, `Swift-v2_Row` knobs, `ProductDetailRenderGrid` sourcing) | [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §1, §3 |
-| Empty-`ParagraphTemplate` resolves to first cshtml alphabetically (silent hijack) + both mitigations | [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §4 |
-| Grid-composition cache (host-restart for paragraph deletion) + `ProductListComponentSelector` `RenderGrid` cache (CSS-hide is the only lever) | [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §5 |
-| ProductHeader **ProductViewModel field inventory** (`ManufacturerName` not `Manufacturer.Name`; what's available vs what only looks like it is) | [`render-viewmodels.md`](../../dw-demo-base/references/foundational/render-viewmodels.md) |
+| Component-first gate (map a requirement to a standard `Swift-v2_*` component before customising); paragraph categories; configuring paragraph item-type fields (PDP enrichment, `FieldDisplayGroups`/`SelectedGroups`, `EcomFieldDisplayGroups` cache, aspect-ratio token, `Swift-v2_Row` knobs, `ProductDetailRenderGrid` sourcing) | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §1, §3 |
+| Empty-`ParagraphTemplate` resolves to first cshtml alphabetically (silent hijack) + both mitigations | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §4 |
+| Grid-composition cache (host-restart for paragraph deletion) + `ProductListComponentSelector` `RenderGrid` cache (CSS-hide is the only lever) | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §5 |
+| ProductHeader **ProductViewModel field inventory** (`ManufacturerName` not `Manufacturer.Name`; what's available vs what only looks like it is) | [`dw-render-viewmodels`](../../dw-render-viewmodels/SKILL.md) |
 | SQL-direct Paragraph INSERT required columns | [`sql-direct-seeding.md`](sql-direct-seeding.md) |
 
 ## Writing paragraph fields via the Management API (Swift 2.4 / DW 10.28.x)
@@ -30,7 +31,10 @@ here is the demo guardrail: the paragraph types you must NOT replace.
 `ParagraphSave` is the write verb behind every Visual-Editor field edit, but the projected
 `contentItem` fields do not all behave alike. Plain text / HTML fields persist exactly as posted;
 several editor types have their own binding contract, and each of the traps below fails **silently**
-— the save returns success and the re-read looks plausible.
+— the save returns success and the re-read looks plausible. Standing rule: verify by round-trip
+against the rendered page or the `ItemType_*` row, never by status code
+([`../../dw-demo-base/references/surface-priority.md`](../../dw-demo-base/references/surface-priority.md)
+§"Silent no-ops on write surfaces").
 
 **The field KEY is `ContentItem|<itemType>|<group>|<field>`, and the GROUP segment is unvalidated — an
 unknown group is dropped without an error.** This is the cheapest way to write a whole page of successful
@@ -76,12 +80,11 @@ three stacked traps:
   **same** `ModelRawData` persist while the button keeps its old value, which reads as "buttons aren't
   writable on children" rather than "the shape is wrong". Write the nested object there too.
 
-> **Correction (supersedes earlier revisions of this file).** A `Label` on a LANGUAGE-VERSION paragraph was
-> previously recorded as "not writable — silently restored from the master", with only `Link` round-tripping,
-> and readers were told to record it as a known residual. **That reading was the string-shaped write
-> failing**, not a language-layer restriction: `Link` is a bare-string field and survived, the object-shaped
-> `Label` / `SelectedValue` did not. A translated CTA label **is** writable on a language paragraph through
-> `ParagraphSave` — post the full nested object. Do not carry the residual forward.
+- *Language-version paragraphs are no exception.* A translated CTA `Label` **is** writable on a language
+  paragraph through `ParagraphSave` — post the full nested object. A string-shaped write there reads as
+  "the label is silently restored from the master" (because the bare-string `Link` survives while the
+  object-shaped `Label` / `SelectedValue` are discarded), but it is the same shape failure, not a
+  language-layer restriction.
 
 Verify every ButtonData write against the RENDERED page (expected `href` + label present, old label
 count dropped), never against the API re-read — a re-read proves storage, never effect.
@@ -105,15 +108,15 @@ Two rules follow. **(1) Treat every `SelectedImage`-typed field as read-only thr
 the proven route for paragraph imagery is an inline `<figure><img src="/Files/..."
 style="width:100%;max-height:70vh;object-fit:cover"></figure>` in a Text field (height-capped under the
 85vh band limit), which renders live on the next request with no recycle. Treat that as a recorded
-exception, not a default — see [content-modeling.md](content-modeling.md) §"The escape hatch, and its
-cost". **(2) NEVER probe write shapes against a `SelectedImage` field on live content.** The failure mode
+exception, not a default — see §"The unsanitised `Swift-v2_Text` escape hatch"
+below. **(2) NEVER probe write shapes against a `SelectedImage` field on live content.** The failure mode
 is destructive and irreversible, so one exploratory payload permanently empties a field a demo is showing:
 probe on an expendable paragraph or not at all. Worth a guard in the shared save helper that refuses to
 write any field whose `typeName` is `SelectedImage` unless explicitly forced — assert the helper throws
 when handed one, and that a round-trip save of a paragraph carrying an icon leaves the icon byte-identical.
 (The **product/logo/favicon** binders are a different surface with a working object shape — `{Id, Name,
 Ratio, FocalX, FocalY}`, `Id` carrying the path — see
-[`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §"Product images".
+[`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §"Product images".
 Do not carry that shape back to a paragraph item field on the strength of the shared type name.)
 
 **Every item-field editor has its OWN write shape, and the four in play are mutually incompatible.**
@@ -156,10 +159,9 @@ ModelRawData Image = "/Images/<brand>/<file>.jpg"   (no /Files)   -> ""
 RelationItem.Groups[].Fields[].Value = binder object / plain path -> "" for both
 ```
 
-**Scope this to `SelectedImage`.** The "children carry STRING fields only" reading it first produced is too
-broad: a `ButtonData` field on a child DOES bind when written as a real nested object inside the same
-`ModelRawData` (above), so the flat-string-map inference was the probe's *shapes* failing, not the channel.
-What stands is the measured fact — no shape reaches a child's `SelectedImage`.
+**Scope this to `SelectedImage`.** A `ButtonData` field on a child DOES bind when written as a real nested
+object inside the same `ModelRawData` (above) — the measured fact is only that no shape reaches a child's
+`SelectedImage`.
 
 So a card image inside a slider/accordion/repeater is **one click in the admin UI**, and saying so is the
 honest answer. Do not design a data fix around it, do not overwrite the file at the old path to fake one
@@ -243,6 +245,24 @@ delete the clone to empty it" recipe looks like it failed: after a successful `P
 listing still returns an object for that row, and a script that verifies its own delete aborts a run
 that in fact worked. Filter to real paragraphs (`id > 0`) before counting emptiness.
 
+## The unsanitised `Swift-v2_Text` escape hatch
+
+DW does not sanitise item Text fields on either hop: a `Swift-v2_Text` paragraph's `Text` field is
+stored and rendered as opaque markup — `ParagraphSave` does not strip and the render does not encode
+event attributes (`@click.prevent`, `onclick`), `x-data`, `data-*` or inline `<script>`; the served
+HTML comes back byte-identical to what was submitted. Since Swift already loads Alpine.js and
+`bootstrap.bundle.min.js` sitewide, behaviour can be added purely from content — no template edit, no
+new script asset, no new JS dependency. That makes the hatch genuinely available when the modeled
+path is unreachable (an unpopulatable item list, a picker field that will not persist — above), and
+it is much smaller blast radius than forking a template for a content-level behaviour. It is still an
+HTML blob, so the content-modelling gate still applies
+([`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §1):
+record it as a deliberate exception rather than reaching for it first. And before designing a
+fallback ladder around "DW will sanitise this", **probe it**: write a throwaway paragraph carrying
+the exact attributes/elements in question, diff the SERVED HTML against the submitted field
+(sanitisation could live in either hop, so the `GetParagraphById` round-trip alone is not enough),
+then delete the throwaway. Only a non-empty diff justifies a template change.
+
 ## Reading paragraphs — the parameter is `Id`, and neither read verb is complete
 
 Both paragraph read verbs have failure modes that read as "the verb is dead" or "the work is done", and both
@@ -259,8 +279,7 @@ GET GetParagraphById?Id=<id>            -> 200 full contentItem.groups[].fields[
 
 The first `400` is the wrong parameter NAME and reads as "verb unavailable". The second meaning is a
 **soft-deleted row**: a paragraph that exists in the `Paragraph` table with `ParagraphDeleted=1` answers `400`
-to a *correct* `?Id=` call, which reads as "paragraph not found". (This supersedes earlier notes recording the
-`400` as simply paragraph-not-found, and the verb as dead.) **Any DB-driven content sweep must filter
+to a *correct* `?Id=` call, which reads as "paragraph not found". **Any DB-driven content sweep must filter
 `ParagraphDeleted` / `PageDeleted`** or it spends the run chasing ghosts it can never write.
 
 **`GetParagraphsByPageId` silently OMITS paragraphs that exist and are visible.** It is not a complete
@@ -323,15 +342,12 @@ the shipped type rather than leaving every build to blank them.
 
 ## `Swift-v2_Accordion`: the items ARE writable — the write rides inside `ParagraphSave`
 
-> **Correction.** Earlier revisions of this file stated the Accordion's items were unreachable from the
-> Admin API and prescribed hand-authored Bootstrap `.accordion` markup pasted into a `Swift-v2_Text`
-> field. **That workaround is retired — it was itself the defect** (an owner review rejected exactly it:
-> raw HTML and styling in a text field where a Swift item type with styling on top belongs). Do not
-> reach for it, and if you find it on an existing demo, migrate it.
+> **Anti-pattern:** hand-authored Bootstrap `.accordion` markup pasted into a `Swift-v2_Text` field — never
+> do it, and migrate it to the real Accordion item list if found on an existing demo.
 
 The Accordion's content lives in `Accordion_Items`, an item LIST — the same storage shape as
 `Swift-v2_Slider`'s slides, and the same edit path:
-[`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §"How repeater
+[`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §"How repeater
 children are stored — and the Management API edit path" is canonical. The accordion-specific bindings:
 
 - **Parent list field** — `ContentItem|Swift-v2_Accordion|General|Accordion_Items`, an ARRAY of child entries.
@@ -355,7 +371,7 @@ POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
 DW mints the `ItemList` and wires the relation for you — on a fresh Accordion the parent's
 `Accordion_Items` pointer transitions `'0'` → a non-zero list id — and the storefront renders it on the
 next GET with **no recycle**. Verify per
-[`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §"Verifying a
+[`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §"Verifying a
 repeater-child write": the `ParagraphSave` response and `GetParagraphById` **cannot** decide it — the
 response is a verbatim echo of what you posted (including values that did not persist) and the parent's
 `Items` field is a constant list id on any accordion that already has items. **The verification is the
@@ -366,12 +382,10 @@ The child-field group is `General` and the field names are confirmed against
 `Files/System/Items/ItemType_Swift-v2_Accordion.xml` + `ItemType_Swift-v2_Accordion_Item.xml` — read the
 XML rather than guessing when adapting this to another repeater.
 
-**Why the wrong belief survived so long, and the general rule it teaches.** The brute-force that produced
-it was *correct*: there is no `ItemEntry*` / `ItemList*` / `ItemEntrySave` verb, and there still is not.
-The inference was wrong. The write is not its own verb — it rides inside `ParagraphSave` as an array on
-the parent's projected list field, so **a verb-registry probe can never find it.** A negative registry
-result proves a VERB absent, never a CAPABILITY absent; the general form of that rule lives in
-[`../../dw-demo-base/references/surface-priority.md`](../../dw-demo-base/references/surface-priority.md).
+There is no `ItemEntry*` / `ItemList*` / `ItemEntrySave` verb — the write rides inside `ParagraphSave` as
+an array on the parent's projected list field, so a verb-registry probe can never find it. A negative
+registry result proves a VERB absent, never a CAPABILITY absent
+([`../../dw-demo-base/references/surface-priority.md`](../../dw-demo-base/references/surface-priority.md)).
 
 ## Where to find a paragraph's wiring (read-only baseline inspection)
 
@@ -394,8 +408,8 @@ A few paragraph types are stock-load-bearing for typical B2B-distributor demo di
   customisations-ledger preflight in base. See [re-skin.md](re-skin.md) "What NOT to touch".
 - **Product detail paragraph** — relies on the Lucene index + the PIM completeness rules; modifying it
   can mask "rules don't show" symptoms. See
-  [dynamicweb-pim-demo/references/governance.md](../../dw-demo-pim/references/governance.md).
+  [dw-demo-pim/references/governance.md](../../dw-demo-pim/references/governance.md).
 
 These callouts generalise into the component-first gate (enumerate the standard component, configure it,
 override only as a last resort) owned by
-[`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §1.
+[`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §1.

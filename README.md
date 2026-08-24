@@ -25,7 +25,7 @@ skills/
   dw-integration-*/         # Integration Framework, ERP connectors, Business Central
   dw-data-access/           # data-access patterns and caching
   dw-source-explorer/       # browse Dynamicweb source on GitHub
-  dw-demo-*/                # presales demo chain (base, pim, swift, erp)
+  dw-demo-*/                # presales demo chain (base, pim, swift, headless, erp)
 ```
 
 ## Plugins
@@ -40,7 +40,7 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
 | `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, extend-mcp-tools |
-| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-erp, integration-bc; + foundational skills the demo skills reference (integration-framework, extend-csharp-api) |
+| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-erp, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
 
 ## Skills
 
@@ -136,13 +136,16 @@ Browse Dynamicweb source code on GitHub to understand internal APIs, classes, an
 ### Demos (Presales)
 
 **[dw-demo-base](skills/dw-demo-base/SKILL.md)**
-Foundation skill for all demos. Scaffolds the dw10-suite host (pinning `Dynamicweb.Suite` to the Distribution's gate-proven platform version when the scaffold validates Distribution content), wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first. Also owns the **orchestrator abstraction** ([references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md)) — how a build is driven, GSD primary or the native `/demo:*` command set. Owns the **hosted/cloud fork** ([references/online-mode.md](skills/dw-demo-base/references/online-mode.md)) — building on an install reached only by URL + Admin API key — and the **publish path** ([references/publish-to-hosted.md](skills/dw-demo-base/references/publish-to-hosted.md)) — migrating a locally-built demo onto one. Owns the **visual-QA design gate** ([references/visual-qa.md](skills/dw-demo-base/references/visual-qa.md)) — the mechanical definition-of-done (overflow, section-gap, image-band-height, PLP row-content detectors) plus a human taste sign-off, armed from the first gate run. Also stages the **product-query verb surface** — [references/foundational/query-authoring.md](skills/dw-demo-base/references/foundational/query-authoring.md) (which read verb is authoritative, the restart-free query-cache flush, `QueryMove`/`QueryCopy` order of operations) and [references/foundational/query-expressions.md](skills/dw-demo-base/references/foundational/query-expressions.md) (expression `Path` semantics, operator reality, sorting, result paging, and the three ways a build verb answers 200 and builds nothing).
+Foundation skill for all demos. Scaffolds the dw10-suite host (pinning `Dynamicweb.Suite` to the Distribution's gate-proven platform version when the scaffold validates Distribution content), wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first. Also owns the **orchestrator abstraction** ([references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md)) — how a build is driven, GSD primary or the native `/demo:*` command set. Owns the **hosted/cloud fork** ([references/online-mode.md](skills/dw-demo-base/references/online-mode.md)) — building on an install reached only by URL + Admin API key — and the **publish path** ([references/publish-to-hosted.md](skills/dw-demo-base/references/publish-to-hosted.md)) — migrating a locally-built demo onto one. Owns the **visual-QA design gate** ([references/visual-qa.md](skills/dw-demo-base/references/visual-qa.md)) — the mechanical definition-of-done (overflow, section-gap, image-band-height, PLP row-content detectors) plus a human taste sign-off, armed from the first gate run. The **product-query verb surface** lives in dw-search-indexing — [query-authoring.md](skills/dw-search-indexing/references/query-authoring.md) (which read verb is authoritative, the restart-free query-cache flush, `QueryMove`/`QueryCopy` order of operations) and [query-expressions.md](skills/dw-search-indexing/references/query-expressions.md) (expression `Path` semantics, operator reality, sorting, result paging, and the three ways a build verb answers 200 and builds nothing).
 
 **[dw-demo-pim](skills/dw-demo-pim/SKILL.md)**
 PIM modelling from a blank DB — product data built from scratch via MCP. Use after `dw-demo-base`.
 
 **[dw-demo-swift](skills/dw-demo-swift/SKILL.md)**
-Swift frontend — baseline deserialize, the **zero-state pass** ([references/zero-state.md](skills/dw-demo-swift/references/zero-state.md)) that retires the shipped baseline's own copy, `defaultValue` placeholders and skeleton bands before any brand work, **catalogue imagery from a customer print-catalogue PDF** ([references/asset-organisation.md](skills/dw-demo-swift/references/asset-organisation.md)), feature-pack install, templates, paragraph types, Visual Editor, the customer-center playbook (incl. the Swift 2.4 sign-in profiles / switch-user recipe and the checkout order-field recipe), and the **mobile pass** ([references/mobile-pass.md](skills/dw-demo-swift/references/mobile-pass.md)) — canvas-fit debugging (`body.scrollWidth`), the Swift 2.4 trap catalogue, and the theme-default ≥1.2.0 "verify first" caveat. Use after `dw-demo-base`.
+Swift frontend — baseline deserialize, the **zero-state pass** ([references/re-skin.md](skills/dw-demo-swift/references/re-skin.md) §"Step 0") that retires the shipped baseline's own copy, `defaultValue` placeholders and skeleton bands before any brand work, **catalogue imagery from a customer print-catalogue PDF** ([references/asset-organisation.md](skills/dw-demo-swift/references/asset-organisation.md)), feature-pack install, templates, paragraph types, Visual Editor, the customer-center playbook (incl. the Swift 2.4 sign-in profiles / switch-user recipe and the checkout order-field recipe), and the **mobile pass** ([references/mobile-pass.md](skills/dw-demo-swift/references/mobile-pass.md)) — canvas-fit debugging (`body.scrollWidth`), the Swift 2.4 trap catalogue, and the theme-default ≥1.2.0 "verify first" caveat. Use after `dw-demo-base`.
+
+**[dw-demo-headless](skills/dw-demo-headless/SKILL.md)**
+Headless delivery demo — Frontend API setup, a decoupled frontend against the DW content/commerce APIs. Routes endpoint detail to `dw-headless-delivery`. Use after `dw-demo-base`.
 
 **[dw-demo-erp](skills/dw-demo-erp/SKILL.md)**
 ERP integration demo — DB-staged mock or live BC, Integration Framework rules. Use after `dw-demo-base`.
@@ -152,7 +155,7 @@ ERP integration demo — DB-staged mock or live BC, Integration Framework rules.
 The **presales demo chain** has a hard order. `dw-demo-base` must run **first** — it scaffolds
 the host, wires MCP + the TLS bypass, and captures the demo's versions + downloads its artifacts
 per-demo. The sister demo skills
-(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
+(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
 The demo skills hold domain knowledge and carry no build sequencing — that is owned by a

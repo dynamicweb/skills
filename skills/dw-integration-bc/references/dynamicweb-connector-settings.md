@@ -4,16 +4,16 @@
 
 > Per-demo recipe for correcting the connector's `BCSettings` row against the host you're demoing on.
 > The AppStore app installs default settings that are almost always wrong for the host it lands in;
-> *why* (the UpdateProvider-seeds-host-unaware-defaults pattern) is the foundational candidate
-> [`extend-providers.md`](../../dw-demo-base/references/foundational/extend-providers.md) §1, and the
+> *why* (the UpdateProvider-seeds-host-unaware-defaults pattern) is
+> [`addin-lifecycle.md`](../../dw-extend-providers/references/addin-lifecycle.md) §1, and the
 > BC-specific default values + which fields are wrong are in
-> [`integration-bc-connector.md`](../../dw-demo-base/references/foundational/integration-bc-connector.md)
+> [`bc-connector-surface.md`](bc-connector-surface.md)
 > "BC default settings". This file is the hands-on correction you run against a live demo host.
 
 ## Before correcting — verify against the actual host
 
 The seeded defaults (`indexBuildKey`, `buildName`, `workflowStateId`) are host-unaware guesses. Read
-[`integration-bc-connector.md`](../../dw-demo-base/references/foundational/integration-bc-connector.md)
+[`bc-connector-surface.md`](bc-connector-surface.md)
 "BC default settings" for what each field means and how it's typically wrong, then verify each one
 against the host you're demoing on:
 
@@ -46,7 +46,7 @@ Invoke-RestMethod -Uri "$base/admin/api/BCSettingsSave" -Method POST -Headers $h
 
 The `{"Model": {...}}` wrapper rule and the exact 400 you get when you forget it are in
 [connector-endpoints.md](connector-endpoints.md) "Two diagnostics" /
-[`integration-bc-connector.md`](../../dw-demo-base/references/foundational/integration-bc-connector.md)
+[`bc-connector-surface.md`](bc-connector-surface.md)
 "Writes".
 
 Successful save returns:

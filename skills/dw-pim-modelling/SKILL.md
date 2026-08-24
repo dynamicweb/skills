@@ -92,7 +92,7 @@ Variant groups define the dimensions along which a product varies (e.g., Color, 
 
 Admin path: **Products > Data > Variant Groups**
 
-When a product has variants, its `ProductId` stays the same and the `VariantId` (a combination code like `variantId_Color.Red_Size.M`) identifies the specific variant.
+When a product has variants, its `ProductId` stays the same and the variant id identifies the specific variant. For multi-axis variants it is the dot-joined variant option ids (e.g. `VO1.VO4`); for single-axis variants it is the bare `VariantOptionId` (e.g. `VO3`). The full 3-table shape (relation tables, per-variant `EcomProducts` rows, unique-`ProductNumber` rule, and MCP/API/SQL surface gotchas) lives in [references/structural-model.md](references/structural-model.md) §2.5 / §2.5a.
 
 ### BOM (Bill of Materials) Products
 
@@ -104,20 +104,14 @@ Set via: product edit → **Product type: BOM**. Then use the **BOM tab** to def
 
 ## Dynamic Workspaces
 
-Dynamic Workspaces are personalized views of the PIM for different editor roles. A workspace shows a subset of:
-- Product groups/folders
-- Data Models
-- Specific fields (field set)
-- Languages
-
-Admin path: **Products > Workspaces > New Workspace**
-
-Configure: Name, Description, Users/Groups (who sees this workspace), Target folders, Data Models, Field set (which fields are visible).
+Dynamic Workspaces are the modern PIM workbench UI — multi-level groupings built from a product query. They are **query-backed projections, not storage**: they do not own or move products, they slice the catalog by attribute axes (`DataModelKey` or `ProductField` levels). The canonical product home stays the group relations under the DataStructure shop.
 
 Use workspaces to:
-- Give translators a translation-only view with only language fields
-- Give category managers a view restricted to their product families
-- Reduce cognitive overload for specialized editors
+- Show products by supplier, workflow state, or any product-field axis (1 level, `ProductField`)
+- Drill category → sub-category by data-model membership (2 levels, `DataModelKey`)
+- Replace a status dashboard for editors who live in the catalog tree
+
+Gated by the PIM license feature. The storage tables (`DynamicStructures`, `DynamicStructureLevels`), the `UseRelationOnProductCreate` orphan trap, the `Path`-parameter probe gotcha, and the empty-workspace 3-cause checklist live in [references/structural-model.md](references/structural-model.md) §2.12.
 
 ## Linking Products to Data Models
 
@@ -144,6 +138,10 @@ Products not linked to any Data Model have only standard/global fields.
 **BOM product stock** — BOM product stock is the minimum stock of all components. If one component has 0 stock, the BOM product shows as out of stock even if other components are available.
 
 **Data Model assignment happens through category group placement** — there is no "assign Data Model" button on the product. Move the product into a category group linked to the target Data Model.
+
+## Deep reference
+
+[references/structural-model.md](references/structural-model.md) — the field-validated structural mental model: shop types (`EcomShops.ShopType`) and admin-nav mapping, group types (`EcomGroups.GroupType`), variants (3-table shape, single-axis lean shape, unique-`ProductNumber` rule, MCP `create_variant_combinations` NULL gotcha), BOM bundles (`EcomProductItems` row shapes, `ProductItemAdd` payload), category/field internals (`EcomProductCategoryField`, option-value storage, `reference_category` option buckets, `ProductFieldSave` retype trap), assets (`EcomDetails`, default-image gate), Dynamic Workspaces internals, the standard `ProductField` inventory preflight, and the collapse-custom-field-into-standard recovery recipe.
 
 ## Next Steps
 

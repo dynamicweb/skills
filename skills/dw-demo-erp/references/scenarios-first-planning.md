@@ -1,6 +1,6 @@
 # scenarios-first-planning.md
 
-> Plan ERP beats BEFORE you build. The pattern: author a `<demo>-Scenarios.xlsx` (or `.md` if you don't want Excel) listing every demo scenario as one row, with explicit columns for ERP-side and PIM-side actions, BEFORE staging the database or wiring a connector. Loaded from `dynamicweb-erp-demo/SKILL.md` "Where to find things".
+> Plan ERP beats BEFORE you build. The pattern: author a `<demo>-Scenarios.xlsx` (or `.md` if you don't want Excel) listing every demo scenario as one row, with explicit columns for ERP-side and PIM-side actions, BEFORE staging the database or wiring a connector. Loaded from `dw-demo-erp/SKILL.md` "Where to find things".
 
 ## Why scenarios first
 

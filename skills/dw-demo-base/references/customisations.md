@@ -9,8 +9,9 @@
 - [4. Approve+log row format](#4-approvelog-row-format)
 - [5. Glob coverage notes](#5-glob-coverage-notes)
 - [6. Cross-references](#6-cross-references)
+- [7. Audit — end-of-phase verifier](#7-audit--end-of-phase-verifier)
 
-Customisations governance for the per-demo project. Two artefacts: the per-demo `<demo>\CUSTOMISATIONS.md` ledger (template at `assets/CUSTOMISATIONS.md.template`, dropped at scaffold time) AND the write-time preflight that appends to it. The audit recipe (`references/audit-customisations.md`) is the verifier -- its output is paste-ready slide content for the demo's closing customisation-budget review.
+Customisations governance for the per-demo project. Two artefacts: the per-demo `<demo>\CUSTOMISATIONS.md` ledger (template at `assets/CUSTOMISATIONS.md.template`, dropped at scaffold time) AND the write-time preflight that appends to it. The audit recipe (§7 below) is the verifier -- its output is paste-ready slide content for the demo's closing customisation-budget review.
 
 This file is the long-form contract for **the customisations-ledger preflight**. The orchestrator's summary -- including the canonical preflight prompt -- lives in `SKILL.md` "Two guarded-writes"; see also the sister contract `references/customer-context.md` (the customer-context read-only contract) which shares the *same mental model* -- write-time preflight on a path glob -- with a single hard-abort branch instead of three.
 
@@ -46,7 +47,7 @@ These DO NOT count as customisations and SHIP unprompted:
 
 **Why this matters:** projects routinely over-interpret the rule to bar Notification subscribers, which then forces SQL backfills (`OrderCustomerNumber`, `OrderComplete=1`) that should have been runtime subscribers. The rule is conservative-by-design — the pitch beat of "low customisation budget" depends on it — but conservatism applies to Controllers/Providers, not "any code we write."
 
-Cross-reference: [`../../dw-demo-swift/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) §"Cross-cutting redirects" — the `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` is the canonical anon-gate / role-gate hook and does NOT trigger this preflight.
+Cross-reference: [`../../dw-render-razor/references/razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 ("cross-cutting redirects") — the `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` is the canonical anon-gate / role-gate hook and does NOT trigger this preflight.
 
 ## 1. Ledger template location
 
@@ -59,7 +60,7 @@ The ledger is **append-only by convention.** The audit recipe reads it; the writ
 This snippet executes during a fresh scaffold flow. It is idempotent in the sense that running it twice overwrites the existing ledger -- which is fine on first scaffold and not what you want afterwards. Skip this block if `CUSTOMISATIONS.md` already exists in the working directory:
 
 ```powershell
-$skill = "$HOME\.claude\skills\dynamicweb-demo-base"
+$skill = "$HOME\.claude\skills\dw-demo-base"
 $demoName = Split-Path -Leaf (Get-Location)
 $template = Get-Content "$skill\assets\CUSTOMISATIONS.md.template" -Raw
 $ledger = $template -replace '<demo-name>', $demoName
@@ -73,7 +74,7 @@ For an idempotent variant that refuses to overwrite an existing ledger:
 if (Test-Path "CUSTOMISATIONS.md") {
   Write-Host "CUSTOMISATIONS.md already exists -- leaving it alone."
 } else {
-  $skill = "$HOME\.claude\skills\dynamicweb-demo-base"
+  $skill = "$HOME\.claude\skills\dw-demo-base"
   $demoName = Split-Path -Leaf (Get-Location)
   $template = Get-Content "$skill\assets\CUSTOMISATIONS.md.template" -Raw
   $ledger = $template -replace '<demo-name>', $demoName
@@ -102,7 +103,7 @@ Example:
 | 2026-08-15 | Dynamicweb.Host.Suite/Controllers/PunchOutController.cs | controller | Inbound cXML endpoint for DEMO-40 punch-out simulator. Stock providers don't expose a cXML body parser. | Justin |
 ```
 
-The audit recipe (`references/audit-customisations.md`) reads these rows by matching `^\|\s*\d{4}-\d{2}-\d{2}` -- the date-prefix is the row marker. Rows without an ISO-8601 date in column 1 are ignored by the audit (intentional -- header rows, separator rows, and the placeholder `_(append rows here)_` row are excluded).
+The audit recipe (§7) reads these rows by matching `^\|\s*\d{4}-\d{2}-\d{2}` -- the date-prefix is the row marker. Rows without an ISO-8601 date in column 1 are ignored by the audit (intentional -- header rows, separator rows, and the placeholder `_(append rows here)_` row are excluded).
 
 ## 5. Glob coverage notes
 
@@ -112,13 +113,62 @@ The preflight globs are intentional:
 - `Providers/**` -- any custom Provider class anywhere in the solution. Providers (notification, payment, shipping, integration, etc.) are a customisation-budget category in their own right.
 - `*Controller.cs` -- broader catch-all. Matches `Controllers/Foo.cs`, `Areas/Admin/BarController.cs`, anywhere in the tree, even if not under a folder named `Controllers/`.
 
-Razor files (`*.cshtml`) are **NOT** in the preflight glob. DW10 templates are conventional, not "customisations" in the pitch sense -- a Swift template override is part of normal demo-build flow, not a customisation-budget hit. If a razor IS modified for a clearly-customisation reason (e.g., hard-coded business logic in a template), it goes in `CUSTOMISATIONS.md` as a `razor` type row by user request, not by preflight. The Razor escalation ladder for Swift demos lives in `dynamicweb-swift-demo/references/re-skin.md` §Pixel-perfect escalation.
+Razor files (`*.cshtml`) are **NOT** in the preflight glob. DW10 templates are conventional, not "customisations" in the pitch sense -- a Swift template override is part of normal demo-build flow, not a customisation-budget hit. If a razor IS modified for a clearly-customisation reason (e.g., hard-coded business logic in a template), it goes in `CUSTOMISATIONS.md` as a `razor` type row by user request, not by preflight. The Razor escalation ladder for Swift demos lives in `dw-demo-swift/references/re-skin.md` §Pixel-perfect escalation.
 
 ## 6. Cross-references
 
-- The audit recipe lives at `references/audit-customisations.md` -- run it on demand and at end of every phase.
+- The audit recipe is §7 below -- run it on demand and at end of every phase.
 - The customer-context guard (`references/customer-context.md`) shares the *mental model* (write-time preflight) but uses a hard-abort branch only.
 - SKILL.md's "Two guarded-writes" section is the orchestrator's summary and owns the canonical preflight prompt; this file is the long-form contract.
 - `assets/CUSTOMISATIONS.md.template` is the parametric ledger (single placeholder: `<demo-name>`).
 
+## 7. Audit — end-of-phase verifier
 
+The audit is the verifier for the write-time preflight: it checks that the file count under `Dynamicweb.Host.Suite/Controllers/` matches the ledger row count and that the customisation budget held. Run it at **every customer-demo phase boundary** and as the **final review for the demo's closing customisation-budget slide** — the here-string output is paste-ready slide content; the format IS the slide, do not embellish (replace `<demo-name>` with the demo folder name when pasting; the recipe deliberately does not auto-substitute). Run from the solution root (one level above `Dynamicweb.Host.Suite/`):
+
+```powershell
+$controllers = Get-ChildItem -Recurse -Path "Dynamicweb.Host.Suite/Controllers/" -Filter "*Controller.cs" -ErrorAction SilentlyContinue
+$controllerCount = ($controllers | Measure-Object).Count
+
+$ledgerLines = (Get-Content "CUSTOMISATIONS.md" -ErrorAction SilentlyContinue) |
+  Where-Object { $_ -match '^\|\s*\d{4}-\d{2}-\d{2}' }   # date-prefixed rows only
+$ledgerCount = ($ledgerLines | Measure-Object).Count
+
+# Paste-ready output
+@"
+## Customisation budget -- <demo-name>
+
+- **Rows logged in CUSTOMISATIONS.md:** $ledgerCount
+- **Files under Dynamicweb.Host.Suite/Controllers/:** $controllerCount
+- **Target:** $ledgerCount rows logged, 0 files under Controllers/
+- **Status:** $(if ($controllerCount -eq 0) { 'TARGET MET ✓' } else { 'TARGET MISSED -- review each file' })
+"@
+```
+
+Interpreting the output:
+
+- **`TARGET MET`** (`controllerCount -eq 0`): the budget held — the demo is built entirely on stock DW10 + configuration. The win condition; the slide reads as a clean "zero customisations" pitch beat.
+- **`TARGET MISSED`**: custom controllers exist — cross-reference each `Controllers\*Controller.cs` against the ledger row by row. A file with a row is a deliberate, approved trade-off ("N approved customisations, all listed in the ledger"); a file without a row was written **without preflight** — investigate before declaring the phase complete.
+- **`controllerCount -eq ledgerCount` (both > 0)**: budget held to plan; acceptable for the pitch, but the win condition is still zero.
+
+**Detection signature for a preflight bypass** (`controllerCount > ledgerCount`) — walk the difference:
+
+```powershell
+$loggedFiles = (Get-Content "CUSTOMISATIONS.md" -ErrorAction SilentlyContinue) |
+  Where-Object { $_ -match '^\|\s*\d{4}-\d{2}-\d{2}' } |
+  ForEach-Object {
+    # Column 2 of the row, trimmed
+    ($_ -split '\|')[2].Trim()
+  }
+
+$onDiskFiles = Get-ChildItem -Recurse "Dynamicweb.Host.Suite/Controllers" -Filter "*Controller.cs" -ErrorAction SilentlyContinue |
+  ForEach-Object { $_.FullName -replace [regex]::Escape((Get-Location).Path + '\'), '' -replace '\\', '/' }
+
+$missingFromLedger = $onDiskFiles | Where-Object { $loggedFiles -notcontains $_ }
+if ($missingFromLedger) {
+  Write-Host "Files on disk without ledger rows (preflight bypass):"
+  $missingFromLedger | ForEach-Object { Write-Host "  $_" }
+}
+```
+
+This is a defense-in-depth check: the convention-based preflight assumes Claude reads `SKILL.md` and follows the rule; this audit catches the residue post-hoc. The audit recipe IS the verifier for the closing customisation-budget success criterion.

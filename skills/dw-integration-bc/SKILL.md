@@ -32,7 +32,7 @@ These trigger shapes route here:
 - "BC connects (green Test Connection) but no products appear" -- the canonical missing-column-mappings stuck state. BC's connector polls `BCLicense` / `BCSettings` / `BCProductFields` / `BCProductCountByLastModified` indefinitely without ever calling `BCProductIdsByLastModified`. See [references/bc-side-config.md](references/bc-side-config.md) "Field mapping setup -- REQUIRED, not optional".
 - BC's "show PIM product page" feature fails with `Unknown command: 'StaticLinkSave'` (AddIn missing) or a `TypeInitializationException` (AddIn installed but host not restarted). See [references/static-link-manager.md](references/static-link-manager.md). The `StaticLinkManager` AppStore AddIn is a separate package from the BC connector and is NOT installed by default in `dw10-suite` template scaffolds.
 
-If the trigger is setup-shaped (host won't start, MCP empty, TLS handshake failing), it belongs in `dynamicweb-demo-base`, not here. PIM modelling questions belong in `dynamicweb-pim-demo`. Frontend re-skin and Swift questions belong in `dynamicweb-swift-demo`.
+If the trigger is setup-shaped (host won't start, MCP empty, TLS handshake failing), it belongs in `dw-demo-base`, not here. PIM modelling questions belong in `dw-demo-pim`. Frontend re-skin and Swift questions belong in `dw-demo-swift`.
 
 ## Where to find things
 
@@ -42,36 +42,30 @@ Each reference is owned end-to-end by a single topic; cross-references between t
 |---|---|
 | Bring the public tunnel up against the HTTP launch profile | references/tunnel.md |
 | Wire `ForwardedHeaders` in `Program.cs` so DW emits public URLs | references/forwarded-headers.md |
-| Look up the exact `/admin/api/BC*` endpoint names + call convention | references/connector-endpoints.md |
+| Look up which BC call fires when during a live demo | references/connector-endpoints.md |
+| Read the full connector product surface (call convention, 400-vs-401, the 11 queries + 4 commands, `{"Model":{...}}` wrapper, internal types, seeded defaults) | references/bc-connector-surface.md |
 | Fix the AppStore connector's wrong defaults (`indexBuildKey` / `buildName` / `workflowStateId`) | references/dynamicweb-connector-settings.md |
 | Configure the **Business Central** side (URL + bearer token + first sync) | references/bc-side-config.md |
 | Diagnose / install the `StaticLinkManager` AddIn that BC's "show PIM product page" feature requires | references/static-link-manager.md |
 
-## Inherited from dynamicweb-demo-base
+## Inherited from dw-demo-base
 
-This skill assumes `dynamicweb-demo-base` ran first. Four rules apply at all times and are NOT restated here:
+This skill assumes `dw-demo-base` ran first. Four rules apply at all times and are NOT restated here:
 
 | Rule | Owner |
 |------|-------|
-| Per-demo artifact download + path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
-| The customer-context read-only contract | [dynamicweb-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
-| The customisations-ledger preflight | [dynamicweb-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
-| The baseline-drift self-diagnosis rule | [dynamicweb-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
+| Per-demo artifact download + path-resolution rule | [dw-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
+| The customer-context read-only contract | [dw-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
+| The customisations-ledger preflight | [dw-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
+| The baseline-drift self-diagnosis rule | [dw-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
 
 **Customisations note**: `Program.cs` edits to add `ForwardedHeaders` middleware ARE customisations and need a row in `CUSTOMISATIONS.md`. The recipe in [references/forwarded-headers.md](references/forwarded-headers.md) calls this out and provides the exact ledger entry to write.
 
 ## Sister skills
 
-- **`dynamicweb-demo-base`** -- foundation skill (Use FIRST). Owns setup, MCP connection, per-demo artifact download, customisations ledger, customer-context contract.
-- **`dynamicweb-pim-demo`** -- PIM modelling, structural mental model, completeness rules, dashboards.
-- **`dynamicweb-swift-demo`** -- Swift frontend, customer center, re-skin recipe.
+- **`dw-demo-base`** -- foundation skill (Use FIRST). Owns setup, MCP connection, per-demo artifact download, customisations ledger, customer-context contract.
+- **`dw-demo-pim`** -- PIM modelling, structural mental model, completeness rules, dashboards.
+- **`dw-demo-swift`** -- Swift frontend, customer center, re-skin recipe.
 
-A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
-
-## Vendor patterns
-
-The vendor skill-repo consultation outcome (`dynamicweb/skills` + `dynamicweb/ai-implementor-skills`) is documented in [dynamicweb-demo-base/references/vendor-patterns.md](../dw-demo-base/references/vendor-patterns.md). Single source of truth for vendor positioning across PIM, Swift, and BC connector skills.
-
-
-
+A sibling skill that runs without `dw-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
 

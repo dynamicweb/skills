@@ -7,6 +7,12 @@ description: 'Step-by-step guide for adding new MCP tools to the Dynamicweb MCP 
 
 # MCP Tool Creator
 
+## Deep reference
+
+| Topic | Where |
+|---|---|
+| The Backend MCP server (`Dynamicweb.MCP` at `/admin/mcp`) — installing the AddIn (NuGet vs AppStore), the auth model (API Key vs Claude.ai OAuth), the two `AccessUserToken` rows, headless token+config provisioning in code, and the silent no-op catalogue for MCP/Management API writes | [`references/backend-mcp-server.md`](references/backend-mcp-server.md) |
+
 ## Purpose
 
 Guide the creation of new MCP tools in this project, following the established patterns and conventions. Ensures correct attribute usage, permission levels, model design, and Dynamicweb API integration.
@@ -15,7 +21,7 @@ Guide the creation of new MCP tools in this project, following the established p
 
 1. Read the CLAUDE.md file for project architecture overview.
 2. Identify which domain the new tool belongs to (Products, Commerce, Content, or a new domain).
-3. Determine which Dynamicweb APIs are needed -- browse the Dynamicweb source on GitHub (`https://github.com/dynamicweb`) or use the `dynamicweb-source-explorer` skill to find the right APIs.
+3. Determine which Dynamicweb APIs are needed -- browse the Dynamicweb source on GitHub (`https://github.com/dynamicweb`) or use the `dw-source-explorer` skill to find the right APIs.
 
 ## Workflow
 

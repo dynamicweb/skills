@@ -20,92 +20,54 @@
 - [Reference: file layout](#reference-file-layout)
 
 When a demo build surfaces a non-trivial learning — a workaround, a gotcha, a corrected
-surface order, a missing prereq — that should be captured into a skill, follow this workflow.
-The goal is to fold it back **while the demo's context is still fresh in the conversation**,
-not from notes a week later.
-
-This workflow is **maintainer-only** — it requires write access to the `dynamicweb/skills`
-repo and a local clone of it. Consumers of the plugin can ignore this reference (or open a PR
-with their learning instead — the workflow is the same, the access is the only difference).
-
-**Every fold-back lands via a pull request.** There are no direct pushes to the integration
-branch (`v2` until it merges to `main`, then `main`). One learning = one atomic commit = one
-PR. The repo-wide rule is in [`../../../CLAUDE.md`](../../../CLAUDE.md) ("Contributing: every
-change lands via PR"); this reference is its demo-side instance.
+surface order, a missing prereq — fold it back **while the demo's context is still fresh in the
+conversation**, not from notes a week later. **Maintainer-only** (needs write access + a local clone
+of `dynamicweb/skills`; consumers can open a PR instead — same workflow). **Every fold-back lands
+via a pull request** — one learning = one atomic commit = one PR; the repo-wide rule is
+[`../../../CLAUDE.md`](../../../CLAUDE.md) "Contributing".
 
 ## When to invoke
 
-Trigger phrases that should route Claude here:
-
-- "fold this into the skill"
-- "fold this learning back"
-- "save this back to the plugin"
-- "update the plugin from this demo"
-- "publish this update"
-- "this is worth keeping — add it to the skill"
-
-The conversation should already contain the actual learning content (the gotcha, the fix, the
-proven recipe). If it doesn't, ask the user to articulate it first; do not invent.
+The trigger phrases live in `SKILL.md` "Folding demo-build learnings back" ("fold this into the
+skill", "save this back to the plugin", …). The conversation should already contain the actual
+learning (the gotcha, the fix, the proven recipe); if it doesn't, ask the user to articulate it
+first — do not invent.
 
 ## Step 0 — Resolve the local skills-repo path
 
-The workflow needs the absolute path to your local clone of `dynamicweb/skills`. Resolution
-order:
-
-1. **Env var.** Check `$env:DYNAMICWEB_SKILLS_REPO`. If set and the path exists, use it.
-2. **User-scope memory.** Look for a `reference` memory with name `dynamicweb-skills-repo` (or
-   similar). If found and the path exists, use it.
-3. **Ask.** Use `AskUserQuestion`: *"Path to your local clone of `dynamicweb/skills`? (e.g.
-   `C:\VibeCode\dynamicweb-skills`)"*. Once the user answers, verify the path exists and
-   contains `.claude-plugin/marketplace.json`, then **save it as a user-scope `reference`
-   memory** so future invocations skip this step. Optionally suggest the user
-   `setx DYNAMICWEB_SKILLS_REPO "<path>"` for a more permanent fix.
-
-If the path doesn't pass the `.claude-plugin/marketplace.json` sanity check, abort — the user
-gave the wrong directory. (There is no `plugin.json` in this repo; the marketplace registry is
-the single manifest.)
+Resolve the absolute path to the local `dynamicweb/skills` clone, in order: (1)
+`$env:DYNAMICWEB_SKILLS_REPO`; (2) a user-scope `reference` memory named `dynamicweb-skills-repo`;
+(3) ask via `AskUserQuestion`, then save the answer as a user-scope `reference` memory (and suggest
+`setx DYNAMICWEB_SKILLS_REPO "<path>"`). Sanity check: the path must contain
+`.claude-plugin/marketplace.json` (the single manifest — there is no `plugin.json`); abort if not.
 
 ## Step 1 — Route the learning: foundational skill or demo skill?
 
-The repo enforces a **strict one-way split** (see `CLAUDE.md` → "Skill categories:
-foundational vs demo"). Routing the fold correctly is now the *first* decision, not an
-afterthought:
+The repo enforces a **strict one-way split** (`CLAUDE.md` → "Skill categories: foundational vs
+demo"); routing is the *first* decision:
 
-- **Is it a platform truth** — something true about Dynamicweb 10 itself (an API shape, a
-  surface-order rule, a caching behaviour, a Razor/ViewModel gotcha)? Then it folds **up into
-  the owning foundational skill** (`dw-render-*`, `dw-pim-*`, `dw-commerce-*`, `dw-extend-*`,
-  `dw-integration-*`, `dw-setup-*`, etc.), **fully sanitized** — foundational skills carry
-  zero demo/customer content (Step 1a is mandatory, not optional, for these).
-- **Is it a demo-craft technique** — something about *running a demo* (scaffolding order,
-  storytelling, the deserialize flow, customer-center playbook)? Then it folds into the owning
-  **demo skill** (`dw-demo-base`, `dw-demo-pim`, `dw-demo-swift`, `dw-demo-erp`, or the
-  `dw-integration-bc` connector demo).
-- **Does the learning only make sense with the customer's name in it?** Then it is
-  demo-specific — it does **not** fold anywhere in this repo. Log it in that demo's own
-  `.planning/` / notes and stop.
+- **A platform truth** (an API shape, surface-order rule, caching behaviour, Razor/ViewModel gotcha)
+  folds **up into the owning foundational skill** (`dw-render-*`, `dw-pim-*`, `dw-commerce-*`,
+  `dw-extend-*`, `dw-integration-*`, `dw-setup-*`, …), **fully sanitized** — foundational skills
+  carry zero demo/customer content.
+- **A demo-craft technique** (scaffolding order, storytelling, the deserialize flow,
+  customer-center playbook) folds into the owning **demo skill** (`dw-demo-base`, `dw-demo-pim`,
+  `dw-demo-swift`, `dw-demo-erp`, `dw-integration-bc`).
+- **A learning that only makes sense with the customer's name in it** is demo-specific — it does
+  **not** fold; log it in that demo's own `.planning/` notes and stop.
 
-A foundational skill must never link to or depend on a demo skill (one-way rule). If your fold
-would add such a link, you have mis-routed — the content belongs in the demo skill instead.
-
-Within the chosen skill, decide:
-
-- **Which reference** is the right home? Read the skill's SKILL.md "Where to find things" /
-  routing table to map the learning's topic to a `references/<topic>.md`. If it genuinely fits
-  no existing reference, propose a new `references/<topic>.md` and check with the user first.
-- **Where in the file** the new content slots in — read enough surrounding context that the
-  insertion belongs (correct heading depth, consistent voice, no duplicate content).
-
-If you're not sure, ask the user one focused question — don't guess at structure.
+A foundational skill must never link to or depend on a demo skill; a fold that would add such a
+link is mis-routed. Within the chosen skill, pick the reference via the SKILL.md routing table (a
+genuinely new topic → propose a new `references/<topic>.md` and check with the user first), and read
+enough surrounding context that the insertion lands at the right heading depth with no duplicate
+content. If unsure, ask one focused question — don't guess at structure.
 
 ## Step 1a — Sanitize the candidate content BEFORE drafting the edit (load-bearing)
 
 **Hard rule: zero customer identifiers, zero named individuals, zero session-relative time
-markers in plugin content.** The repo is public at `github.com/dynamicweb/skills`. Every blob
-and every commit message is visible there. Once a name lands in a commit it persists in tags +
-release tarballs even after subsequent scrubs — historical leaks are forever unless you
-rewrite git history and force-push (a destructive, project-wide operation that this workflow
-exists to prevent). **The PR gate (Step 5) is your cheap catch window — use it; once a leak is
-squash-merged to the integration branch the recovery is the expensive history rewrite.**
+markers in plugin content.** The repo is public at `github.com/dynamicweb/skills`; every blob and commit
+message is visible there, and a merged leak persists in history until a destructive rewrite + force-push.
+**The PR gate (Step 5) is the cheap catch window — use it.**
 
 ### What to scrub before the edit ever reaches the tree
 
@@ -121,14 +83,10 @@ squash-merged to the integration branch the recovery is the expensive history re
 
 ### The grep pack — run BEFORE the file gets edited AND in the PR gate
 
-A learning's drafted text often sits in `./notes/skill-learnings-*.md` first; that's where to
-scrub. The same grep runs against the staged edit before commit.
-
-**There is no scrub-list file — the token list is derived in-session, every fold.** Any token
-that could leak into the edit is, by construction, present in the material being folded (the
-session notes, the learnings file, the demo folder, `CUSTOMISATIONS.md`). Before drafting,
-enumerate the engagement's tokens explicitly and write the list out in the conversation so the
-user can review it. Enumerate at least:
+A learning's drafted text often sits in `./notes/skill-learnings-*.md` first — scrub there; the same grep
+runs against the staged edit before commit. **There is no scrub-list file — the token list is derived
+in-session, every fold**: enumerate the engagement's tokens explicitly and write the list out in the
+conversation for the user to review. Enumerate at least:
 
 - customer / brand / engagement names, **including misspellings and slugs** (folder names,
   hostnames, `<sub>.mydwsiteN.com` subdomains);
@@ -158,51 +116,33 @@ Select-String -Path .\notes\skill-learnings-*.md -Pattern 'C:\\Projects\\Solutio
 git diff --staged | Select-String -Pattern 'C:\\Projects\\Solutions\\[a-z0-9-]+'
 ```
 
-**Any hit in any of those three packs blocks the fold.** Sanitize the source
-`notes/skill-learnings-*.md` first (so the demo's own notes can stay concrete) into a
-derivative learning that's vendor-generic — then carry only the vendor-generic version into
-the edit. Two paragraphs side-by-side in the conversation is fine: "what happened (named)" →
-"what's the durable lesson (generic)". Only the generic side gets committed.
-
-**The grep only catches tokens you enumerated; the re-read catches the rest.** After drafting,
-read the staged diff once as an outsider and ask of every concrete string — every name, field,
-example value, path, id — "is this Dynamicweb-generic, or did it come from the engagement?"
-Anything engagement-derived gets genericized even if it looks harmless in isolation. This
-re-read is mandatory, not a nicety: enumeration misses exactly the tokens you didn't think of,
-and those are the ones that leak.
+**Any hit in any of those three packs blocks the fold.** Sanitize the source notes into a vendor-generic
+derivative first; only the generic side gets committed. **The grep only catches tokens you enumerated; the
+re-read catches the rest** — after drafting, read the staged diff once as an outsider and ask of every
+concrete string "is this Dynamicweb-generic, or engagement-derived?" This re-read is mandatory: enumeration
+misses exactly the tokens you didn't think of.
 
 ### When the structural learning seems to depend on the customer's name
 
-It almost never does. If the rule is "demo X did Y and learned Z", `Z` is the durable part.
-`X` is provenance noise. Drop `X`. If you genuinely cannot say `Z` without `X`, the learning is
-probably demo-specific and shouldn't be folded — log it as a demo-local note instead (Step 1).
-
-The same rule applies to vendor / partner / customer **individuals**. Architectural advice
-"blessed by `<named architect>` at vendor X on `<date>`" loses nothing structural when
-rewritten as "vendor-blessed by the `<role>` (`<date>` architecture call)". The provenance
-value is the role + date, not the person.
+It almost never does: in "demo X did Y and learned Z", `Z` is the durable part and `X` is
+provenance noise — drop `X`. If you genuinely cannot say `Z` without `X`, the learning is
+demo-specific and shouldn't be folded (Step 1). Same for individuals: "blessed by `<named
+architect>`" rewrites to "vendor-blessed by the `<role>` (`<date>` architecture call)" — the
+provenance value is the role + date, not the person.
 
 ## Step 1b — Content-hygiene gate (load-bearing — this is how the corpus stays correct)
 
-Sanitization protects the customer; this step protects the *corpus*. Fold-backs that skip it
-produced, historically: a pivot that left the retracted model live in five other files, a
-retracted API claim that survived three releases next to the file that retracted it, and the
-same lesson recorded four times in different words. Run these checks BEFORE drafting the
-edit:
+Sanitization protects the customer; this step protects the *corpus* — skipping it has left retracted
+claims live next to their retractions and the same lesson recorded four times. Run these checks BEFORE
+drafting the edit:
 
 ### 1. Supersede sweep — when the learning corrects, retracts, or pivots existing guidance
 
-Grep **all of `skills/`** (SKILL.md frontmatter `description:` lines included) for the old
-claim's distinctive tokens — the API name, the folder pattern, the error message, the rule
-wording. Every hit must be either rewritten to the new guidance or replaced with a **one-line
-tombstone**:
-
-> Superseded YYYY-MM-DD: <new rule in one sentence> — see <canonical reference>.
-
-Never leave the old recipe loadable next to the new one: a model that loads only the un-swept
-file will follow the retracted guidance, and the skill's own audit may then flag the output it
-produced. The sweep is cheap (one grep, a handful of edits); the alternative is a contradiction
-that ships until someone audits the whole corpus.
+Grep **all of `skills/`** (frontmatter `description:` lines included) for the old claim's
+distinctive tokens — API name, folder pattern, error message, rule wording. Every hit is either
+rewritten to the new guidance or replaced with a one-line tombstone ("Superseded YYYY-MM-DD: <new
+rule> — see <canonical reference>"). Never leave the old recipe loadable next to the new one — a
+model that loads only the un-swept file follows the retracted guidance.
 
 ### 2. Dedup check — is this lesson already recorded?
 
@@ -241,26 +181,14 @@ append a new dated subsection below it. Specifically:
 
 ### 5. Dead-layer-name sweep — when the fold references a Distribution layer
 
-Demo-skill folds routinely name Distribution layers (`base`, `surface-swift`, `feature-*`,
-`theme-default`, editions). A layer name that was renamed or retired since the skill was authored
-becomes a **latch-on target** — an instruction that tells a future demo to build from a layer that
-no longer exists (the staleness this discipline exists to prevent). Before folding, sweep every
-Distribution layer name the edit mentions against the **distribution's layer index**
-(`layers/INDEX.json` on the latest gate-proven `main` — the source of truth for what layers exist and
-what a retired name was superseded by):
-
-- **Live (`status: active`/`deprecated`)** — use it; prefer the successor over a `deprecated` layer
-  for new instructions.
-- **Retired (an `INDEX.json` `retired` entry)** — rewrite the instruction to the entry's
-  `supersededBy` successor. A retirement *note* ("X was retired, use Y") may stay only where it
-  genuinely helps the reader; an *instruction* that builds from the dead name goes.
-- **Absent entirely** — stop; the name is wrong. Resolve it against `INDEX.json` before folding.
-
-Keep the retired-name list in `INDEX.json`, never hardcoded into `scripts/validate-skills.py` — a
-blocklist in the skills repo forks a second source of truth from the index and drifts the moment a
-layer is renamed. The index is authoritative; this sweep is the release-time check that consults it.
-(The Distribution side enforces the mirror rule in its own CI — its validator rejects a retired layer
-name in its living docs.)
+Before folding anything that names a Distribution layer (`base`, `surface-swift`, `feature-*`,
+`theme-default`, editions), sweep every layer name against `layers/INDEX.json` on the latest
+gate-proven `main`: **live** (`active`/`deprecated`) — use it, preferring the successor over a
+`deprecated` layer; **retired** — rewrite the instruction to the entry's `supersededBy` successor (a
+retirement *note* may stay; an *instruction* building from the dead name goes); **absent** — stop,
+the name is wrong. Keep the retired-name list in `INDEX.json`, never hardcoded into
+`scripts/validate-skills.py` — a blocklist forks a second source of truth that drifts on the next
+rename.
 
 ## Step 2 — Make the edit
 
@@ -274,14 +202,11 @@ Voice + structure rules (match what's already there):
 - Concrete commands beat prose. Include the exact `dotnet`, `git`, `Invoke-RestMethod`,
   `sqlcmd`, or PowerShell snippet that worked.
 - **Phrase instructions positively — say what to do, not just what to avoid.** A model follows
-  "DO A" more reliably than "don't do B": a bare prohibition raises B's salience and leaves the
-  target underspecified. Reach for contrast only when B is the model's natural pull *and* a
-  predictable failure mode, and then prefer the paired form ("serialize with the DW serializer,
-  not a raw XML export") over a bare "don't" — it gives both the target and the boundary. A
-  one-line reason sharpens it further ("read prices through the ViewModel — a raw `SELECT` leaks
-  cross-scope pricing"). A bare "don't do B" is the last resort. A good test: would a competent
-  model, reading only "DO A", still plausibly do B? If no, the "not B" is noise; drop it.
-  (Few-shot bad→good example pairs are exempt — that's a different mechanism.)
+  "DO A" more reliably than "don't do B" (the prohibition raises B's salience and leaves the target
+  underspecified). Keep contrast only when B is the model's natural pull and a predictable failure
+  mode, preferring the paired form ("serialize with the DW serializer, not a raw XML export") over a
+  bare "don't". Test: would a competent model, reading only "DO A", still plausibly do B? If no, the
+  "not B" is noise. (Few-shot bad→good pairs are exempt.)
 - Prefer rewriting the existing text over appending below it (Step 1b §3). If a future reader
   could mistake the new content for hypothetical advice, mark it as proven inline — sparingly.
   **Keep dates out of the skill body: the date lives in `git log`. Never "today" / "this morning" / a `(verified <date>)` stamp.** (Step 1a).
@@ -299,72 +224,41 @@ cd $env:DYNAMICWEB_SKILLS_REPO
 python3 scripts/validate-skills.py
 ```
 
-Must exit 0. Errors → fix before continuing. The validator checks the marketplace schema,
-folder/name/path agreement, relative-link resolution, the 1024-char `description` cap, absence of
-UTF-8 BOMs, and absence of double-encoded UTF-8 (mojibake — the failure mode when a fold pastes
-text from a mis-decoded source; repair with `ftfy.fix_encoding`, not by hand). It also warns when
-a SKILL.md body runs past 500 lines or a reference over 100 lines lacks a top-of-file table of
-contents. If you only edited a reference file under `skills/*/references/`, it should pass
-trivially. For a deeper check, also run `claude plugin validate ./`.
+Must exit 0; fix errors before continuing. What it checks (schema, links, description cap, BOM,
+mojibake — repair the latter with `ftfy.fix_encoding`, not by hand) is documented in the repo
+[`CLAUDE.md`](../../../CLAUDE.md) "Validation". For a deeper check, also run `claude plugin validate ./`.
 
 ## Step 4 — Bump the version (one place)
 
-Read the current version from `.claude-plugin/marketplace.json` (`metadata.version`) and bump
-per semver:
-
-- **Patch** (3.0.1 → 3.0.2) — additive learning, bug fix, clarification. Default for
-  fold-back operations.
-- **Minor** (3.0.2 → 3.1.0) — new skill added, new reference doc, contract change to an
-  existing recipe (e.g. surface order rewritten).
-- **Major** (3.x.y → 4.0.0) — only when explicitly declaring a breaking change to the bundle
-  layout or skill contracts.
-
-There is a **single version** to bump now: `metadata.version` in `marketplace.json`. The old
-"bump both plugin.json and marketplace.json, keep them in lockstep" rule is retired — this repo
-has no `plugin.json`, and the bundle entries under `plugins[]` no longer carry per-bundle
-versions.
+Bump `metadata.version` in `.claude-plugin/marketplace.json` — the **single** version (no
+`plugin.json`, no per-bundle versions) — per semver: **patch** for an additive learning / fix /
+clarification (the fold-back default); **minor** for a new skill, new reference doc, or a contract
+change to an existing recipe; **major** only for a declared breaking change to bundle layout or
+skill contracts.
 
 ## Step 4a — Update README.md and CHANGELOG.md (mandatory when content/scope changes)
 
-Stale docs are the difference between partners seeing the current contents vs. an outdated
-picture. In the **same commit** as the skill edit + version bump:
-
-- **`README.md`** — the **Skills** table/section: add a block for any new skill; revise the
-  one-line description if a skill's scope materially expanded. The **Plugins** table: update if
-  a skill's bundle membership changed. The **Structure** tree: add any new skill directory.
-- **`CHANGELOG.md`** — add the entry under the new version heading (matching
-  `metadata.version`), describing what changed and why.
-
-Keep all of this in the one atomic commit — don't split into a follow-up "docs:" commit.
-Splitting hides the connection between version + content + docs.
+In the **same atomic commit** as the skill edit + version bump (never a follow-up "docs:" commit):
+**`README.md`** — Skills table (new skill block / revised one-liner on a scope change), Plugins table
+(bundle-membership changes), Structure tree (new directories); **`CHANGELOG.md`** — an entry under
+the new version heading describing what changed and why.
 
 ## Step 5 — Branch, atomic commit, push, open PR
 
-Fold-backs do **not** push to the integration branch directly. Compose **one atomic commit on
-a branch**, then open a PR.
+The git mechanics are the repo-wide contract in [`../../../CLAUDE.md`](../../../CLAUDE.md)
+"Contributing: every change lands via PR": branch off the integration branch, one learning = one
+atomic commit = one PR (`gh pr create` targeting the integration branch), squash-merge, no
+`Co-Authored-By` or self-attribution, and no tags from this workflow — releases are tagged when a
+version ships, not per fold.
 
-Compose a commit/PR subject that names **what changed** and **why it was worth folding back**.
-**The same sanitization rule from Step 1a applies to the commit message and PR body — no
-customer names, no personal names, no "Today's"/"this morning" temporal prefixes.** Messages
-and PR bodies ship in `git log`, in GitHub's commit view, and in `gh pr view` — anywhere a
-clone or a public PR is visible. A leak in a message is the same severity as a leak in a blob.
+Two fold-specific rules on top:
 
-```
-Fold demo-build learning: <one-line topic>
-
-<2–4 sentences describing the learning, why the previous skill content
-was wrong or incomplete, and the symptom that surfaced it. Reference the
-file(s) changed. Avoid "minor update" / "tweaks" — those rot. Use absolute
-dates ("a 2026-05-21 walkthrough") rather than relative markers ("today's
-demo"), and refer to demos / vendors / partners / customers by role + date,
-never by name.>
-```
-
-Do **not** add `Co-Authored-By` or any self-attribution line (repo rule, `CLAUDE.md` →
-"Commits").
-
-**Final pre-commit grep** (mandatory; same pack as Step 1a, run one last time against the FULL
-staged change including the message):
+- **The commit message and PR body are sanitization surfaces.** Step 1a applies to them too — no
+  customer names, no personal names, no session-relative time prefixes. Name **what changed** and
+  **why it was worth folding back**; refer to demos / vendors / partners / customers by role + date,
+  never by name; avoid "minor update" / "tweaks".
+- **Final pre-commit grep (mandatory)** — the same pack as Step 1a, run one last time against the
+  FULL staged change including the message:
 
 ```powershell
 $tokens = @('BrandName', 'brand-slug' <# the same in-session token list from Step 1a #>)
@@ -377,152 +271,87 @@ Get-Content .git\COMMIT_EDITMSG -Raw | Select-String -Pattern $nameRx
 Get-Content .git\COMMIT_EDITMSG -Raw | Select-String -Pattern $timeRx
 ```
 
-Any hit blocks the commit. Sanitize and re-stage / re-edit the message. Then:
-
-```powershell
-cd $env:DYNAMICWEB_SKILLS_REPO
-git checkout -b fold/<short-topic>           # branch off the integration branch
-git add .claude-plugin README.md CHANGELOG.md skills/<skill>/<file>
-git commit -m "<the message above>"
-git push -u origin fold/<short-topic>
-gh pr create --base v2 --title "<the subject>" --body "<the body>"
-```
-
-`--base v2` while `v2` is the integration branch; switch to `--base main` once `v2` has merged.
-**Do not tag from this workflow** — release tags are cut on the integration branch when a
-version ships, not per fold.
+Any hit blocks the commit — sanitize, re-stage / re-edit the message, and only then push and open
+the PR.
 
 ## Step 6 — After the PR merges: refresh the local marketplace clone
 
-Once the PR is reviewed and **squash-merged**:
-
-```powershell
-cd $env:USERPROFILE\.claude\plugins\marketplaces\dynamicweb-skills
-git pull origin <integration-branch>
-```
-
-This makes the new version visible to `/plugin update`. Without it, Claude Code's local
-marketplace mirror is still at the old version and the update command is a no-op. (If you added
-the marketplace as `claude plugin marketplace add dynamicweb/skills`, the clone directory is
-named `dynamicweb-skills`.)
+Once the PR is squash-merged, `git pull origin <integration-branch>` in
+`$env:USERPROFILE\.claude\plugins\marketplaces\dynamicweb-skills` — without it the local
+marketplace mirror stays at the old version and `/plugin update` is a no-op.
 
 ## Step 7 — Tell the user the slash commands to refresh the install
 
-Claude cannot issue slash commands. After merge, output a clear final-step message for the
-user. Name the **bundle(s)** that include the edited skill (a demo-craft fold affects
-`dynamicweb-presales`; a foundational fold affects whichever bundles list that skill — e.g. a
-`dw-render-*` edit affects `dynamicweb-frontend`):
-
-> Merged and refreshed the marketplace clone. To activate the new content in this (and other)
-> Claude Code sessions, run:
->
-> ```
-> /plugin update <bundle-name>@dynamicweb-skills
-> /reload-plugins
-> ```
->
-> After `/reload-plugins`, the new content is live without restarting the session.
-
-**`update`, not `install`.** When the bundle is already installed, `/plugin install` is a no-op
-that prints *"already installed"* and leaves the active install at the old version.
-`/plugin update` is what swings the install to the new cached version. Use `install` only for a
-genuine first install on a fresh machine.
+Claude cannot issue slash commands — after merge, tell the user to run
+`/plugin update <bundle-name>@dynamicweb-skills` then `/reload-plugins` (live without a session
+restart), naming the bundle(s) that include the edited skill (demo-craft → `dynamicweb-presales`;
+a foundational fold → whichever bundles list that skill). **`update`, not `install`** — on an
+already-installed bundle `/plugin install` is a no-op that leaves the old version active.
 
 ## Verification gate — this workflow is NOT complete until
 
-1. The learning was routed correctly (foundational vs demo, Step 1) and adds no
-   foundational→demo link.
-2. `python3 scripts/validate-skills.py` returned exit 0.
-3. `metadata.version` bumped in `marketplace.json`.
-4. **README.md + CHANGELOG.md updated** to reflect the new content (Step 4a), in the same
-   commit.
-5. **Sanitization grep packs (Step 1a + final pre-commit) both returned zero hits** — across
-   source notes, the staged diff, AND the commit message / PR body.
-6. **Content-hygiene gate passed (Step 1b)** — supersede sweep run over `skills/` if the
-   learning corrects anything; no second copy of an existing lesson; owning SKILL.md routing
-   row updated if scope changed; every Distribution layer name the fold mentions checked against
-   `INDEX.json` (a retired name rewritten to its `supersededBy` successor, never left as an
-   instruction).
-7. The branch is pushed and a **PR is open** against the integration branch (not pushed
-   directly).
-8. After merge: the marketplace clone is at the new commit, and the user has the
-   slash-command pair to run.
+1. Routed correctly (foundational vs demo, Step 1); no foundational→demo link added.
+2. `python3 scripts/validate-skills.py` exit 0.
+3. `metadata.version` bumped; **README.md + CHANGELOG.md updated in the same commit** (Step 4a).
+4. **Both sanitization grep packs returned zero hits** — source notes, staged diff, AND commit
+   message / PR body.
+5. **Content-hygiene gate passed (Step 1b)** — supersede sweep run if the learning corrects
+   anything; no second copy of an existing lesson; routing row updated on a scope change; every
+   Distribution layer name checked against `INDEX.json`.
+6. Branch pushed and a **PR open** against the integration branch; after merge, the marketplace
+   clone is at the new commit and the user has the slash-command pair.
 
-If any of these fail, surface the failure — don't silently declare success. A half-folded
-learning is worse than not folding it. A **leak that reaches the integration branch** is worse
-still: catch it in the PR (amend the branch and force-push *the branch* before merge — cheap);
-only a leak that has *merged* forces the project-wide history rewrite below.
+If any of these fail, surface the failure — a half-folded learning is worse than not folding it,
+and a leak that *merges* forces the history rewrite below (catch it in the PR instead — cheap).
 
 ## Recovery from a leak that merged to the integration branch
 
-If a customer name or session-relative time marker reaches the integration branch (subject,
-body, or blob) despite the gates above, the only clean recovery is full history rewrite +
-force-push. This is destructive — every collaborator with a clone must re-clone or
-`git reset --hard origin/<branch>` — so it's a last resort.
+**Before merge it is cheap:** amend the offending commit on the PR branch, re-run the grep pack,
+and `git push --force-with-lease` *the branch* — the PR updates in place and nothing public was
+touched. That window is the whole point of the PR gate.
 
-**Before merge it is cheap:** amend the offending commit on the PR branch (`git commit --amend`
-or `git rebase`), re-run the grep pack, and `git push --force-with-lease` *the branch*. The PR
-updates in place; nothing public on the integration branch was ever touched. This pre-merge
-window is the whole point of the PR gate.
+If a leak **merged**, the only clean recovery is a full history rewrite + force-push — destructive:
+every collaborator must re-clone or hard-reset. The recipe:
 
-If it already merged, the recipe used during a prior sweep:
+1. Scrub working-tree content via direct `Edit`s (named strings → `<demo>`/`<brand>`/`Acme` placeholders).
+2. Rewrite commit messages across `--branches --tags` via `git filter-branch --msg-filter`.
+3. Rewrite blob contents across history via `git filter-branch --tree-filter … --prune-empty`
+   (longest patterns first).
+4. Drop the `refs/original/*` backup refs so `git log --all` doesn't surface pre-rewrite history.
+5. `git push --force-with-lease=<branch>:<pre-rewrite-sha> origin <branch>` and
+   `git push --force origin --tags` — `--force-with-lease`, never bare `--force`.
+6. Notify collaborators: `git fetch --tags --force && git reset --hard origin/<branch>`.
 
-1. **Scrub working-tree content** first via direct `Edit`s, replacing customer-named strings
-   with `<demo>`/`<brand>`/`Acme`-style placeholders.
-2. **Rewrite commit messages** across `--branches --tags` via `git filter-branch --msg-filter
-   <python-script>` (per-SHA full-message replacement for affected commits, defensive
-   substring-replace fallback for the rest).
-3. **Rewrite blob contents** across history via `git filter-branch --tree-filter
-   <python-script> --prune-empty` (walk every text file, apply the substitutions, longest
-   patterns first).
-4. **Drop `refs/original/*` backup refs** so `git log --all` doesn't surface pre-rewrite
-   history.
-5. **Force-push** with `git push --force-with-lease=<branch>:<pre-rewrite-sha> origin <branch>`
-   and `git push --force origin --tags`. Use `--force-with-lease`, never bare `--force`.
-6. **Notify collaborators** to `git fetch --tags --force && git reset --hard
-   origin/<branch>`.
-
-The cost of this dance is high enough that the Step 1a + final pre-commit grep packs are not
-"extra paranoia" — they are the cheaper option by orders of magnitude. Run them.
+This cost is why the Step 1a + Step 5 grep packs are mandatory, not paranoia.
 
 ## Anti-patterns
 
-- **Pushing a fold-back straight to the integration branch.** Every fold goes through a PR.
-  The PR is the cheap catch window for leaks and the review gate for correctness.
-- **Bundling two unrelated learnings in one PR.** One learning = one atomic commit = one PR.
-- **Bumping version without changing skill content.** Defeats the cache-key purpose. If you
-  only edited the validator or CI, no version bump is needed.
-- **Bumping the version without updating README.md / CHANGELOG.md.** Stale docs ship an
-  outdated picture (Step 4a).
-- **Skipping the Step 1a sanitization grep.** Customer-name leaks in a public repo are a
-  "capital sin". The grep takes seconds; post-merge recovery takes the rest of an afternoon and
-  costs every collaborator a clone reset.
-- **Letting a personal name through because "they're a vendor employee, not a customer".** The
-  rule covers vendor / partner / individual names too — provenance is "the Dynamicweb vendor
-  architect (`<date>`)", never `<Person Name>`.
-- **Using "Today's …" / "this morning …" / "yesterday …" in commit prose.** The dates are
-  already in `git log`. Use absolute dates inline when structurally important; otherwise drop
-  the temporal prefix.
-- **Folding a learning that's actually demo-specific.** If the gotcha only applies to one
-  customer's quirky data, it belongs in that demo's `.planning/`, not in the repo. (A learning
-  that *requires* the customer's name to be coherent is a strong signal it's demo-specific.)
-- **Folding a platform truth into a demo skill (or vice versa).** Route it per Step 1.
-  Platform truths go up into foundational skills, fully sanitized; demo-craft goes into demo
-  skills. Adding a foundational→demo link is a boundary violation.
-- **Folding without context.** If the user says "save that thing we just figured out" and
-  you're not sure exactly which thing, ask. Don't fold a paraphrase.
-- **Touching `dw-integration-bc` for non-BC learnings.** Each skill has a tight scope;
-  cross-skill demo learnings usually live in `dw-demo-base` (foundation rules) or `dw-demo-erp`
-  (integration concerns), or get split.
-- **Appending a warning next to a claim it contradicts.** If the learning shows an existing
-  sentence is wrong, rewrite that sentence (Step 1b §3).
-- **Folding a correction into one file and calling it done.** A pivot or retraction must sweep
-  all of `skills/` (Step 1b §1).
-- **Recording the same lesson in a second home.** If a grep finds the lesson already exists,
-  sharpen the canonical copy and pointer to it (Step 1b §2).
-- **Leaving a retired layer name as a build instruction.** A renamed/retired Distribution layer
-  name in an instruction sends a future demo to a layer that no longer exists. Sweep layer names
-  against `INDEX.json` and rewrite to the `supersededBy` successor (Step 1b §5).
+- **Pushing a fold-back straight to the integration branch** — every fold goes through a PR, the
+  cheap catch window for leaks and the review gate for correctness.
+- **Bundling two unrelated learnings in one PR** — one learning = one atomic commit = one PR.
+- **Bumping the version without changing skill content**, or **without updating README.md /
+  CHANGELOG.md** (Step 4a).
+- **Skipping the Step 1a sanitization grep** — it takes seconds; post-merge recovery costs every
+  collaborator a clone reset.
+- **Letting a personal name through because "they're a vendor employee"** — the rule covers
+  vendor / partner / customer individuals alike; provenance is role + date, never a name.
+- **"Today's …" / "this morning …" in commit prose** — dates live in `git log`; use absolute
+  dates only when structurally important.
+- **Folding a learning that's actually demo-specific** — one that *requires* the customer's name
+  to be coherent belongs in that demo's `.planning/`, not the repo.
+- **Mis-routing across the foundational/demo boundary** (Step 1) — platform truths fold up,
+  sanitized; demo-craft folds into demo skills; a foundational→demo link is a violation.
+- **Folding without context** — if unsure which "thing we just figured out", ask; don't fold a
+  paraphrase.
+- **Touching `dw-integration-bc` for non-BC learnings** — cross-skill demo learnings live in
+  `dw-demo-base` or `dw-demo-erp`, or get split.
+- **Appending a warning next to a claim it contradicts** — rewrite the claim (Step 1b §3).
+- **Folding a correction into one file and calling it done** — a retraction sweeps all of
+  `skills/` (Step 1b §1).
+- **Recording the same lesson in a second home** — sharpen the canonical copy and pointer to it
+  (Step 1b §2).
+- **Leaving a retired Distribution layer name as a build instruction** — rewrite to the
+  `supersededBy` successor per `INDEX.json` (Step 1b §5).
 
 ## Reference: file layout
 

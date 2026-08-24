@@ -110,7 +110,7 @@ rejects it by default. For **local development only**, set on the Node process r
 NODE_TLS_REJECT_UNAUTHORIZED=0
 ```
 
-This is the same class of bypass `dynamicweb-demo-base` wires for the MCP/browser layer, and it is
+This is the same class of bypass `dw-demo-base` wires for the MCP/browser layer, and it is
 **dev-only**. Never set it on a hosted/production storefront — it disables all TLS verification for
 the process. For a hosted demo, terminate TLS with a real certificate and drop this var. Confine it
 to the storefront's local `.env`/shell; do not commit it into any deploy config.

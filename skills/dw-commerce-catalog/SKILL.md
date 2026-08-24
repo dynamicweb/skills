@@ -154,26 +154,11 @@ product.GetProductLink(pageId)  // URL to product detail page
 
 ## Search Index Setup
 
-A product index is required for the Product Catalog app to serve results.
+A product index is required for the Product Catalog app to serve results. The full setup (repository → index → instances → build configuration → fields → query → build), facet field rules, and auto-rebuild triggers live in [dw-search-indexing](../dw-search-indexing).
 
-1. Go to **Settings > System > Repositories** → create or open a repository
-2. Add a new **Index** with Balancer: `ActivePassive` (serves from live while rebuilding passive)
-3. Add **two instances** (A and B) using `LuceneIndexProvider`
-4. Create a **Build configuration** selecting `ProductIndexBuilder`
-5. Configure **fields** using `ProductIndexSchemaExtender` or `ConfigurableProductIndexSchemaExtender`
-6. Add a **Query** and optionally **Facet groups** under the index
-7. Click **Build**
+## Deep reference
 
-**Field rules for facets:**
-- Fields used as facets must be Indexed = Yes and Analyzed = No (analyzed fields split multi-word values into tokens, breaking facet grouping)
-- Use **Grouping fields** for range-based facets (e.g., price brackets: "0-200", "200-500")
-
-**Auto-rebuild triggers:**
-- On product save (configure on the channel's Advanced Information tab)
-- After integration job (configure in activity settings)
-- On schedule (use the "Build repository index" scheduled task)
-
-Note: auto-rebuild on save does NOT remove deleted products from the index. Only a full rebuild handles deletions.
+[references/catalog-publishing.md](references/catalog-publishing.md) — the field-validated catalog internals: Catalog-vs-Channel group trees (the published-to story), the native "Publish to channel" action, channels + feeds (and the `/dwapi/feeds/{id}` URL shape), assortments-vs-channels, the pricing traps (tier rows not honored by the stock cart, the canonical price read surface, customer-specific contract prices), and the Management API chains for variants (no SQL), product relations, images, and shops — including the `ShopSave` `UsageType` trap and the create-vs-update verb split.
 
 ## Pitfalls
 
@@ -191,3 +176,4 @@ Note: auto-rebuild on save does NOT remove deleted products from the index. Only
 - **Building checkout flows?** See [dw-commerce-orders](../dw-commerce-orders)
 - **B2B assortment scoping?** See [dw-commerce-b2b](../dw-commerce-b2b)
 - **Rendering with ViewModels?** See [dw-render-viewmodels](../dw-render-viewmodels)
+- **Cache invalidation after mutations (what to flush, when a restart is owed)?** See [dw-data-access](../dw-data-access/SKILL.md)
