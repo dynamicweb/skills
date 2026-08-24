@@ -42,7 +42,8 @@ Each reference is owned end-to-end by a single topic; cross-references between t
 |---|---|
 | Bring the public tunnel up against the HTTP launch profile | references/tunnel.md |
 | Wire `ForwardedHeaders` in `Program.cs` so DW emits public URLs | references/forwarded-headers.md |
-| Look up the exact `/admin/api/BC*` endpoint names + call convention | references/connector-endpoints.md |
+| Look up which BC call fires when during a live demo | references/connector-endpoints.md |
+| Read the full connector product surface (call convention, 400-vs-401, the 11 queries + 4 commands, `{"Model":{...}}` wrapper, internal types, seeded defaults) | references/bc-connector-surface.md |
 | Fix the AppStore connector's wrong defaults (`indexBuildKey` / `buildName` / `workflowStateId`) | references/dynamicweb-connector-settings.md |
 | Configure the **Business Central** side (URL + bearer token + first sync) | references/bc-side-config.md |
 | Diagnose / install the `StaticLinkManager` AddIn that BC's "show PIM product page" feature requires | references/static-link-manager.md |

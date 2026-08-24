@@ -1,9 +1,13 @@
-# Foundational candidate → dw-integration-erp
+# The PIM-for-Business-Central connector product surface
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 PIM-for-Business-Central connector product
-> surface, staged here for a future fold-up into `dw-integration-erp`. No demo/customer content.
-> When folded, move this body into `dw-integration-erp` and re-target the pointers in the demo
-> skills. Until then, the demo skills reference this file. Do not add demo specifics here.
+## Contents
+
+- [Call convention — single dispatcher](#call-convention--single-dispatcher)
+- [Authentication — 400 vs 401](#authentication--400-vs-401)
+- [Reads — the 11 queries](#reads--the-11-queries)
+- [Writes — the 4 commands](#writes--the-4-commands)
+- [Internal types — not endpoints](#internal-types--not-endpoints)
+- [BC default settings — what the install seeds, and why it's usually wrong](#bc-default-settings--what-the-install-seeds-and-why-its-usually-wrong)
 
 The **PIM for Business Central connector** AppStore app exposes a `/admin/api/BC*` call surface on
 the Dynamicweb host: 11 queries (read) + 4 commands (write), all bearer-auth via the standard
@@ -104,7 +108,7 @@ Roles:
 Several types in the AppStore package don't expose endpoints; they're internal pipelines and
 providers. The generic DW10 patterns behind them (UpdateProviders that seed defaults, `*Pipeline`
 classes that register DI services at startup) are documented in
-[`addin-lifecycle.md`](../../../dw-extend-providers/references/addin-lifecycle.md); the BC-specific instances are:
+[`addin-lifecycle.md`](../../dw-extend-providers/references/addin-lifecycle.md); the BC-specific instances are:
 
 - `BCEndpointsPipeline` — DI-time pipeline that registers all the queries + commands at host startup.
 - `BCSettingsEditScreen` + `BCSettingsNodeProvider` — admin UI surface (Settings → tree node "BC

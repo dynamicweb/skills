@@ -4,15 +4,15 @@
 > demo, and where to read the full platform reference. The vendor-generic connector product surface
 > (single-dispatcher call convention, the suffix rule, 400-vs-401 auth semantics, the full
 > 11-query/4-command inventory, the `{"Model":{...}}` wrapper rule, the internal pipeline/provider
-> types, and the BC default settings the install seeds) lives in the foundational candidate
-> [`integration-bc-connector.md`](../../dw-demo-base/references/foundational/integration-bc-connector.md).
+> types, and the BC default settings the install seeds) lives in
+> [`bc-connector-surface.md`](bc-connector-surface.md).
 > The assembly-introspection technique for re-deriving the surface yourself is in
 > [`source-explorer.md`](../../dw-demo-base/references/foundational/source-explorer.md).
 
 ## Which call fires when — the demo arc
 
 Read the call convention and the full endpoint inventory in
-[`integration-bc-connector.md`](../../dw-demo-base/references/foundational/integration-bc-connector.md)
+[`bc-connector-surface.md`](bc-connector-surface.md)
 first. During a live demo the BC tenant walks the surface in this order — knowing the order lets you
 narrate the ngrok inspector (`127.0.0.1:4040`) in real time:
 
@@ -33,11 +33,11 @@ narrate the ngrok inspector (`127.0.0.1:4040`) in real time:
 - **400 `Unknown query: 'X'` vs 401** — 400 means auth succeeded but the route name is wrong
   (usually the `Query`/`Command` suffix wasn't stripped); 401 means the token is wrong/expired.
   Full semantics:
-  [`integration-bc-connector.md`](../../dw-demo-base/references/foundational/integration-bc-connector.md)
+  [`bc-connector-surface.md`](bc-connector-surface.md)
   "Authentication".
 - **400 `Command.Model cannot be null`** on a POST — the `{"Model":{...}}` wrapper was omitted. This
   is the easiest mistake on the first write attempt. Wrapper rule:
-  [`integration-bc-connector.md`](../../dw-demo-base/references/foundational/integration-bc-connector.md)
+  [`bc-connector-surface.md`](bc-connector-surface.md)
   "Writes".
 
 Token issuance (admin path + reuse-vs-dedicated tradeoff) and rotation are covered in
