@@ -4,7 +4,7 @@
 > platform mechanics (two-table model, must-translate/fallback list, `AllowChangesAcrossLanguages`
 > seed + SQL, `EcomLanguages` columns, MCP-tool surfaces + gotchas, the `GetGroup()`-returns-null
 > group-translation gotcha, the vestigial XML config) live in
-> [`../../dw-demo-base/references/foundational/pim-localization.md`](../../dw-demo-base/references/foundational/pim-localization.md).
+> [`../../dw-pim-localization/references/translation-mechanics.md`](../../dw-pim-localization/references/translation-mechanics.md).
 > Read that first; this file holds only the demo deltas. Loaded from `~/.claude/skills/dw-demo-pim/SKILL.md`
 > "Where to find things". Sister doc to `dw-demo-swift/references/language-layers.md` (content/area side).
 
@@ -23,7 +23,7 @@ en-US (just with a different culture-derived UI chrome) and vice versa.
 
 The platform steps (insert `EcomLanguages` row, translate group names, translate product fields, rebuild
 index, wire the area) are in the candidate's
-[Adding a new language — the platform steps](../../dw-demo-base/references/foundational/pim-localization.md#adding-a-new-language--the-platform-steps).
+[Adding a new language — the platform steps](../../dw-pim-localization/references/translation-mechanics.md#adding-a-new-language--the-platform-steps).
 The demo deltas on top of that sequence:
 
 1. **Pick the products to translate.** For a demo, translate **only the hero SKUs the storyline lands on** (typically 5-12 products) plus all the catalog group names — translating the full catalogue is wasted demo budget.
@@ -42,6 +42,6 @@ PIM localization sells the "single product master, multiple market storefronts" 
 
 ## Cross-references
 
-- [`../../dw-demo-base/references/foundational/pim-localization.md`](../../dw-demo-base/references/foundational/pim-localization.md) — the vendor-generic platform mechanics this demo guidance builds on.
+- [`../../dw-pim-localization/references/translation-mechanics.md`](../../dw-pim-localization/references/translation-mechanics.md) — the vendor-generic platform mechanics this demo guidance builds on.
 - [`../../dw-demo-swift/references/language-layers.md`](../../dw-demo-swift/references/language-layers.md) — the area / content side; how to add a website language layer + wire the Swift `LanguageSelector` paragraph type so the frontend can actually switch.
 - [`canonical-setup-order.md`](canonical-setup-order.md) — where the language steps fit in the build order.

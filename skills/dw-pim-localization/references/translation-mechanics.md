@@ -1,9 +1,8 @@
-# Foundational candidate → dw-pim-localization
+# Product translation mechanics — tables, verbs, flags, traps
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 PIM-localization knowledge, staged here for a future
-> fold-up into `dw-pim-localization`. No demo/customer content. When folded, move this body into
-> `dw-pim-localization` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file.
+PIM-side localization in Dynamicweb 10 — translating products, product groups, and the eight other
+ecommerce objects that can carry translations. Field-validated internals: the two-table mental model,
+the `EcomProductField` flag gates, the facet-label wipe hazard, and the new-language platform steps.
 
 ## Contents
 
@@ -19,9 +18,6 @@
 - [Order / quote / cart state badges — `OrderStateTranslationSave`](#order--quote--cart-state-badges--orderstatetranslationsave-no-sql-needed)
 - [Adding a new language — the platform steps](#adding-a-new-language--the-platform-steps)
 - [Cross-references](#cross-references)
-
-PIM-side localization in Dynamicweb 10 — translating products, product groups, and the eight other
-ecommerce objects that can carry translations.
 
 **TL;DR:** PIM languages live in `EcomLanguages` (the PRODUCT-side language table) and are completely
 separate from CONTENT-side area language layers (`Area.AreaMasterAreaId`). Translating a product is a
@@ -103,8 +99,6 @@ Group translation row:
 
 ## Surfaces — which MCP tools do what
 
-Vendor MCP tool naming used here matches `mcp__dynamicweb-commerce-mcp__*` (rename if the alias differs):
-
 | Want to... | MCP tool (preferred) | SQL fallback |
 |---|---|---|
 | List existing languages | `get_languages` | `SELECT * FROM EcomLanguages` |
@@ -146,8 +140,8 @@ shape on 10.25 is a per-language `EcomGroups` row per group (clone the default-l
 blank category grid on a language layer is this gap, every time. Use `update_groups` MCP with
 `languageId=<new>` OR direct SQL `INSERT INTO EcomGroupTranslation` / per-language `EcomGroups` rows.
 
-**Cache invalidation:** After bulk-translating products, run
-`mcp__dynamicweb-commerce-mcp__build_assortments` + a full Products `BuildIndex`
+**Cache invalidation:** After bulk-translating products, run the `build_assortments` MCP tool
+plus a full Products `BuildIndex`
 (`POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`).
 The catalog frontend pulls names + facets from the index; without a rebuild, the storefront still renders
 the master language strings even when the storefront context switches.
@@ -272,7 +266,7 @@ Two facts that turn "translate the PLP filters" from a write into a project:
   `{OptionId, FieldId, Name, Value, IsDefault, Sort, Image}` — one `Name`. So there is no verb for a
   per-language option name, and the rows must go in by SQL. Option ids live in the
   `ProductCategory|reference_category|<field>` bucket, not the per-type qualified twins
-  ([`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.8).
+  ([dw-pim-modelling structural-model.md](../../dw-pim-modelling/references/structural-model.md) §2.8).
 - **The option collection is cached in-process and does not pick the rows up.** Neither a cache-busted request
   (`?cb=<guid>`) nor a `ProductFieldOptionSave` round-trip on the same option surfaced the inserted labels —
   the localized PLP kept rendering master-language options. **Facet option labels require an app-pool recycle
@@ -296,8 +290,7 @@ POST OrderStateTranslationSave { Model: { OrderStateId, LanguageId, Name, Descri
 One row per (state × language); on one pass 27 states × 2 languages = 54 rows, all read back from
 `EcomOrderStateTranslations`. It covers order, quote and cart states alike (including the workflow-specific
 and `cart_*` states). **Use the verb — do not reach for SQL on this table.** (`EcomOrderStates` *column*
-changes such as `OrderStateColor` are a different surface and are restart-owed —
-[`cache-invalidation.md`](cache-invalidation.md).)
+changes such as `OrderStateColor` are a different surface — those are cached and owe a host restart.)
 
 ## Adding a new language — the platform steps
 
@@ -310,9 +303,9 @@ changes such as `OrderStateColor` are a different surface and are restart-owed �
 3. **Translate group names** first (groups must be translated so the navigation tree localizes) — see the group-translation null gotcha above. Use `update_groups` MCP with `languageId=<new>` OR direct SQL.
 4. **Translate product name + short description** via `update_products`/`patch_products_safe` with `languageId=<new>`. Custom-field translation can be deferred; the fallback handles it.
 5. **Rebuild the index** + run `build_assortments` if assortments are in play.
-6. **Wire the area** to the new language as a SECOND language layer — see [`content-modelling.md`](content-modelling.md) §3 ("Content-side language layers"). On the area side you need a sibling `Area` row with `AreaEcomLanguageId=<langId>` so the storefront actually serves the translated values.
+6. **Wire the area** to the new language as a SECOND language layer — on the area side you need a sibling `Area` row with `AreaEcomLanguageId=<langId>` so the storefront actually serves the translated values. The content-side language-layer flow (website language + `LanguageSelector`) is covered by [dw-content-modelling](../../dw-content-modelling/SKILL.md).
 
 ## Cross-references
 
-- [`content-modelling.md`](content-modelling.md) §3 — the area / content side of the same picture; how to add a website language layer + wire the `LanguageSelector` paragraph type so the frontend can actually switch.
+- [dw-content-modelling](../../dw-content-modelling/SKILL.md) — the area / content side of the same picture; how to add a website language layer + wire the `LanguageSelector` paragraph type so the frontend can actually switch.
 - Official Dynamicweb doc: `https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/localization.html`

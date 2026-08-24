@@ -337,7 +337,7 @@ This is also grep #6 of the discipline audit grep-pack in [`swift-building.md`](
 ## 3. Content-side language layers
 
 > Content-side localization — adding a language layer to a website. Sister concern to the PIM/product
-> side ([`pim-localization.md`](pim-localization.md)), which translates product names / descriptions
+> side ([`pim-localization.md`](../../../dw-pim-localization/references/translation-mechanics.md)), which translates product names / descriptions
 > / custom fields.
 
 **TL;DR:** A language layer is a **sibling `Area` row** under the same Website, with
@@ -396,7 +396,7 @@ WHERE AreaId = <newAreaId>;
 ```
 
 PIM must have the matching `LANG2` row + the products translated to that LanguageId — see
-[`pim-localization.md`](pim-localization.md).
+[`pim-localization.md`](../../../dw-pim-localization/references/translation-mechanics.md).
 
 ### The Swift OOTB language switcher
 
@@ -698,5 +698,5 @@ is in [`extend-mcp-tools.md`](extend-mcp-tools.md) §5.
   accessors used by template role-gates.
 - [`users-permissions.md`](users-permissions.md) — the Permission entity store that AreaCopy fails to
   clone (point 2 above).
-- [`pim-localization.md`](pim-localization.md) — the product side (translate product names,
+- [`pim-localization.md`](../../../dw-pim-localization/references/translation-mechanics.md) — the product side (translate product names,
   descriptions, custom fields).
