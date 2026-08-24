@@ -30,7 +30,7 @@ Run this **after** the demo's products and users exist, never before:
 
 1. The customer-flavoured baseline is deserialized (base 2.3.2 + the demo's catalog/sample layers) — see [deserialize-flow.md](deserialize-flow.md).
 2. Products are seeded and the Products index is built (favorites and cart lines reference real product ids).
-3. The demo identities exist: at least one **buyer** and one **CSR**, the CSR in a CSR-permission group, with the impersonation grants wired ([customer-center.md](customer-center.md) §3 → [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md) "`AccessUserSecondaryRelation`").
+3. The demo identities exist: at least one **buyer** and one **CSR**, the CSR in a CSR-permission group, with the impersonation grants wired ([customer-center.md](customer-center.md) §3 → [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) "`AccessUserSecondaryRelation`").
 
 Seeding before products/users exist produces orphan rows (favorites pointing at absent products, orders with no customer) and is the usual cause of a list that renders but shows nothing.
 
@@ -48,12 +48,12 @@ Seed the signed-in buyer so every tile lands. Exact SQL/API mechanics are founda
 
 | Tile | Minimum to seed | Key mechanic | Owner |
 |---|---|---|---|
-| My orders | ≥3 completed orders, **mixed order states** (e.g. New / Processing / Completed via `EcomOrderStates`) | `OrderComplete=1` + `OrderCompletedDate`; `create_orders` seeds `OrderComplete=0` and is otherwise skipped by the list | [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md) "Order completion", "Seeding the CSR/account section's demo data" |
-| My quotes | ≥1 quote | `OrderIsQuote=1` discriminator (no `OrderComplete` needed) | [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md) |
-| My carts | ≥1 saved cart with lines | `OrderCart=1` discriminator | [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md) |
-| My favorites | 1 default list + several products | SQL-only: `EcomCustomerFavoriteLists` (`IsDefault=1`) + `EcomCustomerFavoriteProducts` (NOT-NULL `ProductVariantId`, `Note`); read via `Pageview.User.GetFavoriteLists()` | [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md) "Favorites seeded via SQL" |
-| My addresses | ≥2 addresses | seed as `UserAddress` rows; mind the profile-address-vs-`UserAddress` checkout gotcha | [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md) |
-| My profile | complete profile fields | populate name / company / email / phone + the address fields the checkout "Continue" gate reads | [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md) |
+| My orders | ≥3 completed orders, **mixed order states** (e.g. New / Processing / Completed via `EcomOrderStates`) | `OrderComplete=1` + `OrderCompletedDate`; `create_orders` seeds `OrderComplete=0` and is otherwise skipped by the list | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) "Order completion", "Seeding the CSR/account section's demo data" |
+| My quotes | ≥1 quote | `OrderIsQuote=1` discriminator (no `OrderComplete` needed) | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) |
+| My carts | ≥1 saved cart with lines | `OrderCart=1` discriminator | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) |
+| My favorites | 1 default list + several products | SQL-only: `EcomCustomerFavoriteLists` (`IsDefault=1`) + `EcomCustomerFavoriteProducts` (NOT-NULL `ProductVariantId`, `Note`); read via `Pageview.User.GetFavoriteLists()` | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) "Favorites seeded via SQL" |
+| My addresses | ≥2 addresses | seed as `UserAddress` rows; mind the profile-address-vs-`UserAddress` checkout gotcha | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) |
+| My profile | complete profile fields | populate name / company / email / phone + the address fields the checkout "Continue" gate reads | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) |
 | My returns | ≥1 RMA request against a completed order | raise a return from a completed order (stock RMA add flow) so `RMAList.cshtml` has a row; depends on the My-orders seed landing first | stock `eCom_CustomerExperienceCenterRma`; base `EcomOrderFlow`/`EcomOrderStates`/`EcomOrderStateRules` supply the return-eligible states |
 
 "Mixed states" matters for the Orders tile specifically — a list where every row says the same status looks synthetic. Spread the seeded orders across the states the base's `EcomOrderStates` ships so the status column tells a story (placed → in progress → shipped/completed).
@@ -63,7 +63,7 @@ Seed the signed-in buyer so every tile lands. Exact SQL/API mechanics are founda
 The CSR persona opens `Customer center/CSR/{Accounts, Orders, Carts, Users}` (and, from 2.3.2, a CSR tile dashboard on the CSR landing). Seed so the CSR has something to act on:
 
 - **≥2 customer accounts**, each with **activity** — orders/carts/quotes owned by a buyer the CSR can impersonate (reuse the buyer seed from §4 for account #1; add a second buyer for account #2).
-- The **impersonation grants** (`AccessUserSecondaryRelation`) wired both directions, plus the Secondary-user index rebuild + user-cache clear — see [customer-center.md](customer-center.md) §3 and [`commerce-orders.md`](../../dw-demo-base/references/foundational/commerce-orders.md) "CSR sales-on-behalf".
+- The **impersonation grants** (`AccessUserSecondaryRelation`) wired both directions, plus the Secondary-user index rebuild + user-cache clear — see [customer-center.md](customer-center.md) §3 and [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) "CSR sales-on-behalf".
 - The impersonation entry point is **`CSR/Users/`**, not `CSR/Accounts/` (Accounts is a company directory with no impersonate button) — [customer-center.md](customer-center.md) §2.
 
 Do **not** rebuild the CSR section to force data into it — the empty-section symptom is a seeding gap, never a structural one ([customer-center.md](customer-center.md) §1, §4).
@@ -131,7 +131,7 @@ UPDATE [EcomGiftCard]
    AND [GiftCardExpiryDate] > GETDATE();
 ```
 
-Measured across a rewind-and-run cycle: the live cards moved +1 day while the cancelled one stayed frozen and still read `active=False` through the gift-card list query. **Assert it** — a cancelled gift card still reads inactive after the nightly refresher runs. Gift-card storage semantics (encrypted codes, one bad row 500ing the whole family) are owned by [`../../dw-demo-base/references/foundational/promotions-engines.md`](../../dw-demo-base/references/foundational/promotions-engines.md).
+Measured across a rewind-and-run cycle: the live cards moved +1 day while the cancelled one stayed frozen and still read `active=False` through the gift-card list query. **Assert it** — a cancelled gift card still reads inactive after the nightly refresher runs. Gift-card storage semantics (encrypted codes, one bad row 500ing the whole family) are owned by [`../../dw-demo-base/references/foundational/promotions-engines.md`](../../dw-commerce-orders/references/promotions-engines.md).
 
 Verify by reading order dates back through the delivery API after idle days and confirming the marketing dashboards read as current, and that the recurring task reports Success with `nextRun` advancing. Task creation semantics (`Begin` re-anchoring, the toggling `TaskToggleActive`, `TaskSave` with `Id=0` creating a new task every call) are owned by [sql-direct-seeding.md](sql-direct-seeding.md) "Scheduled-task creation semantics".
 

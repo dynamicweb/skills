@@ -1,9 +1,26 @@
-# Foundational candidate → dw-commerce-orders
+# Order lifecycle internals — seeding, saves, invoices, subscriptions, RMA cache, CSR impersonation
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 order-completion / customer-number seeding knowledge, staged here for a future
-> fold-up into `dw-commerce-orders`. No demo/customer content. When folded, move this body into
-> `dw-commerce-orders` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file.
+Field-validated DW10 order knowledge: what `create_orders` actually writes, the platform-owns-the-id
+rule on every `*Save`, the re-save-reverts-SQL trap, invoices as `EcomOrders` rows, subscriptions,
+the RMA service cache, reorder mechanics, and CSR sales-on-behalf impersonation.
+
+## Contents
+
+- [Order completion: created orders default to carts](#order-completion-created-orders-default-to-carts-not-completed-orders)
+- [OrderCustomerNumber is not set by create_orders](#ordercustomernumber-is-not-set-by-create_orders)
+- [Area-currency filters order history](#area-currency-filters-order-history)
+- [Order-line prices: seed after the currency restart](#order-line-prices-seed-after-the-currency-restart-then-backfill-totals)
+- [The platform OWNS ids and timestamps](#the-platform-owns-ids-and-timestamps--a-save-discards-the-ones-you-send)
+- [A re-saving verb reverts raw-SQL edits](#a-re-saving-verb-reverts-raw-sql-edits--orderrecalculate-writes-the-cached-order-back)
+- [`GetOrderList` inner-joins `EcomShops`](#getorderlist-inner-joins-ecomshops--orders-on-a-deleted-shop-vanish-from-every-commerce-grid)
+- [An invoice is an `EcomOrders` row](#an-invoice-is-an-ecomorders-row--and-invoicesave-requires-orderstateid)
+- [Subscriptions have no create verb](#subscriptions-have-no-create-verb--the-shape-is-one-flag-plus-an-ecomrecurringorder-row)
+- [The RMA read path is a persistent service cache](#the-rma-read-path-is-a-persistent-service-cache-that-raw-sql-cannot-invalidate--and-rmalist-masks-it)
+- [SQL backfills vs runtime subscribers](#sql-backfills-vs-runtime-subscribers)
+- [The canonical order read surface](#the-canonical-order-read-surface)
+- [CSR sales-on-behalf — impersonation mechanics](#csr-sales-on-behalf--impersonation-mechanics)
+- [Reorder a past order](#reorder-a-past-order--built-in-but-it-appends-to-an-existing-active-cart)
+- [Seeding the CSR/account section's data](#seeding-the-csraccount-sections-data)
 
 ## Order completion: created orders default to carts, not completed orders
 
@@ -84,8 +101,9 @@ by looking at the rendered screen.
 - **After any `*Save`, read the id back from the response or a list query** — never assume the id you sent is
   the id that exists. Where the two keys must be reconciled, join through the list query that carries both
   (`InvoiceList` returns `id` = the minted ledger id **and** `invoiceNumber` = yours).
-- **No verb anywhere in the order / invoice / RMA families can set a creation timestamp.** Demo backdating is
-  therefore raw SQL **keyed on the minted id** — a sanctioned exception, and the only shape that works.
+- **No verb anywhere in the order / invoice / RMA families can set a creation timestamp.** Backdating
+  seeded data is therefore raw SQL **keyed on the minted id** — a sanctioned exception, and the only shape
+  that works.
 - Neighbouring shapes measured on the same pass: `OrderSave` validates the billing address, so a model without
   `customerCountryCode` answers `400 {"CustomerCountryCode":["Billing country should be set."]}`; and
   `OrderRecalculate` takes **`OrderId`, singular** — passing `Ids` answers
@@ -108,9 +126,8 @@ WORKS:  OrderNew -> OrderSave -> OrderLineAddProductsBySKU -> SQL line qty -> Or
 ```
 
 - **The rule generalises past orders:** *any* API verb that re-saves an entity reverts raw-SQL edits made
-  behind it. **API writes first, SQL last, never re-save afterwards** — stated once for every surface in
-  [`../surface-priority.md`](../surface-priority.md) "Silent no-ops on write surfaces". The discount family's
-  instance of the same mechanism is in [`promotions-engines.md`](promotions-engines.md).
+  behind it. **API writes first, SQL last, never re-save afterwards.** The discount family's instance of
+  the same mechanism is in [`promotions-engines.md`](promotions-engines.md).
 - **The related read-side behaviour needs no intervention.** Immediately after a write the grids serve the
   cached order model, but it turns over on its own within a couple of minutes and `GetOrderById` reads
   through to current values — **no recycle and no cache-bust verb is needed**, so do not add one to the
@@ -195,7 +212,7 @@ POST CacheInformationRefresh
   also matches `inteRMAtional`, `infoRMAtion` and `foRMAt`; the substring hunt is what makes the right entry
   hard to find.
 - **Consequence for scheduled work: a SQL-only task cannot call that verb**, so a nightly date shift leaves
-  the RMA detail view stale by design until the cache turns over. Say so when designing the beat rather than
+  the RMA detail view stale by design until the cache turns over. Say so when designing the job rather than
   debugging it later.
 
 Assert `RmaById` returns the same `CreatedAt` as the `RmaList` row after a SQL edit **plus** the flush.
@@ -317,15 +334,15 @@ handler as the first form.
 
 **Both surfaces append to the session's ACTIVE cart and silently no-op when there is none** — neither
 creates a cart, no error is rendered or logged, and valid order lines make no difference. The trap in
-a demo script: a Reorder click right after checkout (the cart was just emptied) does nothing on
-stage. Put any line in the cart first (a normal add-to-cart creates the cart) or place the reorder
-beat before checkout. A Reorder button is one line of Razor in an Order-detail content-layout — no
+a scripted walkthrough: a Reorder click right after checkout (the cart was just emptied) does nothing.
+Put any line in the cart first (a normal add-to-cart creates the cart) or place the reorder step
+before checkout. A Reorder button is one line of Razor in an Order-detail content-layout — no
 `.cs`, no preflight.
 
-## Seeding the CSR/account section's demo data
+## Seeding the CSR/account section's data
 
 When you seed customer-experience data yourself (MCP `create_orders` + `add_products`, or SQL) instead
-of relying on a flavoured baseline, stock filters silently hide otherwise-correct data:
+of relying on pre-provisioned baseline content, stock filters silently hide otherwise-correct data:
 
 - **Placed orders only show in "My orders" when `EcomOrders.OrderComplete = 1`** (and
   `OrderCompletedDate`). See "Order completion" above. Quotes/carts list by their own discriminators
@@ -349,5 +366,7 @@ engines, a voucher grid fed by the legacy one, and an encrypted gift-card code �
 [`promotions-engines.md`](promotions-engines.md).)
 
 (Gating the CSR section away from non-CSR users — and gating buyer dashboards away from the CSR — is the
-Permission entity store's job; see [`users-permissions.md`](users-permissions.md) §15. DC-scoped buyer
-catalogs/shipping that a CSR impersonates onto are [`dc-scoping.md`](../../../dw-commerce-b2b/references/dc-scoping.md).)
+Permission entity store's job; see
+[`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §15. DC-scoped buyer
+catalogs/shipping that a CSR impersonates onto are
+[`dc-scoping.md`](../../dw-commerce-b2b/references/dc-scoping.md).)

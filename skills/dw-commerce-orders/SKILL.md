@@ -229,6 +229,13 @@ Change cart state (B2B quote/cart flows):
 </form>
 ```
 
+## Deep reference
+
+Field-validated internals, split across two references:
+
+- [references/order-lifecycle.md](references/order-lifecycle.md) — what `create_orders` actually writes (carts by default, no `OrderCustomerNumber`), the platform-owns-ids-and-timestamps rule on every `*Save`, the re-save-reverts-raw-SQL trap (`OrderRecalculate` writes the cached order back), the `GetOrderList`↔`EcomShops` inner join, invoices as `EcomOrders` rows (`InvoiceSave` requires `OrderStateId`), subscriptions (no create verb — one flag plus an `EcomRecurringOrder` row), the persistent RMA service cache, reorder mechanics, CSR sales-on-behalf impersonation, and account-section seeding.
+- [references/promotions-engines.md](references/promotions-engines.md) — the two coexisting discount engines (and which verb writes the one the admin screen reads), the voucher grid's legacy-row projection, v2 condition/reward payload shapes, voucher code constraints, and the encrypted gift-card code.
+
 ## Pitfalls
 
 **Form must have `id="ordersubmit"`** — the Shopping Cart app binds to this ID. A missing or different ID prevents checkout submission from working.

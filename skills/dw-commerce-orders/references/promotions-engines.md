@@ -1,9 +1,8 @@
-# Foundational candidate → dw-commerce-orders (promotions)
+# Promotions engines — discounts, vouchers, loyalty, gift cards
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 discount / voucher / loyalty / gift-card knowledge, staged
-> here for a future fold-up into `dw-commerce-orders`. No demo/customer content. When folded, move this body
-> into `dw-commerce-orders` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file.
+Field-validated DW10 discount / voucher / loyalty / gift-card knowledge (validated on 10.28.x):
+two coexisting discount engines, the voucher grid's legacy-row projection, v2 condition/reward
+payload shapes, voucher code constraints, and the encrypted gift-card code.
 
 ## Contents
 
@@ -41,8 +40,8 @@ admin screen stays empty.
   `DiscountAll` `totalCount` must equal the row count the Discounts screen renders.
 
 This is the general "short command names are not unique" hazard with a second cause — not an add-in shadowing
-a platform verb, but two platform engines sharing a name space
-([`data-access.md`](data-access.md) §"Short command names are not unique").
+a platform verb, but two platform engines sharing a name space (see
+[dw-data-access](../../dw-data-access/SKILL.md) for the Management API dispatch model).
 
 ## A voucher campaign is load-bearing on BOTH engines at once
 
@@ -167,9 +166,10 @@ single check is what separates "no gift cards yet" from "the screen is down".
 
 ## Cross-references
 
-- [`commerce-orders.md`](commerce-orders.md) — orders, invoices (an invoice is an `EcomOrders` row),
+- [`order-lifecycle.md`](order-lifecycle.md) — orders, invoices (an invoice is an `EcomOrders` row),
   subscriptions, and the platform-owns-the-id rule that governs every save in this file.
-- [`data-access.md`](data-access.md) — the Management API surface, short-name collisions, and the
-  read-model-is-not-a-save-model rule the legacy `Translations` trap above is an instance of.
-- [`cache-invalidation.md`](cache-invalidation.md) — which caches a raw-SQL write owes, including the
-  in-process caches the legacy discount verbs re-persist from.
+- [dw-data-access](../../dw-data-access/SKILL.md) — the Management API surface, short-name collisions,
+  and the read-model-is-not-a-save-model rule the legacy `Translations` trap above is an instance of.
+- In-process caches: the legacy discount verbs re-persist from caches that raw SQL never invalidates —
+  the general API-writes-first / SQL-last ordering rule in [`order-lifecycle.md`](order-lifecycle.md)
+  "A re-saving verb reverts raw-SQL edits" is the governing form.
