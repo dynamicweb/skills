@@ -4,7 +4,7 @@
 > works during the demo. The generic admin-deeplink mechanism, the full `/admin/api/StaticLink*`
 > endpoint surface, its settings/save shapes, the case-sensitive-parameter gotcha, and the
 > `*Pipeline`-DI-needs-restart pattern are vendor-generic and live in the foundational candidate
-> [`extend-providers.md`](../../dw-demo-base/references/foundational/extend-providers.md) §2–§3. This
+> [`extend-providers.md`](../../dw-extend-providers/references/addin-lifecycle.md) §2–§3. This
 > file is the demo-specific "install it or the beat fails" recipe.
 
 ## Why it matters for the BC demo
@@ -18,7 +18,7 @@ also installed and the host restarted.
 
 The generic three-failure-shape probe (`Unknown command` → not installed; `TypeInitializationException`
 → installed but host not restarted; `200` → working) and the full endpoint surface are in
-[`extend-providers.md`](../../dw-demo-base/references/foundational/extend-providers.md). The BC
+[`extend-providers.md`](../../dw-extend-providers/references/addin-lifecycle.md). The BC
 connector's own `BCEndpointsPipeline` exhibits the same restart requirement.
 
 ## Install recipe (DW admin, manual)
@@ -42,7 +42,7 @@ Probe `POST /admin/api/StaticLinkSave` with `{"Model":{"Type":"Product","Argumen
 bearer auth. A `200 {"status":"ok","model":{"slug":"<64-hex>",...}}` means BC's webview should now
 succeed; `400 Unknown command` means not installed; `500 TypeInitializationException` means installed
 but the host wasn't restarted. Classify and fix per
-[`extend-providers.md`](../../dw-demo-base/references/foundational/extend-providers.md) §2.
+[`extend-providers.md`](../../dw-extend-providers/references/addin-lifecycle.md) §2.
 
 When the embedded webview is reached through the tunnel, the slug-composed URL resolves to the public
 ngrok hostname automatically as long as `ForwardedHeaders` is honouring `X-Forwarded-Host` (see

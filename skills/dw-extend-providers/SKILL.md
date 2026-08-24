@@ -7,6 +7,12 @@ description: 'Build providers, notification subscribers, and AddIns for Dynamicw
 
 # Providers and Notification Subscribers
 
+## Deep reference
+
+| Topic | Where |
+|---|---|
+| AddIn lifecycle patterns — the UpdateProvider-seeds-defaults pattern, `*Pipeline` DI registration and the post-install host-restart stuck state, and the `StaticLinkManager` admin-deeplink AddIn (endpoints, settings, troubleshooting) | [`references/addin-lifecycle.md`](references/addin-lifecycle.md) |
+
 ## Notification Subscribers
 
 Notification subscribers are the primary way to react to Dynamicweb events (page save, order created, product deleted, etc.) without modifying core code.

@@ -92,6 +92,7 @@
         "./skills/dw-integration-framework",
         "./skills/dw-extend-csharp-api",
         "./skills/dw-extend-mcp-tools",
+        "./skills/dw-extend-providers",
         "./skills/dw-headless-delivery",
         "./skills/dw-search-indexing",
         "./skills/dw-setup-config",

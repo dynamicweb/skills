@@ -104,7 +104,7 @@ Roles:
 Several types in the AppStore package don't expose endpoints; they're internal pipelines and
 providers. The generic DW10 patterns behind them (UpdateProviders that seed defaults, `*Pipeline`
 classes that register DI services at startup) are documented in
-[`extend-providers.md`](extend-providers.md); the BC-specific instances are:
+[`addin-lifecycle.md`](../../../dw-extend-providers/references/addin-lifecycle.md); the BC-specific instances are:
 
 - `BCEndpointsPipeline` — DI-time pipeline that registers all the queries + commands at host startup.
 - `BCSettingsEditScreen` + `BCSettingsNodeProvider` — admin UI surface (Settings → tree node "BC

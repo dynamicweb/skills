@@ -1,13 +1,14 @@
-# Foundational candidate → dw-extend-providers
+# AddIn lifecycle patterns — seeding, DI registration, admin deeplinks
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 AddIn lifecycle patterns, staged here for a future
-> fold-up into `dw-extend-providers`. No demo/customer content. When folded, move this body into
-> `dw-extend-providers` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file. Do not add demo specifics here.
+## Contents
+
+- [1. The UpdateProvider-seeds-defaults pattern](#1-the-updateprovider-seeds-defaults-pattern)
+- [2. `*Pipeline` DI registration needs a host restart](#2-pipeline-di-registration-needs-a-host-restart)
+- [3. The admin-deeplink ("static link") mechanism](#3-the-admin-deeplink-static-link-mechanism)
 
 Three durable patterns that recur across DW10 AppStore AddIns. The generic provider/AddIn/discovery
-mechanics (`UpdateProvider`, reflection-based discovery, `[AddInName]`) are already owned by
-`dw-extend-providers`; these three nuances extend that base.
+mechanics (`UpdateProvider`, reflection-based discovery, `[AddInName]`) are owned by the
+[SKILL.md](../SKILL.md) body; these three nuances extend that base.
 
 ## 1. The UpdateProvider-seeds-defaults pattern
 
