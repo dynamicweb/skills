@@ -129,7 +129,7 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
 
 - **Category** = row in `EcomProductCategory` + translation row in `EcomProductCategoryTranslation`. Categories are SOLUTION-GLOBAL — not scoped to shops.
 - **Fields on a category** = rows in `EcomProductCategoryField` + translations in `EcomProductCategoryFieldTranslation`.
-- **`reference_category` is load-bearing and easy to miss** — the hidden template category that powers every admin completeness/rule lookup, plus its blank-panel gotcha and seed SQL, lives in [dw-pim-completeness](../../dw-pim-completeness/SKILL.md).
+- **`reference_category` is load-bearing and easy to miss** — the hidden template category that powers every admin completeness/rule lookup, plus its blank-panel gotcha and seed SQL, lives in [dw-pim-completeness](../../dw-pim-completeness/references/rules-and-dashboards.md).
 - **List field options** = `EcomFieldOption` (FieldOptionId, FieldOptionFieldId, FieldOptionName, FieldOptionValue, FieldOptionIsDefault, FieldOptionSort). Scoped to field, not category.
 - **Field values on products** = `EcomProductCategoryFieldValue` (FieldValueFieldId, FieldValueFieldCategoryId, FieldValueProductId, FieldValueProductVariantId, FieldValueProductLanguageId, FieldValueValue). One row per (product, field).
 - **Dropdown/multi-select values store the option VALUE, never the display name.** For a list-presented
@@ -149,7 +149,7 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
   `ProductFieldOptionsByFieldId` never serves them back, so the field renders with no choices while the
   write looks perfect. Options belong to the **field**, and a reference field's field-id form is the
   `reference_category` one (same hidden template category that powers the admin completeness/rule lookups —
-  [dw-pim-completeness](../../dw-pim-completeness/SKILL.md)). Write options to the `reference_category` path, then assert
+  [dw-pim-completeness](../../dw-pim-completeness/references/rules-and-dashboards.md)). Write options to the `reference_category` path, then assert
   they come back through `ProductFieldOptionsByFieldId`; a returned id is not evidence.
 - **Cloning a reference field's DEFINITION does not clone its OPTIONS — and `EcomFieldOption` primary keys are
   globally unique, so the rows cannot be copied verbatim.** Cloning reference fields into per-type PIM
@@ -316,6 +316,6 @@ DELETE FROM UnifiedPermission
    AND PermissionKey IN ('g_ean','g_weight_kg','g_height_cm','g_width_cm','g_length_cm');
 ```
 
-Then flush `ProductFieldService`, `ProductService`, `CompletionRuleService`, `PermissionService` and trigger a Full `BuildIndex` on the Products repository (see [dw-pim-completeness](../../dw-pim-completeness/SKILL.md) for the rebuild recovery recipe).
+Then flush `ProductFieldService`, `ProductService`, `CompletionRuleService`, `PermissionService` and trigger a Full `BuildIndex` on the Products repository (see [dw-pim-completeness](../../dw-pim-completeness/references/rules-and-dashboards.md) for the rebuild recovery recipe).
 
 **Completion-rule regex note**: `EcomCompletionRules` uses a comma-separated SystemName list (`EcomCompletionRuleProductFields`), not regex. Rule "completeness" is a field-has-value check, not a pattern match. `EcomValidationRules` is a separate table for input-validation patterns and is independent — touch that only if a custom field carried a regex pattern (`FieldValidationPattern` on `EcomProductCategoryField`) that needs replicating on the standard.

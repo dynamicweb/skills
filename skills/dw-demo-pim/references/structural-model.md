@@ -19,7 +19,7 @@
 | §2.6 Bundles (BOM) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.6 | — |
 | §2.7 Channels + Feeds | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.7 | — |
 | §2.8 Product Categories + Fields internals | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.8 | — |
-| §2.8 `reference_category` blank-panel gotcha | [`pim-completeness.md`](../../dw-demo-base/references/foundational/pim-completeness.md) | planted-gap framing → [governance.md](governance.md) |
+| §2.8 `reference_category` blank-panel gotcha | [`pim-completeness.md`](../../dw-pim-completeness/references/rules-and-dashboards.md) | planted-gap framing → [governance.md](governance.md) |
 | §2.9 Assortments ≠ Channels | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.9 | — |
 | §2.10 Assets (`EcomDetails` + `DetailLanguageId`) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.10 | — |
 | §2.11 Pricing — tier rows ignored by stock cart | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.11 | cheat-sheet caveat (below) |

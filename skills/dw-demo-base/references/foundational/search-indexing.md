@@ -248,4 +248,4 @@ either skipped STEP 0 or flushed the wrong cache — do **not** rebuild again bl
 it an index quirk; flush the three services above and rebuild once more. (Building before flushing is
 the #1 cause of "the dashboard widget shows 0 but the data is right".)
 
-If the build fails or never reaches a fresh Success, check that the index file exists at `wwwroot/Files/System/Repositories/Products/Products.index` and that the Repository name matches the index file's containing folder. The completeness/governance consumers of this index live in [`pim-completeness.md`](pim-completeness.md); the post-mutation cache rules live in [`cache-invalidation.md`](cache-invalidation.md).
+If the build fails or never reaches a fresh Success, check that the index file exists at `wwwroot/Files/System/Repositories/Products/Products.index` and that the Repository name matches the index file's containing folder. The completeness/governance consumers of this index live in [`pim-completeness.md`](../../../dw-pim-completeness/references/rules-and-dashboards.md); the post-mutation cache rules live in [`cache-invalidation.md`](cache-invalidation.md).
