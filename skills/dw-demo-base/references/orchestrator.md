@@ -281,7 +281,7 @@ custom design configuration:
 3. **Stock-copy tripwire** — the shipped baseline's own copy strings, grepped against the served HTML.
 
 The detectors and the tripwire list live in
-[`../../dw-demo-swift/references/zero-state.md`](../../dw-demo-swift/references/zero-state.md); this
+[`../../dw-demo-swift/references/re-skin.md`](../../dw-demo-swift/references/re-skin.md) §"Step 0 — the zero-state pass"; this
 list is the acceptance contract that says *when* they run. Expect FAIL on run one against a raw
 baseline — the pass is earned by fixing the layer defect and authoring the content, never by leaving
 the leg unconfigured.
