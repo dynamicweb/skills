@@ -350,4 +350,4 @@ engines, a voucher grid fed by the legacy one, and an encrypted gift-card code �
 
 (Gating the CSR section away from non-CSR users — and gating buyer dashboards away from the CSR — is the
 Permission entity store's job; see [`users-permissions.md`](users-permissions.md) §15. DC-scoped buyer
-catalogs/shipping that a CSR impersonates onto are [`commerce-b2b.md`](commerce-b2b.md).)
+catalogs/shipping that a CSR impersonates onto are [`dc-scoping.md`](../../../dw-commerce-b2b/references/dc-scoping.md).)

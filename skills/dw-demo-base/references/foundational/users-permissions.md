@@ -705,7 +705,7 @@ shape (verified live on 10.26.x, page AND paragraph level): an explicit
 `AuthenticatedFrontend → None` deny **plus** a `<group id> → Read` grant **on the same entity** —
 i.e. exactly the two-step recipe under "Frontend resolution" below. For visibility that should
 follow commerce data rather than CMS permissions, prefer the surfaces that natively scope by group
-(Assortments, DC groups — [`commerce-b2b.md`](commerce-b2b.md)).
+(Assortments, DC groups — [`dc-scoping.md`](../../../dw-commerce-b2b/references/dc-scoping.md)).
 
 ### Enforcement points
 
@@ -820,7 +820,7 @@ parallel role system.
 **When to escalate.** The suffix-as-role pattern is right when the role is a *visibility flag* on the
 storefront templates (hide price, hide add-to-cart) — you're already touching the relevant layout.
 When the role must drive Assortments / Shipping methods / fees / cart-time pricing, escalate to **DC
-user groups** ([`commerce-b2b.md`](commerce-b2b.md)) instead. The two compose: a buyer is both a member
+user groups** ([`dc-scoping.md`](../../../dw-commerce-b2b/references/dc-scoping.md)) instead. The two compose: a buyer is both a member
 of a DC group (group → unlocks Assortments + Shipping) and carries a `-BROWSE` customer-number suffix
 (suffix → suppresses price display).
 

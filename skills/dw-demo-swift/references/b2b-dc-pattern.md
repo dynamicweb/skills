@@ -7,7 +7,7 @@ Assortments + Shipping methods + Shipping fees + cart-time pricing without custo
 naming convention, user assignment, surface guidance (MCP-first; the `AccessUser` NOT-NULL column
 list for SQL fallback), the admin-tree typed-group filter, and the verification flow are owned by the
 `dw-commerce-b2b` foundational skill — staged in
-[`commerce-b2b.md`](../../dw-demo-base/references/foundational/commerce-b2b.md) ("The DC-as-user-group
+[`dc-scoping.md`](../../dw-commerce-b2b/references/dc-scoping.md) ("The DC-as-user-group
 pattern"). Read that before scaffolding DC groups.
 
 ## Hiding prices from anonymous visitors is a **template-level** gate only
@@ -57,7 +57,7 @@ For everything in between (multi-DC B2B with named buyer accounts), this is the 
 
 ## Cross-references
 
-- [`commerce-b2b.md`](../../dw-demo-base/references/foundational/commerce-b2b.md) — the full mechanic,
+- [`dc-scoping.md`](../../dw-commerce-b2b/references/dc-scoping.md) — the full mechanic,
   naming, assignment, and verification.
 - [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.9 —
   Assortments structural model (customer access ≠ Channels); §2.11 — the stock cart ignores

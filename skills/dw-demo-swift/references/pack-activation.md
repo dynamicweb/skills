@@ -165,7 +165,7 @@ zero-custom-code base preserves while letting a feature layer offer more when a 
 **Worked example — `feature-pricing`.** Contract pricing (the per-customer price a buyer sees at cart
 time) is **native default-provider behavior and needs no compile** — the zero-code headline; author the
 per-customer `EcomPrices` row (`PriceUserCustomerNumber`) and it resolves
-([`../../dw-demo-base/references/foundational/commerce-b2b.md`](../../dw-demo-base/references/foundational/commerce-b2b.md) "Customer-scoped contract prices"). **Quantity-tier enforcement** (bulk-break
+([`../../dw-demo-base/references/foundational/dc-scoping.md`](../../dw-commerce-b2b/references/dc-scoping.md) "Customer-scoped contract prices"). **Quantity-tier enforcement** (bulk-break
 pricing off `PriceQuantity > 0` rows) is what the shipped `IPriceProvider` adds — the stock cart ignores
 tier rows until the provider is compiled in
 ([`../../dw-demo-base/references/foundational/catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11). So: install `feature-pricing` **data-only** to demo contract

@@ -432,4 +432,4 @@ After restart, hit the page once (GET) to warm JIT, then confirm the content ren
 appears but the inner item-type fields are empty, the `ItemType_*` instance row is missing or its `Id`
 doesn't match `ParagraphItemId`. See [`cache-invalidation.md`](cache-invalidation.md) for the
 post-mutation cache table. Sister required-fields list for `AccessUser` SQL-direct seeding is in
-[`commerce-b2b.md`](commerce-b2b.md).
+[`dc-scoping.md`](../../../dw-commerce-b2b/references/dc-scoping.md).

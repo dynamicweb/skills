@@ -99,7 +99,8 @@
         "./skills/dw-pim-completeness",
         "./skills/dw-pim-localization",
         "./skills/dw-pim-workflow",
-        "./skills/dw-commerce-catalog"
+        "./skills/dw-commerce-catalog",
+        "./skills/dw-commerce-b2b"
       ]
     }
   ]

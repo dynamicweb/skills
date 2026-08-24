@@ -1,9 +1,18 @@
-# Foundational candidate → dw-commerce-b2b
+# B2B distribution-center scoping — DC-as-user-group, contract prices, seeding
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 B2B distribution-center (DC) scoping knowledge, staged here for a future
-> fold-up into `dw-commerce-b2b`. No demo/customer content. When folded, move this body into
-> `dw-commerce-b2b` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file.
+Field-validated DW10 B2B distribution-center (DC) scoping knowledge: the DC-as-user-group pattern, customer-scoped contract prices, the `AccessUser` seeding schema, and the admin-tree visibility trap.
+
+## Contents
+
+- [The DC-as-user-group pattern](#the-dc-as-user-group-pattern)
+- [Customer-scoped contract prices — `save_prices` can't set the customer number](#customer-scoped-contract-prices--save_prices-cant-set-the-customer-number)
+- [Naming convention](#naming-convention)
+- [User assignment](#user-assignment)
+- [Surface guidance for setting this up](#surface-guidance-for-setting-this-up)
+- [Admin Users tree filters typed groups](#admin-users-tree-filters-typed-groups)
+- [Verification flow](#verification-flow)
+- [When not to use this pattern](#when-not-to-use-this-pattern)
+- [Cross-references](#cross-references)
 
 ## The DC-as-user-group pattern
 
@@ -26,8 +35,9 @@ wholesale / B2B-distributor scenario that touches DC-aware behavior.
 4. **Cart-time price resolution** scoped by the same user-group — covered by the stock `EcomPrices`
    resolver when `PriceCustomerGroup` matches a group the user is a member of. (Note: this is
    base-row resolution; `PriceQuantity > 0` tier rows are still ignored by the stock cart — see
-   [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) §2.11. The vendor-recommended pattern for qty-aware
-   DC pricing is ERP-imported pre-graduated rows, one per (product, user-group, qty-band).)
+   [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11. The
+   vendor-recommended pattern for qty-aware DC pricing is ERP-imported pre-graduated rows, one per
+   (product, user-group, qty-band).)
 
 This is *not* a custom architecture. Each of the four features is a stock DW10 surface that scopes
 by user-group; "DC = user group" is the convention that makes them compose.
@@ -49,12 +59,13 @@ INSERT INTO EcomPrices (PriceProductId, PriceCurrencyCode, PriceAmount, PriceUse
 VALUES (N'<productId>', N'<CUR>', <amount>, N'<buyer AccessUserCustomerNumber>' /*, … */);
 ```
 
-Restart or flush the price cache after a direct SQL write (see [`cache-invalidation.md`](cache-invalidation.md)).
+Restart the host or flush the price cache after a direct SQL write — prices are cached in process and
+the resolver does not observe raw SQL changes.
 **Validate:** sign in as that buyer → the PDP / cart shows the contract price; sign in as a different
 buyer → they see the list price. (Contract price = per-customer; the group-scoped `PriceCustomerGroup`
 resolver of §"Cart-time price resolution" is the per-DC-group counterpart. Quantity-tier
 enforcement — `PriceQuantity > 0` rows — is a separate matter the **stock cart ignores**; see
-[`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) §2.11.)
+[`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11.)
 
 ## Naming convention
 
@@ -88,8 +99,7 @@ wiring**.
 
 ## Surface guidance for setting this up
 
-Structural setup, not gotcha-debugging — the surface-priority rule applies. MCP-first whenever
-possible.
+Structural setup, not gotcha-debugging — prefer MCP whenever possible; escalate to SQL only for bulk.
 
 ### MCP (preferred surface for the group + user wiring)
 
@@ -104,9 +114,8 @@ surface. Cache invalidation is automatic; no host restart.
 
 ### SQL fallback (for bulk seeding only)
 
-When seeding tens of users across many DCs, bulk SQL is appropriate. Use the surface-priority
-escalation rule — try MCP, escalate to SQL only for bulk cases where MCP-tool round-trips become
-prohibitive.
+When seeding tens of users across many DCs, bulk SQL is appropriate. Try MCP first, escalate to SQL
+only for bulk cases where MCP-tool round-trips become prohibitive.
 
 Schema notes for SQL fallback:
 
@@ -114,9 +123,9 @@ Schema notes for SQL fallback:
   `AccessUserCustomerNumber` = the DC code, `AccessUserUserAndGroupType` = NULL (so the group
   remains visible in admin tree), `AccessUserExternalID` = NULL or your ERP key. `AccessUserActive = 1`.
 - **`AccessUserGroupRelation`** rows: one per `(AccessUserUserID, AccessUserGroupID)` pair.
-- After bulk INSERT, **restart the host** to flush user/group caches — per
-  [`cache-invalidation.md`](cache-invalidation.md) the user-resolution caches don't observe direct
-  SQL writes. **Doesn't apply when** the rows came via MCP / admin UI; those invalidate inline.
+- After bulk INSERT, **restart the host** to flush user/group caches — the user-resolution caches
+  don't observe direct SQL writes. **Doesn't apply when** the rows came via MCP / admin UI; those
+  invalidate inline.
 
 **`AccessUser` NOT NULL columns that easily get skipped.** Bulk-INSERTs that pattern-copy from a
 partial INSERT example abort with a confusing `Cannot insert the value NULL into column '<X>'` on
@@ -201,12 +210,12 @@ For everything in between (multi-DC B2B with named buyer accounts), this is the 
 
 ## Cross-references
 
-- [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) §2.9 — Assortments structural model (customer access
-  ≠ Channels); §2.11 — cart ignores `PriceQuantity > 0`; ERP-pre-graduated rows are the production
-  pattern for qty-aware DC pricing.
-- [`commerce-orders.md`](commerce-orders.md) — CSR sales-on-behalf / impersonation, layered on top
-  of the DC pattern when a CSR persona impersonates DC buyers.
-- [`data-access.md`](data-access.md) — the SQL-fallback surface for bulk `AccessUser` /
-  `AccessUserGroupRelation` seeding.
-- [`users-permissions.md`](users-permissions.md) — `AccessUserGroup` membership resolution
-  ("highest level wins" across a user's groups), which is what makes union-of-DCs work.
+- [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.9 —
+  Assortments structural model (customer access ≠ Channels); §2.11 — cart ignores
+  `PriceQuantity > 0`; ERP-pre-graduated rows are the production pattern for qty-aware DC pricing.
+- [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) — CSR
+  sales-on-behalf / impersonation, layered on top of the DC pattern when a CSR persona impersonates
+  DC buyers.
+- [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) —
+  `AccessUserGroup` membership resolution ("highest level wins" across a user's groups), which is
+  what makes union-of-DCs work.
