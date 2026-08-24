@@ -1,9 +1,4 @@
-# Foundational candidate → dw-source-explorer
-
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 assembly-introspection technique, staged here for
-> a future fold-up into `dw-source-explorer`. No demo/customer content. When folded, move this body
-> into `dw-source-explorer` and re-target the pointers in the demo skills. Until then, the demo
-> skills reference this file. Do not add demo specifics here.
+# Assembly introspection — reflection discipline and MetadataReader
 
 ## Reflection answers "does it exist", never "why is it not selected"
 

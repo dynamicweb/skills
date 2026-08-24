@@ -218,7 +218,7 @@ option exists.
 The add-in is `Dynamicweb.DataIntegration.Integration.JobScheduledTaskAddIn, Dynamicweb.DataIntegration`,
 and its **only** property is `Activity`. Guessing at a namespace burns a cycle for no reason — read the
 assembly's TypeDef table if the FQN is ever in doubt (technique in
-[`../../dw-demo-base/references/foundational/source-explorer.md`](../../dw-demo-base/references/foundational/source-explorer.md)).
+[`../../dw-source-explorer/references/assembly-introspection.md`](../../dw-source-explorer/references/assembly-introspection.md)).
 Its settings obey the same **literal-XML** and **visible-only-after-registration** rules as Step 3.
 
 ```xml

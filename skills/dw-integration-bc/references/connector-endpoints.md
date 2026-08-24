@@ -7,7 +7,7 @@
 > types, and the BC default settings the install seeds) lives in
 > [`bc-connector-surface.md`](bc-connector-surface.md).
 > The assembly-introspection technique for re-deriving the surface yourself is in
-> [`source-explorer.md`](../../dw-demo-base/references/foundational/source-explorer.md).
+> [`assembly-introspection.md`](../../dw-source-explorer/references/assembly-introspection.md).
 
 ## Which call fires when — the demo arc
 

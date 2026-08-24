@@ -7,6 +7,12 @@ description: 'Browse Dynamicweb source code on GitHub to understand internal API
 
 # Dynamicweb Source Explorer
 
+## Deep reference
+
+| Topic | Where |
+|---|---|
+| Assembly introspection — the "grep first, reflect second" discipline (reflection answers "does it exist", never "why is it not selected") and the `MetadataReader` recipe for listing an installed AddIn's `*Query`/`*Command` endpoint surface without loading the assembly | [`references/assembly-introspection.md`](references/assembly-introspection.md) |
+
 ## Purpose
 
 Navigate the Dynamicweb open-source repositories on GitHub to understand internal APIs, discover available classes/methods, and find implementation patterns. This replaces the need for a local Dynamicweb source checkout.

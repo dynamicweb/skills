@@ -86,6 +86,7 @@
         "./skills/dw-demo-base",
         "./skills/dw-setup-install",
         "./skills/dw-setup-upgrade",
+        "./skills/dw-source-explorer",
         "./skills/dw-demo-pim",
         "./skills/dw-demo-swift",
         "./skills/dw-demo-headless",
