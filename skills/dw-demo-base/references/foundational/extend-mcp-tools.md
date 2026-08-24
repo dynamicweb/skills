@@ -140,4 +140,4 @@ and silently drops part of the input:
 through a different surface (or curl the rendered page) before declaring it done. When a silent no-op is
 confirmed, the SQL fallback is sanctioned; note the cache that needs flushing. (The content-author's view
 of these same two no-ops — framed as paragraph/page save bookkeeping — is in
-[`content-modelling.md`](content-modelling.md).)
+[`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md).)

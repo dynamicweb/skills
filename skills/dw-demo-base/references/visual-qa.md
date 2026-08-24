@@ -160,7 +160,7 @@ Most recurring findings have a *known* cause with a documented fix — route the
 | ~192px dead grey band inside a section | Bootstrap `.ratio` aspect-ratio token vs CSS custom-property | [`foundational/swift-building.md`](foundational/swift-building.md) §3 |
 | Blank image wells in a `fullPage` capture | Lazy-load, page not scroll-swept — measurement artifact, not a defect | [`browser-automation.md`](browser-automation.md) verify-flow step 5 |
 | Blank cells in spec/attribute components (admin shows values) | Stored list-field value is the display name, not `FieldOptionValue` | [`dw-pim-modelling/references/structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.8 |
-| Razor error block where a section should be | Plain label string seeded into a `ButtonData` field | [`foundational/content-modelling.md`](foundational/content-modelling.md) Management-API editing section |
+| Razor error block where a section should be | Plain label string seeded into a `ButtonData` field | [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) Management-API editing section |
 | Component renders a heading over an empty shell | `DisplayGroups` given product-category ids instead of display-group system names | [`foundational/swift-building.md`](foundational/swift-building.md) §3 |
 | Second element missing from a grid section | Standard `Swift-v2_Row` columns render exactly one paragraph | [`foundational/swift-building.md`](foundational/swift-building.md) §2 |
 | A whole section renders nothing, silently | Unknown `GridRowDefinitionId` | [`foundational/data-access.md`](foundational/data-access.md) |

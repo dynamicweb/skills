@@ -81,7 +81,7 @@ Verification: `git diff --name-only -- '*custom.css'` must never show a path end
 
 Symptom: a paragraph template path like `Templates\Designs\Swift-v2\Paragraph\Swift-v2_Text\<Project>SomeName.cshtml` that has nothing to do with text. The paragraph is created as Swift Text in admin, then the template path is overridden to point at this file. The editor sees only Title/Subtitle/Text fields; the template ignores most of them and bakes the real fields as hardcoded literals.
 
-Fix: define a `<Prefix>_<ConceptName>` custom item type — see [`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §2 ("Custom item types — the `<Prefix>_*` discipline") and the separate-the-styling-from-content pattern in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9.
+Fix: define a `<Prefix>_<ConceptName>` custom item type — see [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §2 ("Custom item types — the `<Prefix>_*` discipline") and the separate-the-styling-from-content pattern in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9.
 
 ## Recipe
 

@@ -277,6 +277,15 @@ IEnumerable<FileViewModel> files = item.GetFiles("Attachments");
                 2Column.cshtml
 ```
 
+## Deep reference
+
+[references/modelling-discipline.md](references/modelling-discipline.md) — field-validated depth on:
+
+- **Editor-manageable pages, not HTML blobs** — one paragraph/field per editor concern; rich-text fields carry prose only; the "could an editor change it without seeing HTML?" gate.
+- **Custom item types — the `<Prefix>_*` discipline** — why an XML drop alone makes a type readable but never writable (`ItemFieldSave` materialises the table), the write-ACE on `Files\System\Items\**`, Routes A/B for creating types, editor-choice-becomes-column-type (`TextEditor` → `nvarchar(255)` hard errors), and repeater-field storage plus the `ParagraphSave` edit path for repeater children (and why neither the save response nor `GetParagraphById` can verify a child write — the rendered page can).
+- **Content-side language layers** — the `Area` sibling-row model, `AreaCopy`, what a full-content copy does NOT carry (string-id repeater children, permissions, hardcoded page-id gates, component selectors), the three-layer translation cascade, and friendly-URL/root wiring.
+- **Editing content through the Management API** — `ButtonData` binder asymmetry, `ShowParagraph` no-op, `PageCopy` shortcut inheritance, and the saves that report success but silently drop a field.
+
 ## Pitfalls
 
 **System names are permanent** — changing an item type system name after templates reference it breaks rendering for all existing pages/paragraphs of that type. Treat system names as write-once.
@@ -294,3 +303,4 @@ IEnumerable<FileViewModel> files = item.GetFiles("Attachments");
 - **Rendering templates with ViewModels?** See [dw-render-viewmodels](../dw-render-viewmodels)
 - **Razor template structure?** See [dw-render-razor](../dw-render-razor)
 - **Using TemplateTags for legacy rendering?** See [dw-render-templatetags](../dw-render-templatetags)
+- **Cache invalidation after content mutations (SQL-seeded pages/paragraphs, item-type XML drops)?** See [dw-data-access](../dw-data-access/SKILL.md)

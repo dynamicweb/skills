@@ -20,7 +20,7 @@
 | Read customer orders (`Services.Orders.GetCustomerOrdersByType` / `GetOrdersBySearch`) | `dw-commerce-orders` | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) "canonical order read surface" |
 | Get product / friendly URLs; `AddStylesheet`/`AddScript` hoisting; cross-cutting redirects (`Page.Loaded` subscriber); per-category behavior; product-field arrays | `dw-render-razor` | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 |
 | `ViewModelTemplate<>` Razor pitfalls (`@Html.Raw` absent, `ProductFieldValues`, `ToggleFavorite`) | `dw-render-razor` | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §2 |
-| Custom item types — the `<Prefix>_*` discipline | `dw-content-modelling` | [`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §2 |
+| Custom item types — the `<Prefix>_*` discipline | `dw-content-modelling` | [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §2 |
 
 ## Legacy dotted-path redirects (`.htm` / `.asp`) — IIS-only; don't fail the polish gate on localhost
 

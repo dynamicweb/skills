@@ -331,7 +331,7 @@ the shipped type rather than leaving every build to blank them.
 
 The Accordion's content lives in `Accordion_Items`, an item LIST — the same storage shape as
 `Swift-v2_Slider`'s slides, and the same edit path:
-[`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §"How repeater
+[`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §"How repeater
 children are stored — and the Management API edit path" is canonical. The accordion-specific bindings:
 
 - **Parent list field** — `ContentItem|Swift-v2_Accordion|General|Accordion_Items`, an ARRAY of child entries.
@@ -355,7 +355,7 @@ POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
 DW mints the `ItemList` and wires the relation for you — on a fresh Accordion the parent's
 `Accordion_Items` pointer transitions `'0'` → a non-zero list id — and the storefront renders it on the
 next GET with **no recycle**. Verify per
-[`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §"Verifying a
+[`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §"Verifying a
 repeater-child write": the `ParagraphSave` response and `GetParagraphById` **cannot** decide it — the
 response is a verbatim echo of what you posted (including values that did not persist) and the parent's
 `Items` field is a constant list id on any accordion that already has items. **The verification is the

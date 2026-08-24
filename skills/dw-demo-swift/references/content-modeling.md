@@ -9,7 +9,7 @@ field, that is the signal to model a field or an item type instead.
 The full vendor-generic discipline — decompose by editor concern, field-purity rules, images in image
 fields, plain-text titles, no page-ID-scoped CSS, list pages read modeled fields, watch for stacking
 debris — is owned by the `dw-content-modelling` foundational skill, staged in
-[`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §1
+[`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §1
 ("Editor-manageable pages, not HTML blobs"). The custom item-type `<Prefix>_*` discipline (when a block
 needs editor-configurable fields the stock item types don't have) is §2 of the same file. Load both
 **before** building any designed page, not as a post-hoc audit.

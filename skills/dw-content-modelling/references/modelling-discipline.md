@@ -1,16 +1,16 @@
-# Foundational candidate → dw-content-modelling
+# Modelling discipline: editor-manageable content, custom item types, language layers
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 content-modelling knowledge — editor-manageable
-> page modelling, the custom item-type `<Prefix>_*` discipline, and content-side language layers —
-> staged here for a future fold-up into `dw-content-modelling`. No demo/customer content. When
-> folded, move this body into `dw-content-modelling` and re-target the pointers in the demo skills.
-> Until then, the demo skills reference this file.
+Vendor-generic DW10 content-modelling knowledge: editor-manageable page modelling, the custom
+item-type `<Prefix>_*` discipline (including the XML/`ItemFieldSave` activation mechanics and
+repeater-child edit path), content-side language layers, and the Management API editing sharp edges.
 
 ## Contents
 
 - [1. Editor-manageable pages, not HTML blobs](#1-editor-manageable-pages-not-html-blobs)
 - [2. Custom item types — the `<Prefix>_*` discipline](#2-custom-item-types--the-prefix_-discipline)
 - [3. Content-side language layers](#3-content-side-language-layers)
+- [Editing page / paragraph / grid-row content through the Management API](#editing-page--paragraph--grid-row-content-through-the-management-api)
+- [Cross-references](#cross-references)
 
 ## 1. Editor-manageable pages, not HTML blobs
 
@@ -19,7 +19,7 @@
 **The rule: model one paragraph (or field) per editor concern; rich-text fields carry prose only.**
 The moment a `class=` attribute, a `<div>`, or a structural `<img>` is needed inside a rich-text
 field, that is the signal to model a field or an item type instead — see the escalation mechanics in
-[`swift-building.md`](swift-building.md) ("separate the styling from the content") and the custom
+[dw-swift-building](../../dw-swift-building/SKILL.md) ("separate the styling from the content") and the custom
 item-type discipline in §2 below.
 
 ### Why this matters
@@ -49,7 +49,7 @@ enforced at build time, not discovered at audit time.
    never spans inside one rich-text blob.
 2. **Rich-text fields contain only tags the WYSIWYG itself produces** (`p`, `strong`, `em`, `ul`,
    `a`, plain `blockquote`). No `class=`, no `<div>`, no `style=` (the inline-`style` RTE-hostility
-   case is covered in [`swift-building.md`](swift-building.md)).
+   case is covered in [dw-swift-building](../../dw-swift-building/SKILL.md)).
 3. **Images go in image fields** (`ParagraphImage` or an item image field) so editors get the file
    picker and templates get `/Admin/Public/GetImage.ashx` resizing/format conversion for free. Never
    `<img>` inside rich text for structural images (hero, card, avatar). Inline images are acceptable
@@ -75,7 +75,7 @@ enforced at build time, not discovered at audit time.
 
 Open the paragraph(s) in the DW editor and ask: **"could a content editor change the image, reword
 the quote, and edit one stat — without seeing HTML?"** If no, remodel before moving on. Run this per
-designed page, not once per demo.
+designed page, not once per site.
 
 ## 2. Custom item types — the `<Prefix>_*` discipline
 
@@ -152,7 +152,7 @@ a truncation**: a 259-character alt text bounced the whole `ParagraphSave` with 
 characters landed. Nothing in the field definition surfaces the limit. Choose `TextArea` / `RichText` for
 anything that can grow (descriptions, alt text, any authored prose) and keep `TextEditor` for values you
 can guarantee ≤ 255 — and note that the choice is baked at field-create time, so changing it later is the
-create-alongside-and-migrate motion ([`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.8), not an edit.
+create-alongside-and-migrate motion ([dw-pim-modelling](../../dw-pim-modelling/SKILL.md) (`structural-model.md`) §2.8), not an edit.
 
 **A successful `ItemTypeById` / `ItemFieldsByItemTypeSystemName` read is NOT evidence the type is
 usable** — it is exactly the state an XML-only deployment produces. Any new-item-type helper must gate on
@@ -161,7 +161,7 @@ run reports "already writable — nothing to do", record the before/after writab
 `Files/System/Log/items/ActivationWorkflow` on any failure before theorising. Rejected escapes:
 hand-writing the `CREATE TABLE` in SQL (leaves DW's own metadata/schema bookkeeping out of the loop) and
 rotating `changeversion.txt` for a "harder" restart (that file is the host's release-ring pin, not a
-restart lever — [`../db-update-recovery.md`](../db-update-recovery.md) — and a restart is not the missing
+restart lever (see [dw-setup-upgrade](../../dw-setup-upgrade/SKILL.md)) — and a restart is not the missing
 ingredient in the first place).
 
 ### Repeater fields
@@ -182,8 +182,8 @@ A repeater's children (e.g. `Swift-v2_Slider` slides, accordion items) live in
 to a single scalar — the `Items` field holds the `ItemList` id, not the expanded children. That collapse
 is a read-shape detail, **not** a dead end: the children are edited through the Management API like any
 other paragraph item content. The admin Visual Editor's slide editor is a SPA client of `/Admin/Api`, and
-its save is a plain HTTP call you can capture and replay (surface-priority rule: "no operation exists only
-in the UI" — [`../surface-priority.md`](../surface-priority.md)). **This was proven end-to-end against a
+its save is a plain HTTP call you can capture and replay (no operation exists only
+in the UI — the admin SPA is a client of `/Admin/Api`). **This was proven end-to-end against a
 Swift 2.4 `Swift-v2_Slider` on DW 10.28.1: a headless `POST /Admin/Api/ParagraphSave` created a slide and
 then edited it in place — no SQL, no recycle — and the storefront rendered the change on the next GET.**
 
@@ -202,8 +202,7 @@ The edit path — `POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById` (B
 - **`ModelRawData` is a flat `string → string` map, so a child carries STRING fields only.** Any field whose
   editor needs a binder OBJECT — `SelectedImage` above all — cannot be expressed here and is not writable on
   a child through the Admin API at any shape; the structured `RelationItem.Groups[].Fields[]` channel is not
-  honoured for it either. The measured shapes and the honest fallback (one click in the admin UI) are in
-  [`../../../dw-demo-swift/references/paragraphs.md`](../../../dw-demo-swift/references/paragraphs.md).
+  honoured for it either. The honest fallback for such a field is a single edit in the admin UI.
 - A "button"/"link" field on a child (`Text_LinkEditor` / `Button`) is a **plain transparent JSON
   link-binder** — `{Label, Link, LinkType, Style}` — not an opaque encoded blob.
 - **No recycle.** `ParagraphSave` runs DW's domain service, which invalidates the render cache; the slide
@@ -238,8 +237,7 @@ POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
   and can reset the parent's `Items` list pointer to `0`, silently emptying the repeater. Confirm the edit
   through a second surface after every save — but **not** through either of the two obvious ones; see the
   next subsection. This is the same round-trip discipline the `ParagraphSave` item-field no-op carries
-  (see "Saves that report success but silently drop a field" below and
-  [`../surface-priority.md`](../surface-priority.md) "Silent no-ops").
+  (see "Saves that report success but silently drop a field" below).
 
 #### Verifying a repeater-child write — the two surfaces that cannot decide it
 
@@ -281,9 +279,7 @@ POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
 ```
 
 That last clause is the sharp edge: the echo is not merely uninformative, it is **actively wrong** — it
-reports values back to you that the row never took (see the `SelectedImage`-on-a-child case in
-[`../../../dw-demo-swift/references/paragraphs.md`](../../../dw-demo-swift/references/paragraphs.md), where
-`Title`/`Subtitle`/`Text` persist and `Image` does not, out of one payload that echoes all four). A
+reports values back to you that the row never took (observed with `SelectedImage` on a child: `Title`/`Subtitle`/`Text` persist and `Image` does not, out of one payload that echoes all four). A
 repeater-write helper should take the expected rendered string and perform the live GET itself, so a caller
 cannot accidentally verify against the echo; log the echoed `itemId` alongside the verdict so the false
 negative stays visible in the artefact rather than being re-derived next time. Do **not** answer this by
@@ -319,7 +315,7 @@ which table `ItemListRelation` points at before reasoning about the shape.
 - ❌ **One cshtml per "variant"** with hardcoded forks. Use a field with a multi-select / radio for
   the variant.
 - ❌ **Bake category-aware copy into cshtml** with `.Contains("...")` chains. Put the category-aware
-  copy on a `ProductGroup` field instead — see [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) "Per-category
+  copy on a `ProductGroup` field instead — see [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) "Per-category
   behavior".
 
 ### Audit query
@@ -332,12 +328,12 @@ Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\*" -F
     | Where-Object { $_.Name -notlike 'Swift-v2_*' }
 ```
 
-This is also grep #6 of the discipline audit grep-pack in [`swift-building.md`](swift-building.md).
+This is also grep #6 of the discipline audit grep-pack in [dw-swift-building](../../dw-swift-building/SKILL.md).
 
 ## 3. Content-side language layers
 
 > Content-side localization — adding a language layer to a website. Sister concern to the PIM/product
-> side ([`pim-localization.md`](../../../dw-pim-localization/references/translation-mechanics.md)), which translates product names / descriptions
+> side ([dw-pim-localization](../../dw-pim-localization/SKILL.md) (`translation-mechanics.md`)), which translates product names / descriptions
 > / custom fields.
 
 **TL;DR:** A language layer is a **sibling `Area` row** under the same Website, with
@@ -396,7 +392,7 @@ WHERE AreaId = <newAreaId>;
 ```
 
 PIM must have the matching `LANG2` row + the products translated to that LanguageId — see
-[`pim-localization.md`](../../../dw-pim-localization/references/translation-mechanics.md).
+[dw-pim-localization](../../dw-pim-localization/SKILL.md) (`translation-mechanics.md`).
 
 ### The Swift OOTB language switcher
 
@@ -448,7 +444,7 @@ produces a partially-cloned tree missing PDPs, sign-in, customer-center, and the
 connection inside a `TransactionScope`; without the host's distributed-transaction prereqs in place it
 fails with `System.Transactions.TransactionException: The operation is not valid for the state of the
 transaction` (the error LOOKS transactional but is environmental — fix the prereqs, don't change the
-input shape). Those host-config prereqs are owned by [`setup-install.md`](setup-install.md): the
+input shape). Those host-config prereqs are owned by [dw-setup-install](../../dw-setup-install/SKILL.md): the
 `Program.cs` `ImplicitDistributedTransactions = true` opt-in (§3.1), the MSDTC service +
 inbound/outbound + firewall setup (§4), and the **net10-host caveat** where even a fully-configured
 host can't promote to MSDTC and needs the `Enlist=false` connection-string workaround (§4.1). Verify
@@ -484,12 +480,10 @@ content silently don't make it — run this as a checklist immediately after eve
    while the master stayed correctly gated. `UnifiedPermission` rows are not cloned and the
    `CopyPermissions` flag is not the frontend-page-permission switch; nothing in the `status: ok`
    distinguishes the two. Probe **anonymously, per language, per protected URL** after every copy (the
-   pass state is a redirect to the localised sign-in, not a 200) — demo-side checklist in
-   [`../../../dw-demo-swift/references/language-layers.md`](../../../dw-demo-swift/references/language-layers.md).
-   Mirror every master row onto the layer's sibling page id
+   pass state is a redirect to the localised sign-in, not a 200). Mirror every master row onto the layer's sibling page id
    (`Page.PageMasterPageId` gives the mapping), then
    `POST /admin/api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Security.Permissions.PermissionService"}`
-   AND restart (the nav tree caches separately). See [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md).
+   AND restart (the nav tree caches separately). See [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`).
 3. **Hardcoded page ids in template role-gates miss the clones.** A gate like
    `if (node.PageId == <dashboardId> && !isRole) continue;` stops working on the layer (the clone has
    its own id). Make it master-aware:
@@ -502,7 +496,7 @@ content silently don't make it — run this as a checklist immediately after eve
    `ComponentSource`; the layer's PDP renders master-language labels and both areas share one
    `RenderGrid` cache entry. Repoint the layer's selector items at the layer's own component-page
    clones via `set_item_field_values`. (The shared-cache mechanics live in
-   [`swift-building.md`](swift-building.md) "ProductListComponentSelector".)
+   [dw-swift-building](../../dw-swift-building/SKILL.md) "ProductListComponentSelector".)
 
 **Verification probe — enter through the shop route.** When probing the layer's PDP use
 `/Default.aspx?ID=<layer-shop-page>&ProductID=X[&VariantID=Y]`. Hitting the PDP wrapper page id
@@ -525,7 +519,7 @@ chrome strings, the rest fall back to en-GB gracefully); (2) UPDATE cloned heade
 (MiniCart/Favorites store HTML fragments `<div class="dw-paragraph">…</div>` — preserve the wrapper);
 (3) translate DB paragraphs/products/groups. Restart after editing `Translations.xml` (cached at
 startup) and after touching header item rows (composition cache). Same depth-not-width rule as PIM:
-localize the **demo path**, not the whole site.
+localize the **pages a visitor actually reaches first**, not the whole site.
 
 **SQL files with non-ASCII characters — encoding pitfall.** `sqlcmd` defaults to the system codepage
 (Windows-1252 on western Windows); a UTF-8 `.sql` file with multibyte characters gets mangled at
@@ -582,7 +576,7 @@ above this makes the language switch behave coherently.
 
 ### Single-storefront clean root — one area owning `/`
 
-For a single-storefront site (the common demo shape), make the storefront area answer `/` with no
+For a single-storefront site (a common solution shape), make the storefront area answer `/` with no
 `/<area-slug>/` prefix on child URLs:
 
 1. Set `urlIgnoreForChildren = true` on the storefront area (`save_areas` exposes it; admin: Website
@@ -642,7 +636,7 @@ header+footer.
   pages"). Either freeze the master after creating layers, or turn that knob off.
 - **Custom CSS / fonts.** Tier-0 Style assets are area-row-scoped via `AreaColorSchemeGroupId` etc.;
   newly-cloned layers **inherit the master's style ids** — brand stays consistent for free. Verify if
-  a market needs a different palette. See [`swift-building.md`](swift-building.md).
+  a market needs a different palette. See [dw-swift-building](../../dw-swift-building/SKILL.md).
 
 ## Editing page / paragraph / grid-row content through the Management API
 
@@ -674,7 +668,7 @@ worth knowing when authoring content programmatically (validated DW 10.25.x):
 ### Saves that report success but silently drop a field
 
 Two content saves report `status: ok`, bump `updatedDate`, and silently drop part of the input — so
-**round-trip-verify any demo-critical content edit** (read the value back through a different surface,
+**round-trip-verify any critical content edit** (read the value back through a different surface,
 or curl the rendered page) before declaring it done:
 
 | Save | Field silently dropped | Verified | Working fallback |
@@ -684,19 +678,19 @@ or curl the rendered page) before declaring it done:
 | Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort. `ParagraphSave` is still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
 
 The tool-behaviour root cause (why these MCP / Management API writes drop fields, and the surface model)
-is in [`extend-mcp-tools.md`](extend-mcp-tools.md) §5.
+is in [dw-extend-mcp-tools](../../dw-extend-mcp-tools/SKILL.md) §5.
 
 ## Cross-references
 
-- [`extend-mcp-tools.md`](extend-mcp-tools.md) — MCP create/update tool behaviour and the silent-no-op
+- [dw-extend-mcp-tools](../../dw-extend-mcp-tools/SKILL.md) — MCP create/update tool behaviour and the silent-no-op
   table from the tool's perspective.
-- [`swift-building.md`](swift-building.md) — Style assets, the re-skin escalation ladder / item-type
+- [dw-swift-building](../../dw-swift-building/SKILL.md) — Style assets, the re-skin escalation ladder / item-type
   + variant + CSS separation, the discipline grep-pack, and the `RenderGrid` composition cache.
-- [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) — per-category behavior via `ProductGroupFieldValues`; canonical
+- [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) — per-category behavior via `ProductGroupFieldValues`; canonical
   URL/redirect surfaces the language switcher relies on.
-- [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) — `Pageview.User.GetGroups()` and other viewmodel
+- [dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md) — `Pageview.User.GetGroups()` and other viewmodel
   accessors used by template role-gates.
-- [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) — the Permission entity store that AreaCopy fails to
+- [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`) — the Permission entity store that AreaCopy fails to
   clone (point 2 above).
-- [`pim-localization.md`](../../../dw-pim-localization/references/translation-mechanics.md) — the product side (translate product names,
+- [dw-pim-localization](../../dw-pim-localization/SKILL.md) (`translation-mechanics.md`) — the product side (translate product names,
   descriptions, custom fields).

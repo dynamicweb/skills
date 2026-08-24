@@ -180,7 +180,7 @@ directory — hold it in conversation state, not as a global default.
 wiring, sibling links) that raw SQL skips. When MCP doesn't expose an operation, the Management API does
 (the admin UI proves the endpoint exists). Repeater/slider children, once thought SQL-only, edit cleanly
 through `POST /Admin/Api/ParagraphSave` — see
-[`content-modelling.md`](content-modelling.md) §2.
+[`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md) §2.
 
 **`save_pages` does not persist `urlName` / `navigationTag` / `hidden` (verified 10.27.x).** Even the
 MCP-first path needs a **targeted** SQL touch-up for these three: a page created via `save_pages` lands

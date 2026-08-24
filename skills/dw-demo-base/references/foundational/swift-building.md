@@ -51,7 +51,7 @@ unmaintainable code that a Serializer re-deploy silently drops.
 | BOM / assembled-from + configurator | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page; renders fixed lines AND select-one radio groups per configurator slot. The data shape that drives the grouping (`ProductItemBomGroupId` must be a real `EcomGroups` id) is owned by [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.6 |
 
 Picking the type is half the job — how many paragraphs a designed section becomes, and what goes in
-fields vs. rich text, is owned by [`content-modelling.md`](content-modelling.md).
+fields vs. rich text, is owned by [`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md).
 
 ### Component-slider service page — the wiring triad and its failure smells
 
@@ -300,7 +300,7 @@ fixes the invariant.
 language layer's component selectors still point at the MASTER's component pages, both areas share one
 cache entry and whichever context renders first wins. Repoint the layer's `ComponentSource` at the
 layer's own component-page clones (separate ids, separate cache entries) — see
-[`content-modelling.md`](content-modelling.md) §3.
+[`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md) §3.
 
 ## 6. Template categories, page presets, page-state flags
 
@@ -517,7 +517,7 @@ data-attributes**:
    clean content.
 
 (The full modeling discipline — decompose by editor concern, field-purity rules, the editor-gate — is
-owned by [`content-modelling.md`](content-modelling.md).)
+owned by [`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md).)
 
 ### Pixel-perfect escalation — what you may / may not create
 
@@ -574,8 +574,8 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])
 |------|-----------|-------------|
 | #1 | Raw DB access in a template | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 / [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) / [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-lifecycle.md) / [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) |
 | #2,#3,#4 | Routing-by-URL-string / project-locked URL / legacy URL synthesis | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 URLs |
-| #5 | Marketing-fragile branching | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) per-category + [`content-modelling.md`](content-modelling.md) §2 |
-| #6 | Shim instead of custom item type | [`content-modelling.md`](content-modelling.md) §2 |
+| #5 | Marketing-fragile branching | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) per-category + [`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md) §2 |
+| #6 | Shim instead of custom item type | [`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md) §2 |
 | #7 | Cache-buster-breaking inline include | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 |
 | #8 | Brittle content-extraction regex | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) product field arrays |
 | #9 | Brand CSS in Swift's shipped `custom.css` | §9 hard rule — revert, move to `<name>_custom.css` |
@@ -586,7 +586,7 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])
   pitfalls, `CustomHeadInclude` wiring, color schemes, CSS pitfalls.
 - [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) — `ProductViewModel` field inventory + user/group
   accessors.
-- [`content-modelling.md`](content-modelling.md) — modelling discipline, custom item-type `<Prefix>_*`
+- [`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md) — modelling discipline, custom item-type `<Prefix>_*`
   discipline, language layers (incl. the cross-area component-selector cache).
 - [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) — the Permission entity store (gate page/paragraph
   visibility without template edits).
