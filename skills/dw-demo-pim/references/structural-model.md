@@ -14,7 +14,7 @@
 | §2.2 Group types (DataModelFolder / DataModel) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.2 | — |
 | §2.3 Catalog vs Channel group trees + slug cache | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.3 | per-channel naming |
 | §2.3a Native "Publish to channel" action | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.3a | fire publish as a beat |
-| §2.4 Repositories / indexes / queries + `ProductIndexSchemaExtender` | [`search-indexing.md`](../../dw-demo-base/references/foundational/search-indexing.md) | — |
+| §2.4 Repositories / indexes / queries + `ProductIndexSchemaExtender` | [`index-management.md`](../../dw-search-indexing/references/index-management.md) | — |
 | §2.5 / §2.5a Variants (multi- and single-axis) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.5 / §2.5a | — |
 | §2.6 Bundles (BOM) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.6 | — |
 | §2.7 Channels + Feeds | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.7 | — |

@@ -80,7 +80,7 @@ Cross-ref [`cache-invalidation.md`](cache-invalidation.md) for the full notifica
   - `FeedProviderConfiguration` = XML with parameters: `<Parameters><Parameter Name="Template" Value="Feeds/my-template.cshtml" /><Parameter Name="Content Type" Value="application/json" /></Parameters>` for Template, or `<Parameters><Parameter Name="XSLT Stylesheet" Value="Feeds/my.xslt" /></Parameters>` for XML.
 - **Template path resolution** — `TemplateProvider` expects paths relative to `wwwroot/Files/Templates/Feeds/`. `XMLProvider` expects XSLT in same folder.
 - Feed template example for Razor: `@inherits ViewModelTemplate<Dynamicweb.Ecommerce.ProductCatalog.ProductListViewModel>` + `@Model.Products` iteration. Field values are accessed via `ProductCategories[].Fields[categoryFieldId].Value`.
-- The `.query` files backing feeds must live at the repository ROOT, not a subfolder — see [`search-indexing.md`](search-indexing.md) for the placement rule.
+- The `.query` files backing feeds must live at the repository ROOT, not a subfolder — see [`index-management.md`](../../../dw-search-indexing/references/index-management.md) for the placement rule.
 - **The public feed endpoint is `GET /dwapi/Feeds/GetFeedOutput?id=<feedId>` — the parameter is the bare
   `id`.** It is undocumented, and the obvious `feedId` returns **404**, which reads as "the feed isn't
   published" rather than "the parameter is named differently". This is the URL to put on a slide for a
@@ -246,7 +246,7 @@ full build. `ProductSave` refreshes the product's index entry only when **`RunUp
   saves and 148 meta saves on one pass.
 - **Incremental is also the only practical option.** A full `BuildIndex` takes minutes and outruns the 120s
   API-client timeout, so reaching for a full build per save is both slow and unreadable
-  ([`search-indexing.md`](search-indexing.md), and the argument shape in
+  ([`index-management.md`](../../../dw-search-indexing/references/index-management.md), and the argument shape in
   [`../../../dw-demo-swift/references/sql-direct-seeding.md`](../../../dw-demo-swift/references/sql-direct-seeding.md)).
 - Verify on the **rendered** PLP within a few seconds of the save, not on the save response.
 

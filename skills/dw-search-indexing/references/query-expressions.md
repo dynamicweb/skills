@@ -1,11 +1,10 @@
-# Foundational candidate → dw-search-indexing
+# Query expressions and execution — operators, sorting, paging, inert fields, build verbs
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 knowledge of **authoring and executing** a product
-> `.query` — expressions, operators, sorting, result paging, inert index fields, and the build verbs'
-> silent-success failure modes. Staged here for a future fold-up into `dw-search-indexing`. No
-> demo/customer content. The lifecycle verbs (read, copy, name, relocate, delete, cache flush) are in
-> [`query-authoring.md`](query-authoring.md); the index file itself is owned by
-> [`search-indexing.md`](search-indexing.md).
+Field-validated DW10 knowledge of **authoring and executing** a product `.query` — expressions,
+operators, sorting, result paging, inert index fields, and the build verbs' silent-success failure
+modes. The lifecycle verbs (read, copy, name, relocate, delete, cache flush) are in
+[`query-authoring.md`](query-authoring.md); the index file itself is owned by
+[`index-management.md`](index-management.md).
 
 ## Contents
 
@@ -117,8 +116,8 @@ choice the wrong one:
 surface. Two consequences worth stating separately:
 
 - **Exact SKU matching needs `Equal`** (or an Or-group of `Equal`s), never `In`/`MatchAny` with a CSV.
-- **A literal value list does not belong in a shipped demo query.** Even where `In` works, the admin UI
-  renders the expanded per-value form, so a prospect opening the query sees hardcoded literals. Key
+- **A literal value list does not belong in a shipped query.** Even where `In` works, the admin UI
+  renders the expanded per-value form, so anyone opening the query sees hardcoded literals. Key
   defect worklists on a **steward-set flag field** instead, so the query reads as a rule.
 
 ## Sorting

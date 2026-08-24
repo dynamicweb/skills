@@ -1,11 +1,9 @@
-# Foundational candidate → dw-search-indexing
+# Query lifecycle verbs — read, copy, name, relocate, delete, cache flush
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 knowledge of the `Query*` Management API verbs —
-> reading, copying, naming, relocating, expressing and executing a `.query` — staged here for a
-> future fold-up into `dw-search-indexing`. No demo/customer content. The index *file* side (schema,
-> builders, facets, the rebuild recipe) is owned by [`search-indexing.md`](search-indexing.md); this
-> file owns the query lifecycle verbs; expression authoring and execution are in
-> [`query-expressions.md`](query-expressions.md).
+Field-validated DW10 knowledge of the `Query*` Management API verbs — reading, copying, naming,
+relocating and deleting a `.query`, and the restart-free cache flush. The index *file* side (schema,
+builders, facets, the rebuild recipe) is owned by [`index-management.md`](index-management.md);
+expression authoring and execution are in [`query-expressions.md`](query-expressions.md).
 
 ## Contents
 

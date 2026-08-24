@@ -32,8 +32,8 @@ SKUs that are failing.** Everything else is setup for that moment.
 | Why completeness rules "don't show" (7-condition checklist) | [`pim-completeness.md`](../../dw-pim-completeness/references/rules-and-dashboards.md) "Completeness rules" |
 | `reference_category` mechanic + the blank-panel gotcha | [`pim-completeness.md`](../../dw-pim-completeness/references/rules-and-dashboards.md) |
 | Recovery: seed `reference_category` parent row (SQL) | [`pim-completeness.md`](../../dw-pim-completeness/references/rules-and-dashboards.md) "Recovery recipe: Seed `reference_category`" |
-| Recovery: rebuild the Products index (SQL/API) | [`search-indexing.md`](../../dw-demo-base/references/foundational/search-indexing.md) "Recovery recipe: Rebuild Products index" |
-| Dashboard-query location — Shared ONLY + GUID-collision 500 | [`search-indexing.md`](../../dw-demo-base/references/foundational/search-indexing.md) "Dashboard query location" |
+| Recovery: rebuild the Products index (SQL/API) | [`index-management.md`](../../dw-search-indexing/references/index-management.md) "Recovery recipe: Rebuild Products index" |
+| Dashboard-query location — Shared ONLY + GUID-collision 500 | [`index-management.md`](../../dw-search-indexing/references/index-management.md) "Dashboard query location" |
 | Standard `ProductField` inventory preflight (before customs) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) "Standard ProductField inventory" |
 | Recovery: collapse a custom field back into its standard | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) "Recovery recipe: collapse a custom field" |
 | Post-mutation cache flush (when to restart) | [`cache-invalidation.md`](cache-invalidation.md) |

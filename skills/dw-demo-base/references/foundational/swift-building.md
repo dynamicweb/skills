@@ -433,8 +433,8 @@ assets so its rules win cascade ties. (Color-scheme architecture/cascade + the C
 | `Templates/Designs/Swift-v2/` | Swift 2 design root. `Assets/css/swift.css` and `Files/System/Styles/` CSS are NEVER touched. The override slot is `Custom/<name>_custom.css` wired via `Custom/<name>HeadInclude.cshtml`. | Stock `.cshtml`: do not modify — create new content layouts alongside. `Custom/<name>_custom.css`: edit/create freely. |
 | `Templates/Paragraph/` | Built-in paragraph Razor templates | DO NOT EDIT — alternative renderings are NEW content layouts alongside. |
 | `Templates/Feeds/` | Feed Razor / XSLT templates | See feed/search references. |
-| `System/Repositories/` | Index definitions + feed `.query` files | See [`search-indexing.md`](search-indexing.md). |
-| `System/SmartSearches/Ecommerce/Shared/` | Dashboard `.query` files | Shared ONLY — see [`search-indexing.md`](search-indexing.md). |
+| `System/Repositories/` | Index definitions + feed `.query` files | See [`index-management.md`](../../../dw-search-indexing/references/index-management.md). |
+| `System/SmartSearches/Ecommerce/Shared/` | Dashboard `.query` files | Shared ONLY — see [`index-management.md`](../../../dw-search-indexing/references/index-management.md). |
 
 **Asset upload — admin UI vs filesystem drop.** Both put a file into `wwwroot/Files/Images/`: admin
 UI (Files → navigate → Upload, visible to property pickers immediately) or filesystem drop (visible on
@@ -591,5 +591,5 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])
 - [`users-permissions.md`](users-permissions.md) — the Permission entity store (gate page/paragraph
   visibility without template edits).
 - [`data-access.md`](data-access.md) — SQL-direct Page/GridRow/Paragraph seeding required columns.
-- [`search-indexing.md`](search-indexing.md) — Repositories / queries / index placement.
+- [`index-management.md`](../../../dw-search-indexing/references/index-management.md) — Repositories / queries / index placement.
 - [`cache-invalidation.md`](cache-invalidation.md) — the post-mutation cache table.

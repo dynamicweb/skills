@@ -184,6 +184,14 @@ Configured on the **Product Catalog app** → Spell Check section:
 
 Template tags: `QueryResult.SpellCheck` (top suggestion), `SpellCheckerSuggestions` loop (additional suggestions).
 
+## Deep reference
+
+Field-validated internals, split across three references:
+
+- [references/index-management.md](references/index-management.md) — the index/repository file layer: where `.index` and `.query` files live (feed queries at repository ROOT, dashboard queries in Shared ONLY), the schema-extender requirement, `CustomField_<SystemName>` index naming for custom fields, the MCP query payload contract, the GUID-duplication bug, channel isolation as a query-time filter, currency integrity as a build precondition, and the full flush-then-rebuild recovery recipe.
+- [references/query-authoring.md](references/query-authoring.md) — the `Query*` verb lifecycle: which of the three read verbs is authoritative, `QueryCopy`/`QueryMove`/`QueryDelete` mechanics, and the restart-free query-cache flush (throwaway-GUID `QueryById` GET).
+- [references/query-expressions.md](references/query-expressions.md) — expression `Path` semantics (an unresolvable path APPENDS; `Path:"0"` rewrites the ROOT group), operator reality (`In`/`MatchAny` traps), sorting and paging behaviour, declared-but-unpopulated index fields, and the three ways a build verb answers 200 and builds nothing.
+
 ## Pitfalls
 
 **Analyzed facet fields** — the most common indexing mistake. A color facet on "Light Blue" analyzed into "light" and "blue" shows as two separate facets. Always set facet fields to Not Analyzed.

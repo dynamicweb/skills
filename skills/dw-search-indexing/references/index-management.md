@@ -1,15 +1,22 @@
-# Foundational candidate → dw-search-indexing
+# Index and repository management — files, placement rules, builds, recovery
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 product index / repositories / queries knowledge, staged here for a future
-> fold-up into `dw-search-indexing`. No demo/customer content. When folded, move this body into
-> `dw-search-indexing` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file.
->
-> The `Query*` **verbs** are owned by two sibling files: [`query-authoring.md`](query-authoring.md)
-> (reading, copying, naming, relocating, deleting, and the restart-free cache flush) and
-> [`query-expressions.md`](query-expressions.md) (expressions, operators, sorting, result paging,
-> inert index fields, and the build verbs' silent-success failure modes). This file owns the index
-> and repository side.
+Field-validated DW10 knowledge of the product index / repositories / queries file layer: where
+`.index` and `.query` files live, the schema-extender requirement, the MCP query payload contract,
+the GUID-duplication bug, channel isolation, currency preconditions, and the full rebuild recipe.
+The `Query*` **verbs** are owned by two sibling files: [`query-authoring.md`](query-authoring.md)
+(reading, copying, naming, relocating, deleting, and the restart-free cache flush) and
+[`query-expressions.md`](query-expressions.md) (expressions, operators, sorting, result paging,
+inert index fields, and the build verbs' silent-success failure modes). This file owns the index
+and repository side.
+
+## Contents
+
+- [Repositories, Indexes, and Queries — file-based](#repositories-indexes-and-queries--file-based)
+- [MCP product query payload contract](#mcp-product-query-payload-contract)
+- [Dashboard query location — Shared ONLY](#dashboard-query-location--shared-only-never-duplicate-to-repositories)
+- [Channel isolation is a QUERY-time filter](#channel-isolation-is-a-query-time-filter-not-an-index-time-one)
+- [Currency integrity is an index-build precondition](#currency-integrity-is-an-index-build-precondition--dividebyzeroexception-names-neither-the-currency-nor-the-country)
+- [Recovery recipe: Rebuild Products index](#recovery-recipe-rebuild-products-index)
 
 ## Repositories, Indexes, and Queries — file-based
 
@@ -79,7 +86,7 @@ Typical editorial backlog queries: `active_missing_short_description` (`ProductI
 
 ### Custom product fields index as `CustomField_<SystemName>`
 
-A **custom** product field (a category field or a custom `EcomProductField`, as opposed to a standard one) lands in the Lucene index under the field name **`CustomField_<SystemName>`** — e.g. a custom field `RoomType` is queryable/facetable as `CustomField_RoomType`, not as `RoomType`, not as `ProductCategory|<Cat>|RoomType` (that pipe form is the *authoring/value* system name from [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.8, not the *index* name). Referencing it by any other plausible pattern **fails silently** — the facet renders empty and the query returns nothing, with **no error** to point at the wrong name. When a facet you added is defined but always empty, check the index field name is `CustomField_<SystemName>` first. Confirm the exact indexed name against the built segment (or the index schema's field list) rather than guessing the casing/prefix.
+A **custom** product field (a category field or a custom `EcomProductField`, as opposed to a standard one) lands in the Lucene index under the field name **`CustomField_<SystemName>`** — e.g. a custom field `RoomType` is queryable/facetable as `CustomField_RoomType`, not as `RoomType`, not as `ProductCategory|<Cat>|RoomType` (that pipe form is the *authoring/value* system name from [`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.8, not the *index* name). Referencing it by any other plausible pattern **fails silently** — the facet renders empty and the query returns nothing, with **no error** to point at the wrong name. When a facet you added is defined but always empty, check the index field name is `CustomField_<SystemName>` first. Confirm the exact indexed name against the built segment (or the index schema's field list) rather than guessing the casing/prefix.
 
 ## Dashboard query location — Shared ONLY, never duplicate to Repositories
 
@@ -111,7 +118,7 @@ grep -h 'Query ID=' wwwroot/Files/System/SmartSearches/Ecommerce/Shared/**/*.que
 diff /tmp/repo.txt /tmp/shared.txt  # identical lines = duplicates
 ```
 
-**Fix**: relocate with `QueryMove` (which carries the `.configuration` sibling and updates the cache) or delete the Repositories-side dashboard duplicates — NOT feed queries at repo root. Then **flush the query cache; a restart is not required.** The `Searching:Queries` cache is genuinely not reachable through `CacheInformationRefresh` (no `ICacheStorage` implementor owns that key) and `InitQueriesCache` never removes entries — but `QueryHelper.GetQueryById` re-runs `InitQueriesCache` on a cache **miss**, so `GET /Admin/Api/QueryById?Id=<a GUID that does not exist>` re-initialises it as a side effect. The `400` it answers is expected. Full recipe, and the ordering trap that makes it necessary (the file verbs do not update the cache, so the next `QuerySave` writes back to the old path), in [`query-authoring.md`](query-authoring.md) "Flush the query cache without a restart". See [`cache-invalidation.md`](cache-invalidation.md) for the post-mutation cache table.
+**Fix**: relocate with `QueryMove` (which carries the `.configuration` sibling and updates the cache) or delete the Repositories-side dashboard duplicates — NOT feed queries at repo root. Then **flush the query cache; a restart is not required.** The `Searching:Queries` cache is genuinely not reachable through `CacheInformationRefresh` (no `ICacheStorage` implementor owns that key) and `InitQueriesCache` never removes entries — but `QueryHelper.GetQueryById` re-runs `InitQueriesCache` on a cache **miss**, so `GET /Admin/Api/QueryById?Id=<a GUID that does not exist>` re-initialises it as a side effect. The `400` it answers is expected. Full recipe, and the ordering trap that makes it necessary (the file verbs do not update the cache, so the next `QuerySave` writes back to the old path), in [`query-authoring.md`](query-authoring.md) "Flush the query cache without a restart".
 
 **Does widget drill-through need the query in `Repositories`?** No. Widgets look up queries by GUID through the global cache, which is populated from SmartSearches. Drill-through navigation uses `ProductListNodePathProvider.GetPath` which requires the query's `FolderPath` to start with `SharedQueriesPath` — so Shared is actually the REQUIRED location for drill-through to work at all. Repositories is wrong on both fronts.
 
@@ -159,9 +166,9 @@ rebuild with zero `DivideByZero` and zero `NullReference` across the whole log.
 - **Write currencies through `CurrencySave`, never raw SQL** — currencies are cache-coupled.
 - **`CurrencyByCode` answers `400`.** Read the model from `CurrenciesAll`, and use `CurrencyNew` to get the
   blank create model.
-- **Functional check beyond the log:** price a cart line in **every** currency the demo exposes. A currency
-  that silently threw before will price cleanly after.
-- Make this a **precondition of the demo build**, not a symptom to chase: no zero rates, and every
+- **Functional check beyond the log:** price a cart line in **every** currency the solution exposes. A
+  currency that silently threw before will price cleanly after.
+- Make this a **precondition of the build**, not a symptom to chase: no zero rates, and every
   `EcomCountries` currency code exists.
 
 ## Recovery recipe: Rebuild Products index
@@ -176,8 +183,7 @@ After any mutation that touches products, groups, categories, fields, completene
 > Symptom: `get_products_by_query` / a dashboard widget returns 0 or stale while `get_product_by_id`
 > and the DB are correct. That is an un-flushed read-through cache, **not** an "index quirk", and a
 > host restart is NOT a reliable fix (the `dotnet run` parent/child trap means the bounce may not
-> cold-start). Run the flush step below first, then build, then re-verify. Full rationale:
-> [`cache-invalidation.md` "index-build-reads-through-cache ordering trap"](cache-invalidation.md).
+> cold-start). Run the flush step below first, then build, then re-verify.
 
 > Run in PowerShell, not Bash — Bash interpolation eats `$env:` and `$_` before they reach the script.
 
@@ -248,4 +254,4 @@ either skipped STEP 0 or flushed the wrong cache — do **not** rebuild again bl
 it an index quirk; flush the three services above and rebuild once more. (Building before flushing is
 the #1 cause of "the dashboard widget shows 0 but the data is right".)
 
-If the build fails or never reaches a fresh Success, check that the index file exists at `wwwroot/Files/System/Repositories/Products/Products.index` and that the Repository name matches the index file's containing folder. The completeness/governance consumers of this index live in [`pim-completeness.md`](../../../dw-pim-completeness/references/rules-and-dashboards.md); the post-mutation cache rules live in [`cache-invalidation.md`](cache-invalidation.md).
+If the build fails or never reaches a fresh Success, check that the index file exists at `wwwroot/Files/System/Repositories/Products/Products.index` and that the Repository name matches the index file's containing folder. The completeness/governance consumers of this index live in [`rules-and-dashboards.md`](../../dw-pim-completeness/references/rules-and-dashboards.md).

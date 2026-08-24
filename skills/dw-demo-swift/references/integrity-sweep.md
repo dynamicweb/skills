@@ -79,7 +79,7 @@ collision, which 500s the admin Shared-queries tree and breaks widget drill-thro
 cache-invalidation API for `Searching:Queries`, so recovery requires a host restart. The full
 mechanism (and the rule — feed queries → `Repositories/<RepoName>/` only; dashboard queries →
 `SmartSearches/Ecommerce/Shared/` only; never both) is vendor-generic and owned by the
-`dw-search-indexing` foundational skill — staged in [`search-indexing.md`](../../dw-demo-base/references/foundational/search-indexing.md) ("Dashboard query location — Shared ONLY").
+`dw-search-indexing` foundational skill — staged in [`index-management.md`](../../dw-search-indexing/references/index-management.md) ("Dashboard query location — Shared ONLY").
 
 **Probe:**
 
