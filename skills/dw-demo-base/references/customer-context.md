@@ -13,7 +13,7 @@
 
 The `<demo>\customer-context\` directory holds intro-call materials, customer-supplied artefacts, transcripts, and reference documents that must **NEVER** be modified by demo-build automation. Pre-flight check on any path containing `customer-context\` (case-insensitive) is a **HARD ABORT** -- no Approve+log branch, no override. Customer-context writes are never necessary; if a transformation is needed, write the transformed output to `<demo>\notes\` or `<demo>\extracts\` instead.
 
-This file is the long-form contract for **the customer-context read-only contract**. The orchestrator's summary -- including the canonical abort message -- lives in `SKILL.md` "Two guarded-writes"; see also the sister contract `references/customisations.md` (the customisations-ledger preflight) which shares the *same mental model* -- write-time preflight on a path glob -- with three branches instead of one.
+This file is the canonical contract for **the customer-context read-only contract** -- abort message, path-matching rule, and detection signature all live here; `SKILL.md` "Two guarded-writes" carries a one-line summary. See also the sister contract `references/customisations.md` (the customisations-ledger preflight) which shares the *same mental model* -- write-time preflight on a path glob -- with three branches instead of one.
 
 ## 1. Why this rule exists
 
@@ -35,7 +35,9 @@ Reading these is fine. Writing to ANY of them is the abort condition. **Reading 
 
 ## 3. Write-time preflight (mandatory, hard abort)
 
-Before writing any file whose path contains `customer-context\` (case-insensitive), abort with the canonical abort message -- it lives in `SKILL.md` "Two guarded-writes" (the customer-context guarded write). Do not paraphrase it from here.
+Before writing any file whose path contains `customer-context\` (case-insensitive), abort with this canonical message (do not paraphrase it):
+
+> "ABORT -- this would write to a read-only customer-context folder. The `customer-context\` directory holds intro-call materials, call summaries, and customer-supplied artefacts that must not be modified by demo-build automation. Did you mean `<demo>\notes\` (your own working notes) or `<demo>\extracts\` (transformed/derived data extracted FROM customer-context)?"
 
 This is a **hard abort**, not an opt-in fix. There is no `Approve+log` branch. (The customisations-ledger preflight has three options because customisations are sometimes necessary; customer-context writes are never necessary.)
 
@@ -123,7 +125,7 @@ This is a defense-in-depth check: the convention-based preflight assumes Claude 
 
 ## 8. Cross-references
 
-- `SKILL.md` "Two guarded-writes" section names this file and owns the canonical abort message.
+- `SKILL.md` "Two guarded-writes" section names this file and carries the one-line summary; the canonical abort message is §3 above.
 - `references/customisations.md` has the *related* preflight pattern with three branches; this file has the *same mental model* with one branch (hard abort).
 - Bypass detection: `git status customer-context/` shows changes after a demo build.
 - Skill-composition risk (a sister skill loaded without this file): the three-place rule communication + per-demo `CLAUDE.md` drop is the mitigation.

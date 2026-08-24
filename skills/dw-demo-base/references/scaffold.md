@@ -6,6 +6,7 @@
 - [2. Scaffold the per-demo project](#2-scaffold-the-per-demo-project)
 - [3. First run — wizardless bootstrap (HTTP-driven, ~40 s)](#3-first-run--wizardless-bootstrap-http-driven-40-s)
 - [4. Discover-from-project-files rule](#4-discover-from-project-files-rule)
+- [5. Distribution clone/checkout — main IS the version](#5-distribution-clonecheckout--main-is-the-version)
 
 Scaffold a new Dynamicweb 10 demo project. Walk `dotnet new dw10-suite --name Dynamicweb.Host.Suite`. The `--name Dynamicweb.Host.Suite` is **mandatory** — sister-skill path discovery (`Dynamicweb.Host.Suite/Properties/launchSettings.json`, `Dynamicweb.Host.Suite/GlobalSettings.Database.config`) depends on this name.
 
@@ -102,3 +103,36 @@ After the first run completes, the per-demo project files are the source of trut
 `references/mcp-setup.md` Section 1 contains the verbatim port-discovery PowerShell that reads `launchSettings.json`.
 
 The platform anti-patterns to avoid when scaffolding (don't target DW9, don't reference the bare `Dynamicweb` meta-package, don't use the CMS-only `dw10-cms` template) are owned by [`../../dw-setup-install/references/install-anatomy.md`](../../dw-setup-install/references/install-anatomy.md) §6.
+
+---
+
+## 5. Distribution clone/checkout — main IS the version
+
+Demo artifacts are **not** kept in a shared machine-wide vault. They all live in ONE consolidated Distribution repo, consumed by **`git clone` + `git pull --ff-only` on `origin/main`** — never a release zip, never a tag checkout. The clone holds `layers/<name>/` (each a layer with a `kind` = base | catalog | feature | theme | surface | sample-data), `editions/<name>.json` (named, gate-proven compositions of layers), and **`layers/INDEX.json`** — the distribution's machine-readable **layer index**, the source of truth for what layers exist, their kind/version/status, and what any retired name was superseded by.
+
+**Main IS the version:** consumers pin the latest gate-proven `main`, not a frozen tag. The Distribution supports the current latest Swift release only and rolls forward with it, so there is no re-consumable old state to pin — annotated tags survive as provenance/audit history, never a consumer checkout target. Each demo clones into its own `<demo-root>\distribution\` folder, so two demos on the same machine stay isolated. Reproducibility is the resolved **commit SHA** recorded in `CUSTOMISATIONS.md` (forensics), not a tag: record `git -C $dist rev-parse HEAD` after the clone/pull — a later rebuild pulls `main` and reads the current `INDEX.json`; the SHA says which gate-proven tip this demo was built against.
+
+**Layer resolution — read `INDEX.json`, never resolve a git tag.** Clone the Distribution once, or `git pull --ff-only` an existing clone up to `origin/main`; then read `layers/INDEX.json`. Assert its `gateProven` block is present — that marker is what says `main` is at a gate-proven tip, not mid-release — and resolve each layer/edition you need from the **live `layers` entries** (`status: active` or `deprecated`). Verify the checked-out `layer.json`'s `swiftVersion` matches the versions prompt (each layer declares the Swift release it targets — the Distribution tracks one at a time, latest-only). If a name you reach for is absent from `layers`, look it up under `retired`: a retired entry names its **`supersededBy`** successor — resolve to that successor, never the dead name (a retired reference must resolve loudly to its successor, never to silence):
+
+```powershell
+$repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
+$dist = "<demo-root>\distribution"
+if (Test-Path "$dist\.git") {
+  git -C $dist pull --ff-only origin main         # main IS the version — fast-forward to the gate-proven tip
+} else {
+  git clone "https://github.com/$repo" $dist       # one repo — all layers + editions + INDEX.json live here
+}
+$index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
+if (-not $index.gateProven) { throw "INDEX.json has no gateProven marker — main is not at a gate-proven tip; do not consume." }
+# Resolve a layer from the live index (retired -> follow supersededBy, never the dead name):
+$name  = "surface-swift"                            # the layer (or edition) the demo composes
+$entry = $index.layers | Where-Object { $_.name -eq $name }
+if (-not $entry) {
+  $tomb = $index.retired | Where-Object { $_.name -eq $name }
+  if ($tomb) { throw "Layer '$name' is RETIRED -> use $($tomb.supersededBy)" } else { throw "Layer '$name' not in INDEX.json" }
+}
+# Consume $dist\layers\$name\ ; verify (Get-Content "$dist\layers\$name\layer.json" | ConvertFrom-Json).swiftVersion
+# equals the versions-prompt answer (e.g. 2.4.0).
+```
+
+Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh` authenticated so a private Distribution repo clones over HTTPS via the gh credential helper). The Distribution repo URL is per-machine — a default plus the `$env:DW_DISTRIBUTION_REPO` override (owner/name form) when a team mirrors or forks it. The clone contains every live layer at the resolved commit; read whichever `layers/<name>/` dirs the edition composes. The versions prompt (DW10 + Swift version, asked before any artifact is fetched) is owned by `setup-checks.md`; the artifact table mapping each layer to its consumer stays in `SKILL.md` "Baseline data".
