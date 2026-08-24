@@ -19,6 +19,22 @@ gains a Deep reference section; ~90 links repointed across the demo corpus;
 `dw-commerce-catalog`, `dw-commerce-b2b`, and `dw-commerce-orders` join the
 `dynamicweb-presales` bundle to keep it link-closed.
 
+Fold-up batch C: six more staged foundational candidates leave
+`dw-demo-base/references/foundational/`. `render-razor.md` →
+`dw-render-razor/references/razor-surfaces-and-pitfalls.md`; `render-viewmodels.md` was thinner
+than the shipped skill, so its unique facts (Pageview.User accessors, ProductViewModel flattening
+traps, Stock vs StockLevel correction) merged into `dw-render-viewmodels/SKILL.md` and the staged
+file was deleted; `content-modelling.md` → `dw-content-modelling/references/modelling-discipline.md`;
+`swift-building.md` → `dw-swift-building/references/component-system-and-reskin.md`;
+`data-access.md` → `dw-data-access/references/management-api-and-sql.md`; and
+`cache-invalidation.md` lands whole (no 4-way split) as
+`dw-data-access/references/cache-invalidation.md` per the data-area taxonomy, with one-line
+"cache invalidation after mutations → dw-data-access" pointers added to `dw-search-indexing`,
+`dw-content-modelling`, `dw-commerce-catalog`, and `dw-users-permissions`. Demo links and framing
+stripped on the way; ~85 links repointed across the demo corpus; `dw-render-razor`,
+`dw-content-modelling`, `dw-swift-building`, and `dw-data-access` join the `dynamicweb-presales`
+bundle to keep it link-closed.
+
 ## [4.16.0]
 
 Fold-back sprint 4.16.0: lands the skill legs of three triaged learning bundles — zero-state /
