@@ -158,13 +158,13 @@ edits silently never reached the page. Two consequences:
    the head-include partial** — visibility hides, brand chrome, layout fixes. Razor recompiles live
    and an inline block has no cache key to go stale. Keep the CSS file for nice-to-have polish only.
    (This also matters for the `ProductListComponentSelector` CSS-hide lever in
-   [dw-swift-building](../../dw-swift-building/SKILL.md) — a hide that lives only in a stale-cached CSS file is no
+   [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) — a hide that lives only in a stale-cached CSS file is no
    hide at all.)
 
 **Why `Custom/` not `Assets/css/`?** `Assets/css/` is Swift-shipped output; a file there is
 indistinguishable from Swift's own. Keeping the project file in `Custom/` (the tenant-extension
 folder) makes upgrade-time diffing and cleanup trivial. (The "never write a file named exactly
-`custom.css`" hard rule lives in [dw-swift-building](../../dw-swift-building/SKILL.md).)
+`custom.css`" hard rule lives in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md).)
 
 ## 4. Color schemes architecture + cascade
 
@@ -331,7 +331,7 @@ if they look fine on a Mac (which renders some codepoints monochrome by default)
 
 - [dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md) — the data side: which fields surface on
   `ProductViewModel` vs the underlying entity, and the user/group accessors.
-- [dw-swift-building](../../dw-swift-building/SKILL.md) — the Swift component system, the re-skin escalation ladder,
+- [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) — the Swift component system, the re-skin escalation ladder,
   Style assets, the `custom.css` naming hard rule, and the discipline grep-pack.
 - [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`) — the Permission entity store for gating
   page/paragraph visibility (the canonical alternative to template-side SQL gates).

@@ -17,7 +17,7 @@
 The vendor-generic `wwwroot/Files/` layout (the top-level folder table + edit policies, admin-UI
 upload vs filesystem drop, and the "admin File management surfaces only `wwwroot/Files/`" rule) is
 owned by the `dw-swift-building` foundational skill — staged in
-[`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §8 ("Asset
+[`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §8 ("Asset
 organisation under `wwwroot/Files/`"). This file carries the demo-specific subfolder conventions on top
 of it.
 

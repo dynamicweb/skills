@@ -19,7 +19,7 @@ repeater-child edit path), content-side language layers, and the Management API 
 **The rule: model one paragraph (or field) per editor concern; rich-text fields carry prose only.**
 The moment a `class=` attribute, a `<div>`, or a structural `<img>` is needed inside a rich-text
 field, that is the signal to model a field or an item type instead — see the escalation mechanics in
-[dw-swift-building](../../dw-swift-building/SKILL.md) ("separate the styling from the content") and the custom
+[`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) ("separate the styling from the content") and the custom
 item-type discipline in §2 below.
 
 ### Why this matters
@@ -49,7 +49,7 @@ enforced at build time, not discovered at audit time.
    never spans inside one rich-text blob.
 2. **Rich-text fields contain only tags the WYSIWYG itself produces** (`p`, `strong`, `em`, `ul`,
    `a`, plain `blockquote`). No `class=`, no `<div>`, no `style=` (the inline-`style` RTE-hostility
-   case is covered in [dw-swift-building](../../dw-swift-building/SKILL.md)).
+   case is covered in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md)).
 3. **Images go in image fields** (`ParagraphImage` or an item image field) so editors get the file
    picker and templates get `/Admin/Public/GetImage.ashx` resizing/format conversion for free. Never
    `<img>` inside rich text for structural images (hero, card, avatar). Inline images are acceptable
@@ -328,7 +328,7 @@ Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\*" -F
     | Where-Object { $_.Name -notlike 'Swift-v2_*' }
 ```
 
-This is also grep #6 of the discipline audit grep-pack in [dw-swift-building](../../dw-swift-building/SKILL.md).
+This is also grep #6 of the discipline audit grep-pack in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md).
 
 ## 3. Content-side language layers
 
@@ -496,7 +496,7 @@ content silently don't make it — run this as a checklist immediately after eve
    `ComponentSource`; the layer's PDP renders master-language labels and both areas share one
    `RenderGrid` cache entry. Repoint the layer's selector items at the layer's own component-page
    clones via `set_item_field_values`. (The shared-cache mechanics live in
-   [dw-swift-building](../../dw-swift-building/SKILL.md) "ProductListComponentSelector".)
+   [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) "ProductListComponentSelector".)
 
 **Verification probe — enter through the shop route.** When probing the layer's PDP use
 `/Default.aspx?ID=<layer-shop-page>&ProductID=X[&VariantID=Y]`. Hitting the PDP wrapper page id
@@ -636,7 +636,7 @@ header+footer.
   pages"). Either freeze the master after creating layers, or turn that knob off.
 - **Custom CSS / fonts.** Tier-0 Style assets are area-row-scoped via `AreaColorSchemeGroupId` etc.;
   newly-cloned layers **inherit the master's style ids** — brand stays consistent for free. Verify if
-  a market needs a different palette. See [dw-swift-building](../../dw-swift-building/SKILL.md).
+  a market needs a different palette. See [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md).
 
 ## Editing page / paragraph / grid-row content through the Management API
 
@@ -684,7 +684,7 @@ is in [dw-extend-mcp-tools](../../dw-extend-mcp-tools/SKILL.md) §5.
 
 - [dw-extend-mcp-tools](../../dw-extend-mcp-tools/SKILL.md) — MCP create/update tool behaviour and the silent-no-op
   table from the tool's perspective.
-- [dw-swift-building](../../dw-swift-building/SKILL.md) — Style assets, the re-skin escalation ladder / item-type
+- [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) — Style assets, the re-skin escalation ladder / item-type
   + variant + CSS separation, the discipline grep-pack, and the `RenderGrid` composition cache.
 - [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) — per-category behavior via `ProductGroupFieldValues`; canonical
   URL/redirect surfaces the language switcher relies on.

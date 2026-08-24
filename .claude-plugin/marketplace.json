@@ -104,7 +104,8 @@
         "./skills/dw-commerce-orders",
         "./skills/dw-render-razor",
         "./skills/dw-content-modelling",
-        "./skills/dw-data-access"
+        "./skills/dw-data-access",
+        "./skills/dw-swift-building"
       ]
     }
   ]

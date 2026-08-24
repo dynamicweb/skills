@@ -1,11 +1,9 @@
-# Foundational candidate → dw-swift-building
+# The Swift 2 component system and re-skin doctrine
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic Swift 2 / DW10 frontend-building knowledge — the
-> component system, paragraph/template/page conventions, the Style-asset format, asset organisation,
-> the re-skin doctrine, and the discipline grep-pack — staged here for a future fold-up into
-> `dw-swift-building`. No demo/customer content. When folded, move this body into `dw-swift-building`
-> and re-target the pointers in the demo skills. Until then, the demo skills reference this file.
->
+Vendor-generic Swift 2 / DW10 frontend-building knowledge: the component system,
+paragraph/template/page conventions, the Style-asset format, asset organisation, the re-skin
+doctrine, and the discipline grep-pack.
+
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
 ## Contents
@@ -48,10 +46,10 @@ unmaintainable code that a Serializer re-deploy silently drops.
 | Subgroup navigation (tiles / list / carousel) | `Swift-v2_ProductGroupGrid` / `ProductGroupList` / `ProductGroupSlider` | needs child groups; see `SelectedGroups` + aspect-ratio pitfalls below |
 | Related / "similar" products | `Swift-v2_ProductComponentSlider` (+ `eCom/ProductCatalog/ProductSlider.cshtml` service) | `RelationType` (variants/most-sold/trending/latest/related-products); lazy-loads from a Catalog-app **service page** — see "Component-slider service page" wiring triad right below the table |
 | Spec / attribute groups | `Swift-v2_ProductFieldDisplayGroupsAccordion` (collapsible) / `Swift-v2_ProductFieldDisplayGroups` (always visible — the right pick for an elaborate spec sheet) | `FieldDisplayGroups` on the accordion, `DisplayGroups` on the always-visible variant — both take display-group **system names**, see the symptom table below; `Layout` (bullets/list/table), `HideFieldLabels` |
-| BOM / assembled-from + configurator | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page; renders fixed lines AND select-one radio groups per configurator slot. The data shape that drives the grouping (`ProductItemBomGroupId` must be a real `EcomGroups` id) is owned by [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.6 |
+| BOM / assembled-from + configurator | `Swift-v2_ProductBom` | `ListComponentSource` = a Product-card component page; renders fixed lines AND select-one radio groups per configurator slot. The data shape that drives the grouping (`ProductItemBomGroupId` must be a real `EcomGroups` id) is owned by [dw-pim-modelling](../../dw-pim-modelling/SKILL.md) (`structural-model.md`) §2.6 |
 
 Picking the type is half the job — how many paragraphs a designed section becomes, and what goes in
-fields vs. rich text, is owned by [`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md).
+fields vs. rich text, is owned by [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md).
 
 ### Component-slider service page — the wiring triad and its failure smells
 
@@ -146,7 +144,7 @@ A left-sidebar PLP filter panel is two independent settings; the common mistake 
 Reliable refresh is a host restart. Symptom: the editor's checkbox list shows the new groups (it
 re-queries SQL on every load) but the rendered accordion is empty. Seed-flow order: (a) seed the four
 tables, (b) `dotnet run` recycle, (c) configure the paragraph's field. See
-[`cache-invalidation.md`](../../../dw-data-access/references/cache-invalidation.md).
+[dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`).
 
 ### `ProductGroupGrid.SelectedGroups` — SQL-direct seeds don't deserialize
 
@@ -234,7 +232,7 @@ short description), the cleanest escalation is a **NEW content layout** of the P
 — not a new paragraph type and not extra grid rows
 (`Paragraph/Swift-v2_ProductHeader/<MyVariant>.cshtml`, doc-sanctioned, no `.cs`). Which fields are on
 the view model (and which only look like they should be) is owned by
-[`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md).
+[dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md).
 
 ## 4. Empty `ParagraphTemplate` resolves alphabetically (silent footgun)
 
@@ -256,7 +254,7 @@ Symptom: "I added one custom Text variant and now half the site renders with tha
   `save_paragraphs(id=<id>, template='TextLeft.cshtml')` (one at a time, auto cache-invalidation);
   SQL-fallback bulk `UPDATE Paragraph SET ParagraphTemplate='TextLeft.cshtml' WHERE
   ParagraphItemType='Swift-v2_Text' AND (ParagraphTemplate IS NULL OR ParagraphTemplate='')` — a
-  field UPDATE on an existing row, live with no restart ([`cache-invalidation.md`](../../../dw-data-access/references/cache-invalidation.md)
+  field UPDATE on an existing row, live with no restart ([dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`)
   edit-vs-insert rule). Run this BEFORE introducing any sort-early custom variant.
 
 ## 5. Grid composition cache — restart required
@@ -292,7 +290,7 @@ paragraph rendered through `RenderGrid` is NOT live — the `RenderGrid` HTML ca
 page id, not by individual paragraph row state. **The only reliable lever is CSS-hide, and it must be
 cache-proof** — prefer an inline `<style>` block in the head-include partial over a project CSS file
 (on some builds the file is served under a static version token; see
-[`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3). Scope the rule as tightly as possible (item-type class,
+[`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3). Scope the rule as tightly as possible (item-type class,
 data attribute, parent-page wrapper) and document it inline so the next reader removes it once Swift
 fixes the invariant.
 
@@ -300,7 +298,7 @@ fixes the invariant.
 language layer's component selectors still point at the MASTER's component pages, both areas share one
 cache entry and whichever context renders first wins. Repoint the layer's `ComponentSource` at the
 layer's own component-page clones (separate ids, separate cache entries) — see
-[`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md) §3.
+[`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §3.
 
 ## 6. Template categories, page presets, page-state flags
 
@@ -350,10 +348,10 @@ columns together (`active/showInMenu: false` writes `PageActive=0` AND `PageHidd
 leaves the nav but also 404s; `true` writes `1/0` — routable but back in the nav). Set the split
 state via Management API `PageSave` or a SQL `UPDATE Page SET PageActive=0, PageHidden=0`, then
 restart the host — the navigation tree and friendly-URL provider cache the old page set (see
-[`cache-invalidation.md`](../../../dw-data-access/references/cache-invalidation.md)). When auditing reachability, check
+[dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`)). When auditing reachability, check
 `published=true` and `hidden=false`; do NOT flag `active=false` on its own. (Full SQL-direct INSERT
 required-column list, including the `PageActiveFrom`/`PageActiveTo` silent-404 vector, lives in
-[`management-api-and-sql.md`](../../../dw-data-access/references/management-api-and-sql.md).)
+[dw-data-access](../../dw-data-access/SKILL.md) (`management-api-and-sql.md`).)
 
 ## 7. Style assets — `Files/System/Styles/`
 
@@ -420,7 +418,7 @@ button shape + typography (applies to every scheme-tagged paragraph, including d
 content — highest leverage per line). Use the project CSS file (Tier 1) for everything else (hover
 effects, nav polish, footer tweaks, empty-`data-dw-colorscheme` hacks); it loads after the Style
 assets so its rules win cascade ties. (Color-scheme architecture/cascade + the CSS pitfalls live in
-[`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §4-5.)
+[`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §4-5.)
 
 ## 8. Asset organisation under `wwwroot/Files/`
 
@@ -433,17 +431,15 @@ assets so its rules win cascade ties. (Color-scheme architecture/cascade + the C
 | `Templates/Designs/Swift-v2/` | Swift 2 design root. `Assets/css/swift.css` and `Files/System/Styles/` CSS are NEVER touched. The override slot is `Custom/<name>_custom.css` wired via `Custom/<name>HeadInclude.cshtml`. | Stock `.cshtml`: do not modify — create new content layouts alongside. `Custom/<name>_custom.css`: edit/create freely. |
 | `Templates/Paragraph/` | Built-in paragraph Razor templates | DO NOT EDIT — alternative renderings are NEW content layouts alongside. |
 | `Templates/Feeds/` | Feed Razor / XSLT templates | See feed/search references. |
-| `System/Repositories/` | Index definitions + feed `.query` files | See [`index-management.md`](../../../dw-search-indexing/references/index-management.md). |
-| `System/SmartSearches/Ecommerce/Shared/` | Dashboard `.query` files | Shared ONLY — see [`index-management.md`](../../../dw-search-indexing/references/index-management.md). |
+| `System/Repositories/` | Index definitions + feed `.query` files | See [dw-search-indexing](../../dw-search-indexing/SKILL.md) (`index-management.md`). |
+| `System/SmartSearches/Ecommerce/Shared/` | Dashboard `.query` files | Shared ONLY — see [dw-search-indexing](../../dw-search-indexing/SKILL.md) (`index-management.md`). |
 
 **Asset upload — admin UI vs filesystem drop.** Both put a file into `wwwroot/Files/Images/`: admin
 UI (Files → navigate → Upload, visible to property pickers immediately) or filesystem drop (visible on
 next directory-listing read, no restart). Both show in `git status` the same way.
 
 **What lives OUTSIDE `wwwroot/Files/`.** Admin UI File management surfaces ONLY `wwwroot/Files/`
-content — anything else is shell-only. (Project-specific working folders, read-only context folders,
-and ledger files live outside it; those are a deployment/working-folder convention, out of scope for
-this skill.)
+content — anything else is shell-only. (Project-specific working folders and tracking files live outside it; those are a deployment/working-folder convention, out of scope for this skill.)
 
 ## 9. Re-skin doctrine — never edit standard templates
 
@@ -467,7 +463,7 @@ configuration surface.
 | Add a content paragraph | YES (page → "Add paragraph" → pick type) | n/a |
 | Layout shape no preset matches; new column / alt rendering | NO | New content layout `.cshtml` (pixel-perfect escalation) |
 | Site title | YES (Settings → Areas → SHOP1 → Site Settings) | n/a |
-| Data-shape transform, conditional rendering, external calls / business logic | NO | Controller / provider `.cs` — triggers the customisations-ledger preflight |
+| Data-shape transform, conditional rendering, external calls / business logic | NO | Controller / provider `.cs` — is backend-customisation territory — track it as a logged customisation |
 
 **Executor split:** the admin click-paths are the *map* of what is configurable (for a human, and as
 verification targets). When an agent makes a change itself it resolves the click-path to the
@@ -485,7 +481,7 @@ Per `doc.dynamicweb.dev/swift/customization/design-css.html`:
 - ❌ Modifications to existing standard `.cshtml` under `Files/Templates/Designs/Swift-v2/` or
   `Files/Templates/Paragraph/` — per the pixel-perfect doc: extend or create new templates, never
   modify standard ones.
-- ❌ `*Controller.cs`, `Providers/**` — the customisations-ledger preflight.
+- ❌ `*Controller.cs`, `Providers/**` — backend customisations; track every such file explicitly.
 - ❌ Any `.scss` / `.ts` source — recompilation drift; the host serves compiled output.
 - ❌ **Any Swift-shipped file named exactly `custom.css`** (`Custom/custom.css` placeholder ships
   `body { background: hotpink !important; }`; `Assets/css/custom.css` in the doc's load-order example)
@@ -496,8 +492,8 @@ Per `doc.dynamicweb.dev/swift/customization/design-css.html`:
 
 ✅ **Allowed:** a project-scoped `Files/Templates/Designs/Swift-v2/Custom/<name>_custom.css` in the
 Swift `Custom/` slot, loaded after `swift.css`, wired via a `Custom/<name>HeadInclude.cshtml`
-head-include ([`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3). Layout-only `.cshtml` content layouts (escalation
-tier 2) are also allowed — Razor `.cshtml` is **not** in the customisations-ledger preflight glob.
+head-include ([`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3). Layout-only `.cshtml` content layouts (escalation
+tier 2) are also allowed — Razor `.cshtml` is **not** in the backend-customisation tracking glob.
 
 ### Separate styling from content (don't paste HTML into RTF fields)
 
@@ -517,7 +513,7 @@ data-attributes**:
    clean content.
 
 (The full modeling discipline — decompose by editor concern, field-purity rules, the editor-gate — is
-owned by [`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md).)
+owned by [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md).)
 
 ### Pixel-perfect escalation — what you may / may not create
 
@@ -533,17 +529,16 @@ no `.cs`. If `.cs` appears, you've crossed into controller/provider territory.
 ### Pre-escalation check — search the DW10 source first
 
 Before climbing the ladder, search the DW10 source for the canonical surface. Common false-positive
-escalations: gating paragraphs by role → permission entity store ([`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md)),
+escalations: gating paragraphs by role → permission entity store ([dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`)),
 not cshtml SQL; redirect from master by user identity → `Page.Loaded` subscriber, not `WriteLiteral`;
-project-wide stylesheet → `CustomHeadInclude` ([`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3), not inline
+project-wide stylesheet → `CustomHeadInclude` ([`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3), not inline
 `AddStylesheet`; gate routes for anon → page-permission rows + `Page.PermissionType=0`; read user
-point-balance / customer-number / groups → `Pageview.User.*` ([`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md)),
+point-balance / customer-number / groups → `Pageview.User.*` ([dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md)),
 not SQL.
 
 ## 10. Discipline audit — grep pack
 
-Verify a Swift build's templates against the canonical surfaces before declaring "ready" or before
-folding learnings back. Each hit is a candidate finding; a clean run = green light.
+Verify a Swift build's templates against the canonical surfaces before declaring the build "ready". Each hit is a candidate finding; a clean run = green light.
 
 ```powershell
 $Root = "Dynamicweb.Host.Suite\wwwroot"
@@ -572,24 +567,24 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])
 
 | Grep | Hit means | Remediation |
 |------|-----------|-------------|
-| #1 | Raw DB access in a template | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 / [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) / [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-lifecycle.md) / [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) |
-| #2,#3,#4 | Routing-by-URL-string / project-locked URL / legacy URL synthesis | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 URLs |
-| #5 | Marketing-fragile branching | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) per-category + [`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md) §2 |
-| #6 | Shim instead of custom item type | [`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md) §2 |
-| #7 | Cache-buster-breaking inline include | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 |
-| #8 | Brittle content-extraction regex | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) product field arrays |
+| #1 | Raw DB access in a template | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 / [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`) / [dw-commerce-orders](../../dw-commerce-orders/SKILL.md) (`order-lifecycle.md`) / [dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md) |
+| #2,#3,#4 | Routing-by-URL-string / project-locked URL / legacy URL synthesis | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 URLs |
+| #5 | Marketing-fragile branching | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) per-category + [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §2 |
+| #6 | Shim instead of custom item type | [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §2 |
+| #7 | Cache-buster-breaking inline include | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 |
+| #8 | Brittle content-extraction regex | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) product field arrays |
 | #9 | Brand CSS in Swift's shipped `custom.css` | §9 hard rule — revert, move to `<name>_custom.css` |
 
 ## Cross-references
 
-- [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) — canonical `Services.*` surfaces, `ViewModelTemplate<>`
+- [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) — canonical `Services.*` surfaces, `ViewModelTemplate<>`
   pitfalls, `CustomHeadInclude` wiring, color schemes, CSS pitfalls.
-- [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) — `ProductViewModel` field inventory + user/group
+- [dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md) — `ProductViewModel` field inventory + user/group
   accessors.
-- [`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md) — modelling discipline, custom item-type `<Prefix>_*`
+- [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) — modelling discipline, custom item-type `<Prefix>_*`
   discipline, language layers (incl. the cross-area component-selector cache).
-- [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) — the Permission entity store (gate page/paragraph
+- [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`) — the Permission entity store (gate page/paragraph
   visibility without template edits).
-- [`management-api-and-sql.md`](../../../dw-data-access/references/management-api-and-sql.md) — SQL-direct Page/GridRow/Paragraph seeding required columns.
-- [`index-management.md`](../../../dw-search-indexing/references/index-management.md) — Repositories / queries / index placement.
-- [`cache-invalidation.md`](../../../dw-data-access/references/cache-invalidation.md) — the post-mutation cache table.
+- [dw-data-access](../../dw-data-access/SKILL.md) (`management-api-and-sql.md`) — SQL-direct Page/GridRow/Paragraph seeding required columns.
+- [dw-search-indexing](../../dw-search-indexing/SKILL.md) (`index-management.md`) — Repositories / queries / index placement.
+- [dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`) — the post-mutation cache table.

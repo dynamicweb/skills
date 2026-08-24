@@ -33,7 +33,7 @@
 
 Vendor-generic Swift re-skin doctrine is now owned by the foundational skills:
 
-- **The "never edit standard templates" never-touch list + allowed override slot, the item-type + variant + CSS "separate the styling from the content" pattern, the Pixel-perfect "what you may / may not create" escalation, and the Pre-escalation "search the source first" check** — owned by the `dw-swift-building` foundational skill, staged in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9 ("Re-skin doctrine").
+- **The "never edit standard templates" never-touch list + allowed override slot, the item-type + variant + CSS "separate the styling from the content" pattern, the Pixel-perfect "what you may / may not create" escalation, and the Pre-escalation "search the source first" check** — owned by the `dw-swift-building` foundational skill, owned by [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9 ("Re-skin doctrine").
 - **`CustomHeadInclude` + `?<ticks>` static-token wiring** — owned by [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3.
 - **Color schemes architecture + cascade** — owned by [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §4.
 - **The three CSS pitfalls (over-broad `[data-dw-button]`, bare `footer { }`, emoji color-font)** — owned by [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
@@ -51,7 +51,7 @@ The pitfalls (now in the foundational skill) — easy to miss on a partial read:
 - Emoji codepoints render in color regardless of CSS `color:` (OS color-font fallback) → [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
 - Header brand-bar paint loses to colorscheme rules: `.navbar` hits the category sidebar, section colorscheme backgrounds repaint over `header[data-swift-page-header]`, link colours need a stacked `:is()/:not()` override → [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
 - A Typography style's `--dw-font-family` renders the browser default serif unless the font is vendored (`@font-face` + woff2 — Swift ships no webfonts) and the stack ends in a generic family → [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
-- Custom variant `.cshtml` whose filename sorts before stock variants hijacks empty-`ParagraphTemplate` paragraphs → [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §4. The verification step for any re-skin that adds a custom variant must check this.
+- Custom variant `.cshtml` whose filename sorts before stock variants hijacks empty-`ParagraphTemplate` paragraphs → [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §4. The verification step for any re-skin that adds a custom variant must check this.
 
 ## The escalation ladder
 
@@ -59,12 +59,12 @@ The pitfalls (now in the foundational skill) — easy to miss on a partial read:
 
 | Tier | Surface | What it touches | Owner |
 |------|---------|-----------------|-------|
-| 0 | Admin UI Style Tools (Settings → Content → Styles) | Color schemes, button shape, typography — generates the `Styles/*.{json,css}` pairs | [styles-assets.md](styles-assets.md) + [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7 |
+| 0 | Admin UI Style Tools (Settings → Content → Styles) | Color schemes, button shape, typography — generates the `Styles/*.{json,css}` pairs | [styles-assets.md](styles-assets.md) + [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §7 |
 | 1 | `Custom/<customer>_custom.css` | Brand variables, hover states, hacks the schemes don't cover | this file (naming rule below) + [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 (wiring) |
-| 2 | New layout-only `.cshtml` content layouts | Pixel-perfect reshaping of an item type's render | [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9 |
+| 2 | New layout-only `.cshtml` content layouts | Pixel-perfect reshaping of an item type's render | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9 |
 | 3 | Controller / provider `.cs` (customisations-ledger preflight) | Anything that needs server-side logic | [dw-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md) |
 
-Before climbing the ladder, run the Pre-escalation "search the source first" check in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9 — most "I need a custom template" reflexes resolve to a canonical surface (permission entity store for role gates, `Page.Loaded` subscriber for redirects, `CustomHeadInclude` for a project stylesheet, `Pageview.User.*` for identity).
+Before climbing the ladder, run the Pre-escalation "search the source first" check in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9 — most "I need a custom template" reflexes resolve to a canonical surface (permission entity store for role gates, `Page.Loaded` subscriber for redirects, `CustomHeadInclude` for a project stylesheet, `Pageview.User.*` for identity).
 
 ## The `<customer>_custom.css` naming hard rule
 
@@ -75,13 +75,13 @@ Create the customer-named sibling — same naming discipline as the `<Prefix>_*`
 - The override file: `Files/Templates/Designs/Swift-v2/Custom/<customer>_custom.css`
 - Wired via a head-include partial: `Custom/<customer>HeadInclude.cshtml` registered on the Master area's `CustomHeadInclude` field (the `AddStylesheet` wiring + the `?<ticks>` static-token caveat live in [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3).
 
-Verification: `git diff --name-only -- '*custom.css'` must never show a path ending in `custom.css` other than `<customer>_custom.css`. Any file named exactly `custom.css` in the diff is a re-skin bug — revert it and move the rules (this is grep #9 of the discipline audit in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §10).
+Verification: `git diff --name-only -- '*custom.css'` must never show a path ending in `custom.css` other than `<customer>_custom.css`. Any file named exactly `custom.css` in the diff is a re-skin bug — revert it and move the rules (this is grep #9 of the discipline audit in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §10).
 
 ## Re-skin smell: "Swift-v2_Text shim + foreign cshtml"
 
 Symptom: a paragraph template path like `Templates\Designs\Swift-v2\Paragraph\Swift-v2_Text\<Project>SomeName.cshtml` that has nothing to do with text. The paragraph is created as Swift Text in admin, then the template path is overridden to point at this file. The editor sees only Title/Subtitle/Text fields; the template ignores most of them and bakes the real fields as hardcoded literals.
 
-Fix: define a `<Prefix>_<ConceptName>` custom item type — see [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §2 ("Custom item types — the `<Prefix>_*` discipline") and the separate-the-styling-from-content pattern in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9.
+Fix: define a `<Prefix>_<ConceptName>` custom item type — see [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §2 ("Custom item types — the `<Prefix>_*` discipline") and the separate-the-styling-from-content pattern in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9.
 
 ## Recipe
 
@@ -116,7 +116,7 @@ baseline just re-paints the shipped demo.
 
 - Browse to `/` (home) and `/customer-center/` while logged in -- verify logo, palette, and copy are applied.
 - Run `git status` in `<demo>\` -- verify NO `.cs` files changed in `Controllers/` or `Providers/` (would have tripped the customisations-ledger preflight in base) and NO `.scss` / `.ts` files changed (recompilation drift).
-- `.cshtml` changes are NOT automatically a problem -- new content layouts alongside standard templates are part of the §Pixel-perfect escalation ladder ([`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9). The thing to avoid is **modifications** to existing standard `.cshtml`. Use `git diff` to confirm `.cshtml` changes are net-new files, not modifications to baseline files.
+- `.cshtml` changes are NOT automatically a problem -- new content layouts alongside standard templates are part of the §Pixel-perfect escalation ladder ([`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9). The thing to avoid is **modifications** to existing standard `.cshtml`. Use `git diff` to confirm `.cshtml` changes are net-new files, not modifications to baseline files.
 - If a `<customer>_custom.css` was edited: that's the doc-canonical override slot, expected. Verify it lives at `Files/Templates/Designs/Swift-v2/Custom/<customer>_custom.css` and is loaded by a `Custom/<customer>HeadInclude.cshtml` wired to the Master area's `CustomHeadInclude` field. Stock `Custom/custom.css` must remain the hotpink placeholder — run `git diff --name-only -- '*custom.css'` and confirm the only hit is `<customer>_custom.css`.
 - **Image-band height is a Tier-1 (hard) re-skin item — cap it, do not eyeball it.** The stock `Swift-v2_Image` band and the slider cover-card carry no serialized height field, so a swapped-in photo renders at full column-width height, uncapped, and towers over the fold. Every re-skin that changes photography reproduces this. The durable fix is a Tier-1 (`<customer>_custom.css`) CSS cap on the image wrapper and the slider cover-card — `aspect-ratio` + `max-height: min(60vh, 640px)` + `object-fit: cover`. A full-bleed hero may legitimately fill the fold; a content-band image must not. Definition of done: no image band taller than the configured fraction of the viewport, measured by the `tall` detector in [`visual-qa.md`](../../dw-demo-base/references/visual-qa.md) — that mechanical check is the sign-off, not a screenshot glance.
 - **Verify shipped CSS in the CSSOM, not on disk.** A rule can round-trip byte-identical and still not exist in the browser — see [§CSS that silently never reaches the browser](#css-that-silently-never-reaches-the-browser) for the four causes and the two asserts (string-aware comment scan + per-block CSSOM marker) that catch them.

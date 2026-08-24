@@ -55,7 +55,7 @@ From the **Swift clone** (`<demo-root>\dw-swift\`) to the host's `wwwroot/`:
 pairs — while the surface's serialized `Area` rows arrive wired to
 `AreaColorSchemeGroupId='swift'` / `AreaButtonStyleId='buttons'` / `AreaTypographyId='fonts'`.
 `TryGet*Style` fails silently when the file behind an id is absent (the empty-state pitfall,
-[`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7), so a
+[`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §7), so a
 host built without this step renders every page in the browser's serif fallback with unstyled
 buttons and a `Styles/Buttons/buttons.css` 404 — and it looks "almost right", which is exactly
 why it ships unnoticed. Stage `theme-default`'s three pairs

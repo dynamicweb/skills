@@ -297,7 +297,7 @@ inventory are vendor-generic and owned by the `dw-render-razor` foundational ski
 — use these, don't re-implement").
 
 Pair with the wider discipline grep pack — vendor-generic, owned by the `dw-swift-building` foundational
-skill — staged in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md)
+skill — owned by [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md)
 §10 ("Discipline audit — grep pack"). Check 7 is the gating subset (raw DB access only); the audit
 pack covers URL substring scans, hard-coded slugs, category-name branching, master-inline
 `AddStylesheet`, etc.

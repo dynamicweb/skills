@@ -19,6 +19,7 @@ Read the current site first so you understand:
 ## References
 - [references/swift2-page-structure.md](references/swift2-page-structure.md)
 - [references/branding-presets.md](references/branding-presets.md) when deeper branding is needed
+- [references/component-system-and-reskin.md](references/component-system-and-reskin.md) — the deep reference: the component-first gate (map a requirement to a standard `Swift-v2_*` component before customising), paragraph item-field configuration and its symptom table, the empty-`ParagraphTemplate` alphabetical-fallback hijack, the grid-composition and `RenderGrid` caches, template categories and page-state flags (`PageActive` vs `PageHidden`), Style assets under `Files/System/Styles/`, asset organisation, the re-skin doctrine (never edit standard templates; the `custom.css` naming hard rule), and the discipline grep-pack
 
 ## Core Rules
 - Never create a new area in this flow.

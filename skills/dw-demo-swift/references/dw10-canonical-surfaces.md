@@ -35,7 +35,7 @@ So: **store the literal `.htm` / `.asp` rows for production, demo the extensionl
 
 The one-shot grep pack that verifies a Swift demo's templates against the canonical surfaces is owned
 by `dw-swift-building` — staged in
-[`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §10.
+[`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §10.
 
 **TRIGGER — run the grep pack:**
 
@@ -46,4 +46,4 @@ by `dw-swift-building` — staged in
   place to acquire one of these anti-patterns.
 
 A clean run is the green light; each hit routes back to the owning candidate via the table in
-[`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §10.
+[`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §10.
