@@ -14,7 +14,7 @@
 
 | Surface you're about to hand-roll | Use instead — owned by | Candidate |
 |---|---|---|
-| Read user / user groups (`Pageview.User`, `Pageview.User.GetGroups()`) | `dw-render-viewmodels` | [`render-viewmodels.md`](../../dw-demo-base/references/foundational/render-viewmodels.md) "User identity / groups" |
+| Read user / user groups (`Pageview.User`, `Pageview.User.GetGroups()`) | `dw-render-viewmodels` | [`dw-render-viewmodels`](../../dw-render-viewmodels/SKILL.md) "User identity / groups" |
 | Gate a Page/Paragraph by role or group (the permission entity store — `UnifiedPermission` rows keyed `PermissionName='Page'`/`'Paragraph'`; group gates need the broad-role deny pair; NOT the legacy `*Permission` columns) | `dw-users-permissions` | [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §15 |
 | Read prices (`Services.Prices`, custom `PriceProvider`) | `dw-commerce-catalog` | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.12 |
 | Read customer orders (`Services.Orders.GetCustomerOrdersByType` / `GetOrdersBySearch`) | `dw-commerce-orders` | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) "canonical order read surface" |

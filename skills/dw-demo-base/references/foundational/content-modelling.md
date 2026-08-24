@@ -694,7 +694,7 @@ is in [`extend-mcp-tools.md`](extend-mcp-tools.md) §5.
   + variant + CSS separation, the discipline grep-pack, and the `RenderGrid` composition cache.
 - [`render-razor.md`](render-razor.md) — per-category behavior via `ProductGroupFieldValues`; canonical
   URL/redirect surfaces the language switcher relies on.
-- [`render-viewmodels.md`](render-viewmodels.md) — `Pageview.User.GetGroups()` and other viewmodel
+- [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) — `Pageview.User.GetGroups()` and other viewmodel
   accessors used by template role-gates.
 - [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) — the Permission entity store that AreaCopy fails to
   clone (point 2 above).

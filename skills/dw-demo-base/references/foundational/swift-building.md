@@ -234,7 +234,7 @@ short description), the cleanest escalation is a **NEW content layout** of the P
 — not a new paragraph type and not extra grid rows
 (`Paragraph/Swift-v2_ProductHeader/<MyVariant>.cshtml`, doc-sanctioned, no `.cs`). Which fields are on
 the view model (and which only look like they should be) is owned by
-[`render-viewmodels.md`](render-viewmodels.md).
+[`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md).
 
 ## 4. Empty `ParagraphTemplate` resolves alphabetically (silent footgun)
 
@@ -537,7 +537,7 @@ escalations: gating paragraphs by role → permission entity store ([`permission
 not cshtml SQL; redirect from master by user identity → `Page.Loaded` subscriber, not `WriteLiteral`;
 project-wide stylesheet → `CustomHeadInclude` ([`render-razor.md`](render-razor.md) §3), not inline
 `AddStylesheet`; gate routes for anon → page-permission rows + `Page.PermissionType=0`; read user
-point-balance / customer-number / groups → `Pageview.User.*` ([`render-viewmodels.md`](render-viewmodels.md)),
+point-balance / customer-number / groups → `Pageview.User.*` ([`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md)),
 not SQL.
 
 ## 10. Discipline audit — grep pack
@@ -572,7 +572,7 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])
 
 | Grep | Hit means | Remediation |
 |------|-----------|-------------|
-| #1 | Raw DB access in a template | [`render-razor.md`](render-razor.md) §1 / [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) / [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-lifecycle.md) / [`render-viewmodels.md`](render-viewmodels.md) |
+| #1 | Raw DB access in a template | [`render-razor.md`](render-razor.md) §1 / [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) / [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-lifecycle.md) / [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) |
 | #2,#3,#4 | Routing-by-URL-string / project-locked URL / legacy URL synthesis | [`render-razor.md`](render-razor.md) §1 URLs |
 | #5 | Marketing-fragile branching | [`render-razor.md`](render-razor.md) per-category + [`content-modelling.md`](content-modelling.md) §2 |
 | #6 | Shim instead of custom item type | [`content-modelling.md`](content-modelling.md) §2 |
@@ -584,7 +584,7 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])
 
 - [`render-razor.md`](render-razor.md) — canonical `Services.*` surfaces, `ViewModelTemplate<>`
   pitfalls, `CustomHeadInclude` wiring, color schemes, CSS pitfalls.
-- [`render-viewmodels.md`](render-viewmodels.md) — `ProductViewModel` field inventory + user/group
+- [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) — `ProductViewModel` field inventory + user/group
   accessors.
 - [`content-modelling.md`](content-modelling.md) — modelling discipline, custom item-type `<Prefix>_*`
   discipline, language layers (incl. the cross-area component-selector cache).

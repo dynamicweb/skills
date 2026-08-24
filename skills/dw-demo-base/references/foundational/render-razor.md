@@ -117,7 +117,7 @@ on the PDP (a demo-blocker). Fix — resolve the underlying entity:
 
 The third argument (`true`) materialises `ProductFieldValues`; without it the property returns `null`
 even on a valid entity. (Which fields surface where on the view model: see
-[`render-viewmodels.md`](render-viewmodels.md).)
+[`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md).)
 
 ### `ToggleFavorite.cshtml` silently no-ops when `FavoriteListId=0`
 
@@ -331,7 +331,7 @@ if they look fine on a Mac (which renders some codepoints monochrome by default)
 
 ## Cross-references
 
-- [`render-viewmodels.md`](render-viewmodels.md) — the data side: which fields surface on
+- [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) — the data side: which fields surface on
   `ProductViewModel` vs the underlying entity, and the user/group accessors.
 - [`swift-building.md`](swift-building.md) — the Swift component system, the re-skin escalation ladder,
   Style assets, the `custom.css` naming hard rule, and the discipline grep-pack.
