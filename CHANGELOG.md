@@ -3,6 +3,22 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.17.0]
+
+Fold-up batch B: eight staged foundational candidates leave
+`dw-demo-base/references/foundational/` for their owning skills, stripped of
+demo framing on the way. `search-indexing.md` → `dw-search-indexing/references/index-management.md`
+(plus `query-authoring.md` and `query-expressions.md` moved alongside);
+`commerce-catalog.md` → `dw-commerce-catalog/references/catalog-publishing.md`
+(and the SKILL.md's duplicated Search Index Setup section is now a link to
+dw-search-indexing); `commerce-b2b.md` → `dw-commerce-b2b/references/dc-scoping.md`;
+`commerce-orders.md` and `promotions-engines.md` → `dw-commerce-orders/references/`
+(`order-lifecycle.md`, `promotions-engines.md`); `users-permissions.md` →
+`dw-users-permissions/references/permission-layers.md`. Each target SKILL.md
+gains a Deep reference section; ~90 links repointed across the demo corpus;
+`dw-commerce-catalog`, `dw-commerce-b2b`, and `dw-commerce-orders` join the
+`dynamicweb-presales` bundle to keep it link-closed.
+
 ## [4.16.0]
 
 Fold-back sprint 4.16.0: lands the skill legs of three triaged learning bundles — zero-state /
