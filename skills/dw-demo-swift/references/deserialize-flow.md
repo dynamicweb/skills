@@ -277,15 +277,13 @@ The sweep is the second line of defence for the failures strict mode does not ca
 
 ## 9. Known schema-drift workaround (Swift 2.4 layers ↔ DW10)
 
-The `base` layer ships framework `_sql/` in its `replace/` tree (unlike the content-only `Swift2.2` baselines), but **no catalog `_sql/`** — it is framework-only, zero sample products (see §3). Re-verify the framework `_sql/`-era drift points against a host when adopting a new Swift cycle — the two workarounds below were retired under the content-only shape and may re-apply while framework `_sql/` ships.
-
-Superseded (content-only era): the `EcomCurrencies.CurrencyUseCurrencyCodeForFormat` column-strip and the `EcomShopGroupRelation/GROUP253$$SHOP19.yml` orphan-YAML workarounds were retired when the baseline dropped `_sql/`. With framework `_sql/` shipping again, confirm during a host deserialize whether either recurs; reconstruct specifics from git history if needed.
+The `base` layer ships framework `_sql/` in its `replace/` tree (unlike the content-only `Swift2.2` baselines), but **no catalog `_sql/`** — it is framework-only, zero sample products (see §3). Re-verify the framework `_sql/`-era drift points against a host when adopting a new Swift cycle.
 
 ### 9.1 — Content predicates require Swift v2 item-type XMLs
 
 The surface's `Content - Swift 2 (...)` predicates reference item types like `Swift-v2_Master`, `Swift-v2_PageProperties`, `Swift-v2_HomePage`, etc. — XML files that ship **with the `surface-swift` layer** (`itemtypes/`, copied to `Files/System/Items/` during staging — see §3). If the XMLs are not yet on disk, the Content predicates fail with `Unable to resolve the item type. The item cannot be saved.` for every page. Fix: copy the surface's `itemtypes/*.xml` and run §"Design-package deploy (before any deserialize)" above (including the ProductsBackend/ProductsFrontend skip rule stated there), then re-run the deserialize unmodified.
 
-Superseded: deploy-design-first is the only viable path — the former Approach A ("strip Content predicates") no longer applies with a content-only baseline, and running with strict mode off remains forbidden per §4.
+Deploy-design-first is the only viable path; running with strict mode off is forbidden per §4.
 
 ### 9.2 — Verified clean outcome (legacy content-only Swift2.2 baseline)
 

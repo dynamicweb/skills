@@ -30,7 +30,10 @@ here is the demo guardrail: the paragraph types you must NOT replace.
 `ParagraphSave` is the write verb behind every Visual-Editor field edit, but the projected
 `contentItem` fields do not all behave alike. Plain text / HTML fields persist exactly as posted;
 several editor types have their own binding contract, and each of the traps below fails **silently**
-— the save returns success and the re-read looks plausible.
+— the save returns success and the re-read looks plausible. Standing rule: verify by round-trip
+against the rendered page or the `ItemType_*` row, never by status code
+([`../../dw-demo-base/references/surface-priority.md`](../../dw-demo-base/references/surface-priority.md)
+§"Silent no-ops on write surfaces").
 
 **The field KEY is `ContentItem|<itemType>|<group>|<field>`, and the GROUP segment is unvalidated — an
 unknown group is dropped without an error.** This is the cheapest way to write a whole page of successful
@@ -76,12 +79,11 @@ three stacked traps:
   **same** `ModelRawData` persist while the button keeps its old value, which reads as "buttons aren't
   writable on children" rather than "the shape is wrong". Write the nested object there too.
 
-> **Correction (supersedes earlier revisions of this file).** A `Label` on a LANGUAGE-VERSION paragraph was
-> previously recorded as "not writable — silently restored from the master", with only `Link` round-tripping,
-> and readers were told to record it as a known residual. **That reading was the string-shaped write
-> failing**, not a language-layer restriction: `Link` is a bare-string field and survived, the object-shaped
-> `Label` / `SelectedValue` did not. A translated CTA label **is** writable on a language paragraph through
-> `ParagraphSave` — post the full nested object. Do not carry the residual forward.
+- *Language-version paragraphs are no exception.* A translated CTA `Label` **is** writable on a language
+  paragraph through `ParagraphSave` — post the full nested object. A string-shaped write there reads as
+  "the label is silently restored from the master" (because the bare-string `Link` survives while the
+  object-shaped `Label` / `SelectedValue` are discarded), but it is the same shape failure, not a
+  language-layer restriction.
 
 Verify every ButtonData write against the RENDERED page (expected `href` + label present, old label
 count dropped), never against the API re-read — a re-read proves storage, never effect.
@@ -156,10 +158,9 @@ ModelRawData Image = "/Images/<brand>/<file>.jpg"   (no /Files)   -> ""
 RelationItem.Groups[].Fields[].Value = binder object / plain path -> "" for both
 ```
 
-**Scope this to `SelectedImage`.** The "children carry STRING fields only" reading it first produced is too
-broad: a `ButtonData` field on a child DOES bind when written as a real nested object inside the same
-`ModelRawData` (above), so the flat-string-map inference was the probe's *shapes* failing, not the channel.
-What stands is the measured fact — no shape reaches a child's `SelectedImage`.
+**Scope this to `SelectedImage`.** A `ButtonData` field on a child DOES bind when written as a real nested
+object inside the same `ModelRawData` (above) — the measured fact is only that no shape reaches a child's
+`SelectedImage`.
 
 So a card image inside a slider/accordion/repeater is **one click in the admin UI**, and saying so is the
 honest answer. Do not design a data fix around it, do not overwrite the file at the old path to fake one
@@ -259,8 +260,7 @@ GET GetParagraphById?Id=<id>            -> 200 full contentItem.groups[].fields[
 
 The first `400` is the wrong parameter NAME and reads as "verb unavailable". The second meaning is a
 **soft-deleted row**: a paragraph that exists in the `Paragraph` table with `ParagraphDeleted=1` answers `400`
-to a *correct* `?Id=` call, which reads as "paragraph not found". (This supersedes earlier notes recording the
-`400` as simply paragraph-not-found, and the verb as dead.) **Any DB-driven content sweep must filter
+to a *correct* `?Id=` call, which reads as "paragraph not found". **Any DB-driven content sweep must filter
 `ParagraphDeleted` / `PageDeleted`** or it spends the run chasing ghosts it can never write.
 
 **`GetParagraphsByPageId` silently OMITS paragraphs that exist and are visible.** It is not a complete
@@ -323,11 +323,8 @@ the shipped type rather than leaving every build to blank them.
 
 ## `Swift-v2_Accordion`: the items ARE writable — the write rides inside `ParagraphSave`
 
-> **Correction.** Earlier revisions of this file stated the Accordion's items were unreachable from the
-> Admin API and prescribed hand-authored Bootstrap `.accordion` markup pasted into a `Swift-v2_Text`
-> field. **That workaround is retired — it was itself the defect** (an owner review rejected exactly it:
-> raw HTML and styling in a text field where a Swift item type with styling on top belongs). Do not
-> reach for it, and if you find it on an existing demo, migrate it.
+> **Anti-pattern:** hand-authored Bootstrap `.accordion` markup pasted into a `Swift-v2_Text` field — never
+> do it, and migrate it to the real Accordion item list if found on an existing demo.
 
 The Accordion's content lives in `Accordion_Items`, an item LIST — the same storage shape as
 `Swift-v2_Slider`'s slides, and the same edit path:
@@ -366,12 +363,10 @@ The child-field group is `General` and the field names are confirmed against
 `Files/System/Items/ItemType_Swift-v2_Accordion.xml` + `ItemType_Swift-v2_Accordion_Item.xml` — read the
 XML rather than guessing when adapting this to another repeater.
 
-**Why the wrong belief survived so long, and the general rule it teaches.** The brute-force that produced
-it was *correct*: there is no `ItemEntry*` / `ItemList*` / `ItemEntrySave` verb, and there still is not.
-The inference was wrong. The write is not its own verb — it rides inside `ParagraphSave` as an array on
-the parent's projected list field, so **a verb-registry probe can never find it.** A negative registry
-result proves a VERB absent, never a CAPABILITY absent; the general form of that rule lives in
-[`../../dw-demo-base/references/surface-priority.md`](../../dw-demo-base/references/surface-priority.md).
+There is no `ItemEntry*` / `ItemList*` / `ItemEntrySave` verb — the write rides inside `ParagraphSave` as
+an array on the parent's projected list field, so a verb-registry probe can never find it. A negative
+registry result proves a VERB absent, never a CAPABILITY absent
+([`../../dw-demo-base/references/surface-priority.md`](../../dw-demo-base/references/surface-priority.md)).
 
 ## Where to find a paragraph's wiring (read-only baseline inspection)
 

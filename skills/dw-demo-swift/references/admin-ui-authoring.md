@@ -32,7 +32,9 @@ Escalate to [re-skin.md](re-skin.md) §`<customer>_custom.css` only when the adm
 Because every Visual-Editor / Style-tools save resolves to an Admin API call, Claude writes through
 those calls directly — and several of them report success in ways that are not true. Standing rule:
 **after any write, re-read the entity AND fetch the rendered page. `status=ok` and the POST response
-model are not evidence.**
+model are not evidence.** (The general verify-by-round-trip rule is owned by
+[dw-demo-base/references/surface-priority.md](../../dw-demo-base/references/surface-priority.md)
+§"Silent no-ops on write surfaces"; below are the traps specific to this authoring surface.)
 
 **`GridRowSave` — the response model lies.** It *does* accept and persist `colorSchemeId` (stock
 Swift vocabulary: `light|lightgrey1|lightgrey2|dark|darksubtle|primary|secondary`), but the POST
@@ -65,34 +67,28 @@ post them as numbers and the sort is rejected or silently partial. Read the curr
 `GridRowsByPageId` (`model.data` is already in render order), splice the copied row into the position you
 want, and post the whole array back.
 
-**Three safety rules govern that call, and two of them are corrections to the obvious approach.**
+**Three safety rules govern that call:**
 
 **1. `GridRowSort` is an ABSOLUTE ordering — the id set you post must be exactly the live row set.** A missing
 id is how a row silently drops off a page; an extra one is how a sort is rejected. Diff the set you are about
 to post against `GridRowsByPageId` and refuse to post on any difference.
 
 **2. Verify the result against the DATABASE or the RENDERED DOM — never against the API model.**
-*(Correction to the earlier "verify by re-reading `model.data`" instruction above.)* `GridRowsByPageId` is
-served from a cache the sort verb **does not invalidate**, so after a successful `GridRowSort` the DB and the
-rendered page both carry the new order while the API list query still returns the previous one. A script that
-verifies its own re-sort through the API concludes **failure** — and a retry or a revert on that basis
-**destroys the correct state**. The rendered page is the cheapest honest oracle (assert the section's position
-in `main`, e.g. by its offset fraction down the document); the DB row order is the other.
+`GridRowsByPageId` is served from a cache the sort verb **does not invalidate**, so after a successful
+`GridRowSort` the DB and the rendered page both carry the new order while the API list query still returns the
+previous one. A script that verifies its own re-sort through the API concludes **failure** — and a retry or a
+revert on that basis **destroys the correct state**. The rendered page is the cheapest honest oracle (assert
+the section's position in `main`, e.g. by its offset fraction down the document); the DB row order is the other.
 
-**3. INSERT AT A POSITION — never re-derive a total order from a sort key that is not unique.** Rebuilding the
-whole order with a `sort` + `id` composite sort collapses curated layout wherever rows share a sort value: on
-one page eight rows shared sort values, so the `id` tie-break flattened a curated order into plain ascending
-row-id order. Adding **one** row moved two unrelated sections, shipped the damage across **three language
-layers** through the shared master page, read as a CSS problem, and stood for about nine hours until an owner
-noticed. Measured: the anchor-nav strip (highest id) fell from position 3 to last — 98.8% of the way down the
-page — while a 36-item package-contents row jumped from 7 to 3, so the product page opened with a parts dump
-under the hero.
+**3. INSERT AT A POSITION — never re-derive a total order from a sort key that is not unique.** Swift pages
+routinely carry duplicated `sort` values, so rebuilding the whole order with a `sort` + `id` composite sort
+flattens curated layout into ascending row-id order wherever rows tie — and a shared master page ships the
+damage across every language layer at once, presenting as a CSS problem.
 
 - **Insert at a position** rather than re-deriving the total order.
 - If a total order genuinely must be posted, **assert the resulting sequence against an expected id list
   BEFORE posting it**, and compare the rendered section order against a baseline afterwards.
-- A script header comment noting "these sort values are duplicated" is not a guard — the run that caused this
-  had exactly that comment.
+- A script header comment noting "these sort values are duplicated" is not a guard — assert, don't annotate.
 
 **`flexibleColumns` is inverted: `0` = flexible, `1` = fit-to-content.** In the `GridRowSave`
 `flexibleColumns` array the column listed `0` silently absorbs all remaining horizontal space
