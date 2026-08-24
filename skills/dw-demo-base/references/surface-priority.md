@@ -47,7 +47,7 @@ Pattern to follow:
 
 Driving the admin UI to *make* a build-phase change is off-contract on every instance type. A "UI-only" operation means the endpoint hasn't been found yet — go back to step 2.
 
-This rule is owned by `dynamicweb-demo-base` and inherited by every sister skill.
+This rule is owned by `dw-demo-base` and inherited by every sister skill.
 
 ## Scaffold phase (local) — the bootstrap one-clicks
 
@@ -73,7 +73,7 @@ The admin UI is a SPA client of the Admin API — every click it makes lands on 
 - **The positive form of the same discovery: the screen route's `Type=` parameter names its backing query.** Every admin screen route carries `Type=<query name>`, and that value is a Management API query the bearer can call directly — so admin-screen state is assertable with no browser in the loop, once the route→query map has been harvested by driving the admin **read-only** one time. Guessing verb names instead is not free: each unresolvable name writes an `[Application/AddInManager]` Error row onto the customer-visible Insights Monitoring dashboard, so batch the probing, do it early, and clear the log before a demo. Both are owned by [`foundational/data-access.md`](foundational/data-access.md) "Discovering admin screens and their backing queries".
 - **Driving the admin SPA via Playwright to *make* a build-phase change is the worst of both worlds** — fragile selectors wrapped around the same service call you could have made directly, with no machine-readable response to verify against. Playwright's job during the build is verification: navigate, screenshot, DOM-grep to confirm a change landed (see `references/browser-automation.md`).
 
-Sister-skill references that document admin click-paths (e.g. `dynamicweb-swift-demo/references/admin-ui-authoring.md`, `re-skin.md`) are maps of *what is configurable and where* — for a human doing manual authoring, and as verification targets — not instructions for Claude to drive the SPA.
+Sister-skill references that document admin click-paths (e.g. `dw-demo-swift/references/admin-ui-authoring.md`, `re-skin.md`) are maps of *what is configurable and where* — for a human doing manual authoring, and as verification targets — not instructions for Claude to drive the SPA.
 
 ## Anti-pattern: SQL-cloning structural trees
 

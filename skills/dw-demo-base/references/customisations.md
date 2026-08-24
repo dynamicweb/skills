@@ -59,7 +59,7 @@ The ledger is **append-only by convention.** The audit recipe reads it; the writ
 This snippet executes during a fresh scaffold flow. It is idempotent in the sense that running it twice overwrites the existing ledger -- which is fine on first scaffold and not what you want afterwards. Skip this block if `CUSTOMISATIONS.md` already exists in the working directory:
 
 ```powershell
-$skill = "$HOME\.claude\skills\dynamicweb-demo-base"
+$skill = "$HOME\.claude\skills\dw-demo-base"
 $demoName = Split-Path -Leaf (Get-Location)
 $template = Get-Content "$skill\assets\CUSTOMISATIONS.md.template" -Raw
 $ledger = $template -replace '<demo-name>', $demoName
@@ -73,7 +73,7 @@ For an idempotent variant that refuses to overwrite an existing ledger:
 if (Test-Path "CUSTOMISATIONS.md") {
   Write-Host "CUSTOMISATIONS.md already exists -- leaving it alone."
 } else {
-  $skill = "$HOME\.claude\skills\dynamicweb-demo-base"
+  $skill = "$HOME\.claude\skills\dw-demo-base"
   $demoName = Split-Path -Leaf (Get-Location)
   $template = Get-Content "$skill\assets\CUSTOMISATIONS.md.template" -Raw
   $ledger = $template -replace '<demo-name>', $demoName
@@ -112,7 +112,7 @@ The preflight globs are intentional:
 - `Providers/**` -- any custom Provider class anywhere in the solution. Providers (notification, payment, shipping, integration, etc.) are a customisation-budget category in their own right.
 - `*Controller.cs` -- broader catch-all. Matches `Controllers/Foo.cs`, `Areas/Admin/BarController.cs`, anywhere in the tree, even if not under a folder named `Controllers/`.
 
-Razor files (`*.cshtml`) are **NOT** in the preflight glob. DW10 templates are conventional, not "customisations" in the pitch sense -- a Swift template override is part of normal demo-build flow, not a customisation-budget hit. If a razor IS modified for a clearly-customisation reason (e.g., hard-coded business logic in a template), it goes in `CUSTOMISATIONS.md` as a `razor` type row by user request, not by preflight. The Razor escalation ladder for Swift demos lives in `dynamicweb-swift-demo/references/re-skin.md` §Pixel-perfect escalation.
+Razor files (`*.cshtml`) are **NOT** in the preflight glob. DW10 templates are conventional, not "customisations" in the pitch sense -- a Swift template override is part of normal demo-build flow, not a customisation-budget hit. If a razor IS modified for a clearly-customisation reason (e.g., hard-coded business logic in a template), it goes in `CUSTOMISATIONS.md` as a `razor` type row by user request, not by preflight. The Razor escalation ladder for Swift demos lives in `dw-demo-swift/references/re-skin.md` §Pixel-perfect escalation.
 
 ## 6. Cross-references
 

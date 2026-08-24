@@ -15,11 +15,11 @@
 
 > Deserialize the Swift layers (framework-only `base` + the `surface-swift` content surface) from the demo's own `<demo-root>\distribution\layers\` checkout into the per-demo project DB. Uses the DW Serializer + Management API. Strict mode is on by default — failures surface as `CumulativeStrictModeException`. Always followed by [`integrity-sweep.md`](integrity-sweep.md).
 >
-> **Scope: Swift demos only.** PIM demos start from a blank/fresh DB and skip this flow entirely. This file is owned by `dynamicweb-swift-demo`; the underlying Serializer install + background reference live in `dynamicweb-demo-base/references/serializer-reference.md`.
+> **Scope: Swift demos only.** PIM demos start from a blank/fresh DB and skip this flow entirely. This file is owned by `dw-demo-swift`; the underlying Serializer install + background reference live in `dw-demo-base/references/serializer-reference.md`.
 
 ## 1. Prerequisites
 
-`dynamicweb-demo-base` setup is complete:
+`dw-demo-base` setup is complete:
 
 - [`../../dw-demo-base/references/setup-checks.md`](../../dw-demo-base/references/setup-checks.md) is green (NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express all probed and resolved).
 - The Distribution has been **cloned** (repo URL from `$env:DW_DISTRIBUTION_REPO`, default below) and pulled `--ff-only` up to `origin/main` into the demo's own `distribution\` folder (see §3 — the staging snippet clones + fast-forwards on first run). **Main IS the version**: consume the latest gate-proven `main` (assert `layers/INDEX.json` `gateProven` is present) and compose the edition's layers from the live `INDEX.json` `layers` entries. The reproducibility pin is the resolved commit SHA, recorded in `CUSTOMISATIONS.md`.

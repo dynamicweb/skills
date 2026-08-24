@@ -7,7 +7,7 @@
 - [Product-completeness checklist — verify before declaring catalog done](#product-completeness-checklist--verify-before-declaring-catalog-done)
 - [Appendix: commerce-side order seeding (used by Swift customer-center demos)](#appendix-commerce-side-order-seeding-used-by-swift-customer-center-demos)
 
-> The canonical setup order for a Dynamicweb 10 PIM build. Each step depends on earlier ones — skipping or reordering causes rework. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table. Cross-references out to `structural-model.md`, `governance.md`, `cache-invalidation.md`, `workflow.md`, `permissions-model.md`.
+> The canonical setup order for a Dynamicweb 10 PIM build. Each step depends on earlier ones — skipping or reordering causes rework. Loaded from `~/.claude/skills/dw-demo-pim/SKILL.md` "Where to find things" table. Cross-references out to `structural-model.md`, `governance.md`, `cache-invalidation.md`, `workflow.md`, `permissions-model.md`.
 
 **ID discipline for every MCP `create_*` / `save_*` step below:** the PIM catalogue tools **auto-assign entity IDs and ignore IDs you pass in** — a requested variant-group id comes back as an auto-generated one, and a partial create can surface as a `JsonException` from the tool. Capture `items[].id` from every create/save response and key all subsequent steps off the captured ids, never the requested ones. On a failed or repeated run, clean up (or rebuild from) the auto-IDed leftovers before re-running — a blind re-run stacks duplicate, mis-IDed entities.
 

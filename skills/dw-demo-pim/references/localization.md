@@ -5,8 +5,8 @@
 > seed + SQL, `EcomLanguages` columns, MCP-tool surfaces + gotchas, the `GetGroup()`-returns-null
 > group-translation gotcha, the vestigial XML config) live in
 > [`../../dw-demo-base/references/foundational/pim-localization.md`](../../dw-demo-base/references/foundational/pim-localization.md).
-> Read that first; this file holds only the demo deltas. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md`
-> "Where to find things". Sister doc to `dynamicweb-swift-demo/references/language-layers.md` (content/area side).
+> Read that first; this file holds only the demo deltas. Loaded from `~/.claude/skills/dw-demo-pim/SKILL.md`
+> "Where to find things". Sister doc to `dw-demo-swift/references/language-layers.md` (content/area side).
 
 ## When to use
 

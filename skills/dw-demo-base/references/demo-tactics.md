@@ -1,6 +1,6 @@
 # Demo storytelling tactics (generic)
 
-Universal tactics for any Dynamicweb 10 demo, regardless of vertical or domain. Sister skills (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`, future sister skills) cross-reference this file rather than restating these tactics inline. Domain-specific demo tactics live in each sister skill's own `references/demo-storytelling.md` (e.g. PIM-flavoured tactics around governance-gap framing and hero-SKU walkthroughs stay in `dynamicweb-pim-demo/references/demo-storytelling.md`).
+Universal tactics for any Dynamicweb 10 demo, regardless of vertical or domain. Sister skills (`dw-demo-pim`, `dw-demo-swift`, future sister skills) cross-reference this file rather than restating these tactics inline. Domain-specific demo tactics live in each sister skill's own `references/demo-storytelling.md` (e.g. PIM-flavoured tactics around governance-gap framing and hero-SKU walkthroughs stay in `dw-demo-pim/references/demo-storytelling.md`).
 
 ## Generic tactics
 
@@ -14,6 +14,6 @@ Universal tactics for any Dynamicweb 10 demo, regardless of vertical or domain. 
 
 ## How to consume this file
 
-This is a routable reference: load it when planning a demo storyline, or cross-reference it from a sister skill's `references/demo-storytelling.md`. Sister skills may also paste individual bullets into their own demo-storytelling reference and add domain-flavoured cousins as needed. The two-source pattern (PIM-flavoured tactics in `dynamicweb-pim-demo/references/demo-storytelling.md` + generic tactics here) keeps both narrow and reusable.
+This is a routable reference: load it when planning a demo storyline, or cross-reference it from a sister skill's `references/demo-storytelling.md`. Sister skills may also paste individual bullets into their own demo-storytelling reference and add domain-flavoured cousins as needed. The two-source pattern (PIM-flavoured tactics in `dw-demo-pim/references/demo-storytelling.md` + generic tactics here) keeps both narrow and reusable.
 
 If you're adding a new sister skill, grab whichever bullets apply, cross-reference or paste them, and add domain-flavoured cousins as needed. No need to mutate this file when adding sister skills -- it's deliberately closed.

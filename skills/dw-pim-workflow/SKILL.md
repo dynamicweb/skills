@@ -27,7 +27,7 @@ Admin path: **Settings > Areas > Products > Productivity > Workflows**
 
 The workflow is now a container for states.
 
-Creating workflows or completion rules via MCP instead? See [references/completeness-and-workflows.md](references/completeness-and-workflows.md) for the `create_or_update_workflows` / `create_or_update_completeness` payload schemas.
+Creating workflows or completion rules via MCP instead? See [references/completeness-and-workflows.md](references/completeness-and-workflows.md) for the `create_or_update_workflow_states` / `create_or_update_completeness_rules` payload schemas.
 
 ## Workflow States
 

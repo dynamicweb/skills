@@ -3,7 +3,7 @@
 > **Rule:** No custom controllers, providers, or `*Controller.cs` files in `Dynamicweb.Host.Suite/`
 > without a row below explaining why.
 >
-> Approved by Justin (or designate) at write-time via `dynamicweb-demo-base` AskUserQuestion.
+> Approved by Justin (or designate) at write-time via `dw-demo-base` AskUserQuestion.
 >
 > **Never record plaintext user passwords, API keys, or tokens here — this file is git-tracked.**
 > Keep demo logins in the gitignored `notes/credentials.local.md` and reference them by pointer

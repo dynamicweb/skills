@@ -9,8 +9,8 @@
 **Adopted from the vendor repos:**
 
 - Description shape for skill routing: `<one-sentence what>. Use when <triggers>.`
-- Verify widget / field system names via API lookups, never assumptions — including the full `ProductCategory|<CategoryId>|<FieldId>` field format (lives in `dynamicweb-pim-demo` structural-model + governance references).
-- `patch_products_safe` only; never `update_products` (lives in `dynamicweb-pim-demo/references/canonical-setup-order.md`).
+- Verify widget / field system names via API lookups, never assumptions — including the full `ProductCategory|<CategoryId>|<FieldId>` field format (lives in `dw-demo-pim` structural-model + governance references).
+- `patch_products_safe` only; never `update_products` (lives in `dw-demo-pim/references/canonical-setup-order.md`).
 - Upgrade-safe extension points — no monkey-patching `Dynamicweb.*` assemblies (enforced conceptually by the customisations-ledger preflight, `references/customisations.md`).
 
 **Deliberate deviations (each motivated by lived demo-build experience):**

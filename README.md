@@ -25,7 +25,7 @@ skills/
   dw-integration-*/         # Integration Framework, ERP connectors, Business Central
   dw-data-access/           # data-access patterns and caching
   dw-source-explorer/       # browse Dynamicweb source on GitHub
-  dw-demo-*/                # presales demo chain (base, pim, swift, erp)
+  dw-demo-*/                # presales demo chain (base, pim, swift, headless, erp)
 ```
 
 ## Plugins
@@ -40,7 +40,7 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
 | `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, extend-mcp-tools |
-| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-erp, integration-bc; + foundational skills the demo skills reference (integration-framework, extend-csharp-api) |
+| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-erp, integration-bc; + foundational skills the demo skills reference (integration-framework, extend-csharp-api) |
 
 ## Skills
 
@@ -144,6 +144,9 @@ PIM modelling from a blank DB — product data built from scratch via MCP. Use a
 **[dw-demo-swift](skills/dw-demo-swift/SKILL.md)**
 Swift frontend — baseline deserialize, the **zero-state pass** ([references/zero-state.md](skills/dw-demo-swift/references/zero-state.md)) that retires the shipped baseline's own copy, `defaultValue` placeholders and skeleton bands before any brand work, **catalogue imagery from a customer print-catalogue PDF** ([references/asset-organisation.md](skills/dw-demo-swift/references/asset-organisation.md)), feature-pack install, templates, paragraph types, Visual Editor, the customer-center playbook (incl. the Swift 2.4 sign-in profiles / switch-user recipe and the checkout order-field recipe), and the **mobile pass** ([references/mobile-pass.md](skills/dw-demo-swift/references/mobile-pass.md)) — canvas-fit debugging (`body.scrollWidth`), the Swift 2.4 trap catalogue, and the theme-default ≥1.2.0 "verify first" caveat. Use after `dw-demo-base`.
 
+**[dw-demo-headless](skills/dw-demo-headless/SKILL.md)**
+Headless delivery demo — Frontend API setup, a decoupled frontend against the DW content/commerce APIs. Routes endpoint detail to `dw-headless-delivery`. Use after `dw-demo-base`.
+
 **[dw-demo-erp](skills/dw-demo-erp/SKILL.md)**
 ERP integration demo — DB-staged mock or live BC, Integration Framework rules. Use after `dw-demo-base`.
 
@@ -152,7 +155,7 @@ ERP integration demo — DB-staged mock or live BC, Integration Framework rules.
 The **presales demo chain** has a hard order. `dw-demo-base` must run **first** — it scaffolds
 the host, wires MCP + the TLS bypass, and captures the demo's versions + downloads its artifacts
 per-demo. The sister demo skills
-(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
+(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
 The demo skills hold domain knowledge and carry no build sequencing — that is owned by a

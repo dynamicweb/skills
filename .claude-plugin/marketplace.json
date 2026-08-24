@@ -63,7 +63,6 @@
         "./skills/dw-extend-mcp-tools",
         "./skills/dw-integration-framework",
         "./skills/dw-integration-erp",
-        "./skills/dw-integration-bc",
         "./skills/dw-data-access"
       ]
     },
@@ -91,7 +90,11 @@
         "./skills/dw-demo-erp",
         "./skills/dw-integration-bc",
         "./skills/dw-integration-framework",
-        "./skills/dw-extend-csharp-api"
+        "./skills/dw-extend-csharp-api",
+        "./skills/dw-headless-delivery",
+        "./skills/dw-search-indexing",
+        "./skills/dw-setup-config",
+        "./skills/dw-users-permissions"
       ]
     }
   ]

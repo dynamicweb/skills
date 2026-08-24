@@ -394,7 +394,7 @@ A few paragraph types are stock-load-bearing for typical B2B-distributor demo di
   customisations-ledger preflight in base. See [re-skin.md](re-skin.md) "What NOT to touch".
 - **Product detail paragraph** — relies on the Lucene index + the PIM completeness rules; modifying it
   can mask "rules don't show" symptoms. See
-  [dynamicweb-pim-demo/references/governance.md](../../dw-demo-pim/references/governance.md).
+  [dw-demo-pim/references/governance.md](../../dw-demo-pim/references/governance.md).
 
 These callouts generalise into the component-first gate (enumerate the standard component, configure it,
 override only as a last resort) owned by

@@ -1,6 +1,6 @@
 # access-surfaces.md
 
-> Four-surface decision matrix for Dynamicweb 10 instance access (MCP / Management API / direct SQL / filesystem). Use this to pick the fastest surface for any given PIM task. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table.
+> Four-surface decision matrix for Dynamicweb 10 instance access (MCP / Management API / direct SQL / filesystem). Use this to pick the fastest surface for any given PIM task. Loaded from `~/.claude/skills/dw-demo-pim/SKILL.md` "Where to find things" table.
 
 ## Access surfaces
 

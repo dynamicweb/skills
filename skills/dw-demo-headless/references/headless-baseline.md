@@ -18,7 +18,7 @@
 > YAML**, in a presentation-agnostic `Headless_*` item-type layer that shares **no** item-type rows
 > with Swift. Consumer: the Next.js storefront via the Delivery API ([`headless-frontend.md`](headless-frontend.md)).
 >
-> **Use AFTER `dynamicweb-demo-base`** (Serializer installed) and after the backend is understood
+> **Use AFTER `dw-demo-base`** (Serializer installed) and after the backend is understood
 > ([`headless-backend.md`](headless-backend.md)).
 
 ## 1. A headless baseline is its own product line

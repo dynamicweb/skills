@@ -17,7 +17,7 @@
 > (Swagger UI at `/dwapi/docs/`). This reference is demo-facing backend config; for the full raw
 > endpoint catalog and response shapes see [`../../dw-headless-delivery/SKILL.md`](../../dw-headless-delivery/SKILL.md).
 >
-> **Use AFTER `dynamicweb-demo-base`.** Assumes a running host and the localhost TLS bypass wired.
+> **Use AFTER `dw-demo-base`.** Assumes a running host and the localhost TLS bypass wired.
 
 ## 1. What "configure the backend for headless" means
 

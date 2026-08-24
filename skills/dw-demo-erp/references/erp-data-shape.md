@@ -4,7 +4,7 @@
 > field-by-field ownership table, the contract-price data model, and the "what not to sync" rules —
 > is staged in [`../../dw-demo-base/references/foundational/integration-erp.md`](../../dw-demo-base/references/foundational/integration-erp.md)
 > (a foundational candidate → `dw-integration-erp`). Read that first; this file keeps only how a
-> demo *applies* the shape. Loaded from `dynamicweb-erp-demo/SKILL.md` "Where to find things".
+> demo *applies* the shape. Loaded from `dw-demo-erp/SKILL.md` "Where to find things".
 
 ## Read the shape first
 

@@ -30,10 +30,10 @@ Read the current site first so you understand:
 - Always derive the canonical shop-root path at runtime and build all custom links from that path.
 
 ## Key Tools
-- Site structure: `GetAreas`, `GetPagesByArea`, `GetPageByNavigationTag`, `GetNavigationStructure`
-- Updates: `PatchArea`, `PatchPage`, `UpdatePageName`
-- Item values: `GetPageItemValues`, `PatchPageItemValues`, `GetAreaItemValues`, `PatchAreaItemValues`
-- Supporting tools: `DownloadRemoteImages`, `ChangePagePublicationState`, `SortPages`
+- Site structure: `get_areas`, `get_pages_by_area_id`, `get_pages_by_parent_id`, `get_navigation_structure`
+- Updates: `save_areas`, `save_pages`, `reorder_pages`
+- Item values: `get_page_item_field_values`, `set_page_item_fields`, `get_item_field_values`, `set_item_field_values`
+- Supporting tools: `import_product_images_from_urls`, `fetch_frontend_page_html`
 
 ## Workflow
 
@@ -52,8 +52,8 @@ Create a concise baseline note covering:
 - current SEO patterns
 
 Also capture URL portability context:
-- resolve the shop page ID via `GetPageByNavigationTag` (`shop`)
-- call `FetchFrontendPageHtml` on `/Default.aspx?ID={ShopPageId}`
+- resolve the shop page ID by finding the page with navigation tag `shop` in the `get_navigation_structure` / `get_pages_by_area_id` output
+- call `fetch_frontend_page_html` on `/Default.aspx?ID={ShopPageId}`
 - parse the redirect target as the canonical shop root path (for example `/vinshop` or `/vinhuset/vinshop`)
 - use that canonical root for every custom CTA/category link in this flow
 
@@ -114,7 +114,7 @@ Verify that:
 - the nav structure still makes sense
 - shell pages remain active
 - demo-only pages intended for removal are deactivated
-- every custom link patched in this run resolves with `200` via `FetchFrontendPageHtml`
+- every custom link patched in this run resolves with `200` via `fetch_frontend_page_html`
 
 ## Output Summary
 Report:

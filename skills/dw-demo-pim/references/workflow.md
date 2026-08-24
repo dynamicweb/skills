@@ -4,7 +4,7 @@
 > schema, the two attachment paths, the email-firing state-change subscriber, the verified
 > per-state-role-gating gap, and the three workaround patterns — is vendor-generic and lives in
 > [`../../dw-demo-base/references/foundational/pim-workflow.md`](../../dw-demo-base/references/foundational/pim-workflow.md).
-> Read that first. This file holds only the demo-build delta. Loaded from `~/.claude/skills/dynamicweb-pim-demo/SKILL.md` "Where to find things" table.
+> Read that first. This file holds only the demo-build delta. Loaded from `~/.claude/skills/dw-demo-pim/SKILL.md` "Where to find things" table.
 
 ## Platform knowledge → foundational candidate
 

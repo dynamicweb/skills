@@ -7,7 +7,7 @@ description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-sui
 
 # Dynamicweb Demo Base Skill
 
-The foundation skill for any Dynamicweb 10 demo. **Use FIRST** on every new Dynamicweb demo. Sister skills (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`) inherit the `.mcp.json`, `CUSTOMISATIONS.md`, and TLS bypass that this skill establishes -- they are **Use AFTER**, never standalone.
+The foundation skill for any Dynamicweb 10 demo. **Use FIRST** on every new Dynamicweb demo. Sister skills (`dw-demo-pim`, `dw-demo-swift`) inherit the `.mcp.json`, `CUSTOMISATIONS.md`, and TLS bypass that this skill establishes -- they are **Use AFTER**, never standalone.
 
 This SKILL.md is a nav layer only. Each step of the canonical flow links to a `references/<topic>.md` that owns the verbatim recipe, gotchas, and verification gate for that topic.
 
@@ -52,9 +52,9 @@ Walk every step in order — skip none. Each step's reference contains its own v
 
 Loading reference content into the project DB is **NOT** part of this skill's canonical flow. Three separate paths follow base, depending on demo type:
 
-- **PIM demo** -> start with a blank/fresh demo DB; the PIM skill's modelling recipes build content from scratch via MCP. No deserialize step. See [`dynamicweb-pim-demo/SKILL.md`](../dw-demo-pim/SKILL.md).
-- **Swift demo** -> deserialize the **framework-only `base` layer** plus the **`surface-swift` content surface** (the layer that carries ALL Swift content, item-type XMLs, and UrlPath), checked out per-demo into `<demo-root>\distribution\layers\` (see the versions prompt + checkout model below) via the Serializer. Owned end-to-end by [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) + [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md). Prerequisite: the Serializer is installed per [`references/serializer-reference.md`](references/serializer-reference.md) "Installation".
-- **Headless demo** -> deserialize the separate, presentation-agnostic `headless` **surface layer** (its own product line, no shared item-type rows with Swift; checked out per-demo into `<demo-root>\distribution\layers\headless\` like any layer — see the versions prompt + checkout model below) for a Next.js storefront that reads the DW10 Delivery API. Owned by [`dynamicweb-headless-demo/references/headless-baseline.md`](../dw-demo-headless/references/headless-baseline.md); backend config in [`headless-backend.md`](../dw-demo-headless/references/headless-backend.md). Same Serializer prerequisite.
+- **PIM demo** -> start with a blank/fresh demo DB; the PIM skill's modelling recipes build content from scratch via MCP. No deserialize step. See [`dw-demo-pim/SKILL.md`](../dw-demo-pim/SKILL.md).
+- **Swift demo** -> deserialize the **framework-only `base` layer** plus the **`surface-swift` content surface** (the layer that carries ALL Swift content, item-type XMLs, and UrlPath), checked out per-demo into `<demo-root>\distribution\layers\` (see the versions prompt + checkout model below) via the Serializer. Owned end-to-end by [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) + [`dw-demo-swift/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md). Prerequisite: the Serializer is installed per [`references/serializer-reference.md`](references/serializer-reference.md) "Installation".
+- **Headless demo** -> deserialize the separate, presentation-agnostic `headless` **surface layer** (its own product line, no shared item-type rows with Swift; checked out per-demo into `<demo-root>\distribution\layers\headless\` like any layer — see the versions prompt + checkout model below) for a Next.js storefront that reads the DW10 Delivery API. Owned by [`dw-demo-headless/references/headless-baseline.md`](../dw-demo-headless/references/headless-baseline.md); backend config in [`headless-backend.md`](../dw-demo-headless/references/headless-backend.md). Same Serializer prerequisite.
 
 The Serializer install steps live in base so any sister skill can pull them; the act of deserializing is Swift- or headless-specific.
 
@@ -94,12 +94,12 @@ With those answers, artifacts resolve from the demo's Distribution checkout. The
 
 | Artifact | Source (in the Distribution clone) | Working tree | Consumed by |
 |---|---|---|---|
-| Serialized base | `layers/base` (kind base) — **framework-only**: 16 framework SQL sets in `replace/_sql/` (countries, currencies, languages, shops, payments, shippings, VAT, order flow/states, AccessUser), **zero content, zero pages, empty catalog by design** | `<demo-root>\distribution\layers\base\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Swift content surface | `layers/surface-swift` (kind surface) — ALL Swift content: both areas (`Swift 2` + `Swift 2 Nederlands`) in `replace/_content/` + `merge/_content/`, `UrlPath` in `replace/_sql/`, and its **own item-type XMLs** (`itemtypes/`, 128 `ItemType_Swift-v2_*.xml`) | `<demo-root>\distribution\layers\surface-swift\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Demo catalog + identities *(optional)* | `layers/sample-data` (kind sample-data) — ships ALL demo content as SQL files (`merge/_sql/catalog.sql`: products / groups / prices; `merge/_sql/identities.sql`: buyer + CSR); editions activate it via `sampleData: true` (e.g. `swift-demo`); otherwise author per-demo via the [`dw-demo-pim`](../dw-demo-pim/SKILL.md) recipes | `<demo-root>\distribution\layers\sample-data\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Demo theme / style assets | `layers/theme-default` (kind theme — pure disk-overlay `files/`, no serialized DB content). **The ONE presentation layer** — every Swift demo starts from `theme-default` and re-skins on top of it; there is no theme choice and no separate overlay layers (the header-nav affordance CSS ships inside `theme-default`'s `default_custom.css`) | `<demo-root>\distribution\layers\theme-default\` | [`dynamicweb-swift-demo/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) |
-| Feature pack | `layers/<name>` (kind feature) | `<demo-root>\distribution\layers\<name>\` | [`dynamicweb-swift-demo/references/pack-activation.md`](../dw-demo-swift/references/pack-activation.md) |
-| Swift design package | local clone of `https://github.com/dynamicweb/Swift` (release tag `v<version>.0` — the upstream Swift product still ships releases) | `<demo-root>\dw-swift\` | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) "Design-package deploy" |
+| Serialized base | `layers/base` (kind base) — **framework-only**: 16 framework SQL sets in `replace/_sql/` (countries, currencies, languages, shops, payments, shippings, VAT, order flow/states, AccessUser), **zero content, zero pages, empty catalog by design** | `<demo-root>\distribution\layers\base\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
+| Swift content surface | `layers/surface-swift` (kind surface) — ALL Swift content: both areas (`Swift 2` + `Swift 2 Nederlands`) in `replace/_content/` + `merge/_content/`, `UrlPath` in `replace/_sql/`, and its **own item-type XMLs** (`itemtypes/`, 128 `ItemType_Swift-v2_*.xml`) | `<demo-root>\distribution\layers\surface-swift\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
+| Demo catalog + identities *(optional)* | `layers/sample-data` (kind sample-data) — ships ALL demo content as SQL files (`merge/_sql/catalog.sql`: products / groups / prices; `merge/_sql/identities.sql`: buyer + CSR); editions activate it via `sampleData: true` (e.g. `swift-demo`); otherwise author per-demo via the [`dw-demo-pim`](../dw-demo-pim/SKILL.md) recipes | `<demo-root>\distribution\layers\sample-data\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
+| Demo theme / style assets | `layers/theme-default` (kind theme — pure disk-overlay `files/`, no serialized DB content). **The ONE presentation layer** — every Swift demo starts from `theme-default` and re-skins on top of it; there is no theme choice and no separate overlay layers (the header-nav affordance CSS ships inside `theme-default`'s `default_custom.css`) | `<demo-root>\distribution\layers\theme-default\` | [`dw-demo-swift/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) |
+| Feature pack | `layers/<name>` (kind feature) | `<demo-root>\distribution\layers\<name>\` | [`dw-demo-swift/references/pack-activation.md`](../dw-demo-swift/references/pack-activation.md) |
+| Swift design package | local clone of `https://github.com/dynamicweb/Swift` (release tag `v<version>.0` — the upstream Swift product still ships releases) | `<demo-root>\dw-swift\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) "Design-package deploy" |
 
 Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh` authenticated so a private Distribution repo clones over HTTPS via the gh credential helper). The Distribution repo defaults to the URL above and is overridable per machine via `$env:DW_DISTRIBUTION_REPO` (owner/name form) when a team mirrors or forks it.
 
@@ -133,8 +133,8 @@ Cloning uses `git` (hence the setup-checks probe that `git` is present, plus `gh
 | Run an **in-place platform update** on an existing demo host (`Dynamicweb.Suite` bump, design/item-type re-deploy): the mandatory pre-update `BACKUP DATABASE` + `ItemList` content-count gate, update-queue mechanics, schema-drift across NuGet versions | references/foundational/setup-upgrade.md |
 | Install the DW Serializer in the demo host; triage Serializer failure patterns; check baseline compatibility | references/serializer-reference.md ("Installation") |
 | Understand Serializer internals — these live upstream in the Serializer repo's own docs; the reference carries the pointer block | references/serializer-reference.md ("Internals — upstream pointer block") |
-| Run a Swift baseline deserialize (Swift demos only) | [`dynamicweb-swift-demo/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) |
-| Verify post-deserialize integrity (Swift demos only) | [`dynamicweb-swift-demo/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md) |
+| Run a Swift baseline deserialize (Swift demos only) | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) |
+| Verify post-deserialize integrity (Swift demos only) | [`dw-demo-swift/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md) |
 | **Fold a demo-build learning back into the repo** (route foundational-vs-demo -> sanitize -> validate -> bump `metadata.version` -> atomic commit on a branch -> open PR -> refresh marketplace clone after merge). Maintainer-only, PR-based. | references/iterate-plugin.md |
 
 ## Folding demo-build learnings back into the plugin (maintainer-only)
@@ -182,7 +182,7 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
   - **Never force-kill during an index build.** A `Stop-Process -Force` mid-`BuildIndex` corrupts the index instance being written — leaving a "blocking repair candidate" / "must be recovered" state that a single rebuild does not clear (the recovery recipe is `dw-demo-swift/references/integrity-sweep.md` Check 5). Before stopping the host, confirm no Lucene build is in flight (`GET /admin/api/IndexStatusByRepositoryAndIndexName` — not `Running`); if one is, let it finish or use a graceful stop, and only force-kill a host that is genuinely wedged.
 - Visibility ≠ permission: still announce in one line ("starting host…", "host up at :31873", "restarting to clear plugin cache"). Authorization removes the *ask*, not the *narration*.
 
-This rule is owned by this skill and inherited by every sister skill (`dynamicweb-pim-demo`, `dynamicweb-swift-demo`, `dynamicweb-pim-for-bc`). A sister skill that pauses mid-flow to ask "please start the host" is violating this contract — and so is one that restarts the host where the cache table names a flush, or stops a process it hasn't verified as this demo's own.
+This rule is owned by this skill and inherited by every sister skill (`dw-demo-pim`, `dw-demo-swift`, `dw-integration-bc`). A sister skill that pauses mid-flow to ask "please start the host" is violating this contract — and so is one that restarts the host where the cache table names a flush, or stops a process it hasn't verified as this demo's own.
 
 ## Surface priority for CREATES (always-on rule)
 
@@ -273,23 +273,23 @@ Demo time is short; condensed beats spread. Default to a single deep storyline r
 
 **Default postures (sister skills enforce the specifics):**
 
-- **Logins / personas — floor of 2.** One buyer + one CSR so impersonation has somewhere to land. Don't scaffold a roster of personas you won't have time to log into. Owned by `dynamicweb-swift-demo`.
-- **Shops / channels — 1 + 1.** One shop plus the channel most relevant to the customer's pitch. Don't add a second channel of equal weight. Owned by `dynamicweb-pim-demo`.
-- **Locale — single home market.** US-only for a US customer (EN/USD), DE-only for a DACH customer, etc. Add a second language/currency only when the customer's case explicitly demands it. Owned by `dynamicweb-pim-demo`.
-- **Customer-center sections, paragraph types, page presets — storyline-driven.** Scaffold the ones the storyline actually visits, not the ones the platform supports. Owned by `dynamicweb-swift-demo`.
+- **Logins / personas — floor of 2.** One buyer + one CSR so impersonation has somewhere to land. Don't scaffold a roster of personas you won't have time to log into. Owned by `dw-demo-swift`.
+- **Shops / channels — 1 + 1.** One shop plus the channel most relevant to the customer's pitch. Don't add a second channel of equal weight. Owned by `dw-demo-pim`.
+- **Locale — single home market.** US-only for a US customer (EN/USD), DE-only for a DACH customer, etc. Add a second language/currency only when the customer's case explicitly demands it. Owned by `dw-demo-pim`.
+- **Customer-center sections, paragraph types, page presets — storyline-driven.** Scaffold the ones the storyline actually visits, not the ones the platform supports. Owned by `dw-demo-swift`.
 
-**Product catalogue is the deliberate exception — go deep AND wide there.** Rich product data (variants, BOM bundles, completeness rules, assortments, ample SKUs across categories) is cheap to produce via MCP and makes the demo feel real instead of sketched. The "narrow it down" rule does not apply to product modelling — see `dynamicweb-pim-demo` for the modelling depth recipes.
+**Product catalogue is the deliberate exception — go deep AND wide there.** Rich product data (variants, BOM bundles, completeness rules, assortments, ample SKUs across categories) is cheap to produce via MCP and makes the demo feel real instead of sketched. The "narrow it down" rule does not apply to product modelling — see `dw-demo-pim` for the modelling depth recipes.
 
 When in doubt: every login / channel / locale / customer-center section must justify itself against demo minutes. A product family does not need to justify itself. Generic storytelling tactics (audience framing, one-source-N-shapes, speak the customer's words): [references/demo-tactics.md](references/demo-tactics.md).
 
 ## Sister skills
 
-- **`dynamicweb-pim-demo`** -- PIM modelling, structural mental model (shops vs channels, GroupType, repositories, variants, BOM, channels + feeds, assets, product categories), MCP/API/SQL/filesystem decision matrix. **Use AFTER** `dynamicweb-demo-base`.
-- **`dynamicweb-swift-demo`** -- Swift frontend (templates, paragraph types, B2B customer-center scaffolding, baseline deserialize). **Use AFTER** `dynamicweb-demo-base`.
-- **`dynamicweb-erp-demo`** -- ERP integration (source/target rule, DB-staged mock, scenarios-first planning). **Use AFTER** `dynamicweb-demo-base`.
-- **`dynamicweb-pim-for-bc`** -- live BC connector via ngrok + AppStore connector. **Use AFTER** `dynamicweb-demo-base`.
+- **`dw-demo-pim`** -- PIM modelling, structural mental model (shops vs channels, GroupType, repositories, variants, BOM, channels + feeds, assets, product categories), MCP/API/SQL/filesystem decision matrix. **Use AFTER** `dw-demo-base`.
+- **`dw-demo-swift`** -- Swift frontend (templates, paragraph types, B2B customer-center scaffolding, baseline deserialize). **Use AFTER** `dw-demo-base`.
+- **`dw-demo-erp`** -- ERP integration (source/target rule, DB-staged mock, scenarios-first planning). **Use AFTER** `dw-demo-base`.
+- **`dw-integration-bc`** -- live BC connector via ngrok + AppStore connector. **Use AFTER** `dw-demo-base`.
 
-A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts. The "Use FIRST" routing wording in this skill's description and the "Use AFTER" markers in the sister skills are the inoculation.
+A sibling skill that runs without `dw-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts. The "Use FIRST" routing wording in this skill's description and the "Use AFTER" markers in the sister skills are the inoculation.
 
 ## Reference-content layout
 
@@ -302,7 +302,7 @@ Two read-only reference sources are **local clones**, not downloads, and their l
 
 ## Path-resolution rule
 
-Paths in this skill (and sister skills) resolve under the demo's own root (`<demo-root>\baselines\...`) or a per-machine local clone whose location is asked/discovered. Per-machine hardcoded literals (legacy paths under user-specific source folders or sibling solution folders) are a known anti-pattern; the existing `dynamicweb-pim-demo` skill still carries some as a cautionary cleanup target.
+Paths in this skill (and sister skills) resolve under the demo's own root (`<demo-root>\baselines\...`) or a per-machine local clone whose location is asked/discovered. Per-machine hardcoded literals (legacy paths under user-specific source folders or sibling solution folders) are a known anti-pattern; the existing `dw-demo-pim` skill still carries some as a cautionary cleanup target.
 
 ## Discover-from-project-files rule
 

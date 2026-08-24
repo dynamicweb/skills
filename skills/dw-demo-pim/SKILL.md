@@ -7,7 +7,7 @@ description: 'Dynamicweb 10 PIM modelling -- starts from a blank/fresh DB, build
 
 # Dynamicweb PIM Demo Skill
 
-PIM modelling, structural mental model, governance, and recovery for Dynamicweb 10 demo builds. **Use AFTER** `dynamicweb-demo-base` -- this skill assumes MCP is connected with >200 tools. If MCP isn't connected, fix that there first ([dynamicweb-demo-base/references/mcp-setup.md](../dw-demo-base/references/mcp-setup.md)).
+PIM modelling, structural mental model, governance, and recovery for Dynamicweb 10 demo builds. **Use AFTER** `dw-demo-base` -- this skill assumes MCP is connected with >200 tools. If MCP isn't connected, fix that there first ([dw-demo-base/references/mcp-setup.md](../dw-demo-base/references/mcp-setup.md)).
 
 ## How to run me
 
@@ -18,7 +18,7 @@ documented order (gate every step, persist progress to `.demo/<slug>/flow-state.
 orchestrator abstraction (GSD primary, native command set, and the standalone harness) is owned by
 [`../dw-demo-base/references/orchestrator.md`](../dw-demo-base/references/orchestrator.md).
 
-**This skill starts from a blank/fresh DB.** PIM demos do NOT deserialize a content baseline — the modelling recipes here build product data from scratch via MCP. The Serializer install + Swift baseline deserialize live in `dynamicweb-demo-base` and `dynamicweb-swift-demo` respectively; see [`../dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) only if a hybrid demo needs Swift content alongside the PIM model.
+**This skill starts from a blank/fresh DB.** PIM demos do NOT deserialize a content baseline — the modelling recipes here build product data from scratch via MCP. The Serializer install + Swift baseline deserialize live in `dw-demo-base` and `dw-demo-swift` respectively; see [`../dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) only if a hybrid demo needs Swift content alongside the PIM model.
 
 This SKILL.md is an orchestrator only. Each topic links to a `references/<topic>.md` that owns the verbatim recipe and gotchas.
 
@@ -37,7 +37,7 @@ Trigger shapes, one per thematic reference (the "Where to find things" table bel
 - Translating products / groups / commerce objects into additional `EcomLanguages`.
 - PIM-flavoured demo-storytelling tactics.
 
-If the trigger is setup-shaped (host won't start, MCP empty, TLS handshake failing), it belongs in `dynamicweb-demo-base`, not here. PIM-skill recipes assume the host is up and MCP returns >200 tools — but **NOT** that a content baseline has been deserialized. PIM demos start from a blank DB.
+If the trigger is setup-shaped (host won't start, MCP empty, TLS handshake failing), it belongs in `dw-demo-base`, not here. PIM-skill recipes assume the host is up and MCP returns >200 tools — but **NOT** that a content baseline has been deserialized. PIM demos start from a blank DB.
 
 ## Where to find things
 
@@ -54,11 +54,11 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 | Understand the **three-layer permission model** (UnifiedPermission + CapabilityControlFeature + entity-level) — concept, storage tables, flag decision, admin bypass | **references/permissions-model.md** |
 | Seed the role/permission grants for demo personas (SQL recipes: role matrix, functional-view checklist, Read→Edit bumps, field-level differentiation, dashboard pinning) | **references/permissions-recipes.md** |
 | Find demo-storytelling tactics (governance flavour) | references/demo-storytelling.md |
-| Translate products / groups / commerce objects into additional `EcomLanguages` (PIM side; sister doc is `dynamicweb-swift-demo/references/language-layers.md` for the content/area side) | references/localization.md |
+| Translate products / groups / commerce objects into additional `EcomLanguages` (PIM side; sister doc is `dw-demo-swift/references/language-layers.md` for the content/area side) | references/localization.md |
 
 ## Demo philosophy — go deep, not wide
 
-Inherited principle from [`dynamicweb-demo-base/SKILL.md` "Demo philosophy"](../dw-demo-base/SKILL.md). PIM-specific guardrails:
+Inherited principle from [`dw-demo-base/SKILL.md` "Demo philosophy"](../dw-demo-base/SKILL.md). PIM-specific guardrails:
 
 - **Shops + channels: 1 + 1.** One shop plus one channel. Pick the channel most relevant to the customer's pitch (B2B / retail / wholesale / marketplace — whichever the customer leads with). A second channel of equal weight is wasted demo time and dilutes the shop-vs-channel beat. Add it only when the customer's pitch is explicitly multi-channel (e.g. they sell B2B AND retail and want to see both in one platform). The shop-vs-channel concept itself is worth a single moment of pedagogy — one channel is enough to land it.
 - **Locale: single home market.** Default to the customer's home market only (e.g. US-only with EN/USD/US-country for a US customer; DE/EUR/DE for a DACH customer). `references/canonical-setup-order.md` Steps 1-4 set this up. Add a second language/currency/country only when the customer's case explicitly demands it (e.g. they explicitly sell cross-border).
@@ -66,31 +66,31 @@ Inherited principle from [`dynamicweb-demo-base/SKILL.md` "Demo philosophy"](../
 
 When in doubt: every channel, locale, shop, country, currency, and language you add must justify itself against demo minutes. A product family does not need to justify itself.
 
-## Inherited from dynamicweb-demo-base
+## Inherited from dw-demo-base
 
-This skill assumes `dynamicweb-demo-base` ran first. Four rules apply at all times and are NOT restated here -- see the owning reference in base for each:
+This skill assumes `dw-demo-base` ran first. Four rules apply at all times and are NOT restated here -- see the owning reference in base for each:
 
 | Rule | Owner |
 |------|-------|
-| Per-demo artifact download + path-resolution rule | [dynamicweb-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
-| Customer-context read-only contract | [dynamicweb-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
-| Customisations-ledger preflight | [dynamicweb-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
-| Baseline-drift self-diagnosis rule | [dynamicweb-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
+| Per-demo artifact download + path-resolution rule | [dw-demo-base/SKILL.md "Path-resolution rule"](../dw-demo-base/SKILL.md) |
+| Customer-context read-only contract | [dw-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
+| Customisations-ledger preflight | [dw-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
+| Baseline-drift self-diagnosis rule | [dw-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
 
-Runtime enforcement: the per-demo `CLAUDE.md` drop installed by base (`dynamicweb-demo-base/references/customer-context.md` recipe) reminds Claude of these rules regardless of which skill loaded first.
+Runtime enforcement: the per-demo `CLAUDE.md` drop installed by base (`dw-demo-base/references/customer-context.md` recipe) reminds Claude of these rules regardless of which skill loaded first.
 
-If you find yourself running this skill standalone with no base context, fix that before continuing -- see the description's "Use AFTER" hint. If `~/.claude/skills/dynamicweb-demo-base/` is not installed, install it first -- this skill's inherited rules require it.
+If you find yourself running this skill standalone with no base context, fix that before continuing -- see the description's "Use AFTER" hint. If `~/.claude/skills/dw-demo-base/` is not installed, install it first -- this skill's inherited rules require it.
 
 ## Sister skills
 
-- **`dynamicweb-demo-base`** -- foundation skill (Use FIRST). Owns all setup + path resolution + Serializer install + customisations + customer-context.
-- **`dynamicweb-swift-demo`** -- Swift frontend + Swift baseline content deserialize + post-deserialize integrity sweep (Use AFTER, can pair with this skill in either order on the host). PIM-only demos can skip this skill entirely.
+- **`dw-demo-base`** -- foundation skill (Use FIRST). Owns all setup + path resolution + Serializer install + customisations + customer-context.
+- **`dw-demo-swift`** -- Swift frontend + Swift baseline content deserialize + post-deserialize integrity sweep (Use AFTER, can pair with this skill in either order on the host). PIM-only demos can skip this skill entirely.
 
-A sibling skill that runs without `dynamicweb-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
+A sibling skill that runs without `dw-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
 
 ## Vendor patterns
 
-The vendor skill-repo consultation outcome (`dynamicweb/skills` + `dynamicweb/ai-implementor-skills`) is documented in [dynamicweb-demo-base/references/vendor-patterns.md](../dw-demo-base/references/vendor-patterns.md).
+The vendor skill-repo consultation outcome (`dynamicweb/skills` + `dynamicweb/ai-implementor-skills`) is documented in [dw-demo-base/references/vendor-patterns.md](../dw-demo-base/references/vendor-patterns.md).
 
 That file lists patterns we adopt and patterns we deliberately deviate from (PowerShell vs Python; "Use AFTER" composition wording; four-surface vs two-surface decision matrix; explicit recovery recipes inline). Sister skills cross-reference there rather than restating per-skill -- single source of truth for vendor positioning.
 

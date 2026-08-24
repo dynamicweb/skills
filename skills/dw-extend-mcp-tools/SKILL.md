@@ -15,7 +15,7 @@ Guide the creation of new MCP tools in this project, following the established p
 
 1. Read the CLAUDE.md file for project architecture overview.
 2. Identify which domain the new tool belongs to (Products, Commerce, Content, or a new domain).
-3. Determine which Dynamicweb APIs are needed -- browse the Dynamicweb source on GitHub (`https://github.com/dynamicweb`) or use the `dynamicweb-source-explorer` skill to find the right APIs.
+3. Determine which Dynamicweb APIs are needed -- browse the Dynamicweb source on GitHub (`https://github.com/dynamicweb`) or use the `dw-source-explorer` skill to find the right APIs.
 
 ## Workflow
 

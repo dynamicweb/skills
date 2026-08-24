@@ -23,9 +23,9 @@ This file carries the demo-specific framing: where the mood board comes from, th
 
 The configuration-only approach is the default starting point for any Swift 2 demo re-skin — it covers most copy / asset / layout work with zero code. **Mood board source:** pull from the demo's read-only `<demo>\customer-context\` (intro-call materials, brand guide, the customer's public site as reference) — never invent.
 
-**Executor split:** the admin click-paths in the foundational §9 surface map are the *map* of what is configurable — for a human doing manual authoring, and as verification targets. When Claude makes a change itself, it resolves the click-path to the equivalent MCP / Management API call (every Visual Editor / Style-tools save is an Admin API call underneath) per the base surface-priority rule — [dynamicweb-demo-base/references/surface-priority.md](../../dw-demo-base/references/surface-priority.md) §"Admin UI is verification-only during the build". Claude drives `/Admin` via Playwright only to verify a change landed, never to author.
+**Executor split:** the admin click-paths in the foundational §9 surface map are the *map* of what is configurable — for a human doing manual authoring, and as verification targets. When Claude makes a change itself, it resolves the click-path to the equivalent MCP / Management API call (every Visual Editor / Style-tools save is an Admin API call underneath) per the base surface-priority rule — [dw-demo-base/references/surface-priority.md](../../dw-demo-base/references/surface-priority.md) §"Admin UI is verification-only during the build". Claude drives `/Admin` via Playwright only to verify a change landed, never to author.
 
-Escalate to [re-skin.md](re-skin.md) §`<customer>_custom.css` only when the admin Style tools cannot express the visual you need; escalate further (content-layout `.cshtml`) only when a tailored screen requires a new rendering — see [re-skin.md](re-skin.md) §Pixel-perfect escalation. Only the controller/provider `.cs` tier triggers base's customisations-ledger preflight ([dynamicweb-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md)).
+Escalate to [re-skin.md](re-skin.md) §`<customer>_custom.css` only when the admin Style tools cannot express the visual you need; escalate further (content-layout `.cshtml`) only when a tailored screen requires a new rendering — see [re-skin.md](re-skin.md) §Pixel-perfect escalation. Only the controller/provider `.cs` tier triggers base's customisations-ledger preflight ([dw-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md)).
 
 ## Management API authoring traps (Swift 2.4 / DW 10.28.x)
 
@@ -230,7 +230,7 @@ Some changes don't have an admin-UI authoring surface and require either preflig
 
 - **Customer-center CSR section customisation** — never; see [customer-center.md](customer-center.md) (the stock-CSR rule).
 - **Customer-flavoured products / orders seeding** — project-specific data work, not a styling concern.
-- **New product fields / completeness rules** — PIM concern. See [dynamicweb-pim-demo/references/structural-model.md §2.8](../../dw-demo-pim/references/structural-model.md) and `dynamicweb-pim-demo/references/canonical-setup-order.md` step 7.
-- **MCP tool wiring** — base concern. See `dynamicweb-demo-base/references/mcp-setup.md`.
+- **New product fields / completeness rules** — PIM concern. See [dw-demo-pim/references/structural-model.md §2.8](../../dw-demo-pim/references/structural-model.md) and `dw-demo-pim/references/canonical-setup-order.md` step 7.
+- **MCP tool wiring** — base concern. See `dw-demo-base/references/mcp-setup.md`.
 - **Custom payment provider / shipping carrier** — out of scope for Dynamicweb demos (a known customisation trap).
 - **`<customer>_custom.css` / `.scss` / `.cshtml` work** — the escalation ladder in [re-skin.md](re-skin.md). (Brand CSS never goes in a file named `custom.css` — that's Swift-shipped sample code; hard rule in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9.)

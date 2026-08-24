@@ -1,6 +1,6 @@
 # language-layers.md
 
-> Content-side localization in Dynamicweb 10 — adding a language layer to a website. Sister doc to `dynamicweb-pim-demo/references/localization.md` (the PIM/product side).
+> Content-side localization in Dynamicweb 10 — adding a language layer to a website. Sister doc to `dw-demo-pim/references/localization.md` (the PIM/product side).
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 

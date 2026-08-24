@@ -23,7 +23,7 @@
 Completion rules define which fields a product must have filled in to be considered "complete". Used in product queries to show a per-product completeness percentage in the administration UI.
 
 ### MCP Tool
-`create_or_update_completeness(CompletionRuleModel)`
+`create_or_update_completeness_rules(CompletionRuleModel)`
 - Omit `id` (or set to `0`) to create a new rule.
 - Provide `id` to update an existing rule.
 
@@ -97,7 +97,7 @@ This causes the query to display completeness % for each returned product in the
 Workflow states define an editorial approval flow for products (e.g. Draft -> Review -> Approved). Products are assigned a workflow state that editors and managers track.
 
 ### MCP Tool
-`create_or_update_workflows(WorkflowStateModel)`
+`create_or_update_workflow_states(WorkflowStateModel)`
 - States belong to a workflow via `workflowId`.
 - Use `workflowId: 0` when creating states for a new workflow (DW creates the workflow automatically).
 - Transitions between states are set via `nextStateIds`.

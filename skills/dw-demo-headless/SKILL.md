@@ -10,7 +10,7 @@ description: 'Dynamicweb 10 headless-commerce demos — a Next.js storefront (ve
 Build a **headless-commerce demo**: a Next.js storefront (from the `vercel/commerce`
 starter) that reads a Dynamicweb 10 backend through the **Delivery API** (`/dwapi/**`), backed
 by a **dedicated, presentation-agnostic serialized baseline** that is its own product line —
-fully decoupled from the Swift baseline. **Use AFTER** `dynamicweb-demo-base` — assumes a host
+fully decoupled from the Swift baseline. **Use AFTER** `dw-demo-base` — assumes a host
 is running, TLS bypass is wired, and the Serializer is installed in the host (per base's
 [`../dw-demo-base/references/serializer-reference.md`](../dw-demo-base/references/serializer-reference.md)
 "Installation").
@@ -31,7 +31,7 @@ orchestrator abstraction (GSD primary, native command set, and the standalone ha
 
 A headless demo and a Swift demo are **separate product lines**, not two skins of one baseline:
 
-- **Swift demo** (`dynamicweb-swift-demo`) — DW renders the storefront server-side with Razor;
+- **Swift demo** (`dw-demo-swift`) — DW renders the storefront server-side with Razor;
   content is presentation-coupled (`Swift-v2_*` paragraph item types carry template/layout/
   colorscheme/icon fields). Loads the `swift-2.3` baseline.
 - **Headless demo** (this skill) — a **separate** Next.js app renders the storefront; DW is a pure
@@ -78,29 +78,29 @@ Walk these in order; each reference owns its own verification gate.
 | **The raw Delivery API endpoint catalog** (non-demo reference — content/commerce/users/forms/query families, request/response shapes) | [`../dw-headless-delivery/SKILL.md`](../dw-headless-delivery/SKILL.md) |
 | **Build a per-demo product search index** by hand (Lucene `ProductIndexBuilder`, query + facets) | [`../dw-search-indexing/SKILL.md`](../dw-search-indexing/SKILL.md) |
 
-## Inherited from dynamicweb-demo-base
+## Inherited from dw-demo-base
 
-This skill assumes `dynamicweb-demo-base` ran first. Its always-on rules are NOT restated here —
+This skill assumes `dw-demo-base` ran first. Its always-on rules are NOT restated here —
 see the owning reference in base for each:
 
 | Rule | Owner |
 |------|-------|
-| Customer-context read-only contract | [dynamicweb-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
-| Customisations-ledger preflight | [dynamicweb-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
-| Baseline-drift self-diagnosis rule | [dynamicweb-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
+| Customer-context read-only contract | [dw-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
+| Customisations-ledger preflight | [dw-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
+| Baseline-drift self-diagnosis rule | [dw-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
 
 If you find yourself running this skill standalone with no base context, fix that before
-continuing — see the description's "Use AFTER" hint. If `dynamicweb-demo-base` is not installed,
+continuing — see the description's "Use AFTER" hint. If `dw-demo-base` is not installed,
 install it first — this skill's inherited rules require it.
 
 ## Sister skills
 
-- **`dynamicweb-demo-base`** — foundation skill (Use FIRST). Owns all setup + Serializer install +
+- **`dw-demo-base`** — foundation skill (Use FIRST). Owns all setup + Serializer install +
   customisations + customer-context. Does NOT deserialize a baseline.
-- **`dynamicweb-swift-demo`** — the Swift (server-side Razor) storefront line. A headless demo is
+- **`dw-demo-swift`** — the Swift (server-side Razor) storefront line. A headless demo is
   the decoupled peer of a Swift demo, not a variant of it; the two baselines never share item-type
   rows.
-- **`dynamicweb-pim-demo`** — PIM modelling from a blank DB. The headless baseline reuses the same
+- **`dw-demo-pim`** — PIM modelling from a blank DB. The headless baseline reuses the same
   commerce/PIM domain model PIM builds; pair them when a headless demo needs richer catalog data.
-- **`dynamicweb-headless-delivery`** — the raw `/dwapi/` knowledge skill (endpoint catalog, auth,
+- **`dw-headless-delivery`** — the raw `/dwapi/` knowledge skill (endpoint catalog, auth,
   architecture rules). This demo skill routes to it for endpoint detail rather than duplicating it.
