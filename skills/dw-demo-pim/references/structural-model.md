@@ -12,17 +12,17 @@
 |---|---|---|
 | §2.1 Shop types enum + `ProductActive` vs relation gating + admin-nav | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.1 | SHOP1 / SHOP-DATA naming |
 | §2.2 Group types (DataModelFolder / DataModel) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.2 | — |
-| §2.3 Catalog vs Channel group trees + slug cache | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.3 | per-channel naming |
-| §2.3a Native "Publish to channel" action | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.3a | fire publish as a beat |
+| §2.3 Catalog vs Channel group trees + slug cache | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.3 | per-channel naming |
+| §2.3a Native "Publish to channel" action | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.3a | fire publish as a beat |
 | §2.4 Repositories / indexes / queries + `ProductIndexSchemaExtender` | [`index-management.md`](../../dw-search-indexing/references/index-management.md) | — |
 | §2.5 / §2.5a Variants (multi- and single-axis) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.5 / §2.5a | — |
 | §2.6 Bundles (BOM) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.6 | — |
-| §2.7 Channels + Feeds | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.7 | — |
+| §2.7 Channels + Feeds | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.7 | — |
 | §2.8 Product Categories + Fields internals | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.8 | — |
 | §2.8 `reference_category` blank-panel gotcha | [`pim-completeness.md`](../../dw-pim-completeness/references/rules-and-dashboards.md) | planted-gap framing → [governance.md](governance.md) |
-| §2.9 Assortments ≠ Channels | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.9 | — |
+| §2.9 Assortments ≠ Channels | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.9 | — |
 | §2.10 Assets (`EcomDetails` + `DetailLanguageId`) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.10 | — |
-| §2.11 Pricing — tier rows ignored by stock cart | [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.11 | cheat-sheet caveat (below) |
+| §2.11 Pricing — tier rows ignored by stock cart | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11 | cheat-sheet caveat (below) |
 | §2.12 Dynamic Workspaces — projections not storage | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.12 | workflow-state Inbox beat |
 
 ## Demo deltas — naming, beats, cheat-sheet caveats
@@ -38,8 +38,8 @@ DB built via MCP (no baseline deserialize).
 
 ### "Fire publish as a beat"
 
-The native "Publish to channel" action ([`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.3a) is a demo *moment*, not just a data op: select the hero SKU, fire the action live, switch to the channel/storefront and show it appear. Seed everything else via SQL/MCP, but stage this one transition through the real admin action so the audience watches "PIM → live channel" happen — and so the `ShopUrlDataProvider` cache flushes the right way (raw SQL would leave URLs 404ing until a restart).
+The native "Publish to channel" action ([`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.3a) is a demo *moment*, not just a data op: select the hero SKU, fire the action live, switch to the channel/storefront and show it appear. Seed everything else via SQL/MCP, but stage this one transition through the real admin action so the audience watches "PIM → live channel" happen — and so the `ShopUrlDataProvider` cache flushes the right way (raw SQL would leave URLs 404ing until a restart).
 
 ### Pricing tier-row cheat-sheet caveat
 
-When the demo keeps `EcomPrices` tier rows for the PDP display table, note on the demo cheat-sheet that **cart shows base price** — tier prices are illustrative unless you ship the `IPriceProvider` escape hatch or ERP-pre-graduated rows ([`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.11). Don't make qty-break-at-cart-time the closing beat unless one of those is in place. If the storyline wants the customer-group-aware pricing beat, scaffold it on the user-group side (see `dw-demo-swift` DC pattern).
+When the demo keeps `EcomPrices` tier rows for the PDP display table, note on the demo cheat-sheet that **cart shows base price** — tier prices are illustrative unless you ship the `IPriceProvider` escape hatch or ERP-pre-graduated rows ([`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11). Don't make qty-break-at-cart-time the closing beat unless one of those is in place. If the storyline wants the customer-group-aware pricing beat, scaffold it on the user-group side (see `dw-demo-swift` DC pattern).

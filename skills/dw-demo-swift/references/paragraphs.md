@@ -113,7 +113,7 @@ write any field whose `typeName` is `SelectedImage` unless explicitly forced —
 when handed one, and that a round-trip save of a paragraph carrying an icon leaves the icon byte-identical.
 (The **product/logo/favicon** binders are a different surface with a working object shape — `{Id, Name,
 Ratio, FocalX, FocalY}`, `Id` carrying the path — see
-[`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §"Product images".
+[`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §"Product images".
 Do not carry that shape back to a paragraph item field on the strength of the shared type name.)
 
 **Every item-field editor has its OWN write shape, and the four in play are mutually incompatible.**

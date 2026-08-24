@@ -1,9 +1,21 @@
-# Foundational candidate → dw-commerce-catalog
+# Catalog publishing — channels, feeds, pricing, variants, Management API traps
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 catalog-publishing / channels / feeds / pricing knowledge, staged here for a future
-> fold-up into `dw-commerce-catalog`. No demo/customer content. When folded, move this body into
-> `dw-commerce-catalog` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file.
+Field-validated DW10 catalog knowledge: the Catalog-vs-Channel group-tree model, the native
+"Publish to channel" action, feeds, assortments-vs-channels, the pricing traps (tier rows, contract
+prices), and the Management API chains for variants, relations, images, and shops. Section numbers
+(§2.3–§2.14) are stable and referenced from sibling skills.
+
+## Contents
+
+- [2.3 Catalog vs Channel group trees (the published-to story)](#23-catalog-vs-channel-group-trees-the-published-to-story)
+- [2.3a Publishing products: native "Publish to channel" action](#23a-publishing-products-native-publish-to-channel-action)
+- [2.7 Channels + Feeds](#27-channels--feeds)
+- [2.9 Assortments (customer access) ≠ Channels (publishing)](#29-assortments-customer-access--channels-publishing)
+- [2.11 Pricing — tier rows are NOT honored by the stock cart](#211-pricing--tier-rows-are-not-honored-by-the-stock-cart)
+- [2.12 Pricing — the canonical read surface](#212-pricing--the-canonical-read-surface)
+- [2.13 Customer-specific (contract) pricing](#213-customer-specific-contract-pricing)
+- [2.14 Variants via the Management API (no SQL)](#214-variants-via-the-management-api-no-sql)
+- [Product relations, index refresh, create-vs-update, images, shops](#product-relations-via-the-management-api--relationgroupsave-is-update-only-and-the-maintenance-verbs-take-composite-ids)
 
 ## 2.3 Catalog vs Channel group trees (the published-to story)
 
@@ -30,7 +42,7 @@ catalog groups in a data shop first, the publish step owes every storefront grou
 
 **Group URL slug gotcha — `ShopUrlDataProvider` lazy cache.** When a Swift frontend uses path-based group URLs (e.g. `/swift-2/shop/headsets`), the resolver is `Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider`'s static `Lazy<>` indexes (`InitializeProductUrlDataIndex`, `InitializeGroupProductRelationIndex`). Those indexes are populated at first request and only reset when `Notifications.Ecommerce.Group.AfterSave` fires — which fires from MCP `save_groups` and admin-UI saves but NOT from raw `UPDATE EcomGroups SET GroupMetaUrl = ...` SQL. Symptom: SQL-set slugs work in the DB, but `/shop/<slug>` 404s indefinitely until the host restarts OR a group is re-saved through MCP. Index rebuild via `/admin/api/BuildIndex` does NOT flush this — it's separate from Lucene. Recovery after raw-SQL changes to GroupMetaUrl / GroupNumber / any field used by URL resolution: re-save one group through `mcp__dynamicweb-commerce-mcp__save_groups` (idempotent — same payload pattern, same id), or restart the host.
 
-**Same cache-flush rule applies to `EcomGroupProductRelation` mutations** — fired via the native "Publish to channel" action (§2.3a below): `Notifications.Ecommerce.Group.AfterSave` fires, cache flushes, channel URLs resolve immediately. Fired via raw SQL `INSERT INTO EcomGroupProductRelation`: notification doesn't fire, cache stays stale until host restart. See §2.3a and [`cache-invalidation.md`](cache-invalidation.md).
+**Same cache-flush rule applies to `EcomGroupProductRelation` mutations** — fired via the native "Publish to channel" action (§2.3a below): `Notifications.Ecommerce.Group.AfterSave` fires, cache flushes, channel URLs resolve immediately. Fired via raw SQL `INSERT INTO EcomGroupProductRelation`: notification doesn't fire, cache stays stale until host restart. See §2.3a.
 
 ## 2.3a Publishing products: native "Publish to channel" action
 
@@ -67,7 +79,8 @@ PermissionLevelRequired = PermissionLevel.Edit
 | MCP `save_groups` / admin-UI group save | Yes | Flushes | When seeding groups; relation INSERTs go through the same path. |
 | Raw SQL `INSERT INTO EcomGroupProductRelation` | No | Stays stale until host restart | Bulk seeding scripts only — and remember to restart the host or re-fire a `save_groups` notification before verifying URLs. |
 
-Cross-ref [`cache-invalidation.md`](cache-invalidation.md) for the full notification-vs-host-restart matrix and the §2.3 group URL slug gotcha above. The `PermissionLevel.Edit` gate is a Layer C entity check ([`users-permissions.md`](users-permissions.md)).
+The `PermissionLevel.Edit` gate is a Layer C entity check
+([`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md)).
 
 ## 2.7 Channels + Feeds
 
@@ -80,12 +93,13 @@ Cross-ref [`cache-invalidation.md`](cache-invalidation.md) for the full notifica
   - `FeedProviderConfiguration` = XML with parameters: `<Parameters><Parameter Name="Template" Value="Feeds/my-template.cshtml" /><Parameter Name="Content Type" Value="application/json" /></Parameters>` for Template, or `<Parameters><Parameter Name="XSLT Stylesheet" Value="Feeds/my.xslt" /></Parameters>` for XML.
 - **Template path resolution** — `TemplateProvider` expects paths relative to `wwwroot/Files/Templates/Feeds/`. `XMLProvider` expects XSLT in same folder.
 - Feed template example for Razor: `@inherits ViewModelTemplate<Dynamicweb.Ecommerce.ProductCatalog.ProductListViewModel>` + `@Model.Products` iteration. Field values are accessed via `ProductCategories[].Fields[categoryFieldId].Value`.
-- The `.query` files backing feeds must live at the repository ROOT, not a subfolder — see [`index-management.md`](../../../dw-search-indexing/references/index-management.md) for the placement rule.
+- The `.query` files backing feeds must live at the repository ROOT, not a subfolder — see
+  [`index-management.md`](../../dw-search-indexing/references/index-management.md) for the placement rule.
 - **The public feed endpoint is `GET /dwapi/Feeds/GetFeedOutput?id=<feedId>` — the parameter is the bare
   `id`.** It is undocumented, and the obvious `feedId` returns **404**, which reads as "the feed isn't
-  published" rather than "the parameter is named differently". This is the URL to put on a slide for a
-  channel/feed demo; all three provider flavours serve from it (verified live: a CSV feed, a JSON feed and
-  an XML feed all `200` on the same shape, differing only in `id`).
+  published" rather than "the parameter is named differently". This is the URL to present when showing a
+  channel/feed integration; all three provider flavours serve from it (verified live: a CSV feed, a JSON
+  feed and an XML feed all `200` on the same shape, differing only in `id`).
 
 ## 2.9 Assortments (customer access) ≠ Channels (publishing)
 
@@ -139,7 +153,7 @@ make a correct setup look broken:
 
 **Where it renders:** *not* on PLP/PDP (those show the index / default price context regardless of who
 is signed in). The customer price resolves **live in the cart and checkout** (and on any order whose
-customer context carries the customer number). Demo it by signing in as the buyer and showing the
+customer context carries the customer number). Show it by signing in as the buyer and opening the
 cart, not the catalogue. A per-customer price on the PDP requires a content-layout extension that reads
 the live price for the current user — not the index field.
 
@@ -209,7 +223,8 @@ A read that returns the MASTER's values for a combination means the variant row'
 the read fell back — the row exists and is enrichable via this chain; it is not evidence the row is
 missing or read-only. And before planning any per-variant write of a specific field, read
 `EcomProductField.AllowChangesAcrossVariants` for it — a `False` flag discards the per-variant value by
-design while the save still answers ok (see [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.5).
+design while the save still answers ok (see
+[`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.5).
 
 ### Product relations via the Management API — `RelationGroupSave` is update-only, and the maintenance verbs take composite ids
 
@@ -232,8 +247,8 @@ design while the save still answers ok (see [`pim-modelling.md`](../../../dw-pim
   ```
 
   The trailing variant segment is present even when empty. This is the same "list-command ids are full
-  paths, not names" rule the `*Delete` family follows ([`../online-mode.md`](../online-mode.md)) — read one
-  row from the matching list query and copy its identifier shape before scripting a batch.
+  paths, not names" rule the `*Delete` family follows — read one row from the matching list query and
+  copy its identifier shape before scripting a batch.
 
 ### `ProductSave` without `RunUpdateIndex` leaves the storefront serving the old value
 
@@ -246,8 +261,7 @@ full build. `ProductSave` refreshes the product's index entry only when **`RunUp
   saves and 148 meta saves on one pass.
 - **Incremental is also the only practical option.** A full `BuildIndex` takes minutes and outruns the 120s
   API-client timeout, so reaching for a full build per save is both slow and unreadable
-  ([`index-management.md`](../../../dw-search-indexing/references/index-management.md), and the argument shape in
-  [`../../../dw-demo-swift/references/sql-direct-seeding.md`](../../../dw-demo-swift/references/sql-direct-seeding.md)).
+  ([`index-management.md`](../../dw-search-indexing/references/index-management.md)).
 - Verify on the **rendered** PLP within a few seconds of the save, not on the save response.
 
 ### Create-vs-update fork on commerce saves
@@ -327,4 +341,5 @@ There are two shop-read surfaces and they return different models. **`GetShopByI
 
 ### Set `UsageType` explicitly on `ShopSave` — the default `ShopType=0` hides the shop
 
-A `ShopSave` that creates a shop without an explicit `UsageType` leaves `EcomShops.ShopType = 0` (none). The 10.28 admin lists shops by usage-type bucket — the Channels tree filters `UsageType is ShopType.Shop or ShopType.Channel` (`ChannelNodeProvider.GetCatalogShops`), Data models filters `ShopType.DataStructure` — so an untyped shop shows up in **no** typed list, even with a correct area binding and a working storefront (the symptom reads as "the webshop shop is missing from Channels"). **Always set `UsageType` on `ShopSave`:** `shop` for a storefront channel, `channel` for a feed target, `dataStructure` for a data-model shop. Re-typing an existing untyped shop to `shop` makes it reappear in `ShopAll` with storefront checkout/PLP behaviour unchanged. (ShopType enum + admin-nav mapping: [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.1.)
+A `ShopSave` that creates a shop without an explicit `UsageType` leaves `EcomShops.ShopType = 0` (none). The 10.28 admin lists shops by usage-type bucket — the Channels tree filters `UsageType is ShopType.Shop or ShopType.Channel` (`ChannelNodeProvider.GetCatalogShops`), Data models filters `ShopType.DataStructure` — so an untyped shop shows up in **no** typed list, even with a correct area binding and a working storefront (the symptom reads as "the webshop shop is missing from Channels"). **Always set `UsageType` on `ShopSave`:** `shop` for a storefront channel, `channel` for a feed target, `dataStructure` for a data-model shop. Re-typing an existing untyped shop to `shop` makes it reappear in `ShopAll` with storefront checkout/PLP behaviour unchanged. (ShopType enum + admin-nav mapping:
+[`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.1.)

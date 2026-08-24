@@ -31,7 +31,7 @@ SQL or parsing URLs.
 - **Identify a product via `Services.Products.GetProductById(...)`, never by parsing a URL or
   `Request.RawUrl`.**
 
-(Pricing read surfaces live in [`commerce-catalog.md`](commerce-catalog.md); customer-order read
+(Pricing read surfaces live in [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md); customer-order read
 surfaces in [`commerce-orders.md`](commerce-orders.md).)
 
 ### URLs
@@ -337,6 +337,6 @@ if they look fine on a Mac (which renders some codepoints monochrome by default)
   Style assets, the `custom.css` naming hard rule, and the discipline grep-pack.
 - [`users-permissions.md`](users-permissions.md) — the Permission entity store for gating
   page/paragraph visibility (the canonical alternative to template-side SQL gates).
-- [`commerce-catalog.md`](commerce-catalog.md) / [`commerce-orders.md`](commerce-orders.md) — pricing
+- [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) / [`commerce-orders.md`](commerce-orders.md) — pricing
   and customer-order read surfaces.
 - [`extend-providers.md`](extend-providers.md) — `NotificationSubscriber` lifecycle.

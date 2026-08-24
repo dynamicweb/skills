@@ -168,7 +168,7 @@ per-customer `EcomPrices` row (`PriceUserCustomerNumber`) and it resolves
 ([`../../dw-demo-base/references/foundational/commerce-b2b.md`](../../dw-demo-base/references/foundational/commerce-b2b.md) "Customer-scoped contract prices"). **Quantity-tier enforcement** (bulk-break
 pricing off `PriceQuantity > 0` rows) is what the shipped `IPriceProvider` adds — the stock cart ignores
 tier rows until the provider is compiled in
-([`../../dw-demo-base/references/foundational/commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.11). So: install `feature-pricing` **data-only** to demo contract
+([`../../dw-demo-base/references/foundational/catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11). So: install `feature-pricing` **data-only** to demo contract
 pricing; run the §6 opt-in compile **only** when the demo must show qty-tier enforcement.
 
 ## 6. Step 3 — Source-drop the .cs and build the host

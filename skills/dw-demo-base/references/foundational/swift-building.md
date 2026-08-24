@@ -572,7 +572,7 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])
 
 | Grep | Hit means | Remediation |
 |------|-----------|-------------|
-| #1 | Raw DB access in a template | [`render-razor.md`](render-razor.md) §1 / [`commerce-catalog.md`](commerce-catalog.md) / [`commerce-orders.md`](commerce-orders.md) / [`render-viewmodels.md`](render-viewmodels.md) |
+| #1 | Raw DB access in a template | [`render-razor.md`](render-razor.md) §1 / [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) / [`commerce-orders.md`](commerce-orders.md) / [`render-viewmodels.md`](render-viewmodels.md) |
 | #2,#3,#4 | Routing-by-URL-string / project-locked URL / legacy URL synthesis | [`render-razor.md`](render-razor.md) §1 URLs |
 | #5 | Marketing-fragile branching | [`render-razor.md`](render-razor.md) per-category + [`content-modelling.md`](content-modelling.md) §2 |
 | #6 | Shim instead of custom item type | [`content-modelling.md`](content-modelling.md) §2 |

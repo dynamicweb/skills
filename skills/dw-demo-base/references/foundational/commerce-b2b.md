@@ -26,7 +26,7 @@ wholesale / B2B-distributor scenario that touches DC-aware behavior.
 4. **Cart-time price resolution** scoped by the same user-group — covered by the stock `EcomPrices`
    resolver when `PriceCustomerGroup` matches a group the user is a member of. (Note: this is
    base-row resolution; `PriceQuantity > 0` tier rows are still ignored by the stock cart — see
-   [`commerce-catalog.md`](commerce-catalog.md) §2.11. The vendor-recommended pattern for qty-aware
+   [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) §2.11. The vendor-recommended pattern for qty-aware
    DC pricing is ERP-imported pre-graduated rows, one per (product, user-group, qty-band).)
 
 This is *not* a custom architecture. Each of the four features is a stock DW10 surface that scopes
@@ -54,7 +54,7 @@ Restart or flush the price cache after a direct SQL write (see [`cache-invalidat
 buyer → they see the list price. (Contract price = per-customer; the group-scoped `PriceCustomerGroup`
 resolver of §"Cart-time price resolution" is the per-DC-group counterpart. Quantity-tier
 enforcement — `PriceQuantity > 0` rows — is a separate matter the **stock cart ignores**; see
-[`commerce-catalog.md`](commerce-catalog.md) §2.11.)
+[`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) §2.11.)
 
 ## Naming convention
 
@@ -201,7 +201,7 @@ For everything in between (multi-DC B2B with named buyer accounts), this is the 
 
 ## Cross-references
 
-- [`commerce-catalog.md`](commerce-catalog.md) §2.9 — Assortments structural model (customer access
+- [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) §2.9 — Assortments structural model (customer access
   ≠ Channels); §2.11 — cart ignores `PriceQuantity > 0`; ERP-pre-graduated rows are the production
   pattern for qty-aware DC pricing.
 - [`commerce-orders.md`](commerce-orders.md) — CSR sales-on-behalf / impersonation, layered on top

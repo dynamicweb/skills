@@ -59,7 +59,7 @@ For everything in between (multi-DC B2B with named buyer accounts), this is the 
 
 - [`commerce-b2b.md`](../../dw-demo-base/references/foundational/commerce-b2b.md) — the full mechanic,
   naming, assignment, and verification.
-- [`commerce-catalog.md`](../../dw-demo-base/references/foundational/commerce-catalog.md) §2.9 —
+- [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.9 —
   Assortments structural model (customer access ≠ Channels); §2.11 — the stock cart ignores
   `PriceQuantity > 0` tier rows; ERP-pre-graduated rows are the production pattern for qty-aware DC
   pricing.
