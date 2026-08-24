@@ -18,8 +18,8 @@
 | Gate a Page/Paragraph by role or group (the permission entity store — `UnifiedPermission` rows keyed `PermissionName='Page'`/`'Paragraph'`; group gates need the broad-role deny pair; NOT the legacy `*Permission` columns) | `dw-users-permissions` | [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §15 |
 | Read prices (`Services.Prices`, custom `PriceProvider`) | `dw-commerce-catalog` | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.12 |
 | Read customer orders (`Services.Orders.GetCustomerOrdersByType` / `GetOrdersBySearch`) | `dw-commerce-orders` | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) "canonical order read surface" |
-| Get product / friendly URLs; `AddStylesheet`/`AddScript` hoisting; cross-cutting redirects (`Page.Loaded` subscriber); per-category behavior; product-field arrays | `dw-render-razor` | [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §1 |
-| `ViewModelTemplate<>` Razor pitfalls (`@Html.Raw` absent, `ProductFieldValues`, `ToggleFavorite`) | `dw-render-razor` | [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §2 |
+| Get product / friendly URLs; `AddStylesheet`/`AddScript` hoisting; cross-cutting redirects (`Page.Loaded` subscriber); per-category behavior; product-field arrays | `dw-render-razor` | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 |
+| `ViewModelTemplate<>` Razor pitfalls (`@Html.Raw` absent, `ProductFieldValues`, `ToggleFavorite`) | `dw-render-razor` | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §2 |
 | Custom item types — the `<Prefix>_*` discipline | `dw-content-modelling` | [`content-modelling.md`](../../dw-demo-base/references/foundational/content-modelling.md) §2 |
 
 ## Legacy dotted-path redirects (`.htm` / `.asp`) — IIS-only; don't fail the polish gate on localhost

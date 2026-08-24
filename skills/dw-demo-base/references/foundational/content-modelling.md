@@ -319,7 +319,7 @@ which table `ItemListRelation` points at before reasoning about the shape.
 - ❌ **One cshtml per "variant"** with hardcoded forks. Use a field with a multi-select / radio for
   the variant.
 - ❌ **Bake category-aware copy into cshtml** with `.Contains("...")` chains. Put the category-aware
-  copy on a `ProductGroup` field instead — see [`render-razor.md`](render-razor.md) "Per-category
+  copy on a `ProductGroup` field instead — see [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) "Per-category
   behavior".
 
 ### Audit query
@@ -692,7 +692,7 @@ is in [`extend-mcp-tools.md`](extend-mcp-tools.md) §5.
   table from the tool's perspective.
 - [`swift-building.md`](swift-building.md) — Style assets, the re-skin escalation ladder / item-type
   + variant + CSS separation, the discipline grep-pack, and the `RenderGrid` composition cache.
-- [`render-razor.md`](render-razor.md) — per-category behavior via `ProductGroupFieldValues`; canonical
+- [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) — per-category behavior via `ProductGroupFieldValues`; canonical
   URL/redirect surfaces the language switcher relies on.
 - [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) — `Pageview.User.GetGroups()` and other viewmodel
   accessors used by template role-gates.

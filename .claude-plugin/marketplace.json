@@ -5,13 +5,13 @@
     "email": "support@dynamicweb.dk"
   },
   "metadata": {
-    "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
+    "description": "Claude skills for Dynamicweb 10 \u2014 organized by task domain, bundled by role.",
     "version": "4.17.0"
   },
   "plugins": [
     {
       "name": "dynamicweb-setup",
-      "description": "Skills for bootstrapping Dynamicweb 10 solutions — installation, configuration, and upgrades.",
+      "description": "Skills for bootstrapping Dynamicweb 10 solutions \u2014 installation, configuration, and upgrades.",
       "source": "./",
       "strict": false,
       "skills": [
@@ -22,7 +22,7 @@
     },
     {
       "name": "dynamicweb-frontend",
-      "description": "Skills for template and storefront developers — rendering (Razor, ViewModels, TemplateTags), content, Swift, and headless delivery.",
+      "description": "Skills for template and storefront developers \u2014 rendering (Razor, ViewModels, TemplateTags), content, Swift, and headless delivery.",
       "source": "./",
       "strict": false,
       "skills": [
@@ -36,7 +36,7 @@
     },
     {
       "name": "dynamicweb-commerce",
-      "description": "Skills for commerce and PIM implementers — products, catalogs, orders, B2B, search, and user management.",
+      "description": "Skills for commerce and PIM implementers \u2014 products, catalogs, orders, B2B, search, and user management.",
       "source": "./",
       "strict": false,
       "skills": [
@@ -53,7 +53,7 @@
     },
     {
       "name": "dynamicweb-backend",
-      "description": "Skills for backend and platform engineers — C# API, providers, scheduled tasks, MCP tools, integrations, and data access.",
+      "description": "Skills for backend and platform engineers \u2014 C# API, providers, scheduled tasks, MCP tools, integrations, and data access.",
       "source": "./",
       "strict": false,
       "skills": [
@@ -79,7 +79,7 @@
     },
     {
       "name": "dynamicweb-presales",
-      "description": "Skills for presales and demo engineers running Dynamicweb 10 demos. The skills are the substrate; the build is driven by a swappable orchestrator (GSD primary, or the native /demo:* command set) — see dw-demo-base/references/orchestrator.md.",
+      "description": "Skills for presales and demo engineers running Dynamicweb 10 demos. The skills are the substrate; the build is driven by a swappable orchestrator (GSD primary, or the native /demo:* command set) \u2014 see dw-demo-base/references/orchestrator.md.",
       "source": "./",
       "strict": false,
       "skills": [
@@ -101,7 +101,8 @@
         "./skills/dw-pim-workflow",
         "./skills/dw-commerce-catalog",
         "./skills/dw-commerce-b2b",
-        "./skills/dw-commerce-orders"
+        "./skills/dw-commerce-orders",
+        "./skills/dw-render-razor"
       ]
     }
   ]

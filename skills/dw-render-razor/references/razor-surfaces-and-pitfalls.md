@@ -1,10 +1,8 @@
-# Foundational candidate → dw-render-razor
+# Canonical render surfaces and Razor/CSS pitfalls
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 Razor-rendering knowledge — canonical `Services.*`
-> surfaces to call from templates, `ViewModelTemplate<>` execution pitfalls, head-include / stylesheet
-> wiring, and the CSS pitfalls that bite re-skins — staged here for a future fold-up into
-> `dw-render-razor`. No demo/customer content. When folded, move this body into `dw-render-razor` and
-> re-target the pointers in the demo skills. Until then, the demo skills reference this file.
+Vendor-generic DW10 Razor-rendering knowledge: canonical `Services.*` surfaces to call from
+templates, `ViewModelTemplate<>` execution pitfalls, project-scoped head-include / stylesheet
+wiring, color-scheme architecture, and the CSS pitfalls that bite re-skins.
 
 ## Contents
 
@@ -31,8 +29,8 @@ SQL or parsing URLs.
 - **Identify a product via `Services.Products.GetProductById(...)`, never by parsing a URL or
   `Request.RawUrl`.**
 
-(Pricing read surfaces live in [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md); customer-order read
-surfaces in [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-lifecycle.md).)
+(Pricing read surfaces live in [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`); customer-order read
+surfaces in [dw-commerce-orders](../../dw-commerce-orders/SKILL.md) (`order-lifecycle.md`).)
 
 ### URLs
 
@@ -60,10 +58,10 @@ surfaces in [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-
 - **Canonical hook**: a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` that sets
   `loadedArgs.OutputResult = new RedirectOutputResult { RedirectUrl = ... }`. Fires before any Razor
   streams (`PageView.cs:388-392`). For the subscriber lifecycle, see
-  [`extend-providers.md`](extend-providers.md).
+  [dw-extend-providers](../../dw-extend-providers/SKILL.md).
 - **For "anon hits a permission-required page"**: don't write anything. Configure
   `Page.PermissionType = 0` + a `Permission` row, and `CheckPermissionsAndRedirect()` handles it —
-  see [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md).
+  see [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`).
 - **Use a `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` for cross-cutting
   redirects, never `WriteLiteral` + `return;` from inside the master template.**
 
@@ -105,7 +103,7 @@ HTML-special characters, pre-escape in C# before emitting.
 `product.ProductFieldValues` lives on the underlying `Dynamicweb.Ecommerce.Products.Product` entity,
 NOT on `Dynamicweb.Ecommerce.ProductCatalog.ProductViewModel`. Calling it against `Model.Product` (a
 view model) compiles to a runtime error that **surfaces as raw Razor source rendered as page text**
-on the PDP (a demo-blocker). Fix — resolve the underlying entity:
+on the PDP (a page-breaking defect). Fix — resolve the underlying entity:
 
 ```cshtml
 @{
@@ -117,7 +115,7 @@ on the PDP (a demo-blocker). Fix — resolve the underlying entity:
 
 The third argument (`true`) materialises `ProductFieldValues`; without it the property returns `null`
 even on a valid entity. (Which fields surface where on the view model: see
-[`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md).)
+[dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md).)
 
 ### `ToggleFavorite.cshtml` silently no-ops when `FavoriteListId=0`
 
@@ -160,13 +158,13 @@ edits silently never reached the page. Two consequences:
    the head-include partial** — visibility hides, brand chrome, layout fixes. Razor recompiles live
    and an inline block has no cache key to go stale. Keep the CSS file for nice-to-have polish only.
    (This also matters for the `ProductListComponentSelector` CSS-hide lever in
-   [`swift-building.md`](swift-building.md) — a hide that lives only in a stale-cached CSS file is no
+   [dw-swift-building](../../dw-swift-building/SKILL.md) — a hide that lives only in a stale-cached CSS file is no
    hide at all.)
 
 **Why `Custom/` not `Assets/css/`?** `Assets/css/` is Swift-shipped output; a file there is
 indistinguishable from Swift's own. Keeping the project file in `Custom/` (the tenant-extension
 folder) makes upgrade-time diffing and cleanup trivial. (The "never write a file named exactly
-`custom.css`" hard rule lives in [`swift-building.md`](swift-building.md).)
+`custom.css`" hard rule lives in [dw-swift-building](../../dw-swift-building/SKILL.md).)
 
 ## 4. Color schemes architecture + cascade
 
@@ -289,10 +287,10 @@ only when a later guard rule in the same sheet must still be able to override.
 ### Declared typography fonts must be vendored — Swift ships no webfont files
 
 `--dw-font-family: <Font>` in a Typography style is a *request*, not a font. Swift's asset
-pipeline bundles no webfont files, so unless the font is installed on the demo machine or the
+pipeline bundles no webfont files, so unless the font is installed on the serving machine or the
 project vendors it, the browser falls back to its default — Times New Roman on Windows — and the
 whole storefront quietly renders serif. A CDN `@import` (Google Fonts) masks the gap until the
-demo runs offline; removing that import for offline-safety *without vendoring the files* is the
+site must run without internet access; removing that import for offline-safety *without vendoring the files* is the
 same serif fallback with extra steps. Recipe:
 
 1. Vendor the woff2 files (from the font's official distribution) under the design's
@@ -331,12 +329,12 @@ if they look fine on a Mac (which renders some codepoints monochrome by default)
 
 ## Cross-references
 
-- [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) — the data side: which fields surface on
+- [dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md) — the data side: which fields surface on
   `ProductViewModel` vs the underlying entity, and the user/group accessors.
-- [`swift-building.md`](swift-building.md) — the Swift component system, the re-skin escalation ladder,
+- [dw-swift-building](../../dw-swift-building/SKILL.md) — the Swift component system, the re-skin escalation ladder,
   Style assets, the `custom.css` naming hard rule, and the discipline grep-pack.
-- [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) — the Permission entity store for gating
+- [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`) — the Permission entity store for gating
   page/paragraph visibility (the canonical alternative to template-side SQL gates).
-- [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) / [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-lifecycle.md) — pricing
+- [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`) / [dw-commerce-orders](../../dw-commerce-orders/SKILL.md) (`order-lifecycle.md`) — pricing
   and customer-order read surfaces.
-- [`extend-providers.md`](extend-providers.md) — `NotificationSubscriber` lifecycle.
+- [dw-extend-providers](../../dw-extend-providers/SKILL.md) — `NotificationSubscriber` lifecycle.

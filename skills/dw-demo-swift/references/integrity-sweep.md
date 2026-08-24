@@ -293,7 +293,7 @@ raw SQL with it (e.g. `SELECT FROM AccessUserGroupRelation` → `Pageview.User.G
 `Services.Orders.GetCustomerOrdersByType(...)`; `EcomProducts` → `Services.Products.GetProductById(...)`;
 URL-substring → `GetPageIdByNavigationTag(...)`). The full substitution table and the surface
 inventory are vendor-generic and owned by the `dw-render-razor` foundational skill — staged in
-[`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §1 ("Canonical surfaces
+[`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 ("Canonical surfaces
 — use these, don't re-implement").
 
 Pair with the wider discipline grep pack — vendor-generic, owned by the `dw-swift-building` foundational

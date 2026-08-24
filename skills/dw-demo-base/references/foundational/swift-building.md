@@ -292,7 +292,7 @@ paragraph rendered through `RenderGrid` is NOT live — the `RenderGrid` HTML ca
 page id, not by individual paragraph row state. **The only reliable lever is CSS-hide, and it must be
 cache-proof** — prefer an inline `<style>` block in the head-include partial over a project CSS file
 (on some builds the file is served under a static version token; see
-[`render-razor.md`](render-razor.md) §3). Scope the rule as tightly as possible (item-type class,
+[`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3). Scope the rule as tightly as possible (item-type class,
 data attribute, parent-page wrapper) and document it inline so the next reader removes it once Swift
 fixes the invariant.
 
@@ -420,7 +420,7 @@ button shape + typography (applies to every scheme-tagged paragraph, including d
 content — highest leverage per line). Use the project CSS file (Tier 1) for everything else (hover
 effects, nav polish, footer tweaks, empty-`data-dw-colorscheme` hacks); it loads after the Style
 assets so its rules win cascade ties. (Color-scheme architecture/cascade + the CSS pitfalls live in
-[`render-razor.md`](render-razor.md) §4-5.)
+[`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §4-5.)
 
 ## 8. Asset organisation under `wwwroot/Files/`
 
@@ -496,7 +496,7 @@ Per `doc.dynamicweb.dev/swift/customization/design-css.html`:
 
 ✅ **Allowed:** a project-scoped `Files/Templates/Designs/Swift-v2/Custom/<name>_custom.css` in the
 Swift `Custom/` slot, loaded after `swift.css`, wired via a `Custom/<name>HeadInclude.cshtml`
-head-include ([`render-razor.md`](render-razor.md) §3). Layout-only `.cshtml` content layouts (escalation
+head-include ([`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3). Layout-only `.cshtml` content layouts (escalation
 tier 2) are also allowed — Razor `.cshtml` is **not** in the customisations-ledger preflight glob.
 
 ### Separate styling from content (don't paste HTML into RTF fields)
@@ -535,7 +535,7 @@ no `.cs`. If `.cs` appears, you've crossed into controller/provider territory.
 Before climbing the ladder, search the DW10 source for the canonical surface. Common false-positive
 escalations: gating paragraphs by role → permission entity store ([`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md)),
 not cshtml SQL; redirect from master by user identity → `Page.Loaded` subscriber, not `WriteLiteral`;
-project-wide stylesheet → `CustomHeadInclude` ([`render-razor.md`](render-razor.md) §3), not inline
+project-wide stylesheet → `CustomHeadInclude` ([`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3), not inline
 `AddStylesheet`; gate routes for anon → page-permission rows + `Page.PermissionType=0`; read user
 point-balance / customer-number / groups → `Pageview.User.*` ([`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md)),
 not SQL.
@@ -572,17 +572,17 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])
 
 | Grep | Hit means | Remediation |
 |------|-----------|-------------|
-| #1 | Raw DB access in a template | [`render-razor.md`](render-razor.md) §1 / [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) / [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-lifecycle.md) / [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) |
-| #2,#3,#4 | Routing-by-URL-string / project-locked URL / legacy URL synthesis | [`render-razor.md`](render-razor.md) §1 URLs |
-| #5 | Marketing-fragile branching | [`render-razor.md`](render-razor.md) per-category + [`content-modelling.md`](content-modelling.md) §2 |
+| #1 | Raw DB access in a template | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 / [`catalog-publishing.md`](../../../dw-commerce-catalog/references/catalog-publishing.md) / [`order-lifecycle.md`](../../../dw-commerce-orders/references/order-lifecycle.md) / [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) |
+| #2,#3,#4 | Routing-by-URL-string / project-locked URL / legacy URL synthesis | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 URLs |
+| #5 | Marketing-fragile branching | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) per-category + [`content-modelling.md`](content-modelling.md) §2 |
 | #6 | Shim instead of custom item type | [`content-modelling.md`](content-modelling.md) §2 |
-| #7 | Cache-buster-breaking inline include | [`render-razor.md`](render-razor.md) §3 |
-| #8 | Brittle content-extraction regex | [`render-razor.md`](render-razor.md) product field arrays |
+| #7 | Cache-buster-breaking inline include | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 |
+| #8 | Brittle content-extraction regex | [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) product field arrays |
 | #9 | Brand CSS in Swift's shipped `custom.css` | §9 hard rule — revert, move to `<name>_custom.css` |
 
 ## Cross-references
 
-- [`render-razor.md`](render-razor.md) — canonical `Services.*` surfaces, `ViewModelTemplate<>`
+- [`razor-surfaces-and-pitfalls.md`](../../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) — canonical `Services.*` surfaces, `ViewModelTemplate<>`
   pitfalls, `CustomHeadInclude` wiring, color schemes, CSS pitfalls.
 - [`dw-render-viewmodels`](../../../dw-render-viewmodels/SKILL.md) — `ProductViewModel` field inventory + user/group
   accessors.

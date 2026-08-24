@@ -34,9 +34,9 @@
 Vendor-generic Swift re-skin doctrine is now owned by the foundational skills:
 
 - **The "never edit standard templates" never-touch list + allowed override slot, the item-type + variant + CSS "separate the styling from the content" pattern, the Pixel-perfect "what you may / may not create" escalation, and the Pre-escalation "search the source first" check** — owned by the `dw-swift-building` foundational skill, staged in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9 ("Re-skin doctrine").
-- **`CustomHeadInclude` + `?<ticks>` static-token wiring** — staged in [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §3.
-- **Color schemes architecture + cascade** — staged in [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §4.
-- **The three CSS pitfalls (over-broad `[data-dw-button]`, bare `footer { }`, emoji color-font)** — staged in [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
+- **`CustomHeadInclude` + `?<ticks>` static-token wiring** — owned by [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3.
+- **Color schemes architecture + cascade** — owned by [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §4.
+- **The three CSS pitfalls (over-broad `[data-dw-button]`, bare `footer { }`, emoji color-font)** — owned by [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
 
 This file keeps the demo-specific spine: the escalation ladder, the `<customer>_custom.css` naming hard rule, the customisations-ledger preflight, and the customer-themed Recipe.
 
@@ -44,13 +44,13 @@ This file keeps the demo-specific spine: the escalation ladder, the `<customer>_
 
 The pitfalls (now in the foundational skill) — easy to miss on a partial read:
 
-- `?<ticks>` cache-buster can be STATIC on some builds; put demo-critical CSS in an inline `<style>` block → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §3.
-- Scheme name typos / casing mismatches silently resolve to `data-dw-colorscheme=""` → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §4.
-- Over-broad `[data-dw-button]` selectors paint outline/ghost/icon buttons solid brand colour → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
-- Bare `footer { }` selectors clobber card-internal action-bars → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
-- Emoji codepoints render in color regardless of CSS `color:` (OS color-font fallback) → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
-- Header brand-bar paint loses to colorscheme rules: `.navbar` hits the category sidebar, section colorscheme backgrounds repaint over `header[data-swift-page-header]`, link colours need a stacked `:is()/:not()` override → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
-- A Typography style's `--dw-font-family` renders the browser default serif unless the font is vendored (`@font-face` + woff2 — Swift ships no webfonts) and the stack ends in a generic family → [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §5.
+- `?<ticks>` cache-buster can be STATIC on some builds; put demo-critical CSS in an inline `<style>` block → [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3.
+- Scheme name typos / casing mismatches silently resolve to `data-dw-colorscheme=""` → [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §4.
+- Over-broad `[data-dw-button]` selectors paint outline/ghost/icon buttons solid brand colour → [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
+- Bare `footer { }` selectors clobber card-internal action-bars → [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
+- Emoji codepoints render in color regardless of CSS `color:` (OS color-font fallback) → [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
+- Header brand-bar paint loses to colorscheme rules: `.navbar` hits the category sidebar, section colorscheme backgrounds repaint over `header[data-swift-page-header]`, link colours need a stacked `:is()/:not()` override → [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
+- A Typography style's `--dw-font-family` renders the browser default serif unless the font is vendored (`@font-face` + woff2 — Swift ships no webfonts) and the stack ends in a generic family → [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
 - Custom variant `.cshtml` whose filename sorts before stock variants hijacks empty-`ParagraphTemplate` paragraphs → [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §4. The verification step for any re-skin that adds a custom variant must check this.
 
 ## The escalation ladder
@@ -60,7 +60,7 @@ The pitfalls (now in the foundational skill) — easy to miss on a partial read:
 | Tier | Surface | What it touches | Owner |
 |------|---------|-----------------|-------|
 | 0 | Admin UI Style Tools (Settings → Content → Styles) | Color schemes, button shape, typography — generates the `Styles/*.{json,css}` pairs | [styles-assets.md](styles-assets.md) + [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §7 |
-| 1 | `Custom/<customer>_custom.css` | Brand variables, hover states, hacks the schemes don't cover | this file (naming rule below) + [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §3 (wiring) |
+| 1 | `Custom/<customer>_custom.css` | Brand variables, hover states, hacks the schemes don't cover | this file (naming rule below) + [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 (wiring) |
 | 2 | New layout-only `.cshtml` content layouts | Pixel-perfect reshaping of an item type's render | [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §9 |
 | 3 | Controller / provider `.cs` (customisations-ledger preflight) | Anything that needs server-side logic | [dw-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md) |
 
@@ -73,7 +73,7 @@ Before climbing the ladder, run the Pre-escalation "search the source first" che
 Create the customer-named sibling — same naming discipline as the `<Prefix>_*` item types:
 
 - The override file: `Files/Templates/Designs/Swift-v2/Custom/<customer>_custom.css`
-- Wired via a head-include partial: `Custom/<customer>HeadInclude.cshtml` registered on the Master area's `CustomHeadInclude` field (the `AddStylesheet` wiring + the `?<ticks>` static-token caveat live in [`render-razor.md`](../../dw-demo-base/references/foundational/render-razor.md) §3).
+- Wired via a head-include partial: `Custom/<customer>HeadInclude.cshtml` registered on the Master area's `CustomHeadInclude` field (the `AddStylesheet` wiring + the `?<ticks>` static-token caveat live in [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3).
 
 Verification: `git diff --name-only -- '*custom.css'` must never show a path ending in `custom.css` other than `<customer>_custom.css`. Any file named exactly `custom.css` in the diff is a re-skin bug — revert it and move the rules (this is grep #9 of the discipline audit in [`swift-building.md`](../../dw-demo-base/references/foundational/swift-building.md) §10).
 
