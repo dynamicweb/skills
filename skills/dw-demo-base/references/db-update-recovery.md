@@ -6,7 +6,7 @@ shows repeated `Update failed: <guid> ...UpdateProvider. SqlException` entries, 
 stuck and every AddIn install is silently rolling back.
 
 **The full recovery procedure is platform-generic and owned by
-[`foundational/setup-upgrade.md`](foundational/setup-upgrade.md):** the `UpdateManager.ExecuteUpdates()`
+[`../../dw-setup-upgrade/references/upgrade-mechanics.md`](../../dw-setup-upgrade/references/upgrade-mechanics.md):** the `UpdateManager.ExecuteUpdates()`
 mechanics, the Mode A (clear `Updates`, restart) vs Mode B (manual schema patch for a buggy shipped
 CREATE) triage, the worked `EcomConsolidatedOrderPayments` bug, and the "when this is NOT the right fix"
 cases. Work that reference for the mechanics.

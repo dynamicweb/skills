@@ -147,7 +147,7 @@ WHERE Link LIKE '%Default.aspx?%=3421%';
 
 **Fix paths:**
 
-1. Align NuGet versions: bump the target's `Dynamicweb.Suite` to match source, `dotnet publish`, restart. DW runs pending `UpdateProvider` classes at startup. (This NuGet-alignment / startup-migration crossover is platform-generic — owned by [`foundational/setup-upgrade.md`](foundational/setup-upgrade.md) "Schema-drift across NuGet versions"; see it too if a `UpdateProvider` itself is broken.)
+1. Align NuGet versions: bump the target's `Dynamicweb.Suite` to match source, `dotnet publish`, restart. DW runs pending `UpdateProvider` classes at startup. (This NuGet-alignment / startup-migration crossover is platform-generic — owned by [`../../dw-setup-upgrade/references/upgrade-mechanics.md`](../../dw-setup-upgrade/references/upgrade-mechanics.md) "Schema-drift across NuGet versions"; see it too if a `UpdateProvider` itself is broken.)
 2. Drop the column on source: align downward instead of upward.
 3. Accept the drift: the column is silently dropped from MERGE, the rest of the row writes correctly. Lenient mode only.
 

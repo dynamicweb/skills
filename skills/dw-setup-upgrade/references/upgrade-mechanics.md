@@ -1,9 +1,16 @@
-# Foundational candidate → dw-setup-upgrade
+# Update-queue and schema-migration recovery mechanics
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 update-queue / schema-migration recovery knowledge,
-> staged here for a future fold-up into `dw-setup-upgrade`. No demo/customer content. When folded,
-> move this body into `dw-setup-upgrade` and re-target the pointers in the demo skills. Until then,
-> the demo skills reference this file.
+## Contents
+
+- [How the update queue blocks AddIn installs](#how-the-update-queue-blocks-addin-installs)
+- [Symptom](#symptom)
+- [Triage — Mode A vs Mode B](#triage--mode-a-vs-mode-b)
+- [Mode A — Queue-stuck recovery](#mode-a--queue-stuck-recovery-canonical-forum-procedure)
+- [Mode B — Manual schema patch](#mode-b--manual-schema-patch-when-the-create-itself-is-buggy)
+- [When this recipe is NOT the right fix](#when-this-recipe-is-not-the-right-fix)
+- [In-place platform update — the pre-update backup + content-count gate](#in-place-platform-update--the-pre-update-backup--content-count-gate)
+- [Schema-drift across NuGet versions](#schema-drift-across-nuget-versions-serializer--migration-crossover)
+- [Sources](#sources)
 
 This is the platform-level "the `UpdateManager` queue is stuck and AddIn installs silently roll back"
 recovery knowledge: how `UpdateManager.ExecuteUpdates()` works, why a single failing migration blocks

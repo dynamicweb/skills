@@ -7,6 +7,12 @@ description: 'Manage Dynamicweb 10 version upgrades and migration mechanics. Tri
 
 # Dynamicweb 10 Upgrade Guide
 
+## Deep reference
+
+| Topic | Where |
+|---|---|
+| Update-queue recovery — how a stuck `UpdateManager.ExecuteUpdates()` queue silently rolls back AddIn installs, Mode A (clear `Updates` + restart) vs Mode B (manual schema patch for a buggy CREATE), the in-place-update backup + content-count gate, and schema-drift across NuGet versions | [`references/upgrade-mechanics.md`](references/upgrade-mechanics.md) |
+
 ## Upgrade Scope — Choose Your Approach
 
 | Approach | Effort | Best for |
