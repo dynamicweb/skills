@@ -131,7 +131,7 @@ UPDATE [EcomGiftCard]
    AND [GiftCardExpiryDate] > GETDATE();
 ```
 
-Measured across a rewind-and-run cycle: the live cards moved +1 day while the cancelled one stayed frozen and still read `active=False` through the gift-card list query. **Assert it** — a cancelled gift card still reads inactive after the nightly refresher runs. Gift-card storage semantics (encrypted codes, one bad row 500ing the whole family) are owned by [`../../dw-demo-base/references/foundational/promotions-engines.md`](../../dw-commerce-orders/references/promotions-engines.md).
+Measured across a rewind-and-run cycle: the live cards moved +1 day while the cancelled one stayed frozen and still read `active=False` through the gift-card list query. **Assert it** — a cancelled gift card still reads inactive after the nightly refresher runs. Gift-card storage semantics (encrypted codes, one bad row 500ing the whole family) are owned by [`promotions-engines.md`](../../dw-commerce-orders/references/promotions-engines.md).
 
 Verify by reading order dates back through the delivery API after idle days and confirming the marketing dashboards read as current, and that the recurring task reports Success with `nextRun` advancing. Task creation semantics (`Begin` re-anchoring, the toggling `TaskToggleActive`, `TaskSave` with `Id=0` creating a new task every call) are owned by [sql-direct-seeding.md](sql-direct-seeding.md) "Scheduled-task creation semantics".
 

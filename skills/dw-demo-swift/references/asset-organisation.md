@@ -183,7 +183,7 @@ box off the live PDP — the DPI metadata is not the lever and reading it proves
 Upload and attach through the asset verbs, then read the attachment back **per product** rather than
 trusting the attach response — including which asset is primary (`AssetAddToMultipleProducts`'s
 `IsDefault` behaviour is verb-specific; see
-[`../../dw-demo-base/references/foundational/catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md)).
+[`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md)).
 Unpaired products fall through to a **branded placeholder**: a CSS fallback keyed on the placeholder
 image's own `src` (`.ratio:has(img[src*=nopic])`) paints a brand-tinted tile with the customer mark,
 capped and centred — the shipped placeholder file itself is usually ACL-locked, so the fallback is
