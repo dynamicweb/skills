@@ -1,6 +1,6 @@
 # Surface priority — scaffold vs build, by instance type
 
-The always-on summary (surface table + pattern) lives in `SKILL.md` "Surface priority for CREATES". This reference is the canonical statement of the surface contract: which surfaces exist on each instance type, which of them are action surfaces in each phase, plus the long-form anti-pattern detail on why SQL-cloning structural trees fails. The *platform mechanism* underneath the discipline — why an MCP create triggers all the domain-service bookkeeping (ItemRelation cloning, ItemList propagation, cache/index refresh) that raw SQL misses, and why the admin UI is a SPA over `/admin/api/...` rather than a separate surface — is owned by [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §5.
+The always-on summary (surface table + pattern) lives in `SKILL.md` "Surface priority for CREATES". This reference is the canonical statement of the surface contract: which surfaces exist on each instance type, which of them are action surfaces in each phase, plus the long-form anti-pattern detail on why SQL-cloning structural trees fails. The *platform mechanism* underneath the discipline — why an MCP create triggers all the domain-service bookkeeping (ItemRelation cloning, ItemList propagation, cache/index refresh) that raw SQL misses, and why the admin UI is a SPA over `/admin/api/...` rather than a separate surface — is owned by [`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §5.
 
 ## Contents
 
@@ -55,10 +55,10 @@ Until the Backend MCP exists there is nothing at surface 1, and until a bearer e
 
 - **Create the MCP configuration and capture the shown-once API key** (`mcp-setup.md` Step 3).
 - **Create the Management API key** (`mcp-setup.md` Step 6).
-- **AppStore install of the Backend MCP AddIn** when the csproj `PackageReference` route is closed (`foundational/extend-mcp-tools.md` §1 — `PackageReference` stays the default).
+- **AppStore install of the Backend MCP AddIn** when the csproj `PackageReference` route is closed (`../../dw-extend-mcp-tools/references/backend-mcp-server.md` §1 — `PackageReference` stays the default).
 - **Portal downloads** the install scripts can't fetch.
 
-The scaffold ladder: script / CLI / filesystem → Admin API (when a bearer already exists) → **admin UI via the Browser MCP** → headless code recipe (`foundational/extend-mcp-tools.md` §4) → ask the user. Involve the user only when every automated surface is genuinely unreachable — e.g. the Browser MCP tools haven't surfaced in this session yet (they appear in a fresh session; one Claude Code restart loads them) and no API token exists.
+The scaffold ladder: script / CLI / filesystem → Admin API (when a bearer already exists) → **admin UI via the Browser MCP** → headless code recipe (`../../dw-extend-mcp-tools/references/backend-mcp-server.md` §4) → ask the user. Involve the user only when every automated surface is genuinely unreachable — e.g. the Browser MCP tools haven't surfaced in this session yet (they appear in a fresh session; one Claude Code restart loads them) and no API token exists.
 
 Install the Browser MCP **first** in the scaffold sequence (`browser-automation.md`) — it is machine-level and idempotent, and it is the surface the other bootstrap steps drive.
 
@@ -90,7 +90,7 @@ Cloning a tree (Area / Page / Paragraph / GridRow / Item) via raw SQL `INSERT IN
 
 ## Silent no-ops on write surfaces (updates, deletes, index builds) — verify by round-trip, not by status code
 
-A `succeeded` / `status: ok` response from surfaces 1-2 does NOT guarantee the operation happened. Some MCP / Management API writes report success, bump `updatedDate`, and silently drop part of the input (e.g. `save_pages` drops `menuText`; `ParagraphSave` drops item-field value mutations) — and some delete/build tools report success while doing nothing at all (`delete_area` leaves the row; `build_product_index` touches a marker file without writing segments). The catalogue of these version-pinned no-ops and their working fallbacks lives with the tools themselves: [`foundational/extend-mcp-tools.md`](foundational/extend-mcp-tools.md) §5 (MCP/API tool behaviour) and [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) (the same two no-ops framed as paragraph/page save bookkeeping).
+A `succeeded` / `status: ok` response from surfaces 1-2 does NOT guarantee the operation happened. Some MCP / Management API writes report success, bump `updatedDate`, and silently drop part of the input (e.g. `save_pages` drops `menuText`; `ParagraphSave` drops item-field value mutations) — and some delete/build tools report success while doing nothing at all (`delete_area` leaves the row; `build_product_index` touches a marker file without writing segments). The catalogue of these version-pinned no-ops and their working fallbacks lives with the tools themselves: [`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §5 (MCP/API tool behaviour) and [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) (the same two no-ops framed as paragraph/page save bookkeeping).
 
 **The response model is an ECHO, so a read-back through the same API confirms the write that did not happen.**
 The known drop classes are all silent and all shaped alike: an unknown item-group key, a field with no

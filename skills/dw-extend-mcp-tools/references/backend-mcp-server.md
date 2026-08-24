@@ -1,10 +1,12 @@
-# Foundational candidate → dw-extend-mcp-tools
+# The Backend MCP server — install, auth, headless provisioning, write behaviour
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 Backend MCP knowledge — installing the AddIn, the
-> auth model, headless token+config provisioning, and the behaviour of MCP create/update tools — staged
-> here for a future fold-up into `dw-extend-mcp-tools`. No demo/customer content. When folded, move this
-> body into `dw-extend-mcp-tools` and re-target the pointers in the demo skills. Until then, the demo
-> skills reference this file.
+## Contents
+
+- [1. Installing the Backend MCP AddIn](#1-installing-the-backend-mcp-addin--nuget-packagereference-default-appstore-last-resort)
+- [2. Auth model — prefer API Key over Claude.ai OAuth](#2-auth-model--prefer-api-key-over-claudeai-oauth)
+- [3. The two AccessUserToken rows](#3-the-two-accessusertoken-rows)
+- [4. Headless provisioning — create the token + MCP config in code](#4-headless-provisioning--create-the-token--mcp-config-in-code)
+- [5. What MCP create/update tools do to the data model](#5-what-mcp-createupdate-tools-do-to-the-data-model)
 
 This is the platform-level knowledge for the Dynamicweb Backend MCP server (`Dynamicweb.MCP`,
 exposed at `/admin/mcp`): how to install it, how its auth works, how to provision tokens and configs in
@@ -20,7 +22,8 @@ code, and what its create/update tools actually do to the data model.
 
 Rebuild and restart. The AddIn registers **at host startup**, so `/admin/mcp` flips from 404 to live
 with no AppStore click. The host's net10 TFM requirement still applies — the loader's runtime check runs
-regardless of how the package arrived (see [`setup-install.md`](setup-install.md) §2).
+regardless of how the package arrived (see the install anatomy in
+[`dw-setup-install`](../../dw-setup-install/SKILL.md), reference `install-anatomy.md` §2).
 
 This is the canonical route for an agent-driven build: deterministic, scriptable, and idempotent (just a
 csproj edit), and it sidesteps a flaky UI path — the AppStore "Available apps" grid is a virtualized
@@ -30,9 +33,8 @@ Pin the version deliberately — `Dynamicweb.MCP` is a beta-track package, and t
 compatible with the Suite version the host resolves.
 
 **Last resort: the admin AppStore.** Only when you genuinely cannot edit the host csproj (e.g. a locked,
-already-deployed host). This is a scaffold-phase bootstrap one-click: drive it via the Browser MCP,
-expecting retries on the virtualized grid, and ask the user to click it only when automation can't land
-it after a few attempts.
+already-deployed host). Drive it via browser automation, expecting retries on the virtualized grid, and
+ask the user to click it only when automation can't land it after a few attempts.
 
 ## 2. Auth model — prefer API Key over Claude.ai OAuth
 
@@ -76,7 +78,7 @@ empirically — the validation paths differ.
 When the admin UI isn't reachable (a fully headless build / automated provisioning), create both the API
 token and the MCP configuration **in code** — e.g. a one-shot `Program.cs` maintenance branch run
 *inside the built host* (after `app.UseDynamicweb()`, so DI is live; see
-[`../../../dw-extend-csharp-api/SKILL.md`](../../../dw-extend-csharp-api/SKILL.md)). Three pieces, and
+[`dw-extend-csharp-api`](../../dw-extend-csharp-api/SKILL.md)). Three pieces, and
 the third is the non-obvious one:
 
 1. **Issue the token.** `TokenService.TryCreateToken(new ApiTokenRequestModel { Name = …, Prefix =
@@ -132,12 +134,12 @@ and silently drops part of the input:
 | Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort. `ParagraphSave` IS still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
 | MCP `delete_area`, `delete_users`, `delete_paragraphs` | The **entire delete** — `succeeded:1` returned, row still in the DB afterwards | DW 10.27.x + 10.28.1-Pre | SQL `DELETE` (children first: paragraphs → grid rows → pages → area), then restart for the page-tree cache. Always round-trip a delete with a `SELECT COUNT(*)` |
 | MCP `build_product_index` (+ `wait_for_product_index`) | The **target**. It builds its own default repository/index pair (`Products`/`Products` — its own success message says so) while the solution's queries commonly read a *different* instance (`ProductsBackend\|Products.index`). The index the queries read is never touched, so freshly written values stay invisible across repeated rebuilds and a recycle, and the earlier reading of this row ("no Lucene segments are written") was the same incident diagnosed from the wrong end | DW 10.26.x–10.28.x | Read `sourceIndex` off the queries, then `POST /Admin/Api/BuildIndex {Repository, IndexName, BuildName}` for **that** index, resolving `BuildName` from `IndexBuildersByRepositoryAndIndexName`. Verify with a query whose predicate depends on the freshly written field — its count must move off "matches everything" — not with the tool's status or a marker file |
-| MCP `update_users` | A `password` property — the schema has no password field, and an extra `password` property is accepted (`succeeded:1`, `updatedOn` bumped) and dropped | DW 10.28.1-Pre | There is no MCP/API password surface at all — use the plaintext escape hatch in [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) §13 |
-| MCP `patch_products_safe` against a **variant** `EcomProducts` row (`id` + `variantId`) | The **entire patch** — the success items echo the requested values (number, price, isActive) because the echo is the input model, not a post-write read; the variant row's columns stay NULL. The tool writes to the variant *combination* model, not the variant product row (same family as `create_variant_combinations` leaving `ProductActive`/`ProductPrice` NULL — [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.5) | DW 10.27.x | SQL `UPDATE` on the variant `EcomProducts` row is the canonical variant-enrichment surface. Verify immediately: `SELECT ProductNumber FROM EcomProducts WHERE ProductId=@p AND ProductVariantId=@v` — NULL means the write didn't land |
+| MCP `update_users` | A `password` property — the schema has no password field, and an extra `password` property is accepted (`succeeded:1`, `updatedOn` bumped) and dropped | DW 10.28.1-Pre | There is no MCP/API password surface at all — use the plaintext escape hatch documented in [`dw-users-permissions`](../../dw-users-permissions/SKILL.md), reference `permission-layers.md` §13 |
+| MCP `patch_products_safe` against a **variant** `EcomProducts` row (`id` + `variantId`) | The **entire patch** — the success items echo the requested values (number, price, isActive) because the echo is the input model, not a post-write read; the variant row's columns stay NULL. The tool writes to the variant *combination* model, not the variant product row (same family as `create_variant_combinations` leaving `ProductActive`/`ProductPrice` NULL — see [`dw-pim-modelling`](../../dw-pim-modelling/SKILL.md), reference `structural-model.md` §2.5) | DW 10.27.x | SQL `UPDATE` on the variant `EcomProducts` row is the canonical variant-enrichment surface. Verify immediately: `SELECT ProductNumber FROM EcomProducts WHERE ProductId=@p AND ProductVariantId=@v` — NULL means the write didn't land |
 | MCP `copy_page` with `destinationParentPageId=0` (top-level copy) | The **implied area** — the copy lands as a top-level page of area 1, not the source page's area, when no `areaId` is passed | DW 10.27.x | Always pass `areaId` explicitly on top-level copies; confirm the response's `areaId` equals the requested area |
 
-**Rule:** after any demo-critical update through MCP / Management API, round-trip it — read the value back
+**Rule:** after any critical update through MCP / Management API, round-trip it — read the value back
 through a different surface (or curl the rendered page) before declaring it done. When a silent no-op is
 confirmed, the SQL fallback is sanctioned; note the cache that needs flushing. (The content-author's view
-of these same two no-ops — framed as paragraph/page save bookkeeping — is in
-[`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md).)
+of these same save no-ops — framed as paragraph/page save bookkeeping — is in
+[`dw-content-modelling`](../../dw-content-modelling/SKILL.md), reference `modelling-discipline.md`.)
