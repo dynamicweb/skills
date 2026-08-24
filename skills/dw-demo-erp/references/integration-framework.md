@@ -10,9 +10,8 @@
 
 The Integration Framework architecture — activities, the source-provider / destination-provider pair,
 and field mapping — is owned by
-[`dw-integration-framework`](../../dw-integration-framework/SKILL.md). Read it for the architecture;
-the three approaches (ad-hoc / batch / live) are catalogued in
-[`../../dw-demo-base/references/foundational/integration-framework.md`](../../dw-demo-base/references/foundational/integration-framework.md).
+[`dw-integration-framework`](../../dw-integration-framework/SKILL.md). Read it for the architecture
+and the three approaches (ad-hoc / batch / live).
 This skill covers only how an ERP demo *applies* that framework. The one ERP-specific framing the
 demo adds is the rule above: an ERP is both source and target, never a channel or a feed.
 
@@ -25,7 +24,7 @@ It depends on the direction of the activity. Across the bidirectional set of act
 | BC -> DW | ERP (BC) | Dynamicweb (Ecom/Products) |
 | DW -> BC | Dynamicweb (Ecom/Products) | ERP (BC) |
 
-A given **activity** has exactly one source and one target. The "ERP is source AND target" rule applies at the integration-level (the collection of activities), not at the activity-level. Which fields flow in each direction — the ERP↔PIM ownership split — is in the foundational candidate [`../../dw-integration-erp/references/ownership-split.md`](../../dw-integration-erp/references/ownership-split.md).
+A given **activity** has exactly one source and one target. The "ERP is source AND target" rule applies at the integration-level (the collection of activities), not at the activity-level. Which fields flow in each direction — the ERP↔PIM ownership split — is in [`../../dw-integration-erp/references/ownership-split.md`](../../dw-integration-erp/references/ownership-split.md).
 
 ## The right modelling shape in DW10
 

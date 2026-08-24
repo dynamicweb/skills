@@ -23,6 +23,23 @@ Destination Provider (IDestination + IDestinationWriter)
     Dynamicweb DB / API / External system
 ```
 
+## The three integration approaches (by name)
+
+The framework supports three approaches, distinguished by *when* the data moves:
+
+1. **Ad-hoc activities** — run on demand (a manual import/export of a data set, one execution at a time).
+2. **Batch (scheduled) integration** — activities run by scheduled tasks at fixed intervals
+   (hourly / daily / weekly), moving accumulated changes on each run.
+3. **Live (real-time) integration** — retrieves data from a remote system in real time, e.g. live
+   prices or stock states. The remote system is queried per request rather than on a schedule, so
+   the displayed value is always current.
+
+The same activity shape (source provider + destination provider + field mapping) underlies all three;
+only the trigger differs — manual, scheduled, or per-request. In the DW docs' terms, an
+**integration provider** is "a piece of software for moving data between Dynamicweb and an external
+data source, like an XML file, a CSV file or an SQL database", and an activity requires two of them:
+a source provider matching the data source and a destination provider matching the data destination.
+
 ## Admin: Creating and Running Activities
 
 Admin path: **Integration > Activities**
