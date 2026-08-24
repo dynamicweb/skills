@@ -15,7 +15,7 @@ Dynamicweb uses a hidden "template" category `reference_category` (`CategoryType
 4. One `EcomProductCategoryField` row in the concrete category (e.g. `<CategoryName>Attributes`)
 5. Both translations in `EcomProductCategoryFieldTranslation` (one for the mirror, one for the concrete field)
 
-Missing step 1 causes the most-misleading failure in DW: rules validate, assignments persist, API returns correct data, but the product/group completeness panels in admin render empty. See "Recovery recipe: Seed `reference_category` parent row" below for the SQL. The category/field storage internals (`EcomProductCategory`, `EcomProductCategoryField`, `EcomFieldOption`, `EcomProductCategoryFieldValue`, the `ProductCategory|<Cat>|<Field>` system-name format) live in [`pim-modelling.md`](pim-modelling.md) §2.8.
+Missing step 1 causes the most-misleading failure in DW: rules validate, assignments persist, API returns correct data, but the product/group completeness panels in admin render empty. See "Recovery recipe: Seed `reference_category` parent row" below for the SQL. The category/field storage internals (`EcomProductCategory`, `EcomProductCategoryField`, `EcomFieldOption`, `EcomProductCategoryFieldValue`, the `ProductCategory|<Cat>|<Field>` system-name format) live in [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.8.
 
 ## Completeness rules — why they sometimes "don't show"
 

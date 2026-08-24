@@ -209,7 +209,7 @@ A read that returns the MASTER's values for a combination means the variant row'
 the read fell back — the row exists and is enrichable via this chain; it is not evidence the row is
 missing or read-only. And before planning any per-variant write of a specific field, read
 `EcomProductField.AllowChangesAcrossVariants` for it — a `False` flag discards the per-variant value by
-design while the save still answers ok (see [`pim-modelling.md`](pim-modelling.md) §2.5).
+design while the save still answers ok (see [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.5).
 
 ### Product relations via the Management API — `RelationGroupSave` is update-only, and the maintenance verbs take composite ids
 
@@ -327,4 +327,4 @@ There are two shop-read surfaces and they return different models. **`GetShopByI
 
 ### Set `UsageType` explicitly on `ShopSave` — the default `ShopType=0` hides the shop
 
-A `ShopSave` that creates a shop without an explicit `UsageType` leaves `EcomShops.ShopType = 0` (none). The 10.28 admin lists shops by usage-type bucket — the Channels tree filters `UsageType is ShopType.Shop or ShopType.Channel` (`ChannelNodeProvider.GetCatalogShops`), Data models filters `ShopType.DataStructure` — so an untyped shop shows up in **no** typed list, even with a correct area binding and a working storefront (the symptom reads as "the webshop shop is missing from Channels"). **Always set `UsageType` on `ShopSave`:** `shop` for a storefront channel, `channel` for a feed target, `dataStructure` for a data-model shop. Re-typing an existing untyped shop to `shop` makes it reappear in `ShopAll` with storefront checkout/PLP behaviour unchanged. (ShopType enum + admin-nav mapping: [`pim-modelling.md`](pim-modelling.md) §2.1.)
+A `ShopSave` that creates a shop without an explicit `UsageType` leaves `EcomShops.ShopType = 0` (none). The 10.28 admin lists shops by usage-type bucket — the Channels tree filters `UsageType is ShopType.Shop or ShopType.Channel` (`ChannelNodeProvider.GetCatalogShops`), Data models filters `ShopType.DataStructure` — so an untyped shop shows up in **no** typed list, even with a correct area binding and a working storefront (the symptom reads as "the webshop shop is missing from Channels"). **Always set `UsageType` on `ShopSave`:** `shop` for a storefront channel, `channel` for a feed target, `dataStructure` for a data-model shop. Re-typing an existing untyped shop to `shop` makes it reappear in `ShopAll` with storefront checkout/PLP behaviour unchanged. (ShopType enum + admin-nav mapping: [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.1.)

@@ -272,7 +272,7 @@ Two facts that turn "translate the PLP filters" from a write into a project:
   `{OptionId, FieldId, Name, Value, IsDefault, Sort, Image}` — one `Name`. So there is no verb for a
   per-language option name, and the rows must go in by SQL. Option ids live in the
   `ProductCategory|reference_category|<field>` bucket, not the per-type qualified twins
-  ([`pim-modelling.md`](pim-modelling.md) §2.8).
+  ([`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.8).
 - **The option collection is cached in-process and does not pick the rows up.** Neither a cache-busted request
   (`?cb=<guid>`) nor a `ProductFieldOptionSave` round-trip on the same option surfaced the inserted labels —
   the localized PLP kept rendering master-language options. **Facet option labels require an app-pool recycle

@@ -94,7 +94,8 @@
         "./skills/dw-headless-delivery",
         "./skills/dw-search-indexing",
         "./skills/dw-setup-config",
-        "./skills/dw-users-permissions"
+        "./skills/dw-users-permissions",
+        "./skills/dw-pim-modelling"
       ]
     }
   ]

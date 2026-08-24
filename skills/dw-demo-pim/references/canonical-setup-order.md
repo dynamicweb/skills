@@ -95,13 +95,13 @@ Before calling catalog authoring finished, verify **every product** (and every v
 
 | Must hold, per product (and per variant combo) | Storefront symptom when it doesn't |
 |---|---|
-| **`ProductActive=true`** — including variant combos (MCP `create_variant_combinations` leaves them NULL, see [`../../dw-demo-base/references/foundational/pim-modelling.md`](../../dw-demo-base/references/foundational/pim-modelling.md) §2.5) | Product/variant is **invisible** — absent from PLP and the PDP variant selector; add-to-cart no-ops. |
+| **`ProductActive=true`** — including variant combos (MCP `create_variant_combinations` leaves them NULL, see [`../../dw-pim-modelling/references/structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.5) | Product/variant is **invisible** — absent from PLP and the PDP variant selector; add-to-cart no-ops. |
 | **A price** — a real `ProductPrice` / `EcomPrices` row, incl. combos | Renders at **€0** (or the variant drops out of the price/qty table). |
 | **Stock > 0 OR `NeverOutOfStock=true`** — seed per-variant `ProductStock` for **every** language row (variants default to 0) | Shows **"Out Of Stock"** / not orderable even though the master has stock. |
 | **A DEFAULT image is set** — exactly one `EcomDetails.DetailIsDefault=1` per product/variant/language (`import_product_images_from_urls` sets none) | Swift card **NREs on images-but-no-default**, taking down the **whole PLP**, not just that card. |
 | **Texts present in all shipped language layers** — name/description on each `ProductLanguageId` row | Blank name/description (or default-language fallback leaking) on the localized storefront. |
 
-Run this as a SQL sweep, not an eyeball pass: select products/variants where any of `ProductActive IS NULL`, no price row, `ProductStock=0 AND NeverOutOfStock=0`, no `DetailIsDefault=1`, or a missing language-layer text row — every hit is a future storefront defect. Fix, then flush/restart and rebuild the index before the final verification walk. The per-tool root causes live in [`../../dw-demo-base/references/foundational/pim-modelling.md`](../../dw-demo-base/references/foundational/pim-modelling.md) (§2.5 variants, §2.5a per-variant unit/stock, §2.10 assets).
+Run this as a SQL sweep, not an eyeball pass: select products/variants where any of `ProductActive IS NULL`, no price row, `ProductStock=0 AND NeverOutOfStock=0`, no `DetailIsDefault=1`, or a missing language-layer text row — every hit is a future storefront defect. Fix, then flush/restart and rebuild the index before the final verification walk. The per-tool root causes live in [`../../dw-pim-modelling/references/structural-model.md`](../../dw-pim-modelling/references/structural-model.md) (§2.5 variants, §2.5a per-variant unit/stock, §2.10 assets).
 
 ## Appendix: commerce-side order seeding (used by Swift customer-center demos)
 

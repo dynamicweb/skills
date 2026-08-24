@@ -34,8 +34,8 @@ SKUs that are failing.** Everything else is setup for that moment.
 | Recovery: seed `reference_category` parent row (SQL) | [`pim-completeness.md`](../../dw-demo-base/references/foundational/pim-completeness.md) "Recovery recipe: Seed `reference_category`" |
 | Recovery: rebuild the Products index (SQL/API) | [`search-indexing.md`](../../dw-demo-base/references/foundational/search-indexing.md) "Recovery recipe: Rebuild Products index" |
 | Dashboard-query location — Shared ONLY + GUID-collision 500 | [`search-indexing.md`](../../dw-demo-base/references/foundational/search-indexing.md) "Dashboard query location" |
-| Standard `ProductField` inventory preflight (before customs) | [`pim-modelling.md`](../../dw-demo-base/references/foundational/pim-modelling.md) "Standard ProductField inventory" |
-| Recovery: collapse a custom field back into its standard | [`pim-modelling.md`](../../dw-demo-base/references/foundational/pim-modelling.md) "Recovery recipe: collapse a custom field" |
+| Standard `ProductField` inventory preflight (before customs) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) "Standard ProductField inventory" |
+| Recovery: collapse a custom field back into its standard | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) "Recovery recipe: collapse a custom field" |
 | Post-mutation cache flush (when to restart) | [`cache-invalidation.md`](cache-invalidation.md) |
 
 ## Demo recovery posture

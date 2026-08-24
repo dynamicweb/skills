@@ -1,13 +1,19 @@
-# Foundational candidate → dw-pim-modelling
+# The structural mental model — shops, groups, variants, BOM, fields, assets, workspaces
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 PIM structural-modelling knowledge, staged here for a future
-> fold-up into `dw-pim-modelling`. No demo/customer content. When folded, move this body into
-> `dw-pim-modelling` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file.
+Deep field-validated knowledge for Dynamicweb 10 PIM structural modelling. Getting any of these wrong causes rework.
 
-## The structural mental model
+## Contents
 
-Getting any of these wrong causes rework.
+- [2.1 Shop types — one enum controls everything](#21-shop-types--one-enum-controls-everything)
+- [2.2 Group types — data models vs catalog groups](#22-group-types--data-models-vs-catalog-groups)
+- [2.5 Variants — 3 tables, composite IDs](#25-variants--3-tables-composite-ids)
+- [2.5a Single-axis variants — leaner shape + the MCP/SQL surface split](#25a-single-axis-variants--leaner-shape--the-mcpsql-surface-split-validated-dw-1025x)
+- [2.6 Bundles (BOM) — two concerns](#26-bundles-bom--two-concerns)
+- [2.8 Product Categories + Fields (data model internals)](#28-product-categories--fields-data-model-internals)
+- [2.10 Assets](#210-assets)
+- [2.12 Dynamic Workspaces — projections, not storage](#212-dynamic-workspaces--projections-not-storage)
+- [Standard ProductField inventory — audit before creating customs](#standard-productfield-inventory--audit-before-creating-customs)
+- [Recovery recipe: collapse a custom field back into its standard](#recovery-recipe-collapse-a-custom-field-back-into-its-standard)
 
 ### 2.1 Shop types — one enum controls everything
 
@@ -19,7 +25,7 @@ Getting any of these wrong causes rework.
 - `4` **DataStructure** (holds data models — NOT customer-facing)
 
 **Rules:**
-- **One Shop per brand/market** — don't create duplicates. If `mcp__dynamicweb-commerce-mcp__save_shops` fails to rename the default `SHOP1`, update directly: `UPDATE EcomShops SET ShopName = '...' WHERE ShopId = 'SHOP1'`.
+- **One Shop per brand/market** — don't create duplicates. If the `save_shops` MCP tool fails to rename the default `SHOP1`, update directly: `UPDATE EcomShops SET ShopName = '...' WHERE ShopId = 'SHOP1'`.
 - **Channels for feeds** — each external system (Shopify, Home Depot, OrderEase, etc.) gets its own ShopType=3 shop with its own group tree. Products get related INTO those groups to control what the feed publishes.
 - **DataStructure for data models** — a separate ShopType=4 shop owns the data model tree. Never park data models under the commerce shop.
 - **EVERY shop needs a language relation** — insert into `EcomShopLanguageRelation(ShopId, LanguageId, IsDefault)`. Missing this causes "channel with no name" display in admin.
@@ -34,7 +40,7 @@ Getting any of these wrong causes rework.
 
 So in the admin tree, a `ShopType=1` Shop and a `ShopType=3` Channel sit side-by-side in the **Channels** section (different icon, same tree); only `ShopType=4` shops appear under **Data models**. There is no separate "PIM root" concept — trying to build one fights the UI.
 
-**`ProductActive` vs `EcomGroupProductRelation` for visibility gating.** `ProductActive` is a binary all-or-nothing toggle — when the Products index is built with `OnlyIndexActiveProducts=true` (see `Dynamicweb.Ecommerce/Indexing/ProductIndexBuilder.cs:102,277` — `"AND ProductActive = 1"`), `ProductActive=0` rows are excluded from the entire index, killing them in every channel AND every PIM dashboard. For **per-channel** visibility — "online on the webshop, offline on the marketplace" — use `EcomGroupProductRelation` rows scoped per Channel group (i.e. fire the native "Publish to channel" action, see [`commerce-catalog.md`](commerce-catalog.md), or remove a single channel's relation). `ProductActive=0` is for "this product is gone from EVERYWHERE" (discontinuation); `EcomGroupProductRelation` removal is for "this product is gone from THIS channel". Don't conflate them.
+**`ProductActive` vs `EcomGroupProductRelation` for visibility gating.** `ProductActive` is a binary all-or-nothing toggle — when the Products index is built with `OnlyIndexActiveProducts=true` (see `Dynamicweb.Ecommerce/Indexing/ProductIndexBuilder.cs:102,277` — `"AND ProductActive = 1"`), `ProductActive=0` rows are excluded from the entire index, killing them in every channel AND every PIM dashboard. For **per-channel** visibility — "online on the webshop, offline on the marketplace" — use `EcomGroupProductRelation` rows scoped per Channel group (i.e. fire the native "Publish to channel" action, or remove a single channel's relation). `ProductActive=0` is for "this product is gone from EVERYWHERE" (discontinuation); `EcomGroupProductRelation` removal is for "this product is gone from THIS channel". Don't conflate them.
 
 ### 2.2 Group types — data models vs catalog groups
 
@@ -56,12 +62,12 @@ A variant on a hero product is NOT a single row. It needs:
 
 1. **`EcomVariantGroups`** + **`EcomVariantOptions`** (the dimension vocabulary — e.g. a size axis → 9/12/17)
 2. **`EcomVariantGroupProductRelation`** — links variant groups to a product. One row per (product, group).
-3. **`EcomVariantOptionsProductRelation`** — the combinations. VariantId is the dot-joined option IDs: `VO1.VO4` = first option of group 1 AND first option of group 2 (see `VariantCombinationService.cs:221`). Missing combination rows fail silently at the worst spot: a storefront add-to-cart POST for the variant returns **HTTP 200 and adds nothing**. Existence-guard every direct SQL junction INSERT (`IF NOT EXISTS ... INSERT`) so a re-run converges instead of stacking duplicate relation rows — then restart the host: variant relations are read through a cache resolved at startup (see [`cache-invalidation.md`](cache-invalidation.md)).
+3. **`EcomVariantOptionsProductRelation`** — the combinations. VariantId is the dot-joined option IDs: `VO1.VO4` = first option of group 1 AND first option of group 2 (see `VariantCombinationService.cs:221`). Missing combination rows fail silently at the worst spot: a storefront add-to-cart POST for the variant returns **HTTP 200 and adds nothing**. Existence-guard every direct SQL junction INSERT (`IF NOT EXISTS ... INSERT`) so a re-run converges instead of stacking duplicate relation rows — then restart the host: variant relations are read through a cache resolved at startup.
 4. **`EcomProducts`** row per variant — copies master's 60+ columns but overrides `ProductVariantId` (same as step 3), `ProductNumber` (**must be unique per variant** — master `ProductNumber` + dash + short suffix derived from the variant option ids; e.g. master `<CAT>-<SKU>` → `<CAT>-<SKU>-A`, `-B`, `-C`), `ProductActive=1`. Without this row, variants exist but are inactive with no SKU label.
 
 **Hard rule: `ProductNumber` MUST be unique across master + every variant in the family.** Multiple `EcomProducts` rows that share `ProductId` are normal (they're the master + each variant), but their `ProductNumber` values must NOT collide. Downstream consumers that flatten the master/variant tree into separate rows — most notably the PIM-for-Business-Central connector, which exposes each variant as its own BC item via `BCProductIdsByLastModified` and dedupes by SKU — will silently drop variants whose number already matches another row's number. Symptom: BC's "PIM Product List" shows N copies of the same number (one per variant + master), all with the master's name, and the import refuses to create the variant items.
 
-**Regression vector (this WILL happen):** the admin UI's master-product rename flow and some bulk-update paths propagate the master's new `ProductNumber` to every row sharing the same `ProductId` — including the variants — wiping out per-variant suffixes. Re-applying the suffix is idempotent and safe to bake into a verification step / re-run of the seed:
+**Regression vector (this WILL happen):** the admin UI's master-product rename flow and some bulk-update paths propagate the master's new `ProductNumber` to every row sharing the same `ProductId` — including the variants — wiping out per-variant suffixes. Re-applying the suffix is idempotent and safe to bake into a verification step / re-run of a seed:
 ```sql
 UPDATE EcomProducts
 SET ProductNumber = ProductNumber + '-' + REPLACE(ProductVariantId, 'VO-', '')
@@ -80,13 +86,13 @@ Use `INSERT INTO EcomProducts (col1,col2,...) SELECT m.col1, m.col2, ... FROM @c
 When the product has exactly ONE variant axis (a Color selector, a tier ladder), the shape is leaner than §2.5's general case:
 
 - `EcomProducts.ProductVariantId` is the **bare `VariantOptionId`** (e.g. `VO3`) — **no `EcomVariantOptionsProductRelation` rows needed**. That table only matters for multi-axis dot-joined combinations. The master still keeps one `EcomVariantGroupProductRelation` row.
-- Surface split: MCP `save_variant_groups` / `save_variant_options` create the vocabulary, but there is **no MCP surface** for the group→product relation or for the per-variant `EcomProducts` rows. `update_products` against a variant id that has no row yet fails with `Product not found` — it updates, never creates, variant language rows. The §2.5 SQL INSERT (copy master, override per-variant fields) is the proven path for both on local installs. On hosted/API-only installs the Management API chain covers the whole shape — `VariantGroupAdd` then `VariantCombinationSave` (which runs `ExtendAllVariants` to create the per-variant rows); see [`commerce-catalog.md`](commerce-catalog.md) §2.14 "Variants via the Management API (no SQL)" (validated DW 10.25.x).
+- Surface split: MCP `save_variant_groups` / `save_variant_options` create the vocabulary, but there is **no MCP surface** for the group→product relation or for the per-variant `EcomProducts` rows. `update_products` against a variant id that has no row yet fails with `Product not found` — it updates, never creates, variant language rows. The §2.5 SQL INSERT (copy master, override per-variant fields) is the proven path for both on local installs. On hosted/API-only installs the Management API chain covers the whole shape with no SQL — `VariantGroupAdd` then `VariantCombinationSave` (which runs `ExtendAllVariants` to create the per-variant rows) (validated DW 10.25.x).
 - Set **`VariantOptionColor`** (hex) on the options and a Swift-style PDP `VariantSelector` renders live **color swatches** with zero template work.
 - Per-variant `EcomProducts` gotchas beyond the §2.5 override list:
   - Copy **`ProductDefaultUnitId`** onto every variant row. Variants without it silently drop the per-unit price column from the quantity-break table — the master shows Qty / per-unit / per-piece, the variants show a narrower table, and it reads like a pricing bug even though prices never differed.
   - Seed **per-variant `ProductStock`**, and do it for **every language row** — variants default to 0 even when the master has stock.
   - Quantity-break `EcomPrices` rows with an empty `PriceProductVariantId` apply to **all** variants — no per-variant duplication needed.
-- Restart the host before verifying — the PDP selector reads the product cache, so the variants don't show until the bounce. (No restart on a hosted install: bulk-flush the product/stock/price service caches instead — see [`cache-invalidation.md`](cache-invalidation.md).)
+- Restart the host before verifying — the PDP selector reads the product cache, so the variants don't show until the bounce. (No restart on a hosted install: bulk-flush the product/stock/price service caches instead.)
 
 ### 2.6 Bundles (BOM) — two concerns
 
@@ -123,7 +129,7 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
 
 - **Category** = row in `EcomProductCategory` + translation row in `EcomProductCategoryTranslation`. Categories are SOLUTION-GLOBAL — not scoped to shops.
 - **Fields on a category** = rows in `EcomProductCategoryField` + translations in `EcomProductCategoryFieldTranslation`.
-- **`reference_category` is load-bearing and easy to miss** — the hidden template category that powers every admin completeness/rule lookup, plus its blank-panel gotcha and seed SQL, lives in [`pim-completeness.md`](pim-completeness.md).
+- **`reference_category` is load-bearing and easy to miss** — the hidden template category that powers every admin completeness/rule lookup, plus its blank-panel gotcha and seed SQL, lives in [dw-pim-completeness](../../dw-pim-completeness/SKILL.md).
 - **List field options** = `EcomFieldOption` (FieldOptionId, FieldOptionFieldId, FieldOptionName, FieldOptionValue, FieldOptionIsDefault, FieldOptionSort). Scoped to field, not category.
 - **Field values on products** = `EcomProductCategoryFieldValue` (FieldValueFieldId, FieldValueFieldCategoryId, FieldValueProductId, FieldValueProductVariantId, FieldValueProductLanguageId, FieldValueValue). One row per (product, field).
 - **Dropdown/multi-select values store the option VALUE, never the display name.** For a list-presented
@@ -143,7 +149,7 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
   `ProductFieldOptionsByFieldId` never serves them back, so the field renders with no choices while the
   write looks perfect. Options belong to the **field**, and a reference field's field-id form is the
   `reference_category` one (same hidden template category that powers the admin completeness/rule lookups —
-  [`pim-completeness.md`](pim-completeness.md)). Write options to the `reference_category` path, then assert
+  [dw-pim-completeness](../../dw-pim-completeness/SKILL.md)). Write options to the `reference_category` path, then assert
   they come back through `ProductFieldOptionsByFieldId`; a returned id is not evidence.
 - **Cloning a reference field's DEFINITION does not clone its OPTIONS — and `EcomFieldOption` primary keys are
   globally unique, so the rows cannot be copied verbatim.** Cloning reference fields into per-type PIM
@@ -172,9 +178,9 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
   - `DetailProductId`, `DetailVariantId`, `DetailLanguageId`, `DetailType=0` (image), `DetailValue=<file path>`, `DetailIsDefault` (primary), `DetailsGroupId` (asset category numeric id — check `EcomDetailsGroup`)
 - Asset categories = `EcomDetailsGroup` table. Default installs ship with at least `Images` (id=1). New categories (e.g. `Manuals` for PDFs) are SQL-only — no MCP tool exists for `EcomDetailsGroup` mutations. Insert into both `EcomDetailsGroup` (set `DetailsGroupExtensions` to filter file types, e.g. `'pdf'`, and `DetailsGroupDefaultUploadFolder` to the target path) AND `EcomDetailsGroupTranslation` (one row per language).
 - MCP tools `add_product_image` / `import_product_images_from_urls` / `upload_product_images` handle both download-to-disk + DB row. **Plugin-only — no Management API endpoints back these.** They live entirely in the MCP plugin code path; if the MCP session dies (token expiry, plugin restart, host restart) there is no `POST /admin/api/...` fallback for asset registration. The fallback is direct SQL INSERT on `EcomDetails`.
-- **`import_product_images_from_urls` does NOT set a default image** — it registers the `EcomDetails` rows with `DetailIsDefault=0` on all of them. A product then has images-but-no-default, and that is a **frontend-breaking** state, not a cosmetic one: the Swift card template **NREs on a product with images but no default**, and because the PLP renders cards in a loop, one such product **degrades the WHOLE product-list page** (the list throws, not just that one card). After any `import_product_images_from_urls` run, set a default: `UPDATE EcomDetails SET DetailIsDefault=1 WHERE DetailProductId=<id> AND DetailLanguageId='LANG1' AND DetailValue=<chosen path>` (exactly one default per product/variant/language), then flush/restart. The product-completeness checklist in [`../../../dw-demo-pim/references/canonical-setup-order.md`](../../../dw-demo-pim/references/canonical-setup-order.md) makes "a DEFAULT image is set" a per-product gate for exactly this reason.
+- **`import_product_images_from_urls` does NOT set a default image** — it registers the `EcomDetails` rows with `DetailIsDefault=0` on all of them. A product then has images-but-no-default, and that is a **frontend-breaking** state, not a cosmetic one: the Swift card template **NREs on a product with images but no default**, and because the PLP renders cards in a loop, one such product **degrades the WHOLE product-list page** (the list throws, not just that one card). After any `import_product_images_from_urls` run, set a default: `UPDATE EcomDetails SET DetailIsDefault=1 WHERE DetailProductId=<id> AND DetailLanguageId='LANG1' AND DetailValue=<chosen path>` (exactly one default per product/variant/language), then flush/restart. Make "a DEFAULT image is set" a per-product verification gate for exactly this reason.
 - **Bulk SQL INSERT must set `DetailLanguageId` to a real language code** (e.g. `'LANG1'`), not empty string and not NULL. The admin asset query and the per-product image listings filter strict-equality on this column, so empty-string language renders the row invisible despite being on disk and registered. Symptom: SQL count says 9 details for the product, admin product page shows 0 assets, file is at the path. Recovery: `UPDATE EcomDetails SET DetailLanguageId = 'LANG1' WHERE DetailLanguageId = '' OR DetailLanguageId IS NULL;` then host restart to flush asset caches. The MCP tools always populate this column correctly — this gotcha only fires when bulk SQL inserts skip the field.
-- After bulk SQL inserts, **restart the host** to flush the EcomDetails cache (same protocol as [`cache-invalidation.md`](cache-invalidation.md) covers for product mutations).
+- After bulk SQL inserts, **restart the host** to flush the `EcomDetails` cache (the same restart-after-SQL protocol that product mutations require).
 
 ### 2.12 Dynamic Workspaces — projections, not storage
 
@@ -189,7 +195,7 @@ Dynamic Workspaces are the modern PIM workbench UI in DW10 — multi-level group
 
 Cite `Dynamicweb.Core/Indexing/DynamicStructuring/DynamicStructure.cs:24` (`public Guid Id { get; set; }`) and `DynamicStructureLevel.cs` for the level shape.
 
-**Permission entity** — `PermissionName="DynamicStructure"`, key=Guid. Cite `Dynamicweb.Core/Indexing/DynamicStructuring/DynamicStructure.cs:43` (`private const string PermissionName = "DynamicStructure";`) and the `[PermissionEntity(PermissionName)]` attribute at line 12. The class implements `IPermissionEntity, IPermissionEntityLookup` (line 13). Cross-ref [`users-permissions.md`](users-permissions.md) for how this entity slots into the three-layer model.
+**Permission entity** — `PermissionName="DynamicStructure"`, key=Guid. Cite `Dynamicweb.Core/Indexing/DynamicStructuring/DynamicStructure.cs:43` (`private const string PermissionName = "DynamicStructure";`) and the `[PermissionEntity(PermissionName)]` attribute at line 12. The class implements `IPermissionEntity, IPermissionEntityLookup` (line 13). This entity slots into the platform's three-layer permission model as a Layer C entity permission (see the users/permissions foundational knowledge).
 
 **Level types** — `DataModelKey` or `ProductField`. Cite `Dynamicweb.Products.UI/Models/ProductCatalogs/DynamicStructureLevelTypes.cs` (2-value enum):
 
@@ -233,10 +239,10 @@ products existing" state on one build, and fixing either alone left it empty:
    without a rebuild changes nothing. After the repoint + flags + rebuild the three workspaces returned
    756 / 31 / 2,929.
 
-A PIM edition whose demo leans on workspaces should not ship builders that skip completion rules.
+A solution that leans on workspaces should not ship index builders that skip completion rules.
 
 **When workspaces are NOT the right answer:**
-- Permission boundary. Workspaces are gated by the `/Products/DynamicWorkspaces` capability key (single on/off across all workspaces of that capability scope), not per workspace. Per-product permissions still come from group-level grants — see [`users-permissions.md`](users-permissions.md) for the full picture.
+- Permission boundary. Workspaces are gated by the `/Products/DynamicWorkspaces` capability key (single on/off across all workspaces of that capability scope), not per workspace. Per-product permissions still come from group-level grants (the users/permissions foundational knowledge covers the full picture).
 - Originating products without a catalog group. Without `UseRelationOnProductCreate=true` on at least one level, the workspace's "Create product" UI produces orphans.
 
 Cite source files (all under `dw10source/src/Core/Dynamicweb.Core/Indexing/DynamicStructuring/`):
@@ -310,6 +316,6 @@ DELETE FROM UnifiedPermission
    AND PermissionKey IN ('g_ean','g_weight_kg','g_height_cm','g_width_cm','g_length_cm');
 ```
 
-Then flush `ProductFieldService`, `ProductService`, `CompletionRuleService`, `PermissionService` and trigger a Full `BuildIndex` (see [`pim-completeness.md`](pim-completeness.md) "Recovery recipe: Rebuild Products index").
+Then flush `ProductFieldService`, `ProductService`, `CompletionRuleService`, `PermissionService` and trigger a Full `BuildIndex` on the Products repository (see [dw-pim-completeness](../../dw-pim-completeness/SKILL.md) for the rebuild recovery recipe).
 
 **Completion-rule regex note**: `EcomCompletionRules` uses a comma-separated SystemName list (`EcomCompletionRuleProductFields`), not regex. Rule "completeness" is a field-has-value check, not a pattern match. `EcomValidationRules` is a separate table for input-validation patterns and is independent — touch that only if a custom field carried a regex pattern (`FieldValidationPattern` on `EcomProductCategoryField`) that needs replicating on the standard.

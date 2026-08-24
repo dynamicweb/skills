@@ -152,7 +152,7 @@ a truncation**: a 259-character alt text bounced the whole `ParagraphSave` with 
 characters landed. Nothing in the field definition surfaces the limit. Choose `TextArea` / `RichText` for
 anything that can grow (descriptions, alt text, any authored prose) and keep `TextEditor` for values you
 can guarantee ≤ 255 — and note that the choice is baked at field-create time, so changing it later is the
-create-alongside-and-migrate motion ([`pim-modelling.md`](pim-modelling.md) §2.8), not an edit.
+create-alongside-and-migrate motion ([`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md) §2.8), not an edit.
 
 **A successful `ItemTypeById` / `ItemFieldsByItemTypeSystemName` read is NOT evidence the type is
 usable** — it is exactly the state an XML-only deployment produces. Any new-item-type helper must gate on
