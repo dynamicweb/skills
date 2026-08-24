@@ -156,7 +156,7 @@ where the same failures appear under the IIS `HttpServer` category.
   `/robots.txt` and friends. The gate assertion is status + content-type + non-zero body
   (`GET /sitemap.xml` → `200 application/xml`, body length > 0).
 - Log-volume hygiene and what the Monitoring counters do and do not count:
-  [`foundational/tracking-insights.md`](foundational/tracking-insights.md).
+  [`../../dw-setup-config/references/tracking-insights.md`](../../dw-setup-config/references/tracking-insights.md).
 
 ### Test whether the process can CREATE before calling it an ACL lockout
 
