@@ -25,7 +25,7 @@ It depends on the direction of the activity. Across the bidirectional set of act
 | BC -> DW | ERP (BC) | Dynamicweb (Ecom/Products) |
 | DW -> BC | Dynamicweb (Ecom/Products) | ERP (BC) |
 
-A given **activity** has exactly one source and one target. The "ERP is source AND target" rule applies at the integration-level (the collection of activities), not at the activity-level. Which fields flow in each direction — the ERP↔PIM ownership split — is in the foundational candidate [`../../dw-demo-base/references/foundational/integration-erp.md`](../../dw-demo-base/references/foundational/integration-erp.md).
+A given **activity** has exactly one source and one target. The "ERP is source AND target" rule applies at the integration-level (the collection of activities), not at the activity-level. Which fields flow in each direction — the ERP↔PIM ownership split — is in the foundational candidate [`../../dw-integration-erp/references/ownership-split.md`](../../dw-integration-erp/references/ownership-split.md).
 
 ## The right modelling shape in DW10
 

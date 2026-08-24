@@ -1,10 +1,8 @@
-# Foundational candidate → dw-integration-erp
+# ERP ↔ PIM data ownership
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 ERP↔PIM data-ownership knowledge,
-> staged here for a future fold-up into `dw-integration-erp`. No demo/customer content.
-> When folded, move this body into `dw-integration-erp` (it is richer than that skill's
-> current high-level ownership table) and re-target the pointers in the demo skills to it.
-> Until then, the demo skills reference this file. Do not add demo specifics here.
+This reference deepens the high-level ownership table in [SKILL.md](../SKILL.md): the field-level
+ERP↔PIM ownership split, the contract-price data model, what never syncs back to the ERP, why sync
+direction is an ERP-side mapping choice, and the missing-mapping stuck state.
 
 ## The ERP ↔ PIM ownership split
 
