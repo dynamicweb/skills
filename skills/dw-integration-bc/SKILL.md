@@ -68,10 +68,3 @@ This skill assumes `dw-demo-base` ran first. Four rules apply at all times and a
 
 A sibling skill that runs without `dw-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
 
-## Vendor patterns
-
-The vendor skill-repo consultation outcome (`dynamicweb/skills` + `dynamicweb/ai-implementor-skills`) is documented in [dw-demo-base/references/vendor-patterns.md](../dw-demo-base/references/vendor-patterns.md). Single source of truth for vendor positioning across PIM, Swift, and BC connector skills.
-
-
-
-

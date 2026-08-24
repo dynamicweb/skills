@@ -88,12 +88,3 @@ If you find yourself running this skill standalone with no base context, fix tha
 
 A sibling skill that runs without `dw-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
 
-## Vendor patterns
-
-The vendor skill-repo consultation outcome (`dynamicweb/skills` + `dynamicweb/ai-implementor-skills`) is documented in [dw-demo-base/references/vendor-patterns.md](../dw-demo-base/references/vendor-patterns.md).
-
-That file lists patterns we adopt and patterns we deliberately deviate from (PowerShell vs Python; "Use AFTER" composition wording; four-surface vs two-surface decision matrix; explicit recovery recipes inline). Sister skills cross-reference there rather than restating per-skill -- single source of truth for vendor positioning.
-
-
-
-

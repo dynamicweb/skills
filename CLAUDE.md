@@ -68,8 +68,32 @@ description: <one to three sentences. First sentence states what the skill does.
 
 `type` is `knowledge` for reference-style platform skills and `flow` for skills that drive a
 multi-step process (the setup installers and the demo chain). `group` is the skill's area from
-the naming taxonomy (see `dynamicweb-skills-structure.md`) and matches the `<domain>` segment
-of the name.
+the naming taxonomy below and matches the `<domain>` segment of the name.
+
+### Area taxonomy
+
+The structure mirrors how DW10 organizes itself, so a skill's name predicts where its knowledge
+lives in the docs. Three documentation pillars (the developer journey): **Setup** (install, CLI,
+config, upgrade) → **Implementation** (Content, Products/PIM, Commerce on the rendering engine)
+→ **Extending** (C# API, providers, AddIns, scheduled tasks). Four implementation directions:
+Swift, Core, From Scratch, Headless (`/dwapi/`).
+
+| Area | Pillar | Scope |
+|---|---|---|
+| `setup` | Setup | Bootstrap a solution, dev environment, configuration, upgrades |
+| `render` | Implementation | Template hierarchy, Razor patterns, ViewModels, TemplateTags |
+| `swift` | Implementation | Building on the Swift storefront |
+| `headless` | Implementation | `/dwapi/` delivery API, decoupled frontends |
+| `content` | Implementation | Pages, paragraphs, item types, content modelling, assets |
+| `pim` | Implementation | Modelling, variants/BOM, completeness, workflow, localization |
+| `commerce` | Implementation | Catalog, orders/checkout/cart, prices/assortments, B2B |
+| `search` | Implementation | Indexes, queries, repositories, BuildIndex |
+| `users` | Implementation | Users, groups, the Permission entity store |
+| `extend` | Extending | Custom backend code, subscribers, scheduled tasks, MCP tools |
+| `integration` | Extending | Source/target providers, ERP, BC connector |
+| `data` | cross-cutting | Data-access surface priority (API > SQL), cache invalidation |
+| `source` | cross-cutting | Navigating the Dynamicweb platform source |
+| `demo` | Presales | The presales demo chain; flow skills with demo-only guardrails |
 
 The `description` field is the activation signal — it is matched against the user's request at runtime. Write it in the third person using this shape:
 
@@ -143,8 +167,10 @@ that `marketplace.json` parses and has the required top-level schema (`name`, `o
 that each skill's folder name, `name:` frontmatter, and marketplace path agree; that every
 relative link in `SKILL.md`/`references` resolves; that each `description` is within the
 1024-char cap; and that no markdown file begins with a UTF-8 BOM or contains double-encoded UTF-8
-(mojibake). It warns (without failing) when a description lacks a trigger signal, a SKILL.md body
-runs past 500 lines, or a reference over 100 lines lacks a table of contents.
+(mojibake); and that no skill in a marketplace bundle hard-depends (links into `references/` or
+`assets/`) on a skill the bundle does not ship. It warns (without failing) when a description
+lacks a trigger signal, a SKILL.md body runs past 500 lines, or a reference over 100 lines lacks
+a table of contents.
 
 For a deeper check against Claude Code's own plugin schema, also run `claude plugin validate ./`.
 
@@ -154,18 +180,8 @@ Run it before committing:
 python3 scripts/validate-skills.py
 ```
 
-To run it automatically at the start of every Claude Code session (so structural breakage
-surfaces immediately), add this `SessionStart` hook to `.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      { "hooks": [ { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/validate-skills.py\"" } ] }
-    ]
-  }
-}
-```
+CI runs it on every push and PR (`.github/workflows/manifest-check.yml`), alongside the
+manifest drift check.
 
 Record notable changes (skills added/renamed, role-bundle moves, structural changes) in
 `CHANGELOG.md`, and bump `marketplace.json`'s `version` accordingly.
