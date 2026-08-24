@@ -834,7 +834,7 @@ badge presentation — that is presentation, not gating; use `GetGroups()` for i
 - **Render-time half of permissions** — §15 above ("Render-time half — page/paragraph
   permissions"). Owns the render-time entity-store rows (`UnifiedPermission`,
   `PermissionName='Page'`) which gate `Page` / `Paragraph` render at request time.
-- **Workflow transitions** — [`pim-workflow.md`](pim-workflow.md). DW10's workflow engine has NO native per-state role gating (verified gap). The workarounds (subscriber-reject; custom capability key; soft gating via permission-aware surfaces) all build on Layer C entity permissions from this ref.
+- **Workflow transitions** — [`pim-workflow.md`](../../../dw-pim-workflow/references/workflow-engine.md). DW10's workflow engine has NO native per-state role gating (verified gap). The workarounds (subscriber-reject; custom capability key; soft gating via permission-aware surfaces) all build on Layer C entity permissions from this ref.
 - **Publish-to-channel native action** — [`commerce-catalog.md`](commerce-catalog.md). The action's `PermissionLevelRequired = PermissionLevel.Edit` is a Layer C check on the source products + a write-permission check on the target Channel groups.
 - **Dynamic Workspaces entity** (`PermissionName="DynamicStructure"`) — [`pim-modelling.md`](../../../dw-pim-modelling/references/structural-model.md). How the workspace entity slots into the three-layer model.
 - **Access surfaces** (Direct-SQL / Management API) — [`data-access.md`](data-access.md). Per §4c, all three permission tables are Direct-SQL territory in DW 10.25.8 — the admin UI does not expose them for the Dynamic-Workspace / Dashboard / Capability-Set resources.

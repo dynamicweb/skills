@@ -1,9 +1,6 @@
-# Foundational candidate → dw-pim-workflow
+# The workflow engine — schema, subscriber, the role-gating gap, workarounds
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 product-workflow knowledge, staged here for a future
-> fold-up into `dw-pim-workflow`. No demo/customer content. When folded, move this body into
-> `dw-pim-workflow` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file.
+Dynamicweb 10 has a real product-workflow engine. Tables, state graph, the email-firing subscriber, the verified gap (no native per-state role gating), and three workaround patterns for role-based transitions. Read this before building any "approve / publish" flow — most of the moving parts are already wired and you only need data, not C#.
 
 ## Contents
 
@@ -14,8 +11,6 @@
 - [5. VERIFIED GAP — DW10 workflow has NO per-state role gating](#5-verified-gap--dw10-workflow-has-no-per-state-role-gating)
 - [6. Three workaround patterns for per-state role gating](#6-three-workaround-patterns-for-per-state-role-gating)
 - [7. Cross-references](#7-cross-references)
-
-Dynamicweb 10 has a real product-workflow engine. Tables, state graph, the email-firing subscriber, the verified gap (no native per-state role gating), and three workaround patterns for role-based transitions. Read this before building any "approve / publish" flow — most of the moving parts are already wired and you only need data, not C#.
 
 ## 1. Schema — five tables, two foreign-key columns
 
@@ -134,14 +129,14 @@ Single `.cs` file. A `NotificationSubscriber` is custom code that ships without 
 
 Wire a custom "Approve" / "Publish" button to a dedicated capability key (e.g. `/Products/Workflow/Approve`) with `PermissionLevelRequired = PermissionLevel.Create`. This is the same pattern the native "Publish to channel" action uses (`ProductListScreen.cs:726-743`; there is also a duplicate inline-form "Publish to channel" at line 372, and the bulk-action wiring is at line 420).
 
-Layer B (capability) hides the button entirely from non-approvers (see [`users-permissions.md`](users-permissions.md) for the capability tree). When the button isn't rendered, the user can't even attempt the transition.
+Layer B (capability) hides the button entirely from non-approvers (the capability tree lives in [dw-users-permissions](../../dw-users-permissions/SKILL.md)). When the button isn't rendered, the user can't even attempt the transition.
 
 **Strength**: clean UI — non-approvers literally don't see Approve. Aligns with the modern DW10 permission model (CapabilityControlFeature flag ON).
 **Weakness**: more code (a custom `ActionNode` and screen wiring); doesn't prevent raw API / MCP transitions on its own — compose with §6.1 for hard enforcement.
 
 ### 6.3 Soft gating via permission-aware surfaces
 
-The lowest-fidelity option but cheapest to set up. Lean on Layer C entity permissions ([`users-permissions.md`](users-permissions.md)) on **Dynamic Workspaces** and **dashboards**:
+The lowest-fidelity option but cheapest to set up. Lean on Layer C entity permissions ([dw-users-permissions](../../dw-users-permissions/SKILL.md)) on **Dynamic Workspaces** and **dashboards**:
 
 - A "Pending approval" workspace is a `DynamicStructure` entity with `PermissionName="DynamicStructure"`, key = its Guid (`DynamicStructure.cs:43`). Grant Read on it only to the Reviewer/Approver group. Non-approvers don't see the surface at all.
 - A Reviewer dashboard (showing the pending-approval queue widget) is its own `Dashboard` row — same Layer C grants gate it.
@@ -160,9 +155,9 @@ In all three workarounds, **add the audit-log subscriber** anyway: a `Notificati
 
 ## 7. Cross-references
 
-- **Permissions** — [`users-permissions.md`](users-permissions.md). All three §6 workarounds build on Layer B and Layer C grants from that ref.
-- **Render-time permissions** (Page / Paragraph gating in storefront) — [`users-permissions.md`](users-permissions.md) §15 ("Render-time half — page/paragraph permissions"). Same `UnifiedPermission` table as the admin-side grants, different key shape and enforcement points — render-time rows are keyed `PermissionName='Page'` with role strings, and gate STOREFRONT renders; the entity-name-keyed rows this ref focuses on gate ADMIN actions.
+- **Permissions** — [dw-users-permissions](../../dw-users-permissions/SKILL.md). All three §6 workarounds build on Layer B (capability) and Layer C (entity) grants from that skill. Render-time page/paragraph permissions use the same `UnifiedPermission` table with a different key shape (`PermissionName='Page'` + role strings) and gate STOREFRONT renders; the entity-name-keyed rows this ref uses gate ADMIN actions.
 - **Custom code** — `NotificationSubscriber` and scheduled-task surfaces are custom code that ships without a config-surface prompt — §6.1 and the audit-log subscriber ship unprompted.
-- **Cache invalidation** — [`cache-invalidation.md`](cache-invalidation.md). State transitions via `WorkflowStateService.Save` go through the domain service and invalidate caches inline; raw `UPDATE EcomProducts SET ProductWorkflowStateId = …` does NOT fire the `ProductWorkflowStateChanged` notification at all (so emails won't fire either) — use the service, not raw SQL.
+- **Cache invalidation** — state transitions via `WorkflowStateService.Save` go through the domain service and invalidate caches inline; raw `UPDATE EcomProducts SET ProductWorkflowStateId = …` does NOT fire the `ProductWorkflowStateChanged` notification at all (so emails won't fire either) — use the service, not raw SQL.
+- **MCP payload schemas** — [completeness-and-workflows.md](completeness-and-workflows.md) for `create_or_update_workflow_states` / `create_or_update_completeness_rules` payloads.
 
 Source-citation line numbers re-verified against a local clone of the DW10 source.
