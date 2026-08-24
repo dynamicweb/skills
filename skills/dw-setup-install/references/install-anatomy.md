@@ -1,9 +1,14 @@
-# Foundational candidate → dw-setup-install
+# Host install anatomy — prerequisites, TFM, host-config patches, rings, first-run gates
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 host install / scaffold-prerequisites / host-config
-> knowledge, staged here for a future fold-up into `dw-setup-install`. No demo/customer content.
-> When folded, move this body into `dw-setup-install` and re-target the pointers in the demo skills.
-> Until then, the demo skills reference this file.
+## Contents
+
+- [1. Machine prerequisites](#1-machine-prerequisites)
+- [2. The host TargetFramework MUST be `net10.0`](#2-the-host-targetframework-must-be-net100)
+- [3. Build-time host-config patches](#3-build-time-host-config-patches)
+- [4. MSDTC for cross-connection TransactionScope](#4-msdtc-for-cross-connection-transactionscope)
+- [5. Release rings (regression triage only)](#5-release-rings-regression-triage-only)
+- [6. Anti-patterns](#6-anti-patterns)
+- [7. First-run license gate + headless admin-password recovery](#7-first-run-license-gate--headless-admin-password-recovery)
 
 This is the platform-level "what a DW10 host needs to be installed and to run correctly" knowledge:
 machine prerequisites, the mandatory host `TargetFramework`, the build-time host-config patches, the
@@ -70,13 +75,14 @@ The MCP package ships only `lib/net6.0/` and `lib/net8.0/` binaries (no `net10.0
 load fine on net8 — but the AddIn loader's runtime check fails. Symptom: the install POST returns 200,
 files drop to `wwwroot/Files/System/AddIns/Installed/Dynamicweb.MCP.<ver>/lib/`, but the AddIn never
 registers, never appears in Installed Apps, and `/admin/mcp` returns 404. This is indistinguishable
-from the queue-stuck DB-update bug ([`setup-upgrade.md`](setup-upgrade.md)).
+from the queue-stuck DB-update bug (see [`dw-setup-upgrade`](../../dw-setup-upgrade/SKILL.md),
+reference `upgrade-mechanics.md`).
 
 **Triage in this exact order:**
 
 1. Open the host startup log. If it says `Dynamicweb is running on .NET 8`, **the TFM is wrong** — fix
    it first. Edit csproj, restart, verify the log now says `Dynamicweb is running on .NET 10 or greater`.
-2. Only after the host is confirmed on net10, look at the DB-update path ([`setup-upgrade.md`](setup-upgrade.md)).
+2. Only after the host is confirmed on net10, look at the DB-update path ([`dw-setup-upgrade`](../../dw-setup-upgrade/SKILL.md), reference `upgrade-mechanics.md`).
 
 Single-target net10 (not multi-target) keeps the compile/launch loop simple. The only reason to keep
 net8 in the matrix is fallback-compatibility testing.
@@ -241,10 +247,10 @@ debugger, `dotnet watch`, an IDE-managed reload) is respawning it — stop the u
 
 On a fresh DW **10.27.x** install the Setup Guide forces `/admin/license` immediately after the
 database step — **before** any admin-user setup. Complete the license step; a **Suite Trial** is fine
-for demos (the trial expiry lands ~30 days out — record it in the demo's `CUSTOMISATIONS.md` so the
-next run knows when the demo goes dark). The `dw-setup-install` skill ships a headless
-trial-activation path (`scripts/activate-free-trial.ps1`, driving `/admin/license/TrialInstallStep`)
-for boxes where the browser flow is not an option.
+for evaluation and short-lived environments (the trial expiry lands ~30 days out — record the date so
+you know when the host goes dark). This skill ships a headless trial-activation path
+([`activate-free-trial.ps1`](../scripts/activate-free-trial.ps1), driving
+`/admin/license/TrialInstallStep`) for boxes where the browser flow is not an option.
 
 ### 7.1 — The license gate can skip the set-admin-password step
 
@@ -279,4 +285,4 @@ if (admin is not null)
 Restart the host, log in at `/admin` with the new password, then remove the block and restart again so
 the reset cannot re-run. Never leave the reset branch in a committed `Program.cs` — it is a
 plaintext-password write path. The `ChangePassword` / `Save` surface is the same one documented in
-[`../../../dw-users-permissions/SKILL.md`](../../../dw-users-permissions/SKILL.md) ("Writing Users").
+[`../../dw-users-permissions/SKILL.md`](../../dw-users-permissions/SKILL.md) ("Writing Users").

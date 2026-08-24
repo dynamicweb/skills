@@ -7,6 +7,12 @@ description: 'Install Dynamicweb Swift 2 from scratch — download and import th
 
 # DynamicWeb Swift 2 Installer
 
+## Deep reference
+
+| Topic | Where |
+|---|---|
+| Host install anatomy — machine prerequisites (.NET 10 SDK, ProjectTemplates, SQL Express), the mandatory `net10.0` TargetFramework, build-time host-config patches (`ImplicitDistributedTransactions`, `Files\System` build exclusion), MSDTC, release rings, install anti-patterns, and the first-run license gate + headless admin-password recovery | [`references/install-anatomy.md`](references/install-anatomy.md) |
+
 ## Objective
 Go from "fresh DynamicWeb 10 application" to "fully working Swift 2 website" by downloading
 and installing the latest Swift 2 packages from the official Dynamicweb downloads portal.
