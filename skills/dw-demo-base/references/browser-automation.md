@@ -51,7 +51,7 @@ What each flag does:
 | Flag | Why |
 |---|---|
 | `--scope user` | Registers the MCP in `~/.claude.json` (user-global), not in the current project's `.mcp.json`. Keeps it cross-demo. |
-| `--ignore-https-errors` | The Dynamicweb demo host runs on `https://localhost:<port>/` with a self-signed dev cert. Without this flag, every Playwright `browser_navigate` to the host throws `net::ERR_CERT_AUTHORITY_INVALID`. This is the browser-side equivalent of the two-layer TLS bypass in `references/tls-bypass.md` — same threat model (localhost only), same scope (developer machine only). |
+| `--ignore-https-errors` | The Dynamicweb demo host runs on `https://localhost:<port>/` with a self-signed dev cert. Without this flag, every Playwright `browser_navigate` to the host throws `net::ERR_CERT_AUTHORITY_INVALID`. This is the browser-side equivalent of the two-layer TLS bypass in `references/mcp-setup.md` Step 2 — same threat model (localhost only), same scope (developer machine only). |
 | `npx -y @playwright/mcp@latest` | Resolves the latest published Playwright MCP on each spawn. No global npm install to maintain; `npx` caches the package. |
 
 **Optional flags** (append before any verification):

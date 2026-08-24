@@ -55,7 +55,7 @@ appeared in the response — not inferred from an absence. The `DashboardTile.cs
 hot-reload precedent extends to `Designs/<design>/` root templates. A needless recycle is not free: on a
 cloud host the only "restart" levers are the control files, and reaching for `changeversion.txt` is a
 version migration in disguise
-([`db-update-recovery.md`](../../dw-demo-base/references/db-update-recovery.md)).
+([`db-update-recovery.md`](../../dw-setup-upgrade/references/db-update-recovery.md)).
 
 The procedure replaces the hedge:
 

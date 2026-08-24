@@ -174,7 +174,7 @@ Three signals:
 
 1. **`SourcePageId` missing** from page YAML → baseline pre-dates the Serializer's cross-environment link-rewriting support. Re-serialize from a current Serializer version.
 2. **Legacy `deploy: { predicates: [...] }` / `seed: { ... }` config shape** → older config schema. ConfigLoader rejects it in favour of the flat `predicates: [...]` list. Migrate the config; YAML payloads are unchanged. A config carrying the *right* shape can still be rejected for the wrong `mode` spelling — match the enum to the engine major ("Replace vs Merge" above).
-3. **`UpdateVersion_ecom.xml` style update tracking** → pre-DW-9.14 era. Not a Serializer issue per se; affects the host DW10's update-manager queue (see `references/db-update-recovery.md`).
+3. **`UpdateVersion_ecom.xml` style update tracking** → pre-DW-9.14 era. Not a Serializer issue per se; affects the host DW10's update-manager queue (see `../../dw-setup-upgrade/references/db-update-recovery.md`).
 
 ### How baselines roll
 
@@ -187,7 +187,7 @@ Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release,
 | Install the Serializer in the demo host (build DLL, copy to bin, stage config) | "Installation" section above |
 | Run a baseline content deserialize (Swift demos only) | [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) |
 | Post-deserialize integrity checks | [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md) |
-| Recover from DW10 update-queue bugs (independent of Serializer) | `references/db-update-recovery.md` |
+| Recover from DW10 update-queue bugs (independent of Serializer) | `../../dw-setup-upgrade/references/db-update-recovery.md` |
 | Install the engine into the host | NuGet `Truvio.Commerce.Serializer` (0.6.9-beta+) — "Installation" Step 1 above (no repo clone) |
 | Serializer internals — architecture, YAML schema, strict mode, link resolution, tools (canonical) | the `Truvio.Commerce.Serializer` engine repo `docs\` + source — an **optional** clone ("Internals — upstream pointer block" above) |
 

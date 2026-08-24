@@ -42,11 +42,11 @@ Walk every step in order — skip none. Each step's reference contains its own v
 2. **Scaffold the per-demo project** -> [references/scaffold.md](references/scaffold.md)
    `dotnet new dw10-suite --name Dynamicweb.Host.Suite`. The `--name Dynamicweb.Host.Suite` is mandatory; sister-skill path discovery depends on this name. Suite version is whatever the template + `dotnet restore` resolve — version policy is out of scope, **except** a scaffold that validates Distribution content, which must **pin `Dynamicweb.Suite` to the Distribution's `INDEX.json gateProven.dwPlatformVersion`** (floating `10.*` resolves to latest stable and version-coupled layers fail sideways — scaffold.md §2.2).
 
-3. **Wire MCP and fix the two-layer TLS bypass** -> [references/mcp-setup.md](references/mcp-setup.md) + [references/tls-bypass.md](references/tls-bypass.md) + [references/browser-automation.md](references/browser-automation.md)
+3. **Wire MCP and fix the two-layer TLS bypass** -> [references/mcp-setup.md](references/mcp-setup.md) + [references/browser-automation.md](references/browser-automation.md)
    Install the user-scope Browser MCP first (`@playwright/mcp`, machine-level and idempotent — its tools are the scaffold's action surface on the admin UI), write `.mcp.json`, apply both TLS-bypass layers, then drive the admin UI via the Browser MCP to create the MCP configuration and capture the shown-once API key (Authentication method = API Key; Claude.ai OAuth is fallback-only; headless code recipe when the UI is unreachable, ask the user only as last resort). The MCP verification gate: `claude mcp list` shows `Connected` AND `ToolSearch +dynamicweb` returns >200 tools.
 
 4. **Drop the guardrail artefacts** -> `references/customisations.md` + `references/customer-context.md`
-   Stage `<demo>\CUSTOMISATIONS.md` (the customisation ledger) and ensure the `<demo>\customer-context\` read-only contract is wired into the per-demo `CLAUDE.md`. The `references/audit-customisations.md` recipe produces paste-ready end-of-phase audit content. When running **without GSD**, also copy the native orchestrator commands from `assets/commands/demo/` into the demo project's `.claude/commands/demo/` so `/demo:scaffold|impact|build|status` are available (see [references/orchestrator.md](references/orchestrator.md)).
+   Stage `<demo>\CUSTOMISATIONS.md` (the customisation ledger) and ensure the `<demo>\customer-context\` read-only contract is wired into the per-demo `CLAUDE.md`. The audit recipe in `references/customisations.md` (§7) produces paste-ready end-of-phase audit content. When running **without GSD**, also copy the native orchestrator commands from `assets/commands/demo/` into the demo project's `.claude/commands/demo/` so `/demo:scaffold|impact|build|status` are available (see [references/orchestrator.md](references/orchestrator.md)).
 
 ## Baseline data — explicit non-step
 
@@ -85,17 +85,15 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 | Scaffold the project | references/scaffold.md |
 | **Pin the platform** for a Distribution-validating scaffold (why floating `10.*` fails sideways); the DB-wizard "Login failed" race | references/scaffold.md §2.2 + §3 |
 | **Start / stop / restart the demo host** — durable `Start-Process` recipe, ownership-verified stop, flush-first ladder, `--framework` / `$pid` / apphost-exe launch traps | references/host-lifecycle.md |
-| Get MCP working (and verify it) | references/mcp-setup.md |
-| Understand the TLS bypass | references/tls-bypass.md |
+| Get MCP working (and verify it); understand the two-layer TLS bypass | references/mcp-setup.md |
 | Install Browser MCP (`@playwright/mcp`); recover from browser-launch errors | references/browser-automation.md |
 | **Read a storefront screenshot critically** — programmatic defect detectors, the interaction pass, the eyeball checklist, symptom→fix routing, per-page definition of done | **references/visual-qa.md** |
 | **Sweep for real-person PII and vendor boilerplate** — whole-database string sweep, stock vendor legal copy, locale-shaped patterns. **Blocking pre-demo leg**, hardest on a cloned host | **references/pii-sweep.md** |
 | The surface contract — scaffold vs build phases, surfaces per instance type, why SQL-cloning structural trees fails | references/surface-priority.md |
 | Generic demo-storytelling tactics (audience framing, one-source-N-shapes, the customer-wording glossary) | references/demo-tactics.md |
-| Manage the customisation budget | references/customisations.md |
-| Audit customisations at end of phase | references/audit-customisations.md |
+| Manage the customisation budget; audit it at end of phase | references/customisations.md |
 | Honor the customer-context read-only contract | references/customer-context.md |
-| Recover from silent AddIn install failure (stuck `UpdateManager` queue) | references/db-update-recovery.md |
+| Recover from silent AddIn install failure (stuck `UpdateManager` queue) | ../dw-setup-upgrade/references/db-update-recovery.md |
 | **Read, copy, rename, relocate or delete a product `.query`** — authoritative read verb, query-cache flush, `QueryCopy`/`QueryMove`/`QueryDelete` semantics | ../dw-search-indexing/references/query-authoring.md |
 | **Express, sort or execute a product `.query`** — expression `Path` traps, OR groups, dropped sorts, paging gaps, builds that answer 200 and build nothing | ../dw-search-indexing/references/query-expressions.md |
 | **Seed discounts, vouchers, loyalty rewards or gift cards** — the two coexisting discount engines, v2 payload shapes, voucher constraints | ../dw-commerce-orders/references/promotions-engines.md |

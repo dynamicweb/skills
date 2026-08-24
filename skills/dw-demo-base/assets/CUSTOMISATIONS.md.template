@@ -13,7 +13,7 @@
 |------|------|------|--------|-------------|
 | _(append rows here)_ | | | | |
 
-**Audit:** Run `references/audit-customisations.md` to verify file count under
+**Audit:** Run the audit recipe in `references/customisations.md` (§7) to verify file count under
 `Dynamicweb.Host.Suite/Controllers/` matches ledger row count.
 
 **Closing-review target:** zero custom controllers.

@@ -48,7 +48,7 @@ The demo-specific checks owned here are the TLS env var, `git` + the `gh` CLI, t
 
 ### Check: NODE_TLS_REJECT_UNAUTHORIZED env var (User scope)
 
-**Why this matters:** This is the load-bearing layer of the two-layer TLS bypass — without it the MCP HTTPS handshake fails silently (`claude mcp list` shows "Failed to connect"). Full rationale and both layers: `references/tls-bypass.md`; this check is only the env-var verification.
+**Why this matters:** This is the load-bearing layer of the two-layer TLS bypass — without it the MCP HTTPS handshake fails silently (`claude mcp list` shows "Failed to connect"). Full rationale and both layers: `references/mcp-setup.md` Step 2; this check is only the env-var verification.
 
 **Probe:**
 
@@ -60,7 +60,7 @@ The demo-specific checks owned here are the TLS env var, `git` + the `gh` CLI, t
 
 **Cheap fix (opt-in):** Set both the User-scope persistent var AND the current-process `$env:VAR` (the dual-set pattern, Section 4). Ask the user:
 
-> "NODE_TLS_REJECT_UNAUTHORIZED is not set to `0` at User scope. The MCP HTTPS handshake will fail without it (see `references/tls-bypass.md`). I can set it by running:
+> "NODE_TLS_REJECT_UNAUTHORIZED is not set to `0` at User scope. The MCP HTTPS handshake will fail without it (see `references/mcp-setup.md` Step 2). I can set it by running:
 >
 > ```powershell
 > [System.Environment]::SetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED", "0", "User")
@@ -69,7 +69,7 @@ The demo-specific checks owned here are the TLS env var, `git` + the `gh` CLI, t
 >
 > After this, you'll need to **close ALL Claude Code instances and reopen from a fresh PowerShell**. Approve? [Set + restart guidance / Skip]"
 
-**Cross-reference:** `references/tls-bypass.md` is the long-form rationale.
+**Cross-reference:** `references/mcp-setup.md` Step 2 is the long-form rationale.
 
 ### Check: `git` + `gh` CLI present and authenticated
 
@@ -130,12 +130,4 @@ Once setup is verified, the per-demo project files are the source of truth for p
 
 ## 4. Dual-set env-var propagation pattern — User-scope env-var doesn't propagate
 
-When you set any User-scope env var via `[Environment]::SetEnvironmentVariable(name, value, "User")` or `setx`, **it is NOT visible to the currently-running Claude Code process** (or to any already-spawned shell). The fix has three parts:
-
-1. **Set User-scope** (persistent for future sessions): `[Environment]::SetEnvironmentVariable(name, value, "User")`.
-2. **Set current-process `$env:`** (visible to the rest of the current PowerShell session, but NOT to Claude Code): `$env:NAME = value`.
-3. **Restart Claude Code from a fresh shell**: close ALL Claude Code instances, open a new PowerShell, run `claude` from there.
-
-Use `[Environment]::GetEnvironmentVariable(name, "User")` (not `$env:NAME`) for verification re-reads — `$env:NAME` reads the current-process copy, which is stale after a `setx`/`SetEnvironmentVariable` call.
-
-This pattern applies to **all** User-scope env-var fixes in this file (NODE_TLS_REJECT_UNAUTHORIZED, anything else) and is the canonical statement of the dual-set pattern — other files (e.g. `tls-bypass.md` §3) pointer here. The two-line setter (`SetEnvironmentVariable` + `$env:NAME = ...`) covers parts 1 and 2; the user must do part 3.
+A User-scope env var set via `[Environment]::SetEnvironmentVariable(name, value, "User")` or `setx` is **NOT visible to the currently-running Claude Code process** — set User scope AND the current-process `$env:` copy, then restart Claude Code from a fresh shell, and verify re-reads with `[Environment]::GetEnvironmentVariable(name, "User")`, never `$env:NAME`. The canonical statement of the dual-set pattern is `references/mcp-setup.md` Step 2; this file keeps the probes above.
