@@ -8,7 +8,7 @@
 
 ## Read the shape first
 
-Before picking a flavor, read the ownership shape in the foundational candidate above. Knowing
+Before picking a flavor, read the ownership shape in the ownership reference above. Knowing
 which system owns price, stock, descriptions, categories, and assets is what lets you scope the
 demo's ERP beats — and it is the same whether you build the mock or the live flavor.
 
@@ -22,7 +22,7 @@ demo's ERP beats — and it is the same whether you build the mock or the live f
   Customer Y sees price B" beat, stage TWO pre/post `EcomPrices` row sets in the
   [mock-deltas.md](mock-deltas.md) Step 1 table (or two scheduled batches in the live flavor) — one
   per customer-group price update. The price *data model* (`UserGroupId`/`UserCustomerNumber`,
-  resolution via `PriceManager`) is in the foundational candidate.
+  resolution via `PriceManager`) is in the ownership reference.
 
 - **Batch stock is fine for demos.** Stock is the canonical live-integration case, but for a demo,
   batch/scheduled stock works — stage stock post-states in the DB like prices. Only wire live

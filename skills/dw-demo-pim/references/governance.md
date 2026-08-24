@@ -4,7 +4,7 @@
 > dashboards, and recovery. The platform facts (the 7 dashboard areas, the clickable-widget table,
 > the `reference_category` mechanic + seed SQL, the completeness 7-condition checklist, the
 > dashboard-query-Shared-ONLY rule, the standard-field preflight, the rebuild-index recipe) now
-> live in foundational candidates; this file keeps the **demo-pedagogy** layer and routes to them.
+> live in the foundational skills; this file keeps the **demo-pedagogy** layer and routes to them.
 > Loaded from the PIM demo SKILL.md "Where to find things" table.
 
 ## The governance demo is the planted-gap moment
@@ -25,7 +25,7 @@ SKUs that are failing.** Everything else is setup for that moment.
 
 ## Where the platform facts live now
 
-| You need… | Foundational candidate |
+| You need… | Foundational reference |
 |---|---|
 | The 7 real dashboard areas (don't invent) | [`pim-completeness.md`](../../dw-pim-completeness/references/rules-and-dashboards.md) "Dashboards — only 7 real areas" |
 | Clickable vs dead-end widget types | [`pim-completeness.md`](../../dw-pim-completeness/references/rules-and-dashboards.md) "Clickable widgets" |

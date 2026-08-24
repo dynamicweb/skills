@@ -6,7 +6,7 @@
 > [`../../dw-pim-workflow/references/workflow-engine.md`](../../dw-pim-workflow/references/workflow-engine.md).
 > Read that first. This file holds only the demo-build delta. Loaded from `~/.claude/skills/dw-demo-pim/SKILL.md` "Where to find things" table.
 
-## Platform knowledge → foundational candidate
+## Platform knowledge → foundational skill
 
 Everything about *how DW10 workflow works* moved to
 [`../../dw-pim-workflow/references/workflow-engine.md`](../../dw-pim-workflow/references/workflow-engine.md):

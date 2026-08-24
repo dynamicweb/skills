@@ -14,7 +14,7 @@
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
 The vendor-generic paragraph survey (component-first gate, paragraph categories, item-field
-configuration, the cache pitfalls) has been folded up into the foundational candidates. What stays
+configuration, the cache pitfalls) has been folded up into the foundational skills. What stays
 here is the demo guardrail: the paragraph types you must NOT replace.
 
 | If you need… | Read |

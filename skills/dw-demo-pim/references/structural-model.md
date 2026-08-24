@@ -1,14 +1,13 @@
 # structural-model.md
 
-> The structural mental model for a Dynamicweb 10 PIM demo build. The platform facts now live in
-> foundational candidates under `dw-demo-base/references/foundational/`; this file is a **router** —
-> it points each topic at its candidate and keeps only the demo-build deltas (naming conventions,
-> which beats to stage). Read the linked candidate before modelling; come back here for the demo
-> framing. Loaded from the PIM demo SKILL.md "Where to find things" table.
+> The structural mental model for a Dynamicweb 10 PIM demo build. The platform facts live in the
+> foundational skills' references; this file is a **router** — it points each topic at its
+> foundational reference and keeps only the demo-build deltas (naming conventions, which beats to
+> stage). Read the linked reference before modelling; come back here for the demo framing. Loaded from the PIM demo SKILL.md "Where to find things" table.
 
 ## Where each structural topic lives now
 
-| Topic | Foundational candidate (platform fact) | Demo delta (kept below) |
+| Topic | Foundational reference (platform fact) | Demo delta (kept below) |
 |---|---|---|
 | §2.1 Shop types enum + `ProductActive` vs relation gating + admin-nav | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.1 | SHOP1 / SHOP-DATA naming |
 | §2.2 Group types (DataModelFolder / DataModel) | [`pim-modelling.md`](../../dw-pim-modelling/references/structural-model.md) §2.2 | — |

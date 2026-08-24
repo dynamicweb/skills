@@ -40,7 +40,7 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
 | `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, extend-mcp-tools |
-| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-erp, integration-bc; + foundational skills the demo skills reference (integration-framework, extend-csharp-api) |
+| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-erp, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
 
 ## Skills
 

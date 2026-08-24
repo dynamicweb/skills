@@ -35,6 +35,28 @@ stripped on the way; ~85 links repointed across the demo corpus; `dw-render-razo
 `dw-content-modelling`, `dw-swift-building`, and `dw-data-access` join the `dynamicweb-presales`
 bundle to keep it link-closed.
 
+Fold-up batch D (final): the last nine staged foundational candidates leave
+`dw-demo-base/references/foundational/` and the staging directory is deleted.
+`extend-mcp-tools.md` → `dw-extend-mcp-tools/references/backend-mcp-server.md`;
+`extend-providers.md` → `dw-extend-providers/references/addin-lifecycle.md`;
+`integration-bc-connector.md` → `dw-integration-bc/references/bc-connector-surface.md`;
+`integration-erp.md` → `dw-integration-erp/references/ownership-split.md`;
+`integration-framework.md` was thinner than the shipped skill, so its unique
+content (the named ad-hoc/batch/live taxonomy and the docs' provider
+definitions) merged into `dw-integration-framework/SKILL.md` and the staged
+file was deleted; `setup-install.md` → `dw-setup-install/references/install-anatomy.md`;
+`setup-upgrade.md` → `dw-setup-upgrade/references/upgrade-mechanics.md`;
+`source-explorer.md` → `dw-source-explorer/references/assembly-introspection.md`;
+`tracking-insights.md` → `dw-setup-config/references/tracking-insights.md`.
+Demo framing stripped on the way (demo-corpus links rewritten as vendor-generic
+prose); ~35 links repointed across the demo corpus; `dw-setup-install`,
+`dw-setup-upgrade`, `dw-source-explorer`, `dw-integration-erp`,
+`dw-extend-mcp-tools`, and `dw-extend-providers` join the `dynamicweb-presales`
+bundle to keep it link-closed. The CONTENT-GAPS "fold up the foundational
+candidates" follow-up is marked done, and the remaining "foundational
+candidate" phrasing across the demo corpus now reads "foundational skill /
+reference".
+
 ## [4.16.0]
 
 Fold-back sprint 4.16.0: lands the skill legs of three triaged learning bundles — zero-state /

@@ -14,7 +14,7 @@
 - [Swift v2.3.0 templates + swift/2.3 baseline](#swift-v230-templates--swift23-baseline)
 
 This file is now a router. The vendor-generic Swift template / page / Razor knowledge that used to
-live here has been folded up into the foundational candidates; the demo skill points at them.
+live here has been folded up into the foundational skills; the demo skill points at them.
 
 | If you need… | Read |
 |---|---|

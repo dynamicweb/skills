@@ -1,7 +1,7 @@
 # permissions-model.md
 
 > **The three-layer DW10 permission model is vendor-generic platform knowledge — it now lives in the
-> foundational candidate [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md).**
+> foundational reference [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md).**
 > Read that for the `CapabilityControlFeature` flag (DW10.21+, default OFF) and its decision rubric,
 > Layer A `UnifiedPermission`, Layer B `CapabilityLimitation` + capability-key registry, Layer C
 > entity-level permissions + entity registry, `DashboardAccessUserRelation` pinning, the admin-UI

@@ -3,8 +3,8 @@
 > Install the `StaticLinkManager` AppStore AddIn so the BC connector's "show PIM product page" beat
 > works during the demo. The generic admin-deeplink mechanism, the full `/admin/api/StaticLink*`
 > endpoint surface, its settings/save shapes, the case-sensitive-parameter gotcha, and the
-> `*Pipeline`-DI-needs-restart pattern are vendor-generic and live in the foundational candidate
-> [`extend-providers.md`](../../dw-extend-providers/references/addin-lifecycle.md) §2–§3. This
+> `*Pipeline`-DI-needs-restart pattern are vendor-generic and live in
+> [`addin-lifecycle.md`](../../dw-extend-providers/references/addin-lifecycle.md) §2–§3. This
 > file is the demo-specific "install it or the beat fails" recipe.
 
 ## Why it matters for the BC demo
