@@ -146,7 +146,7 @@ A left-sidebar PLP filter panel is two independent settings; the common mistake 
 Reliable refresh is a host restart. Symptom: the editor's checkbox list shows the new groups (it
 re-queries SQL on every load) but the rendered accordion is empty. Seed-flow order: (a) seed the four
 tables, (b) `dotnet run` recycle, (c) configure the paragraph's field. See
-[`cache-invalidation.md`](cache-invalidation.md).
+[`cache-invalidation.md`](../../../dw-data-access/references/cache-invalidation.md).
 
 ### `ProductGroupGrid.SelectedGroups` — SQL-direct seeds don't deserialize
 
@@ -256,7 +256,7 @@ Symptom: "I added one custom Text variant and now half the site renders with tha
   `save_paragraphs(id=<id>, template='TextLeft.cshtml')` (one at a time, auto cache-invalidation);
   SQL-fallback bulk `UPDATE Paragraph SET ParagraphTemplate='TextLeft.cshtml' WHERE
   ParagraphItemType='Swift-v2_Text' AND (ParagraphTemplate IS NULL OR ParagraphTemplate='')` — a
-  field UPDATE on an existing row, live with no restart ([`cache-invalidation.md`](cache-invalidation.md)
+  field UPDATE on an existing row, live with no restart ([`cache-invalidation.md`](../../../dw-data-access/references/cache-invalidation.md)
   edit-vs-insert rule). Run this BEFORE introducing any sort-early custom variant.
 
 ## 5. Grid composition cache — restart required
@@ -350,10 +350,10 @@ columns together (`active/showInMenu: false` writes `PageActive=0` AND `PageHidd
 leaves the nav but also 404s; `true` writes `1/0` — routable but back in the nav). Set the split
 state via Management API `PageSave` or a SQL `UPDATE Page SET PageActive=0, PageHidden=0`, then
 restart the host — the navigation tree and friendly-URL provider cache the old page set (see
-[`cache-invalidation.md`](cache-invalidation.md)). When auditing reachability, check
+[`cache-invalidation.md`](../../../dw-data-access/references/cache-invalidation.md)). When auditing reachability, check
 `published=true` and `hidden=false`; do NOT flag `active=false` on its own. (Full SQL-direct INSERT
 required-column list, including the `PageActiveFrom`/`PageActiveTo` silent-404 vector, lives in
-[`data-access.md`](data-access.md).)
+[`management-api-and-sql.md`](../../../dw-data-access/references/management-api-and-sql.md).)
 
 ## 7. Style assets — `Files/System/Styles/`
 
@@ -590,6 +590,6 @@ git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])
   discipline, language layers (incl. the cross-area component-selector cache).
 - [`permission-layers.md`](../../../dw-users-permissions/references/permission-layers.md) — the Permission entity store (gate page/paragraph
   visibility without template edits).
-- [`data-access.md`](data-access.md) — SQL-direct Page/GridRow/Paragraph seeding required columns.
+- [`management-api-and-sql.md`](../../../dw-data-access/references/management-api-and-sql.md) — SQL-direct Page/GridRow/Paragraph seeding required columns.
 - [`index-management.md`](../../../dw-search-indexing/references/index-management.md) — Repositories / queries / index placement.
-- [`cache-invalidation.md`](cache-invalidation.md) — the post-mutation cache table.
+- [`cache-invalidation.md`](../../../dw-data-access/references/cache-invalidation.md) — the post-mutation cache table.

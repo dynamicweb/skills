@@ -176,3 +176,4 @@ A product index is required for the Product Catalog app to serve results. The fu
 - **Building checkout flows?** See [dw-commerce-orders](../dw-commerce-orders)
 - **B2B assortment scoping?** See [dw-commerce-b2b](../dw-commerce-b2b)
 - **Rendering with ViewModels?** See [dw-render-viewmodels](../dw-render-viewmodels)
+- **Cache invalidation after mutations (what to flush, when a restart is owed)?** See [dw-data-access](../dw-data-access/SKILL.md)

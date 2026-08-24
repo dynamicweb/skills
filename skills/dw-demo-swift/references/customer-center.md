@@ -232,5 +232,5 @@ When the rename is being done for **privacy** reasons rather than storyline reas
 also only one of five database layers — see
 [`../../dw-demo-base/references/pii-sweep.md`](../../dw-demo-base/references/pii-sweep.md). And never repair
 a user row by raw SQL: the in-process user cache is unflushable and the failure surfaces three endpoints away
-([`../../dw-demo-base/references/foundational/cache-invalidation.md`](../../dw-demo-base/references/foundational/cache-invalidation.md)
+([`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)
 "Raw-SQL `AccessUser` writes create a split brain").

@@ -207,3 +207,4 @@ Field-validated internals, split across three references:
 - **Setting up the Product Catalog app?** See [dw-commerce-catalog](../dw-commerce-catalog)
 - **Completeness-driven queries?** See [dw-pim-completeness](../dw-pim-completeness)
 - **C# custom index provider?** See [dw-extend-providers](../dw-extend-providers)
+- **Cache invalidation after mutations (what to flush, when a restart is owed)?** See [dw-data-access](../dw-data-access/SKILL.md)

@@ -8,7 +8,7 @@ You have FOUR independent surfaces into a Dynamicweb 10 instance. Use whichever 
 
 1. **MCP (`dynamicweb-commerce-mcp`)** — ~260 tools, rich schemas, slow to auth but convenient for create/update. Tokens expire mid-session; re-auth with `/mcp`.
 
-2. **Management API** — `https://localhost:<PORT>/admin/api/` with `Authorization: Bearer CLAUDE.xxx` tokens. **Spec UI at `/admin/api/docs/`**. Best for admin operations the MCP doesn't expose (BuildIndex, IndexStatus, cache invalidation, feature flags, rule-usage inspection). Always reach for the API before restarting the host when you need a cache flush. Full admin-endpoint catalog + the runtime OpenAPI-discovery probe: [`../../dw-demo-base/references/foundational/data-access.md`](../../dw-demo-base/references/foundational/data-access.md).
+2. **Management API** — `https://localhost:<PORT>/admin/api/` with `Authorization: Bearer CLAUDE.xxx` tokens. **Spec UI at `/admin/api/docs/`**. Best for admin operations the MCP doesn't expose (BuildIndex, IndexStatus, cache invalidation, feature flags, rule-usage inspection). Always reach for the API before restarting the host when you need a cache flush. Full admin-endpoint catalog + the runtime OpenAPI-discovery probe: [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md).
 
 3. **Direct SQL** — `sqlcmd -S "localhost\SQLEXPRESS" -E -d <DB>` or via PowerShell when heredocs get mangled. Schemas are discoverable via `INFORMATION_SCHEMA.COLUMNS`. Fastest for bulk corrections and structural fixes.
 
@@ -18,7 +18,7 @@ Surface choice is task-driven, not preference-driven. Common shortcuts: bulk sch
 
 ## Management API + OpenAPI discovery + per-project reference paths
 
-The Management API admin-endpoint catalog (BuildIndex, IndexStatus, CacheInformationRefresh, GetServiceCaches, FeatureManagementToggle, CompletionSettingsSourceById), the runtime OpenAPI-discovery probe, and the per-project discovery table (host URL/port, SQL Server, DB name, API token) are vendor-generic platform facts — see [`../../dw-demo-base/references/foundational/data-access.md`](../../dw-demo-base/references/foundational/data-access.md).
+The Management API admin-endpoint catalog (BuildIndex, IndexStatus, CacheInformationRefresh, GetServiceCaches, FeatureManagementToggle, CompletionSettingsSourceById), the runtime OpenAPI-discovery probe, and the per-project discovery table (host URL/port, SQL Server, DB name, API token) are vendor-generic platform facts — see [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md).
 
 Two reference sources this demo skill leans on (per-project):
 

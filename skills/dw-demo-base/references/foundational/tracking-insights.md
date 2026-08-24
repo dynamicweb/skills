@@ -186,11 +186,11 @@ Any demo that will be shown **from the admin UI** needs an explicit daily log-cl
 
 Note the interaction with API probing: every unresolvable Management API verb name writes an
 `[Application/AddInManager]` Error row onto this same dashboard — see
-[`data-access.md`](data-access.md) "Discovering admin screens and their backing queries".
+[`management-api-and-sql.md`](../../../dw-data-access/references/management-api-and-sql.md) "Discovering admin screens and their backing queries".
 
 ## Cross-references
 
-- [`data-access.md`](data-access.md) — the Management API surface, verb discovery, and the cost of guessing
+- [`management-api-and-sql.md`](../../../dw-data-access/references/management-api-and-sql.md) — the Management API surface, verb discovery, and the cost of guessing
   verb names against a customer-visible dashboard.
 - [`../online-mode.md`](../online-mode.md) — hosted/cloned-host posture: the GlobalSettings apply-vs-persist
   split that a tracking-settings change runs into, and the clone-remediation playbook that clears the error

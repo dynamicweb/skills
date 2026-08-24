@@ -103,7 +103,8 @@
         "./skills/dw-commerce-b2b",
         "./skills/dw-commerce-orders",
         "./skills/dw-render-razor",
-        "./skills/dw-content-modelling"
+        "./skills/dw-content-modelling",
+        "./skills/dw-data-access"
       ]
     }
   ]

@@ -154,7 +154,7 @@ Most recurring findings have a *known* cause with a documented fix — route the
 |---|---|---|
 | Horizontal scrollbar; slider arrow at/past the viewport edge | `NavigationPlacement: slider-nav-outside-expand` on a full-width slider | [`foundational/swift-building.md`](foundational/swift-building.md) §3 symptom table |
 | Canvas stretched at 390 (`bodyCanvas` > 0) while `overflowX` reads 0; "missing PLP images" / blank right margin on mobile | Fixed-width mega-menu / non-wrapping `NColumnsFlex` row / `.flex-fill` beating a fixed base — stretch hidden behind body `overflow-x:hidden` | [`../../dw-demo-swift/references/mobile-pass.md`](../../dw-demo-swift/references/mobile-pass.md) (trap catalogue + Tier-1 fixes) |
-| Uniform oversized whitespace bands between sections | GridRow `NULL` spacing → Swift 6rem default; layout columns are SQL-only and reverted by later MCP saves | [`foundational/data-access.md`](foundational/data-access.md) "SQL-direct content seeding" + [`foundational/cache-invalidation.md`](foundational/cache-invalidation.md) |
+| Uniform oversized whitespace bands between sections | GridRow `NULL` spacing → Swift 6rem default; layout columns are SQL-only and reverted by later MCP saves | [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) "SQL-direct content seeding" + [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md) |
 | Towering image band / slider cover-card eating the fold (`tall` detector) | Stock image component has no serialized height field; a tall crop renders full column-width height, uncapped | theme-CSS cap (`aspect-ratio` + `max-height` + `object-fit: cover`), Tier-1 in [`dw-demo-swift/re-skin.md`](../../dw-demo-swift/references/re-skin.md) |
 | PLP list renders zero rows behind HTTP 200 (`empty`/`missing` finding) | Empty or not-yet-repopulated index, or a mis-scoped shop; 200 proves the shell, not the fill | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) + [`index-management.md`](../../dw-search-indexing/references/index-management.md) (rebuild/repopulate the index) |
 | ~192px dead grey band inside a section | Bootstrap `.ratio` aspect-ratio token vs CSS custom-property | [`foundational/swift-building.md`](foundational/swift-building.md) §3 |
@@ -163,7 +163,7 @@ Most recurring findings have a *known* cause with a documented fix — route the
 | Razor error block where a section should be | Plain label string seeded into a `ButtonData` field | [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) Management-API editing section |
 | Component renders a heading over an empty shell | `DisplayGroups` given product-category ids instead of display-group system names | [`foundational/swift-building.md`](foundational/swift-building.md) §3 |
 | Second element missing from a grid section | Standard `Swift-v2_Row` columns render exactly one paragraph | [`foundational/swift-building.md`](foundational/swift-building.md) §2 |
-| A whole section renders nothing, silently | Unknown `GridRowDefinitionId` | [`foundational/data-access.md`](foundational/data-access.md) |
+| A whole section renders nothing, silently | Unknown `GridRowDefinitionId` | [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) |
 | Facet/sort/load-more chrome leaking into a slider | Service page's app paragraph left on the shop-default list template | [`foundational/swift-building.md`](foundational/swift-building.md) §1 |
 | Group/page missing from navigation entirely | Primary-shop resolution or `PageActive`/`PageHidden` coupling | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.3 / [`foundational/swift-building.md`](foundational/swift-building.md) §6 |
 
@@ -173,7 +173,7 @@ A finding that matches no row is new knowledge: fix it, then fold it back (`iter
 
 Findings are data/content defects — fix them through the build-phase action surfaces (MCP → Admin API → SQL last resort, per [`surface-priority.md`](surface-priority.md); this file changes nothing about Playwright staying verification-only). Then:
 
-1. Apply the fix, plus the cache flush / restart its recipe demands ([`foundational/cache-invalidation.md`](foundational/cache-invalidation.md)).
+1. Apply the fix, plus the cache flush / restart its recipe demands ([`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)).
 2. Re-navigate cold, re-run the detectors, re-screenshot at both breakpoints.
 3. Compare against the *previous* shot — confirm the finding is gone AND nothing regressed beside it.
 

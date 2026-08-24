@@ -218,3 +218,4 @@ service.RemoveGroupRelations(user, new[] { group });
 - **B2B assortments and CSR impersonation?** See [dw-commerce-b2b](../dw-commerce-b2b)
 - **Integrating users from an ERP?** See [dw-integration-erp](../dw-integration-erp)
 - **Custom user logic in C#?** See [dw-extend-csharp-api](../dw-extend-csharp-api)
+- **Cache invalidation after mutations (what to flush, when a restart is owed)?** See [dw-data-access](../dw-data-access/SKILL.md)

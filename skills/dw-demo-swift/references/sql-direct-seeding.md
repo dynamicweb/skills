@@ -38,7 +38,7 @@ Symptoms: data present in SQL but absent from the storefront, `GetCatalogGroupPr
 fresh index build. Treatment: re-issue the same writes through the owning API command (e.g.
 `ProductGroupRelationSave` for both top group and subgroup), or accept a host restart. Cache
 mechanics live in
-[`../../dw-demo-base/references/foundational/cache-invalidation.md`](../../dw-demo-base/references/foundational/cache-invalidation.md);
+[`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md);
 scheduled-task SQL semantics in
 [`../dw-extend-scheduled-tasks`](../../dw-extend-scheduled-tasks/SKILL.md). The full forensic
 walkthroughs this file used to carry are in git history (pre-4.17 revisions of this file).

@@ -1,9 +1,16 @@
-# Foundational candidate → dw-data-access
+# Instance access: the Management API and SQL-direct patterns
 
-> **FOUNDATIONAL CANDIDATE.** Vendor-generic DW10 instance-access / Management API knowledge, staged here for a future
-> fold-up into `dw-data-access`. No demo/customer content. When folded, move this body into
-> `dw-data-access` and re-target the pointers in the demo skills. Until then, the demo skills
-> reference this file.
+Vendor-generic DW10 instance-access knowledge: the `/admin/api/` Management API surface, verb
+shadowing and read-vs-save model traps, admin-screen query discovery, OpenAPI/reference-path
+discovery, and the SQL-direct Page/GridRow/Paragraph column schema kept for forensics and the
+narrow sanctioned SQL cases.
+
+## Contents
+
+- [The Management API admin surface](#the-management-api-admin-surface)
+- [OpenAPI discovery](#openapi-discovery)
+- [Reference-path discovery](#reference-path-discovery)
+- [SQL-direct content seeding — Page / GridRow / Paragraph](#sql-direct-content-seeding--page--gridrow--paragraph)
 
 ## The Management API admin surface
 
@@ -96,14 +103,14 @@ the loop:
 ```
 
 Harvest the route→query map **once**, by driving the real admin under a throwaway account and reading the
-route parameters (the same read-only Playwright motion as capturing the SPA's own HTTP calls — see
-[`../surface-priority.md`](../surface-priority.md) "Admin UI is verification-only"). Observed shape: several
+route parameters (the same read-only Playwright motion as capturing the SPA's own HTTP calls — the admin UI is
+verification-only; every UI action is an `/Admin/Api` call underneath). Observed shape: several
 distinct commerce screens (incomplete orders, subscriptions, ledgers/invoices) all resolve to the **same**
 order-list query with different filters, while discounts, vouchers, loyalty and gift cards each name their
 own. Row counts from those queries matched the rendered screens exactly, before and after seeding — which is
-what makes this a **sanctioned assertion surface** for "the demo's screens are populated".
+what makes this a **sanctioned assertion surface** for "the solution's screens are populated".
 
-**Every wrong verb name you try writes an Error row onto the customer's Insights dashboard.** An unresolvable
+**Every wrong verb name you try writes an Error row onto the solution's Insights dashboard.** An unresolvable
 command name is logged as an `[Application/AddInManager]` Error — the exact counter the owner-facing
 Monitoring dashboard shows:
 
@@ -116,14 +123,13 @@ seconds from a single malformed probe loop, with timestamps clustering exclusive
 windows. So probing is **not free**:
 
 - **Prefer enumerating the API catalogue** (`api.json`) over guessing names one at a time.
-- **Batch verb probing and do it EARLY in a session**, then follow it with a log clear before any demo.
+- **Batch verb probing and do it EARLY in a session**, then follow it with a log clear before any handover.
 - **Never fire write verbs speculatively** while probing a registry.
-- Log-clear recipe and the retention gap that lets these accumulate:
-  [`tracking-insights.md`](tracking-insights.md) "Nothing ever trims `GeneralLog`".
+- Nothing ever trims `GeneralLog` — clear the accumulated probe errors explicitly before any
+  handover or review of the Monitoring dashboard.
 
 Related and equally cheap: `HealthProviderChecksByProviderName` and its two siblings serve the Insights
-health-provider data over the same bearer, with each check returning the literal SQL it ran
-([`tracking-insights.md`](tracking-insights.md) "Health providers are reachable over `/Admin/Api`").
+health-provider data over the same bearer, with each check returning the literal SQL it ran.
 
 ## OpenAPI discovery
 
@@ -167,12 +173,12 @@ directory — hold it in conversation state, not as a global default.
 
 > **Retired as a seeding motion — kept as a forensic / teardown schema reference.** "Seed content by
 > writing rows directly (SQL-direct, or SQL via `RunSqlScheduledTaskAddIn`) because the API is out of
-> reach" is no longer a sanctioned demo recipe. The admin UI is **API-first**: every UI action lands on
+> reach" is no longer a sanctioned seeding recipe. The admin UI is **API-first**: every UI action lands on
 > `/Admin/Api`, so if the UI can do it an endpoint exists — capture the SPA's network call (read-only
 > Playwright) and replay it (MCP → Management API). **Do not reach for SQL when the API gets hard; file a
 > learning instead.** The column schema below stays only to *diagnose* rows that were already SQL-seeded
 > (why a hand-INSERTed row renders wrong) and for the narrow, still-sanctioned local-only SQL cases —
-> cleanup/teardown and reads — per [`../surface-priority.md`](../surface-priority.md). It is **not** a
+> cleanup/teardown and reads. It is **not** a
 > content-authoring path.
 
 **The preferred surface for content is MCP** `save_pages` / `save_grid_rows` / `save_paragraphs` /
@@ -180,7 +186,7 @@ directory — hold it in conversation state, not as a global default.
 wiring, sibling links) that raw SQL skips. When MCP doesn't expose an operation, the Management API does
 (the admin UI proves the endpoint exists). Repeater/slider children, once thought SQL-only, edit cleanly
 through `POST /Admin/Api/ParagraphSave` — see
-[`modelling-discipline.md`](../../../dw-content-modelling/references/modelling-discipline.md) §2.
+[dw-content-modelling](../../dw-content-modelling/SKILL.md) (`modelling-discipline.md`) §2.
 
 **`save_pages` does not persist `urlName` / `navigationTag` / `hidden` (verified 10.27.x).** Even the
 MCP-first path needs a **targeted** SQL touch-up for these three: a page created via `save_pages` lands
@@ -317,7 +323,7 @@ INSERT INTO Page (
 `PageActiveFrom` / `PageActiveTo` are the silent killers — without them page-resolution treats the row
 as scheduled-out and returns 404 even though the slug resolves. The other NOT-NULL columns surface a
 more useful `Cannot insert NULL` on first attempt. (`PageActive` vs `PageHidden` semantics — "Hidden in
-Menu" vs route availability — are owned by [`swift-building.md`](swift-building.md) §6.)
+Menu" vs route availability — are owned by [dw-swift-building](../../dw-swift-building/SKILL.md) §6.)
 
 ### Required NOT-NULL columns — `GridRow`
 
@@ -376,7 +382,7 @@ INSERT INTO Paragraph (
   `ParagraphUniqueId`) fails with a type-conversion error. Use `0`.
 - **`ParagraphTemplate` is the optional-looking column you do NOT want to omit** — leaving it `NULL`/`''`
   invokes Swift's empty-template alphabetical fallback (the hijack symptom + mitigations live in
-  [`swift-building.md`](swift-building.md) §4).
+  [dw-swift-building](../../dw-swift-building/SKILL.md) §4).
 
 ### `ItemType_*` rows — pre-seed the item instance
 
@@ -425,11 +431,11 @@ Same pattern for `ParagraphSort` within a GridRow.
   rewrite + the INSERT + the restart into one operation.
 - **Soft-hide flags (`ParagraphShowParagraph = 0` / `ParagraphDeleted = 1`) are unreliable inside
   `@RenderGrid`-nested pages** — for those, CSS-hide is the only lever (see
-  [`swift-building.md`](swift-building.md) §5 "ProductListComponentSelector"). For paragraphs NOT inside
+  [dw-swift-building](../../dw-swift-building/SKILL.md) §5 "ProductListComponentSelector"). For paragraphs NOT inside
   a nested `RenderGrid`, the soft-hide flags work after a restart.
 
 After restart, hit the page once (GET) to warm JIT, then confirm the content renders. If the wrapper
 appears but the inner item-type fields are empty, the `ItemType_*` instance row is missing or its `Id`
 doesn't match `ParagraphItemId`. See [`cache-invalidation.md`](cache-invalidation.md) for the
 post-mutation cache table. Sister required-fields list for `AccessUser` SQL-direct seeding is in
-[`dc-scoping.md`](../../../dw-commerce-b2b/references/dc-scoping.md).
+[dw-commerce-b2b](../../dw-commerce-b2b/SKILL.md) (`dc-scoping.md`).

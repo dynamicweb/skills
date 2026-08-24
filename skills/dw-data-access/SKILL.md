@@ -166,6 +166,11 @@ catch
 }
 ```
 
+## Deep references
+
+- [references/management-api-and-sql.md](references/management-api-and-sql.md) — the `/admin/api/` Management API surface (admin-endpoint catalog, `BuildIndex`/`IndexStatus`, `CacheInformationRefresh`/`GetServiceCaches`), verb shadowing by installed add-ins, the read-model-is-not-a-save-model trap (`modelIdentifier`/`*Icon` stripping), admin-screen `Type=` query discovery, OpenAPI/reference-path discovery, PowerShell SQL-read footguns (`DataRow` unrolling, `[ordered]@{}` integer keys, AMSI-blocked helpers), and the SQL-direct Page/GridRow/Paragraph required-column schema (kept for forensics and the narrow sanctioned SQL cases).
+- [references/cache-invalidation.md](references/cache-invalidation.md) — the post-mutation cache table: which cache each mutation touches, which surface flushes it, and when a host restart is owed. Covers the edit-vs-insert rule for content tables, the "MCP first, SQL last, one restart" ordering rule, the raw-SQL `AccessUser` split-brain, and the index-build-reads-through-cache ordering trap (flush-then-rebuild).
+
 ## Pitfalls
 
 **Never use `Dynamicweb.Data.Database` for Ecommerce core writes** — use `Dynamicweb.Ecommerce.Services.Products.Save(product)`, `Orders.Save(order)`, etc. Raw SQL bypasses caching and notification subscribers.
