@@ -57,6 +57,21 @@ candidates" follow-up is marked done, and the remaining "foundational
 candidate" phrasing across the demo corpus now reads "foundational skill /
 reference".
 
+Trim pass on `dw-demo-swift` (~25% recoverable with zero knowledge loss):
+superseded/correction residue rewritten to current truth in
+`admin-ui-authoring.md`, `paragraphs.md`, and `deserialize-flow.md` (git owns
+the history); the verify-by-round-trip rule single-owned by
+`dw-demo-base/references/surface-priority.md` with one-line standing rules
+left in place; four micro-references merged into their neighbours —
+`content-modeling.md`'s unsanitised `Swift-v2_Text` escape hatch into
+`paragraphs.md`, the `dw10-canonical-surfaces.md` router into SKILL.md as a
+canonical-surfaces table (plus the IIS-only dotted-redirect note),
+`checkout-order-fields.md` and `b2b-dc-pattern.md` into `customer-center.md`
+§9–§10; `zero-state.md` folded into `re-skin.md` as its Step 0; and
+`re-skin.md`'s war-story pitfalls rewritten to claim → mechanism → fix →
+assert form (~9,300 → ~6,400 words with every platform fact preserved).
+All inbound links and nav rows repointed.
+
 ## [4.16.0]
 
 Fold-back sprint 4.16.0: lands the skill legs of three triaged learning bundles — zero-state /

@@ -13,8 +13,8 @@
 - [Two missing guards in stock Swift 2.4 templates — a card that vanishes and a card that throws](#two-missing-guards-in-stock-swift-24-templates--a-card-that-vanishes-and-a-card-that-throws)
 - [Swift v2.3.0 templates + swift/2.3 baseline](#swift-v230-templates--swift23-baseline)
 
-This file is now a router. The vendor-generic Swift template / page / Razor knowledge that used to
-live here has been folded up into the foundational skills; the demo skill points at them.
+Vendor-generic Swift template / page / Razor knowledge is owned by the foundational skills —
+routed below. The sections that follow the table are owned here.
 
 | If you need… | Read |
 |---|---|
