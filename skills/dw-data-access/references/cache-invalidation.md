@@ -1,0 +1,173 @@
+# Post-mutation cache invalidation
+
+Post-mutation cache invalidation for Dynamicweb 10 — cross-cutting over content, catalog, search,
+and users. Use this to look up "I just mutated X — what cache do I need to flush, and do I need to
+restart the host?".
+
+## Contents
+
+- [Surface scope — when this table matters](#surface-scope--when-this-table-matters)
+- [Post-mutation cache table](#post-mutation-cache-table)
+- [The edit-vs-insert rule for content tables (SQL-fallback surface only)](#the-edit-vs-insert-rule-for-content-tables-sql-fallback-surface-only)
+- [The index-build-reads-through-cache ordering trap](#the-index-build-reads-through-cache-ordering-trap)
+- [When a mutation doesn't show up](#when-a-mutation-doesnt-show-up)
+
+## Surface scope — when this table matters
+
+This table is the rulebook for **Direct SQL fallback** mutations and a handful of MCP/API edge cases. It is **NOT** something you read before using MCP or admin UI for the same operation:
+
+- **MCP `save_*` / `create_or_update_*` / admin-UI Visual Editor / admin-UI form save** → these go through DW's domain services, which invalidate caches inline **for the read path**. You do not consult this table for structural CREATEs; you do not restart the host. Domain-service surfaces — MCP `save_*` / `create_or_update_*` and the admin UI — invalidate caches inline, so prefer them for structural CREATEs for exactly this reason.
+  - **EXCEPTION — the index-build path is NOT covered by inline invalidation.** MCP **`patch_products_safe` / `update_products`** writes to product or category-field VALUES are live on the read path (`get_product_by_id`, admin), but the **Lucene index builder reads product+category data *through* the `ProductService` / `ProductCategoryFieldValueService` / `ProductCategoryService` caches**, and those are NOT flushed by the MCP write. A `BuildIndex` / `wait_for_product_index` run after the patch bakes the **pre-patch (often empty) value** into the index — `get_products_by_query` then returns 0/stale even though the DB and `get_product_by_id` are correct. This is the same "ordering trap" documented below; it fires on the **MCP patch surface too, not only Direct SQL**. See the trap section and [dw-search-indexing](../../dw-search-indexing/SKILL.md) (`index-management.md`) for the flush-then-rebuild recipe. **A host restart is NOT a reliable substitute here** — verify the bounce actually cold-started (the `dotnet run` parent spawns a child; killing the parent can leave the real host running, so the cache never cleared). The targeted `CacheInformationRefresh` flush is the reliable surface.
+- **Management API** (`POST /admin/api/...`) → same domain services as MCP; same cache invalidation behavior. The dedicated `CacheInformationRefresh` / `BuildIndex` / `GetServiceCaches` endpoints listed below are themselves Management API calls — use them when you need to flush something explicitly without restarting. On a **hosted install** there is no restart at all: every "YES restart" row below resolves to a bulk flush instead — `GetServiceCaches` → `CacheInformationsRefresh {"Ids": [...]}` (plural, takes the service ids); the Management API surface for both is in [`management-api-and-sql.md`](management-api-and-sql.md).
+- **Direct SQL `INSERT` / `UPDATE`** → bypasses every domain service. Almost everything below applies to this surface. **The "Restart required" column tells you what SQL-direct seeding owes you afterward.**
+- **Filesystem mutations** (`.query`, `.index`, `.cshtml` drops/edits) → cache-bypassing, with the `.query` row below as the exception that is not. **For `.cshtml` this is a procedure, not a hedge:** deploy, then prove the new template is live by asserting on an **observable the edit introduces** (a new attribute, class or string in the delivered HTML), and recycle only if that observable is absent. Measured on a cloud host, a layout-master edit rendered on the very next request with no recycle, no flush and no `changeversion.txt` touch. Because templates are **not HTTP-servable**, pair it with the `FileByName` metadata round-trip (`sizeInBytes` == local byte count AND `updatedAt` moved) to catch a silently-dropped upload — `sizeInBytes` equal to the local byte count AND a moved `updatedAt` together prove the upload landed.
+
+If you used MCP for a row whose mutation type appears in the table below, you should already be done — do not "double-fix" by also restarting; the cost is a 30-second host bounce + lost in-memory state that wasn't broken in the first place.
+
+## Post-mutation cache table
+
+| Mutation | Cache touched | Invalidation surface | Restart required? |
+|----------|---------------|----------------------|-------------------|
+| MCP `create_or_update_completeness_rules` | `CompletionRuleService` ServiceCache | (auto via MCP) | No |
+| Direct SQL INSERT into `EcomCompletionRules` | Same | (none — SQL bypasses cache) | YES (or save once via admin UI) — see [dw-pim-completeness](../../dw-pim-completeness/SKILL.md) (`rules-and-dashboards.md` "Completeness rules") |
+| MCP `create_or_update_product_queries`; any raw file rename/move of a `.query` | `Searching:Queries` cache | `GET /Admin/Api/QueryById?Id=<a GUID that does not exist>` — `GetQueryById` re-runs `InitQueriesCache` on a cache MISS, so the throwaway GUID refreshes it; the `400` it answers is expected. **No `CacheInformationRefresh` type name reaches this cache** (no `ICacheStorage` owns the key) | NO — the throwaway-GUID GET replaces the restart. The `Query*` verbs (`QueryMove`, `QuerySave`) update the cache themselves; the FILE verbs do not, which is what makes the flush necessary — see [dw-search-indexing](../../dw-search-indexing/SKILL.md) (`query-authoring.md`) |
+| Disk delete of `.query` file | Same | (none) | YES — see [dw-search-indexing](../../dw-search-indexing/SKILL.md) (`index-management.md`) |
+| MCP **structural** product mutation (`save_groups`, `assign_products_to_group`, `create_products`) | Lucene index | `BuildIndex` (rebuild only) | No — see [dw-search-indexing](../../dw-search-indexing/SKILL.md) (`index-management.md`) |
+| MCP **value** write to product / category fields (`patch_products_safe`, `update_products`, incl. new `create_category_fields` values) | `ProductService` + `ProductCategoryFieldValueService` + `ProductCategoryService` caches **that the index builder reads through** | `POST /admin/api/CacheInformationRefresh {CacheTypeName:...}` for those 3 services **then** `BuildIndex` | **Flush-then-rebuild required** — rebuild alone indexes the stale pre-patch value. NOT reliably fixed by restart (verify cold-start). See "ordering trap" below + [dw-search-indexing](../../dw-search-indexing/SKILL.md) (`index-management.md`) |
+| **Direct SQL UPDATE on `EcomProducts` translatable fields** (e.g. `ProductName`, `ProductShortDescription` on a per-language layer row) | live `ProductService` product cache **and the Lucene index builder reads *through* that cache** | `POST /admin/api/CacheInformationRefresh` (or restart) **then** BuildIndex | YES (flush/restart) — and see the ordering trap below: a `BuildIndex` run while the product cache is stale bakes the OLD values into the index, so reindex is NOT sufficient on its own |
+| Direct SQL INSERT into `EcomProductItems` | `ProductItem` Lazy<Dictionary> cache | (none) | YES — bundle Components tab will show empty until restart |
+| **Direct SQL INSERT new `Page` row** | Page-resolution cache | (none) | YES — page 404s on the storefront until restart, even with correct slug/area wiring |
+| **Direct SQL INSERT new `Paragraph` row** | Page-composition cache | (none) | YES — paragraph does not render until restart |
+| **Direct SQL INSERT new `GridRow` row** | Page-composition cache | (none) | YES — grid row + its paragraphs do not render until restart |
+| **Direct SQL INSERT new `EcomPrices` row** | Resolved-price cache | (none) | YES — new price is not picked up by PDP / cart resolution until restart |
+| **Direct SQL INSERT into `EcomVariantGroupProductRelation` / `EcomVariantOptionsProductRelation`** | Variant-combination resolution (read at startup) | (none) | YES — until restart the PDP variant selector misses the new combinations and an add-to-cart POST for them returns HTTP 200 but adds nothing. Existence-guard the INSERTs so re-runs converge instead of duplicating — see [dw-pim-modelling](../../dw-pim-modelling/SKILL.md) (`structural-model.md`) |
+| **Direct SQL write to credential/token rows** (`AccessUser` password columns, `AccessUserToken`) | Identity/token state cached at host startup | (none) | YES — the pre-write credential keeps validating (and the new one doesn't) until restart. Pair every SQL credential/token write with a restart |
+| **Direct SQL write to any other `AccessUser` column** (username, names, company, customer number) | In-process user cache behind `UserById` and the storefront identity resolvers | **(none — no invalidation verb reaches it)** | **No surface fix.** Only a successful `UserSave` on that exact id clears it — see "Raw-SQL `AccessUser` writes create a split brain" below. Every such write owes a per-row DB-vs-API diff |
+| **Direct SQL UPDATE on an existing `Page` / `Paragraph` / `GridRow` CONTENT field** (e.g. `ParagraphTemplate`, `PageMetaTitle`, item/text fields) | (cache holds the row by id; content fields are read live from DB on next render) | (none needed) | **No** — live, refresh the page. This is the one safe SQL pattern for these tables — but ONLY for content fields; see the two composition rows below. |
+| **Direct SQL UPDATE on `GridRow.GridRowSort` (re-ordering existing rows)** | Page-composition cache holds the ordered list | (none) | YES — the cached ordering wins until restart, even though content-field updates on individual rows go live |
+| **Direct SQL UPDATE on layout-composition columns** — `GridRowTopSpacing` / `GridRowBottomSpacing` / `GridRowVerticalAlignment` / `GridRowGapX/Y` / `GridRowColorSchemeId`, and `Page.PageItemType` / `PageItemId` / `PageColorSchemeId` | Page-composition cache (these feed the rendered `data-dw-row-space-*` / colorscheme / header-item attributes) | (none — MCP paragraph/page touches do NOT flush them) | YES — the cached values win until restart, same as the ordering row above. These columns behave like structure, not content. |
+| **Direct SQL UPDATE on `Page.PageActive` / `PageHidden` (navigation flags)** | Navigation tree cache + friendly-URL provider | (none) | YES — the nav keeps rendering the old page set (and friendly URLs keep/lose their routes) until restart. Flag semantics live in [dw-swift-building](../../dw-swift-building/SKILL.md). |
+| **Group↔shop relation changes** (SQL on `EcomShopGroupRelation`, or an API group save that re-homes the group's shop) | Ecom navigation tree + friendly-URL provider | (none for SQL; API save still leaves the URL provider stale) | YES — group pages/slug resolution reflect the old shop homing until restart. The primary-shop trap itself is in [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md` §2.3). |
+| **`Area` row column change** (any surface — `AreaDomain`, `AreaFrontpage`, `AreaEcomShopId/LanguageId/CurrencyId`, area item bindings) | Area-resolution cache built at host startup | `CacheInformationRefresh` is **insufficient** here | **YES — full host restart.** Area rows are materialised once at startup; a targeted service flush does not rebuild the area map, so root/domain/binding changes stay stale until the bounce. |
+| **Style-asset change** (Color Scheme / Buttons / Typography / Fonts JSON+CSS in `Files/System/Styles/`, or the `Area`'s style wiring) | Style/theme registry loaded at startup | `CacheInformationRefresh` insufficient | **YES — full host restart.** New/edited style assets are enumerated at startup; the admin Design surface and the rendered `data-*` style attributes hold the old set until restart. |
+| **Item-type XML change** (drop/edit `Files/System/Items/ItemType_*.xml`) | ItemManager type registry (materialised from XML at startup) | `CacheInformationRefresh` insufficient | **YES — full host restart.** The backing `ItemType_*` table + field registry are (re)built from the XML at startup only; content referencing a not-yet-materialised type fails until the bounce. |
+| **Direct SQL UPDATE on `EcomPrices.PriceAmount` / `PriceCurrency` / scope columns** | Resolved-price cache | (none) | YES — old price wins until restart |
+| **Direct SQL write to RMA rows** (`EcomRma*` — dates, comments, deletions) | `Dynamicweb.Ecommerce.Orders.ReturnMerchandiseAuthorization.ReturnMerchandiseAuthorizationService` (persistent service cache behind `RmaById` / `RmaComments`) | `POST /admin/api/CacheInformationRefresh {CacheTypeName:"Dynamicweb.Ecommerce.Orders.ReturnMerchandiseAuthorization.ReturnMerchandiseAuthorizationService"}` | No — but the flush is **mandatory**: `RmaList` reads SQL directly and shows the new data while the detail view serves the pre-write object graph, so the correct-looking list hides the stale detail. A SQL-only scheduled task cannot call the verb — see [dw-commerce-orders](../../dw-commerce-orders/SKILL.md) (`order-lifecycle.md`) §"The RMA read path". |
+| **Direct SQL UPDATE on `EcomOrderStates.OrderStateColor` (or other state-row columns read at render time)** | `OrderStates.GetStateById()` in-memory cache | (none) | YES — the badge's inline-style attribute holds the stale color even after a full page reload; storefront-rendered order-state badges and CSS variables fed by `Services.Orders.GetStateById(...).Color` keep the old hex until restart |
+| MCP `save_paragraphs` / `save_pages` / `save_grid_rows` | Page-composition cache | (auto via MCP) | No — these are the preferred surface for content seeding; the four "Direct SQL INSERT" rows above are the SQL-fallback equivalents |
+| **Paragraph-soft-hide / delete inside a `@RenderGrid(otherPageId)` nested grid** (e.g. Swift's `Swift-v2_ProductListComponentSelector` PLP wrapper) | RenderGrid HTML cache (keyed by source page id) | (none — survives host restart) | **No surface fix** — `ParagraphDeleted=1` / `ParagraphShowParagraph=0` are not observed even after restart. CSS-hide is the only reliable lever; see [dw-swift-building](../../dw-swift-building/SKILL.md) for the worked recipe. |
+| Service-cache enumerate | All services | `GET /admin/api/GetServiceCaches` | n/a (read-only) |
+| Specific service cache flush | Single service | `POST /admin/api/CacheInformationRefresh {CacheTypeName:...}` | No |
+| Feature flag toggle | (varies; flag-specific) | `POST /admin/api/FeatureManagementToggle {FeatureTypeName:...}` — **DO NOT use for Completeness flag, see [dw-pim-completeness](../../dw-pim-completeness/SKILL.md) (`rules-and-dashboards.md` "Completeness rules")** | Varies |
+| Rule-usage inspection | (read-only) | `GET /admin/api/CompletionSettingsSourceById?Id=<ruleId>` | n/a |
+| **Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission`** (entity grants, Layer A / C) | `Dynamicweb.Security.Permissions.PermissionService` ServiceCache | `POST /admin/api/CacheInformationRefresh {CacheTypeName:"Dynamicweb.Security.Permissions.PermissionService"}` | No — but logged-in users do not see the change until flush + re-auth; new logins always see fresh state. See [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`) for the admin-UI gap that forces this SQL surface. |
+| **Direct SQL INSERT/UPDATE/DELETE on `CapabilityLimitation`** (UI hides, Layer B) | `Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilityService` ServiceCache | `POST /admin/api/CacheInformationRefresh {CacheTypeName:"Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilityService"}` | No — flush picks up immediately for current users. |
+| **Direct SQL INSERT/UPDATE/DELETE on `CapabilitySetLimitation`** (capability-set hides) | `Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilitySetService` ServiceCache | `POST /admin/api/CacheInformationRefresh {CacheTypeName:"Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilitySetService"}` | No |
+| **Direct SQL INSERT/UPDATE/DELETE on `DashboardAccessUserRelation`** (per-user dashboard pinning) | (none — `DashboardConfigurationRepository` queries the DB per request, bypassing cache) | n/a | **No** — changes are live on next dashboard tree fetch. |
+
+## The edit-vs-insert rule for content tables (SQL-fallback surface only)
+
+For `Page` / `Paragraph` / `GridRow` / `EcomPrices`, the cache-vs-live behavior splits cleanly along edit-vs-insert lines when mutating via SQL:
+
+- **Editing an existing row's content fields** — live. The page-composition cache holds the row by id; on next render, DW reads the current content-field values back from the DB. So a SQL `UPDATE Paragraph SET ParagraphTemplate = '...' WHERE ParagraphId = N` shows up immediately on refresh, no restart.
+- **Editing an existing row's layout-composition columns** — requires restart, exactly like re-ordering. GridRow spacing/alignment/gap/colorscheme columns and Page item-attach/colorscheme columns are baked into the cached composition (`data-dw-row-space-*`, header colorscheme, item lookup); the rendered values survive both page refreshes and MCP touches on sibling content until the host restarts.
+- **Inserting a new row** — requires restart. The cache resolved the parent (Page / GridRow / shop-currency-language combination for prices) at startup or at last invalidation; it doesn't know about the new child row. Restart flushes the cache and rebuilds it from the current DB state.
+- **Re-ordering existing rows** (`GridRow.GridRowSort` re-sort) — requires restart. Even though each individual row's content fields read live, the cache holds the *ordered list* and won't re-sort until reload. Same applies to `ParagraphSort` if you re-sort paragraphs within a GridRow.
+- **Changing price amount or scope** — requires restart. The resolved-price cache keys by (product, currency, customer-group, shop, qty-band, validity-window) and doesn't reactively reload on column changes.
+
+### Mixing MCP and SQL on the same rows — MCP first, SQL last, one restart
+
+MCP `save_pages` / `save_grid_rows` / `save_paragraphs` load the row from the **domain-service cache**
+and persist the **full row back**, including every column their API model does not expose. A SQL-written
+value on such a column (`GridRowTopSpacing`, `GridRowVerticalAlignment`, `Page.PageItemId`,
+`PageColorSchemeId`, `PageHidden` …) is silently reverted by the next MCP save of that row — the save
+isn't "merging", it's writing back its stale copy. Sequence a mixed-surface authoring pass as:
+**all MCP/structural writes first → SQL for the unexposed columns last → one host restart** to flush
+the composition/nav/URL caches together. If an MCP save must happen after the SQL step, re-apply the
+SQL afterwards.
+
+### Raw-SQL `AccessUser` writes create a split brain that nothing can flush — and it surfaces three endpoints away
+
+**This is the concrete mechanism behind the standing "never rename users via raw SQL" rule, and it is the one
+cache in this file with no invalidation surface at all.**
+
+`SELECT` returns the new value while `GET /Admin/Api/UserById` returns the old one. The storefront profile
+listing looks correct, and then the **profile switch** returns `403 Forbidden`, because the switch validates
+against the **cached** username. Every storefront profile switch can die with nothing wrong at the database
+level.
+
+Proved non-invalidating on one host: a `CacheInformationRefresh` over **every** User / Permission / Security /
+Capability cache, a password-set on the row itself, and a `UserSave` on an *unrelated* user. There is no
+user service among the ~96 `GetServiceCaches` entries (only a user-group-relation service and an
+external-login service), and the memory/static-type cache listings expose nothing user-shaped. **Only a
+successful `UserSave` on that exact id clears it.**
+
+Three rules follow:
+
+- **Every raw-SQL write to an `AccessUser` row owes a per-row DB-vs-API diff afterwards.** The write appearing
+  to succeed proves nothing. On one surname-only fix, `SELECT` returned the new value on all four rows while
+  `UserById` returned the retired surname on **one** of them — caught only by an explicit per-row diff, never
+  by any page check, because the storefront does not render that field.
+- **A repair that re-saves through `UserById` must pass the DB values in EXPLICITLY.** The obvious escape
+  hatch — fetch the model, save it back — fetches the **cached** object, so saving it blindly writes the
+  stale value back into the database and *undoes the fix*. Supply the DB truth as a field override.
+- **Assert the downstream surface, not just the row**: per touched user, `SELECT` and `UserById` agree, and
+  the storefront profile-switch endpoint returns `200`.
+
+This is **the SQL-fallback rulebook only.** MCP `save_paragraphs` / `save_pages` / `save_grid_rows` / `save_prices` and the admin-UI Visual Editor invalidate the relevant caches for you — none of these rules apply to those surfaces. Choosing SQL-direct over a domain-service surface is a separate decision; when a service surface is available, prefer it and skip this section.
+
+## The index-build-reads-through-cache ordering trap
+
+This trap fires on **two surfaces**, not one: (a) **Direct SQL** product/category writes, and
+(b) **MCP `patch_products_safe` / `update_products` / new-`create_category_fields` value writes** —
+because both leave the index-builder's read-through caches stale. The blanket "MCP invalidates
+inline, skip this table" rule in *Surface scope* above does **not** extend to the index-build path.
+The single most common symptom in practice: you set a category field (a channel flag, a
+completeness field, a facet value) via MCP, `wait_for_product_index`, then a dashboard widget /
+`get_products_by_query` shows **0 or stale** — the DB and `get_product_by_id` are correct. That is
+this trap, every time. Do **not** call it an "index quirk"; it is an un-flushed read-through cache.
+
+When you write product data via **Direct SQL** (e.g. translating `ProductName` /
+`ProductShortDescription` into a per-language layer, or any `EcomProducts` field edit) **or via MCP
+`patch_products_safe`** and then need it visible on the storefront/Delivery API PLP **or in an index
+query / dashboard widget**, two caches are in play and **order matters**:
+
+1. The live `ProductService` holds products in an in-memory cache. A SQL write does not touch it,
+   so reads (single-product Delivery API, PDP) return the **stale** value until the cache is
+   flushed (`CacheInformationRefresh`) or the host restarts. A `BuildIndex` does **not** flush it.
+2. **The Lucene index builder reads product data *through* that same `ProductService` cache.** So
+   if you `BuildIndex` while the cache is stale, the builder indexes the OLD values — the PLP/
+   facets then show stale data even though the DB is correct and you "reindexed".
+
+**Correct order for any product/category VALUE write (SQL or MCP `patch_products_safe`):** write →
+**flush** (`POST /admin/api/CacheInformationRefresh {CacheTypeName:...}` for
+`Dynamicweb.Ecommerce.Products.ProductService`,
+`Dynamicweb.Ecommerce.Products.Categories.ProductCategoryFieldValueService`, and
+`Dynamicweb.Ecommerce.Products.Categories.ProductCategoryService`) → **then** `BuildIndex` →
+**then re-verify** with `get_products_by_query`. Reindex-first is the wrong order: the index keeps
+the stale values until the *next* rebuild after a flush. The Management API accepts the same bearer
+key as the MCP endpoint. Prefer the targeted flush over a host restart — a restart only works if it
+actually cold-starts (the `dotnet run` parent vs child-process trap), and it throws away all warm
+state for no reason. Verified on 10.26.x: setting a new text/list category field via MCP +
+`wait_for_product_index` left every product's value empty in the index; flushing those three caches
+then rebuilding made the values queryable immediately.
+
+Related write-path note: MCP `patch_products_safe` with a non-default `languageId` was observed to
+echo the translated `name` in its response but not persist it to the `EcomProducts` language-layer
+row (DB stayed default-language) on a 10.26.x build — verify the DB row after a
+per-language product-text write; direct SQL was the reliable surface.
+
+## When a mutation doesn't show up
+
+If a mutation looks like it should have applied but the symptom persists (a stale dashboard count, an empty completeness panel, a missing variant SKU), it's a cache the mutation surface didn't invalidate. Resolve it in order — each rung is cheaper and safer than the one below it:
+
+1. **Find the row above and run its named invalidation surface** — a targeted `CacheInformationRefresh` (enumerate cache ids with `GET /admin/api/GetServiceCaches`). This is the specific fix and the one to reach for first. **The parameter is `CacheTypeName`, and `CacheName` is not an alias** — the wrong key returns `400 {"CacheTypeName": ["The value is required."]}`, which inside a try/catch-and-continue wiring script reads as a soft warning while the cache is silently never flushed. Prose that names the *service* ("`CacheInformationRefresh` for `Dynamicweb.Ecommerce.Products.ProductService`") without naming the key is how the wrong one gets written. **Assert `status: ok` rather than swallowing the exception.**
+2. **Bulk flush** — `GET /admin/api/GetServiceCaches` → `POST /admin/api/CacheInformationsRefresh {"Ids": [...]}` (plural, all service caches at once). This is the mandatory substitute for *every* "YES restart" row on hosted installs — run it on local hosts too, before any restart: it clears every service-backed cache in one call, works when you can't identify which cache holds the stale value, and keeps the warm state a restart throws away. **Caveat: a whole-`Ids` bulk flush can return `500`** — some registered service caches throw when flushed out of band. If it 500s, don't treat the flush as done: fall back to the targeted single-service `CacheInformationRefresh` for the cache you actually need (rung 1), or restart. The startup-materialised registries above (`Area`, style, item-type) are **not** service-exposed and a bulk flush does not cover them regardless — those are restart-only.
+3. **Restart the host** only when the symptom survives both flushes, or the stale cache is documented as not service-exposed with no other flush (the startup-materialised `Area`/style/item-type registries above — `Searching:Queries` is not service-exposed either but has its own restart-free flush, see its row; the RenderGrid HTML cache survives even a restart — see its row). When a restart is owed, **batch it**: one restart covering all pending restart-owed mutations (the "MCP first, SQL last, one restart" rule above), not one per mutation. Stop the process **port-scoped and ownership-verified** — resolve the PID from this host's own port and confirm the process command line points at this solution folder before killing it; a project-name match kills sibling hosts on a multi-host machine. Then **verify the bounce cold-started** (the `dotnet run` parent/child trap above — killing the parent can leave the real host running with its caches intact).
+4. **Re-verify after the fix:** re-run your post-change verification probes — the targeted MCP/SQL checks whose result was stale.
+
+### Before blaming a "nav cache": nav/menu labels render from the GROUP TREE, not a label cache
+
+A menu/label that "survives every flush and restart" is almost always **data, not cache**. Storefront navigation and menu labels render live from the **group tree** (`EcomGroups` rows and their translations) and from **sibling item fields** on the page/paragraph (e.g. a `Subtitle`, a menu-text item field), not from a dedicated "nav label" cache. So an old label that won't clear usually means an untouched group row, a stale translation row, or a sibling item field you didn't edit is still supplying it — chase the row, not the cache. (Genuine nav *structure* caching — the tree ordering, friendly-URL provider, `PageActive`/`PageHidden` visibility — is real and restart-owed per the rows above; it is the label *text* that is data-driven and mis-diagnosed as cache.)
+
+The mirror error is over-attributing to the restart. A **group rename through `ProductCatalogGroupSave` needs no recycle at all**: the localized name is written for the language in `modelIdentifier`, and the group's friendly URL is derived **on request** rather than from a startup-cached table — the storefront serves the new label and the new slug 200s *before* any restart. Only nav **membership** (adding or removing a node) is startup-cached. Runs that rename and restart in the same session routinely record the recycle as the cause and pay for it on every later rename. Rename blast radius to plan for: child PDP URLs change and there is no automatic 301.

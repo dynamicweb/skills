@@ -1,0 +1,133 @@
+# Setup Checks — fresh-machine readiness
+
+## Contents
+
+- [1. Quick verification ritual](#1-quick-verification-ritual)
+- [2. Per-check sections](#2-per-check-sections)
+- [3. Discovery table — read these from project files (the discover-from-project-files rule)](#3-discovery-table--read-these-from-project-files-the-discover-from-project-files-rule)
+- [4. Dual-set env-var propagation pattern — User-scope env-var doesn't propagate](#4-dual-set-env-var-propagation-pattern--user-scope-env-var-doesnt-propagate)
+
+Verification logic lives as fenced PowerShell inside this Markdown reference. Use it to verify, before touching any per-demo work: the `NODE_TLS_REJECT_UNAUTHORIZED` env var, `git` plus the `gh` CLI (present + authenticated, for cloning the Distribution repo), a writable `<demo-root>\distribution\` clone target, and the demo's DW10 + Swift versions prompt — owned here — plus the platform install prerequisites (.NET 10 SDK, `Dynamicweb.ProjectTemplates`, SQL Express, MSDTC), whose per-check detail is owned by [`../../dw-setup-install/references/install-anatomy.md`](../../dw-setup-install/references/install-anatomy.md).
+
+**Posture:** verify + opt-in fix.
+
+- **Cheap fixes** (env vars at User scope) → the skill prompts for approval, runs the fix, advises a Claude Code restart.
+- **Install-grade fixes** (.NET 10 SDK, SQL Express, `Dynamicweb.ProjectTemplates`, MSDTC) → print + link only. Never auto-install. The user runs the installer. See `setup-install.md`.
+
+---
+
+## 1. Quick verification ritual
+
+Run all probes at once. If every line is green, you can skip the per-check sections below and head to `references/scaffold.md`.
+
+```powershell
+$PSVersionTable.PSVersion                          # pwsh 7+ REQUIRED — run every recipe/verb from pwsh, not Windows PowerShell 5.1
+dotnet --list-sdks | Select-String '^10\.'        # .NET 10 SDK present (host targets net10)
+dotnet new list | Select-String 'dw10-suite'       # expect "DynamicWeb 10 Suite Project Template" or similar
+Get-Service "MSSQL`$SQLEXPRESS" | Select-Object Name, Status
+[Environment]::GetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED","User")
+git --version                                      # git present (clones the distribution repos)
+gh auth status                                     # gh CLI installed AND authenticated (private-repo clone over HTTPS)
+```
+
+Note the backtick on `MSSQL`$SQLEXPRESS` — `$SQLEXPRESS` is a PowerShell special token unless escaped.
+
+**Run everything from pwsh 7+, never Windows PowerShell 5.1.** The skill's PowerShell recipes and any harness verbs (the standalone lightweight harness, DemoAgent `bin/` verbs) use the null-coalescing operator `??` and other pwsh-7 syntax — **5.1 parse-fails the whole script before the first line runs** (`Telemetry.Common.ps1` is the canonical offender). `$PSVersionTable.PSVersion.Major` must be `≥ 7`; if a verb dies with a parser error on `??`, you are in 5.1 — relaunch in `pwsh`.
+
+The first three lines are the platform install prerequisites — if any is red, work the per-check sections in [`../../dw-setup-install/references/install-anatomy.md`](../../dw-setup-install/references/install-anatomy.md) §1 (and §4 for MSDTC). The last three are demo-specific, owned below (the TLS env var, `git`, and the `gh` CLI). The DW10 + Swift versions prompt and the writable-`distribution\` check are also owned here.
+
+---
+
+## 2. Per-check sections
+
+Each check follows the same shape: **Why** → **Probe** → **Expected** → **Cheap fix (opt-in)** OR **Install-grade fix (print+link)**.
+
+> **Platform install prerequisites** — the per-check detail for the **.NET 10 SDK**, **`Dynamicweb.ProjectTemplates`**, the **SQL Express service**, and **MSDTC for cross-connection TransactionScope** (with the `enable-msdtc.ps1` admin script) is owned by [`../../dw-setup-install/references/install-anatomy.md`](../../dw-setup-install/references/install-anatomy.md) §1 and §4. They are platform-generic, not demo-specific — verify them via the ritual above and fix per that reference. The MSDTC requirement pairs with the `Program.cs` `ImplicitDistributedTransactions` opt-in (`setup-install.md` §3.1); both are needed for admin operations like AreaCopy.
+
+The demo-specific checks owned here are the TLS env var, `git` + the `gh` CLI, the writable `distribution\` clone target, and the versions prompt.
+
+### Check: NODE_TLS_REJECT_UNAUTHORIZED env var (User scope)
+
+**Why this matters:** This is the load-bearing layer of the two-layer TLS bypass — without it the MCP HTTPS handshake fails silently (`claude mcp list` shows "Failed to connect"). Full rationale and both layers: `references/mcp-setup.md` Step 2; this check is only the env-var verification.
+
+**Probe:**
+
+```powershell
+[Environment]::GetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED","User")
+```
+
+**Expected:** literal `"0"` (string).
+
+**Cheap fix (opt-in):** Set both the User-scope persistent var AND the current-process `$env:VAR` (the dual-set pattern, Section 4). Ask the user:
+
+> "NODE_TLS_REJECT_UNAUTHORIZED is not set to `0` at User scope. The MCP HTTPS handshake will fail without it (see `references/mcp-setup.md` Step 2). I can set it by running:
+>
+> ```powershell
+> [System.Environment]::SetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED", "0", "User")
+> $env:NODE_TLS_REJECT_UNAUTHORIZED = "0"
+> ```
+>
+> After this, you'll need to **close ALL Claude Code instances and reopen from a fresh PowerShell**. Approve? [Set + restart guidance / Skip]"
+
+**Cross-reference:** `references/mcp-setup.md` Step 2 is the long-form rationale.
+
+### Check: `git` + `gh` CLI present and authenticated
+
+**Why this matters:** Demo artifacts (base, catalog, theme, feature layers) are consumed per-demo with `git clone` + `git pull --ff-only origin main` from the single Distribution repo (URL from `$env:DW_DISTRIBUTION_REPO`) — **main IS the version**; there are **no releases** to download and no tag checkout (see the base SKILL "Versions prompt + Distribution clone/checkout"). `git` does the clone; `gh`, authenticated, supplies the credential helper that lets a **private** Distribution repo clone over HTTPS. If either is missing or unauthenticated, the Swift deserialize and pack-activation flows cannot fetch their sources.
+
+**Probe:**
+
+```powershell
+git --version         # git installed (clones the distribution repos)
+gh --version          # gh CLI installed
+gh auth status        # authenticated to github.com (non-zero exit / "not logged in" = fix below)
+```
+
+**Expected:** `git` and `gh` both print a version, and `gh auth status` reports a logged-in account with repo read scope.
+
+**Install-grade fix (print + link):** If `git` is absent, print `winget install --id Git.Git` (or link https://git-scm.com/). If `gh` is absent, print `winget install --id GitHub.cli` (or link https://cli.github.com/) and let the user install. If `gh` is installed but not authenticated, have the user run `gh auth login` in their own shell (`gh auth setup-git` wires it as the git credential helper) — never script a credential flow.
+
+### Check: `<demo-root>\distribution\` clone target is writable
+
+**Why this matters:** The demo's Distribution checkout lands under the demo's own `distribution\` folder. A read-only or non-existent parent path makes the first `git clone` fail.
+
+**Probe:**
+
+```powershell
+$dist = Join-Path (Get-Location).Path "distribution"
+New-Item -ItemType Directory -Path $dist -Force | Out-Null
+$probe = Join-Path $dist ".write-probe"
+Set-Content -Path $probe -Value "ok"; Remove-Item $probe   # throws if not writable
+```
+
+**Expected:** the folder is created (or already present) and the write probe succeeds.
+
+**Cheap fix (opt-in):** If creation fails, the demo root is likely under a protected path — ask the user to relocate the demo or grant write access. Do not elevate automatically.
+
+### Check: Versions prompt (DW10 + Swift)
+
+**Why this matters:** The version answers drive the Swift design-package clone tag (`v<version>.0`) and layer-compatibility checks (each layer's `layer.json` declares the `swiftVersion` it targets). Ask **before** cloning anything. Note: the demo consumes the latest gate-proven `main` of the Distribution (resolved from `layers/INDEX.json`, not a tag), and the reproducibility pin is the **resolved commit SHA**, recorded in `CUSTOMISATIONS.md`.
+
+**Probe:** conversational — ask the user via `AskUserQuestion`:
+
+> "Which **DW10 platform version** does this demo target, and which **Swift version** (e.g. `2.4`)? Both get recorded in `CUSTOMISATIONS.md` for reproducibility and drive layer-compatibility checks against the Distribution's latest gate-proven `main`."
+
+**Expected:** two values captured in conversation state and written to the demo's `CUSTOMISATIONS.md`. No default — never guess a version.
+
+---
+
+## 3. Discovery table — read these from project files (the discover-from-project-files rule)
+
+Once setup is verified, the per-demo project files are the source of truth for port, DB name, and bearer token. Never hardcode these.
+
+| What | Where to read it |
+|---|---|
+| **HTTPS port + host URL** | `.mcp.json` at solution root (e.g. `https://localhost:<PORT>/admin/mcp`) — or `Dynamicweb.Host.Suite/Properties/launchSettings.json` under `applicationUrl` |
+| **Database name** | `Dynamicweb.Host.Suite/GlobalSettings.Database.config` — look for the `<database>` element or `Initial Catalog=` in the connection string. Falls back to the solution folder name if no explicit setting. |
+| **Management API bearer token** | Project-specific — captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`). Storage contract is canonical in `references/mcp-setup.md` Step 6. |
+
+---
+
+## 4. Dual-set env-var propagation pattern — User-scope env-var doesn't propagate
+
+A User-scope env var set via `[Environment]::SetEnvironmentVariable(name, value, "User")` or `setx` is **NOT visible to the currently-running Claude Code process** — set User scope AND the current-process `$env:` copy, then restart Claude Code from a fresh shell, and verify re-reads with `[Environment]::GetEnvironmentVariable(name, "User")`, never `$env:NAME`. The canonical statement of the dual-set pattern is `references/mcp-setup.md` Step 2; this file keeps the probes above.

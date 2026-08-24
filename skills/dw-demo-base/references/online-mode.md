@@ -1,0 +1,156 @@
+# online-mode.md — building on a hosted (cloud) install
+
+> Owns the **online/cloud variant** of the demo-base flow: what changes when the demo runs on a vendor-hosted DW10 install reached only by URL + Admin API bearer key — no local scaffold, no SQL, no filesystem. This reference covers **building** a demo directly on a hosted install (Management API only).
+>
+> **Publishing an existing local demo onto a hosted install** is a migration, not a build, and has its own failure modes — it is owned by [publish-to-hosted.md](publish-to-hosted.md). Everything below (the probe, the API recipe pack, the upload mechanics, the flush/restart ladder, shared-install discipline) applies to both.
+>
+> Local installs remain the default; this reference is the fork target from [SKILL.md](../SKILL.md) "Environment fork". The four always-on guardrails (customisations ledger, customer-context read-only, demo philosophy, discover-from-project-files) apply unchanged.
+
+## Contents
+
+- [Recognising online mode](#recognising-online-mode)
+- [Probe order at session start](#probe-order-at-session-start)
+- [Management API recipe pack](#management-api-recipe-pack-validated-dw-1025x)
+  - [dw10source as binder disambiguator](#dw10source-as-binder-disambiguator)
+  - [File upload — and why an "ok" upload can change nothing](#file-upload--and-why-an-ok-upload-can-change-nothing)
+  - [`FileDelete` can be ACL-denied for pre-existing files](#filedelete-can-be-acl-denied-for-pre-existing-files--know-the-per-host-answer-before-you-plan-a-cleanup)
+  - [Flush first; a cloud install can usually be restarted](#flush-first-a-cloud-install-can-usually-be-restarted)
+- [Inheriting a CLONED demo host — the remediation playbook](#inheriting-a-cloned-demo-host--the-remediation-playbook)
+- [Personal data on an inherited host](#personal-data-on-an-inherited-host)
+- [What stays the same](#what-stays-the-same)
+
+## Recognising online mode
+
+You are in online mode when the engagement hands you a site URL (`https://<host>/`) and a Management API bearer key (`CLAUDE.<hex>`) instead of a machine to scaffold on. Canonical-flow deltas:
+
+| Canonical step (local) | Online mode |
+|---|---|
+| setup-checks (SDK, SQL Express, MSDTC) | Skip — nothing to install. A local DW10 source clone, if present, is still useful read-only (see "dw10source as binder disambiguator" below). |
+| scaffold (`dotnet new dw10-suite`) | Skip. The per-demo folder still gets created locally for `CUSTOMISATIONS.md`, `customer-context/`, `extracts/`, `scripts/`, screenshots. |
+| MCP wiring + TLS bypass | Replaced by the **probe** below. No TLS bypass needed (real certificates). |
+| Browser MCP install | Unchanged — Playwright is still the verification surface. |
+| Guardrail artefacts | Unchanged. |
+| Host lifecycle authority | You do not own a host process. Most hosted installs still restart — drive it through the CloudHosting control files — but confirm the file is consumed; some partner-hosted installs never act on it. Work the flush-first ladder below. |
+
+## Probe order at session start
+
+Tool availability on hosted installs is **version-dependent and a moving target** — hosted sites track the DW10 release train, and the MCP surface in particular varies by version. Never assume; probe:
+
+1. **Management API**: `GET https://<host>/Admin/Api/api.json` with `Authorization: Bearer CLAUDE.<hex>`. Returns the full OpenAPI catalogue (~1,900 operations on 10.25.x) including the platform version in `info.version`. Save it locally — it is the working map for everything below.
+2. **MCP**: `POST https://<host>/admin/mcp` with a JSON-RPC `initialize`. A 404 plus zero MCP-related operations in the OpenAPI spec means the install doesn't expose MCP — fall through to the Management API as primary surface. If MCP responds, the normal surface priority applies and most of this file's API recipes become fallbacks.
+3. **Admin UI via Playwright**: needs interactive credentials (ask the user for them). Verification surface only — build-phase rules apply from the first request on a hosted install, since there is nothing to scaffold.
+4. **Site database reachability — probe it before assuming API-only reads.** "Cloud-hosted" does not imply "database out of reach": on a co-located host class the site DB is reachable from the VM the agent runs on, and the connection string sits in `Files/GlobalSettings.Database.config`. A plain SqlClient connection with those credentials returns **full result sets** — which retires the whole `Sql-ReadRaw` double-UPDATE / `RAISERROR`-peek family of workarounds that exist only because the API offers no `SELECT` channel. Probe once at session start (read the config, open a connection, run a trivial `SELECT`), record the answer in the demo ledger, and plan the session's verification reads from the result rather than from a remembered host.
+
+   **Caveats, all load-bearing:** the file contains **live credentials for a shared production-class host** — never copy it into the demo folder, an extract, a transcript or a commit, and reference it by path only. A direct connection is outside DW's bookkeeping, so it stays a **read** channel by default: reads through it are the safe, high-value part, while writes re-open every cache/notification hazard the surface-priority rule exists to prevent (`surface-priority.md`, and the API-write-vs-SQL-write visibility split in [`../../dw-demo-swift/references/sql-direct-seeding.md`](../../dw-demo-swift/references/sql-direct-seeding.md)). On a shared install the connection reaches **other tenants' areas** as well as the demo's — scope every query explicitly.
+
+**Surface priority in online mode:** MCP (if the probe finds it) → Management API → **ask the user** for the rare operation neither exposes. Assume there is **no SQL surface** until probe 4 proves otherwise — the "last resort" rung of the local surface-priority table is absent on most hosted installs, which is why every SQL-based sister-skill recipe needs the API equivalent from this file. Where the DB *is* reachable it changes the **verification** picture (a real `SELECT` channel), not the write order: writes stay MCP → Management API. The admin UI stays verification-only, same as every build phase (`surface-priority.md`).
+
+## Management API recipe pack (validated DW 10.25.x)
+
+The Management API hits the same DW domain services as MCP and the admin UI, so bookkeeping (ItemRelation cloning, cache invalidation, notifications) fires correctly. The binder has sharp edges. Most of these recipes are vendor-generic Management API mechanics that the online build leans on more heavily (no MCP, no SQL) — they are owned by the foundational skills, not by this online fork:
+
+- **Create-vs-update fork** (UPDATE when `Id` set, CREATE when empty; `notFound` is the fork talking), the **`SelectedImage` binder asymmetry**, **product images** (`AssetAddToMultipleProducts`, no webp, computed `image`), the **variant chain** (`VariantGroupSave` → `VariantCombinationSave`/`ExtendAllVariants`, skip `VariantCombinationCreate`), and the **`ShopSave` languages gap** → [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.14.
+- **Paragraph / page / grid-row editing** (`ParagraphSave` round-trips, the `ButtonData` object binder, `ShowParagraph` can't be set, `PageCopy` inherits `shortCut`, `GridRowCopy` over `GridRowCreate`) → [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) "Editing page / paragraph / grid-row content through the Management API".
+- **`UserSave` can't set passwords** → [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §13.
+
+Some commands also mirror a property at BOTH the command level and inside `Model` (e.g. `VariantCombinationCreate`); when a payload bounces with "value is required" for a field you sent, mirror it into/out of `Model`.
+
+**List-command ids are full paths, not names.** Every `*Delete` command that takes an `Ids` array wants the entity's `modelIdentifier` from the matching list query — `/Files/Images/<brand>/logo.png` for a file, `GROUP1|ENU` for a product group, `<child>|<parent>` for a group relation. Passing a bare name returns `status: ok` and deletes nothing. Read one row from the list query and copy the `modelIdentifier` shape before scripting a bulk delete.
+
+### dw10source as binder disambiguator
+When a payload shape isn't obvious from the OpenAPI spec, read the command class in a local clone of the DW10 source (location per machine — ask/discover, never hardcode): `Dynamicweb.*.UI/Commands/**/<Name>Command.cs`. Reading the source resolved every binder mystery in the validation build (SelectedImage `Id`, the create/update fork, the variant wizard).
+
+### File upload — and why an "ok" upload can change nothing
+`POST /Admin/Api/Upload`, multipart form: field `path` = **relative** directory (no leading slash — leading-slash paths are rejected as "outside allowed root"), repeated `files` fields for the payload. Many files per request is fine — one request per directory. The target directory must already exist physically. **`DirectorySave` is rename-only** (returns ok, creates nothing) — create folders via `DirectoryCopy` of any small existing folder to the new path, then `DirectoryEmpty` on it.
+
+**`Upload` will not create a missing directory, and `FilesByDirectory` is NOT an existence check.** The two combine into a confusing failure: the listing query answers happily for a path that does not exist, so the folder looks present right up until the upload throws a 500 naming the missing physical path. There is no directory-create verb hiding under a better name — every obvious candidate is unregistered:
+
+```
+GET  /Admin/Api/FilesByDirectory?…&Path=/Files/System/Styles/Fonts
+  -> well-formed model, totalCount 0            # NOT a 404 — cannot be used as an existence test
+POST /Admin/Api/Upload            (same path)
+  -> 500  "Could not find a part of the path …\Files\System\Styles\Fonts\…"
+POST /Admin/Api/DirectorySave     {Name:"Fonts", Model:{Name:"Fonts", Path:"/Files/System/Styles"}}
+  -> {"status":"ok"}, model null                # no folder on disk; the upload 500s identically
+DirectoryCreate | FolderCreate | DirectoryNew | CreateDirectory | FileManagerCreateFolder
+  -> Unknown command  (all five)
+```
+
+**So land assets in a folder that already exists**, and prefer the folder the referencing file already lives in — self-hosted webfonts belong next to the sheet that `@font-face`s them (`Templates/Designs/<design>/Custom/`), not in a new `System/Styles/Fonts/` tree that has to be conjured first. If a new folder is genuinely required, use the `DirectoryCopy` + `DirectoryEmpty` trick above and verify the path lists before uploading into it.
+
+### `FileDelete` can be ACL-denied for pre-existing files — know the per-host answer before you plan a cleanup
+
+On a cloud-co-located host class the `Files` ACL grants the FTP group `Modify` and `BUILTIN\Users` only `ReadAndExecute`, and the app-pool identity falls in `Users`. Every `FileDelete` against a **pre-existing** (stock or FTP-delivered) file then fails **loudly**:
+
+```
+POST /Admin/Api/FileDelete       -> 400  "Access to the path '…' is denied."
+POST /Admin/Api/DirectoryDelete  -> succeeds ONLY for folders the app pool itself created
+```
+
+This is a different failure from the earlier-recorded host where `FileDelete` silently no-ops — same intent, opposite signal — so **probe one file before scripting a bulk delete** and pick the strategy from the result rather than from a remembered host.
+
+**Strategy: API first; fall back to a disk-side delete when the agent is co-located with the files.** A disk delete under the agent's own account bypasses the app-pool ACL entirely and is the working path on a co-located host. It goes behind DW, so it owes a **three-way verification** on a sample of the batch — anything less can leave a file that is gone from one surface and serving from another:
+
+1. absent on disk,
+2. absent from the DW `FilesByDirectory` listing,
+3. public `GET` returns **404**.
+
+An assets-cleanup leg on a co-located host should carry the disk path as a first-class option, not as an emergency escape.
+
+**Send `allowOverwrite=true` on every upload.** Without it the endpoint refuses to replace an existing file and reports the refusal as *success*: `{"status":"ok","model":{"duplicates":["<name>"]}}`, with the file on disk unchanged. The refusal takes the **whole batch** — one pre-existing name in a multi-file request and the request's *new* files do not land either. `allowOverwrite` is a working form field that is absent from the OpenAPI schema; add it as an ordinary multipart field:
+
+```
+POST /Admin/Api/Upload   (multipart: path=<dir>, allowOverwrite=true, files=<name> [, files=<name> …])
+  → {"status":"ok","model":["/Files/<dir>/<name>", …]}      # wrote
+  → {"status":"ok","model":{"duplicates":[…]}}              # wrote NOTHING (no allowOverwrite)
+```
+
+**Success is the shape of `model`, not `status`.** Assert that `model` is a **list whose length equals the batch size**; a `duplicates` object — or an empty list, which is what a 0-byte file returns — means nothing was written. A design push that reports `ok` for every batch while silently keeping the target's old templates is exactly what this catches.
+
+### Flush first; a cloud install can usually be restarted
+Wherever a sister-skill recipe says "restart the host" (variant seeding, BOM inserts, asset bulk loads), you have no host process — but a hosted install usually still has a restart surface. Work the ladder:
+
+1. **Targeted flush** — `CacheInformationRefresh` (singular) with one `CacheTypeName`.
+2. **Bulk flush** — `GET /Admin/Api/GetServiceCaches` → collect the `modelIdentifier`s → `POST /Admin/Api/CacheInformationsRefresh {"Ids": [...]}`. This clears the stale-read class of symptom: a row written through the API that a later query still reports with its old value (a shop that "doesn't exist", a group tree missing a node, a catalog group still under its pre-publish name), and the stale disabled add-to-cart after variant seeding.
+3. **Real restart** — drop a control file in `Files/System/CloudHosting/` (`recycle.txt`, `restart.txt`). Canonical table: [`dw-setup-config`](../../dw-setup-config/SKILL.md) "cloud control files". Some **global settings do not take effect on a cache flush alone** — a URL-generation change can keep serving the old shape until the app restarts. If a setting reads back correctly from the API but the storefront still renders the old behaviour, restart before diagnosing further. **`changeversion.txt` is NOT a restart lever — it is the release-ring/runtime version pin.** Never rotate it to force a recycle: any changed value is a real version migration, and a same-value re-upload is not a reliable no-op either (observed on an `R0-NET…` ring token: it still recycles the app while leaving the version in place). Use `recycle.txt`/`restart.txt` for restarts; touch `changeversion.txt` only to deliberately switch ring/version, confirm the switch with `info.version` (a recycle alone is not proof), and record the last-used token in the demo ledger so the next switch bumps past it. Full treatment: [db-update-recovery.md](../../dw-setup-upgrade/references/db-update-recovery.md).
+
+**Confirm the restart actually happened — the control files are a Dynamicweb Cloud affordance, not a property of every hosted install.** The platform *consumes* the file: it disappears once acted on. On a partner-hosted install that does not run the watcher, `recycle.txt` and `restart.txt` upload happily, sit there unconsumed, and nothing restarts. So after dropping one, re-list `Files/System/CloudHosting/`; a file still present means **rung 3 does not exist on this host**. That is worth knowing early, because a few things are only reachable by restart — notably a repository whose definition was uploaded into an already-running app ([publish-to-hosted.md](publish-to-hosted.md) "Indexes"). Bulk cache flush does not reach them.
+
+### Index / repository-config writes report `ok` while the host ACL drops them
+
+A partner-hosted site process often runs under an account that cannot write `Files/System/Repositories/**`, and the Management API index commands do not surface that denial. **Read every repository-config field back through a different query immediately after the save; a matching readback is the only proof it landed — the `status: ok` is not.**
+
+- **`IndexBuilderSave` is a lying-success surface.** Setting `ShopsToIndex` (or any builder field) round-trips `status: ok` and bumps `updatedDate` while writing nothing to disk when the ACL denies the `/Files/System/Repositories/**` XML write. An `IndexBuilderByName` readback shows the field still empty, and a following Full rebuild then runs unscoped, so the whole catalogue indexes instead of the intended shop. Assert the readback, not the `ok`. Scope it correctly: **`ShopsToIndex` controls how BIG the index is, not what the storefront can see** — channel isolation is enforced at QUERY time (see [`index-management.md`](../../dw-search-indexing/references/index-management.md) "Channel isolation is a QUERY-time filter"), so an empty `ShopsToIndex` is an index-size finding, not an open leak to fix reflexively.
+- **After a raw-SQL group→product relation write, recycle first, THEN Full `BuildIndex` — the rebuild alone is a no-op.** `ProductIndexBuilder` reads `EcomGroupProductRelation` through an app-lifetime cache that only a process recycle clears. Insert a relation via SQL, run a Full build without a recycle, and the builder re-indexes the stale relation set — doc counts never move, which reads as "API index builds are dead on this host". Relations written through `ProductGroupRelationSave` need no recycle: the API write invalidates the relation cache in-process (the visibility split is owned by `dw-demo-swift/references/sql-direct-seeding.md` "API write vs SQL write"). Either way the Full build must target `Repository='Products'` — the `ProductsFrontend`/`ProductsBackend` pair only enqueues and never refreshes the `GroupID` facet. Drop a rung-3 control file first, wait for the recycle, then POST the identical `BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}` — it now swaps the online instance and the per-group counts move. (Relation-cache cousin of the value-write read-through-cache ordering trap in [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md): different cache, same fix — clear it before the rebuild.)
+
+## Inheriting a CLONED demo host — the remediation playbook
+
+A large share of hosted demo work is an **inherited clone** of somebody else's site: files, scheduled tasks and settings copied verbatim onto a host with a different app-pool identity and disk layout. The faults are a family with one shape — **the clone copied the artefact but not the ownership, the path, or the endpoint that made it work.** Work this table early: nearly every row is invisible from the admin UI, and several write customer-visible errors every few minutes while the site *looks* fine.
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| A route 500s (zero-byte body) for months while `GeneralLog` and the Insights Monitoring dashboard show **nothing** | Exceptions inside middleware escape DW's logging pipeline; the only record is the ASP.NET Core stdout log (`Application\logs\stdout_*.log`, IIS `HttpServer` category) | Read the stdout log whenever a route misbehaves with no log row; probe non-page routes (`/sitemap.xml`, `/robots.txt`) by **status + content-type + non-zero body**, never by inferring health from logs |
+| `UnauthorizedAccessException` on a write | Two faults share the exception: a **real ACL lockout** (cannot write the directory — needs an operator) vs a **clone-ownership fossil** (the process CAN create, and only fails to replace/delete a *foreign-owned* file — self-serviceable). Fossil tells: orphaned `.tmp` files beside the artefact; a stale pre-demo artefact in a folder the process demonstrably writes | Make a **scratch-file create in the target directory the first triage step** — one command separates the cases |
+| `/sitemap.xml` 500s (the stale file carries the *source* site's URLs); the index build aborts in ~1 s daily ("Failed to persist index build state"); an item-type reload fails repeatedly | Files under `Files\System` are **owned by the source host's account**; the app pool can create but not delete/replace them, and these code paths delete-then-regenerate their artefacts | **DELETE the fossil — do not edit ACLs.** The app pool recreates and *owns* it (the inherit-only `CREATOR OWNER` ACE makes the fix durable). Clone-time sweep: no file under `Files\System` owned by a principal other than the destination app pool |
+| One scheduled task red since the clone, firing every 15 min (39% of one host's error volume); every sibling green | The clone renamed the integration job tree and left one task on the old path — a stale PATH string, not a broken integration | Clone-time sweep: every enabled task's import-activity path resolves on disk — then apply the next row **before** repairing |
+| Tempted to repoint the red task's path | Repointing re-arms a job whose destination, source *and* endpoint may all be wrong — one "repair" would have run a never-tested user import against live demo identities from an empty stub, every 15 min. Green siblings succeed because unreachable endpoints yield empty output | Preconditions: (1) destination table — live demo data is a stop sign; (2) source payload — records or stub?; (3) endpoint reachable?; (4) downstream leg enabled? A dead-endpoint clone task gets **DISABLED in place**, never repointed |
+| A settings save 500s ("Access to the path is denied") yet reads back NEW; a disk `.config` edit reads back OLD | `ConfigurationManager.SetValue` updates the **in-memory cache BEFORE** the XML persist — the API save **applies without persisting**; the app caches settings at startup with **no file watcher** — a disk edit **persists without applying**. A partially applied save can leave the subsystem FAULTED until a recycle | Do **BOTH**: the API save (catch the 500) **plus** an out-of-band file edit from an account with `Modify`. Batch changes; per key, assert API read-back and on-disk file **agree**, then smoke-test the subsystem. Ask hosting for `Modify` on the two GlobalSettings files |
+| One page dumps "Error executing template" in every language after a tooling write; the rest of the site is fine | **A moved file keeps the SOURCE file's ACL**: `Move-Item` over a DW-managed path strips the app-pool `FullControl` ACE. DW still *reads* it — but DW also **writes `Translations.xml` itself** (`Translate()` on an unknown literal appends a key at render time), and that write throws | **Write IN PLACE** with a stream writer, never `Move-Item` over a DW-managed file; assert the app-pool ACE afterwards; smoke-test a route registering a **new** `Translate()` literal in every language layer |
+| `Translations.xml` diffs against a stored copy / grows on its own | It is **DW-owned and self-modifying**, and the facet-label store: PLP facet group names render through `@Translate(facet.Name)` and auto-register here — not in `Ecom*Translation` | **Merge additively; never "restore" it** (that deletes platform-registered keys). Keys are case-sensitive with shipped case-variant duplicates — tooling rules in [`../../dw-demo-swift/references/language-layers.md`](../../dw-demo-swift/references/language-layers.md) |
+
+## Personal data on an inherited host
+
+A cloned demo host is also a **personal-data inheritance**. Real customer identities, real order snapshots,
+real addresses and the platform vendor's own stock legal/marketing copy all ride the clone into a customer
+presentation, and none of it is visible from a rename of the obvious user rows. Treat it as a blocking
+pre-demo leg with its own method: [`pii-sweep.md`](pii-sweep.md).
+
+## Publishing an existing local demo to a hosted install
+
+Moving a demo that was built locally onto a hosted install is a **migration across three transports**, not a deploy — and its failure modes are not this reference's. It has its own playbook: [publish-to-hosted.md](publish-to-hosted.md) — pre-flight (custom product fields must exist on the target **before** the first deserialize), the transport map, clean-room deserialize semantics, publishing onto an install that already has content (id collisions), the settings that never ride a content export, indexes, and the browser-verified parity sweep.
+
+## What stays the same
+
+- **Guarded writes**: the customisations ledger matters *more* online — code customisations are impossible, so the ledger should finish empty and that is itself the pitch beat.
+- **Customer-context read-only**, demo philosophy (go deep not wide), and the discover-from-project-files rule (URL, key, area ids from chat/files — never hardcoded) all apply unchanged.
+- **Shared-install discipline**: hosted demos often share the install with reference sites and other areas. Agree the untouchable area ids up front, keep all writes scoped to the demo's own area/shop/groups, and treat **global** settings (currencies, asset categories, product fields without a category) as shared state — note any global change in the demo's RESUME so other areas' owners can see it. A publish is where this bites hardest: the demo's `PROD*`/`GROUP*` ids routinely collide with a stock install's own catalog, and clearing the collision destroys the other areas' product data. Get explicit sign-off before purging anything you did not create.
