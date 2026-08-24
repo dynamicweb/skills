@@ -3,6 +3,7 @@
 ## Contents
 
 - [Writing paragraph fields via the Management API (Swift 2.4 / DW 10.28.x)](#writing-paragraph-fields-via-the-management-api-swift-24--dw-1028x)
+- [The unsanitised `Swift-v2_Text` escape hatch](#the-unsanitised-swift-v2_text-escape-hatch)
 - [Reading paragraphs — the parameter is `Id`, and neither read verb is complete](#reading-paragraphs--the-parameter-is-id-and-neither-read-verb-is-complete)
 - [Creating a paragraph — the two-step, the 1-based column, and the writable template twin](#creating-a-paragraph--the-two-step-the-1-based-column-and-the-writable-template-twin)
 - [`Swift-v2_Accordion`: the items ARE writable — the write rides inside `ParagraphSave`](#swift-v2_accordion-the-items-are-writable--the-write-rides-inside-paragraphsave)
@@ -107,8 +108,8 @@ Two rules follow. **(1) Treat every `SelectedImage`-typed field as read-only thr
 the proven route for paragraph imagery is an inline `<figure><img src="/Files/..."
 style="width:100%;max-height:70vh;object-fit:cover"></figure>` in a Text field (height-capped under the
 85vh band limit), which renders live on the next request with no recycle. Treat that as a recorded
-exception, not a default — see [content-modeling.md](content-modeling.md) §"The escape hatch, and its
-cost". **(2) NEVER probe write shapes against a `SelectedImage` field on live content.** The failure mode
+exception, not a default — see §"The unsanitised `Swift-v2_Text` escape hatch"
+below. **(2) NEVER probe write shapes against a `SelectedImage` field on live content.** The failure mode
 is destructive and irreversible, so one exploratory payload permanently empties a field a demo is showing:
 probe on an expendable paragraph or not at all. Worth a guard in the shared save helper that refuses to
 write any field whose `typeName` is `SelectedImage` unless explicitly forced — assert the helper throws
@@ -243,6 +244,24 @@ API describing an empty slot, not a paragraph. So the standard "`GridRowCopy` an
 delete the clone to empty it" recipe looks like it failed: after a successful `ParagraphDelete` the
 listing still returns an object for that row, and a script that verifies its own delete aborts a run
 that in fact worked. Filter to real paragraphs (`id > 0`) before counting emptiness.
+
+## The unsanitised `Swift-v2_Text` escape hatch
+
+DW does not sanitise item Text fields on either hop: a `Swift-v2_Text` paragraph's `Text` field is
+stored and rendered as opaque markup — `ParagraphSave` does not strip and the render does not encode
+event attributes (`@click.prevent`, `onclick`), `x-data`, `data-*` or inline `<script>`; the served
+HTML comes back byte-identical to what was submitted. Since Swift already loads Alpine.js and
+`bootstrap.bundle.min.js` sitewide, behaviour can be added purely from content — no template edit, no
+new script asset, no new JS dependency. That makes the hatch genuinely available when the modeled
+path is unreachable (an unpopulatable item list, a picker field that will not persist — above), and
+it is much smaller blast radius than forking a template for a content-level behaviour. It is still an
+HTML blob, so the content-modelling gate still applies
+([`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §1):
+record it as a deliberate exception rather than reaching for it first. And before designing a
+fallback ladder around "DW will sanitise this", **probe it**: write a throwaway paragraph carrying
+the exact attributes/elements in question, diff the SERVED HTML against the submitted field
+(sanitisation could live in either hop, so the `GetParagraphById` round-trip alone is not enough),
+then delete the throwaway. Only a non-empty diff justifies a template change.
 
 ## Reading paragraphs — the parameter is `Id`, and neither read verb is complete
 

@@ -46,7 +46,7 @@ These DO NOT count as customisations and SHIP unprompted:
 
 **Why this matters:** projects routinely over-interpret the rule to bar Notification subscribers, which then forces SQL backfills (`OrderCustomerNumber`, `OrderComplete=1`) that should have been runtime subscribers. The rule is conservative-by-design — the pitch beat of "low customisation budget" depends on it — but conservatism applies to Controllers/Providers, not "any code we write."
 
-Cross-reference: [`../../dw-demo-swift/references/dw10-canonical-surfaces.md`](../../dw-demo-swift/references/dw10-canonical-surfaces.md) §"Cross-cutting redirects" — the `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` is the canonical anon-gate / role-gate hook and does NOT trigger this preflight.
+Cross-reference: [`../../dw-render-razor/references/razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 ("cross-cutting redirects") — the `NotificationSubscriber` on `Notifications.Standard.Page.Loaded` is the canonical anon-gate / role-gate hook and does NOT trigger this preflight.
 
 ## 1. Ledger template location
 

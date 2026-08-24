@@ -27,7 +27,7 @@ Permissions touch every demo surface — PIM, the Swift frontend, ERP integratio
 potentially. The vendor-generic model is therefore staged in `dw-demo-base`'s foundational area so all
 sister demo skills point at one copy. The candidate's §15 owns the **render-time** half (the
 entity-store rows — `UnifiedPermission`, `PermissionName='Page'` — read on every page/paragraph
-render), routed to from the Swift demo's `dw10-canonical-surfaces.md`. This demo skill's permission story (the persona matrix) lives
+render), routed to from the Swift demo's SKILL.md canonical-surfaces table. This demo skill's permission story (the persona matrix) lives
 in [`permissions-recipes.md`](permissions-recipes.md).
 
 For a PIM demo: decide the `CapabilityControlFeature` flag (candidate §1) BEFORE granting anything —

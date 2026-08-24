@@ -281,7 +281,7 @@ $hits = Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph" -Recurs
 if ($hits) {
     Write-Host "Raw DB access in paragraph templates:"
     $hits | ForEach-Object { Write-Host "  $($_.Path):$($_.LineNumber)  $($_.Line.Trim())" }
-    throw "Replace each hit with the appropriate Services.* API. See dw10-canonical-surfaces.md."
+    throw "Replace each hit with the appropriate Services.* API. See the canonical-surfaces table in SKILL.md."
 }
 ```
 
