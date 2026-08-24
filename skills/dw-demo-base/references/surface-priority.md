@@ -10,7 +10,7 @@
 - [Scaffold phase (local) — the bootstrap one-clicks](#scaffold-phase-local--the-bootstrap-one-clicks)
 - [Admin UI is verification-only during the build](#admin-ui-is-verification-only-during-the-build)
 - [Anti-pattern: SQL-cloning structural trees](#anti-pattern-sql-cloning-structural-trees)
-- [Silent no-ops on UPDATE surfaces — verify by round-trip, not by status code](#silent-no-ops-on-update-surfaces--verify-by-round-trip-not-by-status-code)
+- [Silent no-ops on write surfaces (updates, deletes, index builds) — verify by round-trip, not by status code](#silent-no-ops-on-write-surfaces-updates-deletes-index-builds--verify-by-round-trip-not-by-status-code)
 
 ## Two phases, one gate
 

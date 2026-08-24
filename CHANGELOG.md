@@ -5,6 +5,22 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 
 ## [4.17.0]
 
+Debloat pass on `dw-demo-base` itself: SKILL.md drops from ~6,300 to ~3,900 words and reads
+as a pure nav layer — the Host lifecycle authority moves to a new `references/host-lifecycle.md`,
+the Distribution clone/resolve recipe merges into `references/scaffold.md` §5, the Surface
+priority section (previously duplicated verbatim) becomes a summary with
+`references/surface-priority.md` as sole owner, and the nav-table rows tighten to routing labels.
+`references/tls-bypass.md` merges into `references/mcp-setup.md` Step 2 (now also the canonical
+home of the dual-set env-var pattern); `references/audit-customisations.md` merges into
+`references/customisations.md` §7; `references/db-update-recovery.md` moves, de-demoed, to
+`dw-setup-upgrade/references/`. visual-qa's Assert-design-rules section compresses its
+single-incident war stories to claim→fix bullets around the four reusable detector specs;
+demo-tactics' post-mortem bullets compress to their transferable tactics (the Swift sign-in-nudge
+pattern moves to `dw-demo-swift/references/customer-center.md`); online-mode's inherited-clone
+playbook becomes a symptom→cause→fix table; iterate-plugin trims its generic-git mechanics to a
+CLAUDE.md pointer and halves the Anti-patterns and leak-recovery narrative. No platform facts
+removed — every fact either stays in place or moves to its owning reference.
+
 Fold-up batch B: eight staged foundational candidates leave
 `dw-demo-base/references/foundational/` for their owning skills, stripped of
 demo framing on the way. `search-indexing.md` → `dw-search-indexing/references/index-management.md`

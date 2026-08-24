@@ -182,6 +182,8 @@ Findings are data/content defects — fix them through the build-phase action su
 
 Batch at most a handful of fixes between re-checks, and never declare a page done from a pre-fix screenshot.
 
+## Definition of done (per demo-critical page)
+
 The detectors above are the **mechanical gate**, not a checklist the agent may skip — every one of them is deterministic, so run them as a hard pass/fail before any eyeballing. The eyeball checklist and interaction pass sit on top; they never substitute for a clean detector run.
 
 - Detectors: `overflowX` 0, `broken`/`stretched`/`tall` empty, no unexplained gap > 120px, console free of errors, no 404 assets. No image band taller than the configured fraction of the viewport (`tall`).
