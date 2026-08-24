@@ -318,6 +318,29 @@ object, so the anonymous HTML still ships the list price: a `clickProductLink('<
   consult the same hide-price predicate the price template uses and emit `0` — or omit the price node — when
   prices are gated. Until that lands, treat it as a known leak and say so in the run notes.
 
+### The anonymous sign-in nudge — one CTA, not one per price cell
+
+In the open-catalog B2B pattern (anonymous browsing, prices hidden) the stock sign-in nudge is authored as a
+**control** and emitted per price cell, so a ~200px outlined button repeats once per product row (10–12 per
+PLP): it drowns out the single signup CTA the page wants to convert on, and its Bootstrap margin makes
+anonymous rows taller than the same rows for a signed-in dealer. A price cell is a *column*, and a column
+repeats by definition — the defect is the affordance, not the repetition.
+
+**Fix: branch the shared price template on list-vs-detail context.** In LIST emit a muted, non-interactive
+locked glyph + label with no anchor; in DETAIL emit the same glyph and the same copy string at buy-panel scale
+**plus** the page's single sign-in anchor. The branch selects scale and affordance, never *whether* the price
+is locked — so no context is left with empty space where a price belongs.
+
+**Assert it:** per-row sign-in anchors inside price cells == 0; signup links inside `main` == exactly 1;
+locked labels == product row count; anonymous row height within a few px of dealer row height; and on the
+detail page the sign-in anchor must be **inside** the locked component (assert containment, not presence)
+with both the locked component and its price slot rendering height > 0.
+
+**Rejected alternatives:** a CSS-only restyle of the anchor into a text link (leaves every sign-in link live,
+and re-labelling needs a `font-size:0` + `::after` hack that lies to screen readers); hiding the price cell
+for anonymous visitors (empty cells read as a broken catalogue and break the required-price assert); showing
+list/MSRP anonymously (contradicts the stated commercial contract, and leaks).
+
 ### Driving the cart in an automated probe
 
 Two Swift shapes break naive cart automation, and both make a perfectly healthy cart look broken:
