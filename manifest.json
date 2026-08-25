@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-25T08:35:51.919Z",
+  "generatedAt": "2026-08-25T08:39:47.976Z",
   "skills": [
     {
       "name": "dw-content-localization",
@@ -195,7 +195,7 @@
       "name": "dw-integration-framework",
       "type": "knowledge",
       "group": "integration",
-      "description": "Understand Dynamicweb 10 Integration Framework architecture and patterns.",
+      "description": "Understand Dynamicweb 10 Integration Framework architecture and patterns, and set up, run, schedule, or diagnose a Data Integration activity through the MCP tools.",
       "path": "skills/dw-integration-framework/SKILL.md"
     },
     {
