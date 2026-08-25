@@ -2,7 +2,7 @@
 name: dw-search-indexing
 type: knowledge
 group: search
-description: 'Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, and product index setup. Triggers: set up a product, content, user, or SQL index, configure repositories and index instances, tune analyzers or field boosts, understand Lucene scoring. Non-triggers: PIM data modelling -> dw-pim-modelling; product completeness -> dw-pim-completeness.'
+description: 'Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, product index setup — and design/fix a PIM product query or repository index query through the MCP tools. Triggers: set up a product, content, user, or SQL index, configure repositories and index instances, tune analyzers or field boosts, understand Lucene scoring, build/restructure/delete a product query or a repository index query (e.g. ProductsFrontend), a query returns nothing/everything unexpectedly. Non-triggers: PIM data modelling -> dw-pim-modelling; product completeness -> dw-pim-completeness.'
 ---
 
 # Search Indexing
@@ -184,13 +184,34 @@ Configured on the **Product Catalog app** → Spell Check section:
 
 Template tags: `QueryResult.SpellCheck` (top suggestion), `SpellCheckerSuggestions` loop (additional suggestions).
 
+## MCP Query Tools — Building or Fixing a Product Query
+
+Two distinct query families share the `.query` file format, and confusing them is how the
+wrong query gets edited or deleted:
+
+- **Product query (PIM)** — lives in the PIM smart-search folder, shown on **Products >
+  Queries**. Managed by the `*_product_quer*` tools.
+- **Repository index query** — lives under a **repository** (e.g. **ProductsFrontend** drives
+  the storefront product list). Shown in the Repositories tree, not Products > Queries.
+  Managed by the `*_index_quer*` tools.
+
+They differ in location, accessor, and UI surface, and the tools for one family REFUSE an id
+that resolves to the other — switch tool families rather than fighting the refusal. Every
+expression change follows the same read-edit-verify discipline (`get_*_query_expressions` →
+targeted delete or full-tree `replace_*_query_expressions` → re-read to confirm), and a value
+of the shape `Namespace.Something:Field` is a **macro**, not a constant — saved as Constant it
+silently never matches. The full tool map, the read-edit-verify loop, the macro/constant
+distinction, a worked assortment-visibility example, and safe deletion live in
+[references/mcp-query-tools.md](references/mcp-query-tools.md).
+
 ## Deep reference
 
-Field-validated internals, split across three references:
+Field-validated internals, split across four references:
 
 - [references/index-management.md](references/index-management.md) — the index/repository file layer: where `.index` and `.query` files live (feed queries at repository ROOT, dashboard queries in Shared ONLY), the schema-extender requirement, `CustomField_<SystemName>` index naming for custom fields, the MCP query payload contract, the GUID-duplication bug, channel isolation as a query-time filter, currency integrity as a build precondition, and the full flush-then-rebuild recovery recipe.
 - [references/query-authoring.md](references/query-authoring.md) — the `Query*` verb lifecycle: which of the three read verbs is authoritative, `QueryCopy`/`QueryMove`/`QueryDelete` mechanics, and the restart-free query-cache flush (throwaway-GUID `QueryById` GET).
 - [references/query-expressions.md](references/query-expressions.md) — expression `Path` semantics (an unresolvable path APPENDS; `Path:"0"` rewrites the ROOT group), operator reality (`In`/`MatchAny` traps), sorting and paging behaviour, declared-but-unpopulated index fields, and the three ways a build verb answers 200 and builds nothing.
+- [references/mcp-query-tools.md](references/mcp-query-tools.md) — the MCP tool-level contract for both query families: tool map, read-edit-verify loop, `ValueType` macros, a worked example, index-build ordering, facet parameter binding, safe deletion, and dashboard binding.
 
 ## Pitfalls
 

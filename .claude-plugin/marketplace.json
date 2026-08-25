@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "4.18.0"
+    "version": "4.19.0"
   },
   "plugins": [
     {
@@ -30,6 +30,7 @@
         "./skills/dw-render-viewmodels",
         "./skills/dw-render-templatetags",
         "./skills/dw-content-modelling",
+        "./skills/dw-content-localization",
         "./skills/dw-swift-building",
         "./skills/dw-swift-page-blocks",
         "./skills/dw-swift-page-design",
@@ -68,7 +69,8 @@
         "./skills/dw-extend-mcp-tools",
         "./skills/dw-integration-framework",
         "./skills/dw-integration-erp",
-        "./skills/dw-data-access"
+        "./skills/dw-data-access",
+        "./skills/dw-data-audit-trail"
       ]
     },
     {
@@ -79,6 +81,7 @@
       "skills": [
         "./skills/dw-setup-install",
         "./skills/dw-source-explorer",
+        "./skills/dw-source-doc-lookup",
         "./skills/dw-extend-mcp-tools"
       ]
     },

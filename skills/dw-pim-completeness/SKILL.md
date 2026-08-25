@@ -2,7 +2,7 @@
 name: dw-pim-completeness
 type: knowledge
 group: pim
-description: 'Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, and query-driven automatic workflows. Triggers: create completion rules, assign rules to data models or product groups, understand completeness scoring, set up completeness-driven query movement. Non-triggers: manual workflow states -> dw-pim-workflow; the Data Model schema -> dw-pim-modelling.'
+description: 'Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, query-driven automatic workflows — and enrich products against a query by filling their missing completion fields. Triggers: create completion rules, assign rules to data models or product groups, understand completeness scoring, set up completeness-driven query movement, fill/enrich missing product fields from a query. Non-triggers: manual workflow states -> dw-pim-workflow; the Data Model schema -> dw-pim-modelling.'
 ---
 
 # Product Completeness
@@ -80,6 +80,41 @@ Completeness is calculated **per language**. A product may be 100% complete in E
 Completion queries can be scoped to a specific language, enabling language-specific editorial backlogs.
 
 See [dw-pim-localization](../dw-pim-localization) for language setup.
+
+## Enriching Products Against a Query
+
+Configuring rules answers "what must be filled"; this is the separate action of actually
+filling the gaps for products matched by a saved query.
+
+**Read-first workflow:**
+
+1. **Source rules** — when the user names a query, read the query-source completion rules.
+   Also read any shop-level and group-level rules that apply to the same products (a product
+   can be subject to rules from multiple sources — read all relevant ones, not just the one
+   named).
+2. **Page through products** — fetch matching products page by page. Do not pull the whole
+   result set into context at once.
+3. **Per product** — compare current field values against the union of relevant rules. List
+   only the empty required fields.
+4. **Propose values** — propose a value for each empty field from visible context, sibling
+   product values, or other already-set attributes on the same product. If no source is
+   available, mark the field as needing user input rather than fabricating a value.
+5. **Confirm** — present the proposed patch (fields + proposed values, not a generic summary)
+   before writing.
+6. **Patch only the empty fields** — never overwrite a value that is already set, even if a
+   new proposal looks better. The contract is: fill the gaps, not edit what is filled.
+
+**Multi-product chains.** Bulk enrichment is a chain of per-product patches. Treat the chain
+as authorized once confirmed; break only on tool error, unknown value, or an explicit pause.
+
+**Language layers.** If the relevant rules count translated fields, fill the master language
+first; translations inherit unless explicitly overridden. Filling a translated field can
+shadow a future master change in surprising ways — only do so when the user asked for a
+specific language.
+
+**Out of scope:** editing fields that already have values (this is enrichment, not curation);
+changing a rule's field list itself (that's a rule edit, see "Creating Completion Rules"
+above).
 
 ## Completion Rule API
 

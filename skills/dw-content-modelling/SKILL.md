@@ -2,7 +2,7 @@
 name: dw-content-modelling
 type: knowledge
 group: content
-description: 'Design item types, paragraphs, and content models in Dynamicweb 10. Triggers: item type discipline, paragraph structure, field modelling, asset organization. Non-triggers: rendering content -> dw-render-razor; fetching with ViewModels -> dw-render-viewmodels.'
+description: 'Design item types, paragraphs, and content models in Dynamicweb 10, and create/publish a page or paragraph through the MCP tools. Triggers: item type discipline, paragraph structure, field modelling, asset organization, create/edit/copy/move/publish a page or paragraph. Non-triggers: rendering content -> dw-render-razor; fetching with ViewModels -> dw-render-viewmodels; translating a page/site -> dw-content-localization.'
 ---
 
 # Content Modelling
@@ -277,6 +277,76 @@ IEnumerable<FileViewModel> files = item.GetFiles("Attachments");
                 2Column.cshtml
 ```
 
+## Creating and Publishing a Page
+
+Beyond designing the schema, actually creating/editing/copying/moving/publishing a page or
+paragraph through the MCP tools has its own discipline.
+
+**Domain anchor.** The page entity is `Dynamicweb.Content.Page`. Key fields:
+
+- **`AreaId`** — the website. Every page belongs to exactly one area, set at construction and
+  effectively immutable.
+- **`ParentPageId`** — tree position. `0` means top-level under the area.
+- **`Active`** vs **`Published`** — these are different. `Active` controls inclusion in
+  navigation/availability; `Published` controls whether the page is live. A page can be
+  `Active` but unpublished, or vice versa. `ActiveTo` adds a time-bound expiry.
+- **`IsFolder`** / **`IsTemplate`** — folders hold structure but render nothing; templates are
+  the source for `CopyOf` clones. Don't treat them as content pages.
+- **`NavigationTag`**, **`MenuText`**, **`Sort`** — navigation surface. `Sort` is integer order
+  among siblings.
+- **`LayoutTemplate`**, **`ParentLayoutTemplate`**, `LayoutApplyToSubPages` — layout
+  inheritance. Setting these wrong is the most common cause of "the new page looks broken".
+- **Items** — a page is item-typed via `Dynamicweb.Content.Items.Item`. The item type is the
+  schema (above); required fields, references, and translatable flags live there.
+
+**Read before write:**
+
+1. **Parent** — confirm the parent page or area. The parent's item type and layout often
+   constrain the child.
+2. **Item type** — read the item type schema: required fields, localizable flags, references
+   (image, file, page link).
+3. **Sibling** — read one published sibling at the same level. Copy conventions for layout,
+   navigation, access.
+4. **Language layer** — multilingual sites use translation layers on top of the master
+   language. Decide *up front* whether to write on master (translations inherit) or on a
+   specific translation. Mixing the two is the most common source of "the change is not
+   visible" reports.
+
+**Required field shortlist.** Most installations require at minimum: `AreaId`,
+`ParentPageId`, item type, name. Many add: `MenuText`, `NavigationTag`, `Sort`,
+`LayoutTemplate`, access permissions.
+
+**Publish is a separate write.** Saving a page sets `Active`/data; it does not set
+`Published`. After the create/edit, propose a follow-up publish call as its own step if the
+user said "make it live". If the user said "draft only", stop after save.
+
+**Paragraphs — two insertion paths.** Choosing the wrong one fails silently or with a
+confusing error:
+
+- **App/module paragraph** (`place_app_paragraph`) — for a standalone Dynamicweb application
+  or module (e.g. a product list, search module, form). These appear in `get_content_apps`.
+  If the component is NOT listed there, this path fails.
+- **Item-typed paragraph** (`save_paragraphs`) — for any item-typed component, i.e. any type
+  that appears in `get_item_types`, including any custom solution-specific paragraph types.
+  Create with `save_paragraphs`, setting `ItemType` to the exact system name from
+  `get_item_types`.
+
+To pick: call `get_item_types` and check if the type exists there (→ `save_paragraphs`); if
+not, call `get_content_apps` (→ `place_app_paragraph`); if found in neither, find an existing
+paragraph of that type on another page to copy its structure. Whichever tool creates it,
+`save_paragraphs`/`set_paragraph_item_fields` store field values **verbatim** — read the
+target item type's real field names and an existing sibling's value shapes first (button
+fields as `{"Label","Link","Style"}` JSON, rich-text fields with their own HTML) rather than
+guessing.
+
+**Confirm before writing.** State the page and parent ("Create About page under Company"),
+the item type, language, and whether it will be published. For paragraph edits, name the
+paragraph and the page it lives on.
+
+**Recovery.** If the write fails on item-type or schema validation, read the item type schema
+again, fix the missing or wrong field, and retry. Do not invent placeholder values to satisfy
+required fields.
+
 ## Deep reference
 
 [references/modelling-discipline.md](references/modelling-discipline.md) — field-validated depth on:
@@ -304,3 +374,4 @@ IEnumerable<FileViewModel> files = item.GetFiles("Attachments");
 - **Razor template structure?** See [dw-render-razor](../dw-render-razor)
 - **Using TemplateTags for legacy rendering?** See [dw-render-templatetags](../dw-render-templatetags)
 - **Cache invalidation after content mutations (SQL-seeded pages/paragraphs, item-type XML drops)?** See [dw-data-access](../dw-data-access/SKILL.md)
+- **Translating a page or making a language version of a site?** See [dw-content-localization](../dw-content-localization)

@@ -3,6 +3,46 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.19.0]
+
+Ported the remaining portable Custom.Mcp Assistant builtin skills (everything not tied to
+Dynamo's own admin-assistant features) into this repo, sanitized of "Dynamo"/"approval card"
+framing. Rather than a 1:1 file mapping, each builtin was checked against the existing skill
+covering its domain first, since the existing PIM/commerce/search/content skills already carry
+some field-validated MCP-tool detail — most builtins turned out to be the missing *procedural*
+layer for a domain that already has *reference* depth, not a new domain.
+
+**New skills** (no existing domain home):
+- `dw-data-audit-trail` — investigate history/audit trail for any entity (from
+  `diagnose-what-changed.md`).
+- `dw-content-localization` — translate a page/site or create a language version (from
+  `cms-page-translate.md`); mirrors the existing `dw-pim-localization` split from
+  `dw-pim-modelling`.
+- `dw-source-doc-lookup` — consult doc.dynamicweb.dev via `search_documentation`/
+  `fetch_documentation_page` before answering (from `documentation-lookup.md`).
+
+**Folded into existing skills as new sections** (avoids duplicating the domain's existing
+reference-layer content with a near-identical new skill):
+- `dw-content-modelling` ← `cms-page-publish.md` ("Creating and Publishing a Page").
+- `dw-commerce-b2b` ← `commerce-assortment-setup.md` (MCP tool flow added to the existing
+  "Assortments" section).
+- `dw-commerce-catalog` ← `commerce-currency-pricing.md` ("Currency Conversion").
+- `dw-commerce-orders` ← `commerce-order-investigate.md` + `commerce-discount-voucher.md`
+  ("Investigating an Order", "Discounts and Vouchers").
+- `dw-pim-modelling` ← `commerce-product-create.md` ("Creating a Product") +
+  `product-variants-setup.md` (destructive-ordering trap added to "Variant Groups").
+- `dw-pim-completeness` ← `pim-completeness.md`'s enrichment flow ("Enriching Products Against
+  a Query" — the existing skill only covered rule *configuration*).
+- `dw-search-indexing` ← `pim-product-query.md` + `search-index-and-query.md` (new
+  `references/mcp-query-tools.md`, the MCP-tool-layer companion to the existing
+  Admin-API-layer `query-authoring.md`/`query-expressions.md`).
+
+**Excluded:** `navigation.md` — wraps `dynamo_navigate`, a tool specific to the Dynamo
+admin-assistant's own fuzzy nav-index feature; no generic MCP equivalent exists.
+
+Registered `dw-content-localization` in `dynamicweb-frontend`, `dw-data-audit-trail` in
+`dynamicweb-backend`, and `dw-source-doc-lookup` in `dynamicweb-developer`.
+
 ## [4.18.0]
 
 Ported five skills out of the Custom.Mcp `frn/dw9-to-dw10-migration` branch's builtin skill
