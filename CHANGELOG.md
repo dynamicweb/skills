@@ -3,6 +3,16 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.19.2]
+
+Folded `integration-activity-setup.md` (the last of the Custom.Mcp builtin skills from 4.19.0)
+into `dw-integration-framework` as a new "Setting Up Activities via MCP Tools" section — the
+activity/mapping/endpoint tool map, file-import and endpoint-driven-ERP-sync flows, diagnosing
+a failed run, and import rules. The existing skill covered architecture and C# provider-building
+but had no MCP-tool operational layer, same gap-fill pattern as the rest of 4.19.0. This landed
+as its own follow-up rather than in 4.19.0 itself because the commit was pushed to that PR's
+branch after the PR had already merged.
+
 ## [4.19.0]
 
 Ported the remaining portable Custom.Mcp Assistant builtin skills (everything not tied to

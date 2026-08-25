@@ -2,7 +2,7 @@
 name: dw-integration-framework
 type: knowledge
 group: integration
-description: 'Understand Dynamicweb 10 Integration Framework architecture and patterns. Triggers: Integration Framework, external systems, source/target providers. Non-triggers: ERP specifics -> dw-integration-erp; Business Central -> dw-integration-bc.'
+description: 'Understand Dynamicweb 10 Integration Framework architecture and patterns, and set up, run, schedule, or diagnose a Data Integration activity through the MCP tools. Triggers: Integration Framework, external systems, source/target providers, import/export products/users/orders via CSV/XML/Excel/OData, a failed or hanging integration activity. Non-triggers: ERP specifics -> dw-integration-erp; Business Central -> dw-integration-bc.'
 ---
 
 # Integration Framework
@@ -73,6 +73,102 @@ After creating the activity:
 **Logs** are stored in `/Files/System/Log/Data integration/` as `_lastrun.log` and `_lastrunresult.log`.
 
 Activity XML (job definitions) is stored in `/Files/Files/Integration/jobs/{activityFolder}/{jobName}.xml` and can be copied between solutions.
+
+## Setting Up Activities via MCP Tools
+
+Everything above describes the admin-UI mechanics; this is the same concept model driven
+through MCP tools instead.
+
+**Concept model, mapped to tools:**
+- **Activity** — one import/export job, identified as `group\name`. List with
+  `get_integration_activities`, inspect with `get_integration_activity`.
+- **Providers** — where data comes from and goes to. Both sides are providers; discover them
+  with `get_integration_providers`, their settings with `get_integration_provider_parameters`,
+  and the tables/columns they expose with `get_integration_provider_schema`.
+- **Mappings** — source table → destination table, then column → column. **Key columns**
+  (`IsKey`) decide insert-vs-update: without a key, every run inserts duplicates.
+  **Conditionals** filter rows. Manage with `get_integration_activity_mappings` /
+  `save_integration_activity_mapping`.
+- **Endpoints** — authenticated remote requests (OAuth S2S, Basic, Bearer, ...), grouped in
+  collections that can share authentication. The OData provider references an endpoint by id.
+  Manage with `get_integration_endpoints` / `save_integration_endpoint`, verify with
+  `test_integration_endpoint`.
+- **Runs & logs** — `run_integration_activity` QUEUES a run (asynchronous — a queued result is
+  not a completed run). Poll `get_integration_activity_status`; verify the outcome in
+  `get_integration_activity_logs`. Row counts appear only as log text.
+- **Schedules** — `schedule_integration_activity` binds a scheduled task to the activity
+  (manage further with the scheduled-task tools — see
+  [dw-extend-scheduled-tasks](../dw-extend-scheduled-tasks)).
+
+**Choosing a destination provider for imports:**
+- **Ecom provider** — ecommerce data with conveniences: auto-creates missing IDs, language
+  rows, groups, manufacturers. First choice for product imports; costs ~3x the memory of the
+  Dynamicweb provider.
+- **Dynamicweb provider** — generic access to the whole database. Precise but manual:
+  relation tables (e.g. group-product relations) must be mapped explicitly.
+- **User / Order providers** — users and orders, with domain settings (user key field, "export
+  not yet exported orders", order state after export).
+- **OData provider** — reads/writes a remote OData API via an endpoint. Source modes: full
+  replication vs **delta** (changed-since-last-run; never deletes; first run falls back to
+  full).
+- **SQL / XML / CSV / Excel providers** — external databases and files. File providers resolve
+  paths under `/Files`.
+
+**Flow: file import (CSV/XML/Excel → Dynamicweb/Ecom):**
+1. `get_integration_providers`, then `get_integration_provider_parameters` for the file
+   provider — identify the source-file/folder parameters.
+2. If the source file doesn't exist in the archive yet, upload it to
+   `/Files/Files/Integration` (the archive folder integration file providers read from) — pass
+   the resulting virtual path to the provider's source parameter.
+3. `create_integration_activity` with the file provider as source and Ecom/Dynamicweb as
+   destination.
+4. `get_integration_provider_schema` for both sides of the new activity, then
+   `save_integration_activity_mapping` per table: map columns, mark the natural key (e.g.
+   `ProductNumber`) `IsKey=true`.
+5. `run_integration_activity` (confirm first), poll `get_integration_activity_status`, verify
+   in `get_integration_activity_logs`.
+
+**Flow: endpoint-driven ERP sync (e.g. Business Central OData):**
+1. `save_integration_endpoint` — URL, collection, and inline authentication (OAuth S2S needs
+   client id, tenant id, client secret). `test_integration_endpoint` before going further.
+2. `create_integration_activity` with the OData provider as source (its endpoint parameter
+   takes the endpoint id) and Ecom/Dynamicweb/User as destination; map with
+   `save_integration_activity_mapping`.
+3. Run once manually and verify, then `schedule_integration_activity` for the recurring sync.
+4. Dependent activities (customers before orders, groups before products) must run in
+   dependency order — schedule them accordingly.
+
+**Flow: diagnose a failed run:**
+1. `get_integration_activity_status` — still running? failed? when did it last succeed?
+2. `get_integration_activity_logs` — the error lines usually name the offending table, column,
+   or remote error; page back for context, or read the previous run's log to compare.
+3. Typical causes: authentication expired (test the endpoint), schema drift (a mapped column
+   no longer exists — re-check with `get_integration_provider_schema`), bad source data (see
+   rules below), or the remote system rate-limiting.
+
+**Rules:**
+- Explicitly set IDs in imported data (ProductID etc.) may contain ONLY letters and digits —
+  spaces, commas, dots, or special characters break the import.
+- **Excel provider source path**: splitting the file across "Source folder" (folder path) +
+  "Source file" (file name) — the split the parameter labels suggest — can fail validation
+  with "Excel file '...' does not exist" even when the file is really there. If that happens,
+  put the FULL virtual path (e.g. `/Files/Files/Integration/order_for_customer.xlsx`) in
+  "Source file" and leave "Source folder" empty; re-validate before concluding the file is
+  genuinely missing.
+- Never claim a run succeeded from a queued result: the log is the evidence.
+- `deleteRowsMissingFromSource` and "remove missing" options are destructive — enable only
+  when the source is the complete truth for that table.
+- After a product import, storefront lists driven by index queries show new products only
+  after the repository index rebuilds — if products are "missing," check the index (see
+  [dw-search-indexing](../dw-search-indexing)) before blaming the import.
+- Do not guess provider parameter names or table/column names — read them with the provider
+  tools; the save tools reject unknown names and list valid candidates.
+- If `get_integration_provider_schema` comes back with zero tables for an *existing*
+  activity's file-based source (CSV/XML/Excel) right after uploading or replacing that source
+  file, don't conclude the schema is unreadable: call it with the activity id (not a
+  reconstructed provider-type-name + parameters guess, which is exactly where the Excel path
+  pitfall above bites) and retry once. `save_integration_activity_mapping` reads the same live
+  schema at save time and can succeed even when a prior schema read looked empty.
 
 ## Built-in Source/Destination Providers
 
