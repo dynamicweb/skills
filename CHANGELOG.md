@@ -3,6 +3,20 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.19.1]
+
+Fixed `scripts/build-manifest.mjs`'s frontmatter parser: it read a `description: '...'`
+line's value verbatim, including the surrounding YAML quotes, so every quoted description (39
+of the 40 skills — everything but `dw-demo-base`, the one skill written unquoted) carried a
+literal leading `'` into `manifest.json`. That string is what `Dynamicweb.MCP`'s remote skill
+catalog (`DynamoSkillCatalog.BuildRemoteCatalogIndex`) shows verbatim to the model, so every
+remote-fetched skill's one-line summary in the Dynamo system prompt has been carrying a stray
+leading quote. Added an `unquote()` step (strips one matching pair of `'...'`/`"..."`,
+unescaping the YAML `''`/`\"` embedded-quote forms) before storing any frontmatter value.
+`validate-skills.py`'s own frontmatter readers were not affected (its strict pass uses real
+YAML parsing; the lenient pass's off-by-two on the description-length cap never mattered in
+practice).
+
 ## [4.19.0]
 
 Ported the remaining portable Custom.Mcp Assistant builtin skills (everything not tied to
