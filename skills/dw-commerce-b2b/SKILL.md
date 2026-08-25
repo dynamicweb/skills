@@ -2,7 +2,7 @@
 name: dw-commerce-b2b
 type: knowledge
 group: commerce
-description: 'Implement B2B patterns including customer groups, scoped assortments, and sales workflows. Triggers: B2B commerce, customer groups, DC scoping, CSR sales-on-behalf. Non-triggers: standard ecommerce -> dw-commerce-orders; product data -> dw-pim-modelling.'
+description: 'Implement B2B patterns including customer groups, scoped assortments, and sales workflows, and set up or rebuild a customer assortment through the MCP tools. Triggers: B2B commerce, customer groups, DC scoping, CSR sales-on-behalf, create/build a customer assortment, assortment rebuild not taking effect. Non-triggers: standard ecommerce -> dw-commerce-orders; product data -> dw-pim-modelling.'
 ---
 
 # B2B Commerce Patterns
@@ -40,6 +40,47 @@ Changes go live only **after a rebuild**. Three rebuild triggers:
 1. **Scheduled task** — "Build Ecommerce Assortment Items" (recommended; set to run frequently)
 2. **Manual** — from the assortment list via Actions menu or context menu
 3. **Flag-based** — setting `AssortmentRebuildRequired = true` in code marks the assortment for rebuild on the next scheduled run
+
+### Setting Up an Assortment via MCP Tools
+
+| Intent | Tool |
+|---|---|
+| List existing assortments | `get_assortments` |
+| Create / rename / activate an assortment | `save_assortments` |
+| Add products to an assortment | `assign_products_to_assortment` |
+| Add whole product groups | `assign_groups_to_assortment` |
+| Scope to one or more shops | `assign_shops_to_assortment` |
+| Grant a user/group access | `assign_permissions_to_assortment` |
+| Inspect what a user can see | `get_assortment_ids_by_user`, `get_assortment_permissions_by_user`, `check_assortment_product_access` |
+| Inspect current relations | `get_assortment_relations*` |
+| Mark for rebuild without building now | `flag_assortments_for_rebuild` |
+| Rebuild now | `build_assortments` |
+| Find what still needs building | `get_assortments_for_build` |
+
+Removal mirrors each assign tool (`remove_products_from_assortment`,
+`remove_groups_from_assortment`, etc.).
+
+Standard flow: **create** (`save_assortments`, active) → **fill** (`assign_products_to_assortment`
+and/or `assign_groups_to_assortment` — group membership is dynamic, so products later added to
+an assigned group are included on the next build) → **scope** (optional,
+`assign_shops_to_assortment`) → **grant access** (`assign_permissions_to_assortment` — an
+assortment with no permissions and `AllowAnonymousUsers` off is visible to nobody) →
+**build** (`build_assortments` — until this runs, none of the above is live; use
+`get_assortments_for_build` to confirm nothing is left pending) → **wire the storefront**
+(on a query-driven site, confirm the catalog page's index query filters on `AssortmentIDs` —
+see [dw-search-indexing](../dw-search-indexing); an assortment can be built and still leave the
+storefront unfiltered if the query doesn't reference it) → **verify**
+(`check_assortment_product_access` for a representative user + product).
+
+**The rebuild step is the #1 footgun via MCP too.** `flag_assortments_for_rebuild` only
+**marks** assortments dirty; it does not build them. `build_assortments` does the actual work
+and may run asynchronously. Never report an assortment as ready right after an assign call —
+it is not, until a build completes.
+
+**Anonymous access.** If the catalog should be visible to not-signed-in visitors, the
+assortment needs anonymous access enabled (`get_allow_anonymous_users_assortment_ids` shows
+which currently allow it). Otherwise anonymous storefront visitors see an empty catalog — a
+common "all products disappeared" report after enabling assortments.
 
 ## Impersonation (CSR Sales-on-Behalf)
 

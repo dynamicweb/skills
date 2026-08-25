@@ -2,7 +2,7 @@
 name: dw-pim-modelling
 type: knowledge
 group: pim
-description: 'Model Dynamicweb 10 PIM data — Data Models, category fields, variant groups, and global vs category field storage. Triggers: design or refactor a Data Model, choose global vs category fields, structure variant groups, organize category groups vs product folders. Non-triggers: workflow states and transitions -> dw-pim-workflow; completeness rules and scores -> dw-pim-completeness; translating products -> dw-pim-localization.'
+description: 'Model Dynamicweb 10 PIM data — Data Models, category fields, variant groups, and global vs category field storage — and create products, variant groups/combinations through the MCP tools. Triggers: design or refactor a Data Model, choose global vs category fields, structure variant groups, organize category groups vs product folders, create/clone a product or variant, set up variant options/combinations. Non-triggers: workflow states and transitions -> dw-pim-workflow; completeness rules and scores -> dw-pim-completeness; translating products -> dw-pim-localization.'
 ---
 
 # PIM Data Modelling
@@ -75,6 +75,49 @@ Every field has a **system name** (e.g., `ElecWattage`, `ClothFabric`) — this 
 
 **Naming convention:** Use a model prefix (2-4 chars) + field name in PascalCase. This avoids collisions across models.
 
+## Creating a Product
+
+The product entity is `Dynamicweb.Ecommerce.Products.Product`. It is **language-layered**
+(`LanguageId`) and **shop-scoped through groups** (`Groups` is a collection, not a single shop
+pointer). Custom fields live in `ProductFieldValues`, keyed by `ProductField.SystemName`. The
+default-language value of a translated field is the master — translations inherit until
+overridden.
+
+**Read before write.** Never draft the create call before every required field has a concrete
+value:
+
+1. **Schema** — read the product schema and the active `ProductField` definitions. Required,
+   computed, and translatable fields all live here.
+2. **Sibling** — read one existing product in the same group/shop/language. The sibling
+   reveals which optional fields are conventionally set (VAT group, unit, stock unit,
+   manufacturer, primary group).
+3. **References** — confirm IDs of shop, primary product group, language, currency, VAT
+   group, manufacturer. Reuse IDs already available rather than asking the user to repeat
+   them.
+
+**Required field shortlist.** Most installations require at minimum: language, name, number
+(SKU), and at least one group assignment (a product without a group is orphaned). Many add:
+VAT group, unit, stock unit, default price.
+
+**BOM ("composite") products** use the product's items collection — only set this when the
+user explicitly asked for a bundle. See "BOM (Bill of Materials) Products" below.
+
+**Multi-step writes.** A "create product" goal often chains: create master → create variants
+→ assign categories → set prices → attach images. Treat the chain as authorized once
+confirmed; move to each next step immediately. Break the chain only on tool error, unknown
+args, or an explicit pause.
+
+**Flat bulk creation is not a multi-step chain.** When the user asks to create many products of
+the same shape in one request (e.g. "create 1000 products from this list"), that is a single
+bulk-create operation, not a chain of per-product steps. Build the full list of product-create
+models and call `create_products` once (or in the fewest calls the payload size allows),
+confirmed as one batch. Do not treat each product, or each small group of products, as its own
+step requiring re-confirmation before continuing.
+
+**Recovery.** If the create returns a foreign-key or validation error, the missing reference
+is almost always shop, language, group, currency, or VAT group. Read the error, correct,
+retry — do not invent values to satisfy validators.
+
 ## Reference Groups
 
 **Reference groups** define which other products a product can relate to. Examples:
@@ -88,9 +131,50 @@ Reference group relations are rendered in templates via `ProductViewModel.Relate
 
 ## Variant Groups
 
-Variant groups define the dimensions along which a product varies (e.g., Color, Size). Each variant group contains **variant options** (e.g., Red, Blue, Green for Color).
+Variant groups define the dimensions along which a product varies (e.g., Color, Size). Each variant group contains **variant options** (e.g., Red, Blue, Green for Color). A product becomes variant-enabled by assigning one or more variant groups to it, then creating combinations from those groups' options.
 
 Admin path: **Products > Data > Variant Groups**
+
+### Setting Up Variants via MCP Tools
+
+| Intent | Tool |
+|---|---|
+| List / inspect variant groups | `get_variant_groups`, `get_variant_group_by_id`, `get_variant_groups_by_product_id` |
+| Create / update a group (`DisplayType` controls storefront UI) | `save_variant_groups` |
+| List / create / update options in a group | `get_variant_options`, `save_variant_options` |
+| Assign variant groups to a product | `assign_variant_groups_to_product` |
+| List a product's combinations | `get_variant_combinations` |
+| Create combinations | `create_variant_combinations` |
+| Remove a group from a product | `remove_variant_groups_from_product` |
+| Delete groups / options / combinations | `delete_variant_groups`, `delete_variant_options`, `delete_variant_combinations` |
+
+**The destructive ordering trap — read before doing anything.**
+`assign_variant_groups_to_product` and `remove_variant_groups_from_product` **DELETE all
+existing combinations on that product**, and they are **not atomic**:
+
+- Assign **all** the groups a product needs in a **single** `assign_variant_groups_to_product`
+  call, **before** creating any combinations. Assigning Color, creating combinations, then
+  later assigning Size wipes the Color combinations.
+- A partial failure mid-assign can leave the product with some groups assigned and
+  combinations already gone. After any assign/remove, always re-read with
+  `get_variant_groups_by_product_id` and `get_variant_combinations` before proceeding.
+- If the user wants to add a dimension to a product that already has combinations, warn them
+  the existing combinations will be cleared and must be recreated, and confirm before
+  proceeding.
+
+**The correct flow:** ensure the needed groups and options exist (`save_variant_groups` +
+`save_variant_options`; `DisplayType` on the group controls storefront rendering — dropdown,
+swatch, etc.) → assign **all** groups at once (`assign_variant_groups_to_product`) → create
+combinations (`create_variant_combinations` — each combination's option ids must contain
+**exactly one option per assigned group**, no more, no fewer) → verify
+(`get_variant_combinations`, confirm the expected matrix, e.g. 3 colors × 2 sizes = 6
+combinations).
+
+Full matrix size is the product of option counts across assigned groups. Decide with the user
+whether they want the full matrix or only specific sellable combinations — create only the
+combinations actually sold, since each is an individually sellable variant with its own
+stock/price. State plainly whenever existing combinations will be cleared, so the wipe is
+never a surprise, and report the combination count created vs. the expected matrix size.
 
 When a product has variants, its `ProductId` stays the same and the variant id identifies the specific variant. For multi-axis variants it is the dot-joined variant option ids (e.g. `VO1.VO4`); for single-axis variants it is the bare `VariantOptionId` (e.g. `VO3`). The full 3-table shape (relation tables, per-variant `EcomProducts` rows, unique-`ProductNumber` rule, and MCP/API/SQL surface gotchas) lives in [references/structural-model.md](references/structural-model.md) §2.5 / §2.5a.
 

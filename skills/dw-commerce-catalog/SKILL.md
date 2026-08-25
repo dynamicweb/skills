@@ -2,7 +2,7 @@
 name: dw-commerce-catalog
 type: knowledge
 group: commerce
-description: 'Render product catalogs and assortments in Dynamicweb 10. Triggers: ProductListViewModel, catalog display, assortment rendering. Non-triggers: product workflow -> dw-pim-workflow; orders and checkout -> dw-commerce-orders.'
+description: 'Render product catalogs and assortments in Dynamicweb 10, and convert or set a product price in a specific currency through the MCP tools. Triggers: ProductListViewModel, catalog display, assortment rendering, convert an amount between currencies, set a price in a non-default currency. Non-triggers: product workflow -> dw-pim-workflow; orders and checkout -> dw-commerce-orders.'
 ---
 
 # Product Catalog Rendering
@@ -151,6 +151,61 @@ product.GetProductLink(pageId)  // URL to product detail page
 | **Spell Check** | Enable and configure did-you-mean suggestions |
 
 **"Use group sort in group context"** — when `GroupID` is in the URL, uses the sort order defined on the product group instead of the query's default sort.
+
+## Currency Conversion
+
+Setting or converting a price in a specific currency has one rule above the rest: **never
+convert in your head; use the tool.** For ANY currency conversion, call `convert_currency`
+(`amount`, `fromCurrencyCode`, `toCurrencyCode`). It reads this solution's live, configured
+rates and applies Dynamicweb's exact engine formula, so the answer matches the storefront.
+Report the number it returns.
+
+**Do not compute conversions by hand, and never use rate numbers from documentation examples
+as if they were this solution's rates.** Illustrative doc values are concept-only; the real
+rates live on the solution and are usually completely different. Using doc numbers gives a
+confidently wrong answer — the single most common failure here.
+
+**Default currency means no conversion.** If the requested currency IS the solution's default
+currency, do not convert — just set the product's default price (`defaultPrice` via
+`patch_products_safe`) to the amount given. Do not run rate math and do not create a
+`save_prices` row. Only convert — and only then touch exchange rates — when the target
+currency is **different** from the default. "Set the price to 4999" with no currency named
+means 4999 in the default currency.
+
+**How it works.** The default currency is the reference; every currency's `Rate` is relative
+to it. Find the default with `get_currencies` → the entry where `IsDefault = true`. Read rates;
+never assume them. Dynamicweb's engine converts with exactly:
+
+```
+convertedAmount = amount * fromCurrency.Rate / toCurrency.Rate
+```
+
+That is what `convert_currency` returns. Worked example with live rates EUR `100` (default),
+DKK `15`: 4999 DKK → EUR = `4999 * 15 / 100 = 749.85 EUR`; 100 EUR → DKK = `100 * 100 / 15 ≈
+666.67 DKK`. (Documentation describing this relationship in prose can read inverted relative
+to the engine, and its example numbers are never this solution's rates — trust
+`convert_currency` and the solution's real `Rate` values instead.)
+
+**Procedure:** identify the target currency (equals default → set `defaultPrice` and stop, no
+conversion) → convert with `convert_currency(amount, from, to)` (report the rounded amount and
+the rates used, for transparency) → write, if setting the price, with `save_prices` as a price
+row carrying the target `CurrencyCode` (`save_prices` does **not** convert — give it the
+already-converted amount).
+
+**Sanity checks:**
+- `save_prices` and `patch_products_safe` perform no automatic conversion; `convert_currency`
+  does the math, those tools store what they're given.
+- A currency with `Rate = 0` cannot be a conversion target — `convert_currency` refuses it. Fix
+  the rate first.
+- If rates look unrealistic for the pair (e.g. EUR `100` default and DKK `15`, implying 1 DKK ≈
+  0.15 EUR), the solution's currency setup is likely misconfigured — say so plainly rather
+  than silently emitting a nonsensical price.
+- Don't explain a result with rate logic when no conversion happened (target was the default
+  currency) — state that the default price was set directly.
+
+When editing currency definitions with `save_currencies`, remember a currency's `Rate` is
+relative to the default currency in this base-rate model, not a plain market-style "1 target =
+x default" factor — convert a market rate into this model before saving.
 
 ## Search Index Setup
 

@@ -15,6 +15,7 @@ skills/
   dw-setup-*/               # install, configure, upgrade a Dynamicweb 10 solution
   dw-render-*/              # Razor, ViewModels, TemplateTags
   dw-content-modelling/     # item types, paragraphs, content models
+  dw-content-localization/ # translate a page/site, create a language version
   dw-swift-building/        # customize a Swift 2 site for a business
   dw-swift-page-blocks/     # Swift 2 page-building vocabulary (reference)
   dw-swift-page-design/     # build a Swift 2 page from a reference/mockup
@@ -29,7 +30,9 @@ skills/
   dw-extend-*/              # C# API, providers, scheduled tasks, MCP tools
   dw-integration-*/         # Integration Framework, ERP connectors, Business Central
   dw-data-access/           # data-access patterns and caching
+  dw-data-audit-trail/      # investigate who/when/why something changed
   dw-source-explorer/       # browse Dynamicweb source on GitHub
+  dw-source-doc-lookup/     # consult the live Dynamicweb documentation
   dw-demo-*/                # presales demo chain (base, pim, swift, headless, erp)
 ```
 
@@ -41,10 +44,10 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | Plugin | Audience | Skills included |
 |--------|----------|-----------------|
 | `dynamicweb-setup` | Provisioning Dynamicweb 10 | setup-install, setup-config, setup-upgrade |
-| `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, swift-building, swift-page-blocks, swift-page-design, swift-migrate-v1, swift-migrate-content, headless-delivery |
+| `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, content-localization, swift-building, swift-page-blocks, swift-page-design, swift-migrate-v1, swift-migrate-content, headless-delivery |
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
-| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access |
-| `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, extend-mcp-tools |
+| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access, data-audit-trail |
+| `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, source-doc-lookup, extend-mcp-tools |
 | `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-erp, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
 
 ## Skills
@@ -72,7 +75,10 @@ Fetch and shape content using ViewModels in Dynamicweb 10 templates.
 Build templates using TemplateTags to access content properties directly.
 
 **[dw-content-modelling](skills/dw-content-modelling/SKILL.md)**
-Design item types, paragraphs, and content models in Dynamicweb 10.
+Design item types, paragraphs, and content models in Dynamicweb 10, and create/publish a page or paragraph through the MCP tools.
+
+**[dw-content-localization](skills/dw-content-localization/SKILL.md)**
+Create a language version of a website and translate its page content, or translate an existing page/site from one language to another.
 
 **[dw-swift-building](skills/dw-swift-building/SKILL.md)**
 Customize an existing Swift 2 site for a specific business without rebuilding it — preserves the working page shell and updates area, navigation, category pages, and item values.
@@ -150,8 +156,14 @@ Live "PIM for Business Central connector" demos — expose the local DW host pub
 **[dw-data-access](skills/dw-data-access/SKILL.md)**
 Choose appropriate data-access patterns and optimize caching.
 
+**[dw-data-audit-trail](skills/dw-data-audit-trail/SKILL.md)**
+Investigate why something changed, who changed a record, when a value was set, or inspect version/history for any Dynamicweb 10 entity.
+
 **[dw-source-explorer](skills/dw-source-explorer/SKILL.md)**
 Browse Dynamicweb source code on GitHub to understand internal APIs, classes, and extension points.
+
+**[dw-source-doc-lookup](skills/dw-source-doc-lookup/SKILL.md)**
+Consult the live Dynamicweb documentation as the source of truth before answering how a feature works, is configured, or fits together.
 
 ### Demos (Presales)
 
