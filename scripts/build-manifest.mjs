@@ -29,6 +29,20 @@ function findSkillFiles(dir) {
   return out;
 }
 
+// Strips one matching pair of YAML scalar quotes (the frontmatter convention
+// here is `description: '...'`), unescaping the doubled/backslash form each
+// style uses for an embedded quote. Left alone if the value isn't quoted.
+function unquote(value) {
+  if (value.length >= 2) {
+    const first = value[0], last = value[value.length - 1];
+    if (first === last && (first === "'" || first === '"')) {
+      const inner = value.slice(1, -1);
+      return first === "'" ? inner.replace(/''/g, "'") : inner.replace(/\\"/g, '"');
+    }
+  }
+  return value;
+}
+
 // Minimal frontmatter parse: flat `key: value` lines between the first --- pair.
 // Descriptions are single-line, so this is all the YAML we need.
 function frontmatter(text) {
@@ -39,7 +53,7 @@ function frontmatter(text) {
     if (/^\s/.test(line) || line.trimStart().startsWith("#")) continue;
     const i = line.indexOf(":");
     if (i === -1) continue;
-    fm[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+    fm[line.slice(0, i).trim()] = unquote(line.slice(i + 1).trim());
   }
   return fm;
 }
