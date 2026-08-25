@@ -3,6 +3,19 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.18.0]
+
+Ported five skills out of the Custom.Mcp `frn/dw9-to-dw10-migration` branch's builtin skill
+set, sanitized to platform-generic knowledge (no Dynamo-specific "workflow"/"approval card"
+framing): `dw-pim-migrate-dw9` (structure -> product import -> data-model assignment -> verify
+for a DW9-to-DW10 product catalog migration), `dw-swift-page-blocks` (the Swift 2 page-building
+vocabulary — row layouts, paragraph components, color schemes, and the MCP tools that compose
+them), `dw-swift-page-design` (build a Swift 2 page from a reference page, a mockup, or a live
+URL), `dw-swift-migrate-v1` (faithful Swift 1 -> Swift 2 layout-preserving port), and
+`dw-swift-migrate-content` (rebuild any site's content as modern Swift 2). Registered
+`dw-pim-migrate-dw9` in `dynamicweb-commerce` and the four Swift skills in
+`dynamicweb-frontend`.
+
 ## [4.17.0]
 
 Debloat pass on `dw-demo-base` itself: SKILL.md drops from ~6,300 to ~3,900 words and reads

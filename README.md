@@ -16,8 +16,13 @@ skills/
   dw-render-*/              # Razor, ViewModels, TemplateTags
   dw-content-modelling/     # item types, paragraphs, content models
   dw-swift-building/        # customize a Swift 2 site for a business
+  dw-swift-page-blocks/     # Swift 2 page-building vocabulary (reference)
+  dw-swift-page-design/     # build a Swift 2 page from a reference/mockup
+  dw-swift-migrate-v1/      # faithful Swift 1 -> Swift 2 layout port
+  dw-swift-migrate-content/ # rebuild any site's content as modern Swift 2
   dw-headless-delivery/     # decoupled frontends over the /dwapi/ delivery API
   dw-pim-*/                 # PIM modelling, completeness, workflow, localization
+  dw-pim-migrate-dw9/       # migrate a DW9 product catalog into DW10 PIM
   dw-commerce-*/            # catalog, orders, B2B
   dw-search-indexing/       # search indexes on Lucene
   dw-users-permissions/     # users, groups, permissions
@@ -36,8 +41,8 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | Plugin | Audience | Skills included |
 |--------|----------|-----------------|
 | `dynamicweb-setup` | Provisioning Dynamicweb 10 | setup-install, setup-config, setup-upgrade |
-| `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, swift-building, headless-delivery |
-| `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
+| `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, swift-building, swift-page-blocks, swift-page-design, swift-migrate-v1, swift-migrate-content, headless-delivery |
+| `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
 | `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, extend-mcp-tools |
 | `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-erp, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
@@ -72,6 +77,18 @@ Design item types, paragraphs, and content models in Dynamicweb 10.
 **[dw-swift-building](skills/dw-swift-building/SKILL.md)**
 Customize an existing Swift 2 site for a specific business without rebuilding it — preserves the working page shell and updates area, navigation, category pages, and item values.
 
+**[dw-swift-page-blocks](skills/dw-swift-page-blocks/SKILL.md)**
+Reference for the Swift 2 page-building vocabulary — grid row layouts, paragraph component types with their variants and fields, color schemes, and the MCP tools that compose them.
+
+**[dw-swift-page-design](skills/dw-swift-page-design/SKILL.md)**
+Build a good-looking Swift 2 page — matching an existing page's style, from a screenshot/mockup, or by recreating a live page from its URL.
+
+**[dw-swift-migrate-v1](skills/dw-swift-migrate-v1/SKILL.md)**
+Faithful, layout-preserving migration of pages from a Swift 1 solution into Swift 2.
+
+**[dw-swift-migrate-content](skills/dw-swift-migrate-content/SKILL.md)**
+Extract any existing site's content and rebuild it as a standard, modern Swift 2 site.
+
 **[dw-headless-delivery](skills/dw-headless-delivery/SKILL.md)**
 Build decoupled frontends using the `/dwapi/` delivery API — authentication, content, ecommerce, users, navigation, forms, and query endpoints.
 
@@ -88,6 +105,9 @@ Configure Dynamicweb 10 PIM workflows — named states, transitions, and editori
 
 **[dw-pim-localization](skills/dw-pim-localization/SKILL.md)**
 Manage product translation and localization across EcomLanguages.
+
+**[dw-pim-migrate-dw9](skills/dw-pim-migrate-dw9/SKILL.md)**
+Migrate a Dynamicweb 9 solution's product structure and catalog data into a Dynamicweb 10 PIM — structure, product import, data-model assignment, and verification, in that order.
 
 **[dw-commerce-catalog](skills/dw-commerce-catalog/SKILL.md)**
 Render product catalogs and assortments in Dynamicweb 10.

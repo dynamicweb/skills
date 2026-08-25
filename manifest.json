@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-24T13:42:11.794Z",
+  "generatedAt": "2026-08-25T07:40:30.902Z",
   "skills": [
     {
       "name": "dw-demo-base",
@@ -52,6 +52,13 @@
       "path": "skills/dw-integration-bc/SKILL.md"
     },
     {
+      "name": "dw-pim-migrate-dw9",
+      "type": "flow",
+      "group": "pim",
+      "description": "'Migrate a Dynamicweb 9 (DW9) solution''s product structure and catalog data into a Dynamicweb 10 PIM with the migrate_dw9_export, run_dw9_product_import, and assign_dw9_products_to_data_models tools.",
+      "path": "skills/dw-pim-migrate-dw9/SKILL.md"
+    },
+    {
       "name": "dw-setup-install",
       "type": "flow",
       "group": "setup",
@@ -71,6 +78,27 @@
       "group": "swift",
       "description": "'Customize an existing Swift 2 Dynamicweb site for a specific business without rebuilding it — preserve the working page shell and update area, navigation, category pages, and item values.",
       "path": "skills/dw-swift-building/SKILL.md"
+    },
+    {
+      "name": "dw-swift-migrate-content",
+      "type": "flow",
+      "group": "swift",
+      "description": "'Bring the CONTENT of an existing/old website into a Dynamicweb 10 solution as a standard, modern Swift 2 site — extract a source site''s pages/media and rebuild them here.",
+      "path": "skills/dw-swift-migrate-content/SKILL.md"
+    },
+    {
+      "name": "dw-swift-migrate-v1",
+      "type": "flow",
+      "group": "swift",
+      "description": "'Migrate pages from a Swift 1 (Swift v1) solution to Swift 2 and KEEP THE LAYOUT — a faithful, structure-preserving port (Swift 1 and Swift 2 share the same grid model, so the layout carries over 1:1)",
+      "path": "skills/dw-swift-migrate-v1/SKILL.md"
+    },
+    {
+      "name": "dw-swift-page-design",
+      "type": "flow",
+      "group": "swift",
+      "description": "'Build a good-looking Swift 2 page — matching the style of an existing page, from a supplied image/screenshot/mockup, from a plain-language description, or by recreating a single live page from its UR",
+      "path": "skills/dw-swift-page-design/SKILL.md"
     },
     {
       "name": "dw-commerce-b2b",
@@ -218,6 +246,13 @@
       "group": "source",
       "description": "'Browse Dynamicweb source code on GitHub to understand internal APIs, classes, extension points, and patterns.",
       "path": "skills/dw-source-explorer/SKILL.md"
+    },
+    {
+      "name": "dw-swift-page-blocks",
+      "type": "knowledge",
+      "group": "swift",
+      "description": "'Reference for the Swift 2 page-building vocabulary — grid row layouts (DefinitionIds), paragraph component types with their variants and fields, color schemes, and the MCP tools that compose them.",
+      "path": "skills/dw-swift-page-blocks/SKILL.md"
     },
     {
       "name": "dw-users-permissions",
