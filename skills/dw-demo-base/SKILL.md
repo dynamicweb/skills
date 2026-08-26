@@ -2,7 +2,7 @@
 name: dw-demo-base
 type: flow
 group: demo
-description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, when "pinning the platform" for a Distribution-validating scaffold, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (references/online-mode.md). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md — and the maintainer fold-back workflow — "fold this into the skill" routes to references/iterate-plugin.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-erp, dw-integration-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
+description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, when "pinning the platform" for a Distribution-validating scaffold, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (routes to dw-demo-hosted). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md — and the maintainer fold-back workflow — "fold this into the skill" routes to references/iterate-plugin.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-hosted, dw-demo-erp, dw-integration-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
 ---
 
 # Dynamicweb Demo Base Skill
@@ -30,7 +30,7 @@ Every sister demo skill carries the same "how to run me" header and defers to th
 
 ## Environment fork — local install vs hosted (online) install
 
-The canonical flow below assumes a **local install** (scaffold + SQL Express on the demo machine). When the engagement instead hands you a **site URL + Admin API bearer key** — a vendor-hosted/cloud install with no machine to scaffold on — fork to [references/online-mode.md](references/online-mode.md), which owns the deltas: which canonical steps to skip, the session-start probe (tool availability on hosted installs is **version-dependent** — MCP may or may not be exposed; always probe, never assume), the Management API recipe pack that substitutes for MCP/SQL recipes, and the shared-install discipline. Moving a demo that was built locally onto a hosted install is a **migration, not a deploy** — a separate playbook with its own failure modes, owned by [references/publish-to-hosted.md](references/publish-to-hosted.md). The always-on rules (surface priority, guarded writes, customer-context, demo philosophy) apply in both modes.
+The canonical flow below assumes a **local install** (scaffold + SQL Express on the demo machine). When the engagement instead hands you a **site URL + Admin API bearer key** — a vendor-hosted/cloud install with no machine to scaffold on — the build forks to [`dw-demo-hosted`](../dw-demo-hosted/SKILL.md), which owns the deltas: which canonical steps to skip, the session-start probe (tool availability on hosted installs is **version-dependent** — MCP may or may not be exposed; always probe, never assume), the Management API recipe pack that substitutes for MCP/SQL recipes, and the shared-install discipline. Moving a demo that was built locally onto a hosted install is a **migration, not a deploy** — a separate playbook with its own failure modes, owned by [`dw-demo-hosted/references/publish-to-hosted.md`](../dw-demo-hosted/references/publish-to-hosted.md). The always-on rules (surface priority, guarded writes, customer-context, demo philosophy) apply in both modes.
 
 ## Canonical end-to-end flow
 
@@ -79,8 +79,7 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 |---|---|
 | How a demo build is **driven** — GSD vs the native `/demo:*` commands, `--standalone`, the strictness gradient, acceptance criteria | references/orchestrator.md |
 | Verify a fresh machine is build-ready (incl. the MSDTC check behind AreaCopy `TransactionException`s) | references/setup-checks.md |
-| **Build on a hosted/cloud install** (URL + Admin API key only) — the session-start probe, Management API recipe pack, flush-then-restart ladder, inherited-clone remediation | **references/online-mode.md** |
-| **Publish an existing local demo onto a hosted install** ("publish this site", "migrate local → hosted") — pre-flight, transport map, id collisions, index rebuild | **references/publish-to-hosted.md** |
+| **Build on, or publish onto, a hosted/cloud install** (URL + Admin API key only — no scaffold, no SQL; the session-start probe, the Management API recipe pack, lying-success verification, the flush-then-restart ladder, inherited-clone remediation; and for a publish: pre-flight, transport map, id collisions, index rebuild) | **[`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)** |
 | Ask the demo's DW10 + Swift versions; clone/resolve the Distribution per-demo | references/setup-checks.md (versions prompt) + references/scaffold.md §5 |
 | Scaffold the project | references/scaffold.md |
 | **Pin the platform** for a Distribution-validating scaffold (why floating `10.*` fails sideways); the DB-wizard "Login failed" race | references/scaffold.md §2.2 + §3 |
@@ -125,7 +124,7 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 
 ## Surface priority for CREATES (always-on rule)
 
-Creating things in DW10 has a strict surface priority, split into two phases by the MCP verification gate. **Scaffold phase** (before the gate): the admin UI via the Browser MCP is an action surface, scoped to the bootstrap one-clicks. **Build phase** (after the gate — and hosted/headless installs from the first request): **MCP first → Management API → direct SQL last resort (local only, sanctioned cases only)**; the admin UI is **verification-only** — every UI click is an Admin API call underneath, so a "UI-only" operation means the endpoint hasn't been found yet. On hosted installs there is no SQL rung: probe for MCP, else Management API, else ask the user ([references/online-mode.md](references/online-mode.md)). The full contract — the surface table, the scaffold ladder, why SQL-cloning structural trees is forbidden — is owned by [references/surface-priority.md](references/surface-priority.md). This rule is owned by this skill and inherited by every sister skill.
+Creating things in DW10 has a strict surface priority, split into two phases by the MCP verification gate. **Scaffold phase** (before the gate): the admin UI via the Browser MCP is an action surface, scoped to the bootstrap one-clicks. **Build phase** (after the gate — and hosted/headless installs from the first request): **MCP first → Management API → direct SQL last resort (local only, sanctioned cases only)**; the admin UI is **verification-only** — every UI click is an Admin API call underneath, so a "UI-only" operation means the endpoint hasn't been found yet. On hosted installs there is no SQL rung: probe for MCP, else Management API, else ask the user ([`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)). The full contract — the surface table, the scaffold ladder, why SQL-cloning structural trees is forbidden — is owned by [references/surface-priority.md](references/surface-priority.md). This rule is owned by this skill and inherited by every sister skill.
 
 ## Two guarded-writes (always-on rules)
 
@@ -200,6 +199,7 @@ When in doubt: every login / channel / locale / customer-center section must jus
 - **`dw-demo-swift`** -- Swift frontend (templates, paragraph types, B2B customer-center scaffolding, baseline deserialize). **Use AFTER** `dw-demo-base`.
 - **`dw-demo-erp`** -- ERP integration (source/target rule, DB-staged mock, scenarios-first planning). **Use AFTER** `dw-demo-base`.
 - **`dw-integration-bc`** -- live BC connector via ngrok + AppStore connector. **Use AFTER** `dw-demo-base`.
+- **`dw-demo-hosted`** -- hosted/cloud installs reached only by URL + Admin API key: building directly on one, and publishing a locally-built demo onto one. **Use AFTER** `dw-demo-base`.
 
 A sibling skill that runs without `dw-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts. The "Use FIRST" routing wording in this skill's description and the "Use AFTER" markers in the sister skills are the inoculation.
 

@@ -33,7 +33,7 @@ skills/
   dw-data-audit-trail/      # investigate who/when/why something changed
   dw-source-explorer/       # browse Dynamicweb source on GitHub
   dw-source-doc-lookup/     # consult the live Dynamicweb documentation
-  dw-demo-*/                # presales demo chain (base, pim, swift, headless, erp)
+  dw-demo-*/                # presales demo chain (base, pim, swift, headless, hosted, erp)
 ```
 
 ## Plugins
@@ -48,7 +48,7 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
 | `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access, data-audit-trail |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, source-doc-lookup, extend-mcp-tools |
-| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-erp, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
+| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
 
 ## Skills
 
@@ -168,7 +168,7 @@ Consult the live Dynamicweb documentation as the source of truth before answerin
 ### Demos (Presales)
 
 **[dw-demo-base](skills/dw-demo-base/SKILL.md)**
-Foundation skill for all demos. Scaffolds the dw10-suite host (pinning `Dynamicweb.Suite` to the Distribution's gate-proven platform version when the scaffold validates Distribution content), wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first. Also owns the **orchestrator abstraction** ([references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md)) — how a build is driven, GSD primary or the native `/demo:*` command set. Owns the **hosted/cloud fork** ([references/online-mode.md](skills/dw-demo-base/references/online-mode.md)) — building on an install reached only by URL + Admin API key — and the **publish path** ([references/publish-to-hosted.md](skills/dw-demo-base/references/publish-to-hosted.md)) — migrating a locally-built demo onto one. Owns the **visual-QA design gate** ([references/visual-qa.md](skills/dw-demo-base/references/visual-qa.md)) — the mechanical definition-of-done (overflow, section-gap, image-band-height, PLP row-content detectors) plus a human taste sign-off, armed from the first gate run. The **product-query verb surface** lives in dw-search-indexing — [query-authoring.md](skills/dw-search-indexing/references/query-authoring.md) (which read verb is authoritative, the restart-free query-cache flush, `QueryMove`/`QueryCopy` order of operations) and [query-expressions.md](skills/dw-search-indexing/references/query-expressions.md) (expression `Path` semantics, operator reality, sorting, result paging, and the three ways a build verb answers 200 and builds nothing).
+Foundation skill for all demos. Scaffolds the dw10-suite host (pinning `Dynamicweb.Suite` to the Distribution's gate-proven platform version when the scaffold validates Distribution content), wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first. Also owns the **orchestrator abstraction** ([references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md)) — how a build is driven, GSD primary or the native `/demo:*` command set. Owns the **hosted/cloud fork** ([references/online-mode.md](skills/dw-demo-hosted/references/online-mode.md)) — building on an install reached only by URL + Admin API key — and the **publish path** ([references/publish-to-hosted.md](skills/dw-demo-hosted/references/publish-to-hosted.md)) — migrating a locally-built demo onto one. Owns the **visual-QA design gate** ([references/visual-qa.md](skills/dw-demo-base/references/visual-qa.md)) — the mechanical definition-of-done (overflow, section-gap, image-band-height, PLP row-content detectors) plus a human taste sign-off, armed from the first gate run. The **product-query verb surface** lives in dw-search-indexing — [query-authoring.md](skills/dw-search-indexing/references/query-authoring.md) (which read verb is authoritative, the restart-free query-cache flush, `QueryMove`/`QueryCopy` order of operations) and [query-expressions.md](skills/dw-search-indexing/references/query-expressions.md) (expression `Path` semantics, operator reality, sorting, result paging, and the three ways a build verb answers 200 and builds nothing).
 
 **[dw-demo-pim](skills/dw-demo-pim/SKILL.md)**
 PIM modelling from a blank DB — product data built from scratch via MCP. Use after `dw-demo-base`.
@@ -182,12 +182,15 @@ Headless delivery demo — Frontend API setup, a decoupled frontend against the 
 **[dw-demo-erp](skills/dw-demo-erp/SKILL.md)**
 ERP integration demo — DB-staged mock or live BC, Integration Framework rules. Use after `dw-demo-base`.
 
+**[dw-demo-hosted](skills/dw-demo-hosted/SKILL.md)**
+Hosted/cloud installs reached only by URL + Admin API key — building a demo directly on one ([references/online-mode.md](skills/dw-demo-hosted/references/online-mode.md)) and publishing a locally-built demo onto one ([references/publish-to-hosted.md](skills/dw-demo-hosted/references/publish-to-hosted.md)). No scaffold, no SQL; verify by round-trip, not status code. Use after `dw-demo-base`.
+
 ## Skill dependencies
 
 The **presales demo chain** has a hard order. `dw-demo-base` must run **first** — it scaffolds
 the host, wires MCP + the TLS bypass, and captures the demo's versions + downloads its artifacts
 per-demo. The sister demo skills
-(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
+(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
 The demo skills hold domain knowledge and carry no build sequencing — that is owned by a

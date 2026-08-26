@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-25T08:39:47.976Z",
+  "generatedAt": "2026-08-26T09:13:13.686Z",
   "skills": [
     {
       "name": "dw-content-localization",
@@ -36,6 +36,13 @@
       "group": "demo",
       "description": "Dynamicweb 10 headless-commerce demos — a Next.js storefront (vercel/commerce starter) driven by the DW10 Delivery API, plus a dedicated presentation-agnostic serialized baseline.",
       "path": "skills/dw-demo-headless/SKILL.md"
+    },
+    {
+      "name": "dw-demo-hosted",
+      "type": "flow",
+      "group": "demo",
+      "description": "Build or publish a Dynamicweb 10 demo on a vendor-hosted/cloud install reached only by URL + Admin API bearer key — no scaffold, no SQL, no filesystem.",
+      "path": "skills/dw-demo-hosted/SKILL.md"
     },
     {
       "name": "dw-demo-pim",
