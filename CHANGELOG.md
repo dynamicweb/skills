@@ -3,6 +3,46 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.20.0]
+
+Re-lands the July `dw-demo-base` split chain (PRs #64–#69, originally stacked on `v2`) on
+`main`, rebased by hand against 4.19.1. Four of the six legs survive; the `dw-demo-base`
+SKILL.md rightsizing (#67) is dropped because fold-back sprint 4.16.0 and the v2 debloat (#79)
+reshaped that file since, and its `host-lifecycle.md` / `distribution-checkout.md` extractions
+already exist on `main` in another form.
+
+- **New skill `dw-demo-hosted`** — hosted/cloud installs reached only by URL + Admin API key.
+  `online-mode.md` and `publish-to-hosted.md` move out of `dw-demo-base/references/` into the
+  new skill unchanged in content (including the 4.15.0+ inherited-clone remediation playbook and
+  the PII-inheritance pointer); every inbound link (`dw-demo-base` SKILL.md and
+  `surface-priority.md` / `pii-sweep.md`, `dw-demo-swift` `cheat-sheet.md` /
+  `language-layers.md`, README) is repointed. `dw-demo-base`'s "Environment fork" and its two
+  hosted routing rows now route to the skill. Registered in `dynamicweb-presales`.
+- **New skill `dw-demo-foldback`** — the maintainer fold-back workflow.
+  `dw-demo-base/references/iterate-plugin.md` becomes
+  `dw-demo-foldback/references/fold-back-workflow.md`; the trigger-phrase block and routing row
+  in `dw-demo-base` SKILL.md collapse to one paragraph routing to the skill, and the base
+  description drops its claim on the fold-back (it was 3 chars over the 1024 cap after the
+  hosted rename). `customisations.md`, `visual-qa.md`, CLAUDE.md and README repointed.
+  Registered in `dynamicweb-presales`.
+- **New repo-local skill `.claude/skills/dw-skill-authoring`** — the authoring procedure moves
+  out of CLAUDE.md (frontmatter contract, naming, area taxonomy, body voice, length budgets,
+  adding a skill, bundle closure, validation, the PR workflow). CLAUDE.md shrinks to what governs
+  every edit: the one-way foundational/demo boundary, encoding, and the PR rule. The skill folds
+  in what CLAUDE.md gained since July — the area taxonomy table, the bundle-closure validator
+  clause, the CI note — plus a new step: regenerate `manifest.json` with
+  `node scripts/build-manifest.mjs` after any frontmatter change (CI fails on drift). The
+  integration branch is now `main`; the `v2` wording is gone.
+- **Validator: SKILL.md bodies are budgeted by characters, not just lines.** A body over
+  16,000 characters (~4k tokens on activation) warns alongside the existing 500-line check, and
+  the reference-TOC check now descends into nested `references/` folders. Currently flags
+  `dw-render-viewmodels` (16.3k), `dw-swift-page-blocks` (22.4k) and `dw-swift-page-design`
+  (18.9k) — warnings only, to be split in their own PRs.
+- **`orchestrator.md` — "Model tier" section.** Choosing a cheaper or stronger model for a demo
+  step is the orchestrator's dial, not the skill's: there are no per-tier SKILL.md variants, and
+  what a cheaper model cannot be trusted to remember is encoded as a script or detector rather
+  than more prose. `dw-skill-authoring` carries the authoring-side corollary.
+
 ## [4.19.1]
 
 Two follow-ups to 4.19.0, found while verifying that Custom.Mcp's remote skill fetch
