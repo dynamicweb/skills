@@ -2,7 +2,7 @@
 name: dw-demo-base
 type: flow
 group: demo
-description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, when "pinning the platform" for a Distribution-validating scaffold, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (routes to dw-demo-hosted). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md — and the maintainer fold-back workflow — "fold this into the skill" routes to references/iterate-plugin.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-hosted, dw-demo-erp, dw-integration-bc) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
+description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, when "pinning the platform" for a Distribution-validating scaffold, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (routes to dw-demo-hosted). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-hosted, dw-demo-erp, dw-integration-bc, dw-demo-foldback) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
 ---
 
 # Dynamicweb Demo Base Skill
@@ -102,21 +102,13 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 | Serializer internals — upstream pointer block | references/serializer-reference.md |
 | Run a Swift baseline deserialize (Swift demos only) | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) |
 | Verify post-deserialize integrity (Swift demos only) | [`dw-demo-swift/references/integrity-sweep.md`](../dw-demo-swift/references/integrity-sweep.md) |
-| **Fold a demo-build learning back into the repo** — route, sanitize, validate, version-bump, PR. Maintainer-only | references/iterate-plugin.md |
+| **Fold a demo-build learning back into the repo** — route, sanitize, validate, version-bump, PR. Maintainer-only | **[`dw-demo-foldback`](../dw-demo-foldback/SKILL.md)** |
 
 ## Folding demo-build learnings back into the plugin (maintainer-only)
 
 The whole point of authoring these skills locally and publishing them as a versioned plugin is **so demo-build learnings don't decay**. When a non-trivial discovery surfaces mid-demo, capture it back **while the conversation context is still rich** — not from notes a week later.
 
-Trigger phrases — when the user says any of these mid-demo, route to [references/iterate-plugin.md](references/iterate-plugin.md):
-
-- "fold this into the skill" / "fold this learning back"
-- "save this back to the plugin"
-- "update the plugin from this demo"
-- "publish this update"
-- "this is worth keeping — add it to the skill"
-
-The reference owns the full workflow end-to-end, including the load-bearing first step: **route the learning before editing** — a platform truth folds *up* into the owning foundational skill (fully sanitized), demo-craft folds into a demo skill, and a learning that needs the customer's name stays demo-local. Every fold lands via a **PR** (one learning = one atomic commit = one PR), never a direct push. It is maintainer-only; consumers of the plugin can ignore it — or open a PR.
+"Fold this into the skill" / "fold this learning back" / "save this back to the plugin" / "publish this update" / "this is worth keeping — add it to the skill" route to [`dw-demo-foldback`](../dw-demo-foldback/SKILL.md), which owns the workflow end-to-end — including the load-bearing first step: **route the learning before editing**. A platform truth folds *up* into the owning foundational skill (fully sanitized), demo-craft folds into a demo skill, and a learning that needs the customer's name stays demo-local. Every fold lands via a **PR** (one learning = one atomic commit = one PR), never a direct push.
 
 ## Host lifecycle authority
 
@@ -200,6 +192,7 @@ When in doubt: every login / channel / locale / customer-center section must jus
 - **`dw-demo-erp`** -- ERP integration (source/target rule, DB-staged mock, scenarios-first planning). **Use AFTER** `dw-demo-base`.
 - **`dw-integration-bc`** -- live BC connector via ngrok + AppStore connector. **Use AFTER** `dw-demo-base`.
 - **`dw-demo-hosted`** -- hosted/cloud installs reached only by URL + Admin API key: building directly on one, and publishing a locally-built demo onto one. **Use AFTER** `dw-demo-base`.
+- **`dw-demo-foldback`** -- folding a demo-build learning back into the skills repo as a sanitized, atomic PR. **Use AFTER** `dw-demo-base`.
 
 A sibling skill that runs without `dw-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts. The "Use FIRST" routing wording in this skill's description and the "Use AFTER" markers in the sister skills are the inoculation.
 

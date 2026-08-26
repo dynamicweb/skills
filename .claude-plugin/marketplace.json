@@ -100,6 +100,7 @@
         "./skills/dw-demo-headless",
         "./skills/dw-demo-erp",
         "./skills/dw-demo-hosted",
+        "./skills/dw-demo-foldback",
         "./skills/dw-integration-bc",
         "./skills/dw-integration-framework",
         "./skills/dw-integration-erp",

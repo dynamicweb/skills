@@ -40,7 +40,7 @@ The dependency direction is **one-way and enforced**:
    build on foundational ones; never the reverse. A `references/` link or routing row from a
    foundational skill into `dw-demo-*` is a boundary violation.
 3. **Learnings flow demo → foundational only via the sanitized fold-back** (see
-   `skills/dw-demo-base/references/iterate-plugin.md`). A demo-build discovery that is durable
+   `skills/dw-demo-foldback/references/fold-back-workflow.md`). A demo-build discovery that is durable
    and vendor-generic gets folded *up* into the right foundational skill, stripped of all
    demo/customer specifics first. A discovery that needs the customer's name to make sense is
    demo-specific and is **not** folded — it stays in that demo's own notes.
@@ -119,7 +119,7 @@ the target underspecified). Keep a contrast only when B is the model's natural p
 predictable failure mode, and prefer the paired form ("serialize with the DW serializer, not a
 raw XML export") over a bare "don't". Few-shot bad→good example pairs are exempt. The full
 rule, with the test for when contrast earns its place, lives in
-`skills/dw-demo-base/references/iterate-plugin.md` ("Phrase instructions positively").
+`skills/dw-demo-foldback/references/fold-back-workflow.md` ("Phrase instructions positively").
 
 ### Length budgets and references
 

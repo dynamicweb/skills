@@ -33,7 +33,7 @@ skills/
   dw-data-audit-trail/      # investigate who/when/why something changed
   dw-source-explorer/       # browse Dynamicweb source on GitHub
   dw-source-doc-lookup/     # consult the live Dynamicweb documentation
-  dw-demo-*/                # presales demo chain (base, pim, swift, headless, hosted, erp)
+  dw-demo-*/                # presales demo chain (base, pim, swift, headless, hosted, erp, foldback)
 ```
 
 ## Plugins
@@ -48,7 +48,7 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions |
 | `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access, data-audit-trail |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, source-doc-lookup, extend-mcp-tools |
-| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
+| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, demo-foldback, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
 
 ## Skills
 
@@ -185,12 +185,15 @@ ERP integration demo — DB-staged mock or live BC, Integration Framework rules.
 **[dw-demo-hosted](skills/dw-demo-hosted/SKILL.md)**
 Hosted/cloud installs reached only by URL + Admin API key — building a demo directly on one ([references/online-mode.md](skills/dw-demo-hosted/references/online-mode.md)) and publishing a locally-built demo onto one ([references/publish-to-hosted.md](skills/dw-demo-hosted/references/publish-to-hosted.md)). No scaffold, no SQL; verify by round-trip, not status code. Use after `dw-demo-base`.
 
+**[dw-demo-foldback](skills/dw-demo-foldback/SKILL.md)**
+Fold a demo-build learning back into this repo as a sanitized, atomic PR — route it foundational-vs-demo, strip customer specifics, validate, bump the version, open the PR ([references/fold-back-workflow.md](skills/dw-demo-foldback/references/fold-back-workflow.md)). Maintainer flow. Use after `dw-demo-base`.
+
 ## Skill dependencies
 
 The **presales demo chain** has a hard order. `dw-demo-base` must run **first** — it scaffolds
 the host, wires MCP + the TLS bypass, and captures the demo's versions + downloads its artifacts
 per-demo. The sister demo skills
-(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-erp`, and the `dw-integration-bc` connector demo)
+(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-erp`, `dw-demo-foldback`, and the `dw-integration-bc` connector demo)
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
 The demo skills hold domain knowledge and carry no build sequencing — that is owned by a
