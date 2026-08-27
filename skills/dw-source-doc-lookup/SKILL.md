@@ -2,10 +2,18 @@
 name: dw-source-doc-lookup
 type: flow
 group: source
+mcp: optional
 description: 'Consult the live Dynamicweb documentation (doc.dynamicweb.dev) as the source of truth before answering how a feature works, is configured, or fits together, using search_documentation and fetch_documentation_page. Triggers: "how does X work / how do I set up X", verifying an exact field/setting/macro/template-tag/API name, a configured feature that still does not behave as expected. Non-triggers: browsing the Dynamicweb C# source on GitHub for internal APIs/classes -> dw-source-explorer.'
 ---
 
 # Documentation Lookup
+
+## Without MCP
+
+The `search_documentation` / `fetch_documentation_page` MCP tools are the preferred lookup
+path. When no Dynamicweb MCP server is connected, fetch the same content directly from
+https://doc.dynamicweb.dev/ over HTTP instead — the source of truth is the documentation
+site, not the transport.
 
 Use the live Dynamicweb documentation as the source of truth. When a question is about how a
 feature works, how it is configured, or how parts of the platform fit together — and the exact

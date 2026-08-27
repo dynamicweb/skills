@@ -2,10 +2,18 @@
 name: dw-pim-modelling
 type: knowledge
 group: pim
+mcp: optional
 description: 'Model Dynamicweb 10 PIM data — Data Models, category fields, variant groups, and global vs category field storage — and create products, variant groups/combinations through the MCP tools. Triggers: design or refactor a Data Model, choose global vs category fields, structure variant groups, organize category groups vs product folders, create/clone a product or variant, set up variant options/combinations. Non-triggers: workflow states and transitions -> dw-pim-workflow; completeness rules and scores -> dw-pim-completeness; translating products -> dw-pim-localization.'
 ---
 
 # PIM Data Modelling
+
+## Without MCP
+
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
+apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
+review, or produce payloads and configuration for the user to apply — and do not substitute
+direct SQL, file edits, or guessed HTTP calls for those tool calls.
 
 ## Core Concepts
 

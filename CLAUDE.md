@@ -62,6 +62,7 @@ marketplace `skills` path basename must all match exactly. (Only the role *bundl
 name: dw-<domain>-<topic>
 type: <knowledge | flow>
 group: <area — pim, search, render, setup, extend, integration, commerce, users, swift, headless, content, data, source, demo>
+mcp: <required | optional | none>
 description: <one to three sentences. First sentence states what the skill does. Remaining sentences list the exact trigger phrases / conditions that activate it.>
 ---
 ```
@@ -69,6 +70,32 @@ description: <one to three sentences. First sentence states what the skill does.
 `type` is `knowledge` for reference-style platform skills and `flow` for skills that drive a
 multi-step process (the setup installers and the demo chain). `group` is the skill's area from
 the naming taxonomy below and matches the `<domain>` segment of the name.
+
+### MCP dependence (`mcp:` field)
+
+This repo is consumed both by harnesses with a live Dynamicweb MCP connection (Dynamo) and by
+plain Claude Code installs that may have none. Every skill declares which world it lives in —
+the field is orthogonal to `type`/`group` and flows through to `manifest.json` so consumers
+can filter on it:
+
+- **`mcp: required`** — the skill's steps *are* MCP tool calls; it cannot run without the
+  server (the demo chain, tool-driven flows like `dw-pim-migrate-dw9`, `dw-swift-page-design`).
+  The body must open with a **`## MCP preflight`** section: verify the tools are available,
+  and stop — never substitute direct SQL, file edits, or guessed HTTP calls — when they are not.
+- **`mcp: optional`** — the knowledge stands alone; MCP tools are the preferred way to apply
+  it (most `knowledge` skills that name tools, e.g. `dw-pim-modelling`, `dw-search-indexing`).
+  The body must carry a **`## Without MCP`** section stating the standalone path (advisory
+  mode, produce payloads/config for the user to apply).
+- **`mcp: none`** — pure platform knowledge or an offline flow (`dw-render-*`, `dw-setup-*`,
+  `dw-extend-*`, `dw-source-explorer`). No marker section; the skill must read the same
+  whether or not an MCP server exists. Note `dw-extend-mcp-tools` is `none`: it teaches
+  *writing* MCP tools in C#, which needs no live connection.
+
+The validator enforces the pair: the field must be present and valid, `required` needs its
+`## MCP preflight` section, `optional` needs `## Without MCP`, and a marker section that
+contradicts the declared level is an error. Keep the marker level in mind on the demo
+boundary too — demo skills are all `required`, and a foundational skill never becomes
+`required` just to lean on demo scaffolding.
 
 ### Area taxonomy
 
@@ -166,7 +193,8 @@ that `marketplace.json` parses and has the required top-level schema (`name`, `o
 `plugins`), that every plugin entry has a `source` and every referenced skill path exists;
 that each skill's folder name, `name:` frontmatter, and marketplace path agree; that every
 relative link in `SKILL.md`/`references` resolves; that each `description` is within the
-1024-char cap; and that no markdown file begins with a UTF-8 BOM or contains double-encoded UTF-8
+1024-char cap; that every skill declares `mcp: required | optional | none` with the matching
+body marker section (see "MCP dependence"); and that no markdown file begins with a UTF-8 BOM or contains double-encoded UTF-8
 (mojibake); and that no skill in a marketplace bundle hard-depends (links into `references/` or
 `assets/`) on a skill the bundle does not ship. It warns (without failing) when a description
 lacks a trigger signal, a SKILL.md body runs past 500 lines, or a reference over 100 lines lacks

@@ -2,10 +2,18 @@
 name: dw-data-access
 type: knowledge
 group: data
+mcp: optional
 description: 'Choose appropriate data-access patterns and optimize caching in Dynamicweb 10. Triggers: data access, API vs SQL, cache invalidation, SQL gotchas. Non-triggers: C# API usage -> dw-extend-csharp-api; specific domain logic -> domain-specific skills.'
 ---
 
 # Data Access in Dynamicweb 10
+
+## Without MCP
+
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
+apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
+review, or produce payloads and configuration for the user to apply — and do not substitute
+direct SQL, file edits, or guessed HTTP calls for those tool calls.
 
 ## When to Use the Service API vs Raw SQL
 

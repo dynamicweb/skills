@@ -2,10 +2,18 @@
 name: dw-pim-localization
 type: knowledge
 group: pim
+mcp: optional
 description: 'Manage product translation and localization across EcomLanguages in Dynamicweb 10. Triggers: product translation, EcomLanguage setup, AreaCopy language layers. Non-triggers: product structure -> dw-pim-modelling; product completeness -> dw-pim-completeness.'
 ---
 
 # PIM Localization
+
+## Without MCP
+
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
+apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
+review, or produce payloads and configuration for the user to apply — and do not substitute
+direct SQL, file edits, or guessed HTTP calls for those tool calls.
 
 ## EcomLanguage Setup
 

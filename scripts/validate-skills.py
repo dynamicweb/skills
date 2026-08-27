@@ -9,6 +9,9 @@ Checks (errors fail the build, warnings are printed but do not):
     description) — catches unquoted `description:` values carrying a second
     ": " that fail the real loader with "mapping values are not allowed here".
   - Each skill `description` is within the 1024-char frontmatter cap.
+  - Each SKILL.md declares `mcp: required | optional | none`, and the body
+    carries the matching marker section (`## MCP preflight` for required,
+    `## Without MCP` for optional, neither for none).
   - Every relative markdown link in SKILL.md / references resolves to a real file.
   - No markdown file under skills/ begins with a UTF-8 BOM (breaks some
     frontmatter parsers).
@@ -55,6 +58,15 @@ DESCRIPTION_MAX = 1024
 SKILL_BODY_MAX = 500
 # References longer than this should carry a top-of-file TOC (survives partial reads).
 REFERENCE_TOC_MIN = 100
+# The MCP-dependence axis: required = the skill's steps are MCP tool calls;
+# optional = knowledge stands alone, MCP tools are the preferred way to apply it;
+# none = pure platform knowledge or an offline flow. Each level pairs with a
+# body marker section so the behavioral contract travels with the skill.
+MCP_LEVELS = {
+    "required": "## MCP preflight",
+    "optional": "## Without MCP",
+    "none": None,
+}
 # Substrings that signal double-encoded UTF-8 (mojibake): a UTF-8 byte sequence
 # was read as CP1252 and re-encoded. None occur in correct English/code, so a hit
 # is reliable. U+FFFD is already-lost data. See CHANGELOG 3.3.7.
@@ -172,9 +184,25 @@ def check_skills() -> None:
             if not re.search(r"Triggers:|Use when|Use FIRST|Use AFTER", desc):
                 warn(f"{rel(skill_md)}: description lacks a trigger signal "
                      "(Triggers:/Use when/Use FIRST)")
+        body = FRONTMATTER_RE.sub("", text, count=1)
+        # MCP-dependence declaration + matching body marker. The marker section
+        # is what actually steers behavior at runtime (preflight/fallback), so
+        # the field and the section are validated as a pair.
+        mcp = fm.get("mcp")
+        if mcp not in MCP_LEVELS:
+            err(f"{rel(skill_md)}: frontmatter `mcp` must be one of "
+                f"{sorted(MCP_LEVELS)} (got {mcp!r})")
+        else:
+            marker = MCP_LEVELS[mcp]
+            if marker and marker not in body:
+                err(f"{rel(skill_md)}: mcp: {mcp} requires a `{marker}` "
+                    "section in the body")
+            for level, other in MCP_LEVELS.items():
+                if other and level != mcp and other in body:
+                    err(f"{rel(skill_md)}: body has a `{other}` section but "
+                        f"frontmatter says mcp: {mcp} — make them agree")
         # Soft line budget on the body (frontmatter stripped): past it, the body
         # is doing reference work that belongs in references/.
-        body = FRONTMATTER_RE.sub("", text, count=1)
         body_lines = len(body.splitlines())
         if body_lines > SKILL_BODY_MAX:
             warn(f"{rel(skill_md)}: body is {body_lines} lines "

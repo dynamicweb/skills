@@ -2,10 +2,18 @@
 name: dw-swift-page-design
 type: flow
 group: swift
+mcp: required
 description: 'Build a good-looking Swift 2 page — matching the style of an existing page, from a supplied image/screenshot/mockup, from a plain-language description, or by recreating a single live page from its URL. Composes the page with the low-level content tools (save_grid_rows, save_paragraphs, set_paragraph_item_fields, color schemes) and the Swift 2 design grammar. Triggers: build a page that looks like another page, build a page from a screenshot or mockup, design a pretty campaign/landing page, recreate a live page''s look here. Non-triggers: importing/rebuilding a whole existing site -> dw-swift-migrate-content; a faithful Swift 1 port -> dw-swift-migrate-v1; a plain page with no design concern (build directly with the page/paragraph tools, no skill needed).'
 ---
 
 # Swift 2 Page Design
+
+## MCP preflight
+
+This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
+MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
+for the tool calls this skill names.
 
 Use this skill when the user wants to **build a good-looking Swift 2 page from a
 reference** — either "make a page that looks like this other page" (clone/match an existing

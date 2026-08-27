@@ -204,9 +204,15 @@ criteria — lives in
 ## Manifest
 
 `manifest.json` (repo root) is a generated index of every skill — `name`, `type`
-(`knowledge` or `flow`), `group`, a one-sentence `description`, and the `path` to its
-`SKILL.md`. The Dynamicweb MCP server ("Dynamo") fetches this single file to auto-discover
-skills; Claude Code does not use it (it loads skills via `marketplace.json`).
+(`knowledge` or `flow`), `group`, `mcp` (see below), a one-sentence `description`, and the
+`path` to its `SKILL.md`. The Dynamicweb MCP server ("Dynamo") fetches this single file to
+auto-discover skills; Claude Code does not use it (it loads skills via `marketplace.json`).
+
+Every skill declares its **MCP dependence** in frontmatter — `mcp: required` (the skill's
+steps are Dynamicweb MCP tool calls and it carries an `## MCP preflight` section), `mcp:
+optional` (the knowledge stands alone and a `## Without MCP` section states the fallback), or
+`mcp: none` (pure platform knowledge / offline flows). Harnesses without a live Dynamicweb
+MCP connection can filter out `required` skills using this field.
 
 It is generated from each skill's frontmatter — never edit it by hand:
 

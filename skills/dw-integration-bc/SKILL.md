@@ -2,10 +2,18 @@
 name: dw-integration-bc
 type: flow
 group: integration
+mcp: required
 description: 'Dynamicweb 10 live "PIM for Business Central connector" demos -- expose the local DW host publicly via ngrok so a real BC tenant can call the connector''s `/admin/api/BC*` surface. Triggers: "connect BC to the local Dynamicweb host", "give BC a real URL", expose localhost publicly for a connector demo, `Unknown query`/`Unknown command` errors from `BC*` endpoints, connector defaults wrong after AppStore install, BC''s Test Connection is green but no products appear, StaticLinkManager errors on "show PIM product page". Non-triggers: PIM data modelling -> dw-demo-pim; DB-mocked ERP sync without a live tenant -> dw-demo-erp; demo setup/MCP/TLS -> dw-demo-base. Use AFTER dw-demo-base (assumes MCP connected, host up).'
 ---
 
 # Dynamicweb PIM for Business Central Connector skill
+
+## MCP preflight
+
+This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
+MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
+for the tool calls this skill names.
 
 Expose the local Dynamicweb host as a stable public HTTPS URL so a real Business Central tenant can connect through the **PIM for Business Central connector** AppStore app. Covers the four pieces that have to line up: ngrok tunnel, ASP.NET Core `ForwardedHeaders`, BC connector settings (the AppStore app's defaults are usually wrong), and the BC-side configuration values.
 

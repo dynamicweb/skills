@@ -2,10 +2,18 @@
 name: dw-content-localization
 type: flow
 group: content
+mcp: required
 description: 'Create a language version of a Dynamicweb 10 website and translate its page content, or translate an existing page/site from one language to another. Triggers: make a French/German/... version of this website, translate the about page, translate all pages in this area, create a language version. Non-triggers: translating PIM product data -> dw-pim-localization; designing item types/paragraphs -> dw-content-modelling; a faithful site rebuild from another platform -> dw-swift-migrate-content.'
 ---
 
 # Content Localization
+
+## MCP preflight
+
+This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
+MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
+for the tool calls this skill names.
 
 Use this skill for "make an <language> version of this website" or "translate this page/site
 from one language to another." Translation is the one thing only the model can do here. The

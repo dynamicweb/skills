@@ -2,6 +2,7 @@
 name: dw-extend-providers
 type: knowledge
 group: extend
+mcp: none
 description: 'Build providers, notification subscribers, and AddIns for Dynamicweb 10. Triggers: notification subscribers, providers, AddIns, reacting to save/delete events, custom price logic, custom shipping, custom payment, custom authentication. Non-triggers: C# API usage -> dw-extend-csharp-api; scheduled background work -> dw-extend-scheduled-tasks.'
 ---
 

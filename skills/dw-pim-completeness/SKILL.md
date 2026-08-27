@@ -2,10 +2,18 @@
 name: dw-pim-completeness
 type: knowledge
 group: pim
+mcp: optional
 description: 'Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, query-driven automatic workflows — and enrich products against a query by filling their missing completion fields. Triggers: create completion rules, assign rules to data models or product groups, understand completeness scoring, set up completeness-driven query movement, fill/enrich missing product fields from a query. Non-triggers: manual workflow states -> dw-pim-workflow; the Data Model schema -> dw-pim-modelling.'
 ---
 
 # Product Completeness
+
+## Without MCP
+
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
+apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
+review, or produce payloads and configuration for the user to apply — and do not substitute
+direct SQL, file edits, or guessed HTTP calls for those tool calls.
 
 ## What Completeness Is
 

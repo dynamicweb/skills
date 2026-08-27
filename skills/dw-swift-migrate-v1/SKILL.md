@@ -2,10 +2,18 @@
 name: dw-swift-migrate-v1
 type: flow
 group: swift
+mcp: required
 description: 'Migrate pages from a Swift 1 (Swift v1) solution to Swift 2 and KEEP THE LAYOUT — a faithful, structure-preserving port (Swift 1 and Swift 2 share the same grid model, so the layout carries over 1:1). Reuses site extraction + page-build tools in faithful mode with an explicit Swift 1 -> Swift 2 component/layout mapping. Triggers: migrate a Swift 1 site to Swift 2 keeping the layout, port Swift v1 pages 1:1, faithful Swift 1 -> Swift 2 conversion. Non-triggers: a free content re-design or a non-Swift-1 source -> dw-swift-migrate-content; a plain new page with no migration source -> dw-swift-page-design.'
 ---
 
 # Swift 1 → Swift 2 Migration
+
+## MCP preflight
+
+This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
+MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
+for the tool calls this skill names.
 
 Use this skill when the user wants to migrate pages from a **Swift 1** (Swift v1) solution to
 **Swift 2** and **keep the layout** — as faithful and structure-preserving as the pipeline
