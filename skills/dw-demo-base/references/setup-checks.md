@@ -34,6 +34,8 @@ Note the backtick on `MSSQL`$SQLEXPRESS` — `$SQLEXPRESS` is a PowerShell speci
 
 **Run everything from pwsh 7+, never Windows PowerShell 5.1.** The skill's PowerShell recipes and any harness verbs (the standalone lightweight harness, DemoAgent `bin/` verbs) use the null-coalescing operator `??` and other pwsh-7 syntax — **5.1 parse-fails the whole script before the first line runs** (`Telemetry.Common.ps1` is the canonical offender). `$PSVersionTable.PSVersion.Major` must be `≥ 7`; if a verb dies with a parser error on `??`, you are in 5.1 — relaunch in `pwsh`.
 
+**Install-grade fix (print + link):** if `pwsh` is not on `PATH`, print `winget install --id Microsoft.PowerShell --source winget` (or link https://aka.ms/powershell) and let the user install, then relaunch. Scripts shipped under `skills/*/scripts/` start with `#Requires -Version 7.0`, so under 5.1 they stop with a one-line message instead of a parse error; this check is the only place the version is handled.
+
 The first three lines are the platform install prerequisites — if any is red, work the per-check sections in [`../../dw-setup-install/references/install-anatomy.md`](../../dw-setup-install/references/install-anatomy.md) §1 (and §4 for MSDTC). The last three are demo-specific, owned below (the TLS env var, `git`, and the `gh` CLI). The DW10 + Swift versions prompt and the writable-`distribution\` check are also owned here.
 
 ---
