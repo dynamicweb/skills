@@ -43,8 +43,8 @@ Resolve the absolute path to the local `dynamicweb/skills` clone, in order: (1)
 
 ## Step 1 — Route the learning: foundational skill or demo skill?
 
-The repo enforces a **strict one-way split** (`CLAUDE.md` → "Skill categories: foundational vs
-demo"); routing is the *first* decision:
+The repo enforces a **strict one-way split** (`CLAUDE.md` → "The one-way boundary (foundational
+vs demo)"); routing is the *first* decision:
 
 - **A platform truth** (an API shape, surface-order rule, caching behaviour, Razor/ViewModel gotcha)
   folds **up into the owning foundational skill** (`dw-render-*`, `dw-pim-*`, `dw-commerce-*`,

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-25T08:39:47.976Z",
+  "generatedAt": "2026-08-26T09:16:46.169Z",
   "skills": [
     {
       "name": "dw-content-localization",
@@ -31,11 +31,25 @@
       "path": "skills/dw-demo-erp/SKILL.md"
     },
     {
+      "name": "dw-demo-foldback",
+      "type": "flow",
+      "group": "demo",
+      "description": "Fold a demo-build learning back into the dynamicweb/skills repo as a sanitized, atomic pull request.",
+      "path": "skills/dw-demo-foldback/SKILL.md"
+    },
+    {
       "name": "dw-demo-headless",
       "type": "flow",
       "group": "demo",
       "description": "Dynamicweb 10 headless-commerce demos — a Next.js storefront (vercel/commerce starter) driven by the DW10 Delivery API, plus a dedicated presentation-agnostic serialized baseline.",
       "path": "skills/dw-demo-headless/SKILL.md"
+    },
+    {
+      "name": "dw-demo-hosted",
+      "type": "flow",
+      "group": "demo",
+      "description": "Build or publish a Dynamicweb 10 demo on a vendor-hosted/cloud install reached only by URL + Admin API bearer key — no scaffold, no SQL, no filesystem.",
+      "path": "skills/dw-demo-hosted/SKILL.md"
     },
     {
       "name": "dw-demo-pim",

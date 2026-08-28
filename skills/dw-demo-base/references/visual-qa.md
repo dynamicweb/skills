@@ -170,7 +170,7 @@ Most recurring findings have a *known* cause with a documented fix — route the
 | Facet/sort/load-more chrome leaking into a slider | Service page's app paragraph left on the shop-default list template | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §1 |
 | Group/page missing from navigation entirely | Primary-shop resolution or `PageActive`/`PageHidden` coupling | [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.3 / [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §6 |
 
-A finding that matches no row is new knowledge: fix it, then fold it back (`iterate-plugin.md`) — that is how every row above got here.
+A finding that matches no row is new knowledge: fix it, then fold it back ([`dw-demo-foldback`](../../dw-demo-foldback/SKILL.md)) — that is how every row above got here.
 
 ## The fix loop
 

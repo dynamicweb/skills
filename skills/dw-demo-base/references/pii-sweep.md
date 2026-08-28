@@ -145,7 +145,7 @@ harnesses, generators, seeders and secret stores that will *re-publish* it on th
 
 ## Cross-references
 
-- [`online-mode.md`](online-mode.md) — the cloned-host remediation playbook; a clone is where rules 1 and 3
+- [`online-mode.md`](../../dw-demo-hosted/references/online-mode.md) — the cloned-host remediation playbook; a clone is where rules 1 and 3
   bite hardest.
 - [`visual-qa.md`](visual-qa.md) — the rendered-page pass this file makes mandatory, and the same
   mechanical-gate-plus-human-eyeball relationship.

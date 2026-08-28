@@ -4,7 +4,7 @@
 >
 > **Publishing an existing local demo onto a hosted install** is a migration, not a build, and has its own failure modes — it is owned by [publish-to-hosted.md](publish-to-hosted.md). Everything below (the probe, the API recipe pack, the upload mechanics, the flush/restart ladder, shared-install discipline) applies to both.
 >
-> Local installs remain the default; this reference is the fork target from [SKILL.md](../SKILL.md) "Environment fork". The four always-on guardrails (customisations ledger, customer-context read-only, demo philosophy, discover-from-project-files) apply unchanged.
+> Local installs remain the default; this reference is the fork target from [SKILL.md](../../dw-demo-base/SKILL.md) "Environment fork". The four always-on guardrails (customisations ledger, customer-context read-only, demo philosophy, discover-from-project-files) apply unchanged.
 
 ## Contents
 
@@ -143,7 +143,7 @@ A large share of hosted demo work is an **inherited clone** of somebody else's s
 A cloned demo host is also a **personal-data inheritance**. Real customer identities, real order snapshots,
 real addresses and the platform vendor's own stock legal/marketing copy all ride the clone into a customer
 presentation, and none of it is visible from a rename of the obvious user rows. Treat it as a blocking
-pre-demo leg with its own method: [`pii-sweep.md`](pii-sweep.md).
+pre-demo leg with its own method: [`pii-sweep.md`](../../dw-demo-base/references/pii-sweep.md).
 
 ## Publishing an existing local demo to a hosted install
 
