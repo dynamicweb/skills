@@ -17,6 +17,7 @@ rule that governs every edit — the one-way foundational/demo boundary — live
 - [SKILL.md frontmatter](#skillmd-frontmatter)
 - [Writing the instruction body](#writing-the-instruction-body)
 - [Length budgets and references](#length-budgets-and-references)
+- [Shipping scripts](#shipping-scripts)
 - [Adding a new skill](#adding-a-new-skill)
 - [Updating marketplace.json](#updating-marketplacejson)
 - [Demo skills dependency order](#demo-skills-dependency-order)
@@ -157,6 +158,57 @@ warns when it is missing). Keep references one level deep from SKILL.md.
 (mojibake). The validator errors on both — see CLAUDE.md for why. If a paste looks corrupted,
 repair it with `ftfy.fix_encoding` rather than hand-editing character by character.
 
+## Shipping scripts
+
+A skill may ship runnable code under `skills/<skill>/scripts/`. The layout follows the Agent
+Skills specification, which names exactly three optional folders: `scripts/` for executable
+code, `references/` for documentation, `assets/` for copy-in templates. Use those names and no
+others. A script earns its place when the same operation is re-implemented across engagements,
+or already sits in a reference as a fenced block a model must retype correctly every time (the
+"encode in a script" corollary above). A one-off recipe stays prose.
+
+**PowerShell 7, single tier.** Every script targets PowerShell 7 and starts with
+`#Requires -Version 7.0`, so under Windows PowerShell 5.1 it stops with a one-line message
+before the body is parsed. PowerShell 7 is a machine prerequisite, installed by the setup
+preflight (`dw-demo-base/references/setup-checks.md`) alongside `git`, `gh` and `node`; a script
+never checks or branches on the version itself. Invoke scripts as `pwsh -NoProfile -File`.
+
+**File contract** (one file, `<Verb-Noun>.ps1` or `<Name>.psm1`, approved verbs):
+
+- Comment-based help: `.SYNOPSIS` opens with `READ-ONLY.` or `WRITES: <what>.`;
+  `.DESCRIPTION` names the owning reference and the traps the script encodes; one `.PARAMETER`
+  per parameter; at least one `.EXAMPLE`.
+- `[CmdletBinding(SupportsShouldProcess)]`, an explicit `param()` block,
+  `$ErrorActionPreference = 'Stop'`, exit code 0 on success and 1 on failure, error messages
+  that say what to fix, no unexplained constants. A write whose blast radius exceeds one row
+  runs as `-WhatIf` by default and needs `-Apply`.
+- Connection discovery in this order: explicit parameter, then `$env:DW_BASE_URL` /
+  `$env:DW_API_TOKEN` / `$env:DW_MCP_TOKEN` / `$env:DW_SQL_CONNECTION`, then the port from
+  `Dynamicweb.Host.Suite/Properties/launchSettings.json`, then fail with the one-liner that
+  fixes it. No default port, host, path or token anywhere. Secrets come from `$env:` only and
+  are masked in every log line.
+- Shared code lives in one module, `dw-data-access/scripts/Dw.Api.psm1`, imported
+  `$PSScriptRoot`-relative and followed by `Assert-DwConnection`. `dw-setup-install` scripts
+  stay self-contained: they run before a host or token exists, in bundles that do not ship
+  `dw-data-access`.
+- UTF-8 without BOM, free of mojibake; a detector builds its marker strings from code points
+  (`[char]0xFFFD`), never from literals.
+
+**Wiring in SKILL.md.** Declare `compatibility: Requires PowerShell 7.x` in the frontmatter of
+every skill that ships a script. Add a `## Scripts (scripts/)` table, one row per file,
+`| Script | Reads / writes | What it does |`, with a markdown link `[Name.ps1](scripts/Name.ps1)`
+so the validator proves the file exists. Every invocation is a fenced
+`pwsh -NoProfile -File scripts/Name.ps1 ...` line, with forward slashes, that says whether to
+*run* the script or *see* it as reference. The owning reference keeps the rule and the why and
+links the script for the how (one lesson, one home).
+
+A script import into another skill's `scripts/` is a hard dependency for bundle closure, the
+same as a link into its `references/`. The machine-checkable half of this contract (help block,
+`#Requires`, import resolution, secrets, environment literals, encoding, unlinked scripts) is
+the validator's job; review enforces the rest. Lifting a script out of a demo build has its own
+gates in [`fold-back-workflow.md`](../../../skills/dw-demo-foldback/references/fold-back-workflow.md)
+("Step 1c").
+
 ## Adding a new skill
 
 1. Create `skills/dw-<domain>-<topic>/SKILL.md` with matching `name:` frontmatter (UTF-8, no BOM).
@@ -178,7 +230,7 @@ resolve relative to the source root and start with `./`. Bump the `version` unde
 (semver) when skills are added or renamed.
 
 A bundle must be **closed**: every skill it ships may only hard-depend (link into `references/`
-or `assets/`) on skills the same bundle ships. The validator errors on a link that escapes the
+or `assets/`, or import from `scripts/`) on skills the same bundle ships. The validator errors on a link that escapes the
 bundle — either add the target skill to the bundle or route through its SKILL.md by name.
 
 ## Demo skills dependency order

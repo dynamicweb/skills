@@ -3,6 +3,30 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.21.0]
+
+Adopts `skills/<skill>/scripts/` as the packaging convention for runnable scripts, ahead of
+shipping a shared module and a first wave of scripts for the operations every demo build
+re-implements (Admin API / MCP wrapper, RunSql task runner, guarded host restart, index build,
+readiness verify, PII scan, stock-Swift debrand, mojibake census). Docs only; no script changes.
+
+- **`dw-skill-authoring` "Shipping scripts"**: the script contract. PowerShell 7 single tier
+  (`#Requires -Version 7.0`, the version handled by the setup preflight, never in scripts),
+  comment-based help with a READ-ONLY / WRITES opener, `SupportsShouldProcess` with `-WhatIf`
+  default beyond one row, connection discovery order with no default host/port/path/token,
+  `$env:`-only secrets, one shared module in `dw-data-access` with `dw-setup-install`
+  self-contained, `compatibility:` frontmatter, a linked `## Scripts` table, forward-slash
+  `pwsh -NoProfile -File` invocations. Script imports count toward bundle closure.
+- **`dw-demo-foldback` Step 1c**: lifting a script from a demo build. The recurrence bar (two
+  engagements, or one plus an existing fenced block), the script-specific sanitization classes
+  (hosts, tokens, passwords, ids, paths, task names), one-lesson-one-home for the superseded
+  prose, retiring the demo copy, and the smoke-test rule (write scripts local-first; a hosted
+  install only afterwards and under `dw-demo-hosted` shared-install discipline).
+- **`dw-demo-base` setup-checks**: install-grade fix for a missing `pwsh`
+  (`winget install --id Microsoft.PowerShell`).
+- **CLAUDE.md, README**: encoding and no-secrets rules extended to `scripts/`; PowerShell 7
+  listed under Requirements.
+
 ## [4.20.0]
 
 Re-lands the July `dw-demo-base` split chain (PRs #64–#69, originally stacked on `v2`) on
