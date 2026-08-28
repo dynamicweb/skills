@@ -197,44 +197,63 @@ others. A script earns its place when the same operation is re-implemented acros
 or already sits in a reference as a fenced block a model must retype correctly every time (the
 "encode in a script" corollary above). A one-off recipe stays prose.
 
-**PowerShell 7, single tier.** Every script targets PowerShell 7 and starts with
-`#Requires -Version 7.0`, so under Windows PowerShell 5.1 it stops with a one-line message
-before the body is parsed. PowerShell 7 is a machine prerequisite, installed by the setup
-preflight (`dw-demo-base/references/setup-checks.md`) alongside `git`, `gh` and `node`; a script
-never checks or branches on the version itself. Invoke scripts as `pwsh -NoProfile -File`.
+**Pick the language for the job; declare the runtime.** PowerShell 7 is the default for
+anything that touches a Dynamicweb install on a Windows host (the host process, SQL Server, the
+Admin API from the machine that runs it): that is where the operator already is and where the
+shared module lives. A script that another language serves better (a text transform over
+template files, JSON or CSV reshaping, anything that would fight PowerShell) ships in that
+language; Python, Bash and JavaScript are the ones the Agent Skills spec calls common. The rule
+is not "PowerShell only". The rule is that every runtime a skill needs is declared in its
+frontmatter (`compatibility: Requires PowerShell 7.x`, `Requires Python 3.12+`) and named again
+in the script header, and that a script never checks or branches on the runtime version itself.
+Machine prerequisites are installed by the setup preflight
+(`dw-demo-base/references/setup-checks.md`) alongside `git`, `gh` and `node`.
 
-**File contract** (one file, `<Verb-Noun>.ps1` or `<Name>.psm1`, approved verbs):
+**File contract, every language** (one file under `scripts/`, named by the language's own
+convention):
 
-- Comment-based help: `.SYNOPSIS` opens with `READ-ONLY.` or `WRITES: <what>.`;
-  `.DESCRIPTION` names the owning reference and the traps the script encodes; one `.PARAMETER`
-  per parameter; at least one `.EXAMPLE`.
-- `[CmdletBinding(SupportsShouldProcess)]`, an explicit `param()` block,
-  `$ErrorActionPreference = 'Stop'`, exit code 0 on success and 1 on failure, error messages
-  that say what to fix, no unexplained constants. A write whose blast radius exceeds one row
-  runs as `-WhatIf` by default and needs `-Apply`.
-- Connection discovery in this order: explicit parameter, then `$env:DW_BASE_URL` /
-  `$env:DW_API_TOKEN` / `$env:DW_MCP_TOKEN` / `$env:DW_SQL_CONNECTION`, then the port from
+- A header a reader can act on without opening the body: what the script does, whether it is
+  `READ-ONLY` or what it `WRITES`, the owning reference, the traps it encodes, every parameter,
+  at least one example.
+- Explicit, named parameters; exit code 0 on success and 1 on failure; error messages that say
+  what to fix; no unexplained constants. A write whose blast radius exceeds one row runs as a
+  dry run by default and needs an explicit apply switch.
+- Connection discovery in this order: explicit parameter, then `DW_BASE_URL` / `DW_API_TOKEN` /
+  `DW_MCP_TOKEN` / `DW_SQL_CONNECTION` from the environment, then the port from
   `Dynamicweb.Host.Suite/Properties/launchSettings.json`, then fail with the one-liner that
-  fixes it. No default port, host, path or token anywhere. Secrets come from `$env:` only and
-  are masked in every log line.
-- Shared code lives in one module, `dw-data-access/scripts/Dw.Api.psm1`, imported
-  `$PSScriptRoot`-relative and followed by `Assert-DwConnection`. `dw-setup-install` scripts
-  stay self-contained: they run before a host or token exists, in bundles that do not ship
-  `dw-data-access`.
+  fixes it. No default port, host, path or token anywhere. Secrets come from the environment
+  only and are masked in every log line.
 - UTF-8 without BOM, free of mojibake; a detector builds its marker strings from code points
-  (`[char]0xFFFD`), never from literals.
+  (`[char]0xFFFD`, `"Fffd"`), never from literals.
 
-**Wiring in SKILL.md.** Declare `compatibility: Requires PowerShell 7.x` in the frontmatter of
-every skill that ships a script. Add a `## Scripts (scripts/)` table, one row per file,
-`| Script | Reads / writes | What it does |`, with a markdown link `[Name.ps1](scripts/Name.ps1)`
-so the validator proves the file exists. Every invocation is a fenced
-`pwsh -NoProfile -File scripts/Name.ps1 ...` line, with forward slashes, that says whether to
-*run* the script or *see* it as reference. The owning reference keeps the rule and the why and
-links the script for the how (one lesson, one home).
+**PowerShell profile.** `<Verb-Noun>.ps1` or `<Name>.psm1` with approved verbs; first line
+`#Requires -Version 7.0`, so under Windows PowerShell 5.1 the script stops with a one-line
+message before the body is parsed; comment-based help (`.SYNOPSIS` opening with `READ-ONLY.` or
+`WRITES: <what>.`, `.DESCRIPTION`, `.PARAMETER`, `.EXAMPLE`);
+`[CmdletBinding(SupportsShouldProcess)]` with `-WhatIf` as the dry run and `-Apply` to write; an
+explicit `param()` block; `$ErrorActionPreference = 'Stop'`. Invoke as `pwsh -NoProfile -File`.
+Shared code lives in one module, `dw-data-access/scripts/Dw.Api.psm1`, imported
+`$PSScriptRoot`-relative and followed by `Assert-DwConnection`. `dw-setup-install` scripts stay
+self-contained: they run before a host or token exists, in bundles that do not ship
+`dw-data-access`.
+
+**Python profile.** `snake_case.py` with `#!/usr/bin/env python3`; a module docstring as the
+header and `argparse` so `--help` renders it; `--dry-run` as the default and `--apply` to
+write; standard library only unless the frontmatter declares the package. A Python script that
+needs the Admin API calls it directly; a second shared library appears when a second consumer
+does.
+
+**Wiring in SKILL.md.** Declare every runtime in `compatibility:`. Add a `## Scripts (scripts/)`
+table, one row per file, `| Script | Reads / writes | What it does |`, with a markdown link
+`[name](scripts/name)` so the validator proves the file exists. Every invocation is a fenced
+command line (`pwsh -NoProfile -File scripts/Name.ps1 ...`, `python3 scripts/name.py ...`),
+with forward slashes, that says whether to *run* the script or *see* it as reference. The
+owning reference keeps the rule and the why and links the script for the how (one lesson, one
+home).
 
 A script import into another skill's `scripts/` is a hard dependency for bundle closure, the
-same as a link into its `references/`. The machine-checkable half of this contract (help block,
-`#Requires`, import resolution, secrets, environment literals, encoding, unlinked scripts) is
+same as a link into its `references/`. The machine-checkable half of this contract (header,
+declared runtime, import resolution, secrets, environment literals, encoding, unlinked scripts) is
 the validator's job; review enforces the rest. Lifting a script out of a demo build has its own
 gates in [`fold-back-workflow.md`](../../../skills/dw-demo-foldback/references/fold-back-workflow.md)
 ("Step 1c").

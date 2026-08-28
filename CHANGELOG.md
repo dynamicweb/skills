@@ -10,13 +10,17 @@ shipping a shared module and a first wave of scripts for the operations every de
 re-implements (Admin API / MCP wrapper, RunSql task runner, guarded host restart, index build,
 readiness verify, PII scan, stock-Swift debrand, mojibake census). Docs only; no script changes.
 
-- **`dw-skill-authoring` "Shipping scripts"**: the script contract. PowerShell 7 single tier
-  (`#Requires -Version 7.0`, the version handled by the setup preflight, never in scripts),
-  comment-based help with a READ-ONLY / WRITES opener, `SupportsShouldProcess` with `-WhatIf`
+- **`dw-skill-authoring` "Shipping scripts"**: the script contract. Language per job, runtime
+  declared in `compatibility:` frontmatter: PowerShell 7 is the default for anything touching a
+  Windows Dynamicweb host (`#Requires -Version 7.0`, the version handled by the setup preflight,
+  never in scripts); Python or another language where it fits better. Language-neutral rules
+  (actionable header with a READ-ONLY / WRITES opener, explicit parameters, exit codes, dry-run
   default beyond one row, connection discovery order with no default host/port/path/token,
-  `$env:`-only secrets, one shared module in `dw-data-access` with `dw-setup-install`
-  self-contained, `compatibility:` frontmatter, a linked `## Scripts` table, forward-slash
-  `pwsh -NoProfile -File` invocations. Script imports count toward bundle closure.
+  environment-only secrets, encoding), a PowerShell profile (comment-based help,
+  `SupportsShouldProcess`, one shared module in `dw-data-access`, `dw-setup-install`
+  self-contained) and a Python profile (`argparse`, `--dry-run`/`--apply`, stdlib unless
+  declared). Linked `## Scripts` table, forward-slash invocations; script imports count toward
+  bundle closure.
 - **`dw-demo-foldback` Step 1c**: lifting a script from a demo build. The recurrence bar (two
   engagements, or one plus an existing fenced block), the script-specific sanitization classes
   (hosts, tokens, passwords, ids, paths, task names), one-lesson-one-home for the superseded

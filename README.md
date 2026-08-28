@@ -261,4 +261,4 @@ Install any of the six bundles by name: `dynamicweb-setup`, `dynamicweb-frontend
 
 These skills delegate execution to the **Dynamicweb 10 MCP server**. The MCP server must be connected before using any skill.
 
-Scripts shipped under `skills/*/scripts/` require **PowerShell 7+** (`winget install --id Microsoft.PowerShell`); each starts with `#Requires -Version 7.0`. The script contract is in `.claude/skills/dw-skill-authoring/SKILL.md` ("Shipping scripts").
+Skills may ship scripts under `skills/*/scripts/`. PowerShell scripts require **PowerShell 7+** (`winget install --id Microsoft.PowerShell`) and start with `#Requires -Version 7.0`; any other runtime a skill needs is declared in that skill's `compatibility:` frontmatter. The script contract is in `.claude/skills/dw-skill-authoring/SKILL.md` ("Shipping scripts").
