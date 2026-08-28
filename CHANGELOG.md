@@ -36,8 +36,11 @@ already exist on `main` in another form.
 - **Validator: SKILL.md bodies are budgeted by characters, not just lines.** A body over
   16,000 characters (~4k tokens on activation) warns alongside the existing 500-line check, and
   the reference-TOC check now descends into nested `references/` folders. Currently flags
-  `dw-render-viewmodels` (16.3k), `dw-swift-page-blocks` (22.4k) and `dw-swift-page-design`
-  (18.9k) — warnings only, to be split in their own PRs.
+  seven skills, warnings only: `dw-content-modelling` (16.3k), `dw-demo-base` (29.6k),
+  `dw-demo-swift` (19.8k), `dw-integration-framework` (17.9k), `dw-render-viewmodels` (16.3k),
+  `dw-swift-page-blocks` (22.4k) and `dw-swift-page-design` (18.9k). Whether a given one
+  warrants a split is a per-skill call; the flow skills that drive live MCP work pay the
+  activation cost on every build and are the first candidates.
 - **`orchestrator.md` — "Model tier" section.** Choosing a cheaper or stronger model for a demo
   step is the orchestrator's dial, not the skill's: there are no per-tier SKILL.md variants, and
   what a cheaper model cannot be trusted to remember is encoded as a script or detector rather
