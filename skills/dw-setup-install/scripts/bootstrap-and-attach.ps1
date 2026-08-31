@@ -1,14 +1,22 @@
 <#
 .SYNOPSIS
-    Bootstraps a Dynamicweb MCP configuration and writes MCP client config.
+    WRITES: the MCP client config (.mcp.json or .codex/config.toml), a
+    credentials file, and a status file. Bootstraps a Dynamicweb MCP
+    configuration and attaches the current agent to it.
 
 .DESCRIPTION
     Reads Files/System/mcp-bootstrap.json, calls /admin/mcp/bootstrap, persists
     the response safely outside the repo, writes or updates the local MCP client
     config for Claude Code or Codex, and validates connectivity.
+    Owning reference: dw-setup-install/SKILL.md ("After Installation").
+    Traps encoded: the license gate before bootstrap (an unlicensed host
+    redirects to /admin/license and returns HTML instead of JSON), the one-time
+    TTL on the bootstrap secret, and refusing to write client config when the
+    response lacks a bearer token.
 
 .PARAMETER DynamicwebUrl
-    Base URL of the Dynamicweb site (e.g. https://localhost:5001).
+    Base URL of the Dynamicweb site, e.g. https://localhost:<port> — read the
+    port from Dynamicweb.Host.Suite/Properties/launchSettings.json.
 
 .PARAMETER FilesPath
     Path to the Dynamicweb Files folder that contains System/mcp-bootstrap.json.
@@ -30,11 +38,16 @@
 
 .PARAMETER ResumeFromCredentials
     Path to an existing credentials file to resume from.
+
+.EXAMPLE
+    pwsh -NoProfile -File scripts/bootstrap-and-attach.ps1 -DynamicwebUrl "https://localhost:<port>" -FilesPath "C:\DwSolutions\Swift2\Files" -ConfigurationName "My Business MCP"
 #>
+#Requires -Version 7.0
 
 [CmdletBinding()]
 param(
-    [string]$DynamicwebUrl = "https://localhost:5001",
+    [Parameter(Mandatory = $true)]
+    [string]$DynamicwebUrl,
     [string]$FilesPath = "C:\DwSolutions\Swift2\Files",
     [string]$ConfigurationName = "Dynamicweb MCP",
     [ValidateSet("All", "NonDestructive", "ReadOnly")]
@@ -69,81 +82,25 @@ function Invoke-DwWebRequest {
         [string]$ContentType = ""
     )
 
-    if ($PSVersionTable.PSVersion.Major -ge 7) {
-        $params = @{
-            Uri = $Uri
-            Method = $Method
-            SkipCertificateCheck = $true
-        }
-
-        if ($Headers) {
-            $params["Headers"] = $Headers
-        }
-
-        if ($Body) {
-            $params["Body"] = $Body
-        }
-
-        if ($ContentType) {
-            $params["ContentType"] = $ContentType
-        }
-
-        return Invoke-WebRequest @params
+    $params = @{
+        Uri = $Uri
+        Method = $Method
+        SkipCertificateCheck = $true
     }
 
-    $bodyFile = [System.IO.Path]::GetTempFileName()
-    $requestBodyFile = $null
-    try {
-        $writeOut = "__CURL_META__%{url_effective}|%{content_type}|%{http_code}"
-        $args = @("-k", "-sS", "-L", "-o", $bodyFile, "-w", $writeOut, "-X", $Method)
-
-        if ($Headers) {
-            foreach ($header in $Headers.GetEnumerator()) {
-                $args += @("-H", "$($header.Key): $($header.Value)")
-            }
-        }
-
-        if ($ContentType) {
-            $args += @("-H", "Content-Type: $ContentType")
-        }
-
-        if ($Body) {
-            $requestBodyFile = [System.IO.Path]::GetTempFileName()
-            Set-Content -Path $requestBodyFile -Value $Body -Encoding UTF8
-            $args += @("--data-binary", "@$requestBodyFile")
-        }
-
-        $args += $Uri
-        $rawOutput = & curl.exe @args
-        if ($LASTEXITCODE -ne 0) {
-            throw "curl.exe failed while calling $Uri"
-        }
-
-        $content = Get-Content -Path $bodyFile -Raw
-        if ($rawOutput -notmatch '__CURL_META__(?<url>[^|]*)\|(?<contentType>[^|]*)\|(?<statusCode>\d+)$') {
-            throw "Could not parse curl.exe response metadata for $Uri"
-        }
-
-        return [pscustomobject]@{
-            Content = $content
-            Headers = @{
-                "Content-Type" = $matches["contentType"]
-            }
-            StatusCode = [int]$matches["statusCode"]
-            BaseResponse = [pscustomobject]@{
-                ResponseUri = [Uri]$matches["url"]
-            }
-        }
+    if ($Headers) {
+        $params["Headers"] = $Headers
     }
-    finally {
-        if (Test-Path $bodyFile) {
-            Remove-Item -Path $bodyFile -Force
-        }
 
-        if ($requestBodyFile -and (Test-Path $requestBodyFile)) {
-            Remove-Item -Path $requestBodyFile -Force
-        }
+    if ($Body) {
+        $params["Body"] = $Body
     }
+
+    if ($ContentType) {
+        $params["ContentType"] = $ContentType
+    }
+
+    return Invoke-WebRequest @params
 }
 
 function Test-LicenseInstalled {
@@ -388,12 +345,7 @@ function Test-McpConnectivity {
 
     $testUrl = "$BaseUrl/admin/mcp"
 
-    if ($PSVersionTable.PSVersion.Major -ge 7) {
-        $response = Invoke-RestMethod -Uri $testUrl -Method Post -Headers $headers -Body $initBody -SkipCertificateCheck
-    }
-    else {
-        $response = Invoke-RestMethod -Uri $testUrl -Method Post -Headers $headers -Body $initBody
-    }
+    $response = Invoke-RestMethod -Uri $testUrl -Method Post -Headers $headers -Body $initBody -SkipCertificateCheck
 
     if ($response.result) {
         Write-Success "MCP connectivity validated. Server: $($response.result.serverInfo.name) v$($response.result.serverInfo.version)"
