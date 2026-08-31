@@ -226,10 +226,12 @@ convention):
 - UTF-8 without BOM, free of mojibake; a detector builds its marker strings from code points
   (`[char]0xFFFD`, `"Fffd"`), never from literals.
 
-**PowerShell profile.** `<Verb-Noun>.ps1` or `<Name>.psm1` with approved verbs; first line
-`#Requires -Version 7.0`, so under Windows PowerShell 5.1 the script stops with a one-line
-message before the body is parsed; comment-based help (`.SYNOPSIS` opening with `READ-ONLY.` or
-`WRITES: <what>.`, `.DESCRIPTION`, `.PARAMETER`, `.EXAMPLE`);
+**PowerShell profile.** `<Verb-Noun>.ps1` or `<Name>.psm1` with approved verbs; comment-based
+help opens the file (`.SYNOPSIS` opening with `READ-ONLY.` or `WRITES: <what>.`,
+`.DESCRIPTION`, `.PARAMETER`, `.EXAMPLE`), with `#Requires -Version 7.0` on the line after the
+closing `#>` — `Get-Help` binds script help only when nothing but plain comments precede it, and
+a leading `#Requires` breaks that binding, while `#Requires` itself works from any top-level
+line and still stops Windows PowerShell 5.1 with a one-line message;
 `[CmdletBinding(SupportsShouldProcess)]` with `-WhatIf` as the dry run and `-Apply` to write; an
 explicit `param()` block; `$ErrorActionPreference = 'Stop'`. Invoke as `pwsh -NoProfile -File`.
 Shared code lives in one module, `dw-data-access/scripts/Dw.Api.psm1`, imported
