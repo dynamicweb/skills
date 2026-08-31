@@ -3,6 +3,38 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.23.0]
+
+Enforces the machine-checkable half of the 4.22.0 script contract and brings the four existing
+`dw-setup-install` scripts up to it, in one PR so `main` never sits between the gate and the
+conformance.
+
+- **Validator** (`scripts/validate-skills.py`), new checks over `skills/*/scripts/`:
+  script contract (PowerShell files carry `#Requires -Version 7.0` after the help block,
+  comment-based help with a `READ-ONLY.`/`WRITES:` `.SYNOPSIS` opener, `.DESCRIPTION`, an
+  explicit `param()`; `.EXAMPLE` warns; Python files carry a module docstring); the runtime
+  declared in the skill's `compatibility:` frontmatter; `Import-Module`/dot-source targets
+  resolve and cross-skill imports honor bundle closure (markdown links into another skill's
+  `scripts/` now count as hard dependencies too); token-shaped secrets rejected everywhere
+  under `skills/`, plaintext password assignments and environment literals
+  (`localhost:<port>`, `*.mydwsite*.com`, the local solutions tree) rejected in scripts; BOM,
+  mojibake, and invalid-UTF-8 checks extended from markdown to script files; unlinked scripts
+  warn.
+- **CI** (`manifest-check.yml`): a `pwsh` step parses every shipped `.ps1`/`.psm1` with the
+  PowerShell language parser and fails on parse errors.
+- **`dw-setup-install` scripts migrated to PowerShell 7 single-tier**: `#Requires -Version 7.0`
+  placed after the help block (a leading `#Requires` silently breaks `Get-Help`'s binding of
+  comment-based help — the contract text was corrected on the 4.22.0 branch), the 5.1
+  `curl.exe -k` fallbacks and `-UseBasicParsing` removed, `WRITES:` synopsis openers, owning
+  reference + traps in `.DESCRIPTION`, `.EXAMPLE` blocks, `Download-File` renamed to the
+  approved-verb `Save-RemoteFile`. `-DynamicwebUrl` is now mandatory in
+  `bootstrap-and-attach.ps1` and `activate-free-trial.ps1` (the host port is install-specific;
+  `https://localhost:5001` defaults dropped per the no-default-host rule).
+- **`dw-setup-install` SKILL.md**: `compatibility: Requires PowerShell 7.x` frontmatter, a
+  linked `## Scripts (scripts/)` table, PowerShell 7 added to Prerequisites, and all
+  invocations switched from `powershell -ExecutionPolicy Bypass -File` to
+  `pwsh -NoProfile -File`.
+
 ## [4.22.0]
 
 Adopts `skills/<skill>/scripts/` as the packaging convention for runnable scripts, ahead of

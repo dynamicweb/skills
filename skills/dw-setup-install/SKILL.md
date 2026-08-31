@@ -3,6 +3,7 @@ name: dw-setup-install
 type: flow
 group: setup
 mcp: none
+compatibility: Requires PowerShell 7.x
 description: 'Install Dynamicweb Swift 2 from scratch — download and import the database, extract files, install the temporary MCP add-ins payload, and write the first-run bootstrap manifest. Triggers: a fresh or empty Dynamicweb instance needs Swift 2 installed, bootstrap the MCP connection on a new install, download and import the Swift 2 baseline. Non-triggers: install exists and needs business configuration -> dw-setup-config; presales demo host scaffolding, TLS, and MCP wiring -> the presales demo bundle.'
 ---
 
@@ -13,6 +14,19 @@ description: 'Install Dynamicweb Swift 2 from scratch — download and import th
 | Topic | Where |
 |---|---|
 | Host install anatomy — machine prerequisites (.NET 10 SDK, ProjectTemplates, SQL Express), the mandatory `net10.0` TargetFramework, build-time host-config patches (`ImplicitDistributedTransactions`, `Files\System` build exclusion), MSDTC, release rings, install anti-patterns, and the first-run license gate + headless admin-password recovery | [`references/install-anatomy.md`](references/install-anatomy.md) |
+
+## Scripts (scripts/)
+
+All PowerShell 7 (`#Requires -Version 7.0`); run with `pwsh -NoProfile -File`. These scripts
+are self-contained by design — they run before a host or token exists, so they never import
+the shared module.
+
+| Script | Reads / writes | What it does |
+|---|---|---|
+| [install-swift2.ps1](scripts/install-swift2.ps1) | Writes: SQL database, Files tree, Custom.Mcp payload, bootstrap manifest, DB config | Full Swift 2 install from the downloads portal |
+| [activate-free-trial.ps1](scripts/activate-free-trial.ps1) | Writes: a trial license on the target install | Drives the `/admin/license` trial flow and verifies the redirect is gone |
+| [bootstrap-and-attach.ps1](scripts/bootstrap-and-attach.ps1) | Writes: MCP client config, credentials + status files | Bootstraps `/admin/mcp` and attaches the current agent |
+| [reset-mcp-bootstrap-manifest.ps1](scripts/reset-mcp-bootstrap-manifest.ps1) | Writes: `Files/System/mcp-bootstrap.json` | Re-arms an expired bootstrap secret |
 
 ## Objective
 Go from "fresh DynamicWeb 10 application" to "fully working Swift 2 website" by downloading
@@ -43,18 +57,19 @@ After install you have a complete, working e-commerce website with the MCP boots
 ## Happy Path - Automated Installation
 
 ### Prerequisites
+- PowerShell 7: `winget install --id Microsoft.PowerShell --source winget` (all scripts start with `#Requires -Version 7.0`)
 - `sqlpackage` CLI tool: `dotnet tool install -g microsoft.sqlpackage`
 - SQL Server instance running (Express is fine)
 - Internet access to download from `doc.dynamicweb.com`
 
 ### Run the Script
 ```powershell
-powershell -ExecutionPolicy Bypass -File "scripts/install-swift2.ps1"
+pwsh -NoProfile -File "scripts/install-swift2.ps1"
 ```
 
 ### Custom server/database
 ```powershell
-powershell -ExecutionPolicy Bypass -File "scripts/install-swift2.ps1" `
+pwsh -NoProfile -File "scripts/install-swift2.ps1" `
   -TargetServer ".\SQLEXPRESS" `
   -TargetDatabase "mybusiness" `
   -FilesPath "C:\MyProject\wwwroot\Files"
@@ -114,7 +129,7 @@ If the automated script fails (no sqlpackage, download blocked, wrong SQL Server
 7. **Install license** at `/admin`
    - For a free trial, prefer:
    ```powershell
-   powershell -ExecutionPolicy Bypass -File "scripts/activate-free-trial.ps1" `
+   pwsh -NoProfile -File "scripts/activate-free-trial.ps1" `
      -DynamicwebUrl "https://localhost:5001" `
      -FilesPath "C:\MyProject\wwwroot\Files"
    ```
@@ -127,9 +142,10 @@ If the automated script fails (no sqlpackage, download blocked, wrong SQL Server
 ## After Installation - Bootstrap and Attach
 
 ### Happy Path (auto-attach)
-Run the bootstrap-and-attach script:
+Run the bootstrap-and-attach script (`-DynamicwebUrl` is mandatory — the host's port is
+install-specific, from `Dynamicweb.Host.Suite/Properties/launchSettings.json`):
 ```powershell
-powershell -ExecutionPolicy Bypass -File "scripts/bootstrap-and-attach.ps1" `
+pwsh -NoProfile -File "scripts/bootstrap-and-attach.ps1" `
   -DynamicwebUrl "https://localhost:5001" `
   -FilesPath "C:\DwSolutions\Swift2\Files" `
   -ConfigurationName "My Business MCP"
