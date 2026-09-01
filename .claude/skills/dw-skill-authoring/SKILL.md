@@ -15,6 +15,7 @@ rule that governs every edit — the one-way foundational/demo boundary — live
 - [Naming](#naming)
 - [Area taxonomy](#area-taxonomy)
 - [SKILL.md frontmatter](#skillmd-frontmatter)
+- [MCP dependence (`mcp:` field)](#mcp-dependence-mcp-field)
 - [Writing the instruction body](#writing-the-instruction-body)
 - [Length budgets and references](#length-budgets-and-references)
 - [Adding a new skill](#adding-a-new-skill)
@@ -74,13 +75,15 @@ Swift, Core, From Scratch, Headless (`/dwapi/`).
 name: dw-<domain>-<topic>
 type: <knowledge | flow>
 group: <area — pim, search, render, setup, extend, integration, commerce, users, swift, headless, content, data, source, demo>
+mcp: <required | optional | none>
 description: <one to three sentences. First sentence states what the skill does. Remaining sentences list the exact trigger phrases / conditions that activate it.>
 ---
 ```
 
 `type` is `knowledge` for reference-style platform skills and `flow` for skills that drive a
 multi-step process (the setup installers and the demo chain). `group` is the skill's area from
-the taxonomy above and matches the `<domain>` segment of the name.
+the taxonomy above and matches the `<domain>` segment of the name. `mcp` declares the skill's
+MCP dependence — see the next section.
 
 The `description` is the **activation signal** — it is matched against the user's request at
 runtime, and it is the only part of the skill the model sees before deciding to load it. Treat
@@ -101,6 +104,33 @@ Demo skills additionally carry a `Use AFTER dw-demo-base` marker. Keep descripti
 line and within the **1024-character** cap — parsers truncate past it, silently dropping trigger
 coverage (the validator errors over the cap). A description crowding the cap is a signal the
 skill owns too many unrelated routes; split the skill rather than compressing the triggers.
+
+## MCP dependence (`mcp:` field)
+
+This repo is consumed both by harnesses with a live Dynamicweb MCP connection (Dynamo) and by
+plain Claude Code installs that may have none. Every skill declares which world it lives in —
+the field is orthogonal to `type`/`group` and flows through to `manifest.json` so consumers
+can filter on it:
+
+- **`mcp: required`** — the skill's steps *are* MCP tool calls; it cannot run without the
+  server (the demo chain, tool-driven flows like `dw-pim-migrate-dw9`, `dw-swift-page-design`).
+  The body must open with a **`## MCP preflight`** section: verify the tools are available,
+  and stop — never substitute direct SQL, file edits, or guessed HTTP calls — when they are not.
+- **`mcp: optional`** — the knowledge stands alone; MCP tools are the preferred way to apply
+  it (most `knowledge` skills that name tools, e.g. `dw-pim-modelling`, `dw-search-indexing`).
+  The body must carry a **`## Without MCP`** section stating the standalone path (advisory
+  mode, produce payloads/config for the user to apply).
+- **`mcp: none`** — pure platform knowledge or an offline flow (`dw-render-*`, `dw-setup-*`,
+  `dw-extend-*`, `dw-source-explorer`). No marker section; the skill must read the same
+  whether or not an MCP server exists. Note `dw-extend-mcp-tools` is `none`: it teaches
+  *writing* MCP tools in C#, which needs no live connection.
+
+The validator enforces the pair: the field must be present and valid, `required` needs its
+`## MCP preflight` section, `optional` needs `## Without MCP`, and a marker section that
+contradicts the declared level is an error. Keep the marker level in mind on the demo
+boundary too — demo skills are all `required`, and a foundational skill never becomes
+`required` just to lean on demo scaffolding. The MCP dependence is declared in frontmatter
+and body markers, never appended to the `description` — trigger budget stays trigger budget.
 
 ## Writing the instruction body
 
@@ -194,7 +224,9 @@ sister skill (`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hoste
 when `marketplace.json` fails to parse or lacks its top-level schema (`name`, `owner`,
 `plugins`), a plugin entry has no `source`, a referenced skill path is missing, a skill's folder
 name / `name:` frontmatter / marketplace path disagree, frontmatter fails a strict YAML parse, a
-relative link does not resolve, a `description` exceeds 1024 chars, a markdown file carries a
+relative link does not resolve, a `description` exceeds 1024 chars, the `mcp` field is missing
+or invalid or its body marker section (`## MCP preflight` / `## Without MCP`) does not match
+the declared level, a markdown file carries a
 UTF-8 BOM or mojibake, or a bundled skill hard-depends on a skill the bundle does not ship. It
 **warns** when a description lacks a trigger signal, a SKILL.md body runs past 500 lines or
 16,000 characters, or a reference over 100 lines lacks a table of contents.

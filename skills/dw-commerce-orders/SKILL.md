@@ -2,10 +2,18 @@
 name: dw-commerce-orders
 type: knowledge
 group: commerce
+mcp: optional
 description: 'Handle orders, checkout, and cart functionality in Dynamicweb 10, investigate an order/cart/payment/shipment, and create or audit a discount or voucher. Triggers: order management, checkout flow, cart handling, pricing, find/troubleshoot an order or payment, create a discount/promotion/voucher/coupon. Non-triggers: product catalog -> dw-commerce-catalog; B2B patterns -> dw-commerce-b2b.'
 ---
 
 # Orders, Checkout, and Cart
+
+## Without MCP
+
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
+apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
+review, or produce payloads and configuration for the user to apply — and do not substitute
+direct SQL, file edits, or guessed HTTP calls for those tool calls.
 
 ## Order Lifecycle
 

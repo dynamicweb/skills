@@ -2,10 +2,18 @@
 name: dw-demo-swift
 type: flow
 group: demo
+mcp: required
 description: 'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, the customer re-skin ladder, and the mobile pass. Triggers: starting a Swift demo (load the baseline), re-skinning to a customer brand, "where do I edit the header/footer", "mobile view" / "mobile pass" / "canvas stretch" / "overflow at 390" / mega-menu won''t collapse, customer-center / impersonation flows, sign-in profiles / switch user, checkout delivery date or custom order fields, paragraph renders empty or stale, Razor pitfalls in custom layouts, language layers, gating pages or paragraphs by group, editing repeater/slider children via the Admin API. Non-triggers: demo setup/MCP/TLS -> dw-demo-base; PIM data modelling -> dw-demo-pim; ERP integration -> dw-demo-erp. Swift 2 only -- never follow `doc.dynamicweb.dev/swift/swift-1/` URLs. Use AFTER dw-demo-base (host running, Serializer installed).'
 ---
 
 # Dynamicweb Swift Demo Skill
+
+## MCP preflight
+
+This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
+MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
+for the tool calls this skill names.
 
 Baseline content deserialize, frontend / Swift / customer-center playbook, and re-skin recipe for Dynamicweb 10 demo builds. **Use AFTER** `dw-demo-base` -- assumes a host is running, the demo's versions are captured, and the Serializer is installed in the host (per base's [`../dw-demo-base/references/serializer-reference.md`](../dw-demo-base/references/serializer-reference.md) "Installation").
 

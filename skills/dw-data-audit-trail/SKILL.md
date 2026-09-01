@@ -2,10 +2,18 @@
 name: dw-data-audit-trail
 type: flow
 group: data
+mcp: required
 description: 'Investigate why something changed, who changed a record, when a value was set, or inspect version/history for any Dynamicweb 10 entity, using the Dynamicweb.Auditing subsystem and its AuditQuery filter. Triggers: "why did this change", "who changed this product/order/page", "when was this field set", inspect audit log or version history. Non-triggers: reverting or fixing the change itself (a separate write, not this skill); data-access/caching patterns -> dw-data-access.'
 ---
 
 # Audit Trail Investigation
+
+## MCP preflight
+
+This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
+MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
+for the tool calls this skill names.
 
 Use this when the question is about history — why something changed, who changed it, when a
 value was set — for any Dynamicweb entity. This skill is **read-only**: if the investigation

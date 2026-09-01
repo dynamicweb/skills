@@ -2,10 +2,18 @@
 name: dw-integration-framework
 type: knowledge
 group: integration
+mcp: optional
 description: 'Understand Dynamicweb 10 Integration Framework architecture and patterns, and set up, run, schedule, or diagnose a Data Integration activity through the MCP tools. Triggers: Integration Framework, external systems, source/target providers, import/export products/users/orders via CSV/XML/Excel/OData, a failed or hanging integration activity. Non-triggers: ERP specifics -> dw-integration-erp; Business Central -> dw-integration-bc.'
 ---
 
 # Integration Framework
+
+## Without MCP
+
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
+apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
+review, or produce payloads and configuration for the user to apply — and do not substitute
+direct SQL, file edits, or guessed HTTP calls for those tool calls.
 
 ## Architecture Overview
 

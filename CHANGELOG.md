@@ -3,6 +3,29 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.21.0]
+
+MCP-dependence taxonomy: every skill now declares whether it depends on the Dynamicweb MCP
+server, so harnesses without a live connection (plain Claude Code installs) can tell
+tool-driven flows apart from standalone platform knowledge.
+
+- New required frontmatter field on every SKILL.md: `mcp: required | optional | none`
+  (13 required, 14 optional, 13 none). Orthogonal to `type`/`group`.
+- `required` skills open with an `## MCP preflight` section (verify tools, stop if absent —
+  never substitute direct SQL/file edits/guessed HTTP); `optional` skills carry a
+  `## Without MCP` section stating the standalone/advisory path. `dw-source-doc-lookup`
+  gets a tailored fallback (fetch doc.dynamicweb.dev over HTTP); `dw-demo-base` a tailored
+  preflight (the flow wires MCP itself).
+- `scripts/validate-skills.py` enforces the pair: field present and valid, marker section
+  matches the declared level, contradictions are errors.
+- `scripts/build-manifest.mjs` emits the `mcp` field into `manifest.json` so Dynamo and
+  other consumers can filter on it; manifest regenerated.
+- Deliberately NOT encoded in skill names (no renames) or descriptions (several are near
+  the 1024-char cap; trigger budget stays intact — the body markers carry the behavior).
+- Authoring rules documented in `dw-skill-authoring` ("MCP dependence") and README
+  ("Manifest"); the new 4.20.0 skills (`dw-demo-hosted` required, `dw-demo-foldback`)
+  classified alongside the rest.
+
 ## [4.20.0]
 
 Re-lands the July `dw-demo-base` split chain (PRs #64–#69, originally stacked on `v2`) on

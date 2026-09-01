@@ -74,10 +74,14 @@ function buildSkills() {
       if (!name) return null;
       const type = (fm.type || "").toLowerCase() === "flow" ? "flow" : "knowledge";
       const group = fm.group || (name.match(/^dw-([a-z0-9]+)-/)?.[1] ?? "");
+      // MCP-dependence axis (required | optional | none) — lets consumers
+      // without a live Dynamicweb MCP connection filter out `required` skills.
+      const mcp = ["required", "optional", "none"].includes(fm.mcp) ? fm.mcp : "none";
       return {
         name,
         type,
         group,
+        mcp,
         description: firstSentence(fm.description || ""),
         path: relative(REPO, file).split(sep).join("/"),
       };

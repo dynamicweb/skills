@@ -2,10 +2,18 @@
 name: dw-demo-headless
 type: flow
 group: demo
+mcp: required
 description: 'Dynamicweb 10 headless-commerce demos — a Next.js storefront (vercel/commerce starter) driven by the DW10 Delivery API, plus a dedicated presentation-agnostic serialized baseline. Triggers: building a headless/decoupled storefront demo, wiring a Next.js/vercel-commerce frontend to a DW10 backend, "the /dwapi call returns 401 with my admin token", product search returns 400 on POST /dwapi/ecommerce/products, PLP needs a repository+query, product data missing under a language, deserializing a headless baseline, Headless_* item types, running/building the storefront against a self-signed dev host. Non-triggers: server-side Swift storefront -> dw-demo-swift; PIM data modelling -> dw-demo-pim; raw Delivery API endpoint catalog (non-demo) -> dw-headless-delivery; demo setup/MCP/TLS -> dw-demo-base. Use AFTER dw-demo-base (host running, Serializer installed). Headless is its own baseline product line, fully decoupled from Swift.'
 ---
 
 # Dynamicweb Headless Demo Skill
+
+## MCP preflight
+
+This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
+MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
+for the tool calls this skill names.
 
 Build a **headless-commerce demo**: a Next.js storefront (from the `vercel/commerce`
 starter) that reads a Dynamicweb 10 backend through the **Delivery API** (`/dwapi/**`), backed

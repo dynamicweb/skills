@@ -2,10 +2,18 @@
 name: dw-demo-base
 type: flow
 group: demo
+mcp: required
 description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, when "pinning the platform" for a Distribution-validating scaffold, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (routes to dw-demo-hosted). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-hosted, dw-demo-erp, dw-integration-bc, dw-demo-foldback) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
 ---
 
 # Dynamicweb Demo Base Skill
+
+## MCP preflight
+
+This flow establishes the Dynamicweb MCP connection itself: the scaffold steps run without
+MCP, and every step after the MCP wiring assumes it is live. If the MCP wiring fails, stop
+and fix it before continuing — do not substitute direct SQL or file edits for the tool
+calls later steps name.
 
 The foundation skill for any Dynamicweb 10 demo. **Use FIRST** on every new Dynamicweb demo. Sister skills (`dw-demo-pim`, `dw-demo-swift`) inherit the `.mcp.json`, `CUSTOMISATIONS.md`, and TLS bypass that this skill establishes -- they are **Use AFTER**, never standalone.
 
@@ -223,7 +231,6 @@ Port, DB name, and Management API bearer token vary per project. Read them from 
 ## Baseline-drift self-diagnosis rule
 
 When grep results in skill text contradict the live baseline, consider "the baseline has rolled since this skill was authored" as a candidate cause. Cross-check the checked-out `base` layer's `swiftVersion` (from its `layer.json`) against the demo's Swift version before assuming the skill is correct. Reality wins; the skill is the second source of truth.
-
 
 
 

@@ -2,10 +2,18 @@
 name: dw-demo-pim
 type: flow
 group: demo
+mcp: required
 description: 'Dynamicweb 10 PIM modelling -- starts from a blank/fresh DB, building product data from scratch via MCP (no baseline deserialize). Triggers: modelling PIM data structures (shops vs channels, repositories/indexes, variants, BOM, categories, assortments, Dynamic Workspaces), choosing Storefront-first vs PIM-first setup order, fixing "completeness rules don''t show", building PIM dashboards, GUID-collision errors in the Products tree, designing the product workflow / approval flow, designing the role/permission matrix for a PIM team, translating products into additional EcomLanguages, recovering from data-load mishaps or stale indexes, post-mutation cache invalidation. Non-triggers: setup/MCP/TLS issues -> dw-demo-base; storefront/content/re-skin -> dw-demo-swift; ERP -> dw-demo-erp. Use AFTER dw-demo-base (assumes MCP connected with >200 tools).'
 ---
 
 # Dynamicweb PIM Demo Skill
+
+## MCP preflight
+
+This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
+MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
+for the tool calls this skill names.
 
 PIM modelling, structural mental model, governance, and recovery for Dynamicweb 10 demo builds. **Use AFTER** `dw-demo-base` -- this skill assumes MCP is connected with >200 tools. If MCP isn't connected, fix that there first ([dw-demo-base/references/mcp-setup.md](../dw-demo-base/references/mcp-setup.md)).
 

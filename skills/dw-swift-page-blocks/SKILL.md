@@ -2,10 +2,18 @@
 name: dw-swift-page-blocks
 type: knowledge
 group: swift
+mcp: optional
 description: 'Reference for the Swift 2 page-building vocabulary — grid row layouts (DefinitionIds), paragraph component types with their variants and fields, color schemes, and the MCP tools that compose them. Triggers: what row layouts/paragraph types/variants exist in Swift 2, how color schemes work, which tools build or read a Swift 2 page, load before designing or migrating any Swift 2 page. Non-triggers: designing item-type schemas -> dw-content-modelling; writing Razor/cshtml templates -> dw-render-razor; performing the actual page build or migration (this is reference only, no writes) -> dw-swift-page-design, dw-swift-migrate-v1, dw-swift-migrate-content.'
 ---
 
 # Swift 2 Page Blocks
+
+## Without MCP
+
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
+apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
+review, or produce payloads and configuration for the user to apply — and do not substitute
+direct SQL, file edits, or guessed HTTP calls for those tool calls.
 
 Reference for the Swift 2 page-building vocabulary — the row layouts, paragraph component
 types, color schemes, and the MCP tools that compose them. Load this whenever you are about to

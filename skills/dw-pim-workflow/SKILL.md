@@ -2,10 +2,18 @@
 name: dw-pim-workflow
 type: knowledge
 group: pim
+mcp: optional
 description: 'Configure Dynamicweb 10 PIM workflows — named states, transitions, and editorial handoffs across the product enrichment lifecycle. Triggers: create a PIM workflow, define workflow states and transitions, set up manual editorial handoffs, configure state notifications. Non-triggers: completeness-driven automatic movement -> dw-pim-completeness; the Data Model schema -> dw-pim-modelling.'
 ---
 
 # PIM Workflow
+
+## Without MCP
+
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
+apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
+review, or produce payloads and configuration for the user to apply — and do not substitute
+direct SQL, file edits, or guessed HTTP calls for those tool calls.
 
 ## What PIM Workflows Are
 

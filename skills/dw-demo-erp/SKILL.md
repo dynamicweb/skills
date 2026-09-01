@@ -2,10 +2,18 @@
 name: dw-demo-erp
 type: flow
 group: demo
+mcp: required
 description: 'Dynamicweb 10 ERP integration -- owns the always-on rule that an ERP is a source AND target in DW10''s Integration Framework, never a `ShopType=3` channel or an `EcomFeed`. Two flavors -- DB-staged mock (post-sync state pre-staged in the DB + built-in RESET scheduled task; no JSON files) and live BC (routes to sister skill dw-integration-bc). Triggers: "model the ERP integration", "mock the ERP / BC sync without a live tenant", "reset demo data between runs", "which fields does ERP own vs PIM", "is the ERP a channel?" (NO), planning ERP demo beats. Non-triggers: ngrok / AppStore connector -> dw-integration-bc; PIM modelling -> dw-demo-pim; frontend -> dw-demo-swift. Use AFTER dw-demo-base.'
 ---
 
 # Dynamicweb ERP Demo Skill
+
+## MCP preflight
+
+This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
+MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
+for the tool calls this skill names.
 
 ERP integration patterns for Dynamicweb 10 demos. Owns the source/target rule, the mock-delta pattern, the generic ERP data shape, and the scenarios-first planning habit. **Use AFTER** `dw-demo-base`.
 

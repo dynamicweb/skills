@@ -2,10 +2,18 @@
 name: dw-users-permissions
 type: knowledge
 group: users
+mcp: optional
 description: 'Manage users, groups, and the Permission entity store in Dynamicweb 10. Triggers: Permission entity, user groups, permission modelling. Non-triggers: product access control -> dw-commerce-b2b; custom backend logic -> dw-extend-csharp-api.'
 ---
 
 # Users and Permissions
+
+## Without MCP
+
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
+apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
+review, or produce payloads and configuration for the user to apply — and do not substitute
+direct SQL, file edits, or guessed HTTP calls for those tool calls.
 
 ## User Entity Structure
 

@@ -2,10 +2,19 @@
 name: dw-demo-hosted
 type: flow
 group: demo
+mcp: optional
 description: 'Build or publish a Dynamicweb 10 demo on a vendor-hosted/cloud install reached only by URL + Admin API bearer key — no scaffold, no SQL, no filesystem. Triggers: the engagement hands over a site URL and a `CLAUDE.<hex>` key instead of a machine; "build on the cloud install"; "publish this site"; "push the demo to the hosted install"; "migrate local to hosted"; a Management API write that returns ok but changes nothing; an inherited/cloned demo host with 500s, stale tasks or ACL faults; CloudHosting control files (recycle/restart/changeversion). Use AFTER dw-demo-base — it owns the guardrails, the versions prompt, and the surface-priority rule this skill inherits. Non-triggers: a local scaffold on the demo machine -> dw-demo-base; Swift content and templates -> dw-demo-swift; the PII sweep itself -> dw-demo-base references/pii-sweep.md.'
 ---
 
 # Hosted (cloud) demo installs
+
+## Without MCP
+
+Hosted installs differ in what they expose — MCP may or may not be present, and this skill is
+built for both worlds: the session-start probe in
+[references/online-mode.md](references/online-mode.md) determines which surfaces exist, and its
+Management API recipe pack substitutes for the MCP/SQL recipes when MCP is absent. Work only
+through the surfaces the probe confirmed; never guess endpoints.
 
 A hosted install is handed over as a **URL + an Admin API bearer key**. There is no machine to
 scaffold on, no SQL floor, and no filesystem — so the canonical demo-base flow forks here.

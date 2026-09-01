@@ -2,10 +2,18 @@
 name: dw-swift-building
 type: flow
 group: swift
+mcp: required
 description: 'Customize an existing Swift 2 Dynamicweb site for a specific business without rebuilding it — preserve the working page shell and update area, navigation, category pages, and item values. Triggers: rebrand or repurpose an existing Swift 2 site, update area/page settings and navigation for a new business, adjust category pages and item values. Non-triggers: installing Swift 2 from scratch -> dw-setup-install; modelling PIM data -> dw-pim-modelling; configuring commerce/catalog data -> dw-commerce-catalog.'
 ---
 
 # Dynamicweb Swift 2 Site Builder
+
+## MCP preflight
+
+This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
+MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
+for the tool calls this skill names.
 
 ## Objective
 Take an existing Swift 2 site and make it fit a new business while keeping the working site shell intact.

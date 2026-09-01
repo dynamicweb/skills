@@ -2,6 +2,7 @@
 name: dw-demo-foldback
 type: flow
 group: demo
+mcp: none
 description: 'Fold a demo-build learning back into the dynamicweb/skills repo as a sanitized, atomic pull request. Triggers: "fold this into the skill", "fold this learning back", "save this back to the plugin", "update the plugin from this demo", "publish this update", "this is worth keeping — add it to the skill". Use AFTER dw-demo-base, while the demo''s context is still in the conversation — the workflow routes the learning foundational-vs-demo, strips customer/demo specifics, validates, bumps the version, and opens the PR. Non-triggers: authoring or restructuring a skill from scratch -> the repo''s own dw-skill-authoring skill; recording a customisation in the demo ledger -> dw-demo-base references/customisations.md.'
 ---
 
