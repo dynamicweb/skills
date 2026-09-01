@@ -3,6 +3,34 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.22.0]
+
+Adopts `skills/<skill>/scripts/` as the packaging convention for runnable scripts, ahead of
+shipping a shared module and a first wave of scripts for the operations every demo build
+re-implements (Admin API / MCP wrapper, RunSql task runner, guarded host restart, index build,
+readiness verify, PII scan, stock-Swift debrand, mojibake census). Docs only; no script changes.
+
+- **`dw-skill-authoring` "Shipping scripts"**: the script contract. Language per job, runtime
+  declared in `compatibility:` frontmatter: PowerShell 7 is the default for anything touching a
+  Windows Dynamicweb host (`#Requires -Version 7.0`, the version handled by the setup preflight,
+  never in scripts); Python or another language where it fits better. Language-neutral rules
+  (actionable header with a READ-ONLY / WRITES opener, explicit parameters, exit codes, dry-run
+  default beyond one row, connection discovery order with no default host/port/path/token,
+  environment-only secrets, encoding), a PowerShell profile (comment-based help,
+  `SupportsShouldProcess`, one shared module in `dw-data-access`, `dw-setup-install`
+  self-contained) and a Python profile (`argparse`, `--dry-run`/`--apply`, stdlib unless
+  declared). Linked `## Scripts` table, forward-slash invocations; script imports count toward
+  bundle closure.
+- **`dw-demo-foldback` Step 1c**: lifting a script from a demo build. The recurrence bar (two
+  engagements, or one plus an existing fenced block), the script-specific sanitization classes
+  (hosts, tokens, passwords, ids, paths, task names), one-lesson-one-home for the superseded
+  prose, retiring the demo copy, and the smoke-test rule (write scripts local-first; a hosted
+  install only afterwards and under `dw-demo-hosted` shared-install discipline).
+- **`dw-demo-base` setup-checks**: install-grade fix for a missing `pwsh`
+  (`winget install --id Microsoft.PowerShell`).
+- **CLAUDE.md, README**: encoding and no-secrets rules extended to `scripts/`; PowerShell 7
+  listed under Requirements.
+
 ## [4.21.0]
 
 MCP-dependence taxonomy: every skill now declares whether it depends on the Dynamicweb MCP

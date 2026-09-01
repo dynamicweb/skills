@@ -18,6 +18,7 @@ rule that governs every edit — the one-way foundational/demo boundary — live
 - [MCP dependence (`mcp:` field)](#mcp-dependence-mcp-field)
 - [Writing the instruction body](#writing-the-instruction-body)
 - [Length budgets and references](#length-budgets-and-references)
+- [Shipping scripts](#shipping-scripts)
 - [Adding a new skill](#adding-a-new-skill)
 - [Updating marketplace.json](#updating-marketplacejson)
 - [Demo skills dependency order](#demo-skills-dependency-order)
@@ -187,6 +188,78 @@ warns when it is missing). Keep references one level deep from SKILL.md.
 (mojibake). The validator errors on both — see CLAUDE.md for why. If a paste looks corrupted,
 repair it with `ftfy.fix_encoding` rather than hand-editing character by character.
 
+## Shipping scripts
+
+A skill may ship runnable code under `skills/<skill>/scripts/`. The layout follows the Agent
+Skills specification, which names exactly three optional folders: `scripts/` for executable
+code, `references/` for documentation, `assets/` for copy-in templates. Use those names and no
+others. A script earns its place when the same operation is re-implemented across engagements,
+or already sits in a reference as a fenced block a model must retype correctly every time (the
+"encode in a script" corollary above). A one-off recipe stays prose.
+
+**Pick the language for the job; declare the runtime.** PowerShell 7 is the default for
+anything that touches a Dynamicweb install on a Windows host (the host process, SQL Server, the
+Admin API from the machine that runs it): that is where the operator already is and where the
+shared module lives. A script that another language serves better (a text transform over
+template files, JSON or CSV reshaping, anything that would fight PowerShell) ships in that
+language; Python, Bash and JavaScript are the ones the Agent Skills spec calls common. The rule
+is not "PowerShell only". The rule is that every runtime a skill needs is declared in its
+frontmatter (`compatibility: Requires PowerShell 7.x`, `Requires Python 3.12+`) and named again
+in the script header, and that a script never checks or branches on the runtime version itself.
+Machine prerequisites are installed by the setup preflight
+(`dw-demo-base/references/setup-checks.md`) alongside `git`, `gh` and `node`.
+
+**File contract, every language** (one file under `scripts/`, named by the language's own
+convention):
+
+- A header a reader can act on without opening the body: what the script does, whether it is
+  `READ-ONLY` or what it `WRITES`, the owning reference, the traps it encodes, every parameter,
+  at least one example.
+- Explicit, named parameters; exit code 0 on success and 1 on failure; error messages that say
+  what to fix; no unexplained constants. A write whose blast radius exceeds one row runs as a
+  dry run by default and needs an explicit apply switch.
+- Connection discovery in this order: explicit parameter, then `DW_BASE_URL` / `DW_API_TOKEN` /
+  `DW_MCP_TOKEN` / `DW_SQL_CONNECTION` from the environment, then the port from
+  `Dynamicweb.Host.Suite/Properties/launchSettings.json`, then fail with the one-liner that
+  fixes it. No default port, host, path or token anywhere. Secrets come from the environment
+  only and are masked in every log line.
+- UTF-8 without BOM, free of mojibake; a detector builds its marker strings from code points
+  (`[char]0xFFFD`, `"Fffd"`), never from literals.
+
+**PowerShell profile.** `<Verb-Noun>.ps1` or `<Name>.psm1` with approved verbs; comment-based
+help opens the file (`.SYNOPSIS` opening with `READ-ONLY.` or `WRITES: <what>.`,
+`.DESCRIPTION`, `.PARAMETER`, `.EXAMPLE`), with `#Requires -Version 7.0` on the line after the
+closing `#>` — `Get-Help` binds script help only when nothing but plain comments precede it, and
+a leading `#Requires` breaks that binding, while `#Requires` itself works from any top-level
+line and still stops Windows PowerShell 5.1 with a one-line message;
+`[CmdletBinding(SupportsShouldProcess)]` with `-WhatIf` as the dry run and `-Apply` to write; an
+explicit `param()` block; `$ErrorActionPreference = 'Stop'`. Invoke as `pwsh -NoProfile -File`.
+Shared code lives in one module, `dw-data-access/scripts/Dw.Api.psm1`, imported
+`$PSScriptRoot`-relative and followed by `Assert-DwConnection`. `dw-setup-install` scripts stay
+self-contained: they run before a host or token exists, in bundles that do not ship
+`dw-data-access`.
+
+**Python profile.** `snake_case.py` with `#!/usr/bin/env python3`; a module docstring as the
+header and `argparse` so `--help` renders it; `--dry-run` as the default and `--apply` to
+write; standard library only unless the frontmatter declares the package. A Python script that
+needs the Admin API calls it directly; a second shared library appears when a second consumer
+does.
+
+**Wiring in SKILL.md.** Declare every runtime in `compatibility:`. Add a `## Scripts (scripts/)`
+table, one row per file, `| Script | Reads / writes | What it does |`, with a markdown link
+`[name](scripts/name)` so the validator proves the file exists. Every invocation is a fenced
+command line (`pwsh -NoProfile -File scripts/Name.ps1 ...`, `python3 scripts/name.py ...`),
+with forward slashes, that says whether to *run* the script or *see* it as reference. The
+owning reference keeps the rule and the why and links the script for the how (one lesson, one
+home).
+
+A script import into another skill's `scripts/` is a hard dependency for bundle closure, the
+same as a link into its `references/`. The machine-checkable half of this contract (header,
+declared runtime, import resolution, secrets, environment literals, encoding, unlinked scripts) is
+the validator's job; review enforces the rest. Lifting a script out of a demo build has its own
+gates in [`fold-back-workflow.md`](../../../skills/dw-demo-foldback/references/fold-back-workflow.md)
+("Step 1c").
+
 ## Adding a new skill
 
 1. Create `skills/dw-<domain>-<topic>/SKILL.md` with matching `name:` frontmatter (UTF-8, no BOM).
@@ -208,7 +281,7 @@ resolve relative to the source root and start with `./`. Bump the `version` unde
 (semver) when skills are added or renamed.
 
 A bundle must be **closed**: every skill it ships may only hard-depend (link into `references/`
-or `assets/`) on skills the same bundle ships. The validator errors on a link that escapes the
+or `assets/`, or import from `scripts/`) on skills the same bundle ships. The validator errors on a link that escapes the
 bundle — either add the target skill to the bundle or route through its SKILL.md by name.
 
 ## Demo skills dependency order

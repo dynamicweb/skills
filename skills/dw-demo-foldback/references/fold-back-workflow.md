@@ -7,6 +7,7 @@
 - [Step 1 — Route the learning: foundational skill or demo skill?](#step-1--route-the-learning-foundational-skill-or-demo-skill)
 - [Step 1a — Sanitize the candidate content BEFORE drafting the edit (load-bearing)](#step-1a--sanitize-the-candidate-content-before-drafting-the-edit-load-bearing)
 - [Step 1b — Content-hygiene gate (load-bearing — this is how the corpus stays correct)](#step-1b--content-hygiene-gate-load-bearing--this-is-how-the-corpus-stays-correct)
+- [Step 1c: Lifting a script from a demo build](#step-1c-lifting-a-script-from-a-demo-build)
 - [Step 2 — Make the edit](#step-2--make-the-edit)
 - [Step 3 — Validate](#step-3--validate)
 - [Step 4 — Bump the version (one place)](#step-4--bump-the-version-one-place)
@@ -190,6 +191,52 @@ the name is wrong. Keep the retired-name list in `INDEX.json`, never hardcoded i
 `scripts/validate-skills.py` — a blocklist forks a second source of truth that drifts on the next
 rename.
 
+## Step 1c: Lifting a script from a demo build
+
+A demo build's `scripts/` folder is a fold-back source like its notes, with one extra bar and a
+few extra leaks. The target contract (PowerShell 7, help block, `-WhatIf`, connection discovery,
+the `## Scripts` table) is owned by `dw-skill-authoring` ("Shipping scripts"); this step owns
+what changes on the way from a demo copy to a shipped one.
+
+**Lift a script only when the shape recurs.** The bar is two or more engagements with their own
+implementation of the same operation, or one engagement plus a fenced block already in a
+reference that the script replaces. Iterations inside one engagement (`translate-v3.sql`,
+`fix-again.ps1`) are that demo's business and stay in its folder. Route the shipped script with
+Step 1: the foundational skill that owns the platform lesson, or the demo skill that owns the
+demo-only guardrail.
+
+**Sanitize per Step 1a, plus the shapes a script adds.** Every environment literal becomes a
+parameter, an `$env:` variable, or discovery from project files; sample data moves to a
+`-DataFile` the caller supplies. The grep pack gains these classes:
+
+| Class | Leaks as | Replace with |
+|---|---|---|
+| Hosts and ports | `<sub>.mydwsiteN.com`, `localhost:<port>`, `<server>\SQLEXPRESS;Database=<demo>` | `-BaseUrl` / `-Port` / `-ConnectionString` (mandatory, no default) or `launchSettings.json` discovery |
+| Tokens and keys | any `CLAUDE.<hex>` / `mcp.<hex>` literal, a key as a parameter default, a customer-named `$env:` name | `$env:DW_API_TOKEN` / `$env:DW_MCP_TOKEN`, masked in output |
+| Passwords and connection strings | `Password=...` in a string, a credentials file as a default path | `$env:DW_SQL_CONNECTION`; Integrated Security in examples |
+| Ids and personas | user names, profile / group / page ids, SKUs, VINs, `_<demo>*` scratch tables | `-DataFile`; examples use `SKU-0001` |
+| Paths | `C:\Projects\Solutions\<slug>\...`, `notes\credentials.local.md` | `-SolutionPath` (mandatory), `$PSScriptRoot`-relative |
+| Task and object names | `<Customer> Demo - SQL Runner` | vendor-generic (`DW SQL Runner (agent)`) |
+
+A detector keeps its detection targets (the stock Swift vendor strings, `noreply@noreply.com`)
+with an inline note saying so, so a later sanitization pass does not strip the detector.
+
+**One lesson, one home.** The fenced block the script supersedes becomes a one-line pointer to
+the script in the same PR, and the Step 1b §1 supersede sweep runs on the block's distinctive
+tokens (`RunSqlScheduledTaskAddIn`, `Get-NetTCPConnection`, ...) so no second copy survives in
+another reference. The demo's own copy is retired, or its header points at the shipped script,
+so the next engagement extends the shipped one instead of forking it again.
+
+**Smoke-test rule.** A write script is smoke-tested on a local host you own before its PR is
+opened. A hosted install is never the first target: only after the script has passed locally,
+and then under the shared-install discipline in
+[`../../dw-demo-hosted/SKILL.md`](../../dw-demo-hosted/SKILL.md) (writes scoped to the demo's
+own areas, destructive operations announced, changes recorded in `CUSTOMISATIONS.md`). Hosted
+installs are frequently shared with the customer or a partner, and their "lying success" (a
+write returns `ok` and changes nothing) means a smoke test there proves nothing anyway.
+Read-only scripts may run against a hosted install where the surface exists; most hosted
+installs expose no SQL, so the SQL-based scripts have no target there.
+
 ## Step 2 — Make the edit
 
 Edit the file at `$DYNAMICWEB_SKILLS_REPO/skills/<skill>/references/<topic>.md` (or the
@@ -365,7 +412,8 @@ $DYNAMICWEB_SKILLS_REPO/
 └── skills/
     ├── dw-demo-base/                ← demo: foundation for the presales chain
     │   ├── SKILL.md
-    │   └── references/<topic>.md     ← demo-craft learnings land here
+    │   ├── references/<topic>.md     ← demo-craft learnings land here
+    │   └── scripts/<Verb-Noun>.ps1   ← lifted scripts land here (Step 1c)
     ├── dw-demo-pim/                 ← demo
     ├── dw-demo-swift/               ← demo
     ├── dw-demo-erp/                 ← demo
