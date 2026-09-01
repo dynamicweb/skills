@@ -3,6 +3,22 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.29.0]
+
+Wave-1 script 6: the stock-Swift vendor debrand.
+
+- **New: `dw-demo-base/scripts/Remove-SwiftVendorBoilerplate.ps1`** — dry-run by default,
+  `-Apply` to write, originals backed up to `_dw_debrand_backup_<timestamp>` first, one SQL
+  transaction. Rewrites the stock vendor boilerplate by CONTENT match, never by item id
+  (vendor-framed privacy phrases, the stock foreign placeholder phone block, the
+  `noreply@noreply.com` mailbox, OSS licence boilerplate replaced with a holding notice — never
+  synthesised terms, `<SenderName>DynamicWeb</SenderName>` in module settings). The de-branding
+  nuance is enforced by construction: only specific stock phrases are touched, so the platform's
+  load-bearing cookie names survive; the script then lists what remains for the manual pass.
+  Local installs only. The stock vendor strings inside the script are detection targets — a
+  sanitization pass must not strip them.
+- **`pii-sweep.md` Rule 2** names the script as the enforced form of the stock-content half.
+
 ## [4.28.0]
 
 Wave-1 script 5: the PII scan — the blocking gate that previously existed only as a method.
