@@ -185,6 +185,12 @@ Steps 1–4 wire the Dynamicweb MCP server into the **Claude Code client**, whic
 
 Send `Content-Type: application/json` (add `Accept: application/json, text/event-stream` if the endpoint negotiates SSE) and `-SkipCertificateCheck` for the localhost self-signed cert. The bearer is the same DB-backed API key the client uses, so no separate credential is needed.
 
+**Don't hand-write this client** — `Invoke-DwMcp` / `Get-DwMcpTools` in
+[`../../dw-data-access/scripts/Dw.Api.psm1`](../../dw-data-access/scripts/Dw.Api.psm1) implement
+the handshake, the `mcp-session-id` header, the SSE `data:` unwrap, and `tools/list` cursor
+pagination (set `$env:DW_MCP_TOKEN`, then `Connect-Dw`). The notes above stay because they are the
+contract the module implements.
+
 **Caution — this bypasses the client's approval layer.** It is a transport swap, not a licence for unreviewed writes: the guarded-writes discipline is unchanged. `tools/call` reaches the same domain services as the client-driven tools, so [`surface-priority.md`](surface-priority.md)'s build-phase rule and the round-trip verification rule apply exactly as they do through the client. Prefer the client-wired path (Steps 1–4) whenever a human can clear the one-time approval; reach for direct JSON-RPC only when the client gate genuinely can't be cleared in an unattended run.
 
 ---

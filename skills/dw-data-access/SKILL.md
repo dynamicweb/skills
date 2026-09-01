@@ -3,6 +3,7 @@ name: dw-data-access
 type: knowledge
 group: data
 mcp: optional
+compatibility: Requires PowerShell 7.x
 description: 'Choose appropriate data-access patterns and optimize caching in Dynamicweb 10. Triggers: data access, API vs SQL, cache invalidation, SQL gotchas. Non-triggers: C# API usage -> dw-extend-csharp-api; specific domain logic -> domain-specific skills.'
 ---
 
@@ -172,6 +173,21 @@ catch
     transaction.Rollback();
     throw;
 }
+```
+
+## Scripts (scripts/)
+
+| Script | Reads / writes | What it does |
+|---|---|---|
+| [Dw.Api.psm1](scripts/Dw.Api.psm1) | Writes nothing on import; each function states its own | The shared Dynamicweb connection module: `Connect-Dw`/`Assert-DwConnection` (discovery + load sentinel), `Invoke-DwApi` (+ `Remove-DwDisplayOnlyMember` for round-trip saves), `Invoke-DwMcp`/`Get-DwMcpTools` (JSON-RPC handshake, SSE, pagination), `Get-DwSqlRows`/`Get-DwSqlScalar` (array-safe, DataRow-free reads; LOCAL installs only — no remote SQL path exists by design), `Clear-DwServiceCache`, `Set-DwDbConnectionTrust` |
+
+Scripts in other skills import it `$PSScriptRoot`-relative and assert the load (see the fenced
+form below); the traps it encodes are documented in
+[`references/management-api-and-sql.md`](references/management-api-and-sql.md).
+
+```powershell
+Import-Module (Join-Path $PSScriptRoot '../../dw-data-access/scripts/Dw.Api.psm1') -Force -ErrorAction Stop
+Assert-DwConnection
 ```
 
 ## Deep references
