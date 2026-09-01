@@ -3,6 +3,21 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.27.0]
+
+Wave-1 script 4: the readiness harness.
+
+- **New: `dw-setup-install/scripts/Test-DwHostReady.ps1`** — READ-ONLY; runs the post-install
+  verification contract as one harness: `/admin` reachable and licensed (not redirecting to
+  `/admin/license`), `/admin/mcp` -> 401 unauthenticated, `HEAD /admin/mcp/bootstrap` -> 405,
+  and with `-McpToken` the JSON-RPC handshake, a >200 tool count, and `get_areas`/`get_shops`
+  data probes. `-Expectation <file>.psd1` swaps in a custom check table; `-OutFile` writes a
+  markdown report; exit 0/1. Self-contained (the dw-setup-install exception).
+- **SKILL.md Verification folded**: the 8-item manual list becomes the harness invocation plus
+  the two checks a script cannot see (the `net10.0` TFM, the agent's own MCP config entry).
+- **`dw-demo-base` `setup-checks.md`** points host-side readiness at the harness (the machine
+  preflight ritual stays).
+
 ## [4.26.0]
 
 Wave-1 script 3: the guarded host restart — the highest damage-if-forgotten shape in the survey
