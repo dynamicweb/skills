@@ -18,6 +18,13 @@ A running Dynamicweb 10 host exposes an admin Management API at `https://localho
 authenticated with `Authorization: Bearer CLAUDE.xxx` tokens. The interactive spec UI lives at
 `/admin/api/docs/`. This surface covers admin operations that the MCP plugin does not expose.
 
+**The enforced calling form is the shared module** [`../scripts/Dw.Api.psm1`](../scripts/Dw.Api.psm1)
+(`Connect-Dw`, `Invoke-DwApi`, `Invoke-DwMcp`, `Get-DwSqlRows`) — import it rather than retyping a
+request wrapper; it encodes this file's traps once. This reference keeps the rules and the why.
+SQL is **local-only** throughout: a hosted install exposes no SQL surface, and neither the module
+nor any shipped script provides a remote SQL path — the blast radius of arbitrary SQL on a cloud
+install (no remediation short of a backup restore) rules it out.
+
 ### Admin-endpoint catalog
 
 | Endpoint | Method | Purpose |
@@ -71,7 +78,8 @@ GET EmailById -> POST EmailSave  (verbatim)                        -> 500
 
 **Delete `modelIdentifier` and any presentation-only member (`*StateIcon`, `*Icon`) from the model before
 any round-trip save**, and when a `Save` 500s on a verbatim round-trip, bisect the model rather than
-hunting the data.
+hunting the data. `Remove-DwDisplayOnlyMember` in [`../scripts/Dw.Api.psm1`](../scripts/Dw.Api.psm1)
+is the canned strip.
 
 ### `EmailsByFilters` treats a missing filter as no-match, and `IsAutomationList` reports a false count
 
@@ -218,6 +226,8 @@ guarantee has to live where the unrolling happens. **Return the array from insid
 a one-row query returns an array), and read scalars through a dedicated `Sql-Scalar` that returns
 `ExecuteScalar` directly.** A verification read that can quietly return `0` is worse than no verification: it
 converts "the write did not land" and "my reader is wrong" into the same observation.
+`Get-DwSqlRows` / `Get-DwSqlScalar` in [`../scripts/Dw.Api.psm1`](../scripts/Dw.Api.psm1) are that
+helper — use them instead of writing a new `_sql.ps1`.
 
 **Companion trap on the same helper: never `ConvertTo-Json` a raw `DataRow`.** The object graph behind a
 `DataRow` is enormous (table → schema → parent dataset), so the call does not error — it **hangs**, and cost a
@@ -264,7 +274,8 @@ been comparing against empty strings the whole time.
 
 - **Assert the helper actually loaded, immediately after every dot-source** — a trivial `Sql-Scalar "SELECT 1"`
   probe (or a sentinel variable the helper sets) — and **fail loudly** rather than comparing against empty
-  output.
+  output. The shared module's form is `Import-Module … -ErrorAction Stop` followed by
+  `Assert-DwConnection` ([`../scripts/Dw.Api.psm1`](../scripts/Dw.Api.psm1)).
 - **Move credentials out of the inline literal** to reduce the false positive.
 
 Same failure shape as the two traps above: a comparison that returns a plausible wrong answer with no error
