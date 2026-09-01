@@ -94,7 +94,10 @@ The classes to sweep, all of them stock:
 - **Edition/layer level:** strip or neutralise vendor legal copy, corporate addresses and the author mailing
   list from the shipped demo content, so no demo inherits them again.
 - **Demo level:** add a **vendor-boilerplate sweep** to the demo checklist covering privacy, cookie, terms,
-  unsubscribe and the email-recipient table.
+  unsubscribe and the email-recipient table. The enforced form of the stock-content half is
+  [`../scripts/Remove-SwiftVendorBoilerplate.ps1`](../scripts/Remove-SwiftVendorBoilerplate.ps1)
+  (dry-run by default, `-Apply` to write, originals backed up; local installs only) — it rewrites
+  the stock phrases by content match and then lists what remains for the manual pass.
 
 **The de-branding nuance that works:** some vendor strings are *technically load-bearing* — the platform's
 own cookies genuinely are named after the platform, and renaming them in the cookie policy makes the page a
