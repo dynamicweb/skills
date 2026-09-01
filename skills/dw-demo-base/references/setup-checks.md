@@ -32,6 +32,11 @@ gh auth status                                     # gh CLI installed AND authen
 
 Note the backtick on `MSSQL`$SQLEXPRESS` — `$SQLEXPRESS` is a PowerShell special token unless escaped.
 
+Once a host is scaffolded and running, the *host-side* readiness checks (admin/license gate, MCP
+route gates, handshake, tool count) have their own harness — run
+[`../../dw-setup-install/scripts/Test-DwHostReady.ps1`](../../dw-setup-install/scripts/Test-DwHostReady.ps1)
+with the host's base URL rather than probing the routes by hand.
+
 **Run everything from pwsh 7+, never Windows PowerShell 5.1.** The skill's PowerShell recipes and any harness verbs (the standalone lightweight harness, DemoAgent `bin/` verbs) use the null-coalescing operator `??` and other pwsh-7 syntax — **5.1 parse-fails the whole script before the first line runs** (`Telemetry.Common.ps1` is the canonical offender). `$PSVersionTable.PSVersion.Major` must be `≥ 7`; if a verb dies with a parser error on `??`, you are in 5.1 — relaunch in `pwsh`.
 
 **Install-grade fix (print + link):** if `pwsh` is not on `PATH`, print `winget install --id Microsoft.PowerShell --source winget` (or link https://aka.ms/powershell) and let the user install, then relaunch. PowerShell scripts shipped under `skills/*/scripts/` carry `#Requires -Version 7.0` (right after the help block — a leading `#Requires` breaks `Get-Help` binding), so under 5.1 they stop with a one-line message instead of a parse error; this check is the only place the version is handled. A skill that ships a script in another runtime (Python, Node) declares it in its `compatibility:` frontmatter; handle it the same way, print + link.

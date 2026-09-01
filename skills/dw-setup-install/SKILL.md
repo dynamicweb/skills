@@ -27,6 +27,7 @@ the shared module.
 | [activate-free-trial.ps1](scripts/activate-free-trial.ps1) | Writes: a trial license on the target install | Drives the `/admin/license` trial flow and verifies the redirect is gone |
 | [bootstrap-and-attach.ps1](scripts/bootstrap-and-attach.ps1) | Writes: MCP client config, credentials + status files | Bootstraps `/admin/mcp` and attaches the current agent |
 | [reset-mcp-bootstrap-manifest.ps1](scripts/reset-mcp-bootstrap-manifest.ps1) | Writes: `Files/System/mcp-bootstrap.json` | Re-arms an expired bootstrap secret |
+| [Test-DwHostReady.ps1](scripts/Test-DwHostReady.ps1) | Read-only (optionally writes a report file) | The post-install readiness harness: admin/license gate, MCP route gates, handshake, tool count, data probes; exit 0/1 |
 
 ## Objective
 Go from "fresh DynamicWeb 10 application" to "fully working Swift 2 website" by downloading
@@ -186,15 +187,22 @@ edited from this session, tell the user the exact entry to add and resume after 
 
 ## Verification
 
-After installation, verify with these checks:
-1. `GET /admin` returns a Dynamicweb admin page
-2. the host is running on `net10.0` before testing MCP routes
-3. `GET /admin/mcp` returns `401 Unauthorized`
-4. `HEAD /admin/mcp/bootstrap` returns `405 Method Not Allowed`
-5. `get_areas` returns at least one area with a Swift 2 LayoutTemplate
-6. `get_shops` returns at least one shop
-7. `get_pages_by_area_id` returns the standard Swift 2 page structure
-8. the config used by the current agent contains the Dynamicweb MCP server entry
+Run the readiness harness — it owns the HTTP and MCP checks and writes a PASS/FAIL report:
+
+```powershell
+pwsh -NoProfile -File scripts/Test-DwHostReady.ps1 -BaseUrl "https://localhost:5001" -McpToken $env:DW_MCP_TOKEN -OutFile readiness.md
+```
+
+It verifies: `GET /admin` reachable and licensed (not redirecting to `/admin/license`),
+`GET /admin/mcp` -> `401 Unauthorized`, `HEAD /admin/mcp/bootstrap` -> `405 Method Not Allowed`,
+and with a token the MCP handshake, a tool count above 200, and `get_areas` / `get_shops`
+returning data. Exit 0 = ready.
+
+Two checks stay manual because the script cannot see them:
+1. the host is running on `net10.0` (read the startup log) — a `404` on `/admin/mcp` usually
+   means it is not
+2. the config used by the current agent contains the Dynamicweb MCP server entry, and the agent
+   can call `get_pages_by_area_id` (returns the standard Swift 2 page structure)
 
 ---
 
