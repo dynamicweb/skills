@@ -3,6 +3,21 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.28.0]
+
+Wave-1 script 5: the PII scan — the blocking gate that previously existed only as a method.
+
+- **New: `dw-demo-base/scripts/Invoke-DwPiiScan.ps1`** — READ-ONLY, classes and counts only,
+  never a value. String-column census (legacy `ntext`/`text` counted separately — they drop out
+  of REPLACE-based sweeps), person-PII counts on the platform tables (mailboxes, names,
+  addresses, phone shapes, real IPv4 outside the documentation range, gateway XML snapshots,
+  live recovery tokens), a whole-database term sweep per `-Term`, a rendered-page pass and an
+  anonymous-download probe by URL (`-PagePath`/`-ProbePath` + locale-shaped `-ShapePattern`
+  regexes). SQL sections are local-only; hosted installs run the URL sections. The counts are
+  the gate, not the exit code — and the rendered-page eyeball pass stays mandatory.
+- **`pii-sweep.md`** names the script as the enforced form of the mechanical steps; the method,
+  the classification and fix steps, and the eyeball pass stay prose.
+
 ## [4.27.0]
 
 Wave-1 script 4: the readiness harness.
