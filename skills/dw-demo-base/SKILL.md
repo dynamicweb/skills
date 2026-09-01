@@ -3,6 +3,7 @@ name: dw-demo-base
 type: flow
 group: demo
 mcp: required
+compatibility: Requires PowerShell 7.x
 description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, when "pinning the platform" for a Distribution-validating scaffold, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (routes to dw-demo-hosted). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-hosted, dw-demo-erp, dw-integration-bc, dw-demo-foldback) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
 ---
 
@@ -120,7 +121,13 @@ The whole point of authoring these skills locally and publishing them as a versi
 
 ## Host lifecycle authority
 
-Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start, stop, restart without asking, announcing each action in one line (authorization removes the *ask*, not the *narration*). **Flush first — a restart is the last resort**: work the cache-flush ladder in [cache-invalidation.md](../dw-data-access/references/cache-invalidation.md) before restarting, and batch the restarts that ARE owed (AddIn deploys, TFM changes, restart-only cache rows) into one per authoring pass. Start durably via `Start-Process` with stdout/stderr redirected to `<demo>\notes\logs\`; stop port-scoped AND ownership-verified (sibling demo hosts share the machine); never force-kill during an index build. The verbatim start/stop recipes and the launch traps (`--no-build`, `--framework`, `$pid`, the apphost exe, silent early exits) live in [references/host-lifecycle.md](references/host-lifecycle.md). This rule is owned here and inherited by every sister skill — a sister skill that pauses to ask "please start the host", restarts where a flush suffices, or kills an unverified process is violating the contract.
+Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start, stop, restart without asking, announcing each action in one line (authorization removes the *ask*, not the *narration*). **Flush first — a restart is the last resort**: work the cache-flush ladder in [cache-invalidation.md](../dw-data-access/references/cache-invalidation.md) before restarting, and batch the restarts that ARE owed (AddIn deploys, TFM changes, restart-only cache rows) into one per authoring pass. Start durably via `Start-Process` with stdout/stderr redirected to `<demo>\notes\logs\`; stop port-scoped AND ownership-verified (sibling demo hosts share the machine); never force-kill during an index build. The enforced form is [scripts/Restart-DwHost.ps1](scripts/Restart-DwHost.ps1) — run `pwsh -NoProfile -File scripts/Restart-DwHost.ps1 -Action Restart -Port <port> -SolutionPath <solution> -Reason "<why>"` rather than retyping the recipes; the launch traps (`--no-build`, `--framework`, `$pid`, the apphost exe, silent early exits) and the why live in [references/host-lifecycle.md](references/host-lifecycle.md). This rule is owned here and inherited by every sister skill — a sister skill that pauses to ask "please start the host", restarts where a flush suffices, or kills an unverified process is violating the contract.
+
+## Scripts (scripts/)
+
+| Script | Reads / writes | What it does |
+|---|---|---|
+| [Restart-DwHost.ps1](scripts/Restart-DwHost.ps1) | Writes: starts/stops THIS solution's host process, a lock file, log files | Guarded host lifecycle: port-scoped ownership-verified stop, index-build-in-flight guard, lock with stale takeover, durable redirected start, /Admin readiness poll. `-Port` and `-SolutionPath` are mandatory — no defaults |
 
 ## Surface priority for CREATES (always-on rule)
 
