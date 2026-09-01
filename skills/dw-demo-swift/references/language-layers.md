@@ -151,7 +151,7 @@ keys are worth raising with the vendor as a shipped-file defect.)
 The file is also **DW-owned and self-modifying** — `Translate()` on an unknown literal appends a key at render
 time, which is why it must stay additive and why DW must retain write access to it; that, and the
 `Move-Item`-loses-the-ACE hazard, are in
-[`../../dw-demo-base/references/online-mode.md`](../../dw-demo-base/references/online-mode.md)
+[`../../dw-demo-hosted/references/online-mode.md`](../../dw-demo-hosted/references/online-mode.md)
 "Never `Move-Item` over a file in a DW-managed folder".
 
 ## Demo judgement — localize the demo path, not the whole site

@@ -51,7 +51,7 @@ Two traps live in that call:
 | Files — brand CSS, fonts, imagery, templates, index/repository definitions | `/Admin/Api/Upload` with `allowOverwrite=true` ([online-mode.md](online-mode.md) "File upload") |
 | Commerce — catalog, pricing, stock, variants, discounts, **orders**, logins | Serializer `SqlTable` predicates. Add the tables to the config rather than re-authoring rows through the API — it preserves ids and relations that hand-authoring drifts on. |
 
-The Serializer AddIn must be installed on the target, and **its version must match the source's**: the predicate `mode` enum was renamed (`Deploy`/`Seed` → `Replace`/`Merge`), so a config authored against one engine 500s the other with `Unknown mode '<name>' for predicate`. Align the AddIn versions, or translate the config per side. See [serializer-reference.md](serializer-reference.md) "Replace vs Merge".
+The Serializer AddIn must be installed on the target, and **its version must match the source's**: the predicate `mode` enum was renamed (`Deploy`/`Seed` → `Replace`/`Merge`), so a config authored against one engine 500s the other with `Unknown mode '<name>' for predicate`. Align the AddIn versions, or translate the config per side. See [serializer-reference.md](../../dw-demo-base/references/serializer-reference.md) "Replace vs Merge".
 
 **Orders ride a plain `SqlTable` predicate.** No shipped example config includes `EcomOrders` / `EcomOrderLines`, which reads as "transactional data is deliberately excluded" — it is not. Add the two predicates and the full order history crosses (orders, quotes, open carts, order lines), which is what makes customer-center history, reorder, and per-profile order isolation demoable on the target.
 
@@ -122,7 +122,7 @@ A stale index is equally load-bearing in the other direction: it keeps serving t
 
 ## Verify with a browser, not just status codes
 
-An HTTP sweep can return 200 on every page while the site is visibly broken. A derive-on-save field can leave an image rendering thousands of pixels wide; a colour-swatch variant group can leave a PDP with no selector; a phantom index can leave a PLP with a product count and no products. **Screenshot the storefront** and run [visual-qa.md](visual-qa.md) before declaring a publish done; drive one real login and one real add-to-cart.
+An HTTP sweep can return 200 on every page while the site is visibly broken. A derive-on-save field can leave an image rendering thousands of pixels wide; a colour-swatch variant group can leave a PDP with no selector; a phantom index can leave a PLP with a product count and no products. **Screenshot the storefront** and run [visual-qa.md](../../dw-demo-base/references/visual-qa.md) before declaring a publish done; drive one real login and one real add-to-cart.
 
 Assert parity on the numbers that matter, against the source install:
 

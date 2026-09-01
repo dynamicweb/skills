@@ -22,7 +22,7 @@ This file is the long-form contract for **the customisations-ledger preflight**.
 **gitignored** `notes/credentials.local.md` only, and reference them from the ledger **by pointer**,
 never by value — e.g. a row reason reading `buyer/CSR logins: see notes/credentials.local.md`, not the
 password itself. (`notes/` is gitignored by construction in a scaffolded demo — same rule as
-[`iterate-plugin.md`](iterate-plugin.md) "What to scrub".) This mirrors the bearer-token storage
+[`dw-demo-foldback`](../../dw-demo-foldback/references/fold-back-workflow.md) "What to scrub".) This mirrors the bearer-token storage
 contract in [`mcp-setup.md`](mcp-setup.md) Step 6 (secrets live in per-demo memory / gitignored notes;
 pointers live in tracked files) and the cheat-sheet customer-safety rule. A plaintext password found in
 the tracked ledger is an audit finding — move it to `notes/credentials.local.md` and leave a pointer.
