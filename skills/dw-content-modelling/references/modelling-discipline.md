@@ -526,7 +526,9 @@ localize the **pages a visitor actually reaches first**, not the whole site.
 parse time and stored corrupted in NVARCHAR even though the literal is `N'...'` (symptom: an accented
 character such as `é` renders as a two-character double-encoded mojibake sequence). Fix: skip the file — build the UPDATE statements in PowerShell (UTF-16 in memory) and pass
 via `Invoke-Sqlcmd -Query`, or save the `.sql` as UTF-8-with-BOM (sqlcmd detects the BOM). The
-PowerShell-inline approach is more robust (the BOM is easy to lose on re-save).
+PowerShell-inline approach is more robust (the BOM is easy to lose on re-save). To measure damage
+already in a database, the [dw-data-access](../../dw-data-access/SKILL.md) skill ships a read-only
+census script (`Invoke-DwMojibakeCensus.ps1`).
 
 ### Nav-tree leaks the master area on layers — `LocalizeLink` patch
 
