@@ -3,6 +3,22 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.30.0]
+
+Wave-1 script 7 (final): the mojibake census.
+
+- **New: `dw-data-access/scripts/Invoke-DwMojibakeCensus.ps1`** — READ-ONLY census of
+  double-encoded UTF-8 per table.column across every string column (or a `-Table` subset):
+  broken-marker rows vs healthy typographic characters as the partial-vs-wholesale contrast,
+  plus U+FFFD context spans with every non-ASCII character escaped (forensics, never readable
+  content). Every marker is built from code points, so the file's own encoding can never corrupt
+  the needles and the repo validator does not trip on its own detector. Repair stays a separate
+  deliberate step; U+FFFD damage is called out as unrecoverable in place.
+- **Mojibake guidance consolidated**: `dw-demo-base` `visual-qa.md` (the double-encode-signature
+  rule) points at the census as the enforced DB-side form; `dw-content-modelling`
+  `modelling-discipline.md` (the sqlcmd codepage pitfall) gains a soft pointer. The repo-file
+  side (`ftfy`, the validator) stays where it was.
+
 ## [4.29.0]
 
 Wave-1 script 6: the stock-Swift vendor debrand.

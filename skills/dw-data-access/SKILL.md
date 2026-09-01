@@ -180,6 +180,7 @@ catch
 | Script | Reads / writes | What it does |
 |---|---|---|
 | [Dw.Api.psm1](scripts/Dw.Api.psm1) | Writes nothing on import; each function states its own | The shared Dynamicweb connection module: `Connect-Dw`/`Assert-DwConnection` (discovery + load sentinel), `Invoke-DwApi` (+ `Remove-DwDisplayOnlyMember` for round-trip saves), `Invoke-DwMcp`/`Get-DwMcpTools` (JSON-RPC handshake, SSE, pagination), `Get-DwSqlRows`/`Get-DwSqlScalar` (array-safe, DataRow-free reads; LOCAL installs only — no remote SQL path exists by design), `Clear-DwServiceCache`, `Set-DwDbConnectionTrust` |
+| [Invoke-DwMojibakeCensus.ps1](scripts/Invoke-DwMojibakeCensus.ps1) | Read-only (optionally writes a JSON census) | Double-encoded-UTF-8 census per table.column: broken markers vs healthy typography, U+FFFD contexts as escaped spans; markers built from code points. Local installs only |
 
 Scripts in other skills import it `$PSScriptRoot`-relative and assert the load (see the fenced
 form below); the traps it encodes are documented in
