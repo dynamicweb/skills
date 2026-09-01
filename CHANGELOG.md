@@ -3,6 +3,23 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.25.0]
+
+Wave-1 script 2: the index build. (The originally planned SQL task runner script is dropped —
+owner decision: no scheduled-task SQL path ships in the skills; SQL stays local-only.)
+
+- **New: `dw-search-indexing/scripts/Build-DwProductIndex.ps1`** — flushes the three read-through
+  product caches, POSTs BuildIndex (a severed response on a long 10.28.x build is caught, and the
+  build is never re-fired on a timeout), and polls to a Success with a LastRun newer than this
+  run's POST. `State=Error` is terminal only when the instance's `LifecycleState=Failed`; the
+  10.28.x `IndexStatusesAll` verb is the automatic fallback when the 10.26.x status verb answers
+  400. `-Passes 2` covers multi-instance indexes; `-SkipCacheFlush` only for structural creates.
+- **Prose folds**: the fenced flush-build-poll block in `index-management.md` and the two-pass
+  probe in `dw-demo-swift` `integrity-sweep.md` (which disagreed on details) now both point at
+  the script; each keeps its why (the flush rationale, the status contract, the build-twice and
+  instance-freshness rules, the BuildName-from-XML rule).
+- `dw-search-indexing` gains `compatibility:` frontmatter and a `## Scripts (scripts/)` table.
+
 ## [4.24.0]
 
 First shipped script of the default-scripts wave: the shared connection module. The demo-build
