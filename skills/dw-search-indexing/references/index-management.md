@@ -185,54 +185,23 @@ After any mutation that touches products, groups, categories, fields, completene
 > host restart is NOT a reliable fix (the `dotnet run` parent/child trap means the bounce may not
 > cold-start). Run the flush step below first, then build, then re-verify.
 
-> Run in PowerShell, not Bash — Bash interpolation eats `$env:` and `$_` before they reach the script.
+Run the enforced form — [`../scripts/Build-DwProductIndex.ps1`](../scripts/Build-DwProductIndex.ps1)
+owns the flush-build-poll mechanics (the cache flush, the non-blocking POST, the freshness-guarded
+poll, the Error-vs-first-build distinction, and the 10.28.x status-verb fallback):
 
 ```powershell
-# $port and $token come from project-file discovery (launchSettings.json + chat).
-# $token works for BOTH the MCP endpoint and /admin/api (same bearer key).
-
-# STEP 0 — flush the caches the index builder reads through (skip ONLY for pure structural
-# CREATEs via MCP save_*/assign_*; ALWAYS run after any patch_products_safe / SQL value write).
-foreach ($svc in @(
-  'Dynamicweb.Ecommerce.Products.ProductService',
-  'Dynamicweb.Ecommerce.Products.Categories.ProductCategoryFieldValueService',
-  'Dynamicweb.Ecommerce.Products.Categories.ProductCategoryService'
-)) {
-  Invoke-RestMethod -Uri "https://localhost:$port/admin/api/CacheInformationRefresh" `
-    -Method POST -Headers @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' } `
-    -Body (@{ CacheTypeName = $svc } | ConvertTo-Json) -SkipCertificateCheck | Out-Null
-}
-
-$buildResp = Invoke-RestMethod `
-  -Uri "https://localhost:$port/admin/api/BuildIndex" `
-  -Method POST `
-  -Headers @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' } `
-  -Body (@{ Repository = "Products"; IndexName = "Products.index"; BuildName = "Full" } | ConvertTo-Json) `
-  -SkipCertificateCheck
-
-# Poll the index status query until Success with a fresh build timestamp (15-min timeout).
-# `synchronous: true` in the BuildIndex body does NOT actually block — the POST returns before the
-# build finishes regardless, so treating a 2xx as "built" indexes against a stale/empty segment.
-# ALWAYS poll the instance/index status below; never rely on the request to be synchronous.
-# DW 10.26.x contract: no Status/Idle field — State: Success|Warning|Error on the index query,
-# LifecycleState: NeverBuilt|...|Completed|Failed on the instance query. Live JSON is camelCase
-# (the api.json catalog declares PascalCase); PowerShell access is case-insensitive.
-# A never-built index reports State=Error while its FIRST build is still writing — treat Error
-# as terminal only when the instance query's LifecycleState is Failed; otherwise keep polling.
-$posted = Get-Date
-$deadline = (Get-Date).AddMinutes(15)
-do {
-  Start-Sleep -Seconds 5
-  $status = Invoke-RestMethod `
-    -Uri "https://localhost:$port/admin/api/IndexStatusByRepositoryAndIndexName?Repository=Products&IndexName=Products.index" `
-    -Headers @{ Authorization = "Bearer $token" } `
-    -SkipCertificateCheck
-  Write-Host ("State: " + $status.Model.State + "  LastRun: " + $status.Model.LastRun)
-} while (-not ($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted) -and (Get-Date) -lt $deadline)
-
-if ($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted) { Write-Host "BuildIndex Full complete." -ForegroundColor Green }
-else { Write-Warning "BuildIndex did not reach a fresh Success within 15 minutes" }
+pwsh -NoProfile -File scripts/Build-DwProductIndex.ps1 -Repository Products -IndexName Products.index
 ```
+
+The contract the script implements, kept here because extensions must honor it:
+
+- `synchronous: true` in the BuildIndex body does NOT actually block — the POST returns before the
+  build finishes, so treating a 2xx as "built" indexes against a stale/empty segment. Always poll.
+- DW 10.26.x contract: no `Status`/`Idle` field — `State: Success|Warning|Error` on the index
+  query, `LifecycleState: NeverBuilt|...|Completed|Failed` on the instance query. Live JSON is
+  camelCase (the api.json catalog declares PascalCase); PowerShell access is case-insensitive.
+- A never-built index reports `State=Error` while its FIRST build is still writing — treat Error
+  as terminal only when the instance query's `LifecycleState` is `Failed`; otherwise keep polling.
 
 **On 10.28.x the build is genuinely synchronous and outlives the client, so a timeout is not a failure.**
 A `Repository='Products'` Full build routinely exceeds a 120s HTTP client timeout while completing

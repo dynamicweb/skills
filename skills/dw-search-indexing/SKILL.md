@@ -3,6 +3,7 @@ name: dw-search-indexing
 type: knowledge
 group: search
 mcp: optional
+compatibility: Requires PowerShell 7.x
 description: 'Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, product index setup — and design/fix a PIM product query or repository index query through the MCP tools. Triggers: set up a product, content, user, or SQL index, configure repositories and index instances, tune analyzers or field boosts, understand Lucene scoring, build/restructure/delete a product query or a repository index query (e.g. ProductsFrontend), a query returns nothing/everything unexpectedly. Non-triggers: PIM data modelling -> dw-pim-modelling; product completeness -> dw-pim-completeness.'
 ---
 
@@ -14,6 +15,14 @@ The knowledge here stands alone; the Dynamicweb MCP tools it names are the prefe
 apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
 review, or produce payloads and configuration for the user to apply — and do not substitute
 direct SQL, file edits, or guessed HTTP calls for those tool calls.
+
+## Scripts (scripts/)
+
+| Script | Reads / writes | What it does |
+|---|---|---|
+| [Build-DwProductIndex.ps1](scripts/Build-DwProductIndex.ps1) | Writes: rebuilds a Lucene index (flushes product caches first) | The flush-build-poll recipe with the freshness guard, the Error-vs-first-build distinction, the 10.28.x status-verb fallback, and `-Passes 2` for multi-instance indexes; never re-fires on a timeout |
+
+Run with `pwsh -NoProfile -File scripts/Build-DwProductIndex.ps1 -Repository <repo> -IndexName <name>.index`; the contract it implements is in [references/index-management.md](references/index-management.md).
 
 ## Engine
 
