@@ -1,13 +1,19 @@
 <#
 .SYNOPSIS
-    Activates a free Dynamicweb trial license for a local site.
+    WRITES: a trial license on the target Dynamicweb install (the host drops a
+    *.license file under Files). Activates a free Dynamicweb trial for a local site.
 
 .DESCRIPTION
     Uses Dynamicweb's built-in /admin/license trial flow to issue a trial license and
     verifies that /admin is no longer redirected to /admin/license.
+    Owning reference: dw-setup-install/SKILL.md (Degraded Path step 7).
+    Traps encoded: the trial ids are scraped from the live license page (they are
+    not stable), and success is proven by the redirect disappearing plus the
+    *.license file, not by the POST's response.
 
 .PARAMETER DynamicwebUrl
-    Base URL of the Dynamicweb site (e.g. https://localhost:5001).
+    Base URL of the Dynamicweb site, e.g. https://localhost:<port> — read the
+    port from Dynamicweb.Host.Suite/Properties/launchSettings.json.
 
 .PARAMETER FilesPath
     Optional path to the Dynamicweb Files folder. When supplied, the script also
@@ -16,11 +22,16 @@
 .PARAMETER TrialName
     Optional case-insensitive substring used to choose a specific trial by name.
     If omitted, the first available trial is selected.
+
+.EXAMPLE
+    pwsh -NoProfile -File scripts/activate-free-trial.ps1 -DynamicwebUrl "https://localhost:<port>" -FilesPath "C:\DwSolutions\Swift2\Files"
 #>
+#Requires -Version 7.0
 
 [CmdletBinding()]
 param(
-    [string]$DynamicwebUrl = "https://localhost:5001",
+    [Parameter(Mandatory = $true)]
+    [string]$DynamicwebUrl,
     [string]$FilesPath = "",
     [string]$TrialName = ""
 )
@@ -43,64 +54,21 @@ function Invoke-DwWebRequest {
         [string]$ContentType = ""
     )
 
-    if ($PSVersionTable.PSVersion.Major -ge 7) {
-        $params = @{
-            Uri = $Uri
-            Method = $Method
-            SkipCertificateCheck = $true
-        }
-
-        if ($Body) {
-            $params["Body"] = $Body
-        }
-
-        if ($ContentType) {
-            $params["ContentType"] = $ContentType
-        }
-
-        return Invoke-WebRequest @params
+    $params = @{
+        Uri = $Uri
+        Method = $Method
+        SkipCertificateCheck = $true
     }
 
-    $bodyFile = [System.IO.Path]::GetTempFileName()
-    try {
-        $writeOut = "__CURL_META__%{url_effective}|%{content_type}|%{http_code}"
-        $args = @("-k", "-sS", "-L", "-o", $bodyFile, "-w", $writeOut, "-X", $Method)
-
-        if ($ContentType) {
-            $args += @("-H", "Content-Type: $ContentType")
-        }
-
-        if ($Body) {
-            $args += @("--data", $Body)
-        }
-
-        $args += $Uri
-        $rawOutput = & curl.exe @args
-        if ($LASTEXITCODE -ne 0) {
-            throw "curl.exe failed while calling $Uri"
-        }
-
-        $content = Get-Content -Path $bodyFile -Raw
-        if ($rawOutput -notmatch '__CURL_META__(?<url>[^|]*)\|(?<contentType>[^|]*)\|(?<statusCode>\d+)$') {
-            throw "Could not parse curl.exe response metadata for $Uri"
-        }
-
-        return [pscustomobject]@{
-            Content = $content
-            Headers = @{
-                "Content-Type" = $matches["contentType"]
-            }
-            StatusCode = [int]$matches["statusCode"]
-            BaseResponse = [pscustomobject]@{
-                ResponseUri = [Uri]$matches["url"]
-            }
-        }
+    if ($Body) {
+        $params["Body"] = $Body
     }
-    finally {
-        if (Test-Path $bodyFile) {
-            Remove-Item -Path $bodyFile -Force
-        }
+
+    if ($ContentType) {
+        $params["ContentType"] = $ContentType
     }
+
+    return Invoke-WebRequest @params
 }
 
 function Get-TrialsFromHtml {

@@ -17,8 +17,20 @@ Checks (errors fail the build, warnings are printed but do not):
     frontmatter parsers).
   - No markdown file under skills/ contains double-encoded UTF-8 (mojibake).
   - Bundle closure: no skill in a marketplace bundle hard-depends (links into
-    references/ or assets/) on a skill the bundle does not ship.
+    references/, assets/, or scripts/) on a skill the bundle does not ship.
+  - Script contract (skills/*/scripts/*): PowerShell files carry
+    `#Requires -Version 7.0`, comment-based help (.SYNOPSIS opening with
+    `READ-ONLY.` or `WRITES:`, .DESCRIPTION) and an explicit param() block;
+    Python files carry a module docstring. A skill that ships scripts declares
+    the runtime in `compatibility:` frontmatter.
+  - Script imports (Import-Module / dot-source) resolve on disk; a cross-skill
+    import is a hard dependency and honors bundle closure.
+  - No token-shaped secret anywhere under skills/; no plaintext password
+    assignment and no environment literal (localhost:<port>, *.mydwsite*.com,
+    the local solutions tree) inside scripts/.
+  - BOM and mojibake checks cover skills/*/scripts/* files as well as markdown.
   - WARN if a skill description lacks a trigger signal (Triggers:/Use when/Use FIRST).
+  - WARN if a scripts/ file is never linked from markdown in its own skill.
   - WARN if a SKILL.md body exceeds 500 lines or 16000 characters (split into
     references/) — the character budget is what actually bounds activation cost.
   - WARN if a references/ file over 100 lines lacks a top-of-file table of contents.
@@ -86,6 +98,32 @@ MOJIBAKE_MARKERS = (
 # Markdown links: [text](target) — captures the target.
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+# Token-shaped secrets. These are the shapes demo builds actually leak (a
+# Dynamicweb Admin API key, an MCP bearer token, any long Bearer literal); none
+# occur legitimately in docs or scripts, so every hit is a real leak.
+SECRET_RES = (
+    re.compile(r"(?i)\b(?:claude|mcp)\.[0-9a-f]{40,}"),
+    re.compile(r"Bearer\s+[A-Za-z0-9._~+/-]{40,}"),
+)
+# Plaintext password assignment inside a script. Values that are a variable,
+# env expansion, placeholder, or boolean (EncryptPassword=False) are fine;
+# a literal is not. Scripts only — markdown legitimately discusses the pattern.
+PASSWORD_RE = re.compile(
+    r"(?i)(?:password|pwd)\s*=\s*['\"]?(?!\$|<|%|\{)(?!true\b|false\b)"
+    r"[^;'\"\s>]{4,}")
+# Environment literals that mark a script as lifted unsanitized from a demo
+# build: a hardcoded host:port, a demo-hosting domain, a solutions-tree path.
+ENVIRONMENT_LITERAL_RES = (
+    re.compile(r"localhost:\d{4,5}"),
+    re.compile(r"(?i)\.mydwsite\d*\.com"),
+    re.compile(r"(?i)C:\\Projects\\Solutions"),
+)
+# PowerShell import targets: any quoted path ending in .ps1/.psm1 on an
+# Import-Module or dot-source line. The convention is
+# `Import-Module (Join-Path $PSScriptRoot '<relative path>')`, so the quoted
+# string is the path relative to the importing script's folder.
+PS_IMPORT_TARGET_RE = re.compile(r"['\"]([^'\"]+\.psm?1)['\"]")
+PS_IMPORT_LINE_RE = re.compile(r"^\s*(?:Import-Module\b|\.\s+\S)")
 
 
 def err(msg: str) -> None:
@@ -283,13 +321,41 @@ def check_links() -> None:
                 err(f"{rel(md)}: broken link -> {target}")
 
 
+def scan_files() -> list[Path]:
+    """Every markdown file under skills/ plus every file under a skill's
+    scripts/ folder — the set the encoding and secret checks cover."""
+    files = set(SKILLS_DIR.rglob("*.md"))
+    for scripts_dir in SKILLS_DIR.glob("*/scripts"):
+        files.update(f for f in scripts_dir.rglob("*") if f.is_file())
+    return sorted(files)
+
+
+def script_files() -> list[tuple[str, Path]]:
+    """(skill name, file) for every file under a skill's scripts/ folder."""
+    out: list[tuple[str, Path]] = []
+    for scripts_dir in sorted(SKILLS_DIR.glob("*/scripts")):
+        for f in sorted(scripts_dir.rglob("*")):
+            if f.is_file():
+                out.append((scripts_dir.parent.name, f))
+    return out
+
+
+def read_text_checked(f: Path) -> str | None:
+    try:
+        return f.read_text(encoding=ENCODING)
+    except UnicodeDecodeError:
+        err(f"{rel(f)}: not valid UTF-8")
+        return None
+
+
 def check_no_bom() -> None:
     # A leading UTF-8 BOM (EF BB BF) before the opening `---` defeats some YAML
     # frontmatter parsers, so name/description go unread and the skill fails to
-    # load. Read raw bytes — utf-8-sig used elsewhere would silently hide it.
-    for md in sorted(SKILLS_DIR.rglob("*.md")):
-        if md.read_bytes()[:3] == b"\xef\xbb\xbf":
-            err(f"{rel(md)}: starts with a UTF-8 BOM (strip it)")
+    # load. In a script it can break shebang/`#Requires` handling the same way.
+    # Read raw bytes — utf-8-sig used elsewhere would silently hide it.
+    for f in scan_files():
+        if f.read_bytes()[:3] == b"\xef\xbb\xbf":
+            err(f"{rel(f)}: starts with a UTF-8 BOM (strip it)")
 
 
 def check_reference_tocs() -> None:
@@ -347,8 +413,10 @@ def check_bundle_closure() -> None:
                     target_skill = parts[0]
                     # A bare pointer to another skill (its folder or SKILL.md)
                     # is soft routing and fine to dangle; a link into another
-                    # skill's references/assets is a hard content dependency.
-                    hard = len(parts) > 1 and parts[1] in ("references", "assets")
+                    # skill's references/, assets/, or scripts/ is a hard
+                    # content dependency.
+                    hard = len(parts) > 1 and parts[1] in (
+                        "references", "assets", "scripts")
                     if hard and target_skill != skill and target_skill not in shipped:
                         err(f"bundle '{plugin.get('name')}': {rel(md)} depends on "
                             f"content in '{target_skill}', which the bundle does "
@@ -358,13 +426,171 @@ def check_bundle_closure() -> None:
 def check_no_mojibake() -> None:
     # Double-encoded UTF-8 most often re-enters via a fold-back pasted from a
     # mis-decoded source. Catch it at the door. See CHANGELOG 3.3.7.
-    for md in sorted(SKILLS_DIR.rglob("*.md")):
-        for i, line in enumerate(md.read_text(encoding=ENCODING).splitlines(), 1):
+    # Covers scripts too: a shipped detector must build its own marker strings
+    # from code points ([char]0xFFFD), never literals, or it trips this check.
+    for f in scan_files():
+        text = read_text_checked(f)
+        if text is None:
+            continue
+        for i, line in enumerate(text.splitlines(), 1):
             for marker in MOJIBAKE_MARKERS:
                 if marker in line:
-                    err(f"{rel(md)}:{i}: double-encoded UTF-8 (mojibake) "
+                    err(f"{rel(f)}:{i}: double-encoded UTF-8 (mojibake) "
                         f"near '{marker}' — repair the file's encoding")
                     break  # one report per line is enough
+
+
+def check_no_secrets() -> None:
+    # A credential that ships in the plugin is compromised on publish. The
+    # token shapes are checked everywhere under skills/ (markdown included);
+    # the password-assignment shape only inside scripts/, where markdown's
+    # legitimate discussion of the pattern (EncryptPassword=False, example
+    # env vars) cannot false-positive.
+    scripts = {f for _, f in script_files()}
+    for f in scan_files():
+        text = read_text_checked(f)
+        if text is None:
+            continue
+        for i, line in enumerate(text.splitlines(), 1):
+            for secret_re in SECRET_RES:
+                if secret_re.search(line):
+                    err(f"{rel(f)}:{i}: token-shaped secret — replace with an "
+                        "$env: lookup or a parameter")
+                    break
+            else:
+                if f in scripts and PASSWORD_RE.search(line):
+                    err(f"{rel(f)}:{i}: plaintext password assignment — take "
+                        "it from a parameter or the environment")
+
+
+def check_no_environment_literals() -> None:
+    # A hardcoded host:port, demo-hosting domain, or solutions-tree path marks
+    # a script lifted unsanitized from a demo build. Connection discovery is
+    # parameter > $env:DW_* > launchSettings.json > fail — never a literal.
+    for skill, f in script_files():
+        text = read_text_checked(f)
+        if text is None:
+            continue
+        for i, line in enumerate(text.splitlines(), 1):
+            for lit_re in ENVIRONMENT_LITERAL_RES:
+                m = lit_re.search(line)
+                if m:
+                    err(f"{rel(f)}:{i}: environment literal '{m.group(0)}' — "
+                        "make it a parameter or discover it (see the script "
+                        "contract in dw-skill-authoring)")
+                    break
+
+
+def check_script_contract() -> None:
+    # The machine-checkable half of the script contract in dw-skill-authoring
+    # ("Shipping scripts"): an actionable header, an explicit parameter block,
+    # and the runtime pinned. Review enforces the rest.
+    runtimes_by_skill: dict[str, set[str]] = {}
+    for skill, f in script_files():
+        ext = f.suffix.lower()
+        if ext in (".ps1", ".psm1"):
+            runtimes_by_skill.setdefault(skill, set()).add("PowerShell")
+        elif ext == ".py":
+            runtimes_by_skill.setdefault(skill, set()).add("Python")
+        else:
+            continue  # .sql etc. ride along with the invoking script
+        text = read_text_checked(f)
+        if text is None:
+            continue
+        if ext in (".ps1", ".psm1"):
+            # After the help block, not before it: a leading #Requires breaks
+            # Get-Help's binding of comment-based help.
+            if not re.search(r"(?m)^#Requires -Version 7\.0\b", text):
+                err(f"{rel(f)}: no `#Requires -Version 7.0` line (place it "
+                    "right after the help block; PowerShell 7 is a preflight "
+                    "prerequisite and scripts never branch on the version)")
+            for section in (".SYNOPSIS", ".DESCRIPTION"):
+                if section not in text:
+                    err(f"{rel(f)}: comment-based help lacks `{section}`")
+            if ".EXAMPLE" not in text:
+                warn(f"{rel(f)}: comment-based help lacks an `.EXAMPLE`")
+            if not re.search(r"(?m)^\s*param\s*\(", text):
+                err(f"{rel(f)}: no explicit param() block")
+            m = re.search(r"\.SYNOPSIS\s*\n\s*(\S[^\n]*)", text)
+            if m and not re.match(r"READ-ONLY\.|WRITES:", m.group(1)):
+                err(f"{rel(f)}: .SYNOPSIS must open with `READ-ONLY.` or "
+                    f"`WRITES: <what>.` (got: {m.group(1)[:60]!r})")
+        elif ext == ".py":
+            head = "\n".join(text.splitlines()[:10])
+            if '"""' not in head and "'''" not in head:
+                err(f"{rel(f)}: no module docstring in the first 10 lines "
+                    "(the header contract)")
+            if "argparse" not in text:
+                warn(f"{rel(f)}: no argparse — `--help` should render the "
+                     "header")
+    # Every runtime a skill's scripts need is declared in its frontmatter.
+    for skill, runtimes in sorted(runtimes_by_skill.items()):
+        skill_md = SKILLS_DIR / skill / "SKILL.md"
+        compat = ""
+        if skill_md.exists():
+            compat = parse_frontmatter(
+                skill_md.read_text(encoding=ENCODING)).get("compatibility", "")
+        for runtime in sorted(runtimes):
+            if runtime.lower() not in compat.lower():
+                err(f"{rel(skill_md)}: ships {runtime} scripts but "
+                    f"`compatibility:` frontmatter does not declare {runtime} "
+                    "(e.g. `compatibility: Requires PowerShell 7.x`)")
+
+
+def check_script_imports() -> None:
+    # Import-Module / dot-source targets must resolve on disk, and a cross-skill
+    # import is a hard dependency: every bundle that ships the consumer must
+    # ship the provider, same as a markdown link into references/.
+    bundles: list[tuple[str, set[str]]] = []
+    if MARKETPLACE.exists():
+        try:
+            data = json.loads(MARKETPLACE.read_text(encoding=ENCODING))
+            for plugin in data.get("plugins", []):
+                bundles.append((plugin.get("name", "?"),
+                                {Path(p).name for p in plugin.get("skills", [])}))
+        except json.JSONDecodeError:
+            pass  # already reported by check_marketplace
+    for skill, f in script_files():
+        if f.suffix.lower() not in (".ps1", ".psm1"):
+            continue
+        text = read_text_checked(f)
+        if text is None:
+            continue
+        for i, line in enumerate(text.splitlines(), 1):
+            if not PS_IMPORT_LINE_RE.match(line):
+                continue
+            for target in PS_IMPORT_TARGET_RE.findall(line):
+                resolved = (f.parent / target).resolve()
+                if not resolved.exists():
+                    err(f"{rel(f)}:{i}: import target does not resolve -> "
+                        f"{target}")
+                    continue
+                try:
+                    parts = resolved.relative_to(SKILLS_DIR).parts
+                except ValueError:
+                    err(f"{rel(f)}:{i}: import escapes skills/ -> {target}")
+                    continue
+                target_skill = parts[0]
+                if target_skill == skill:
+                    continue
+                for bundle_name, shipped in bundles:
+                    if skill in shipped and target_skill not in shipped:
+                        err(f"bundle '{bundle_name}': {rel(f)}:{i} imports "
+                            f"from '{target_skill}', which the bundle does "
+                            f"not ship -> {target}")
+
+
+def check_orphan_scripts() -> None:
+    # A script nothing links to is invisible at activation time: the contract
+    # wants a `## Scripts (scripts/)` table row in SKILL.md (a markdown link,
+    # so check_links proves the file exists) plus the owning reference.
+    for skill, f in script_files():
+        skill_dir = SKILLS_DIR / skill
+        name = f.name
+        if not any(name in md.read_text(encoding=ENCODING)
+                   for md in skill_dir.rglob("*.md")):
+            warn(f"{rel(f)}: not mentioned by any markdown in '{skill}' — "
+                 "add it to the `## Scripts (scripts/)` table")
 
 
 def main() -> int:
@@ -379,6 +605,11 @@ def main() -> int:
     check_reference_tocs()
     check_bundle_closure()
     check_no_mojibake()
+    check_no_secrets()
+    check_no_environment_literals()
+    check_script_contract()
+    check_script_imports()
+    check_orphan_scripts()
 
     for w in warnings:
         print(f"WARN  {w}")
