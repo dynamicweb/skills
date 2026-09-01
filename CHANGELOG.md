@@ -3,6 +3,23 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.26.0]
+
+Wave-1 script 3: the guarded host restart — the highest damage-if-forgotten shape in the survey
+(a name-based restart once killed a sibling demo's host).
+
+- **New: `dw-demo-base/scripts/Restart-DwHost.ps1`** — `-Action Start|Stop|Restart` with `-Port`
+  and `-SolutionPath` mandatory (no default port or path exists on purpose). Stop resolves the
+  PID only from the port and only stops it after the owning process's command line proves it
+  belongs to this solution; a mismatch stops nothing. Index-build-in-flight guard (state.json
+  heartbeat; `-Force` overrides only this guard, never the ownership check), lock file with
+  10-minute stale takeover, durable redirected `dotnet run` start (`--launch-profile`, optional
+  `--framework`), `/Admin` readiness poll, `-WhatIf` support. Self-contained: needs no token and
+  works when the host is down.
+- **`host-lifecycle.md`** names the script as the enforced form; the recipes and launch traps
+  stay as the contract it implements. `dw-demo-base` gains `compatibility:` frontmatter and a
+  `## Scripts (scripts/)` table.
+
 ## [4.25.0]
 
 Wave-1 script 2: the index build. (The originally planned SQL task runner script is dropped —
