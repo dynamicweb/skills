@@ -9,6 +9,7 @@ Checks (errors fail the build, warnings are printed but do not):
     description) — catches unquoted `description:` values carrying a second
     ": " that fail the real loader with "mapping values are not allowed here".
   - Each skill `description` is within the 1024-char frontmatter cap.
+  - Each SKILL.md declares `dynamo: true | false` (manifest visibility).
   - Each SKILL.md declares `mcp: required | optional | none`, and the body
     carries the matching marker section (`## MCP preflight` for required,
     `## Without MCP` for optional, neither for none).
@@ -245,6 +246,16 @@ def check_skills() -> None:
                 if other and level != mcp and other in body:
                     err(f"{rel(skill_md)}: body has a `{other}` section but "
                         f"frontmatter says mcp: {mcp} — make them agree")
+        # Dynamo visibility. Dynamo serves manifest.json to in-product
+        # admins, so a skill whose steps need a surface Dynamo does not
+        # have (shell, SQL, git, a browser, csproj) declares
+        # `dynamo: false` and is left out of the manifest. Orthogonal to
+        # `mcp:` — a demo scaffold is mcp: required yet dynamo: false,
+        # and dw-render-razor is mcp: none yet dynamo: true.
+        dynamo = fm.get("dynamo")
+        if dynamo not in ("true", "false"):
+            err(f"{rel(skill_md)}: frontmatter `dynamo` must be true or "
+                f"false (got {dynamo!r})")
         # Soft budgets on the body (frontmatter stripped): past either, the body
         # is doing reference work that belongs in references/. Both are reported
         # because they catch different shapes of the same defect — many short

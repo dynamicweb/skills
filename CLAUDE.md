@@ -17,7 +17,7 @@ edit regardless of what you are doing.
 ## Key files
 
 - `.claude-plugin/marketplace.json` — the plugin registry. Defines 6 role bundles (`dynamicweb-setup`, `dynamicweb-frontend`, `dynamicweb-commerce`, `dynamicweb-backend`, `dynamicweb-developer`, `dynamicweb-presales`). Each entry uses `"source": "./"` + `"strict": false` and curates the bundle via a `skills` array of paths into `skills/`. The top level requires `name` (string), `owner` (object), and `plugins` (array); `description`/`version` live under `metadata`.
-- `manifest.json` — generated skill catalog consumed directly by Dynamo (the Dynamicweb MCP server). Never hand-edit; CI fails when it drifts from the frontmatter.
+- `manifest.json` — generated skill catalog consumed directly by Dynamo (the Dynamicweb MCP server). Holds only the skills marked `dynamo: true` in frontmatter; a skill needing a surface Dynamo lacks (shell, SQL, git, a browser, csproj) is `dynamo: false` and is omitted. Never hand-edit; CI fails when it drifts from the frontmatter.
 
 ## The one-way boundary (foundational vs demo)
 

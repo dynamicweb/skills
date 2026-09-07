@@ -3,6 +3,7 @@ name: dw-content-modelling
 type: knowledge
 group: content
 mcp: optional
+dynamo: true
 description: 'Design item types, paragraphs, and content models in Dynamicweb 10, and create/publish a page or paragraph through the MCP tools. Triggers: item type discipline, paragraph structure, field modelling, asset organization, create/edit/copy/move/publish a page or paragraph. Non-triggers: rendering content -> dw-render-razor; fetching with ViewModels -> dw-render-viewmodels; translating a page/site -> dw-content-localization.'
 ---
 

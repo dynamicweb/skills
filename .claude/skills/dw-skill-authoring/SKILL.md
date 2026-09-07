@@ -16,6 +16,7 @@ rule that governs every edit — the one-way foundational/demo boundary — live
 - [Area taxonomy](#area-taxonomy)
 - [SKILL.md frontmatter](#skillmd-frontmatter)
 - [MCP dependence (`mcp:` field)](#mcp-dependence-mcp-field)
+- [Dynamo visibility (`dynamo:` field)](#dynamo-visibility-dynamo-field)
 - [Writing the instruction body](#writing-the-instruction-body)
 - [Length budgets and references](#length-budgets-and-references)
 - [Shipping scripts](#shipping-scripts)
@@ -77,6 +78,7 @@ name: dw-<domain>-<topic>
 type: <knowledge | flow>
 group: <area — pim, search, render, setup, extend, integration, commerce, users, swift, headless, content, data, source, demo>
 mcp: <required | optional | none>
+dynamo: <true | false>
 description: <one to three sentences. First sentence states what the skill does. Remaining sentences list the exact trigger phrases / conditions that activate it.>
 ---
 ```
@@ -84,7 +86,7 @@ description: <one to three sentences. First sentence states what the skill does.
 `type` is `knowledge` for reference-style platform skills and `flow` for skills that drive a
 multi-step process (the setup installers and the demo chain). `group` is the skill's area from
 the taxonomy above and matches the `<domain>` segment of the name. `mcp` declares the skill's
-MCP dependence — see the next section.
+MCP dependence and `dynamo` its manifest visibility — see the next two sections.
 
 The `description` is the **activation signal** — it is matched against the user's request at
 runtime, and it is the only part of the skill the model sees before deciding to load it. Treat
@@ -132,6 +134,27 @@ contradicts the declared level is an error. Keep the marker level in mind on the
 boundary too — demo skills are all `required`, and a foundational skill never becomes
 `required` just to lean on demo scaffolding. The MCP dependence is declared in frontmatter
 and body markers, never appended to the `description` — trigger budget stays trigger budget.
+
+## Dynamo visibility (`dynamo:` field)
+
+Dynamo serves `manifest.json` to admins working **inside** a running Dynamicweb install. Its
+surface is the MCP tool set plus read/write under `Files/`: no shell, no SQL, no git, no
+browser, no csproj, no host restart. A skill whose steps need one of those cannot be acted on
+there, and offering it is noise.
+
+- **`dynamo: true`** — the skill is useful to an in-product admin and goes into the manifest.
+  Every pim, commerce, content, users, search, render and swift skill is here.
+- **`dynamo: false`** — the skill needs a surface Dynamo does not have, so the builder leaves
+  it out of `manifest.json` entirely: the demo chain, `dw-setup-*`, `dw-integration-bc`
+  (ngrok), `dw-extend-mcp-tools` (builds the MCP project), `dw-source-explorer` (browses
+  GitHub). Claude Code still loads these normally through `marketplace.json`.
+
+The axis is **orthogonal to `mcp:`** and the two disagree often: `dw-demo-base` is
+`mcp: required` yet `dynamo: false`, and `dw-render-razor` is `mcp: none` yet `dynamo: true`.
+Decide it by asking what surface the steps need, not how much MCP the skill uses.
+
+The validator requires the field on every skill; the builder omits `false` rows. A skill
+missing the field is a validator error rather than a silent default.
 
 ## Writing the instruction body
 

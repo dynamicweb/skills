@@ -3,6 +3,7 @@ name: dw-data-access
 type: knowledge
 group: data
 mcp: optional
+dynamo: true
 compatibility: Requires PowerShell 7.x
 description: 'Choose appropriate data-access patterns and optimize caching in Dynamicweb 10. Triggers: data access, API vs SQL, cache invalidation, SQL gotchas. Non-triggers: C# API usage -> dw-extend-csharp-api; specific domain logic -> domain-specific skills.'
 ---
