@@ -3,6 +3,66 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.34.0]
+
+Fold-back sprint: **commerce and PIM**. Dynamic relations get a subsystem section that had no prior
+art; the rest lands as fact rows and two corrections.
+
+- **Dynamic product relations, a new section in `catalog-publishing.md`.** `/Admin/Api` cannot create
+  one: `DynamicProductRelationDataModel.SourceProductId` is `internal get / internal set`, so
+  `DynamicProductRelationSave` answers 200 and persists an ORPHAN row that
+  `DynamicProductRelationsByProductAndGroup` cannot see, and the published OpenAPI schema never mentions
+  the property. Category, group and all three deletes work normally. The working create is the Ecommerce
+  service layer from a disposable Razor runner, `DynamicProductRelationService.Save`, which is the same
+  terminal write the admin command ends in. Lookup is **source-only** everywhere, so the reverse hop is
+  `GetByDynamicRelationGroupId(g).Where(r => r.TargetProductId == id)`. Calculations: `TotalSum` is
+  unimplemented on 10.28.4 (500), `SumByProduct` can report SUCCESS at all 11 steps while generating zero
+  rows so only the assert is safe to follow, and `GroupIds` scopes the SUMMED target products.
+- **Range category fields (`EcomFieldType` 25) are half-implemented end to end** and now carry one fact
+  table in `structural-model.md`: storage as two composite ids, a string-only write binder, language
+  invariance, a two-`Double` index projection whose facet must point at the BASE id, `IsEmpty` on every
+  index document, no Swift 2.4 facet renderer, product-cache cross-contamination between products,
+  re-poisoning on every Full build, and completeness never satisfied. Model two scalar numeric fields
+  instead. Only `/Admin/Api/ProductById` reads a range value faithfully.
+- **`OrderSave` on an existing order is a reconciliation pass, not a row update.**
+  `ForcePriceRecalculation` runs unconditionally and re-prices from the LIVE catalogue, so lines whose
+  SKU has left `EcomProducts` go to 0; a missing delivery country blanks a real shipping method; and
+  `GetOrderById` returns RESOLVED defaults (the default payment method) that the save then writes back.
+  The mints-its-own-id rule is corrected to its real condition, `model.AutoId < 1`.
+- **The PIM workflow verb-namespace split** (`Dynamicweb.Products.UI` vs `Dynamicweb.Content.UI`) is now
+  the stated parent fact. `WorkflowSave` and `WorkflowDelete` are write-inert on 10.28.4 while
+  `WorkflowStateSave`, `WorkflowStateDelete`, `WorkflowNotificationSave` and `GroupWorkflowId` via
+  `DataModelGroupSave` all work.
+- **Correction: per-language option labels ARE writable.** The flat "no verb" claim in
+  `translation-mechanics.md` is scoped to the Management API `ProductFieldOptionSave`; MCP
+  `set_option_translations` writes the rows. The wipes-other-languages hazard on that verb stands. Four
+  per-language chrome verbs and their three payload shapes are now recorded.
+- **Language ROWS come before translations.** `ProductSave` writes exactly one `EcomProducts` row and
+  `ProductSetLanguages` is the second verb; `ProductCatalogGroupSave` cannot mint a catalogue-group
+  language row at all; and a `400 "Unable to load query parameters"` from any `*ById` query means the row
+  is missing, not the parameters. Unused `EcomLanguages` rows cannot be swept: each carries 11
+  `EcomCurrencies` rows.
+- **Silent no-op rows.** `ProductFieldSave` drops `Sort` and `TemplateName` while echoing them;
+  `ProductCategoryFieldSaveSort` needs category-qualified ids; `FieldTemplateTag` is create-only through
+  API and admin UI alike; `FeedDelete` answers ok and deletes nothing, with a `FeedService`
+  DictionaryCache that must be cleared by fully-qualified `CacheInformationRefresh`; `/Admin/Api/GroupSave`
+  is the USER-group verb and mints junk `AccessUser` groups; MCP `save_shops` is a full-entity replace;
+  `save_groups` with `parentGroupId` and no `shopId` builds a branch that resolves zero products;
+  `DynamicStructureSave` drops a `Levels` collection and `DynamicStructureLevelById` never hydrates
+  `UseCompleteness` / `UseRelationOnProductCreate`, so a read-modify-write clears them. `create_category_fields`
+  lies the other way: its echo under-reports options and `allowChangesAcrossLanguages` while persisting both.
+- **Discontinued products are data-only.** The `discontinuedAction` literals are
+  `none | redirectToReplacementProduct | redirectToGroup`, a rejected literal still commits the rest of
+  the model, and no shipped handler redirects. The PDP-template guard, including the `GetProductLink`
+  internal form that 404s from a `Location` header, is in `templates.md`.
+- Also folded: workspace node counts follow the backing query predicate; a data set stores only its
+  deltas from the parent data model; `ProductRelatedDelete` needs `ProductId` and leaves the two-way
+  mirror row; there is no Channel entity and no `ShopById`, and `ShopAll` is usage-type-filtered;
+  `EcomOrders.OrderTotalPrice` is a dead legacy column; MCP `search_orders` cannot see a quote;
+  `create_order_state` takes `orderType` as a string and `color` as hex; the Secondary-user index rebuild
+  is a two-call builder-name lookup, with the `Repository` vs `RepositoryName` split across sibling index
+  queries; and `GetImage.ashx` fits inside `Width x Height` with no crop unless `Crop` is passed.
+
 ## [4.33.0]
 
 Fold-back sprint: **content authoring, users and permissions, and the 2026-09-01 retest wave**.

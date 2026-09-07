@@ -108,6 +108,53 @@ Binding a workflow persona therefore needs the **admin UI**, or a user-group-sha
 in the plan rather than scripting it: an API pass over these rows produces a governance model that looks
 staged and gates nothing.
 
+### The verb-namespace split: `Dynamicweb.Products.UI` vs `Dynamicweb.Content.UI`
+
+**Two unrelated workflow subsystems share verb prefixes but not data**, and that split is the parent fact
+behind every surprise in this family, `WorkflowUserSave` dropping `UserId` included:
+
+| Ships from | Verbs | Subsystem |
+|---|---|---|
+| `Dynamicweb.Products.UI.dll` | `WorkflowSave`, `WorkflowDelete`, `WorkflowStateSave`, `WorkflowStateDelete`, `WorkflowNotificationSave` | The PIM product workflow (the `Workflow` / `WorkflowState` tables in §1) |
+| `Dynamicweb.Content.UI.dll` | `WorkflowById`, `WorkflowsAll`, `WorkflowUserSave`, `WorkflowUserNew`, `WorkflowUsersByWorkflowId` | The legacy `AccessWorkflow` CONTENT workflow |
+
+Reaching for a `Content.UI` verb expecting PIM behaviour is why `WorkflowUserSave` looks like it should
+bind a PIM persona. It drives `AccessWorkflow` rows instead.
+
+**The workflow CONTAINER is write-inert on 10.28.4; the workflow FEATURE is not.** Measured on two hosts:
+
+- **`WorkflowSave` creates nothing and renames nothing.** It answers
+  `200 {"status":"ok","message":"Saved successfully"}` and returns an **incrementing** id (3, then 4 on
+  the next call) while the `Workflow` table never gains a row; posting an existing `Id` with a new `Name`
+  answers ok and does not rename. The incrementing id suggests the model is constructed and an identity
+  allocated before a save step that is skipped or swallowed.
+- **`WorkflowSave` also 404s on a row `WorkflowAll` returns.** Where `WorkflowCreatedDate` is NULL,
+  `POST WorkflowSave {Model:{Id:4,…}}` answers
+  `404 {"status":"notFound","message":"Workflow is not found by specified Id"}` although
+  `GET WorkflowAll` returns that same id 4 (`statesCount 3`, `inUse true`). Adding `ModelIdentifier` does
+  not help. A workflow created before or outside the admin UI can therefore carry a NULL created date
+  that no shipped verb can repair, and the admin Workflows list shows a BLANK Created column: **do not
+  promise that column in a demo.**
+- **`WorkflowDelete` is inert too.** `POST WorkflowDelete {Id:1}` answers
+  `200 {"status":"ok","message":"Deleted successfully"}` and deletes neither the `Workflow` row nor its
+  `WorkflowState` rows. `Ids`, `["1"]` and `ModelIdentifiers` variants all behave the same. Curating an
+  unwanted baseline workflow away needs another path.
+
+**The surfaces that DO work**, and which a build should be written against:
+
+- **`WorkflowStateSave`** persists states, and **`WorkflowStateDelete`** removes them. Verified by SQL:
+  three states written under one workflow plus all four `WorkflowGoToState` transition rows read back.
+- **`GroupWorkflowId` via `DataModelGroupSave`** binds the workflow to a group (§2's attachment path).
+- **`WorkflowNotificationSave`** round-trips its recipient user ids into
+  `WorkflowNotification.WorkflowNotificationUsers`.
+
+So a workflow can be fully built INSIDE an existing container while the container itself cannot be
+created, renamed or deleted through the API. Plan for reusing a shipped container (its label stays
+whatever it shipped as, which is a visible demo artefact) or for a one-click admin-UI rename, and
+**assert every workflow claim in SQL**: `SELECT COUNT(*) FROM Workflow WHERE …` after any step that
+claims to have created one, and `SELECT * FROM WorkflowState` / `WorkflowGoToState` after the state
+writes. The 200 is affirmatively misleading here, so it is not evidence.
+
 ## 6. Three workaround patterns for per-state role gating
 
 In increasing fidelity. Pick one or compose — they layer.
