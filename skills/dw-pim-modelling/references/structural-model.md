@@ -10,6 +10,7 @@ Deep field-validated knowledge for Dynamicweb 10 PIM structural modelling. Getti
 - [2.5a Single-axis variants — leaner shape + the MCP/SQL surface split](#25a-single-axis-variants--leaner-shape--the-mcpsql-surface-split-validated-dw-1025x)
 - [2.6 Bundles (BOM) — two concerns](#26-bundles-bom--two-concerns)
 - [2.8 Product Categories + Fields (data model internals)](#28-product-categories--fields-data-model-internals)
+- [Range category fields are half-implemented: do not model a demo attribute as one](#range-category-fields-ecomfieldtype-25-are-half-implemented-do-not-model-a-demo-attribute-as-one)
 - [2.10 Assets](#210-assets)
 - [2.12 Dynamic Workspaces — projections, not storage](#212-dynamic-workspaces--projections-not-storage)
 - [Standard ProductField inventory — audit before creating customs](#standard-productfield-inventory--audit-before-creating-customs)
@@ -25,7 +26,8 @@ Deep field-validated knowledge for Dynamicweb 10 PIM structural modelling. Getti
 - `4` **DataStructure** (holds data models — NOT customer-facing)
 
 **Rules:**
-- **One Shop per brand/market** — don't create duplicates. If the `save_shops` MCP tool fails to rename the default `SHOP1`, update directly: `UPDATE EcomShops SET ShopName = '...' WHERE ShopId = 'SHOP1'`.
+- **One Shop per brand/market** — don't create duplicates. To rename the default `SHOP1`, send the WHOLE model through `save_shops` (see the full-replace rule below); `UPDATE EcomShops SET ShopName = '...' WHERE ShopId = 'SHOP1'` is the SQL fallback where the tool is permission-blocked.
+- **MCP `save_shops` is a FULL-ENTITY REPLACE, not a partial update.** `ShopTools.SaveShops` binds the request item into a fresh `Shop` entity and saves it whole, so a name-only payload resets every column not sent: measured on one host, `{"shops":[{"id":"SHOP1","name":"AgriHub Store"}]}` answered `succeeded:1` and left `ShopAutoBuildIndex` false (was true), `ShopOrderFlowId` NULL (was 1), `ShopImageFolder` / `ShopImagePatternMain` NULL, `ShopAlternativeImagePatterns` empty (was 9 entries), `ShopCompletionRules` NULL, and `ShopCreated` restamped to now. Its sibling `save_areas` documents "on update only the fields you send are changed"; `save_shops` does not, and the response model projects only `id`/`name`/`usageType`/`topLevelProductGroups`, so the damage is invisible in the echo. **Snapshot the row first** (`SELECT * FROM EcomShops WHERE ShopId=... FOR JSON PATH`), send the complete model, then diff the row back. `ShopAutoBuildIndex` silently flipping to false is the leg that costs a later index rebuild.
 - **Channels for feeds** — each external system (Shopify, Home Depot, OrderEase, etc.) gets its own ShopType=3 shop with its own group tree. Products get related INTO those groups to control what the feed publishes.
 - **DataStructure for data models** — a separate ShopType=4 shop owns the data model tree. Never park data models under the commerce shop.
 - **EVERY shop needs a language relation** — insert into `EcomShopLanguageRelation(ShopId, LanguageId, IsDefault)`. Missing this causes "channel with no name" display in admin.
@@ -52,9 +54,10 @@ So in the admin tree, a `ShopType=1` Shop and a `ShopType=3` Channel sit side-by
 
 **Critical behaviors:**
 - Admin distinguishes the product's "Groups/Channels" tab vs "Data Models" tab by filtering on parent shop's `UsageType`: Shop/Channel → Groups tab; DataStructure → Data Models tab. Cite `Dynamicweb.Products.UI/Queries/ProductGroupRelationsByProductIdQuery.cs:38` — `return usageType is ShopType.Shop or ShopType.Channel;` — and the mirror `Dynamicweb.Products.UI/Queries/ProductRelationsByProductIdQuery.cs:40` — `return usageType is ShopType.DataStructure;`. A "PIM-only" product (relations only to ShopType=4 groups) therefore renders an empty Groups/Channels tab — that's the visible signal that nothing is published.
-- **Every group needs a `EcomShopGroupRelation` row** linking it to its parent shop. Missing = "channel with no name" appears on every product in that group.
+- **Every group needs an `EcomShopGroupRelation` row, SUBGROUPS INCLUDED. DW resolves a group to its shop through that table and does NOT walk the parent chain.** A subgroup created with MCP `save_groups {name, parentGroupId}` and no `shopId` gets its `EcomGroupRelations` parent row and no shop relation, and the result is a branch that renders but resolves zero products: navigation walks `EcomGroupRelations` so the tree still shows the group, the PLP page returns 200 with the right `h1`, `ProductCatalogGroupById` on it returns `shopId: null`, `ProductsByGroupId` returns `totalCount 0` for a product whose `EcomGroupProductRelation` row demonstrably exists, and the product index writes no `ParentGroupIDs` for it. It is not a cache: measured surviving an `app_offline` recycle plus a Full index rebuild. **Pass `shopId` AND `parentGroupId` in the same `save_groups` call**, then assert the relation: a healthy tree carries one `EcomShopGroupRelation` row for every group (18/18 child groups on a reference install). A missing row on a group whose products all render is the separate "channel with no name" display fault.
 - **Every group needs `GroupType` set explicitly.** NULL defaults to 0 (Common) — data models not set to 2 will appear as catalog groups.
 - **Every DataModel group needs `ProductCategoryId`** pointing at a CategoryFields category — that's how field values get plumbed to the product.
+- **A data set (`GroupType=3`) stores only its DELTAS from the parent data model's defaults.** The data model above it carries Details-tab default values in `EcomProductCategoryFieldGroupValue`; the data set inherits those, and `DataSetGroupSave` persists only the fields whose value DIFFERS from the inherited default. Measured: 8 values posted to a data set under a data model carrying 5 defaults stored 4 rows, and a second identical save produced the same 4. This is correct behaviour that reads exactly like a failed save, so **an assertion counting stored data-set values must expect (values posted MINUS values equal to the parent default)**. The create is also two-step: `DataSetGroupSave` with `CategoryId` set returns the id, and only a re-read through `DataSetGroupById` exposes the category fields to fill. `DataSetGroupNew` returns an EMPTY `categoryFields` collection because `CategoryId` is not set yet.
 
 ### 2.5 Variants — 3 tables, composite IDs
 
@@ -80,6 +83,13 @@ Then trigger a Products index rebuild (`POST /admin/api/BuildIndex {"Repository"
 Use `INSERT INTO EcomProducts (col1,col2,...) SELECT m.col1, m.col2, ... FROM @combinations v INNER JOIN EcomProducts m ON m.ProductId = v.MasterId AND m.ProductVariantId = ''` — copy master, override 3 fields. Make `ProductNumber` one of the overridden fields, not a copied one.
 
 **MCP `create_variant_combinations` gotcha — it leaves the combo rows NULL where it matters.** The MCP tool creates the per-variant `EcomProducts` rows for you, but it leaves **`ProductActive`** and **`ProductPrice`** **NULL** on the combinations. A NULL-active, NULL-price variant is **invisible storefront-wide** — it does not render in the PDP variant selector and an add-to-cart for it no-ops, exactly like a missing combination row, so it reads as "the tool didn't create them" when the rows are actually there. After `create_variant_combinations`, always set `ProductActive=1` and a real `ProductPrice` (and the §2.5a extras — `ProductDefaultUnitId`, per-variant `ProductStock`) on the new combo rows, then restart/flush. Verify by selecting the combo rows and confirming none have `ProductActive IS NULL` or a NULL price before declaring variants done.
+
+**Enum properties on Management API save models bind by NAME, so a variant write that reuses the DB
+ordinal silently zeroes the column.** `VariantGroupTranslationSave` with `DisplayType` read straight out
+of `EcomVariantGroups.VariantGroupDisplayType` (int `2` = `VariantColor`) reports successful and stores
+`0` = `NothingSelected`, degrading a colour swatch to a plain name list; send `"VariantColor"`. The
+general rule, which applies to every `*Save` model carrying an enum, is in the dw-data-access skill,
+`references/management-api-and-sql.md`.
 
 ### 2.5a Single-axis variants — leaner shape + the MCP/SQL surface split (validated DW 10.25.x)
 
@@ -171,6 +181,59 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
   **create the correctly-typed field alongside, migrate the values, then retire the old field**, and record
   the retirement so a later reader does not treat the leftover as live.
 
+#### Category-field writes that answer `ok` and change nothing, and one that lies the other way
+
+`ProductFieldSave` binds the whole `ProductFieldDataModel` and round-trips it through the read model,
+but the repository update covers only a subset of columns. Everything outside that subset is echoed
+back with the new value and dropped. Assert every row in this table against raw SQL on
+`EcomProductCategoryField`, never against the save response and never against `ProductFieldById`:
+
+| Write | What the API says | What lands | Do this instead |
+|---|---|---|---|
+| `ProductFieldSave` with `Sort` | `status: ok`, response model carries the new `sort` | `FieldSortOrder` unchanged (71 sort writes, 0 rows moved) | `ProductCategoryFieldSaveSort` (next row) |
+| `ProductFieldSave` with `TemplateName` | `status: ok`, response carries the new `templateName` | `FieldTemplateTag` unchanged | Nothing. `FieldTemplateTag` is **create-only** (below) |
+| `ProductCategoryFieldSaveSort` with BARE field ids in `OrderedIds` | `{"status":"ok","model":null}` | Zero rows moved. Each `OrderedId` resolves as a fully-qualified product-field id, a bare system name resolves to nothing, and the empty set is written as a no-op | Build every id as `ProductCategory\|<CategoryId>\|<fieldSystemName>`, in the wanted order. A top-level `CategoryId` property on the body does NOT help: the qualification must be inside each id. Qualified ids rewrote all 18 sort orders to a gapless 1..18 |
+| `create_category_fields` echo | `fieldOptions: []` and `allowChangesAcrossLanguages: false` even when five options and `true` were sent | **Both persisted correctly.** The echo renders the per-category field copy before the shared `reference_category` option set is attached | Read back with `get_product_category_fields`, which shows all five options with translations on every target category. This echo lies in the safe direction, so do not "fix" a field that is already correct |
+
+**`FieldTemplateTag` is write-once at field CREATE, through every surface.** `ProductFieldSave` drops
+it, and so does the admin field-edit screen (`/Admin/UI/Products/ProductAttributeEdit/<guid>?FieldId=…`):
+type a tag, click Save, and `SELECT FieldTemplateTag` still returns `''`, but the form REDISPLAYS the
+submitted value on the next visit, because the read model serves it from cache. Retried with a unique
+value to rule out a uniqueness constraint, same result. A field that needs a template tag must be
+recreated (which discards its stored values) or shipped with the tag from the start. Sweep for the gap:
+`SELECT FieldTemplateTag FROM EcomProductCategoryField WHERE FieldTemplateTag IS NULL OR FieldTemplateTag = ''`
+must be empty on a healthy solution.
+
+### Range category fields (`EcomFieldType` 25) are half-implemented: do not model a demo attribute as one
+
+**Standing rule: use two scalar numeric fields (`…MinC` / `…MaxC`).** They are language-layered,
+indexable, facetable, completeness-scorable and cache-stable, which the Range type is not. Reproduced
+across two independent catalogues and two host classes on DW 10.26.12, 10.28.3 and 10.28.4. Every leg
+fails silently:
+
+| Leg | What actually happens | Consequence |
+|---|---|---|
+| Storage | The `EcomFieldType` row 25 (`FieldTypeName=Range`, `FLOAT DEFAULT 0.0`) is inserted unconditionally by migration; the `Products.UI.RangeFieldTypeFeature` flag only gates UI/API exposure. Values ride `EcomProductCategoryFieldValue` as **two composite ids**, `<fieldId>\|RangeType\|Minimum` and `<fieldId>\|RangeType\|Maximum` | The type "exists" with the flag off, and there are no dedicated min/max columns to query |
+| Write (`ProductSave`) | Persists a Range value **only** as STRING members `{Minimum:"-20",Maximum:"60"}`. `RangeValueConverter` emits strings and numeric members are dropped: `status: ok`, empty message, no row | Twelve payload shapes burned before the right one was found. A control Integer write in the same request body persists fine |
+| Write (`patch_products_safe`) | An object `{Minimum,Maximum}` throws "An error occurred invoking patch_products_safe"; the same value as a JSON **string** answers OK and persists nothing | Both readings look like a payload-shape problem |
+| Language | Range values are language-invariant: only the default-language row stores. `ProductSave` for a non-default language answers `ok` and persists nothing | Reads in any language resolve the default row, so the value IS correct everywhere. Reads as a 33% write failure |
+| Index schema | The schema extender projects a Range field as **two** `System.Double` definitions (`\|RangeType\|Minimum` / `\|Maximum`) the moment the field is created, no rebuild needed. The un-suffixed base name is NOT an index field | `FacetSave` must still point at the **BASE** field id: `RangeHelper.GetRangeFieldWith{Minimum,Maximum}PrefixId` re-applies the postfixes. Pointing a facet at a field the index does not list is correct here and looks certain to fail |
+| Index read | The product index answers `IsEmpty=true` for a range field on **every** document (measured 452/452 on a field where sibling scalars answered 449 / 451 / 1) | A query can never witness a range value, so no worklist or dashboard can be built on one |
+| Facet render | Swift 2.4 ships **no Range facet renderer**. `FacetRenderOptions.xml` advertises `Range` as selectable; `Paragraph/ProductListFacets/FormFields.cshtml` switches on the raw string render type, `Colors` gets swatches and everything else falls through to checkboxes, and a range facet returns no discrete Options so the group is hidden | Configured, accepted, visible in admin, invisible on the PLP, no error anywhere |
+| Cache | Range values are served from the product cache and can be **cross-contaminated between products**: of 17 backfilled products, 8 served null and 4 served ANOTHER product's Minimum/Maximum while still satisfying the probe predicate | A Full build copies the corruption into the index. Deterministic and identical across consecutive rebuilds; no product property separates the poisoned set |
+| Rebuild | A Full `Products\|Products.index` rebuild **re-poisons** the values (4 of 5 builds in one day), and the poisoning was present before the build too, so the build triggers rather than causes it | Check and repair after **every** build, not once per pass. The DB stays correct throughout; both the Management and Delivery APIs lie |
+| Completeness | Range (and boolean) category fields never satisfy a completeness rule: a product with every rule field populated in the DB scored 91%. A `patch_products_safe` naming three OTHER scalars silently DELETED both range-typed fields from the product | The worklist can never drain, and there is no warning on the delete |
+
+**The read surfaces disagree, and only one of them is honest.** MCP `get_product_by_id` renders every
+range as the literal string `"RangeValue { Minimum = , Maximum =  }"` whether or not a value exists,
+and the index answers `IsEmpty` for all of them. **`/Admin/Api/ProductById` is the only reader that
+returns the typed value the admin editor renders.** Assert there, and report populated/empty counts
+explicitly rather than inferring from either of the other two.
+
+**If a catalogue must carry Range values:** treat them as write-once at seed time through the path that
+originally worked, re-inject them from SQL BEFORE any `ProductSave` round-trip (the save wipes them
+otherwise), and gate on the post-build repair after every index build.
+
 ### 2.10 Assets
 
 - Files live in `wwwroot/Files/Images/...` (or any `/Files/` subfolder).
@@ -231,6 +294,50 @@ nothing.
 **Validate by the SUM, not by a drill.** Assert the level's node count and the **sum of node counts**
 against the workspace query total. A per-node drill alone does not catch the analysed-field failure,
 because every tokenised node drills to real rows.
+
+**A level's node counts follow the BACKING QUERY's predicate, so a sum that overshoots the query is the
+query's own document fan-out, not a workspace defect.** A level counts index documents by field value
+under the backing query's predicate, which is the same variant × language fan-out the counter widgets
+see. Measured: L1 nodes summing `18+1459+833+87+752 = 3149` against a 2 939-row query read as a defect;
+adding `LanguageID=ENU` + `VariantID isEmpty` to the four workspace-backing queries brought the same
+level to `6+1433+768+29+703 = 2939`, exactly the query, and the sibling workspaces to exactly theirs.
+**Narrow the backing query** rather than treating the node counts as independent of it.
+
+**Creating a workspace is TWO commands, and `DynamicStructureSave` silently drops a `Levels` collection.**
+Posting `{QueryData:{}, model:{Name, QueryId, Levels:[…]}}` answers `200 {"status":"ok"}`, echoes a real
+id, and creates a workspace with **zero levels**. A zero-level workspace still appears in the Products
+tree and expands to nothing, so it reads as "the query returned nothing" rather than "the write was
+ignored", and nothing in the response mentions the dropped array. Levels are a separate aggregate:
+
+```
+1) POST /Admin/Api/DynamicStructureSave  {"QueryData":{}, "model":{"Name":…, "QueryId":…}}
+2) per level, POST /Admin/Api/DynamicStructureLevelSave
+   {"QueryData":{"StructureId":<guid>,"Type":"DynamicStructureLevelNew"},
+    "model":{"StructureId":<guid>,          // REQUIRED inside the model, not only in QueryData
+             "SourceType":"DataModelKey"|"ProductField","SourceField":…,
+             "SortDirection":"Ascending","Index":<n>,
+             "UseRelationOnProductCreate":<bool>,"UseCompleteness":<bool>}}
+```
+
+- **`StructureId` is validated out of the MODEL.** With it only in the query envelope the call answers
+  `400 {"":["Model validation failed"],"StructureId":["The value is required."]}`.
+- **Always pass `Index` explicitly.** It defaults to `0` when the model omits it (the admin form has no
+  Index editor), so levels created in sequence all land at index 0 with undefined ordering. Re-saving
+  with `model.Index=1|2` fixes the order.
+- **`UseCompleteness` and `UseRelationOnProductCreate` are never hydrated on the read, so a
+  read-modify-write CLEARS them.** `GET /Admin/Api/DynamicStructureLevelById?Id=<n>&StructureId=<guid>`
+  returns `useRelationOnProductCreate:false, useCompleteness:false` regardless of the stored values
+  (measured against a DB row holding `UseCompleteness=1`), while `DynamicStructureLevelSave` persists
+  both booleans correctly. Posting back the model you just read therefore writes both flags to false,
+  and a self-draining completeness workspace quietly stops draining. **Never round-trip a
+  `DynamicStructureLevel` model**: read the true state from `DynamicStructureLevels` (or keep an
+  intended-state table) and set BOTH booleans explicitly on every save.
+- **There is no read query for either aggregate.** `DynamicStructureList`, `DynamicStructures`,
+  `DynamicStructureGet`, `DynamicStructureById` and `DynamicStructureFields` all answer
+  `400 "Unknown query"`, so the API cannot verify its own write and SQL is the only read-back. Assert
+  `COUNT(*) FROM DynamicStructureLevels` for the structure's `DynamicStructureUniqueId` equals the
+  number of levels intended, and that `DynamicStructureLevelIndex` is 1..n with no duplicates.
+  `status: ok` from `DynamicStructureSave` proves nothing about levels.
 
 **When workspaces are the right answer:**
 - "Show me products by **brand**": 1 level, `LevelType=ProductField`, `SourceField=ManufacturerID`.

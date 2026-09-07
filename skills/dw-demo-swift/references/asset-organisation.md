@@ -235,6 +235,25 @@ Ship a **2× resample of the frame size** (long edge capped, alpha flattened, co
 the true source dimensions, and assert `naturalWidth`/`naturalHeight` **and** the rendered bounding
 box off the live PDP — the DPI metadata is not the lever and reading it proves nothing.
 
+**A second, independent `GetImage.ashx` rule: `Width` and `Height` are a BOUNDING BOX, and nothing is
+cropped unless `Crop` is passed.** The resizer preserves the source aspect and FITS inside the box, so a
+3:2 source asked for `Width=640&Height=360` comes back **540x360**: the right height, the wrong width,
+and the wrong aspect, which then letterboxes inside a card built for 16:9. Measured on one host:
+
+```
+…&Width=640&Height=360           -> 540x360
+…&Width=640&Height=360&Crop=0    -> 640x360   (subject centred)
+…&Width=640&Height=360&Crop=1    -> 640x360   (subject on the upper third)
+…&Width=640&Height=360&Crop=5    -> 540x360   (no crop)
+…&Width=640&Height=360&Fill=True -> 540x360   (no crop; Fill+Crop behaves the same)
+…&Width=640  (no Height)         -> 640x426
+```
+
+**Pass `Crop=1` (or `0`) whenever both `Width` and `Height` are given and a specific aspect ratio is
+required**, and never assume `Width x Height` yields those exact pixels. Assert the RETURNED image
+dimensions in the deploy script, not just HTTP 200. This is distinct from the 0.75x webp rule above: the
+two compound, so an uncropped webp request can miss on both axes at once.
+
 ### 7. Attach, then verify per product
 
 Upload and attach through the asset verbs, then read the attachment back **per product** rather than

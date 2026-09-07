@@ -16,6 +16,8 @@ prices), and the Management API chains for variants, relations, images, and shop
 - [2.13 Customer-specific (contract) pricing](#213-customer-specific-contract-pricing)
 - [2.14 Variants via the Management API (no SQL)](#214-variants-via-the-management-api-no-sql)
 - [Product relations, index refresh, create-vs-update, images, shops](#product-relations-via-the-management-api--relationgroupsave-is-update-only-and-the-maintenance-verbs-take-composite-ids)
+- [Dynamic product relations: the API cannot create, and the Razor escape that can](#dynamic-product-relations-a-management-api-that-cannot-create-and-the-sanctioned-razor-escape)
+- [Discontinuing a product: enum literals and the redirect nothing performs](#discontinuing-a-product-the-enum-literals-and-the-redirect-that-no-shipped-code-performs)
 
 ## 2.3 Catalog vs Channel group trees (the published-to story)
 
@@ -100,6 +102,19 @@ The `PermissionLevel.Edit` gate is a Layer C entity check
   published" rather than "the parameter is named differently". This is the URL to present when showing a
   channel/feed integration; all three provider flavours serve from it (verified live: a CSV feed, a JSON
   feed and an XML feed all `200` on the same shape, differing only in `id`).
+- **`FeedDelete` answers `{"status":"ok"}` and deletes nothing, and the feed list is served from a cache
+  that no row write invalidates.** Two independent defects: `FeedDeleteCommand` binds `Ids` as
+  `IEnumerable<string>` (so `{"Ids":[8]}` answers `500 "The JSON value could not be converted to
+  System.String"`) and its handler never removes the row, so `{"Ids":["8"]}` reports success with the row
+  intact. Proven not to be id resolution: a freshly minted scratch folder (`FeedNew` + `FeedSave`)
+  survived its own `FeedDelete` the same way. Delete feeds and feed folders through the sanctioned
+  scheduled-task SQL runner (guard on `FeedIsFolder` and a `NOT EXISTS` child check), then clear the cache
+  before any list read: `POST /Admin/Api/CacheInformationRefresh
+  {"CacheTypeName":"Dynamicweb.Ecommerce.Feeds.FeedService"}`. **The fully qualified type name is
+  required** (the short `FeedService` 404s), and re-saving a sibling feed does NOT invalidate it
+  (measured). No app recycle is needed. Verify that `GET /Admin/Api/FeedsByParentId?ParentId=0` matches
+  `SELECT FeedId,FeedName FROM EcomFeed WHERE FeedParentId=0` exactly, and that the `GetServiceCaches`
+  count for `FeedService` drops after the refresh.
 
 ## 2.9 Assortments (customer access) ≠ Channels (publishing)
 
@@ -312,6 +327,127 @@ read-only row on its own, so run the master control before you decide which one 
   paths, not names" rule the `*Delete` family follows — read one row from the matching list query and
   copy its identifier shape before scripting a batch.
 
+- **`ProductRelatedDelete` also requires `ProductId`, and it deletes exactly ONE row: the two-way MIRROR
+  row survives.** It is a LIST command scoped to a context product, so `Ids[]` alone answers
+  `400 {"":["Command validation failed"],"ProductId":["The product id must be set."]}` and removes
+  nothing; `ProductId` must be the SOURCE product of those ids. With it set the call removes exactly the
+  `EcomProductsRelated` rows named in `Ids[]`, and **DW does not infer or cascade the reciprocal row even
+  when the relation carries `twoWayRelation=true`** (measured: 108 rows to 107, forward row gone, mirror
+  `<target>|<group>|<source>` still present). Clearing a two-way set therefore means enumerating rows in
+  BOTH directions from `EcomProductsRelated`, grouping by `ProductRelatedProductId`, and issuing one
+  `ProductRelatedDelete` per source. Verify by SQL count after every batch, never by the `ok`.
+  `ProductRelatedRemoveTwoWayRelation` changes the two-way FLAG and is not a delete;
+  `ProductRelatedGroupDelete {ProductId, RelatedGroupId}` needs the same per-source fan-out.
+
+### Dynamic product relations: a Management API that cannot create, and the sanctioned Razor escape
+
+Dynamic relations (`EcomDynamicProductRelations`, gated on the
+`Dynamicweb.Products.UI.DynamicRelations.DynamicRelationsFeature` flag) are the "assembly / spare parts"
+subsystem: a relation carries a source product, a target product, an amount and a description, grouped
+by `DynamicRelationGroup` inside a `DynamicRelationGroupCategory`. **The surface splits unevenly and the
+split is not visible from the OpenAPI schema.**
+
+| Operation | Surface | Notes |
+|---|---|---|
+| Category create/update | `/Admin/Api/DynamicRelationGroupCategorySave` `{Model:{Id:"", Name, TabName, SortOrder}}` | Works. `Id: ""` is the create signal |
+| Group create/update | `/Admin/Api/DynamicRelationGroupSave` `{Model:{Id:"", Name, CategoryId, SortOrder}}` | Works |
+| Relation CREATE | **Not achievable through `/Admin/Api` on 10.28.x** | See below. Use the service layer |
+| Relation READ by source | `DynamicProductRelationsByProductAndGroup?ProductId=&DynamicRelationGroupId=` | Source-only, see below |
+| All three DELETEs | `DynamicProductRelationDelete` / `DynamicRelationGroupDelete` / `DynamicRelationGroupCategoryDelete` with `Ids[]` | Work normally, so cleanup is available even though create is not |
+
+**`SourceProductId` cannot be bound through `/Admin/Api`, so the verb persists ORPHAN relations.**
+`DynamicProductRelationSave` answers 200 with a model, and a row DOES appear in
+`EcomDynamicProductRelations` carrying the correct `DynamicRelationGroupId`, `TargetProductId`, `Amount`
+and `Description`, with `SourceProductId` **empty**. The relation is then invisible to
+`DynamicProductRelationsByProductAndGroup` (`totalCount 0` for the intended source) and to
+`DynamicProductRelationService.GetByProductId`. Cause:
+`Dynamicweb.Products.UI.DynamicRelations.Models.DynamicProductRelationDataModel.SourceProductId` is
+declared `internal get / internal set`, so the JSON binder cannot populate it, while
+`DynamicProductRelationSaveCommand.Handle()` reads it anyway and writes the null;
+`CommandBase<T>.GetModel()` does no server-side rehydration, so no `ModelIdentifier` or `QueryContext`
+merge can supply it out of band. Every bindable sibling (`SourceProductVariantId`, `SourceProductUnitId`,
+`TargetProductKey`, `Amount`, `Description`) is public, and the published OpenAPI schema never mentions
+`SourceProductId` at all, which is why the omission is invisible to an API-first caller. Seven further
+shapes were measured (Pascal, camel, `SourceProductKey`, sibling `SourceProductId`, sibling `ProductId`,
+`Model+ModelIdentifier`, `Model+QueryContext`) and all returned 200 with an empty source. The admin UI
+works only because its CoreUI screen holds the model server-side where the internal setter is reachable.
+
+**The working create path is the Ecommerce service layer, driven from a disposable Razor template.**
+This is not a bypass: `DynamicProductRelationService.Save(relation)` is literally the call the admin save
+command ends in (`IL_013A` of `DynamicProductRelationSaveCommand.Handle`), so it runs the same cache
+storage and the same notification subscribers, minus the lossy DTO. The domain entity
+`Dynamicweb.Ecommerce.Products.DynamicRelations.DynamicProductRelation` has `SourceProductId` **public**.
+
+```csharp
+@* throwaway Razor page, deleted after the run *@
+var relSvc = Dynamicweb.Extensibility.ServiceLocator.Current
+                 .GetInstance<DynamicProductRelationService>();   // -> DefaultDynamicProductRelationService
+var rel = new DynamicProductRelation {
+    DynamicRelationGroupId = "DYNRELGRP3",
+    SourceProductId = "PROD12429", TargetProductId = "PROD12430",
+    SourceProductVariantId = "", SourceProductUnitId = "",
+    SourceProductVariantOptionId = "", TargetProductVariantId = "",
+    Amount = 3, Description = "service-layer write"
+};
+relSvc.Save(rel);          // rel.Id is assigned, e.g. DYNPRODREL17
+```
+
+- **Every string property must be set to `""`, never left null.**
+- **`Dynamicweb.Ecommerce.Services` has NO `DynamicProductRelations` property** and the service class is
+  abstract with a non-public constructor, so it must come from
+  `ServiceLocator.Current.GetInstance<DynamicProductRelationService>()`.
+- Verify from BOTH sides: `relSvc.GetById(newId).SourceProductId` equals the intended source, AND
+  `GET /Admin/Api/DynamicProductRelationsByProductAndGroup?ProductId=<source>&DynamicRelationGroupId=<group>`
+  returns `totalCount 1`. Both passed on 10.28.3 for the service write and failed for the API write.
+- **Doctrine:** the build stays API-first and raw SQL writes to content tables stay banned (SQL-inserted
+  relation rows do not reach the view model). The Razor service-layer runner is the sanctioned escape for
+  **this subsystem specifically**, because the documented API is incomplete rather than merely awkward.
+  Delete the runner page when the batch is done.
+
+**Lookup is SOURCE-ONLY everywhere, and nothing in the naming says so.** Both
+`DynamicProductRelationService.GetByProductId(id)` and
+`DynamicProductRelationsByProductAndGroup?ProductId=id` resolve the argument against `SourceProductId`
+alone. On a product that is a source in one group and a target in another, `GetByProductId` returns ONLY
+its source rows, which looks like a working reverse lookup until the ids are checked. There is no
+by-target read anywhere: the 31-operation `Dynamic*Relation*` catalogue has no `…ByTargetProduct` verb,
+and the service exposes only `GetAll`, `GetById`, `GetByIds`, `GetByProductId`,
+`GetByProductIdInDynamicRelationGroup` and `GetByDynamicRelationGroupId`. **Assemble "which assemblies use
+this part" caller-side:**
+
+```csharp
+relSvc.GetByDynamicRelationGroupId(groupId).Where(r => r.TargetProductId == id)
+```
+
+That is group-scoped, so all inbound relations across groups means iterating
+`DynamicRelationGroupService.GetAll()`. The scan is served from the service cache, so no SQL view is
+needed for the reverse direction.
+
+**The calculation engine: one method is unimplemented, one reports success while generating nothing, and
+the group filter points at the side you do not expect.**
+
+- **`TotalSum` is still unimplemented on 10.28.4.** A configured, active TotalSum calculation renders an
+  empty "Calculation result(s)" panel on every product in its category, and
+  `POST /Admin/Api/DynamicRelationCalculationConfigurationCalculate {Ids:["DYNRELCALCCFG1"]}` answers
+  `500 {"title":"TotalSum calculation method is not yet implemented."}`. The admin lets you configure and
+  activate it regardless, so the dead panel ships. **Do not ship an active TotalSum configuration**: set
+  `IsActive=false` so the empty panel stops rendering (`SELECT IsActive FROM
+  EcomDynamicRelationCalculationConfigurations WHERE Method=1` must be 0).
+- **`SumByProduct` can report success at every step and generate zero calculations.** Measured with the
+  group filter correctly scoped: `Calculate` answered
+  `{"status":"ok","message":"Calculations completed successfully"}`, the trace log recorded
+  `Status: SUCCESS` for all 11 steps, and both `Total Raw Calculations` and `Final Calculations` were 0
+  with zero rows in `EcomDynamicRelationCalculations`, on relations whose target products all carried the
+  summed field. The mechanism is not established. **The assert is what folds: never trust the Calculate
+  response.** Assert `COUNT(*) FROM EcomDynamicRelationCalculations` after every run and deactivate a
+  configuration that yields none.
+- **`GroupIds` scopes the SUMMED (target) products, not the sources.** It is a product-group filter
+  applied during group-membership filtering to the products whose field is being read. Pointing it at the
+  source group filtered every target out (`Products with Matching Groups: 0` for all 15 relations);
+  pointing it at the group where the summed field's products live matched (`1` for all 15). It is not the
+  dynamic-relation group id either, despite the property name, and `DynamicRelationGroupCategoryId` must
+  carry a `DYNRELGRPCAT*` id, not a product-category id. **Read the computation trace and require a
+  non-zero "Final Included Products" per relation** before believing a configuration is wired.
+
 ### `ProductSave` without `RunUpdateIndex` leaves the storefront serving the old value
 
 **The PLP renders from the product search index, not from `EcomProducts`** — so a product copy fix that is
@@ -334,6 +470,43 @@ capture it from the response `model.id` or `modelIdentifier`. Category product f
 `Id: ""` + `SystemName: "<field id>"` + `CategoryId`. Posting a chosen `Id` to a save command returns
 `notFound` ("Shop not found", "Field not found") — that is the create/update fork talking, not a missing
 entity.
+
+### Discontinuing a product: the enum literals, and the redirect that no shipped code performs
+
+**`discontinuedAction` takes exactly three string literals: `none` | `redirectToReplacementProduct` |
+`redirectToGroup`** (persisting `EcomProducts.ProductDiscontinuedAction` 0 / 1 / 2). The admin UI labels
+("nothing / redirect to replacement / redirect to group") are not the API literals, and near-misses like
+`redirectToProduct`, `replacementProduct` and `redirect` all answer
+`500 "Exception has been thrown by the target of an invocation."` with no field name.
+
+- **A rejected literal is NOT a rollback.** The unmatched enum throws during model binding AFTER the
+  earlier members have been applied, so `ProductSave` is not transactional across the model: a probe that
+  sent `discontinued` + date + replacement + a bad action returned 500 while
+  `ProductDiscontinuedDate` landed in `EcomProducts`. **Assert the expected int in SQL.** A 200 alone is
+  not enough, because a 500 on the same call can still have committed neighbouring fields, and a 200 on a
+  no-op model looks identical to a 200 on a real change.
+- `replacementProductAndVariantIds` is WRITTEN as a bare product id (`"PROD417"`) and READS BACK as the
+  composite `"PROD417|ENU|"`.
+
+**No shipped handler acts on the redirect, so setting the data changes nothing on the storefront.** The
+platform persists the fields and populates the frontend view model
+(`ProductViewModel.Discontinued` / `.DiscontinuedAction` / `.ReplacementProduct`, filled by
+`Dynamicweb.Ecommerce.ProductCatalog.ViewEngine.GetReplacementProduct`) and exposes them over the
+Delivery API (`GET /dwapi/ecommerce/products/<id>` returns
+`{"discontinued":true,"discontinuedAction":1,"replacementProduct":{...}}`), while the discontinued PDP
+still answers **HTTP 200 and renders normally**. A reflection sweep of the bin folder finds
+"Discontinued" only in `Dynamicweb.Ecommerce.dll` (the model plus the `DiscontinueProductsByDate`
+add-in), `Dynamicweb.Products.UI.dll` (admin) and one cart-validation helper, and Swift 2.4 templates
+reference it only to disable add-to-cart and favourites, never `DiscontinuedAction` or
+`ReplacementProduct`. **Acting on the redirect is a DESIGN responsibility**: the guard belongs at the top
+of the first code block of the PDP entry template
+(`Designs/<design>/eCom/ProductCatalog/ProductDetailRenderGrid.cshtml`), resolving
+`Model.ReplacementProduct.GetProduct()` and redirecting. Budget it as template work whenever a lifecycle
+story is demoed, and note that `GetProductLink` returns the internal `Default.aspx?ID=..` form, which
+404s from a `Location` header unless it is run through
+`Dynamicweb.Frontend.SearchEngineFriendlyURLs.GetFriendlyUrl()` first. The full recipe, with the
+`IRequest.QueryString` and obsolete-`Response.Redirect` traps, is in the `dw-demo-swift` skill's
+`templates.md`.
 
 ### Product images via the Management API
 
@@ -403,6 +576,38 @@ Learn them as a set:
 `ShopSave` never persists `Model.Languages` (only `CompletionLanguages`); `EcomShopLanguageRelation`
 cannot be written through this API version. A shop created via the API has no language relation until
 someone ticks it in the admin UI — a hand-off step, not a bug to debug.
+
+### There is no Channel entity and no `ShopById`: every usage type is an `EcomShops` row from `ShopSave`
+
+Asked to "create a channel", the obvious verbs do not exist: `ChannelAll`, `ChannelNew`, `ChannelById`,
+`ProductCatalogShopAll` and `ShopById` all answer `400 "Unknown query"` (absence proven, not assumed).
+All four usage types are `EcomShops` rows discriminated by the `ShopType` int and created through the one
+`ShopSave` verb.
+
+- **The create shell comes from `GET /Admin/Api/ShopNew?UsageType=<Shop|Channel|Warehouse|DataStructure>`**
+  (`0..4` numerically; `5` answers `400 {"UsageType":["The value 5 is invalid."]}`). It returns a model
+  whose `usageType` is preset; post it with `Id:""` to create. Measured mapping: `1`=shop, `3`=channel,
+  `4`=dataStructure (full enum in
+  [`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.1).
+- **The `ShopNew` shell defaults `autoBuildIndex` to `true`**, which is wrong for a channel. Set it
+  explicitly on the save.
+- **`ShopAll` is usage-type-filtered, so it is not the shop inventory.** On one host it returned the two
+  shops and the one channel and silently omitted the `dataStructure` shop; `ShopsAsDataStructure` and
+  `ShopsAsWarehouse` are what surface the other types. A "list the shops" probe that reads only `ShopAll`
+  will report a shop as missing when it is merely a different usage type. Assert the `EcomShops` row count
+  against what the enumerations return in aggregate.
+
+### `/Admin/Api/GroupSave` is the USER-group verb, not the product-group one
+
+`GroupSave` belongs to the user/permission domain. Posting an `EcomGroups` id to it answers **200 with a
+plausible model on every call**, changes nothing in `EcomGroups`, and **creates a junk `AccessUser`
+group** as a side effect. The tell is in the response model: it carries `userAndGroupTypeSystemName` and
+`smartSearchId`, which are `AccessUser` fields. The product-group verb is MCP `save_groups`.
+
+**`save_groups` has no `metaUrl` property and BLANKS `GroupMetaUrl` on save, so a rename MOVES the
+category URL.** Measured: `/shop/water-treatment` went 200 to 404 while `/shop/water-quality` became the
+live path. Re-probe every renamed category PLP for 200 and repoint any storyline, gate leg or navigation
+link that named the old slug. (The slug-cache half of this is the `ShopUrlDataProvider` gotcha in §2.3.)
 
 ### Read a shop with `GetShopByIdQuery` before any round-trip `ShopSave`
 

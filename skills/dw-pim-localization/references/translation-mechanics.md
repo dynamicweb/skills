@@ -14,7 +14,9 @@ the `EcomProductField` flag gates, the facet-label wipe hazard, and the new-lang
 - [Enable per-language editing on standard fields (one-time seed)](#enable-per-language-editing-on-standard-fields-one-time-seed)
 - [Read `EcomProductField` BEFORE planning any per-language or per-variant product write](#read-ecomproductfield-before-planning-any-per-language-or-per-variant-product-write)
 - [Per-product category field VALUES are language-invariant by configuration](#per-product-category-field-values-are-language-invariant-by-configuration--the-language-column-is-a-decoy)
-- [Facet option labels — no per-language verb, and an admin edit destroys the translations](#facet-option-labels--there-is-no-per-language-verb-and-an-admin-edit-destroys-the-translations)
+- [Facet option labels: the MCP route writes them, and an admin edit destroys them](#facet-option-labels-the-mcp-route-writes-them-and-an-admin-edit-destroys-them)
+- [Minting the language ROW comes first](#minting-the-language-row-comes-first-and-a-400-unable-to-load-query-parameters-means-the-row-is-missing)
+- [Per-language PIM chrome IS writable: four verbs, three payload shapes](#per-language-pim-chrome-is-writable-four-verbs-three-payload-shapes)
 - [Order / quote / cart state badges — `OrderStateTranslationSave`](#order--quote--cart-state-badges--orderstatetranslationsave-no-sql-needed)
 - [Adding a new language — the platform steps](#adding-a-new-language--the-platform-steps)
 - [Cross-references](#cross-references)
@@ -255,16 +257,20 @@ data-model change first** (flip `FieldAllowChangesAcrossLanguages` via `ProductF
 task — so scope it as a modelling decision, or exclude it explicitly from the language pass rather than
 attempting it and reporting a failure.
 
-## Facet option labels — there is no per-language verb, and an admin edit destroys the translations
+## Facet option labels: the MCP route writes them, and an admin edit destroys them
 
 Two facts that turn "translate the PLP filters" from a write into a project:
 
 - **The index value is the option KEY and must never be translated** (`StainlessSteel`, `Zinc`) — translating
   it breaks the filter. The PLP sidebar renders `facetOption.Label`, and the per-language display name lives in
   **`EcomFieldOptionTranslation`**.
-- **`ProductFieldOptionSave` has no language dimension.** Its model is
-  `{OptionId, FieldId, Name, Value, IsDefault, Sort, Image}` — one `Name`. So there is no verb for a
-  per-language option name, and the rows must go in by SQL. Option ids live in the
+- **The Management API `ProductFieldOptionSave` has no language dimension, but MCP
+  `set_option_translations` does.** `ProductFieldOptionSave`'s model is
+  `{OptionId, FieldId, Name, Value, IsDefault, Sort, Image}`, one `Name` only, so that verb cannot express a
+  per-language option label. The MCP route writes them directly:
+  `set_option_translations {requests:[{fieldId:"ProductCategory|<cat>|<field>", optionValue:"corrosive",
+  languageId:"FRC", name:"Corrosif"}]}` landed 88/88 rows, `EcomFieldOptionTranslation` FRC rows 0 → 88,
+  SQL-verified. Reach for that before SQL. Option ids live in the
   `ProductCategory|reference_category|<field>` bucket, not the per-type qualified twins
   ([dw-pim-modelling structural-model.md](../../dw-pim-modelling/references/structural-model.md) §2.8).
 - **The option collection is cached in-process and does not pick the rows up.** Neither a cache-busted request
@@ -276,6 +282,69 @@ Two facts that turn "translate the PLP filters" from a write into a project:
   measured directly, and it fires on **normal admin use**: an editor tweaking one facet option in the UI
   silently destroys its localizations. **Re-apply the per-language names after any facet option edit**, and
   assert the `EcomFieldOptionTranslation` row count per option is unchanged across one.
+
+## Minting the language ROW comes first, and a `400 "Unable to load query parameters"` means the row is missing
+
+A translation write needs a row to write into, and the two creates work differently.
+
+- **`ProductSave` writes exactly ONE `EcomProducts` row, the language it was called with.** It does not
+  fan out to the other site languages, so a freshly created product is single-language. Measured on one
+  host: 11 969 of 12 059 products had exactly 1 language row; the 90 with 3 were the ones a translation
+  pass had explicitly minted. `ProductCreated` on a minted row is COPIED from the master, so it falsely
+  suggests the rows were created together. **`ProductUpdated` is the field that tells the truth.**
+- **Creating a multi-language product is a two-verb sequence.** `ProductNew`/`ProductSave`, then
+  `ProductSetLanguages {Model:{ProductKeys:["<PROD>|ENU|"], LanguageIds:["ENU","ESU","FRC"],
+  ActivateNewLanguages:true, CopyMainProduct:true, RemoveExistingLanguages:false, VariantId:""}}`. Assert
+  the expected language-row count after any create that is meant to be multilingual, before attempting
+  translation. (MCP `add_products_to_language` is the tool-side equivalent: it CREATES the layers and
+  does not populate them.)
+- **`ProductCatalogGroupSave` cannot CREATE a catalogue-group language row.** It is an UPDATE path only:
+  it resolves the target through `Dynamicweb.Ecommerce.Products.GroupService` keyed on
+  (GroupId, LanguageId), and when no row exists for that language the resolve misses, the handler falls
+  through without inserting, and it **still answers `{"status":"ok"}`**. Four shapes were measured, all
+  `ok`, all zero rows inserted: `Model.LanguageId` set with the default `modelIdentifier`;
+  `modelIdentifier` rewritten to `GROUP513|ESU`; `LanguageId` passed as a sibling command parameter; and
+  `modelIdentifier` removed entirely. The recipes that appear to work with this verb only work because
+  those groups already HAD the target language row. Create the row as a clone of the default-language
+  row through the sanctioned scheduled-task SQL runner (`INSERT INTO EcomGroups (<every column except
+  the identity GroupAutoId>) SELECT <same columns, GroupLanguageId and GroupName substituted> FROM
+  EcomGroups WHERE GroupId=@g AND GroupLanguageId='ENU'`), then
+  `POST /Admin/Api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Ecommerce.Products.GroupService"}`
+  or every subsequent read is stale. After that `ProductCatalogGroupSave` works normally on the new row.
+  `ProductCatalogGroupTranslationsSave` is the auto-translate action and needs a configured translation
+  provider; `ProductCatalogGroupNew` requires a `ParentId` and mints a new group, not a language row.
+- **A `400 {"successful":false,"message":"Unable to load query parameters for query type: '<Verb>ById'"}`
+  from any `*ById` query means the requested ROW does not exist, not that the parameters are wrong.**
+  Measured on both `ProductById?Id=<new product>&LanguageId=ESU` and
+  `ProductCatalogGroupById?Id=GROUP513&LanguageId=ESU`, while the identical shape returns 200 for an
+  entity that has the language row. The message names the QUERY PARAMETERS, so it sends you probing
+  `VariantId` / `ModelIdentifier` variants that cannot help. **Check for the row first.**
+
+## Per-language PIM chrome IS writable: four verbs, three payload shapes
+
+Field labels, group names, option labels and variant names all take a per-language write. Each surface
+takes a DIFFERENT payload shape, and the wrong shape answers either a bare
+"An error occurred invoking `<tool>`" with no field detail (MCP) or a 400 naming a property that is in
+no read model (`/Admin/Api`), which is what makes this read as "there is no write path". All four
+verified by SQL row counts on one 10.28.4 host:
+
+| Surface | Verb | Payload | Verified |
+|---|---|---|---|
+| Category-field LABEL | `POST /Admin/Api/ProductCategoryFieldTranslationSave` | flat `Model:{CategoryId, FieldId, LanguageId, Name}`, where `Name` carries the LABEL | 160/160 rows, 0 failures, `EcomProductCategoryFieldTranslation` FRC rows appear |
+| Catalogue-group NAME | MCP `save_group_translations` | `{translations:[{groupId, languageId, name}]}` | 56 succeeded, `EcomGroups` FRC rows 0 → 56 |
+| Field-option LABEL | MCP `set_option_translations` | `{requests:[{fieldId:"ProductCategory\|<cat>\|<field>", optionValue, languageId, name}]}` | 88/88, `EcomFieldOptionTranslation` FRC rows 0 → 88 |
+| Variant group / option NAME | MCP `save_variant_groups` / `save_variant_options` | a per-language `names` array of `{id, value}` where **`id` is the LANGUAGE id** | 5 groups + 40 options, `EcomVariantsOptions` FRC rows 0 → 40 |
+
+- **The variant verbs take `{id: <languageId>, value: <name>}`, not the natural `{languageId, name}`**,
+  and the natural shape fails with no diagnostic.
+- **Both variant verbs are whole-entity replaces: read the current model first and APPEND the new
+  language to `names`,** or the existing name is dropped. Assert the prior-language rows still exist
+  afterwards.
+- Shapes rejected on the way, for the label verb: `{Label:…}`, `{SystemName:…}` and `{Id:…}` all answer
+  `400 "FieldId: The value is required"`, and sending BOTH `Model` and `model` keys answers 500
+  "An item with the same key has already been added. Key: model".
+- This covers the CHROME. Per-product field VALUES on a non-master language layer are a separate
+  question, governed by `EcomProductField` flags (see the section above).
 
 ## Order / quote / cart state badges — `OrderStateTranslationSave` (no SQL needed)
 
@@ -303,7 +372,15 @@ changes such as `OrderStateColor` are a different surface — those are cached a
 3. **Translate group names** first (groups must be translated so the navigation tree localizes) — see the group-translation null gotcha above. Use `update_groups` MCP with `languageId=<new>` OR direct SQL.
 4. **Translate product name + short description** via `update_products`/`patch_products_safe` with `languageId=<new>`. Custom-field translation can be deferred; the fallback handles it.
 5. **Rebuild the index** + run `build_assortments` if assortments are in play.
-6. **Wire the area** to the new language as a SECOND language layer — on the area side you need a sibling `Area` row with `AreaEcomLanguageId=<langId>` so the storefront actually serves the translated values. The content-side language-layer flow (website language + `LanguageSelector`) is covered by [dw-content-modelling](../../dw-content-modelling/SKILL.md).
+6. **Do NOT sweep the unused `EcomLanguages` rows.** Currency records are per language: every unused
+   locale still owns **11 `EcomCurrencies` rows**, and individual locales carry more (one host: `DAN`
+   also owned 7 shippings and 2 payments, `ESM` owned an `EcomShopLanguageRelation`). Deleting a locale
+   cascades into the currency table. On the measured host 16 of 20 locales were unused by products,
+   groups and areas and **none was cleanly removable**. Broken cultures (a locale row pointing at an
+   unrelated culture) are cosmetic in the picker and not worth the cascade. Count
+   `EcomCurrencies` / `EcomShippings` / `EcomPayments` per `LanguageId` before proposing any deletion,
+   and expect the answer to be "leave them".
+7. **Wire the area** to the new language as a SECOND language layer — on the area side you need a sibling `Area` row with `AreaEcomLanguageId=<langId>` so the storefront actually serves the translated values. The content-side language-layer flow (website language + `LanguageSelector`) is covered by [dw-content-modelling](../../dw-content-modelling/SKILL.md).
 
 ## Cross-references
 

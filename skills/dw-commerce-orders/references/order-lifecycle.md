@@ -89,8 +89,11 @@ non-zero total after an `OrderService` cache flush.
 
 ## The platform OWNS ids and timestamps — a `*Save` discards the ones you send
 
-**`OrderSave` and `InvoiceSave` mint their own id from the `EcomNumbers` counters (`ORDER`,
-`LEDGERENTRIES`) and discard `Model.Id`.** They also ignore a caller-supplied date and stamp *now*;
+**On a CREATE, `OrderSave` and `InvoiceSave` mint their own id from the `EcomNumbers` counters (`ORDER`,
+`LEDGERENTRIES`) and discard `Model.Id`.** The create/update switch is **`model.AutoId < 1`**, so this is
+conditioned on `AutoId` and not on `Id`: a model round-tripped from `GetOrderById` carries a real `AutoId`
+and **updates in place** (measured, row count 430 to 430), while a hand-built model with `AutoId` unset
+mints a new row no matter what `Id` it carries. They also ignore a caller-supplied date and stamp *now*;
 `RmaCommentSave` ignores `Model.Created` the same way, and `Model.reference` does not persist through
 `OrderSave` at all. So **any follow-up SQL keyed on the id or reference you sent addresses nothing** — and it
 does so silently, updating zero rows with no error. One pass built twelve invoices with correct due dates,
@@ -135,6 +138,62 @@ WORKS:  OrderNew -> OrderSave -> OrderLineAddProductsBySKU -> SQL line qty -> Or
 
 Assert it: seeded order dates still match the intended backdated values **after the full build sequence
 completes**, not after the SQL step.
+
+## `OrderSave` on an existing order is a reconciliation pass against live platform state
+
+Editing one cosmetic string on a settled order through the sanctioned `/Admin/Api/OrderSave` path moved
+**11 columns when exactly 1 was requested**, with HTTP 200 and `successful: true`. Three mechanisms
+compose, and none of them warns:
+
+- **`OrderSaveCommand.Handle()` unconditionally calls `Services.Orders.ForcePriceRecalculation(order)`
+  immediately before `Services.Orders.Save()`.** Recalculation prices every line from the **LIVE
+  catalogue**, so any order line whose SKU has since left `EcomProducts` re-prices to **0**. Measured on
+  one historical order: unit price 18.16 to 0.00, `OrderPriceWithVAT` / `WithoutVAT` /
+  `PriceBeforeFees*` all 18.16 to 0.00, on a SKU with zero rows in `EcomProducts` (22 of the 27 rows in
+  that batch carried the same dead SKU).
+- **`ShippingAndPaymentHelper.GetAvailableShippingMethods` filters on `model.DeliveryCountryCode` and
+  BLANKS `model.ShippingMethodId` when the current method is not in the available list**, so a blank
+  delivery country strips a real, active, unrestricted shipping method (`SHIP6`/FedEx to `""`, name and
+  description with it).
+- **`ValidateModel` refuses an empty `CustomerCountryCode`** (`400 {"CustomerCountryCode":["Billing
+  country should be set."]}`), so the caller is FORCED to write a country it did not intend to change
+  just to reach the save at all.
+
+**Do not use `OrderSave` to edit a cosmetic field on a historical order.** Where a company or name string
+on a settled order must change, the honest options are (a) a targeted SQL `UPDATE` on that string column
+with **no** subsequent `OrderSave` or `OrderRecalculate` (either one re-zeroes it), or (b) saving only
+orders whose every line SKU still resolves in `EcomProducts` AND whose delivery country is set. Restoring
+afterwards through `OrderSave` is not available: the same recalculation re-zeroes it, and a shipping
+method deleted from `EcomShippings` cannot be put back.
+
+### `GetOrderById` returns RESOLVED DEFAULTS, so a full-state graft materialises fields the row never had
+
+The read is not a faithful snapshot. The `Order` to `OrderDataModel` mapping **resolves a default payment
+method** (the `EcomMethodCountryRelation` row with `MethodCountryRelIsDefault=1` for the resolved country)
+into `model.paymentMethodId` when the order has none, and `OrderSaveCommand` then does
+`order.PaymentMethodId = model.PaymentMethodId` unconditionally. Measured on a cart whose
+`EcomOrders.OrderPaymentMethodId` was empty in the database: the GET model carried `"PAY2"`, and a save
+that mutated only `customerCompany` persisted `OrderPaymentMethodId = "PAY2"` and
+`OrderPaymentMethod = "Invoice"` to the row. The control (a cart whose row already carried `PAY2`) showed
+no payment movement on the identical call. **The GET-change-one-field-POST idiom is therefore NOT an
+identity operation on the untouched fields**, and blanking the field before the POST does not help: the
+model has no null or omit semantics, and an empty string is itself a write.
+
+**The safe idiom is a measured pre-flight plus a full-column post-diff:**
+
+1. Before the save, pull the row with SQL and the model with the `*ById` verb, and **fail on any column
+   where they disagree outside the intended set.** Every disagreement is a field the save will silently
+   rewrite.
+2. Pre-flight the recalculation hazards: every `EcomOrderLines.OrderLineProductId` resolves in
+   `EcomProducts`, `OrderCustomerCountryCode` and `OrderDeliveryCountryCode` are both non-empty, and the
+   current `OrderShippingMethodId` exists in `EcomShippings`.
+3. After the save, diff **all 181 `EcomOrders` columns plus the order lines** and fail the run if any
+   column outside the intended set moved.
+
+Comparing only the fields you changed is exactly the check that misses this class of defect. Where a
+shell cart carries only resolved defaults worth painting on, `OrderDelete` beats a graft.
+
+(Note the read parameter: `GET /Admin/Api/GetOrderById?OrderId=<id>`, because `Id` answers 400.)
 
 ## `GetOrderList` inner-joins `EcomShops` — orders on a deleted shop vanish from every Commerce grid
 
@@ -247,6 +306,32 @@ no config-surface prompt.
 - **Read customer orders via `Services.Orders.GetCustomerOrdersByType(...)`, never a hand-rolled
   multi-subquery `EcomOrders`/`EcomOrderLines` SQL chain in Razor.**
 
+**`EcomOrders.OrderTotalPrice` is a dead legacy column on 10.28: it reads `0.0` on a perfectly good
+order.** Three orders placed through the real storefront checkout all showed `OrderTotalPrice 0.0` in SQL
+while the receipt, the cart and the customer centre all showed the correct totals, which reads as a
+pricing failure at order-conversion time. The live totals are **`OrderPriceWithVAT` /
+`OrderPriceWithoutVAT`** (API `totalPriceWithVat` / `totalPriceWithoutVat`), and line amounts are
+`OrderLineUnitPriceWithVAT` / `OrderLinePriceWithVAT`. **Never assert on `OrderTotalPrice`**; where a
+`0.0` renders correctly on the storefront, this column is the explanation, not a defect.
+
+**MCP `search_orders` cannot see a quote at all, under any filter.** A Dynamicweb quote is an `EcomOrders`
+row with `OrderIsQuote=1` AND `OrderCart=1` (`orderType: "Cart"`), and `search_orders` excludes carts, so
+searches by `userId`, by `stateId` and by `textSearch` all returned the real orders and never the quote
+that the admin Quotes tab and `get_orders_by_ids` both show in full. It reads exactly like "the quote did
+not reach the admin". **Read quotes with `get_orders_by_ids`, or through the admin UI Commerce → Orders →
+Quotes tab** (click through the tab; the deep route does not resolve cold). Draw no conclusion about
+quotes from a `search_orders` result.
+
+**MCP `create_order_state` takes `orderType` as a STRING and `color` as hex.** The wrong type on either
+answers a bare `"An error occurred invoking 'create_order_state'"` with nothing naming the offending
+property. `orderType` is one of `Order` | `Quote` | `Cart` | `Recurringorder` | `LedgerEntry`, while
+`EcomOrderStates.OrderStateOrderType` **stores an integer**, so reading the table and echoing its value
+back is precisely what fails. `color` must be a hex literal (`#F59E0B`); the dashboard-widget palette
+names (`orange`, `lightBlue`) are rejected here. The same verb UPDATES when an existing id is supplied,
+which is how a shipped flow's states get re-spaced into a new pipeline. Verify by re-reading
+`EcomOrderStates` for the flow and asserting both the new ids and a gapless `sortOrder`, then assert the
+state name rendered in the storefront order list.
+
 ## CSR sales-on-behalf — impersonation mechanics
 
 Customer 360 / sales-on-behalf is a differentiator only if the CSR can do it without custom code. The
@@ -307,10 +392,31 @@ VALUES (<csr_user_id>, <customer_user_id>);
 the CSR under "Users that can impersonate this user". Swap the two ids. Don't trust the column name;
 trust the screen label.
 
-**Required follow-up — not picked up live.** After the SQL change: (1) **rebuild the Secondary user
+**Required follow-up, not picked up live.** After the SQL change: (1) **rebuild the Secondary user
 index** (the lookup is index-backed); (2) **clear the user/system cache** (DW caches `AccessUser`
-objects in process). Both are triggerable from admin UI or the admin API (UI buttons wrap the same
-endpoints) — Settings → Indexing (index) and Settings → System info → Cache (cache). If the bar still
+objects in process).
+
+The rebuild is a **two-call** sequence, because `BuildIndex` hard-requires a `BuildName` that the index
+model does not expose. Resolve the builder first, then build:
+
+```
+GET  /Admin/Api/IndexBuildersByRepositoryAndIndexName?Repository=Secondary%20users&IndexName=Users.index
+     -> name "Users", assemblyQualifiedName Dynamicweb.Security.UserManagement.Indexing.UserIndexBuilder
+POST /Admin/Api/BuildIndex {"Repository":"Secondary users","IndexName":"Users.index","BuildName":"Users"}
+     -> ok;  IndexStatusesAll then reports "Secondary users|Users.index" state=success
+```
+
+`IndexByRepositoryAndName` returns only counts (`balancerTypeName`, `schemaExtenderFieldsCount`,
+`indexFieldsCount`) and **no builds collection**, so the build name is not discoverable from it, and
+`BuildIndex` without `BuildName` answers `400 {"BuildName":["The value is required."]}` although the
+OpenAPI schema marks all three properties as plain optional strings. Note also the parameter-name split
+across sibling queries: `IndexByRepositoryAndName` and `IndexBuildersByRepositoryAndIndexName` take
+**`Repository` + `IndexName`**, while `IndexInstancesByRepositoryAndIndex` takes **`RepositoryName` +
+`IndexName`** — the wrong one answers `400 "Unable to load query parameters"`
+([`index-management.md`](../../dw-search-indexing/references/index-management.md)).
+
+The cache half is triggerable from the admin UI or the admin API (the UI buttons wrap the same
+endpoints): Settings → System info → Cache. If the bar still
 doesn't list the customer after both, re-check the column direction, then check the CSR's
 `AccessUserType` doesn't have the bit-16 *Service* flag (Service-flagged users are filtered out of
 standard form-login flows).

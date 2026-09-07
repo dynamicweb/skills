@@ -221,6 +221,36 @@ is exactly what makes the usual non-null check useless as a guard.
 - **Gate:** every product reachable from a localized PLP has a language row for that area's ecom language,
   and the localized PLP renders with zero `ArgumentNullException` rows in `GeneralLog`.
 
+## The discontinued-product redirect is a re-skin obligation, not a platform behaviour
+
+Setting `ProductDiscontinued=true` + `ProductDiscontinuedAction=redirectToReplacementProduct` +
+`ProductReplacementProductId` changes **nothing** on a Swift 2.4 storefront: the discontinued PDP still
+answers 200 and renders normally, while the Delivery API reports the intent in full. The platform fills
+`ProductViewModel.Discontinued` / `.DiscontinuedAction` / `.ReplacementProduct` and stops there; no
+shipped component acts on them, and `grep -rn discontinued` over `Files/Templates/Designs/Swift24` finds
+only add-to-cart and favourites disabling. The data side of this lives in
+[`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) "Discontinuing a
+product". **Acting on it is design work, so budget it as a template beat whenever a lifecycle story is
+demoed.**
+
+The guard goes at the top of the first code block of the PDP entry template,
+`Designs/<design>/eCom/ProductCatalog/ProductDetailRenderGrid.cshtml`: when `Model.Discontinued` and
+`Model.DiscontinuedAction == 1` and `Model.ReplacementProduct?.ProductId` is set, resolve
+`Model.ReplacementProduct.GetProduct()` (`ProductInfoViewModelExtensions`), build
+`replacementModel.GetProductLink(GetPageIdByNavigationTag("Shop"), false)`, run it through
+`Dynamicweb.Frontend.SearchEngineFriendlyURLs.GetFriendlyUrl()` and redirect. Three traps:
+
+- **`GetProductLink` returns the INTERNAL relative form** (`Default.aspx?ID=..&GroupID=..&ProductID=..`).
+  Inside markup DW rewrites that to the friendly URL, but **a `Location` header is never
+  post-processed**, so an unresolved link 404s from the PDP. The `GetFriendlyUrl()` pass is what makes the
+  redirect land, not a nicety.
+- **`IRequest` has `QueryString`, NOT `Query`.**
+- **`Response.Redirect(string, bool)` is `[Obsolete]` and fails the Razor compile.**
+
+Verify all of it: both discontinued PDPs answer **302 with a friendly `Location`** and follow to 200 on
+the successor, the `?ShowDiscontinued=1` escape hatch still renders 200, and a set of control PDPs plus
+the listing and language pages are unchanged with no Razor compile-error banner.
+
 ## Swift v2.3.0 templates + swift/2.3 baseline
 
 Target **Swift v2.3.0 templates** at the GitHub repo alongside the **`base` layer data** at

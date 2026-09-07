@@ -104,6 +104,11 @@ code that DW already ships. `AccessUserStockLocationID` (which DW does ship as a
 fine as supplementary metadata for ERP sync, but **the DC-as-group membership is the load-bearing
 wiring**.
 
+When the people in those groups are single-identity buyers (one person, one account, one login), the
+DC-group wiring above still holds but the user SHAPE has no clean answer in Swift 2.4: section 17 of
+[`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) carries the
+`Login.xml` `AllowedParents` trade-off and the recommended default.
+
 ## Surface guidance for setting this up
 
 Structural setup, not gotcha-debugging — prefer MCP whenever possible; escalate to SQL only for bulk.
