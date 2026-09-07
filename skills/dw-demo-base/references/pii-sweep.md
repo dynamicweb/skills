@@ -12,10 +12,11 @@
 - [Rule 1 — anonymisation is a whole-database string sweep, re-run after every pass](#rule-1--anonymisation-is-a-whole-database-string-sweep-re-run-after-every-pass)
 - [Rule 2 — stock Swift ships the VENDOR's own PII and legal copy](#rule-2--stock-swift-ships-the-vendors-own-pii-and-legal-copy)
 - [Rule 3 — a term-grep cannot find placeholder data containing none of your terms](#rule-3--a-term-grep-cannot-find-placeholder-data-containing-none-of-your-terms)
+- [Rule 4 — assert a PREDICATE over the table, and re-run it AFTER the closeout gate](#rule-4--assert-a-predicate-over-the-table-and-re-run-it-after-the-closeout-gate)
 - [The sweep, end to end](#the-sweep-end-to-end)
 - [Cross-references](#cross-references)
 
-## The three rules, stated once
+## The four rules, stated once
 
 1. **Renaming the user rows fixes nothing.** Every other layer holds an independent denormalised copy that no
    user-table edit touches. Enumerate by **scanning every string column in the database**, not by querying the
@@ -24,6 +25,8 @@
    corporate addresses and an internal author mailing list. Nothing in a normal build removes them.
 3. **A vocabulary sweep cannot find what contains none of your vocabulary.** Add locale-*shaped* patterns and
    keep a rendered-page eyeball pass as a **required** step, not an optional one.
+4. **Fixing a row does not fix the provisioning that made it.** Assert a predicate over the table, never a
+   check keyed on an id, and re-run it after the closeout gate.
 
 Each rule below is stated as a class of exposure. **Never quote the leaked values** into notes, commits,
 tickets, transcripts or skill text — recording the class is the useful part, and copying the data forward is
@@ -126,6 +129,28 @@ fail on disjoint sets: the sweep catches volume and hidden layers, the eyeball c
 matches no pattern anyone thought to write. Neither substitutes for the other — this is the same relationship
 as the mechanical detectors vs the human taste sign-off in [`visual-qa.md`](visual-qa.md).
 
+## Rule 4 — assert a PREDICATE over the table, and re-run it AFTER the closeout gate
+
+**Anonymising one row is not removing a person, because the fix targets a ROW and not the provisioning
+that creates it.** One workstream closed a privacy gap by deactivating and anonymising a real named
+person's `AccessUser` row, and recorded it as the sole surviving artifact of that family. A census a day
+later found the same person back under a **new id**: same name, same real mailbox, active, backend-allowed,
+created 13 minutes after the anonymisation and before the closeout gate ran. `AccessUserLastLoginOn` was
+NULL and `AccessUserLoginType` was 0, so the row was not minted by that person signing in — something
+re-provisioned the identity into the site.
+
+The per-id check reports clean and is worthless: **the new row carries a new id, so every check keyed on
+the old one passes.** The rule that survives this:
+
+- **Express every privacy claim as a predicate over the TABLE, never over an id.**
+  `SELECT COUNT(*) FROM AccessUser WHERE AccessUserEmail LIKE '%@<real-domain>' AND AccessUserActive = 1`
+  must be `0`.
+- **Re-run it AFTER the closeout gate, not before it.** The window between the fix and the gate is exactly
+  where a re-provision lands.
+- **Deleting the new row is not the fix and re-creates the illusion** — the next provision mints the next
+  id and the ledger says "fixed" again. Report the exact rows and hand the decision to the demo owner: a
+  real person's login is a decision, not a sweep.
+
 ## The sweep, end to end
 
 Run this as a **blocking leg**, not a polish item, on every demo — hardest on an inherited/cloned host.
@@ -142,8 +167,9 @@ than retyping the census queries. Steps 2, 3, and 5 remain yours:
    language layer with your eyes.
 6. **Assert** — zero term hits across all string columns (documented exemptions only), zero vendor strings in
    the rendered corpus, zero vendor-domain mailboxes in the recipient table, zero foreign dialling codes on
-   contact blocks.
-7. **Do not record the values.** Write down the classes and the counts; never the data.
+   contact blocks. Every assertion is a predicate over a table, never a per-id check (rule 4).
+7. **Re-assert AFTER the closeout gate**, not before it — a re-provision lands in exactly that window.
+8. **Do not record the values.** Write down the classes and the counts; never the data.
 
 **A persona rename is a superset of this problem, not a subset** — the retired identity also lives in
 harnesses, generators, seeders and secret stores that will *re-publish* it on their next run. See

@@ -24,7 +24,8 @@ page/paragraph entity store.
 - [14. `UserAddressDelete` resolves through the owning user — orphaned addresses are API-unreachable](#14-useraddressdelete-resolves-through-the-owning-user--orphaned-addresses-are-api-unreachable)
 - [15. Render-time half — page/paragraph permissions (the entity store)](#15-render-time-half--pageparagraph-permissions-the-entity-store)
 - [16. Customer-number suffix as a role flag (presentation gate)](#16-customer-number-suffix-as-a-role-flag-presentation-gate)
-- [17. Cross-references](#17-cross-references)
+- [17. Frontend user management — the Swift 2.4 UserGroups app](#17-frontend-user-management--the-swift-24-usergroups-app)
+- [18. Cross-references](#18-cross-references)
 
 This is the modelling-time half of DW10 permissions — three SQL tables (`UnifiedPermission` for
 entity grants, `CapabilityLimitation` for UI hides, `DashboardAccessUserRelation` for per-user
@@ -407,6 +408,21 @@ Effect: when designing or testing a role matrix, never verify a scoping by loggi
 above. Always create a Default-type user in the target group and log in as them. A scoping that "works"
 only because you're testing as Admin is not a scoping.
 
+**`allowBackend=false` is a no-op on an admin row: clear the `userType` instead, then read the column
+back.** `UserSaveCommand` does assign `user.AllowBackend = model.AllowBackend`, but
+`Dynamicweb.Security.UserManagement.User.AllowBackend` is computed:
+`get { if (!allowBackend && !IsAdmin) return IsAngel; return true; }`. For `AccessUserType`
+SystemAdministrator (1) or Administrator (3) the getter always returns true, so `AccessUserAllowBackend`
+persists as `1` no matter what the model carried, with no validation error and no warning. Measured on
+10.28.1: `POST /Admin/Api/UserSave {Model:{... allowBackend:false, active:false ...}}` answered ok and
+`SELECT AccessUserActive, AccessUserAllowBackend FROM AccessUser WHERE AccessUserID=3081` returned
+`False, True`; the identical call with `model.userType = "default"` added returned `False, False`. The
+only levers that actually deny backend access are `userType` (demote to `Default=5`) and `Active=false`.
+So a teardown or "deactivate and deny backend" cleanup must set `userType` in the same `UserSave` and
+then assert `AccessUserAllowBackend = 0` from the column, since the API echo is not evidence. Assert
+separately that other backend admins survive (`COUNT` of `AccessUserType IN (1,3) AND Active=1 AND
+AllowBackend=1`) so the cleanup cannot lock everyone out.
+
 ## 7. Grant mechanics — `PermissionLevel` bit values
 
 `UnifiedPermission` grant rows have the shape `(PermissionUserId, PermissionKey, PermissionName,
@@ -588,6 +604,26 @@ steps:
 For per-user dashboard pinning via `DashboardAccessUserRelation`: insert one `Default=1` row per
 (dashboard, user) pair to give a user an auto-landing dashboard, plus `Default=0` rows for any users
 who should also see it. No cache flush needed — the table is queried per request (§4b).
+
+**A `Section`-level `UnifiedPermission` deny hides only the Settings area on 10.28 — promise nothing
+else.** `ShellScreen.GetAreas()` drops an area when its `GetPermissionSection().HasPermission(Read)` is
+false, but only Settings is evidently gated on its Section in the shipped shell. Measured with explicit
+level-`None` (1) rows in the database for a persona's single group:
+
+```
+UnifiedPermission for the persona's group: Section|Settings=1, Users=1, Integration=1,
+                                           Commerce=1, Marketing=1, Content=1, <add-in area>=1
+signed in as that persona -> areas = [Apps, Content, <add-in area>, Ecommerce, Files, Insights,
+                                      Integration, Marketing, Products, Users]     (Settings gone)
+same run, a persona with Section|Settings=4 (Read) -> the same list PLUS Settings
+```
+
+The area keys are correct (confirmed by reflection over every `AreaBase` subclass: Apps, Commerce,
+Insights, Integration, Marketing, Products, Settings, Users, plus Content and Files), so this is not a
+key-naming mistake. **Do not sell a Section-level nav fence for Commerce / Content / Marketing /
+Integration / Users on 10.28.** Where a tight persona navigation is genuinely required, hide the sections
+with `CapabilityLimitation` rows (above) rather than Section denies, and verify by logging in as a
+Default-type persona and recording the permission-filtered area list.
 
 ## 13. Plaintext password storage — `EncryptPassword=False` escape hatch
 
@@ -806,15 +842,52 @@ looks fixed on desktop and broken in the mobile drawer (or vice versa). Test bot
 **permission gate covers all three** without per-template edits — prefer it over template `foreach`
 filters on `PageNavigationTag`.
 
-### Write surface — the admin Permissions panel (no MCP tool, no Management API endpoint)
+### Write surface — `PermissionSave` on the Management API (DW 10.28.x)
 
-`assign_permissions_to_assortment` writes assortment permissions; there is no page/paragraph
-equivalent in MCP, and the Management API catalog (`/admin/api/openapi.json`) exposes no
-page-permission endpoint either (checked on 10.26.x). The working path: drive the admin UI
-**Permissions** panel — `/Admin/UI/Content/PermissionList?Key=<pageId>&Name=Page` — headless
-(browser automation), once per page, and verify each write with a read-only SELECT on
-`UnifiedPermission`. Direct SQL INSERT stays the last resort; if used, flush the security cache or
-restart before verifying (cache caveat above).
+**`POST /Admin/Api/PermissionSave` is the write verb, and it is proven on 10.28.x for page, grid-row,
+paragraph and user-entity grants.** The shape is
+`{Key:<entityId>, Name:"<PermissionName>", SubName:"<subName or empty>", OwnerId:<userOrGroupId>,
+Level:"<read|edit|create|delete|all|none>"}`. It is the surface a language-layer permission mirror drives
+row by row, and the surface the frontend user-management grant below depends on. `assign_permissions_to_assortment`
+writes assortment permissions; there is still no page/paragraph equivalent in MCP. Verify every write with a
+read-only `SELECT` on `UnifiedPermission`, and flush the security cache or restart before believing a read
+(cache caveat above). Direct SQL INSERT stays the last resort. The admin **Permissions** panel
+(`/Admin/UI/Content/PermissionList?Key=<pageId>&Name=Page`) is a verification surface, not the authoring
+path.
+
+**The READ side has a trap that inverts its answer: `PermissionsByIdentifier` returns an EMPTY `data`
+array when `SubName` is passed as `""`.** An empty-string sub-name is not treated as "no sub-name" — it
+filters to nothing. Auditing page permissions before a change is exactly when this fires, and the empty
+result reads as "no permissions configured, safe to add mine" while the rows sat there the whole time:
+
+```
+GET /Admin/Api/PermissionsByIdentifier?Key=8460&Name=Page&SubName=   -> {"data":[]}
+GET /Admin/Api/PermissionsByIdentifier?Key=8460&Name=Page            -> {"totalCount":7, …}
+SQL SELECT PermissionUserId, PermissionLevel FROM UnifiedPermission
+      WHERE PermissionName='Page' AND PermissionKey='8460'
+  -> 1270|1   1292|1364   1325|1   Anonymous|1
+```
+
+**Omit `SubName` entirely when reading.** The write side still takes `SubName:""` normally. Cross-check
+the API read against the `UnifiedPermission` SELECT before treating any empty result as "no permissions
+set" (and mind the nvarchar `PermissionUserId` join trap when writing that SELECT: a bare
+`int = PermissionUserId` comparison aborts the whole statement on the literal `'Anonymous'`, so use
+`TRY_CAST`).
+
+### Static files under `/Files` bypass page permissions entirely
+
+**`UnifiedPermission` gates the PAGE request pipeline. A request for `/Files/...` is served by the static
+file handler and never enters it**, so every image, PDF and screenshot embedded in a role-gated page stays
+anonymously readable:
+
+```
+GET /Files/Images/<folder>/<asset>.png   with no cookies  -> 200, image/png, valid PNG
+   (the same asset's host page denies anonymous, the dealer buyer AND the account admin)
+```
+
+**Treat anything under `/Files` as public.** Never put a screenshot carrying a credential, a token or a
+customer's data behind a page gate and call it protected, and state the exposure in the run notes rather
+than implying the gate covers it. Page-level gating protects the narrative, not the assets.
 
 ## 16. Customer-number suffix as a role flag (presentation gate)
 
@@ -845,7 +918,182 @@ A presentation role can also combine the suffix with CSR/staff group membership 
 avatar-ring / badge presentation — that is presentation, not gating; use `GetGroups()` for it, never
 raw `SELECT FROM AccessUserGroupRelation`.
 
-## 17. Cross-references
+## 17. Frontend user management — the Swift 2.4 UserGroups app
+
+The storefront "Manage users" surface is the `UserGroups` content module
+(`Dynamicweb.Users.UI.ContentModules.UserGroupContentModuleAddIn`). Everything below is measured on
+DW 10.28.1-PreRelease with Swift 2.4.
+
+### Every management command is gated by the ACTING user's permission on their OWN User entity
+
+**Out of the box every `UserGroupCmd` is refused, the buttons still render, and the demo silently does
+nothing.** `?UserGroupCmd=inviteuser` falls back to the account list; `ChangeActiveStatus` /
+`ResendInvitation` / `DeleteUser` return **HTTP 200** with the group list plus the toast "You do not have
+permission to edit this account". No data changes and nothing is logged.
+
+`UserGroupFrontend.GetModuleContent` computes `GetRequiredPermission(cmd)` — `Read` for the plain list,
+`Edit` for `ChangeActiveStatus` / `EditGroup` / `SaveGroup`, `Create` for `InviteUser` /
+`ResendInvitation`, `Delete` for `DeleteUser` — and evaluates it as `user.HasPermission(required)` where
+`user` is `UserContext.Current.User` **as a permission entity** (`[PermissionEntity("User")]`). It is the
+acting user's permission over their **own** `User` row, not over the target user and not over the account.
+Resolution order is explicit (`User/<uid>`), then inherited parents — `User.GetPermissionParents()` yields
+`PermissionSubset("User", group)`, i.e. `Name=UserGroup`, `Key=<groupId>`, `SubName=User` — then owner
+defaults. The only match a storefront user has out of the box is the `AuthenticatedFrontend` role at level
+`read`, which satisfies `Read` and refuses `Edit` / `Create` / `Delete`.
+
+**Neither the "Enable user account functionality" feature flag, nor group membership, nor
+`AccessUserAdministratorInGroups` has any effect.** The grant is the fix:
+
+```
+POST /Admin/Api/PermissionSave
+  {Name:"UserGroup", Key:<accountGroupId>, SubName:"User", OwnerId:<adminGroupId>, Level:"delete"}
+```
+
+Before the grant, `PermissionsByIdentifier?Key=<accountGroupId>&Name=UserGroup&SubName=User` shows only
+inherited owners (`Anonymous=read`, `AuthenticatedFrontend=read`, `Administrator=all`) and an invite loop
+runs 3 passed / 5 failed. After it the identical requests pass 13/13 and the badge actually flips. **A
+gate leg on this surface must POST one `UserGroupCmd` and assert the STATE CHANGED**, because the refusal
+is a 200 with the full action set rendered.
+
+### The module's real property set, and what is not on it
+
+Decompiling `UserGroupContentModuleAddIn` gives exactly 20 `AddInParameter` properties: `ListGroupType`,
+`AccountListScope`, `PageSize`, `SortOrder`, `SortBy`, `GroupListTemplate`, `UserListTemplate`,
+`EditGroupTemplate`, `CreateUserTemplate`, `UserGroups`, `UserSelectableGroups`, `EmailTemplate`,
+`SenderName`, `SenderEmail`, `EmailSubject`, `RedirectAfterSubmission`, `RedirectAfterApproval`,
+`RedirectAfterImpersonation`, `LoginPageId`, `CreatePasswordPageId`.
+
+- **There is no `ShowInactiveUsers`** — it is a `UserView` property. It is also not needed: the user list
+  is built from `UserManagementServices.Users.GetUsersByGroupId(groupId)` with no active filter, so
+  inactive users are ALWAYS listed.
+- **There is no account pre-select.** `UserGroupSettings.SelectedGroupId` exists on the settings class but
+  carries no `AddInParameter`; `UserGroupFrontend` populates it from the `?UserGroupId=` querystring only.
+  So a single-account admin always lands on an account DIRECTORY and must click their own account first.
+  The fix is a thin `GroupListTemplate` wrapper that `Response.Redirect`s to `?UserGroupId=<id>` when the
+  scope yields exactly one group and no `UserGroupId` was requested, falling back to the stock list
+  otherwise.
+- **`UserGroups` and `UserSelectableGroups` are NOT an account whitelist.** Their `AddInLabel`s are "Groups
+  for new users" and "Groups the new user can be added to" — both are invite-time settings and neither
+  filters the directory. `UserGroupFrontend.RenderUserGroupList` calls
+  `GetFilteredGroups(SelectedGroupTypeSystemName, filterText, AccountListScope)`: the listed set is
+  filtered by group TYPE and by ACCOUNT SCOPE only, and **there is no id whitelist anywhere**.
+
+### Scope an account directory with `AccountListScope`, which matches on CUSTOMER NUMBER
+
+`AccountListScope` is `AllAccounts | OwnAccounts | OwnAndImpersonatableAccounts`.
+`ApplyAccountScopeFilter` builds a set of **customer numbers** from every valid user sharing the acting
+user's username (all their profiles) plus, under `OwnAndImpersonatableAccounts`, every impersonatable
+user, then keeps the groups reachable through `GetGroupsByCustomerNumber`. On one host that took a CSR
+directory from 1,581 listed groups to exactly the three real accounts, and the system groups dropped out
+for free because they carry no customer number.
+
+**Prerequisites, and they are the whole trick:** the account groups must carry
+`AccessUserCustomerNumber`, and the acting user's profiles must carry the matching numbers.
+`OwnAndImpersonatableAccounts` additionally needs the Secondary-users index to be current. `OwnAccounts`
+narrows the directory but still renders it as a directory.
+
+### `UserChangeType` does NOT change the user-and-group type
+
+Two different concepts share the word "type", and the verb named after it targets the other one.
+
+- `Dynamicweb.Security.UserManagement.UserType` (in `Dynamicweb.Core`) is the **admin-rights** enum
+  `{SystemAdministrator=1, Administrator=3, Default=5}` backing `AccessUserType`. That is what
+  `UserChangeType` writes. Its OpenAPI schema shows `{UserId:int, UserType:<no type>}` with no value
+  domain, and every user-and-group type name answers **HTTP 500** "The JSON value could not be converted
+  to `Dynamicweb.Security.UserManagement.UserType`".
+- The **user-and-group type** (`Login` / `Profile` / `Dealership` / `Role` / `Account`, declared in
+  `Files/System/UserTypes/*.xml`) is a separate string column, `AccessUserUserAndGroupType`.
+
+**The only write path for the user-and-group type is `UserSaveCommand`**, which does
+`user.UserAndGroupTypeSystemName = model.UserAndGroupTypeSystemName`. So: `GET UserById` → set
+`userAndGroupTypeSystemName` → `POST UserSave {Model}`. Measured on a `Profile` to `Login` conversion, the
+full `AccessUser` row diff was exactly two columns (the type and `AccessUserUpdatedOn`), the
+`AccessUserId` was unchanged, and the orders, addresses and favourite lists hanging off it stayed
+attached.
+
+`UserSaveCommand.ValidateModel` rejects `IsLogin=true` only when **another** row with the same username
+already has `IsLogin=true`, so a standalone row converts fine and a member of a multi-profile set does not
+(the escape hatch for editing a member of an existing multi-profile set is to SQL-park the other rows
+of the set on throwaway usernames, `UserSave` the target row, then restore the set).
+
+### Every `UserSave` mints a blank `AccessUserAddress` carrier row
+
+`UserSaveCommand` unconditionally calls `HandleDynamicFields(user.AddressCustomFieldValues, m =>
+m.DefaultAddressCustomFields)`. `GET UserById` always returns a `defaultAddressCustomFields` block (with
+`groups[0].fields = []` when no address custom fields are defined), and persisting it materialises an
+`AccessUserAddress` row with every column blank, `AccessUserAddressIsDefault=0` and
+`AccessUserAddressDefaultAddressCustomFields=1`. **There is no way to suppress it from the payload —
+omitting the property still produces the row.** Measured: one round-trip `UserSave` per user changing ONE
+field took the address counts 3 to 4, 3 to 4, 3 to 4 and 0 to 1.
+
+The frontend impact is nil (the carrier does not render, and a user whose only address row is a carrier
+still gets the empty state), so this is invisible residue that grows per call. **Make scripted user
+backfills one-shot, and exclude `AccessUserAddressDefaultAddressCustomFields = 1` from any address-count
+assertion.**
+
+### Deleting a user versus deleting a group — two verbs, and each is a silent no-op on the other's target
+
+A DW10 user GROUP is an `AccessUser` row (`AccessUserType` 2 or 3), not a separate entity, which is what
+makes the two verbs look interchangeable. They are not, and each answers `{"status":"ok"}` when pointed at
+the wrong one.
+
+- **`GroupDelete {Ids:["<id>"]}` deletes a group in every shape** measured at 10.28.1: a parented child, a
+  top-level group, a parent (which cascades to its child group) and a group carrying members. Member
+  `AccessUser` **user** rows survive the group's deletion. The `GroupId` parameter is irrelevant to the
+  outcome. It is the batch verb, and the only path that keeps the user cache and tree indexes consistent —
+  never raw SQL, which leaves the cache and the secondary-user index stale with no flush verb.
+- **`UserDelete` on a GROUP id answers `{"status":"ok"}` and deletes NOTHING.** `UserDelete` on a real
+  user row works. This inverse is the trap: a cleanup step that reaches for `UserDelete` on a group
+  reports success while the group is still there.
+- **`UserDelete` wants `Ids` as an array of STRINGS.** `{"Id":1332}` answers **400** `{"status":"invalid",
+  "message":"No items selected"}` — a 4xx that a wrapper checking only "did the call return" happily
+  swallows, which is how a backend `systemAdministrator` account survived a throwaway-admin cleanup on a
+  demo about to be handed to a prospect. `{"Ids":[1332]}` answers **500** "The JSON value could not be
+  converted to System.String". `{"Ids":["1332"]}` works.
+
+```
+POST UserDelete {"Id":1332}       -> 400 "No items selected"   alive
+POST UserDelete {"Ids":[1332]}    -> 500 JSON conversion        alive
+POST UserDelete {"Ids":["1332"]}  -> 200 {"status":"ok"}        gone
+```
+
+**Assert the row count, never the HTTP status.** Measure the `AccessUser` delta immediately after every
+batch (`SELECT COUNT(*) FROM AccessUser WHERE AccessUserUserName='<probe>'` must be 0), and have the
+helper return `deleted: (countAfter === 0)` rather than `deleted: true`. A clone-hygiene check belongs in
+every build that inherits a host: count `AccessUserType=2` rows and assert every group is reachable from a
+reference, not merely present in the tree. On one inherited host 1,576 of 1,602 groups had a reference
+count of exactly zero, invisible to every storefront probe and every gate assert, and `GroupDelete` in
+batches of 25 removed them with zero collateral (`AccessUserGroupRelation`, `UnifiedPermission`,
+`AccessUserSecondaryRelation`, `AccessUserAddress` and `EcomOrders` deltas all 0).
+
+A DW 10.28.4 capture recorded `GroupDelete` behaving as a detach-from-parent no-op on that build. Treat
+that as a version fork and measure the delta on the host in front of you before scripting a batch.
+
+### There is no shape for a single-account person, so pick the deviation deliberately
+
+The type model assumes every account member is a `Login` row in a `Logins` group PLUS one `Profile` row
+per account in the account group, with orders and addresses hanging off the Profile. That is right for a
+multi-account person (a vendor CSR, a buying group) and wrong for the common B2B case of one person, one
+account, one identity:
+
+- `Files/System/UserTypes/Login.xml` declares `<AllowedParents><Parent>Logins</Parent></AllowedParents>`,
+  so a Login may not sit in an account (`Dealership`) group.
+- The Swift account Users page lists `AccessUserGroupRelation` members **of the account group**, so anyone
+  who must appear there has to be a direct member of it.
+- `Profile.xml` allows `Dealership` and `Role` parents, so a Profile lists — but can never be a login
+  identity in its own right and can never gain sibling profiles.
+
+**`AllowedParents` is advisory: it is honoured by the admin UI tree and is NOT enforced by `UserSave`.**
+Recommended default for a person who belongs to exactly one account: **a `Login` row in All Logins that is
+ALSO a direct member of the account group**, accepting the `AllowedParents` deviation, because it is the
+only shape that authenticates, lists on the account Users page, and can later gain sibling profiles.
+Measured end to end on four personas: logins authenticate, the account Users page lists them, the
+account admin impersonates each of them, and order and quote lists are byte-identical before and after
+the conversion. Building the person as a `Profile` with `AccessUserIsLogin=1` authenticates but is
+structurally dead. (Modelling an account group as a DC group for pricing and shipping is a separate
+concern owned by `dw-commerce-b2b`.)
+
+## 18. Cross-references
 
 - **Render-time half of permissions** — §15 above ("Render-time half — page/paragraph
   permissions"). Owns the render-time entity-store rows (`UnifiedPermission`,

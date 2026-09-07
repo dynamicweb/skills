@@ -146,6 +146,29 @@ your authored XML as authored:
 `POST ItemTypeDelete {SystemName, DeletePages:false}` frees the name **and** removes the XML — it is the
 reset lever when a type is genuinely mis-authored, not a required step on the way to a working table.
 
+**To ADD a field to a type that already holds live content, call `ItemFieldNew` + `ItemFieldSave` and
+nothing else. Never re-run a create-the-type script against a type that holds content.** The
+delete-and-recreate opening of Route A/B above (`ItemTypeDelete` then `ItemTypeNew`/`ItemTypeSave`) reads
+like "the way to change an item type" and it is not: `ItemTypeDelete` DROPS the `ItemType_<X>` table and
+every row of content in it. The field-level verbs are independent of it — `ItemFieldNew` returns a field
+shell for an existing type and `ItemFieldSave` ALTERs the table to add the column, leaving every existing
+row intact:
+
+```
+GET  /Admin/Api/ItemFieldNew?ItemTypeSystemName=<Type>&ItemFieldGroupSystemName=General
+POST /Admin/Api/ItemFieldSave { Model: { …, systemName:"<Field>", isNew:true,
+       editorType:"Dynamicweb.Content.Items.Editors.TextEditor, Dynamicweb",
+       underlyingType:"System.String, System.Private.CoreLib" } }   -> status ok
+
+ItemType_<Type>: 15 -> 16 columns, rows 12 -> 12, new column <Field> nvarchar(255)
+```
+
+**Guard it with a before/after content fingerprint plus a row count**, so "I added a column" cannot quietly
+mean "I lost the content": snapshot the column list, the row count and a per-row digest of the existing
+values, then assert exactly one new column with the expected name and type, an unchanged row count, and an
+identical fingerprint. The editor decides the column width the same way it does at create time
+(`TextEditor` backs as `nvarchar(255)`, `LongTextEditor` as `nvarchar(max)`).
+
 **The editor you pick becomes a column type — a `TextEditor` field materialises as `nvarchar(255)`.**
 `ItemFieldSave` issues the DDL from the editor, and a value longer than the column is a **hard error, not
 a truncation**: a 259-character alt text bounced the whole `ParagraphSave` with a **500**, while 250
@@ -497,6 +520,31 @@ content silently don't make it — run this as a checklist immediately after eve
    `RenderGrid` cache entry. Repoint the layer's selector items at the layer's own component-page
    clones via `set_item_field_values`. (The shared-cache mechanics live in
    [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) "ProductListComponentSelector".)
+
+### A DANGLING item-list pointer reads exactly like an empty list
+
+Same shape of damage as class 1 above, from a different cause, and the read side cannot tell you which you
+are looking at. **An item-list field can point at an `ItemList` id that no longer exists, and the read verb
+answers `[]` — indistinguishable from "nobody has added items yet".** Observed after a serializer
+deserialize left `ItemList` and `ItemListRelation` **completely empty** while the parent items still
+carried their pointers (`ItemType_Swift-v2_Slider.Items = 323`, an accordion's `Accordion_Items = 324`).
+The paragraphs render as heading-plus-subline shells with no children, and a punch list records them as
+empty bands:
+
+```
+SELECT * FROM ItemList          -> 0 rows
+SELECT * FROM ItemListRelation  -> 0 rows
+get_repeatable_item_field       -> []
+add_repeatable_item             -> "Field Accordion_Items references item list 324, which no longer exists"
+```
+
+**Reset the pointer to the STRING `"0"`** with `set_paragraph_item_fields` (an empty string is rejected
+with "The input string was not in a correct format" — it is an int field), which makes the field
+list-less. The next `add_repeatable_item` then mints a fresh `ItemList` and links it; `ItemList` gains a
+row and the child appears in `ItemType_<child>`. **Distinguish the two states before treating a `[]` as
+empty**: `SELECT COUNT(*) FROM ItemList WHERE Id = <pointer>` is the cheap discriminator, and
+`add_repeatable_item`'s own error message names it. A presence-only design assert passes on a shell, so
+gate the section on RENDERED HEIGHT, not on the element existing.
 
 **Verification probe — enter through the shop route.** When probing the layer's PDP use
 `/Default.aspx?ID=<layer-shop-page>&ProductID=X[&VariantID=Y]`. Hitting the PDP wrapper page id

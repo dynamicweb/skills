@@ -71,9 +71,20 @@ three stacked traps:
 - *It renders from `Link`, not `SelectedValue`.* The Swift button partial emits the `Link` member
   verbatim and treats `SelectedValue` as admin-picker metadata only. An object with `SelectedValue`
   set and `Link` empty saves, reads back with the id intact, and renders **zero** anchors —
-  indistinguishable from a silent save failure. Populate BOTH. `LinkType` `page` and `product` are
-  both confirmed working; `Style: "link"` is in the stock vocabulary and renders
+  indistinguishable from a silent save failure. Populate BOTH. `LinkType` `page` and `product` both
+  resolve a target page; `Style: "link"` is in the stock vocabulary and renders
   `class="btn btn-link" data-dw-button="link"`.
+- ***`LinkType: "page"` silently STRIPS the querystring, so a deep link needs `LinkType: "external"`.***
+  For `LinkType=page` the button view model resolves the target page and emits its friendly URL,
+  discarding everything after the page id. `{LinkType:"page", SelectedValue:"8604",
+  Link:"Default.aspx?ID=8604&ShowProfiles=True"}` stores and reads back exactly as written and renders
+  `<a href="/en-us/sign-in/sign-in">`, so the tile opens a plain sign-in page instead of the profile
+  picker. `LinkType: "external"` (and `url`) pass `Link` through verbatim. Any content button that must
+  carry a querystring uses `LinkType: "external"` with the fully resolved friendly URL and
+  `SelectedValue: ""`, resolved **per language** by the `GET /Default.aspx?ID=<n>` redirect
+  ([admin-ui-authoring.md](admin-ui-authoring.md) §"Resolving a page URL"), never by deriving a slug from
+  the page name. The stored `ButtonData` JSON escapes the ampersand as the six-character sequence
+  backslash-u-0-0-2-6, so a read-back regex must unescape before comparing.
 
 - *The rule holds at every nesting level — including inside an item-list child's `ModelRawData`.* One level
   deeper the same string write looks ~80% successful: `Title`, `Text`, `Sort` and the sibling fields in the
@@ -194,13 +205,57 @@ translated string against its target column width (`INFORMATION_SCHEMA.COLUMNS`)
 batch**, and remember alt attributes are plain text — HTML entities only spend bytes against the limit
 without rendering as anything.
 
-**`ParagraphSave` silently BLANKS module settings it cannot round-trip — page-picker values are the known
-class.** The save model omits settings the API has no representation for, and posting that model back
-writes the omission as blank. One unrelated `ParagraphSave` on a sign-in module wiped three page-picker
-settings with no error and no failed status; they had to be restored by hand from a diff. **Before any
-`ParagraphSave` on a MODULE paragraph, snapshot the paragraph's settings, and diff them after the save** —
-this is not covered by the standard "re-read the entity" check, because the re-read agrees with the model
-you posted. Restore anything the diff shows missing in the same run.
+**Module page-picker settings round-trip ASYMMETRICALLY: read-as-link, write-as-int, so posting back the
+value you were just given CLEARS it.** `GetParagraphById` renders a page-picker
+`contentModule.fields[].value` as the resolved link `"Default.aspx?Id=8603"`, while
+`ParagraphSaveCommand` parses the posted value as a page ID and discards anything non-numeric. Posting the
+bare integer `"8603"` is accepted, and the module re-renders it as `Default.aspx?Id=8603` on the next read.
+`"Default.aspx?ID=8603"` with a capital `ID` is dropped exactly like the lower-case form. The known field
+class on the Swift 2.4 user modules is `RedirectAfterImpersonation`, `RedirectAfterSubmission`,
+`RedirectAfterApproval`, `LoginPageId` and `CreatePasswordPageId`:
+
+```
+ParagraphSave CreatePasswordPageId = "Default.aspx?Id=8603"  -> ok, moduleSettings <CreatePasswordPageId></CreatePasswordPageId>
+ParagraphSave CreatePasswordPageId = "8603"                  -> ok, moduleSettings <CreatePasswordPageId>Default.aspx?Id=8603</CreatePasswordPageId>
+```
+
+The consequence is not "set it once and you are done": **EVERY subsequent `ParagraphSave` on that paragraph
+must re-post the numeric form**, because a read-modify-write of an unrelated field carries the link-shaped
+values straight back into the discard path and wipes settings nobody was editing. Normalise every
+page-picker property to a bare integer before posting, snapshot the module settings before any
+`ParagraphSave` on a MODULE paragraph, and diff them after. The standard "re-read the entity" check does not
+cover it, because the re-read agrees with the model you posted.
+
+**Re-pointing a paragraph at a DIFFERENT app: graft the target app's `contentModule` from a reference
+paragraph. There is no `ChangeApp` verb.** `Dynamicweb.Content.UI` exposes only
+`ParagraphSave` / `Copy` / `Move` / `Delete` / `Layout` / `Sort`, so the app switch rides inside
+`ParagraphSave`, and the obvious move fails: `ParagraphSaveCommand` re-serialises the module settings XML
+from `contentModule.groups[].fields[].value` and dereferences that structure unconditionally, so
+`contentModule: null` throws inside the invocation and answers **HTTP 500 "Exception has been thrown by the
+target of an invocation."**. Leaving the fetched `contentModule` in place instead saves successfully and
+writes the OLD app's settings shape into the new app. The working recipe:
+
+1. `GetParagraphById` on a REFERENCE paragraph that already runs the target app.
+2. Deep-clone its `contentModule` and set the values you want on the clone.
+3. On the target paragraph's model, set `moduleSystemName` to the target add-in type (e.g.
+   `Dynamicweb.Users.UI.ContentModules.UserGroupContentModuleAddIn`) and attach the cloned `contentModule`.
+4. One `ParagraphSave`. `Paragraph.ParagraphModuleSystemName` flips and `moduleSettings` is written in the
+   new app's shape.
+
+Verify on the rendered storefront, not on the save response, and re-apply the page-picker integer rule
+above in the same call: the grafted field set carries link-shaped values from the reference paragraph.
+
+**A paragraph the platform cannot materialise fails `ParagraphSave` with `SqlDateTime overflow`, and the
+failed save POISONS the read cache (DW 10.28.4-PreRelease, Swift 2.4.0).** Measured on exactly the Logo and
+SearchField paragraphs of the stock desktop header: `GetParagraphById` returns them with `itemType: ""` and
+`versionTimeStamp 0001-01-01`, and the save then tries to persist `DateTime.MinValue`. The other paragraphs
+on the same page save normally, and the underlying `Paragraph` rows are well-formed. Afterwards
+`GetParagraphById` keeps reporting the REJECTED `gridRowId` / `column` while SQL still holds the old values,
+so a read-back "confirms" a write that never happened, and `ParagraphDelete` answers `notFound` for rows
+that demonstrably exist. Route around it rather than repairing it: `save_paragraphs` with `id: 0` CREATES
+fine, so rebuild the component in the target cell and leave the broken original in place with a HIGHER
+`sort` (Swift renders one paragraph per column and the lowest sort wins). Version-scope this: it is a
+property of that build, so re-probe before assuming it on another.
 
 **Hiding a paragraph: `showParagraph=false` is inert; the three `hideFor*` flags are the working motion.**
 `ParagraphSave {showParagraph:false}` returns `status: ok`, reads back `showParagraph: True`, and the
@@ -287,6 +342,44 @@ API describing an empty slot, not a paragraph. So the standard "`GridRowCopy` an
 delete the clone to empty it" recipe looks like it failed: after a successful `ParagraphDelete` the
 listing still returns an object for that row, and a script that verifies its own delete aborts a run
 that in fact worked. Filter to real paragraphs (`id > 0`) before counting emptiness.
+
+**`GridRowCopy` copies the paragraphs standing in the row, so the new row arrives ALREADY OCCUPIED.** It
+is a row copy including its content, not a row skeleton. The clone-then-delete recipe above is one valid
+half of the picture and this is the other: after `GridRowCopy`, **read the row occupancy back** with
+`SELECT ParagraphId, ParagraphItemType FROM Paragraph WHERE ParagraphGridRowId = <newRow> AND
+ParagraphDeleted = 0`, then either reuse the carried paragraph when its item type already matches what you
+wanted, or `ParagraphDelete` it before adding your own. Adding a second paragraph to the same column
+LOSES: Swift renders one paragraph per grid column and the lowest `sort` wins, so the donor's content
+renders and yours does not. Measured on seven pages built from one donor row: 14 paragraphs on the page,
+the 7 donor copies rendering the Swift baseline copy and the 7 real captions invisible, with every save
+reporting success. Never assume a copied row is empty.
+
+**`ParagraphDelete` is a SOFT delete AND it cascades to master-linked language copies, and
+`GetParagraphsByPageId` hides both facts while SQL does not.** The verb sets
+`Paragraph.ParagraphDeleted = 1` with `ParagraphDeletedBy` / `ParagraphDeletedAt` rather than removing
+the row, exactly like `PageDelete` (which also answers `status: ok` and soft-deletes). And ONE
+`ParagraphDelete` naming ONE id on the MASTER page also soft-deletes the corresponding paragraph on
+**every** master-linked language copy, all carrying an identical `ParagraphDeletedAt`:
+
+```
+POST /Admin/Api/ParagraphDelete { PageId: "8947", Ids: ["23384"] }     (one id, one page)
+
+SELECT ParagraphID, ParagraphPageID, ParagraphDeleted, ParagraphDeletedAt FROM Paragraph …
+  23384  8947  True  10:49:43     the id that was named
+  23385  8948  True  10:49:43     es copy, never named in the call
+  23386  8949  True  10:49:43     fr copy, never named in the call
+
+GET /Admin/Api/GetParagraphsByPageId?PageId=8947   -> deleted rows absent
+```
+
+Two rules follow, and both are about the audit rather than the delete. **Every SQL audit of paragraphs
+must filter `ParagraphDeleted = 0`**, or an API-based audit and a SQL-based audit disagree by
+construction (one run counted 15 paragraphs where 12 were expected and read the extras as live duplicate
+content on pages that in fact rendered correctly). And **any cleanup that proves a delete landed must
+compare SETS before and after, never counts**: the delta for one id is `1 + (number of language copies)`,
+so a guard asserting "exactly one row went away" fires on correct behaviour. Same shape as
+`RecycleBinClear` on pages ([language-layers.md](language-layers.md) §"The recycle bin is keyed to the
+MASTER row").
 
 ## The unsanitised `Swift-v2_Text` escape hatch
 

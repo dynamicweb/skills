@@ -96,17 +96,40 @@ reads back `True` through `GlobalSettingByKey` while the shipped `<Settings>` no
 {"Model":{"Key":"/Globalsettings/Settings/Auditing/EnableAuditing","Value":"True"}}
 ```
 
-Assert the enablement two ways before concluding the audit log is empty: `Files/GlobalSettings.config`
-parsed as `[xml]` must resolve `//Auditing` to exactly **one** node, and `SELECT COUNT(*) FROM Audit`
-must increase across a known write such as a `ProductSave`. The full key-minting trap lives in
+Assert the enablement by parsing `Files/GlobalSettings.config` as `[xml]` and resolving `//Auditing` to
+exactly **one** node. The full key-minting trap lives in
 [dw-setup-config](../dw-setup-config/SKILL.md) "`GlobalSettingSave` creates ANY key you name".
+
+**Correct enablement is still not sufficient: a Management-API write writes NO audit rows.** Measured with
+the correct key set to `True`, exactly one `Auditing` node in the config, and a confirmed fresh worker
+process: a `ProductSave` through `/Admin/Api` returns `status: ok`, the value reads back changed, and
+`Audit` / `AuditDetail` stay at **zero rows** (`AuditsBy` returns `totalCount 0` both globally and
+product-scoped). On one install `IDENT_CURRENT('Audit') = 1` with `COUNT(*) = 0`, so the identity had never
+been consumed and auditing had never written a row there at all.
+
+Two consequences, and the first is the one that saves a build:
+
+- **Never build a "Review changes" demo beat on auditing for API-driven writes.** The PIM Review-changes
+  tab stays empty no matter how correct the flag is, and there is no scripted route around it.
+- **Do not assert enablement by "the Audit row count must increase across a `ProductSave`."** That
+  assertion fails on a correctly configured install and sends the reader back to re-check the key.
+
+The leading hypothesis is that the audit writer needs a resolved backend-user context (`Audit` has a
+non-null `AuditUserId`, and `AuditsBy` returns `permissionLevelCurrentUser: null` on the same call) which
+the bearer API-key identity does not supply. **The comparison that would settle it cannot be scripted**:
+`/Admin/Api` is bearer-only and an admin cookie session gets `401` there, so a UI-session probe needs a
+real browser. Say so rather than reporting auditing as broken.
 
 ## Limits
 
 - If audit logging is disabled in this installation, say so directly. The honest answer
   ("audit log is off, only signal is the entity's own last-modified field") beats a long
   fruitless search. Check the enablement section above before reporting it as off: a flag written to
-  the wrong key reads back `True` and produces zero rows.
+  the wrong key reads back `True` and produces zero rows, and a flag written to the RIGHT key still
+  produces zero rows for `/Admin/Api` writes.
+- **API-driven writes are not audited** on the builds measured so far, so an empty audit log after a
+  scripted change is the expected state, not a fault to diagnose. Report what the entity's own
+  last-modified fields and the version history carry instead.
 - A change attributed to a system/service account usually means an automated process ran —
   trace the scheduled task or integration activity rather than presenting that as the final
   answer.

@@ -12,6 +12,7 @@
 - [Localised ecom URLs need BOTH settings on the layer's shop page](#localised-ecom-urls-need-both-settings-on-the-layers-shop-page)
 - [Audit group `primaryPageId` after every AreaCopy — at the shop page it blanks every PDP](#audit-group-primarypageid-after-every-areacopy--at-the-shop-page-it-blanks-every-pdp)
 - [A master-layer `ParagraphSave` writes THROUGH to the language layers](#a-master-layer-paragraphsave-writes-through-to-the-language-layers)
+- [The recycle bin is keyed to the MASTER row, and `totalCount` always reads 0](#the-recycle-bin-is-keyed-to-the-master-row-and-totalcount-always-reads-0)
 - [`Translations.xml` keys are case-sensitive — and the shipped file carries case-variant pairs](#translationsxml-keys-are-case-sensitive--and-the-shipped-file-carries-case-variant-pairs)
 - [Demo judgement — localize the demo path, not the whole site](#demo-judgement--localize-the-demo-path-not-the-whole-site)
 - [Cross-references](#cross-references)
@@ -49,12 +50,29 @@ This is the same class as the `UnifiedPermission` rows the copier drops
 full-content AreaCopy does NOT carry") — and it is the one with a security consequence, so treat it as a
 blocking post-copy step, not a polish item.
 
-- **Mirror every master page-permission row onto the layer's sibling page ids explicitly** (`PermissionSave`
-  per row; `Page.PageMasterPageId` gives the master → clone mapping). On one three-language build that was
-  34 rows by hand.
+**The same hole exists one and two levels down: `UnifiedPermission` rows are NOT language-layered at
+GridRow or Paragraph level either.** Pages, grid rows and paragraphs are all language-layered (a master row
+plus one row per language area) while `UnifiedPermission` is keyed by the **entity id of the row it
+gates** — and the layer rows have DIFFERENT ids. A permission written against `GridRow/19100` therefore
+does not reach `GridRow/19196` (es) or `GridRow/19576` (fr). Creating a language layer copies the content
+and silently drops the gating. Measured on one three-language host: all 26 `PermissionName='GridRow'` rows
+keyed area-29 ids, zero rows for the es or fr ids, and a plain buyer switching to `/es-us/…` or `/fr-ca/…`
+saw the CSR tiles and the account-admin tiles that are correctly hidden from them on the master page. Page
+weight was the tell: the es/fr Overview stayed at 153-164 KB for every persona while the master ranged
+100-143 KB by role.
+
+- **Mirror every master permission row onto the layer's sibling ids explicitly, at every entity level the
+  master gates: `Page`, `GridRow` AND `Paragraph`** (`PermissionSave` per row; `Page.PageMasterPageId`
+  gives the master to clone mapping for pages, and the layer's row/paragraph ids come from the layer's own
+  page). Read the master rows' owner/level pairs and `PermissionSave` each pair against the mirror id.
+  Levels are `None=1 Read=4 Edit=20 Create=84 Delete=340 All=1364`. On one three-language build the page
+  level alone was 34 rows by hand, and the ten Overview grid rows were another 20.
 - **Then probe anonymously, per language, per protected URL** — a signed-in check proves nothing here. The
   passing state is a redirect to the *localised* sign-in page, not a 200 with content. Any gate persona leg
-  must walk protected URLs in **every** language layer, not only the master's.
+  must walk protected URLs in **every** language layer, not only the master's, and must assert per persona
+  that the tiles a role should not see are absent (page weight is a cheap secondary signal: on the run that
+  measured this, mirroring the rows dropped the es/fr Overview from 153702 to 104767 bytes for the admin
+  persona).
 - Flush the permission cache and restart afterwards (the nav tree caches separately) before believing
   either result.
 
@@ -100,29 +118,67 @@ state before a human does.
 
 ## A master-layer `ParagraphSave` writes THROUGH to the language layers
 
-**Language layers are reconciled against the master on every save, and the reconciliation is destructive in
-two different ways.** Neither is announced, and both are easy to mistake for someone else's edit:
+**Item lists are DELETE-AND-RECREATE across the language layers, and the reconciliation is destructive.**
+Saving the master's accordion/slider deletes the layers' children and recreates them **carrying the
+master's copy**, with **new ids**. `ItemId=<existing>` means edit-in-place only for the layer you post to.
+Measured on one page: saving the master deleted two layers' children and recreated them under a fresh id
+block with English text, while the master's own children survived in place. Nothing announces it, and it is
+easy to mistake for someone else's edit.
 
-- **Item lists are DELETE-AND-RECREATE.** Saving the master's accordion/slider deletes the layers' children
-  and recreates them **carrying the master's copy**, with **new ids**. `ItemId=<existing>` means edit-in-place
-  only for the layer you post to. Measured on one page: saving the master deleted two layers' children and
-  recreated them under a fresh id block with English text, while the master's own children survived in place.
-- **Plain item fields are COPIED DOWN.** On simple types (`Swift-v2_Text`, `Swift-v2_Feature`) the master's
-  value is written into the language layers. On one run, six layer paragraphs had already been rewritten in
-  English *before* their own translation write ran — nothing had touched them but a master-side save.
+**Plain item fields do NOT propagate. Write every language layer explicitly, one save at a time, re-reading
+after each.** Measured on `Swift-v2_Text` at DW 10.28.1-PreRelease: with the master changed, a copy field
+that already held a value, a copy field that had never been set, and an overridden copy all stayed exactly
+where they were. There is no master-to-copy copy-down to rely on and none to defend against, so a
+translation pass that edits only the master leaves every layer holding its stale body.
 
-Two rules follow, and the second is the one that saves a run:
+Two version-scoped riders on the same surface, both measured on other builds and neither reproducible at
+10.28.1. Treat each as a property of its capture, not as a rule:
+
+- A field **newly added to the item type** after the copies were created has no per-copy override, so on
+  10.28.3 the master value was observed landing on the copies on the first save. If the demo depends on
+  that, measure it on the build in front of you.
+- Saving a master and its layers **in one loop** produced body-inside-body nesting at 10.28.4, growing by a
+  fixed byte count per preceding save in the pass. A one-pass double save at 10.28.1 produced no nesting.
+
+Three rules follow, and the middle one is the one that saves a run:
 
 1. **Never cache language-layer child ids across a master save — re-read them.** Any id captured before the
    save points at a deleted row.
 2. **Guard every language-layer write with a fingerprint of the ORIGINAL text**, read from SQL immediately
    before the write, and **skip if the fingerprint is gone**. Without it, writing a layer after an unrelated
-   later master edit silently reverts that layer to English. The guard is what turned "six paragraphs
-   mysteriously back in English" into six correctly-skipped writes on the run that measured this.
+   later master edit silently reverts that layer to English.
+3. **One save at a time, re-read every layer after every save**, and assert a content marker occurs exactly
+   once per layer. Never batch a master and its layers in one loop.
 
 Sequencing rule for a translation pass: do the master edits first, then the layers — and re-read, never
 assume, the layer state in between. (Item-list saves are authoritative in the other direction too: posting a
 subset deletes the omitted children outright — [`paragraphs.md`](paragraphs.md).)
+
+## The recycle bin is keyed to the MASTER row, and `totalCount` always reads 0
+
+Three facts that between them decide whether a purge or a restore on a multi-language site is safe.
+
+**Deleting or clearing a MASTER entity cascades to its language copies, so a "the total fell by exactly 1"
+guard fires on correct behaviour.** `RecycleBinClear {EntityType:"Page", Ids:["8944"]}` on a master page in
+area 29 took the bin from 516 to 513: the master plus the two master-linked copies `PageSave` had
+auto-created in areas 30 and 31, a delta of **3 for a single id**. On a host carrying hundreds of unrelated
+soft-deleted pages a blanket clear is destructive, so the guard is load-bearing and must be the right one:
+**snapshot the SET of soft-deleted ids before the purge, and afterwards assert the ids that went away are a
+SUBSET of your own.** Never assert a count delta. `ParagraphDelete` has the same cascade
+([`paragraphs.md`](paragraphs.md)).
+
+**Restore is keyed to the master too, and the language areas' own bins read EMPTY.**
+`GetRecycleBins?AreaId=<layer>&EntityType=GridRow` returns zero entries for language-layer rows that are
+demonstrably soft-deleted in SQL, because those rows are never independently deleted or restored: they
+follow the master. So a layer's deleted content looks unrecoverable when it is one call away.
+`RecycleBinRestore {EntityType:"GridRow", Ids:["<masterRowId>"]}` restored the master row, both language
+mirrors and all nine child paragraphs in one operation. **Always operate on the MASTER area's entity; do
+not go hunting in the language areas' bins.** `RecycleBinEntityType` is
+`None=0 Area=1 Page=2 GridRow=3 Paragraph=4`.
+
+**`GetRecycleBins` reports `model.totalCount = 0` while `model.data` carries rows.** Measured at 58 and 69
+entries against a `totalCount` of 0. Any paging or emptiness check on `totalCount` is wrong by
+construction: **count `model.data`.**
 
 ## `Translations.xml` keys are case-sensitive — and the shipped file carries case-variant pairs
 
@@ -147,6 +203,32 @@ and parse with `System.Text.Json`, never `ConvertFrom-Json`.
 **Assert the RENDERED page contains the translated literal — not merely that the key exists in the file.**
 Key-presence is exactly the check that passes on a case-variant miss. (The shipped duplicate case-variant
 keys are worth raising with the vendor as a shipped-file defect.)
+
+**A key that "is missing" is almost always PRESENT with an EMPTY value, and an empty value falls back to
+`DefaultValue`, which is the English source string.** DW writes every unseen `Translate()` literal back
+into the design register at render time, so by the time anyone notices English on a localised page the key
+already exists in `Translations.xml` with empty CDATA per culture:
+
+```xml
+<key name="Ref" DefaultValue="Ref">
+  <translation culture="es-US"><![CDATA[]]></translation>
+  <translation culture="fr-CA"><![CDATA[]]></translation>
+</key>
+```
+
+**Diagnose by reading the key, never by observing English output**, and **FILL the existing CDATA** rather
+than appending new `<key>` blocks. Appending is the natural first diagnosis and it is wrong: the original
+node is found first, so the duplicate never wins. The harvest is live and observable, which is the cheapest
+proof the mechanism is real: rendering a new template once took one shipped file from 2408 to 2411 keys
+before anything had been authored.
+
+Two mechanical rules for editing the file. Set `CDataSection.Value` (assigning `InnerText` replaces the
+CDATA with a text node). And round-trip with `XmlWriterSettings` `Indent = true`, `IndentChars` two spaces
+and `UTF8Encoding($true)`: that reproduces the shipped file byte for byte, whereas a default `[xml]`
+load/save collapses the indentation and loses about 79 KB (894,927 bytes against 974,201 on one file).
+**Re-serialise the UNMODIFIED file first and assert byte-identity with what was fetched before making any
+edit**, then assert the key/culture node counts moved by exactly the expected amount, then re-render and
+assert the English literals are gone.
 
 The file is also **DW-owned and self-modifying** — `Translate()` on an unknown literal appends a key at render
 time, which is why it must stay additive and why DW must retain write access to it; that, and the
