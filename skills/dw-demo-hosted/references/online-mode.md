@@ -40,6 +40,17 @@ You are in online mode when the engagement hands you a site URL (`https://<host>
 Tool availability on hosted installs is **version-dependent and a moving target** — hosted sites track the DW10 release train, and the MCP surface in particular varies by version. Never assume; probe:
 
 1. **Management API**: `GET https://<host>/Admin/Api/api.json` with `Authorization: Bearer CLAUDE.<hex>`. Returns the full OpenAPI catalogue (~1,900 operations on 10.25.x) including the platform version in `info.version`. Save it locally — it is the working map for everything below.
+
+   **Pin the build from `info.version` first.** It carries the version AND the commit, e.g.
+   `10.28.1-PreRelease+<commit sha>` — a stronger pin than a bare version string, and the thing to fill
+   every learning's env line from. Where a host answers `api.json` without a version (measured on one
+   10.28.5 hosted install), fall back to the admin shell footer: `GET /Admin/UI/` with the bearer key and
+   no UI session renders `License: <edition> <version>+<commit>` into the HTML. **Record the commit SHA,
+   not just the version.** There is no version or system-info QUERY registered on the Admin API —
+   `SystemInformationGet`, `VersionGet`, `About`, `ApplicationInfo`, `ServerInfo`, `SystemStatus`,
+   `HealthCheck` and `Ping` all answer `400 Unknown query`, and `GET /Admin/Api/License` answers 200 with
+   licence and feature data and no version. Version-scope every measured claim against this pin: a
+   divergence between two hosts is a version fork, not a contradiction.
 2. **MCP**: `POST https://<host>/admin/mcp` with a JSON-RPC `initialize`. A 404 plus zero MCP-related operations in the OpenAPI spec means the install doesn't expose MCP — fall through to the Management API as primary surface. If MCP responds, the normal surface priority applies and most of this file's API recipes become fallbacks.
 3. **Admin UI via Playwright**: needs interactive credentials (ask the user for them). Verification surface only — build-phase rules apply from the first request on a hosted install, since there is nothing to scaffold.
 4. **Site database reachability — probe it before assuming API-only reads.** "Cloud-hosted" does not imply "database out of reach": on a co-located host class the site DB is reachable from the VM the agent runs on, and the connection string sits in `Files/GlobalSettings.Database.config`. A plain SqlClient connection with those credentials returns **full result sets** — which retires the whole `Sql-ReadRaw` double-UPDATE / `RAISERROR`-peek family of workarounds that exist only because the API offers no `SELECT` channel. Probe once at session start (read the config, open a connection, run a trivial `SELECT`), record the answer in the demo ledger, and plan the session's verification reads from the result rather than from a remembered host.
@@ -109,9 +120,13 @@ the same type, from the OpenAPI catalogue, or from the admin UI's own captured r
 | MCP `delete_variant_combinations` | non-functional, same server-side throw. |
 | `VariantGroupRemove` | 400 Unknown command. The group deletes without detaching. |
 | `delete_products` | removes the variant rows with the family, so a family delete needs no per-variant cleanup. |
+| `UserByUserName` | **not registered on 10.28**: `400 {"successful":false,"message":"Unknown query: 'UserByUserName'"}`. Only `UserById` exists. A throwaway-admin teardown helper that resolves its id through `UserByUserName` inside a swallowing `try/catch` reports "not present" and deletes nothing, leaving a live `systemAdministrator` on a prospect-facing host while its own check passes. Resolve the id by a route that cannot silently answer zero (the MCP `get_user_by_username` tool, or `SELECT AccessUserId FROM AccessUser WHERE AccessUserUserName='<probe>'`), and make the delete path THROW when the lookup mechanism itself fails instead of reporting absent. |
 
 Verify cleanup by reading back, not by the response: `PriceById` on every created price id must return
-non-200 and the product-scoped price list must be empty.
+non-200 and the product-scoped price list must be empty. After a throwaway-admin teardown assert BOTH
+that `GET /Admin/Api/UserById?Id=<id>` no longer returns a `model` AND that `SELECT COUNT(*) FROM
+AccessUser WHERE AccessUserUserName='<probe>'` is 0. A cleanup step that cannot name the id it deleted is
+not evidence.
 
 ### dw10source as binder disambiguator
 When a payload shape isn't obvious from the OpenAPI spec, read the command class in a local clone of the DW10 source (location per machine — ask/discover, never hardcode): `Dynamicweb.*.UI/Commands/**/<Name>Command.cs`. Reading the source resolved every binder mystery in the validation build (SelectedImage `Id`, the create/update fork, the variant wizard).

@@ -411,16 +411,28 @@ findings or pollutes the nav menu.
 | `active` | `Page.PageActive` | **Appears in the navigation menu** ("Hidden in Menu" toggle) | `false` for cart steps, product detail, asset info |
 
 (`Page.PageShowInLegend` is the legacy legend flag — the Swift navigation templates ignore it; don't
-reach for it to hide a page from the nav.) The nav additionally hides permission-restricted pages
-regardless of flags, which is why a login-gated page can sit at top level without a nav entry.
+reach for it to hide a page from the nav on a composition whose nav is driven by shop categories.) The nav
+additionally hides permission-restricted pages regardless of flags, which is why a login-gated page can sit
+at top level without a nav entry.
+
+**The page schema carries no `PageShowInMenu` column.** `api.json` exposes `PageActive`, `PageHidden`,
+`PageShowInLegend` and `PageShowInSitemap` and nothing named `ShowInMenu` at page level, so any verb
+documenting a "ShowInMenu flag" is writing one of the other four. `PageShowInLegend` **can** be flipped on
+its own with zero collateral: read the full model with `GetPageById`, set `ShowInLegend`, `PageSave` the
+COMPLETE model back. `PageSave` is a whole-entity save, so a partial model blanks area, parent, name and
+item type and 404s the page.
 
 A page with `published=true, hidden=false, active=false` (DB: `PageActive=0, PageHidden=0`) is
 **fully reachable** by direct URL and JS-driven navigation, and correctly hidden from the top nav —
 the right state for almost every utility page. **Gotcha — the MCP page tools cannot express that
 state:** `publish_pages`, `save_pages(active:…)` and `set_page_menu(showInMenu:…)` all flip **both**
 columns together (`active/showInMenu: false` writes `PageActive=0` AND `PageHidden=1` — the page
-leaves the nav but also 404s; `true` writes `1/0` — routable but back in the nav). Set the split
-state via Management API `PageSave` or a SQL `UPDATE Page SET PageActive=0, PageHidden=0`, then
+leaves the nav but also 404s; `true` writes `1/0` — routable but back in the nav). On DW 10.28.4
+`set_page_menu(showInMenu:…)` was measured writing `PageActive` alone and leaving `PageShowInLegend`
+untouched, so `showInMenu:false` there means publish/unpublish and nothing else; the tool's own
+"ShowInMenu flag" wording names a column the schema does not have. Use `set_page_menu` for
+`showInSitemap`, which does work. Set the split state via Management API `PageSave` or a SQL
+`UPDATE Page SET PageActive=0, PageHidden=0`, then
 restart the host — the navigation tree and friendly-URL provider cache the old page set (see
 [dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`)). When auditing reachability, check
 `published=true` and `hidden=false`; do NOT flag `active=false` on its own. (Full SQL-direct INSERT

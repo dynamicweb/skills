@@ -102,6 +102,56 @@ any round-trip save**, and when a `Save` 500s on a verbatim round-trip, bisect t
 hunting the data. `Remove-DwDisplayOnlyMember` in [`../scripts/Dw.Api.psm1`](../scripts/Dw.Api.psm1)
 is the canned strip.
 
+### Enum properties on a save model bind by NAME — an integer silently coerces to `default(TEnum)` = 0
+
+**The JSON binder deserialises enum members by name only. A numeric token matches no member, falls through
+to `0`, and the command still reports `successful: true`.** No validation error is raised, so the write
+looks clean, and **the round trip cannot catch it**: the read model echoes what was stored, so a read-back
+of `0` is indistinguishable from a value that was genuinely 0. Only a pre/post DB diff exposes the
+coercion.
+
+The worked case is `VariantGroupTranslationSave.DisplayType`
+(`Dynamicweb.Ecommerce.Variants.VariantGroupDisplayType`), fed straight out of the column that stores the
+ordinal:
+
+```
+POST VariantGroupTranslationSave {"Model":{"Id":"VARGRP35","LanguageId":"ENU","DisplayType":2}}
+  -> successful;  SELECT VariantGroupDisplayType … -> 0  (was 2)
+POST VariantGroupTranslationSave {"Model":{…,"DisplayType":"VariantColor"}}
+  -> successful;  SELECT VariantGroupDisplayType … -> 2
+```
+
+Five variant groups came back at `NothingSelected` and a colour-swatch rendering degraded to a plain name
+list, silently. **Round-trip every enum-valued property as a STRING**, and where the DB column stores the
+ordinal, map ordinal to member name before posting (reflect the enum with a metadata-only
+`AssemblyLoadContext` over `Application/bin`). This applies to **every `*Save` model carrying an enum**,
+not only this verb. Assert it as a baseline diff: after the write, every row you did not deliberately
+change must still match its pre-write value, and a `0` where the baseline was non-zero is this bug.
+
+### `UnifiedPermission.PermissionUserId` is nvarchar holding `'Anonymous'` — a bare int join aborts the whole query
+
+DW stores pseudo-principals in the same column as real ids, so `PermissionUserId` carries the literal
+string `'Anonymous'` alongside numeric `AccessUser` ids. SQL Server resolves `int = nvarchar` by converting
+the **string** side to int, evaluates it over whatever rows the optimiser chose to touch regardless of any
+predicate meant to filter them, and one non-numeric value **fails the entire statement**, not just that
+row:
+
+```sql
+-- fails: Conversion failed when converting the nvarchar value 'Anonymous' to data type int
+(SELECT COUNT(*) FROM UnifiedPermission p WHERE p.PermissionUserId = g.AccessUserId)
+
+-- works
+(SELECT COUNT(*) FROM UnifiedPermission p
+  WHERE ISNUMERIC(p.PermissionUserId) = 1 AND TRY_CAST(p.PermissionUserId AS int) = g.AccessUserId)
+```
+
+`WHERE ISNUMERIC(...) = 1` in the same predicate does **not** save the bare comparison: there is no
+guaranteed evaluation order. **Compare on the string side (`p.PermissionUserId = CAST(g.AccessUserId AS
+nvarchar(20))`) or use `TRY_CAST`. Never a bare `int = column` comparison against this table.** The
+consequence is worse than an error message: this is the query a delete-safety audit runs before deleting
+user groups, and the failing form returns NOTHING, so an audit that swallows the error classifies
+permission-carrying groups as unreferenced.
+
 ### `EmailsByFilters` treats a missing filter as no-match, and `IsAutomationList` reports a false count
 
 Two filter behaviours on the email grid queries that produce wrong result sets rather than errors:
@@ -254,6 +304,11 @@ helper — use them instead of writing a new `_sql.ps1`.
 `DataRow` is enormous (table → schema → parent dataset), so the call does not error — it **hangs**, and cost a
 five-minute timeout on the run that measured it. Project into a `pscustomobject` with the columns you want
 before serialising, and document both traps in the helper header where the next caller will read them.
+The hang is not the only symptom: a single DataRow-sourced FIELD dropped into an `/Admin/Api` payload
+serialises as an object, the model binder cannot bind it and binds the default empty string instead, the
+call still reports `status: ok`, and the rows are blanked (15 `EcomVariantGroups` rows lost
+`VariantGroupName` and `VariantGroupLabel` on a `VariantGroupTranslationSave` repair run before anyone
+noticed). Cast at the point of read, `[string]$row.Col`, and re-SELECT the written columns afterwards.
 
 ### `[ordered]@{}` with integer keys indexes by POSITION, not by key
 
@@ -393,9 +448,16 @@ POST /Admin/Api/GridRowSave?Query.Type=GridRowById
 The shape is exact: **lowercase `model`**, the id in `QueryData`, and numeric members as **strings**.
 Measured 59/59 rows across 12 pages reading back at the written `containerWidth`.
 
+- **It is UPDATE-only.** `GridRowSave` with `ID:0` answers **404**. The create verb is
+  `GridRowCreate {PageId, GridId:'Page', DefinitionId, Container:'Grid'}`, where `GridId` comes from
+  `GridRowSelectorByPage` and `Container` is the layout container. **Omitting `Container` answers HTTP
+  500 and still writes a row** with `GridRowContainer=''` that never renders, so a create owes an
+  assert that `GridRowContainer` is non-empty, and a delete of the row when it is not.
 - **It repairs a NULL `GridRowItemId`.** Rows created by MCP `save_grid_rows` land with
   `GridRowItemId` NULL; `GridRowSave` **mints the row item** (measured on three such rows), which is
-  cheaper than the `GridRowCopy` workaround.
+  cheaper than the `GridRowCopy` workaround. `GridRowItemId` is a repair target, **not** the
+  discriminator for a row that saves and never renders: the row item mints even on the `GridRowCreate`
+  failure path, so read `GridRowContainer` to tell a broken row from a healthy one.
 - **The 12-member payload is partial and the server preserves the rest** (`gap`, `mobileLayout`,
   `flexibleColumns`, `verticalAlignment`, `itemType`, `container`), with one exception: **changing
   `DefinitionId` clears `mobileLayout`** (`"12,12"` becomes `""`). Snapshot every row before a batch and

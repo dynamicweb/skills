@@ -9,6 +9,7 @@
 - [The workflow + Visual Editor surface map live in the foundational skill](#the-workflow--visual-editor-surface-map-live-in-the-foundational-skill)
 - [When to use + executor split](#when-to-use--executor-split)
 - [Management API authoring traps (Swift 2.4 / DW 10.28.x)](#management-api-authoring-traps-swift-24--dw-1028x)
+- [Resolving a page URL](#resolving-a-page-url)
 - [Authoring scripts must ASSERT the shape they expect — a count guard is an anti-pattern](#authoring-scripts-must-assert-the-shape-they-expect--a-count-guard-is-an-anti-pattern)
 - [Verification: did the change land via the admin UI?](#verification-did-the-change-land-via-the-admin-ui)
 - [What this surface does NOT do (escape hatches)](#what-this-surface-does-not-do-escape-hatches)
@@ -50,12 +51,30 @@ conversion (`4Columns` ↔ `4ColumnsFlex`) round-trips through `GridRowSave` wit
 `originalDefinitionId` and `itemType` set **together**, and it changes the emitted column markup — which
 changes which custom CSS can reach the content ([re-skin.md](re-skin.md) §"Selector reach").
 
-**Grid ROW creation: `GridRowSave` has no create mode, `GridRowCopy` only appends, and position is set
-exclusively by `GridRowSort`.** Three verbs, one recipe, and each of the two obvious shortcuts fails in its
-own way — `GridRowSave` with `Id=0` returns **404** (it is update-only, unlike the create/update fork on
-the commerce saves), and `GridRowCopy` always lands the new row at the BOTTOM of the page with no
-positional argument to override it. So inserting a row *between* two existing rows is always
-**copy-then-sort**:
+**Grid ROW creation: `GridRowCreate` is the create verb, `GridRowSave` is update-only, `GridRowCopy` only
+appends, and position is set exclusively by `GridRowSort`.** `GridRowSave` with `Id=0` returns **404** (it
+is update-only, unlike the create/update fork on the commerce saves), and `GridRowCopy` always lands the
+new row at the BOTTOM of the page with no positional argument to override it.
+
+**`GridRowCreate` needs `Container`, and omitting it writes a BROKEN row alongside an HTTP 500.**
+
+```
+POST /Admin/Api/GridRowCreate {PageId, GridId:'Page', DefinitionId, Container:'Grid'}  -> ok, renders
+POST /Admin/Api/GridRowCreate {PageId, GridId:'Page', DefinitionId}                    -> 500, AND a row
+                                                                                          with GridRowContainer=''
+                                                                                          that never renders
+POST /Admin/Api/GridRowCreate {PageId, GridId:'Grid', …}                               -> throws
+```
+
+`GridId` is `'Page'` (the value `GridRowSelectorByPage` returns); `'Grid'` is the `Container`, and swapping
+the two throws. **`GridRowContainer` is the discriminator for a row that saves and never renders**, not
+`GridRowItemId` — the row item mints even on the failure path, so a NULL-`GridRowItemId` check clears a
+broken row and a container check catches it. The 500 is not a rollback: assert
+`SELECT GridRowContainer FROM GridRow WHERE GridRowId = <new>` is non-empty after every create, and delete
+the row if it is not. `GridRowCopy` avoids the whole question (the copy carries the source's container and
+renders), at the cost of arriving occupied ([paragraphs.md](paragraphs.md) §`GridRowCopy`).
+
+So inserting a row *between* two existing rows is always **copy-then-sort**:
 
 ```
 POST /Admin/Api/GridRowCopy  {PageId, Id}            -> new row appended at the bottom
@@ -105,10 +124,34 @@ item `Title` still carries the source page's title while the page `name` was ren
 that touched an unrelated flag renames the page and breaks a URL the demo's gate asserts.
 **Never `PageSave` a page without setting `name` AND `Title` in the same call**, and keep the item
 `Title` aligned with the page name afterwards or the next save renames it again. Verification: after
-any `PageSave`, re-fetch (a) the saved page's own `friendlyUrl` and (b) every URL in the demo's gate
+any `PageSave`, re-resolve (a) the saved page's own live URL and (b) every URL in the demo's gate
 page list, asserting 200 or 301 — a rename shows up **only** as a 404 on the OLD url, which a
 `status=ok` check and a page-object diff both miss. Also assert `name` still equals what you
-submitted.
+submitted. **Resolve the page's own URL through the `Default.aspx?ID=<n>` redirect, not from
+`friendlyUrl`** — on an API-created page that property answers `"Default.aspx?ID=n"` and proves nothing
+(§"Resolving a page URL").
+
+**`PageSave` is a WHOLE-ENTITY save, and a partial model blanks the page into a 404.** Properties absent
+from the request are persisted as their type defaults, not left unchanged. `PageSave {Model:{Id, ShowInLegend:false}}`
+set the flag correctly and simultaneously blanked `PageAreaId`, `PageParentPageId`, `PageMenuText`,
+`PageItemType`, `PageItemId`, `PageSort` and `PageMetaTitle`:
+
+```
+before  8544 = area 27, parent 0, "About", Swift-v2_Page, item 1169
+after   PageSave {Model:{Id:8544}}   ->  area 0, parent 0, name empty, itemType empty, item 1191 (new)
+        /en-ca/about -> 404
+```
+
+It also does **not honour a supplied `ItemId`**: every save mints a NEW page-item instance, so the item
+`Title` is lost, and because DW re-derives `PageMenuText` from that Title the tree name is one UI save away
+from blanking too. There is no patch-style verb for the navigation flag, and `{Id, ShowInLegend, Active}`
+blanks the same way. Used as a one-line probe against a live storefront page, this takes the page down.
+
+**So: snapshot the `Page` row, send EVERY property back, re-read, diff, then re-set the item `Title` with
+`set_page_item_fields`.** Prefer MCP `save_pages` for anything it covers. This is the page-level face of the
+general rule that a `*Save` command is a whole-entity save
+([`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) §"A read model is
+not a save model").
 
 **On an ITEM-BASED page, `Model.name` alone is a silent no-op — the rendered label comes from the page item's
 `Title` field.** The same-call rule above is not only a rename-safety measure: writing `name` by itself
@@ -158,7 +201,13 @@ ZERO effect on rendered navigation — the navigation providers do not consult i
 duplicated nav/footer link, hide it in CSS or remove the page from the menu source; do not spend a
 `PageSave` (with the rename risk above) on this flag.
 
-**`PageCopy` inherits more than you want, and the copy can win the render.**
+**`PageCopy` is the working clone path for an ordinary content page, and it inherits more than you want.**
+`GET /Admin/Api/NewPageInfoForCopy?SourcePageId=<n>&DestinationParentPageId=<m>` returns the model;
+`POST /Admin/Api/PageCopy` with it copies an ordinary `Swift-v2_Page` at DW 10.28.1 including the subtree
+and the language mirrors. (The "Standard pages are Not allowed" refusal belongs to the MCP `copy_page`
+wrapper, not to this verb — see
+[`backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §5.) Two inheritance
+traps ride along:
 
 - Copies carry the source page's paragraph `Button` fields verbatim, with no reset offered. One
   source CTA reappears once per copied paragraph — e.g. a single "Discover more" `FirstButton`
@@ -173,6 +222,28 @@ duplicated nav/footer link, hide it in CSS or remove the page from the menu sour
   HTML for the paragraph ids you expect (breadcrumb / product-list info / component selector / list
   navigation) before and after the edit, assert the ids of the page you did NOT edit stay absent,
   and re-run the count on more than one list URL.
+
+## Resolving a page URL
+
+**`GET /Default.aspx?ID=<n>` with redirects disabled, reading the `Location` header, is the only reliable
+page-URL resolver.** Nothing in the API will tell you a page's friendly URL: `GetPageById.friendlyUrl`
+answers `"Default.aspx?ID=8947"` for an API-created page, because the property is not recomputed on that
+path. The URL is resolved by the request pipeline at render time, and the pipeline exposes it through the
+permanent redirect it already issues for the numeric form:
+
+```
+GET /Default.aspx?ID=8932                  -> 301  Location: /en-us/shop-by-boat/sterndrive-drivetrain
+GET /Default.aspx?ID=8936                  -> 301  Location: /es-us/comprar-por-embarcacion/ventilacion-de-sala-de-maquinas-y-sentina
+GET /Default.aspx?ID=8589&ProductID=PROD12426 -> 301  Location: /en-us/shop?ProductID=PROD12426
+```
+
+**Never derive a slug from the page name.** The lowercase-plus-dash-the-non-alphanumerics regex that reads
+as the obvious substitute is wrong for any name carrying diacritics: DW transliterates the accent and the
+regex eats it, so `"Equipo estandar y de seguridad"` derives `equipo-est-ndar-y-de-seguridad` and the helper
+throws on a page that is live and healthy. In PowerShell issue the numeric request with
+`-MaximumRedirection 0`, read `Location`, and **prove the result with a real 200 before writing it into
+content**. Every button, card link and page map that must carry a URL depends on this step, and it is the
+only resolver that works for a product URL too.
 
 ## Authoring scripts must ASSERT the shape they expect — a count guard is an anti-pattern
 

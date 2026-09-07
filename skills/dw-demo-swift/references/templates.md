@@ -75,6 +75,17 @@ The procedure replaces the hedge:
    Assert `sizeInBytes == the local byte count` **and** that `updatedAt` moved. Together those catch a
    silently-dropped upload, which the upload response alone does not. Worth a shared template-deploy
    helper that does upload + `FileByName` assert in one call, mirroring the CSS deploy scripts.
+3. **For the servable static files (`.css`, `.js`, images), diff a sha256 of the SERVED bytes against
+   the uploaded bytes, not a marker check.** On some IIS demo topologies the web-visible `/Files` is a
+   set of directory JUNCTIONS into `Application\wwwroot\Files`, and Windows file-change notification does
+   not propagate through a junction, so the static-file cache never invalidates and IIS keeps serving the
+   OLD bytes indefinitely after an `allowOverwrite=true` upload lands on disk. Measured: 24,825 B on
+   disk while `curl -D -` on the stylesheet reported `Content-Length: 23524` with a frozen
+   `Last-Modified`, and the CSSOM in Blink parsed the old sheet. A marker-presence check calls that green
+   because the sentinel markers survive in the old copy, and a cache-busting query string does not help
+   (the `AddStylesheet` version token already varies and the stale copy was served regardless). Only on a
+   sha256 mismatch escalate to ONE `app_offline.htm` recycle, then read back again and fail loudly if the
+   served bytes still differ. Add a rule-count floor to the CSSOM gate leg so a stale sheet cannot pass it.
 
 ## Branching a template on Visual Editor mode — `Pageview.IsVisualEditorMode`
 

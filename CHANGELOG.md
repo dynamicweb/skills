@@ -3,6 +3,223 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.33.0]
+
+Fold-back sprint: **content authoring, users and permissions, and the 2026-09-01 retest wave**.
+
+- **Paragraph module settings round-trip read-as-link / write-as-int** (`paragraphs.md`). The published
+  root cause was wrong: there IS a representation. `GetParagraphById` renders a page-picker value as
+  `Default.aspx?Id=<n>` and `ParagraphSaveCommand` parses the posted value as a page ID, discarding
+  anything non-numeric, so posting back what the read just gave you CLEARS the setting and every later
+  save must re-post the numeric form. Adds the app-switch recipe (graft the target `contentModule` from a
+  reference paragraph; `contentModule:null` answers 500; no `ChangeApp` verb exists), the
+  `LinkType=page` querystring strip (a deep link needs `LinkType=external`), `GridRowCopy` arriving
+  occupied, and `ParagraphDelete` as a soft delete that cascades to master-linked language copies.
+- **`Plain item fields are COPIED DOWN` is false at 10.28.1** (`language-layers.md`). Measured on
+  `Swift-v2_Text`: a valued copy field, a never-set copy field and an overridden copy all stay put when
+  the master changes. The rule is to write every language layer explicitly, one save at a time,
+  re-reading after each; the newly-added-field propagation and the one-pass nesting are scoped to their
+  own captures. Adds the master-keyed recycle bin (clear and restore both cascade, the language areas'
+  own bins read empty, `totalCount` always reads 0), widens the SECURITY permission mirror from pages to
+  `GridRow` and `Paragraph` ids, and records that a "missing" `Translations.xml` key is usually present
+  with an empty value that falls back to `DefaultValue`.
+- **`GridRowContainer`, not `GridRowItemId`, is the discriminator for a row that saves and never
+  renders** (`admin-ui-authoring.md`, `dw-swift-page-blocks`, `management-api-and-sql.md`).
+  `GridRowCreate {PageId, GridId:'Page', DefinitionId, Container:'Grid'}` works; omitting `Container`
+  answers HTTP 500 **and still writes** a row with `GridRowContainer=''`; `GridRowSave` with `ID:0`
+  is 404, it is update-only. The row item mints on the failure path too.
+- **`PageSave` is a whole-entity save with page-level blast radius** (`admin-ui-authoring.md`). A partial
+  model blanks area, parent, name, item type, sort and meta title, mints a new page-item instance, and
+  404s the page. Used as a one-line probe it takes a live storefront page down.
+- **The `Default.aspx?ID=<n>` 301 is the only reliable page-URL resolver** (`admin-ui-authoring.md`).
+  `GetPageById.friendlyUrl` answers `"Default.aspx?ID=n"` for API-created pages, and the
+  derive-a-slug-from-the-name workaround breaks on diacritics.
+- **Three rows into the MCP silent-no-op table** (`backend-mcp-server.md`): `save_pages` /
+  `save_paragraphs` echo `id:0` on create (resolve the real id through the item instance), `copy_page`
+  refuses ordinary content pages while the Admin API `PageCopy` copies them including subtree and
+  language mirrors, and `set_page_menu(showInMenu)` writes `PageActive` because the schema has no
+  `PageShowInMenu` column.
+- **Live item types gain fields non-destructively** (`modelling-discipline.md`). `ItemFieldNew` +
+  `ItemFieldSave` ALTERs the table; the delete-and-recreate opening of the create recipe drops it.
+  Also: an item-list field can point at an `ItemList` id that does not exist and the read verb answers
+  `[]`, indistinguishable from empty.
+- **Enum properties on `/Admin/Api` save models bind by NAME** (`management-api-and-sql.md`). An integer
+  falls through to `default(TEnum)=0` with `successful:true`, and the read-back echoes the stored value,
+  so only a pre/post DB diff catches it. Plus: `UnifiedPermission.PermissionUserId` is nvarchar holding
+  the literal `'Anonymous'`, so a bare int join aborts the whole statement.
+- **`PermissionSave` IS the Management API write surface on 10.28.x** (`permission-layers.md` §15),
+  replacing the "no Management API endpoint" claim. The read side has the inverse trap:
+  `PermissionsByIdentifier` returns an empty `data` array when `SubName` is passed as `""`. Static files
+  under `/Files` bypass page permissions entirely. Section-level denies hide only Settings on 10.28.
+- **New `permission-layers.md` §17 — the Swift 2.4 UserGroups app.** Every management command is gated by
+  the ACTING user's permission on their own `User` entity, so the default `AuthenticatedFrontend=read`
+  silently kills invite / activate / delete behind a 200 and a rendered button set; the fix is one
+  `PermissionSave` on the account group's `User` subset. Also the module's real 20-property set (no
+  `ShowInactiveUsers`, no group pre-select, `UserGroups`/`UserSelectableGroups` are invite-time
+  settings), `AccountListScope` matching on customer number as the only directory filter,
+  `UserChangeType` targeting the admin-rights enum while `UserSave` converts the user-and-group type in
+  place, the blank `AccessUserAddress` carrier row every `UserSave` mints, the
+  `GroupDelete` / `UserDelete` split with string ids, and the single-account-person modelling deviation.
+- **New `customer-center.md` §10 — the storefront account-admin page.** Impersonating from it answers a
+  128-byte permission-denied body and that IS the switch succeeding, so assert on the FOLLOWING request.
+  The invitation mail can never greet by name (`CreateNewUserViewModel` never assigns `Name`), and a
+  failed invitation mail is invisible in the EventViewer: the `EmailHandler` month log is the probe and
+  the Pending badge is the in-band delivery check.
+- **Stock Swift renders an EMPTY `swift-v2_productprice` div when the area hides prices**
+  (`customer-center.md` §11). The only `else` branch is `Pageview.IsVisualEditorMode`, so the call to
+  action has to be added; the anchor string occurs TWICE in `Swift-v2_ProductPrice.cshtml` and a
+  first-match replace yields a Razor compile error that still answers HTTP 200.
+- **PII rule 4: assert a predicate over the table, re-run AFTER the closeout gate** (`pii-sweep.md`).
+  An anonymised mailbox reappeared as a NEW row 13 minutes later, so every per-id check reports clean.
+- **Auditing does not record API-driven writes** (`dw-data-audit-trail`). With the correct key, one
+  config node and a recycled host, a landed `/Admin/Api` `ProductSave` writes zero `Audit` /
+  `AuditDetail` rows. Never build a Review-changes beat on it, and drop the "Audit count must increase"
+  enablement assertion. The UI-session comparison needs a browser: `/Admin/Api` is bearer-only.
+- **`api.json` `info.version` is the version pin** (`online-mode.md`). It carries version plus commit
+  sha; the admin shell footer is the fallback where a host answers without one.
+
+Fold-back sprint: **screens, hosted-install traps and the Aug-26/31 misc wave**.
+
+- **New reference `dw-demo-pim/references/screen-authoring.md`.** `ScreenLayout`, `ScreenType`,
+  `ScreenPreset` and `ConfigurableColumns` had zero coverage anywhere in the tree. `ScreenType` is a
+  fully-qualified .NET type name that no API enumerates (only the "New screen layout" form's option
+  list publishes the 627 values), and the short form fails **two different ways** on two 10.28.4
+  builds: 500 "Unable to resolve screen type" on one, accepted-stored-and-inert on the other, where
+  the edit screen falls back to DW's default tabs. Category editors need the same `CategoryFields|`
+  prefix the presets use, and a tab built entirely from un-prefixed editors is **dropped from the tab
+  strip** with no error. `ScreenPresetSave` accepts any column string and answers ok;
+  `ScreenPresetAccessUserRelation` keeps rows for presets that never existed while preset ids restart
+  at 1; `ScreenPresetSetAsDefault` with `SelectedPresetId=0` is the un-set. The "no tab strip" symptom
+  folds as one row with its discriminator: does a different row of the same worklist render tabs.
+  Grid edit and Bulk update have no Management API surface (`ProductCollectionSave`'s abstract `Query`
+  type, `ProductBulkUpdateSave`'s `TransientStorageKey` handshake), **Bulk update writes an EMPTY
+  value to every selected row when the dual list is untouched** while its Preview grid renders blank,
+  and grid-edit cell authoring lands as the guarded exception with td-index addressing plus a
+  Number/Name/Price read-back and abort.
+- **`governance.md`: what a worklist drill-through actually opens.** A product opened from a worklist
+  inherits the query's screen preset, not the full editor, so say which one a frame is showing. Shoot
+  grid edit from All products: the worklist route renders zero rows while its header claims ten
+  (cause unestablished). Per-persona favourites come from the query-tree context menu in the persona's
+  own session, and the tree collapses after every add.
+- **`permission-layers.md`: an empty product editor is a query-string symptom before it is a
+  permission symptom.** `ProductEdit` resolves its model from `Type=`, not `Id=`, so a deep link
+  without `Type`/`LanguageId` opens a live NEW-product form with a green Save, for a full
+  administrator too. The published line attributed exactly that screen to permission starvation.
+  `DynamicStructureLevelResultsList` and `QueryListScreen` entered cold 500 or come back empty and
+  must be reached by clicking the left nav.
+- **`browser-automation.md`: driving the DW 10.28 admin shell.** Every action-menu item is
+  pre-rendered hidden in one shared block, so visibility-aware clicks never find Import / Bulk update
+  / Export: click via `page.evaluate`, scoped to the open dialog. ~20 hidden "Edit" links sit at
+  x=0,y=0, so text-keyed clicks need a box filter and the resulting URL must be asserted. The AI rail
+  is a toggle whose two obvious open-state tells are both wrong; a double close translates the shell
+  355px, so close idempotently by measuring the ask-input rect (max 3 rounds) and assert
+  `.tree-nav` x before every shot. Added the DOM attribute-flip A/B as the way to attribute a geometry
+  regression to a change rather than to a standing defect.
+
+- **`GlobalSettingSave` creates ANY key you name** (`dw-setup-config/SKILL.md`). The command does not
+  validate the key against a schema, so naming a path that does not exist mints it, the save returns
+  ok and `GlobalSettingByKey` reads the invented key back while the app keeps reading the real node.
+  The audit flag is `/Globalsettings/Settings/Auditing/EnableAuditing`, not `/System`. Assert the key
+  resolves to exactly one node in `Files/GlobalSettings.config` and assert the effect, never the
+  read-back. `dw-data-audit-trail/SKILL.md` gains the enablement section it lacked, so "the audit log
+  is off" is no longer reported for a flag written to a dead path.
+- **`/Admin/Api` is bearer-only** (`management-api-and-sql.md`). A logged-in admin browser session
+  gets 401 with an empty body, for a freshly minted full administrator as much as for a restricted
+  persona, so a per-user verb such as `MyFavoriteQueryAdd` cannot be called from the persona's own
+  session. Drive the real UI control, or call the verb as the key user and replicate the artefact.
+- **Post-`CopyDemoSite` `/Files` assert** (`setup-checks.md` §2a). The web-visible `/Files` root on
+  these hosted sites is `<site>\Files`, which the clone leaves empty, while DW resolves its archive to
+  `<site>\Application\wwwroot\Files`. Every asset 404s and the storefront renders unstyled, which
+  reads as a broken deserialize. GET a known file before deserializing anything.
+
+- **What an `/Admin/Api` GET error proves** (`online-mode.md`). "Unable to load query parameters" is a
+  real QUERY whose parameters did not bind, and the commonest reason is **entity not found**, so it
+  widens from the two verb-specific instances into a family rule. "Unknown query" means it is not a
+  query, and says NOTHING about a command of that name: `GridRowCopy`, a known-good command, answers it
+  too. Discover commands from the admin UI's own `data-dw-action` attributes and XHR. Added the
+  **minimal-body probe ban** (`AssetCategorySave` needs only `Name` and a shape probe created a live
+  category) and a cleanup-verb table (`PriceDelete` takes `ProductId` beside `Ids` and works after the
+  product is gone; MCP `delete_prices` and `delete_variant_combinations` are non-functional on 10.28.5).
+- **`SerializerDeserialize`: `Mode` lives in the body and DEFAULTS TO REPLACE** (`serializer-reference.md`).
+  A `Mode` on the query string has no effect and `{"IsDryRun":true}` alone runs a Replace dry run, so an
+  empty `{}` body executes a live Replace. Also: dry-run CONTENT counts under-report because a dry run
+  cannot create parents, so only `failed > 0` and escalated strict-mode warnings gate.
+- **Field display groups, end to end** (`component-system-and-reskin.md`). They are API-only: the admin
+  list screen renders "No results found" for a `systemAdministrator` while `FieldDisplayGroupAll`
+  returns the rows and the PDP renders them. `SystemName` is immutable after create while the save echo
+  reports the new value, `Name` writes the default-language translation only, and the shop binding is
+  inert. A spec row needs all five tables and **`EcomProductCategoryTranslation` is the one that gets
+  forgotten**: without it `productCategories` and `fieldDisplayGroups` come back `{}` at HTTP 200, and
+  the anonymous `GET /dwapi/ecommerce/products/<id>` is the diagnostic that separates data from
+  template. A NULL `RangeValue` renders its .NET `ToString` into the PDP. The layout partial resolves
+  **by string**, so a new `Components/Specifications/<Name>.cshtml` plus `Layout=<name>` is an
+  extension point needing no item type; Swift 2.4 ships no tabs layout.
+- **Paragraph write surfaces** (`paragraphs.md`, `modelling-discipline.md`, `backend-mcp-server.md`).
+  `ParagraphChangeActive` is inert with a correct body, and its shape (`{"setActive":<bool>,"ids":["<id>"]}`,
+  `ids` a `List<string>`) has to be reverse-engineered because a schema mistake answers "No items
+  selected" and numeric ids 500. The hide ladder is `GridRow.GridRowActive = 0` for a sole occupant,
+  then the `hideFor*` trio, then SQL: the published `ParagraphDelete` prescription is replaced.
+  `save_paragraphs` is inert on `active` but DOES write `itemType`, re-minting the item with default
+  values. `set_paragraph_item_fields` takes a MAP and reports `succeeded` for field names that do not
+  exist on the item type. `patch_products_safe` `customFields` take `{id, value}` with STRING values,
+  a multi-select being a comma-joined string, and the wrong shape is a hintless invoke error.
+- **`add_product_image` is an ADD and validates nothing** (`asset-organisation.md`). With a `groupId` it
+  mints a second detail row instead of moving one, so a category migration needs an explicit remove
+  step or every PDP shows its photo twice; and it accepts a `filePath` that does not exist, producing a
+  dead asset link that `Swift-v2_ProductMediaTable` hides behind its `File.Exists` guard.
+- **Imagery is an orchestrator job, uploading is an executor job** (`asset-organisation.md`). A spool
+  executor has no image-generation capability at all, so a brief that asks it to generate is
+  unexecutable: deliver the mechanism, prove it with an honest asset, and report the imagery blocked
+  rather than shipping a wrong-colourway shot.
+- **Derived spec values need a review stage** (`governance.md`). Deriving specs from marketing prose
+  propagates the catalogue's own copy-paste defects and misreads negations, attachments, model names
+  and units: 24 of 44 candidates were wrong. Exclude any product on the copy-paste worklist from
+  description-derived enrichment.
+
+- **`AreaSave` is whole-entity carriage, and it cannot set the domain** (`deserialize-flow.md`). A save
+  that omits `websiteItem` blanks `Swift-v2_Master`'s header and footer bindings while the page keeps
+  returning 200, so bind the area's commerce columns by SQL or round-trip the FULL `GetAreaById` model,
+  and gate after any `AreaSave` on `<header data-swift-page-header>` and `<footer data-swift-page-footer>`
+  being present. `domain` / `hostNames` are accepted and no-op on `AreaDomain`, and a full model with
+  `hostNames` 500s: the published "or the Management API equivalent" for the root binding is corrected
+  to the SQL-plus-restart motion.
+- **`EcomCurrencies.CurrencyRate` is a percentage, `100.0` = par** (`deserialize-flow.md`). The Swift
+  baseline ships `USD$$<lang>` rows at rate `1.0`, so every price renders at 1 % of value the moment USD
+  becomes the default, with the symbol and formatting perfectly correct. Assert the magnitude against
+  `ProductPrice`, not the symbol.
+- **Cart gates over curl** (`customer-center.md`). DW10 silently skips the cart command for curl's
+  default User-Agent: 200, a cart row, zero `EcomOrderLines`, nothing in the log. Set a browser UA, plus
+  `-L` / `--post301` for the `Default.aspx` redirect and `-F` for the multipart form. And a lines-only
+  SQL delete leaves the cached `Order`, so the next add comes back at doubled quantities: delete the
+  `EcomOrders` cart row too and restart the pool.
+- **Facet source fields** (`index-management.md`). An `Analyzed="false"` field is one term, so a
+  multi-value cell facets as a single giant bucket, and `Analyzed="true"` buckets word fragments
+  instead. Source the facet from a single-valued sibling or a real multi-value field type, and assert
+  the facet's VALUE COUNT. Also: the Files index build fails on a fresh clone when
+  `Files\Digital assets` does not exist, and instances build one per call.
+- **The mobile performance pass** (`mobile-pass.md`). A hero preload is a no-op when
+  `lcp-discovery-insight` already scores 1, because the preload scanner discovers `<img srcset>` during
+  parse and blocking CSS delays paint, not discovery. Below-fold EAGER slider images cost more LCP than
+  every insight row Lighthouse ranks above them, because no audit models bandwidth contention: a
+  net-new Custom-lane template with `loading="lazy"` and a quality override moved mobile Performance
+  86 to 93 in one step.
+- **Minifying the custom sheet** (`re-skin.md`). `clean-css` level 1 sorts selector lists, strips
+  whitespace inside values Blink serialises verbatim, and rewrites `background-position-x: initial` to
+  `0px`: it is not whitespace-only, and no size metric reveals a value-level edit. Ship a tokeniser that
+  only drops comments and collapses whitespace outside strings, `url()` and values. A minified sheet
+  must carry a `/*! ... */` banner naming its readable master, or the pull-live-and-edit motion
+  silently diverges from it.
+- **The Tier-0 customer re-skin motion** (`styles-assets.md`). Net-new `<customer>.{json,css}` pairs
+  reusing the **seven stock ColorScheme ids verbatim**, because every deserialized
+  `data-dw-colorscheme` binds by id name and renaming them unbinds the whole site with no error. Edit
+  the hex AND the rgb triplet in BOTH the `.css` and the `.json`, repoint the four `Area` style columns
+  by SQL, and load `default_custom.css` before `<customer>_custom.css`.
+- **Host restore traps** (`dw-setup-config/SKILL.md`, `publish-to-hosted.md`). A
+  `GlobalSettings.Database.config` `<Password>` is ciphertext bound to that host's `appsettings`
+  Encryption keys: copied between solutions it decrypts to garbage and the site serves the Setup
+  wizard while SQL logs a password mismatch. And a transfer package that is a **source project** keeps
+  its own `bin`: ring-symlinking it boots a stock host with every custom extension silently gone.
+
 ## [4.32.0]
 
 Fold-back sprint: **screens, hosted-install traps and the Aug-26/31 misc wave**.

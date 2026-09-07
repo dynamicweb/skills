@@ -191,7 +191,13 @@ auto-correction on this path. A wrong value renders as garbled raw text, overlap
   - `Swift-v2_Poster.Height` → `"2"` = 35vh, `"3"` = 55vh, `"4"` = 85vh. Unset renders a short
     boxy tile.
   - Row `ContainerWidth` → `1` = text width, `2` = 65vw, `3` = default page container,
-    **`4` = full-bleed (100% width, zero gutter)**.
+    **`4` = full-bleed (100% width, zero gutter)**. Width `4` removes the `main` gutter
+    ENTIRELY, so "full width" and "edge-to-edge" are one setting, not two: stock `swift.css`
+    sets `--dw-container-gutter:0rem` at width 4 and re-adds `calc(2rem)` only under
+    header/footer, so a Text or product-list row at width 4 starts at x=0 on desktop and
+    mobile alike. theme-default 1.3.3 block 21 restores a `--dw-container-gutter` on width-4
+    containers inside `main`, with a `data-td-full-bleed` attribute as the opt-out for rows
+    that really should bleed.
   - Row `GapX` / `GapY` → `0` = flush (tiles butt together), `1` = .25rem, `2` = .5rem,
     **`3` = 1rem (default)**, `4` = 2rem, `5` = 3rem, `6` = 6rem.
   - Full-bleed flush image/poster tile grids — the look most brand sites use — are
@@ -298,7 +304,15 @@ small related blocks into one multi-column row instead of a long single-column s
     and the `Model.Grid(...)` ones a Swift v2 page layout uses. Take the `IsDefault` entry
     (`Grid` on `Swift-v2_Page.cshtml`) as the `Container` for rows and paragraphs. A row saved
     with no `Container` never lands in the layout's content area and the whole page renders
-    blank, so let the create path default it or pass a discovered name — never a guess.
+    blank, so pass a discovered name — never a guess, and never nothing. **`GridRowContainer`
+    is the discriminator for a row that saves and never renders.** On the Management API,
+    `GridRowCreate {PageId, GridId:'Page', DefinitionId, Container:'Grid'}` works, while the
+    same call WITHOUT `Container` answers HTTP 500 **and still writes a row** carrying
+    `GridRowContainer=''` that renders nothing (`GridId` is `'Page'`, from
+    `GridRowSelectorByPage`; passing `'Grid'` there throws). The row ITEM is not the tell — it
+    mints on the failure path too — so assert `GridRowContainer` is non-empty after every
+    create and delete the row when it is not. `GridRowSave` with `ID:0` answers 404: it is
+    update-only. `GridRowCopy` carries the source's container and the copy renders.
 14. Batching: `set_item_field_values` takes a list spanning DIFFERENT items, so a whole page's
     field values fit in one or two calls — prefer it to one `set_paragraph_item_fields` per
     paragraph. For repeatable children (slider slides, accordion rows) pass an explicit
@@ -325,8 +339,9 @@ its JSON sets the matching `EnableContainerWidth` / `EnableGapSettings` / `Enabl
 **Read the tool's own model before relying on that.** The MCP save model is build-dependent: on one
 10.28.5 host `save_grid_rows` carried only
 `active`/`backgroundImage`/`colorSchemeId`/`container`/`definitionId`/`id`/`itemType`/`pageId`/`sort`,
-and rows it created came back with `GridRowItemId` NULL. Where a member is missing, the native write is
-`POST /Admin/Api/GridRowSave?Query.Type=GridRowById`, which also mints the missing row item. The exact
+and rows it created came back with `GridRowItemId` NULL. Where a member is missing, the native UPDATE is
+`POST /Admin/Api/GridRowSave?Query.Type=GridRowById`, which also mints a missing row item; the native
+CREATE is `GridRowCreate` (gotcha 13). The exact
 payload shape, the preserved-members caveat and the per-template spacing defaults live in
 `dw-data-access` (`management-api-and-sql.md`, the `GridRow` NOT-NULL-columns section). Never coalesce a null `TopSpacing`/`BottomSpacing` to a default on a whole-entity
 save: the two Swift row templates have different defaults (`Swift-v2_Row` 6, `Swift-v2_RowFlex` 1).

@@ -11,9 +11,10 @@
 - [7. Signing in AS a persona — the field names, and the right assertion target](#7-signing-in-as-a-persona--the-field-names-and-the-right-assertion-target)
 - [8. Renaming a persona is a sweep, not a user edit](#8-renaming-a-persona-is-a-sweep-not-a-user-edit)
 - [9. Checkout delivery date and custom order fields](#9-checkout-delivery-date-and-custom-order-fields)
-- [10. The B2B DC pattern (one AccessUser group per Stock Location)](#10-the-b2b-dc-pattern-one-accessuser-group-per-stock-location)
+- [10. The storefront account-admin page (Swift 2.4 UserGroups app)](#10-the-storefront-account-admin-page-swift-24-usergroups-app)
+- [11. The B2B DC pattern (one AccessUser group per Stock Location)](#11-the-b2b-dc-pattern-one-accessuser-group-per-stock-location)
 
-> The Swift customer-center frontend playbook for Dynamicweb 10 demos. Covers the page-tree map (Account vs CSR vs legacy nav vs Overview), the stock-CSR rule rationale (inoculation against the rebuild-the-CSR-section trap in sales-on-behalf demos), the persona presentation layer, the Swift 2.4 sign-in profiles / switch-user recipe (§6), the checkout order-field recipe (§9), and the B2B DC pattern (§10). The deeper, vendor-generic mechanics (impersonation, the `AccessUserSecondaryRelation` grant, reorder, seeding filters, permission gating, contract pricing) are owned by foundational skills — see §3.
+> The Swift customer-center frontend playbook for Dynamicweb 10 demos. Covers the page-tree map (Account vs CSR vs legacy nav vs Overview), the stock-CSR rule rationale (inoculation against the rebuild-the-CSR-section trap in sales-on-behalf demos), the persona presentation layer, the Swift 2.4 sign-in profiles / switch-user recipe (§6), the checkout order-field recipe (§9), the storefront account-admin page (§10), and the B2B DC pattern (§11). The deeper, vendor-generic mechanics (impersonation, the `AccessUserSecondaryRelation` grant, reorder, seeding filters, permission gating, contract pricing) are owned by foundational skills — see §3.
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -280,7 +281,81 @@ order.
 Until it is fixed, create the definition via the SQL contract above — and first ask whether the
 beat needs a custom field at all (see the delivery-date rule).
 
-## 10. The B2B DC pattern (one AccessUser group per Stock Location)
+## 10. The storefront account-admin page (Swift 2.4 UserGroups app)
+
+The "Manage users" page an account admin uses to invite, activate, impersonate and remove their own
+people. The permission gate that decides whether ANY of it works, the module's real property set, the
+`AccountListScope` directory filter and the single-account-person modelling trade-off are foundational —
+[`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §17. **Read that
+first: out of the box every command on this page is refused with a 200 and a toast, and the buttons still
+render.** What follows is the demo-facing behaviour of the same page.
+
+### Impersonating from this page answers a 128-byte permission-denied page, and that IS the switch succeeding
+
+The impersonate anchor in `UserGroupUser_List.cshtml` posts back to the **same URL it is rendered on**:
+`{baseUrl}?NowImpersonating=true&DWExtranetSecondaryUserSelector={id}&Redirect={RedirectAfterImpersonation}`.
+The secondary-user switch is applied **before** the page renders, so the acting user is already the
+impersonated buyer, who by design has no permission on the account-admin Users page. The response is
+therefore the denied page **for the new identity**, and the paragraph's `RedirectAfterImpersonation`
+setting is not honoured on this request:
+
+```
+GET /<lang>/account/users?NowImpersonating=true&DWExtranetSecondaryUserSelector=<buyerId>&Redirect=…
+    -> 200, length 128 (the DW "You do not have permission to view the page" body)
+GET <the buyer's overview page>
+    -> 200, 146 KB, the buyer's name plus a DwExtranetRemoveSecondaryUser switch-back link
+GET <the buyer's orders page>            -> the buyer's order codes
+GET /<lang>/account/users?DwExtranetRemoveSecondaryUser=1   -> back to the admin identity
+```
+
+Every naive assertion (banner present, list re-rendered, length > N) reads that 128-byte body as a failed
+impersonation, and the obvious next move is to go re-check `AccessUserSecondaryRelation` rows that are
+already correct. **Assert the impersonation on the FOLLOWING request to a buyer-visible page, never on the
+response to the impersonate link itself.** A 128-byte denied page there is the expected success signature
+when the host page is admin-only.
+
+### The invitation mail cannot greet the invitee by name
+
+`Users/UserCreate/ConfirmationEmail/UserInviteEmailConfirmation.cshtml` does `Model.Name ?? Model.UserName`,
+but `Dynamicweb.Users.Frontend.UserCreate.UserCreateViewModelFactory.CreateNewUserViewModel(user,
+settings)` populates only `Result`, `Email` and `UserName` from the user — **`Name` is never assigned**.
+The UserGroups invite form defaults `UserName` to the email address, so the fallback always renders the
+address and every invitation opens "Dear <email address>," while the account Users list shows the person's
+real name on the row. The same factory feeds the on-screen invite form, where the gap is invisible.
+
+`UserCreationHelper.SendEmail` runs `SendInvitationEmail` **after**
+`UserManagementServices.Users.Save(user)`, so the row exists by then and the template can fall back
+through it:
+
+```csharp
+if (string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(Model.Email)) {
+    var invitee = UserManagementServices.Users.GetUserByEmailAddress(Model.Email);
+    if (invitee != null && !string.IsNullOrEmpty(invitee.Name)) userName = invitee.Name;
+}
+```
+
+Verify by inviting a throwaway whose Name differs from the email, capturing the outgoing `.eml`
+(`saveAllMailsToDisk`) and asserting the greeting carries the Name and not the address. The upstream fix
+is `Name = user?.Name` in `CreateNewUserViewModel`.
+
+### A failed invitation mail is INVISIBLE in the EventViewer, and the badge is the delivery signal
+
+`UserCreationHelper.SendEmail` calls `SendInvitationEmail` FIRST and only then sets `user.InvitationSent`
+and saves. If the SMTP send throws, `InvitationSent` is never written, so `User.GetStatus()` returns
+**Inactive** instead of **Pending**. The invite POST returns 200, there is no error toast, and **nothing
+lands in `Files/System/Log/EventViewer`** — reading that log had previously been used to conclude the mail
+"ran without throwing".
+
+Mail exceptions go to a different log, `Files/System/Log/EmailHandler/<yyyy_MM>.log`, and DW drops a
+second copy of the message as `<timestamp>_<guid>.eml` in that folder on the failure path (so a broken
+send leaves TWO `.eml` files milliseconds apart where a healthy one leaves one).
+
+**Assert on the EmailHandler log, not the EventViewer, and treat the badge as the cheap in-band delivery
+check.** PASS requires both: zero lines matching `Error:` appended to
+`Files/System/Log/EmailHandler/<yyyy_MM>.log` after t0, **and** status `Pending` on the row. Then delete
+the throwaway.
+
+## 11. The B2B DC pattern (one AccessUser group per Stock Location)
 
 The canonical Dynamicweb 10 B2B pattern for any portal where pricing, stock, shipping methods, or
 shipping fees vary by Distribution Center (DC) — vendor-blessed (Dynamicweb architecture guidance).
@@ -300,6 +375,27 @@ pattern"). Read that before scaffolding DC groups. Related:
 `PriceQuantity > 0` tier rows; ERP-pre-graduated rows are the production pattern for qty-aware DC
 pricing). The stock Swift CSR section (§1–§3 above) layers on top of the DC pattern when a CSR
 persona impersonates DC buyers.
+
+### Stock Swift renders NOTHING where the price goes when the area hides prices
+
+**On an area configured `AnonymousUsers="cart-price"`, the PLP and PDP render an EMPTY
+`<div data-dw-itemtype="swift-v2_productprice">` to anonymous visitors**: no price, no explanation, no
+sign-in call to action, so a prospect sees products with no commercial surface at all. This is not a
+misconfiguration to chase. `Swift-v2_ProductPrice.cshtml` computes
+`hidePrice = anonymousUsersLimitations.Contains("price") && anonymousUser`, wraps its ENTIRE body in
+`@if (product is object && !hidePrice && …)`, and the only `else` branch is
+`else if (Pageview.IsVisualEditorMode)`. **There is nothing to configure — the call to action has to be
+added to the component**, as an `else if (hidePrice)` branch rendering a note plus a real anchor to the
+sign-in page, carrying a marker class so the gate can assert it.
+
+**The anchor string `else if (Pageview.IsVisualEditorMode)` occurs TWICE in that file**, and the first
+occurrence is inside the leading `@{ }` block. A `String.replace` on the first match injects the new
+branch **above** the `hidePrice` declaration, Razor fails to compile, and every PLP and PDP serves a
+compiler stack trace **while still answering HTTP 200**. Anchor on the second occurrence, or on a longer
+unique span, and prove the edit by fetching a PLP and asserting the marker class is present rather than
+asserting a status code. Gate shape that works: at least one element matching the marker class per product
+row on the PLP, each at least 34px tall and 120px wide with a background or a border, plus a
+"every row carries a price surface" assert.
 
 ### Hiding prices from anonymous visitors is a **template-level** gate only
 
