@@ -9,6 +9,7 @@
 - [Subfolder conventions for demos](#subfolder-conventions-for-demos)
 - [Branding assets — a shared SVG is not safe to edit in place](#branding-assets--a-shared-svg-is-not-safe-to-edit-in-place)
 - [Generated product imagery — review against the hero, and record the prompt](#generated-product-imagery--review-against-the-hero-and-record-the-prompt)
+- [`add_product_image` is an ADD, and it validates nothing](#add_product_image-is-an-add-and-it-validates-nothing)
 - [Catalogue imagery is its own brief](#catalogue-imagery-is-its-own-brief)
 - [Video in a PDP media gallery — stock Swift preloads it three times](#video-in-a-pdp-media-gallery--stock-swift-preloads-it-three-times)
 - [Auditing which assets are actually referenced](#auditing-which-assets-are-actually-referenced)
@@ -89,6 +90,41 @@ Record **`prompt` (verbatim), `model` and `quality` as REQUIRED** alongside `gen
 asset, and record the prompt **actually sent**, so a regenerated image carries the prompt that produced
 the shipped file rather than the first attempt. Definition of done: a second run can re-issue the recorded
 prompt and get a comparable image.
+
+**An executor session cannot generate imagery, so the brief boundary is generate-then-upload.** A
+non-interactive spool executor runs with the DW Backend MCP, the Lovable MCP and local shell tooling;
+none of them produces raster imagery and there is no image-generation key on the host (the shipped
+`var/tools` carries poppler, which READS PDFs). A brief that asks the executor to "generate" a product
+photo is unexecutable, and the recipes above were written for an orchestrator session that could
+generate. Split the work at the brief boundary: the **orchestrator** generates and eyeballs the assets
+and drops them in `staging/`, the **executor** brief only uploads, attaches and verifies.
+
+Where a brief already asks an executor to generate, deliver the **mechanism**, prove it with whatever
+honest asset exists, and **report the imagery as blocked**. Do not close the checkbox with a
+wrong-product or wrong-colourway shot: reusing a different fragrance's can or a different colourway
+passes a sheet review and ships a lie, and upscaling the single existing asset into a fake "second
+angle" invents detail that is not in the photograph. Measure the extraction well before declaring it
+dry (files on disk, assets per master, files attached to no master) rather than assuming it.
+
+## `add_product_image` is an ADD, and it validates nothing
+
+Two traps on the same verb, both silent on the storefront:
+
+- **With a `groupId` it ADDS a second asset link, it does not move one.** Called with the same
+  `filePath` and a different `groupId` it mints a NEW detail row in the target category and only flips
+  `isDefault` to it; the original `groupId: 0` row survives untouched. Run naively over a
+  298-product category migration that puts TWO links to the SAME file on every product, and Swift
+  renders a gallery plus a thumbnail strip at more than one asset, so every PDP shows the same photo
+  twice. A migration is therefore three steps per product: add under the target group,
+  `remove_product_image` on every detail whose `groupId` is not the target, then read back and assert
+  exactly N details, all in the target group, exactly one `isDefault`.
+- **It accepts a `filePath` that does not exist on disk.** Neither file existence nor extension is
+  validated, so any string is accepted and the call returns a healthy `detailId` for a dead asset
+  link. `GroupedAssetsByProductId` lists it, and `Swift-v2_ProductMediaTable` guards its rows with
+  `File.Exists`, so the broken attachment renders as **nothing** rather than as an error: the defect
+  is invisible on the PDP and shows only as a silently missing row. A rename done after an attach
+  leaves stale paths attachable forever. Check the path against `list_files` before the attach and
+  read `GroupedAssetsByProductId` back after it.
 
 ## Catalogue imagery is its own brief
 

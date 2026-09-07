@@ -17,6 +17,8 @@ and repository side.
 - [Channel isolation is a QUERY-time filter](#channel-isolation-is-a-query-time-filter-not-an-index-time-one)
 - [Currency integrity is an index-build precondition](#currency-integrity-is-an-index-build-precondition--dividebyzeroexception-names-neither-the-currency-nor-the-country)
 - [A NULL-price variant row drops every variant document from the build](#a-null-price-variant-row-drops-every-variant-document-from-the-build)
+- [An `Analyzed="false"` field facets as ONE term](#an-analyzedfalse-field-facets-as-one-term)
+- [The Files index needs `Files\Digital assets` to exist](#the-files-index-needs-filesdigital-assets-to-exist)
 - [Recovery recipe: Rebuild Products index](#recovery-recipe-rebuild-products-index)
 
 ## Repositories, Indexes, and Queries — file-based
@@ -196,6 +198,42 @@ Error process prices (AutoID: <the variant rows' auto ids>)
   [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.14).
 - **Count the documents, not the build status.** Assert the built document count against masters plus
   variants; a build that silently drops every variant still answers `state: success`.
+
+## An `Analyzed="false"` field facets as ONE term
+
+Decide the facet's SOURCE field before the index is written. A field indexed as
+`<Field Source="ProductCategory|<cat>|<field>" Analyzed="false">` is a single term, so the facet gets
+exactly one bucket per distinct **cell**. On a multi-value PIM text field that is one giant checkbox:
+a pipe-joined fitment cell (`Machine A (SKU) | Machine B (SKU)`) facets as the whole string rather
+than one value per machine. `EcomProductCategoryField` `FieldType = 11` (plain Text) carries no
+multi-value semantics of its own; the pipe separator is a display convention, not structure.
+
+Setting `Analyzed="true"` on the pipe-joined field is **not** the fix: an analysed field tokenises on
+whitespace, so the facet buckets word fragments ("Snapper", "T42", "(SNTR1900-42)") instead of whole
+labels. Two honest options:
+
+- **Source the facet from a separate SINGLE-valued field** and keep the multi-value field display-only.
+  Know the consequence: an item that fits several machines is then reachable only through its primary
+  value in that facet.
+- **Use a genuine multi-value field type.** `EcomProductCategoryField.FieldType` has options beyond 11
+  (1, 2, 3, 6, 7, 8, 12, 15 and 25 are all in gate-proven use) and `EcomFieldOption` exists for option
+  lists.
+
+**Assert the facet's VALUE COUNT, not that the facet renders.** A single-term regression shows as a
+facet with exactly one enormous checkbox, which a presence assert passes. Assert the expected bucket
+count per facet and the product count behind at least one filtered URL. Not corruption, by the way:
+Swift wraps a facet value containing a comma in brackets, `value="[Controls, Steering &amp; Seat]"`.
+
+## The Files index needs `Files\Digital assets` to exist
+
+On a fresh clone the Files index build fails outright with `Directory 'Files\Digital assets' does not
+exist`, and the whole index goes to error / "no healthy instance", which then reads as a broken
+repository. The builder requires the directory; a fresh clone does not ship it. Precreate it before
+the first build (`mkdir "Files/Digital assets"`), or scope the build to the repositories the demo
+actually serves. Two rebuilds are needed afterwards, because index instances build one at a time: each
+`BuildIndex` call rebuilds only the currently-offline instance and then swaps, so a two-instance index
+reports a partial state until the second call. Gate on `GET /Admin/Api/IndexStatusesAll` reporting
+success / "All instances are fine" per repository, never on the `BuildIndex` response.
 
 ## Recovery recipe: Rebuild Products index
 

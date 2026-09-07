@@ -207,6 +207,80 @@ Display-group field links use the pipe-delimited form `ProductCategory|<Category
 `EcomProductCategoryFieldValue` splits the parts; the rendering code synthesises the pipe form when
 matching, so the stored `FieldDisplayGroupFieldSystemName` MUST be the full pipe form.
 
+### Creating and assigning a field display group
+
+**Field display groups are API-only.** Settings > Products > Channels > Field display groups renders
+the empty state "No results found / There are no records to display" while
+`GET /Admin/Api/FieldDisplayGroupAll` returns the rows and the PDP accordion renders all of them with
+real values. Measured on 10.26.12 cloud: `totalCount 4` from the API, `tbody tr` count **0** on
+`/Admin/UI/Ecommerce/FieldDisplayGroupList`, in the same browser session, seconds later, for the real
+persona AND for a throwaway `systemAdministrator` created and deleted in the same run. It is not a
+permission problem, not a stale cache, and not a filter: the screen has no shop/channel/language
+control to mis-set, and translations plus a default-language Name are present. The screen simply never
+binds the `EcomFieldDisplayGroups` rows on this host class. **Do not promise an owner-visible admin
+screen for display groups**; a brief that says "check it in the UI" becomes "read it back through
+`FieldDisplayGroupAll`". Create, translate and wire them entirely through
+`FieldDisplayGroupSave` + `FieldDisplayGroupTranslationSave` + the paragraph item-field verbs.
+
+`FieldDisplayGroupSave` semantics, all measured:
+
+- `Id: 0` creates; a save is a **whole-entity replace**, so post the full model.
+- **`SystemName` is immutable after create, and the save response echoes the NEW value while the store
+  keeps the old one.** Pick system names right the first time and verify a rename by read-back, never
+  by the save echo.
+- `Name` writes the **default-language** translation only. Other languages need
+  `FieldDisplayGroupTranslationSave`.
+- **`EcomFieldDisplayGroupShops` does not gate rendering.** `ShopIds: []` and `ShopIds: ["CH-PRINT"]`
+  both render on `SHOP1`, so shop binding is inert as a visibility lever.
+- Members take the pipe form `ProductCategory|<categoryId>|<fieldId>` (see "Field-system-name format"
+  above). Resolution runs through `ProductField.GetAllEditableProductFields` including
+  `GetCategoryFields`, so **fields of categories not attached to the product drop silently**: build one
+  member variant per category that carries the logical field.
+
+**A PIM spec row needs all five of these, and the translation row is the one that gets forgotten.**
+Without an `EcomProductCategoryTranslation` row the whole PIM category is invisible to the ViewModel:
+`productCategories` comes back as `{}` and `fieldDisplayGroups` as `{}`, so
+`Swift-v2_ProductFieldDisplayGroupsAccordion` renders its own heading and **zero groups**, at HTTP 200
+with `dw-error = 0`. Nothing status-based or error-based catches it.
+
+1. `EcomProductCategory` (`CategoryProductProperties = 0`, `CategoryType = 0`) **plus its
+   `EcomProductCategoryTranslation` row** (`CategoryTranslationCategoryId`,
+   `CategoryTranslationLanguageId`, `CategoryTranslationCategoryName`).
+2. `EcomProductCategoryField` (`FieldType = 11` for plain text, `FieldTemplateTag = FieldId`,
+   `FieldHideEmpty = 1`) plus `EcomProductCategoryFieldTranslation` for the label.
+3. `EcomGroups.ProductCategoryId` on every group that holds the products.
+4. `EcomFieldDisplayGroups` (`FieldDisplayGroupAvailableInFrontend = 1`,
+   `FieldDisplayGroupShopIds = NULL`) plus `EcomFieldDisplayGroupTranslation` and
+   `EcomFieldDisplayGroupFields`.
+5. `EcomProductCategoryFieldValue` per product.
+
+Then restart the pool (the display-group cache above). **Diagnose from the ViewModel JSON, not from
+the markup:** `GET /dwapi/ecommerce/products/<ProductId>` works **anonymously**, returns the whole
+`ProductViewModel`, and separates "the data is wrong" from "the template is wrong" in one call.
+Non-empty `productCategories` and `fieldDisplayGroups` is the gate; the accordion group count and
+spec-row count follow.
+
+**Never put a range-typed field in a display group unless it is verifiably filled.** A `RangeValue`
+object is non-null even when both members are null, so the null-field drop and `HideFieldsWithZeroValue`
+never fire and `FieldValue.cshtml` falls through to `ToString`: the PDP prints the literal
+`RangeValue { Minimum = , Maximum =  }` as the spec value. Template guard: assert the served HTML
+contains **zero** `RangeValue {` substrings across the page set.
+
+**The layout partial is resolved BY STRING, which makes it an extension point.**
+`Swift-v2_ProductFieldDisplayGroups.cshtml` renders
+`RenderPartial($"Components/Specifications/{FirstCharToUpper(Model.Item.GetRawValueString("Layout","list"))}.cshtml")`,
+and the item field accepts a value its `RadioButtonList` never offers, because the editor constrains
+the admin UI and not the store. Swift 2.4 ships exactly six files under `Components/Specifications/`
+(Accordion, Bullets, Columns, Commas, List, Table) and **no Tabs**, while
+`ItemType_Swift-v2_ProductFieldDisplayGroups.xml` offers list / columns / table / bullets / commas. A
+NEW `Components/Specifications/<Name>.cshtml` plus `Layout=<name>` therefore adds a display-group
+layout with **no custom item type, no `ItemTypeSave` and no edit to a standard template**. Two
+caveats: an editor re-saving the paragraph's Styling group in the admin UI drops `Layout` back to a
+stock option, so the gate must assert the layout's own DOM (for a tabs layout: `role="tab"` and
+`role="tabpanel"` counts, the open `.tab-pane` computing `display:block`, the active tab's
+`borderBottomColor`), not the item value. Restyling the accordion into a tab strip with CSS is
+rejected: it leaves an accordion in the DOM and in the admin UI, and nothing shows until a click.
+
 ### `Swift-v2_Row` has no item-type fields
 
 The row item type ships with zero custom fields — its layout knobs (column definition, container,

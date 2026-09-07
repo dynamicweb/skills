@@ -38,6 +38,7 @@ Trigger shapes, one per thematic reference (the "Where to find things" table bel
 - Modelling PIM data structures (shops vs channels vs data structures, GroupType, repositories+indexes, variants, BOM, channels+feeds, assets, product categories).
 - Choosing and executing a setup order — Storefront-first vs PIM-first.
 - Diagnosing "completeness rule doesn't show", building governance dashboards, recovering from missing seed rows or stale indexes (incl. GUID-collision errors in the Products -> Shared queries tree).
+- Authoring the PIM editor surface: screen layouts and screen presets, a product editor that renders no tab strip, driving grid edit or Bulk update.
 - Looking up the post-mutation cache flush for any surface.
 - Designing the product workflow / approval flow (states, transitions, notifications).
 - Designing the role/permission matrix for a PIM team.
@@ -57,6 +58,7 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 | Understand the structural model (incl. §2.3a native "Publish to channel" action, §2.5a single-axis variants, §2.11 Pricing / `PriceQuantity>0` cart gotcha, §2.12 Dynamic Workspaces) | references/structural-model.md |
 | Pick the right setup-order variant — Storefront-first or **PIM-first** (no `ShopType=1` shop, Dynamic Workspaces + workflow-driven) | references/canonical-setup-order.md (§0 decision matrix at top) |
 | Diagnose "rules don't show", build dashboards, recover from missing seed rows or stale indexes | references/governance.md |
+| Author the PIM editor surface: `ScreenLayout` / `ScreenType` / `ScreenPreset` / `ConfigurableColumns`, the "no tab strip" discriminator, grid edit and Bulk update | **references/screen-authoring.md** |
 | Look up a post-mutation cache flush | references/cache-invalidation.md |
 | Design the **DW10 product Workflow** (states, transitions, notifications) + work around the verified per-state-role-gating gap | **references/workflow.md** |
 | Understand the **three-layer permission model** (UnifiedPermission + CapabilityControlFeature + entity-level) — concept, storage tables, flag decision, admin bypass | **references/permissions-model.md** |

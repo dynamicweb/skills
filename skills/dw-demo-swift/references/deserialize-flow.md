@@ -251,6 +251,44 @@ UPDATE Area SET AreaEcomShopId = 'SHOP1', AreaEcomCurrencyId = 'EUR', AreaEcomLa
 WHERE AreaId = <area>;  -- then restart the host (Area rows materialise at startup)
 ```
 
+**Bind these columns by SQL, not by `AreaSave`.** `AreaSave` treats the posted `Model` as authoritative
+and full-replace, so a **partial** model wipes what it omits. A save that omitted `websiteItem`
+returned HTTP 200 / `ok` and blanked
+`Swift-v2_Master.{HeaderDesktop, HeaderMobile, FooterDesktop, FooterMobile, AnonymousUsers}` that the
+deserializer had just installed: the storefront then rendered with **no `<header>` and no `<footer>`
+while still returning 200**, and nothing in the response signalled the loss. If a partial save has
+already happened, the repair is a re-run of `SerializerDeserialize` Replace, which is idempotent
+(0 created / 281 updated / 746 skipped / 0 failed on the measured host). Two rules follow:
+
+- Either bind the area's ecommerce columns with SQL, or round-trip the **FULL** `GetAreaById` model
+  including `websiteItem`. Never post a hand-built partial `Model` to `AreaSave` on an area that
+  carries `Swift-v2_Master` values. (`AreaSave`'s one mandatory field is `layoutTemplate`, validation
+  label "Default page template". There is no `layout` / `areaLayout` / `template` alias.)
+- **Gate after ANY `AreaSave`:** fetch `/` and require both `<header data-swift-page-header=...>` and
+  `<footer data-swift-page-footer=...>` to be present. HTTP 200 alone does not prove the area survived;
+  the symptom to watch for is a 200 with `grep -c '<header'` equal to 0.
+
+**`EcomCurrencies.CurrencyRate` is a PERCENTAGE against the default currency: `100.0` is par, `1.0`
+means one hundredth.** The Swift baseline ships `USD$$<lang>` rows at `CurrencyRate = 1.0` with
+`CurrencyIsDefault = 0`, which is harmless only while nothing resolves against them and instantly wrong
+the moment USD becomes the default: every price renders at 1 % of value, a 2599.99 product showing
+$26.00. The symbol, culture and formatting are all correct, so the page looks entirely plausible and no
+error, `dw-error` or log entry marks it. `EcomCurrencies` is keyed `CurrencyCode` + `CurrencyLanguageId`,
+so back-fill a row for **every** `EcomLanguages` row (three had none on the measured host) and leave
+exactly one `CurrencyIsDefault` per language context:
+
+```sql
+UPDATE EcomCurrencies SET CurrencyRate      = 100.0 WHERE CurrencyCode = 'USD';   -- 100.0 = 1:1
+UPDATE EcomCurrencies SET CurrencyIsDefault = 0     WHERE CurrencyIsDefault = 1;
+UPDATE EcomCurrencies SET CurrencyIsDefault = 1     WHERE CurrencyCode = 'USD';
+UPDATE Area SET AreaEcomCurrencyId = 'USD' WHERE AreaId = <area>;
+```
+
+Assert the rendered price **equals** `ProductPrice`, not merely that a currency symbol is present: a
+1:100 scale error still renders a well-formatted, plausible number. Use a known-value control row (a
+100.00 product must render as 100.00) plus `itemprop="price" content="..."` on a hero PDP, and assert
+exactly one `CurrencyIsDefault` per language context with zero non-target defaults.
+
 ### Site root `/` 404s after deserialize — bind `AreaDomain` + `AreaFrontpage` (DW 10.27.x)
 
 A clean deserialize can still leave the **site root (`/`) returning 404** even though every page exists and resolves under its own path — the area just has no root binding. On **DW 10.27.x the root binding is two `Area` columns**, set on the area the root should serve:
@@ -258,7 +296,7 @@ A clean deserialize can still leave the **site root (`/`) returning 404** even t
 - **`Area.AreaDomain`** — the host the area answers on (e.g. `localhost`, or `localhost:<port>`).
 - **`Area.AreaFrontpage`** — the numeric page id that `/` renders.
 
-**There is no `AreaDns` table on 10.27.x** — do not look for one; the older DNS-binding table is gone and the binding lives on the `Area` row itself. Set both columns (`UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>`), then **restart the host** — `Area` rows are materialised at startup, so the new root binding is not live until the bounce (see [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md), the `Area`-row row). These binding columns are per-environment and excluded from serialization, so they arrive unset on a fresh host — set them at provisioning, don't expect them from the baseline.
+**There is no `AreaDns` table on 10.27.x** — do not look for one; the older DNS-binding table is gone and the binding lives on the `Area` row itself. **`AreaSave` cannot set `AreaDomain`.** It accepts both `domain` and `hostNames` and maps neither onto the column, so the write is a silent no-op that answers 200, and a full model carrying `hostNames` additionally returns HTTP **500**. A green `AreaSave` response is not evidence the domain is set: read `SELECT AreaDomain FROM Area WHERE AreaId = <id>` back. Set both columns by SQL (`UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>`), then **restart the host** — `Area` rows are materialised at startup, so the new root binding is not live until the bounce (see [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md), the `Area`-row row). These binding columns are per-environment and excluded from serialization, so they arrive unset on a fresh host — set them at provisioning, don't expect them from the baseline.
 
 ## 8. Mandatory next step
 
@@ -266,7 +304,7 @@ After this flow returns 2xx, **immediately run [`integrity-sweep.md`](integrity-
 
 **Also bind the area's commerce columns** (§7 "Mandatory consumer obligation") — `AreaEcomShopId` / `AreaEcomCurrencyId` / `AreaEcomLanguageId` explicitly per area + host restart; on DW 10.28+ an unbound area derives its currency from the area culture (en-US → USD), not `CurrencyIsDefault`.
 
-**Also bind the site root** (§7 "Site root `/` 404s after deserialize") as an explicit post-deserialize step: `AreaDomain` / `AreaFrontpage` are per-environment and excluded from serialization, so `/` 404s until you set them — `UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>` (or the Management API equivalent), **then restart the host** (Area rows materialise at startup). The integrity sweep's done-condition includes `/` returning 200.
+**Also bind the site root** (§7 "Site root `/` 404s after deserialize") as an explicit post-deserialize step: `AreaDomain` / `AreaFrontpage` are per-environment and excluded from serialization, so `/` 404s until you set them — `UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>` (SQL is the working path: `AreaSave` accepts `domain` / `hostNames` and no-ops on `AreaDomain`), **then restart the host** (Area rows materialise at startup). The integrity sweep's done-condition includes `/` returning 200.
 
 The sweep is the second line of defence for the failures strict mode does not catch:
 

@@ -63,6 +63,38 @@ Two **conflict strategies** for the same deserialize pipeline, set per predicate
 
 A config authored for one engine major therefore **500s the other on every call** — including `GET /Admin/Api/SerializerSettings`. When a layer ships a config, check its `mode` spelling against the engine the host actually runs before staging it. (The legacy `deploy: { predicates: [...] }` / `seed: { ... }` *shape* is rejected by `ConfigLoader` on every version.)
 
+**`Mode` goes in the BODY, and an omitted `Mode` DEFAULTS TO REPLACE.** `SerializerDeserialize` is a
+flat (non-`Model`-wrapped) POST command: `Mode` is read from the JSON body only, a `Mode` on the query
+string has no effect, and the property's default value is `Replace` rather than an
+explicit-required value. `{"IsDryRun":true}` alone therefore runs a Replace dry run, which means **an
+empty `{}` body executes a LIVE REPLACE against the target**. Always send `Mode`; never send `{}`.
+Verified body forms on 10.28.8:
+
+```
+POST https://<host>/Admin/Api/SerializerDeserialize      Authorization: Bearer CLAUDE.<hex>
+
+{"IsDryRun": true,  "Mode": "Replace"}     # dry run, replace tree
+{"IsDryRun": true,  "Mode": "Merge"}       # dry run, merge tree
+{"IsDryRun": false, "Mode": "Replace"}     # real run
+{"IsDryRun": false, "Mode": "Merge"}       # real run
+```
+
+Values are Pascal-case. The response is `{"status":"ok"|"error","message":"..."}`; on a strict-mode
+escalation the HTTP code is 400 with `status:"error"` and the escalated warnings inline in `message`,
+which names the failing `entryId`, so read `message` rather than the code alone. Same transport rules
+as the rest of the surface: queries are GET, commands are POST, a wrong verb is a 400 "Unknown
+command" / "Unknown query" and never a 404. Command bodies are `{"Model":{...}}`-wrapped for models
+(`AreaSave`) and **flat** for simple commands (`BuildIndex`, `SerializerDeserialize`); the wrapping
+error is literally `{"Command.Model":["Command.Model cannot be null"]}`.
+
+**Dry-run CONTENT counts under-report by design; only `failed > 0` gates.** A dry run cannot create
+parents, so every child whose parent would not yet exist is deferred rather than counted. A
+`content/area-<id>` entry reporting 11 created / 30 skipped against a 77-page tree is not a broken
+composition: the real run created all 77 pages and 104 paragraphs (dry Replace 724 created / 8 updated
+/ 64 skipped / 0 failed over 19 entries, real Replace 984 / 10 / 33 / 0). Content counts in a dry run
+are a lower bound, not a prediction. Gate the dry run on `failed == 0` and the absence of escalated
+strict-mode warnings, nothing else.
+
 **Always pass `?mode=` explicitly on 0.6.9 — both passes.** A mode-less `POST /Admin/Api/SerializerDeserialize` on engine 0.6.9-beta targets the **legacy `deploy` folder** rather than `SerializeRoot/replace/`, and returns **HTTP 400 `deploy contains no YAML files`** against a layer that stages `replace/`+`merge/`. Run `?mode=replace` first, then `?mode=merge` — never a bare POST. The two-pass sequence + snippet is owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §4.
 
 | Mode (dir / alias) | `"mode"` field | Conflict strategy | Use for |

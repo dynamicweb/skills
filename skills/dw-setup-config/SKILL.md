@@ -77,6 +77,24 @@ For high-demand solutions add a timeout: `<ConnectionString>Connect Timeout=600<
 
 **Gitignore this file** — credentials must not be committed.
 
+### `<Password>` is ciphertext bound to THIS host's `appsettings` Encryption keys
+
+The stored `<Password>` is encrypted with the host's own `appsettings.json` `Encryption` key and IV, so
+**never copy a `GlobalSettings.Database.config` between solutions**. Dropped into a host that does not
+carry those keys it decrypts to garbage, the app pool cannot authenticate, and the symptoms point
+everywhere except at the config: the site serves the **Setup wizard** as if the schema were missing,
+while the SQL errorlog fills with `Login failed for user <user> ... Password did not match that for
+the login provided`. Confirm by testing the copied value directly (`sqlcmd -U <user> -P <value>` fails
+with the same login error).
+
+Two remedies, in order:
+
+1. **Integrated security.** Set `IntegratedSecurity=True` and grant the app pool identity access:
+   `CREATE LOGIN [IIS APPPOOL\<site>] FROM WINDOWS` plus `db_owner` on the restored database. Verify
+   with `sys.dm_exec_sessions` showing the app pool login on that database, and `/Admin` serving the
+   DW10 login page instead of Setup.
+2. Re-enter the password on the target host so it is encrypted with that host's own keys.
+
 ## Programmatic Access to GlobalSettings
 
 ```csharp
@@ -91,6 +109,32 @@ Dynamicweb.Configuration.SystemConfiguration.Instance.Save();
 ```
 
 Custom config sections can be added via a class implementing `IConfigurationProvider`.
+
+### `GlobalSettingSave` creates ANY key you name
+
+The Management API command `GlobalSettingSave` does not validate the key against a schema. Naming a
+path that does not exist **creates** it, the save returns `status: ok`, and `GlobalSettingByKey` reads
+the invented key back with the value you wrote, while the running application keeps reading the real
+node. That is indistinguishable from a working save until you check the effect.
+
+The audit flag is the worked example: the app reads
+`/Globalsettings/Settings/Auditing/EnableAuditing` (the literal embedded in `Dynamicweb.Core.dll`, no
+`/System` variant exists in any assembly). A write to `/Globalsettings/System/Auditing/EnableAuditing`
+minted a second, dead node, so `Files/GlobalSettings.config` parsed as `[xml]` returned **two**
+`//Auditing` nodes, the shipped one under `<Settings>` still `False` and the invented one under
+`<System>` `True`, at the same instant. Saving the correct key edited the existing node in place, with
+no duplicate appended.
+
+```json
+{"Model":{"Key":"/Globalsettings/Settings/Auditing/EnableAuditing","Value":"True"}}
+```
+
+- After any `GlobalSettingSave`, re-parse `Files/GlobalSettings.config` and assert the key resolves to
+  exactly **one** node. Two nodes for the same setting is the signal that you just minted a dead
+  setting at a path nothing reads, not a platform bug that appends duplicates.
+- Never treat `GlobalSettingByKey` as proof a setting is applied. It echoes back a key you invented.
+  Assert the **effect** instead, for auditing that is `SELECT COUNT(*) FROM Audit` increasing across a
+  `ProductSave`.
 
 ## Setting the Environment
 

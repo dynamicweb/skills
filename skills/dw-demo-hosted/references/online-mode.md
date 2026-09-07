@@ -11,6 +11,9 @@
 - [Recognising online mode](#recognising-online-mode)
 - [Probe order at session start](#probe-order-at-session-start)
 - [Management API recipe pack](#management-api-recipe-pack-validated-dw-1025x)
+  - [Reading a GET error: what it proves and what it does not](#reading-a-get-error-what-it-proves-and-what-it-does-not)
+  - [Never shape-probe a save verb](#never-shape-probe-a-save-verb)
+  - [Cleanup verbs](#cleanup-verbs)
   - [dw10source as binder disambiguator](#dw10source-as-binder-disambiguator)
   - [File upload — and why an "ok" upload can change nothing](#file-upload--and-why-an-ok-upload-can-change-nothing)
   - [`FileDelete` can be ACL-denied for pre-existing files](#filedelete-can-be-acl-denied-for-pre-existing-files--know-the-per-host-answer-before-you-plan-a-cleanup)
@@ -56,6 +59,59 @@ The Management API hits the same DW domain services as MCP and the admin UI, so 
 Some commands also mirror a property at BOTH the command level and inside `Model` (e.g. `VariantCombinationCreate`); when a payload bounces with "value is required" for a field you sent, mirror it into/out of `Model`.
 
 **List-command ids are full paths, not names.** Every `*Delete` command that takes an `Ids` array wants the entity's `modelIdentifier` from the matching list query — `/Files/Images/<brand>/logo.png` for a file, `GROUP1|ENU` for a product group, `<child>|<parent>` for a group relation. Passing a bare name returns `status: ok` and deletes nothing. Read one row from the list query and copy the `modelIdentifier` shape before scripting a bulk delete.
+
+### Reading a GET error: what it proves and what it does not
+
+`GET /Admin/Api/<Name>` dispatches the **query registry only**. Commands are POST-only and are not in
+that registry, so the two error strings classify different things and neither one says the surface is
+broken:
+
+```
+GET /Admin/Api/GridRowById   -> 400 "Unable to load query parameters for query type: 'GridRowById'"
+GET /Admin/Api/GridRowSave   -> 400 "Unknown query: 'GridRowSave'"
+GET /Admin/Api/GridRowCopy   -> 400 "Unknown query: 'GridRowCopy'"      (a KNOWN-GOOD command)
+POST /Admin/Api/GridRowSave?Query.Type=GridRowById  -> 200, row written and read back
+```
+
+- **"Unable to load query parameters"** = a real QUERY. On a GET it means the parameters did not bind,
+  and the commonest reason is that **the entity does not exist**: the binder surfaces this message for
+  a missing id, not only for a malformed request. `FieldDisplayGroupById?Id=1` returned it while
+  `EcomFieldDisplayGroups` was simply empty, and `ProductById?Id=NOPE123XYZ` returns the identical
+  message while valid ids return 200. Decode it as entity-not-found and continue. Confirm by GETting a
+  known-absent and a known-present id of the same entity: the message appears only for the absent one.
+- **"Unknown query"** = not a query. It says **nothing** about whether a command of that name exists.
+  Sixteen candidate write verbs were probed by GET and every save-shaped one answered this, which was
+  read as "no such verb" and drove a whole brief toward replaying admin-UI requests. `GridRowSave` was
+  real the entire time.
+
+**Discover commands from the client, never by POSTing a speculative body.** The admin UI encodes them
+in `data-dw-action` attributes and in its own XHR; capture the real request. A minimal or empty write
+probe EXECUTES (below).
+
+### Never shape-probe a save verb
+
+An empty or minimal body reaching a real command runs it. `AssetCategorySave` declares only `Name` as
+`[Required]`, so `POST AssetCategorySave {"Model":{"Name":"ZZZ"}}`, sent purely to learn the payload
+shape, created a live asset category (id 7) on the host; it had to be cleaned up with
+`AssetCategoryDelete {"GroupId":7}` and `AssetCategoryAll` re-read back to `totalCount` 0. Same hazard
+class as the `SerializerDeserialize {}` incident, where an omitted `Mode` defaults to Replace.
+
+The ban is on **minimal-body** probes, not only empty ones. Read the schema from an existing entity of
+the same type, from the OpenAPI catalogue, or from the admin UI's own captured request. Assert
+`<Entity>All` `totalCount` is unchanged after any recon session.
+
+### Cleanup verbs
+
+| Verb | Shape on 10.28.5 |
+|---|---|
+| `PriceDelete` | needs `ProductId` **beside** `Ids`: `{"ProductId":"PROD804","Ids":["PRICE132", ...]}`. `Ids` alone is a 400 naming the missing field, which is the only clue. It still resolves rows whose product has already been deleted, so orphaned `EcomPrices` rows are reclaimable after the fact. |
+| MCP `delete_prices` | non-functional: "An error occurred invoking 'delete_prices'." on a batch and on every single id. Use `PriceDelete`. |
+| MCP `delete_variant_combinations` | non-functional, same server-side throw. |
+| `VariantGroupRemove` | 400 Unknown command. The group deletes without detaching. |
+| `delete_products` | removes the variant rows with the family, so a family delete needs no per-variant cleanup. |
+
+Verify cleanup by reading back, not by the response: `PriceById` on every created price id must return
+non-200 and the product-scoped price list must be empty.
 
 ### dw10source as binder disambiguator
 When a payload shape isn't obvious from the OpenAPI spec, read the command class in a local clone of the DW10 source (location per machine — ask/discover, never hardcode): `Dynamicweb.*.UI/Commands/**/<Name>Command.cs`. Reading the source resolved every binder mystery in the validation build (SelectedImage `Id`, the create/update fork, the variant wizard).

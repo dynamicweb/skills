@@ -358,6 +358,36 @@ Two Swift shapes break naive cart automation, and both make a perfectly healthy 
   button, then zero the affected order line and assert the count returns to its starting value; exit non-zero if
   either leg fails. Retry the cart navigation — it can `ERR_ABORT` while a mini-cart POST redirect is in flight.
 
+### Driving the cart from curl: the User-Agent gate and the cache-safe reset
+
+**DW10 silently skips the cart command for curl's default User-Agent.** The POST returns **HTTP 200**,
+CREATES the cart row in `EcomOrders`, and adds **no `EcomOrderLines` row at all**, with nothing in the
+log. Session, cart creation and the 200 all happen, so every observable except the order lines says
+success. That signature (200 + cart row + zero lines + no log) cost half an hour of CSRF and
+order-context theories and very nearly shipped a false "the cart is broken" finding. The identical
+request with `-A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)
+Chrome/126.0.0.0 Safari/537.36"` works. Bake a browser UA into the harness's curl wrapper so a cart
+gate cannot be written without one. Two curl gotchas ride along:
+
+- `/Default.aspx?ID=...` **301-redirects** to the friendly URL, so a probe needs `-L` (0 bytes without
+  it) and a POST needs `--post301`, or post straight to the friendly URL.
+- Swift posts cart forms as **multipart** (FormData), so use `-F`, not `--data`.
+
+**Never clear a cart with a lines-only SQL delete.** DW holds the `Order` object in memory, and a
+`DELETE FROM EcomOrderLines` does not invalidate it: on the next cart command the cached Order
+re-persists its stale lines and merges the new add on top, so quantities come back **doubled**. The
+database looks clean between the two steps, which is exactly what makes the doubled numbers read as an
+add-to-cart bug rather than a cache artefact. The working three-step reset before any cart gate:
+
+```sql
+DELETE FROM EcomOrderLines WHERE OrderId = <cart>;
+DELETE FROM EcomOrders     WHERE OrderCart = 1;     -- the cart ROW too
+-- then restart the app pool, which drops the cached Order
+```
+
+Regression test for the trap: run the identical cart sequence twice with the full reset between runs
+and assert identical line counts and quantities both times. Without the reset, run two doubles.
+
 ### When not to use this pattern
 
 - **Single-DC demos** — if the customer is single-DC and the storyline doesn't lean on "different

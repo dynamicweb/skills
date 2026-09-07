@@ -27,6 +27,37 @@ Each fix is a Tier-1 `<customer>_custom.css` item **only if the shipped theme do
 - **A no-crop hero sized to the image aspect-ratio overflows at 390.** Setting the hero band to the photo's own `aspect-ratio` (so nothing is cropped) is fine on desktop and breaks on the phone: at 390 the band is only ~`vw / ratio` tall (~257px for a 1.5:1 image) while the overlaid copy block is ~360px, so a centered grid overlay (`align-content: center`) spills out **both** ends — the H1 pushed off the top, the CTAs landing in the next section. Below ~640px stop overlaying: put the figure in-flow at its own aspect-ratio (grid row 1), let the copy flow beneath it (row 2) on a solid brand surface for legibility, and restore the header clearance so the hero starts below a floating bar. Keep the overlay at ≥640px where the band is tall enough. Verify by measuring, not eyeballing: the subject's `top` must sit below the header's `bottom`, and every CTA must be inside the section.
 - **Anon B2B "sign in for pricing" CTA lives in `swift-v2_productPRICE`**, not `swift-v2_productaddtocart` (which renders a narrow stub). Selectors targeting the CTA via add-to-cart miss it entirely — target `productPRICE` when styling or probing the anon price affordance.
 
+## The mobile performance pass: read the insight before acting on it
+
+Two rules that keep a Lighthouse-driven perf pass from spending its budget on a no-op.
+
+**A hero preload is a no-op when `lcp-discovery-insight` already scores 1.** The standing advice
+("preload the LCP image, its request cannot start until the blocking CSS is down") is wrong about the
+mechanism: the preload scanner discovers `<img srcset>` during HTML parse, and blocking CSS delays
+**paint**, not **discovery**. Read `lcp-discovery-insight` (`priorityHinted` / `requestDiscoverable` /
+`eagerlyLoaded`) and `lcp-breakdown-insight` first. On the measured build all three were already true
+and the breakdown was `resourceLoadDelay` 56ms against `elementRenderDelay` 230ms, so the fix was
+render-blocking bytes and a preload could have moved the request at most ~133ms earlier while
+competing for the same pipe. A mismatched preload also shows up as a **double download**, so assert
+the hero is requested exactly once.
+
+**Below-fold EAGER images cost more LCP than every insight row Lighthouse ranks above them.** Standard
+`Paragraph/Swift-v2_Slider/CardCoverNavInline.cshtml` emits its card `<img>` with neither
+`loading="lazy"` nor a quality override. Four cards sitting at y=1238 on a 390x844 phone, all below the
+fold, shipped eager at quality 95: ~150 KB of a ~447 KB critical window, issued at the same millisecond
+as the LCP hero, over one 1.6 Mbps pipe. Lighthouse credits the compression saving but **has no audit
+that models bandwidth contention from below-fold eager images**, so it ranked "improve image delivery"
+last, behind render-blocking and unused CSS. The fix moved mobile Performance 86 to 93 in one step,
+LCP 3.60s to 2.73s.
+
+The fix is a **net-new Custom-lane copy** of the standard template (leave the standard file untouched)
+adding `loading="lazy" decoding="async"` and a Quality override, with the paragraph repointed via
+`ParagraphSave` and the previous template recorded so the change is reversible. Do **not** add
+`width`/`height` attributes to a CSS-sized card (`h-100` + a `min-height` with `object-fit: cover`):
+the attribute-derived aspect-ratio fights the cover fit. The design gate must scroll-sweep so lazy
+images still measure honestly. The layer-side ask, shipping the `loading` attribute in the standard
+template, is an upstream request against `theme-default`, not a per-demo edit.
+
 ## Gate implication
 
 A single-width pass ships a broken mobile view. The design gate must:

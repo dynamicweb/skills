@@ -658,8 +658,21 @@ worth knowing when authoring content programmatically (validated DW 10.25.x):
     string** for "no button" — templates guard on empty via `TryGetButton`. Seed/import sweeps should
     treat any non-empty non-JSON value on a `*Button*` item field as a defect.
 - **`ShowParagraph` cannot be changed via the API** — both the `ParagraphSave` round-trip and
-  `ParagraphChangeActive` silently no-op (observed on copied / master-linked rows). Hide a paragraph by
-  `ParagraphDelete {DeleteWithRows: true, Ids: [...]}` or by blanking its fields instead.
+  `ParagraphChangeActive` silently no-op. `ParagraphSave {"showParagraph": false}` on the full model
+  returns 200 and leaves `Paragraph.ParagraphShowParagraph = 1`; a **correctly shaped**
+  `ParagraphChangeActive` returns `{"status":"ok"}` and changes nothing either. Its body shape is
+  undocumented and worth recording, because a schema mistake is reported as a domain error: the shape
+  is `{"setActive":<bool>,"ids":["<id>", ...]}` where `ids` is a `List<string>`, so **numeric ids 500**
+  and **any other key name answers `{"status":"invalid","message":"No items selected"}`** rather than
+  naming the field. Hide a paragraph in this order:
+  1. **`GridRow.GridRowActive = 0`** when the paragraph is the sole occupant of its row. It removes the
+     whole band rather than its contents, so no empty padded `<section>` is left behind, and it is one
+     UPDATE to reverse.
+  2. **`hideForDesktops` + `hideForTablets` + `hideForPhones` all `true`** for a paragraph that shares
+     a row. Server-side suppression, fully reversible.
+  3. `Paragraph.ParagraphShowParagraph = 0` by SQL as a last resort.
+
+  `ParagraphDelete` is not on that list: it is irreversible and it orphans the grid row.
 - **`PageCopy` inherits the source's `shortCut`.** A page that carries a shortcut redirect produces a
   copy that 301s elsewhere (`DestinationType` is `folder|section|website`; the
   `X-DWAPP-REDIR-REASON` header names the middleware). Clear `shortCut` on the copy.
