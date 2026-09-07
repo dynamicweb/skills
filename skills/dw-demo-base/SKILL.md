@@ -128,6 +128,7 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 | Script | Reads / writes | What it does |
 |---|---|---|
 | [Restart-DwHost.ps1](scripts/Restart-DwHost.ps1) | Writes: starts/stops THIS solution's host process, a lock file, log files | Guarded host lifecycle: port-scoped ownership-verified stop, index-build-in-flight guard, lock with stale takeover, durable redirected start, /Admin readiness poll. `-Port` and `-SolutionPath` are mandatory — no defaults |
+| [Invoke-DwPiiScan.ps1](scripts/Invoke-DwPiiScan.ps1) | Read-only (optionally writes a report file) | The mechanical half of the PII/vendor sweep: string-column census, person-PII counts, whole-DB term sweep (SQL local-only), rendered-page and download probes by URL. Classes and counts only — never values |
 
 ## Surface priority for CREATES (always-on rule)
 

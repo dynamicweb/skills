@@ -125,7 +125,11 @@ as the mechanical detectors vs the human taste sign-off in [`visual-qa.md`](visu
 
 ## The sweep, end to end
 
-Run this as a **blocking leg**, not a polish item, on every demo — hardest on an inherited/cloned host:
+Run this as a **blocking leg**, not a polish item, on every demo — hardest on an inherited/cloned host.
+The mechanical steps (1, 4, and the mechanical half of 6) have an enforced form —
+[`../scripts/Invoke-DwPiiScan.ps1`](../scripts/Invoke-DwPiiScan.ps1) (READ-ONLY, classes and
+counts only; SQL sections are local-only, the rendered/probe sections run by URL) — run it rather
+than retyping the census queries. Steps 2, 3, and 5 remain yours:
 
 1. **Enumerate** — scan every string column for the identity terms **and** the locale-shaped patterns.
 2. **Classify by sampling values** — person / vendor-branding / infrastructure.
