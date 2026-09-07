@@ -322,6 +322,15 @@ band, so they matter as much as the component choice. A row definition only hono
 its JSON sets the matching `EnableContainerWidth` / `EnableGapSettings` / `EnableTopSpacing` /
 `EnableBottomSpacing` — check `get_row_definitions`.
 
+**Read the tool's own model before relying on that.** The MCP save model is build-dependent: on one
+10.28.5 host `save_grid_rows` carried only
+`active`/`backgroundImage`/`colorSchemeId`/`container`/`definitionId`/`id`/`itemType`/`pageId`/`sort`,
+and rows it created came back with `GridRowItemId` NULL. Where a member is missing, the native write is
+`POST /Admin/Api/GridRowSave?Query.Type=GridRowById`, which also mints the missing row item. The exact
+payload shape, the preserved-members caveat and the per-template spacing defaults live in
+`dw-data-access` (`management-api-and-sql.md`, the `GridRow` NOT-NULL-columns section). Never coalesce a null `TopSpacing`/`BottomSpacing` to a default on a whole-entity
+save: the two Swift row templates have different defaults (`Swift-v2_Row` 6, `Swift-v2_RowFlex` 1).
+
 ## Ceiling (not settable via MCP)
 
 No per-column settings (offsets, per-column scheme or spacing), no grid-row template/variant,

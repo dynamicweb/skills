@@ -203,7 +203,7 @@ Cite `Dynamicweb.Core/Indexing/DynamicStructuring/DynamicStructure.cs:24` (`publ
 public enum DynamicStructureLevelTypes { DataModelKey, ProductField }
 ```
 
-A workspace level rooted on `DataModelKey` projects products by which DataModel group (GroupType=2) they're related to; a level rooted on `ProductField` projects by distinct values of a product field (e.g. Supplier, `ProductWorkflowStateId`).
+A workspace level rooted on `DataModelKey` projects products by which DataModel group (GroupType=2) they're related to; a level rooted on `ProductField` projects by distinct values of a product field. **Which product field is the whole game, and two obvious choices are silent failure modes** (see "Choosing a level source" below).
 
 **`UseRelationOnProductCreate` — the auto-attach mechanic.** Cite `Dynamicweb.Core/Indexing/DynamicStructuring/DynamicStructureLevel.cs:74` (`public bool UseRelationOnProductCreate { get; set; }`). When `true`, products created from inside the workspace UI are automatically attached to the source `DataModel` group via `EcomGroupProductRelation`. Without this flag, products created in a workspace are **orphans** — they exist in `EcomProducts` but have no group relation, so they appear only in "All products" and are invisible to every channel filter and every other workspace projection. The workspace's `DynamicStructureRepository` persists/reads the flag at lines 152, 170, 173, 201.
 
@@ -211,10 +211,32 @@ A workspace level rooted on `DataModelKey` projects products by which DataModel 
 
 **Mental model:** Dynamic Workspaces are *projections*, not *storage*. They're configurable, multi-level views over the product catalog backed by a query + level definitions. They do not own products — they project the catalog by attribute axes. The single mechanic that makes "creating in a workspace" feel like real storage is `UseRelationOnProductCreate=true` on the workspace's level: when set, the workspace owns the "auto-attach to the source DataModel group" behaviour on create. Without it, "create in workspace" produces orphan rows.
 
+**Choosing a level source: it must be a NON-ANALYSED string field.** `DynamicStructureLevel.SourceType`
+is `productField` or `dataModelKey` only, and the node value is enumerated from the **index** and matched
+as a **string**. That rules out two field classes that both look like the natural choice, and both fail
+without erroring:
+
+| Level source | What renders | Why |
+|---|---|---|
+| **Analysed string field** (free text: a name field such as `ManufacturerName`, a supplier name, a description-shaped field) | Plausible-looking nodes that are **lower-cased word fragments**. One 358-product query produced **129 nodes summing to 419**: `"Hot-Shot"` appeared as both `hot (12)` and `shot (12)`, `"J Lube"` as `j (3)` and `lube (1)`, plus junk nodes `o (1)`, `z (3)`, `plus (3)`. | The level enumerates analysed Lucene **terms**, not stored values. Every node drills to real rows, so nothing errors and no count contradicts itself. |
+| **Numeric / id-typed field** (`ProductWorkflowStateId` and similar) | Nodes that open onto **zero rows**. | The value is indexed numerically and the node label is matched as a string, so the label never matches a row. |
+| **Non-analysed string field**: an **ID** field (`ManufacturerID`), a `DATAMODEL_*` key, or a category field (`ProductCategory\|<cat>\|<field>`, indexed as keywords) | Correct nodes with exact casing that sum to the query total. | Keyword-indexed, so the enumerated term is the stored value. |
+
+**Use the ID field, not the name field, and let DW resolve the display name.** Swapping the same level
+from `ManufacturerName` to `ManufacturerID` took it from 129 nodes summing to 419 to **106 nodes summing
+to 358** against a query total of 358, labelled `3M (13) | Allflex (19) | Duflex (27) | Hot-Shot (12) |
+…`: DW resolves the id to the manufacturer display name for the node label, so the readable tree costs
+nothing.
+
+**Validate by the SUM, not by a drill.** Assert the level's node count and the **sum of node counts**
+against the workspace query total. A per-node drill alone does not catch the analysed-field failure,
+because every tokenised node drills to real rows.
+
 **When workspaces are the right answer:**
-- "Show me products by **supplier**" — 1 level, `LevelType=ProductField`, `SourceField=Supplier`.
-- "Show me products by **workflow state**" — 1 level, `LevelType=ProductField`, `SourceField=ProductWorkflowStateId`. Replaces a status dashboard for editors who live in the catalog tree.
+- "Show me products by **brand**": 1 level, `LevelType=ProductField`, `SourceField=ManufacturerID`.
+- "Show me products by **hazard class / spec attribute**": 1 level, `LevelType=ProductField`, `SourceField=ProductCategory|<cat>|<field>` (category fields are keyword-indexed and safe).
 - "Products by spec attribute" — 2 levels, both `LevelType=DataModelKey`, drilling category → sub-category.
+- A **workflow-state** tree is NOT one of them: `ProductWorkflowStateId` is the numeric failure mode above, and it is not populated as an index field either, so the clause is silently dropped wherever it is used as a filter. Group by state on a string-valued state field, or use the catalog tree with a state column.
 
 **Probing a workspace: `ProductsByDynamicStructureLevel` requires `Path` and returns `0` without it — for
 every query, on a healthy workspace.** The command does not error on the missing parameter; it answers

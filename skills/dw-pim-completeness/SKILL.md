@@ -79,13 +79,17 @@ The product list displays a **Completeness** column showing each product's perce
 
 ### Completion status in dashboards
 
-Add a **Repository Count Widget** to a dashboard that counts products matching a query (e.g., "products with completeness < 100%"). This provides a live quality overview.
+Add a **Repository Count Widget** to a dashboard that counts products matching a query (e.g., "products with completeness < 100%"). This provides a live quality overview. It is a **counter**: `WidgetType=Sum`/`Avg` is accepted and renders the row count anyway, so no stock widget can show a sum or an average (see [references/rules-and-dashboards.md](references/rules-and-dashboards.md)).
 
-## Per-Language Completeness
+## Completeness has no per-language dimension
 
-Completeness is calculated **per language**. A product may be 100% complete in English but 40% complete in German if the required fields have not been translated.
+**`CompletionLanguages` changes nothing in a query.** A query configured `ENU+ESU+FRC` returns exactly
+the same products as `ENU` alone, or `ESU` alone, or `FRC` alone. The appended expression is built from
+`CompletionRule|<id>`, a **single per-product index value**; the language list never reaches it.
 
-Completion queries can be scoped to a specific language, enabling language-specific editorial backlogs.
+A translation-gap worklist ("complete in English, incomplete in es-US") **cannot be built from
+completeness**. Model it as an explicit per-language field query instead: filter on the translated fields
+themselves for the target language.
 
 See [dw-pim-localization](../dw-pim-localization) for language setup.
 
@@ -141,11 +145,13 @@ double score = Services.CompletionRules.GetCompletenessScore(product, languageId
 
 ## Deep reference
 
-[references/rules-and-dashboards.md](references/rules-and-dashboards.md) — the field-validated internals: the hidden `reference_category` template category (the #1 cause of "rule defined and assigned but no panel renders"), the 7-condition checklist for rules that "don't show", the 7 real dashboard areas, clickable vs dead-end widget types, the MCP dashboard/widget payload contracts and their three invisible-dashboard blockers, and the idempotent `reference_category` seed SQL.
+[references/rules-and-dashboards.md](references/rules-and-dashboards.md), the field-validated internals: the hidden `reference_category` template category (the #1 cause of "rule defined and assigned but no panel renders"), the four-gate scoring chain, the 7-condition checklist for rules that "don't show", the completion-rule API traps (`ProductCompletenessRulesByProductId` 500s, the phantom auto rule id `0`, dangling ids after `CompletionRuleDelete`), the 7 real dashboard areas, clickable vs dead-end widget types, the widget envelope table, the MCP dashboard/widget payload contracts and their three invisible-dashboard blockers, and the idempotent `reference_category` seed SQL.
 
 ## Pitfalls
 
-**Completeness context matters** — a product's completeness score can differ between channels and languages. Always check completeness in the relevant context, not just the default.
+**Completeness is computed against a read context, not stored on the product**. `ProductById` with no rule context reports `0` for a verifiably complete product, and opening the product from a query supplies the context only if the query configuration carries `CompletionRules`. Check the score in the context that matters, and treat a `0` or `N/A` as a context question first. The four gates that must all be satisfied before anything scores at all are in [references/rules-and-dashboards.md](references/rules-and-dashboards.md).
+
+**The `Completeness feature` flag has two opposite scopes**: the admin calculation path stays OFF (the flag activates a buggy beta path), while `CompletionRule|<id>` index fields populate only with the flag ON, so completeness as a query or dashboard term requires it. Decide which path the demo needs before touching it, and never auto-toggle it.
 
 **"Use completeness rules to limit results" excludes 100% complete products** — this setting removes complete products from the query, which is the intended behavior for an enrichment backlog. If you want to see all products regardless of completeness, do not enable this setting.
 

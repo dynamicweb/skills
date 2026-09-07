@@ -353,20 +353,58 @@ all its paragraphs vanish from the page with no error). Enumerate that folder be
 ships `1Column`–`4Columns`, `6Columns`, the `*Flex` variants and asymmetric `2Columns_*` splits — there
 is no `5Columns`.
 
-Layout columns (`GridRowTopSpacing` / `GridRowBottomSpacing` / `GridRowVerticalAlignment` /
-`GridRowGapX/Y` / `GridRowColorSchemeId` / `GridRowContainerWidth`) are settable only on this SQL
-surface — the MCP `save_grid_rows` model doesn't carry them **and a later MCP save of the same row
-silently reverts them**. `ContainerWidth` is the per-row **content width** the Swift row template
-renders as `data-dw-container-width`; the MCP model exposes only
+**The row layout columns are written natively by `GridRowSave`, not only by SQL.** The MCP
+`save_grid_rows` model exposes only
 `active`/`backgroundImage`/`colorSchemeId`/`container`/`definitionId`/`id`/`itemType`/`pageId`/`sort`,
-so a site-wide width change cannot be authored as content through that tool at all. Where a row-level
-SQL write is not available, the sanctioned substitute is a CSS override of `--dw-container-width`
-**scoped to `main`** — header and footer read the same token, so an unscoped override moves the
-chrome with the content. Verify by measured band widths at the target viewports plus zero horizontal
-overflow at mobile and desktop, not by the saved value. Write them after all MCP saves of the row, then restart; the ordering rule and cache rows live
-in [`cache-invalidation.md`](cache-invalidation.md) "Mixing MCP and SQL on the same rows". NULL spacing
-renders as the Swift row-template default (`?? 6` = 6rem top and bottom) — serialize explicit values
-when composing a page, or every section ships with ~96px bands.
+so `ContainerWidth`, `TopSpacing`/`BottomSpacing`, `HideForPhones`/`Tablets`/`Desktops`, `Gap`,
+`MobileLayout`, `FlexibleColumns` and `VerticalAlignment` are unreachable **through that tool**. They are
+reachable through the CoreUI command it does not wrap, and the read model already returns all of them
+from `GET /Admin/Api/GridRowsByPageId?PageId=<id>`:
+
+```
+POST /Admin/Api/GridRowSave?Query.Type=GridRowById
+{"QueryData":{"Id":19029},
+ "model":{"TopSpacing":"6","BottomSpacing":"6","ContainerWidth":"4","BackgroundImage":null,
+          "ColorSchemeId":"","DefinitionId":"1Column","ValidFrom":"","ValidTo":"","Active":true,
+          "HideForPhones":false,"HideForTablets":false,"HideForDesktops":false}}
+```
+
+The shape is exact: **lowercase `model`**, the id in `QueryData`, and numeric members as **strings**.
+Measured 59/59 rows across 12 pages reading back at the written `containerWidth`.
+
+- **It repairs a NULL `GridRowItemId`.** Rows created by MCP `save_grid_rows` land with
+  `GridRowItemId` NULL; `GridRowSave` **mints the row item** (measured on three such rows), which is
+  cheaper than the `GridRowCopy` workaround.
+- **The 12-member payload is partial and the server preserves the rest** (`gap`, `mobileLayout`,
+  `flexibleColumns`, `verticalAlignment`, `itemType`, `container`), with one exception: **changing
+  `DefinitionId` clears `mobileLayout`** (`"12,12"` becomes `""`). Snapshot every row before a batch and
+  diff the members the payload cannot carry.
+- `ContainerWidth` is the per-row **content width** the Swift row template renders as
+  `data-dw-container-width`. Where `GridRowSave` is not available, the fallback substitute is a CSS
+  override of `--dw-container-width` **scoped to `main`**, because header and footer read the same token
+  and an unscoped override moves the chrome with the content; it also cannot reach header and footer
+  rows at all, which is why a header stays boxed while the body goes full width. Prefer `GridRowSave`:
+  it writes the standard Swift setting rather than overriding it.
+- Verify by measured band widths at the target viewports plus zero horizontal overflow at mobile and
+  desktop, not by the saved value.
+
+If a row is written by raw SQL instead, write it after all MCP saves of the row, then restart, because a
+later MCP save of the same row silently reverts the columns it does not carry; the ordering rule and
+cache rows live in [`cache-invalidation.md`](cache-invalidation.md) "Mixing MCP and SQL on the same rows".
+
+**Row spacing has TWO defaults, one per row TEMPLATE, so a whole-entity save must never invent one.**
+`Swift-v2_Row.cshtml` renders `data-dw-row-space-top="@(Model.TopSpacing ?? 6)"` (96px);
+`Swift-v2_RowFlex.cshtml` renders `?? 1` (4px). "The default is 6" is wrong for every RowFlex row,
+including header, footer and product-component rows. `GridRowSave` has no "unset", so a helper that
+coerces a null with `?? 6` while writing some other member turns 4px of padding into 96px on every
+RowFlex row it touches: measured, that grew a PLP product card from 116px to 242px tall and left 8 empty
+155px bands on the page, with every width assert still passing so the damage read as unrelated.
+
+**Pass a null through as null.** The API accepts and stores `TopSpacing`/`BottomSpacing` as null and
+reads them back null; the renderer owns the default. Writing the template's own default explicitly
+renders identically today and bakes a template default into data, which is the coupling that caused the
+defect. The rule generalises to every whole-entity save: never coalesce a null to a default you believe
+in.
 
 ### Required NOT-NULL columns — `Paragraph`
 

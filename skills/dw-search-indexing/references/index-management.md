@@ -16,6 +16,7 @@ and repository side.
 - [Dashboard query location — Shared ONLY](#dashboard-query-location--shared-only-never-duplicate-to-repositories)
 - [Channel isolation is a QUERY-time filter](#channel-isolation-is-a-query-time-filter-not-an-index-time-one)
 - [Currency integrity is an index-build precondition](#currency-integrity-is-an-index-build-precondition--dividebyzeroexception-names-neither-the-currency-nor-the-country)
+- [A NULL-price variant row drops every variant document from the build](#a-null-price-variant-row-drops-every-variant-document-from-the-build)
 - [Recovery recipe: Rebuild Products index](#recovery-recipe-rebuild-products-index)
 
 ## Repositories, Indexes, and Queries — file-based
@@ -170,6 +171,31 @@ rebuild with zero `DivideByZero` and zero `NullReference` across the whole log.
   currency that silently threw before will price cleanly after.
 - Make this a **precondition of the build**, not a symptom to chase: no zero rates, and every
   `EcomCountries` currency code exists.
+
+## A NULL-price variant row drops every variant document from the build
+
+**`ProductIndexBuilder.HandlePrices` throws `InvalidCastException` Int32 to Double on a variant
+`EcomProducts` row whose `ProductPrice` is NULL**, and the exception is caught **per document**: the
+master indexes normally, every variant document is silently dropped, and the build reports success. The
+only trace is one log line per dropped row:
+
+```
+Error processing prices. System.InvalidCastException: Unable to cast object of type
+System.Int32 to type System.Double
+   at ...ProductIndexBuilder.HandlePrices
+Error process prices (AutoID: <the variant rows' auto ids>)
+```
+
+- **Adding an `EcomPrices` row for the variant does not stop it**: the throw is on the product row's own
+  NULL `ProductPrice`, not on the absence of a price row.
+- Storefront symptom: the master renders on the PLP with its variant combinations attached while the PDP
+  shows **no variant selector**, so a size-ladder product looks like a single un-sized product. Deleting
+  the combinations removes the log noise and the selector alike.
+- MCP `create_variant_combinations` materialises variant rows with `ProductPrice` NULL, which is how a
+  catalogue arrives in this state. On DW 10.28.x those rows cannot be filled through the API at all (see
+  [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.14).
+- **Count the documents, not the build status.** Assert the built document count against masters plus
+  variants; a build that silently drops every variant still answers `state: success`.
 
 ## Recovery recipe: Rebuild Products index
 

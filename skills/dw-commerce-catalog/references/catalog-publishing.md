@@ -142,12 +142,25 @@ Switching surfaces will not fix it; the resolver is the same downstream code pat
 Account / contract pricing ("customer-card" prices) is a per-customer `EcomPrices` row. Two gotchas
 make a correct setup look broken:
 
-- **Scope by customer number, not the MCP `customerGroupId`.** `save_prices`'s `customerGroupId`
-  writes `PriceCustomerGroupId`, which the frontend resolver does **not** match against a logged-in
-  user's group membership — the price silently never applies. The reliable scope is the **customer
-  number**: `UPDATE EcomPrices SET PriceUserCustomerNumber='<custno>'` (and clear the group columns)
-  matches every user whose `AccessUserCustomerNumber` equals it — i.e. the whole account. This is the
-  shape that actually resolves.
+- **Two different scopes live in two different columns, and MCP `save_prices` can only reach one of
+  them.** `PriceUserGroupId` (Admin API `userGroupId`) scopes a row to an **`AccessUser` group**;
+  `PriceCustomerGroupId` (Admin API `groupCustomerNumber`) matches a customer **NUMBER** string, not a
+  group id. MCP `save_prices`'s `customerGroupId` writes `PriceCustomerGroupId`, so passing a user-group
+  id there stores a number that matches nothing and the resolver falls through to the list price:
+  `save_prices {customerGroupId:"1342"}` answers `succeeded:1`, the row appears in `EcomPrices` with
+  `PriceCustomerGroupId=1342` and `PriceUserGroupId=NULL`, and a member of group 1342 still sees the list
+  price on the PDP.
+- **Write a GROUP-scoped contract price through `/Admin/Api/PriceSave` with `userGroupId` set.** Read the
+  full model from `PriceById`, set `userGroupId` to the `AccessUser` group id and leave
+  `groupCustomerNumber` empty, and post the whole model. Measured: the same buyer's PDP moved from the
+  list 312.00 to the contract 274.56 on that one change. MCP `save_prices` does not expose
+  `PriceUserGroupId` at all, so keep it for unscoped rows and for customer-number-scoped rows.
+- **A CUSTOMER-scoped contract price is `PriceUserCustomerNumber`**, matching every user whose
+  `AccessUserCustomerNumber` equals it, i.e. the whole account. `save_prices` cannot set it either; use
+  `PriceSave` with `userCustomerNumber`.
+- **Assert the rendered price, not the row.** A row-exists assertion passes while the storefront is still
+  on list price. Sign in as a member of the group and read the price block; an anonymous visitor is the
+  control.
 - **Lowest matching price wins** — not priority. A lower contract amount beats the all-customers list
   price automatically once it matches; no need to set `PricePriority`.
 
@@ -164,47 +177,96 @@ Verify in the storefront cart as the signed-in user, never via recalc.
 
 ## 2.14 Variants via the Management API (no SQL)
 
-Building per-variant product rows through the Management API alone — the full chain that replaces any
-per-variant `EcomProducts` SQL insert (validated DW 10.25.x):
+Building per-variant product rows through the Management API alone, the chain that replaces any
+per-variant `EcomProducts` SQL insert. **The chain is version-forked between DW 10.25.x and DW 10.28.x**,
+and on 10.28.x the wrong shape answers `status: ok` and writes nothing. Establish the build first
+(`/Admin/Api` responses do not carry it; read it from the host's version surface), then run the matching
+fork and read every step back.
 
 1. `VariantGroupSave` (post with empty `Id` to create) + `VariantOptionSave` per option. Set `Color`
    (hex) on each option and a Swift PDP renders live swatches.
 2. `VariantGroupAdd {ProductId, Ids: [groupId]}` attaches the group to the product.
-3. **`VariantCombinationSave {ProductId, VariantCombinationSelectionCacheKey, Ids: [<variantIds>]}`** —
-   for a single axis the variant ids are the bare option ids. This command persists the combinations
-   AND runs `ExtendAllVariants` (creates the per-variant product rows), clears the variant caches, and
-   rebuilds the product's index entry. **Skip `VariantCombinationCreate`** — it only fills a UI-wizard
-   cache and persists nothing.
-4. Per-variant stock: round-trip `ProductById?Id=<id>&VariantId=<vid>` → set `stock` /
-   `neverOutOfStock` → `ProductSave`. Variants default to 0 stock and render a disabled add-to-cart.
+3. **`VariantCombinationSave {ProductId, Ids: [<variantIds>]}`** persists the combinations AND runs
+   `ExtendAllVariants` (creates the per-variant product rows), clears the variant caches, and rebuilds
+   the product's index entry. The id shape and the cache key are both version-forked (next section).
+4. Per-variant PRICE: `PriceSave` carrying `VariantId`, verified by `PriceById` ("Per-variant price"
+   below).
+5. Per-variant number / stock / active: writable on 10.25.x, **not writable at all on 10.28.x**
+   ("Per-variant row fields" below).
 
-**Per-variant PRICE does not ride `ProductSave` — `DefaultPrice` on a variant row is a silent no-op.**
-The trap is that the *neighbouring* fields on the same call work: `stock`, `active` and `number` all
-persist through `ProductSave` on a variant, so the call is plainly reaching the right row. `DefaultPrice`
-alone is ignored and the variant reads back with the MASTER's price — measured across 22 variants in three
-families, reverting every time. Per-variant pricing is an `EcomPrices` row, so the write is
-**`PriceSave` carrying `VariantId`**; that is the only path that sticks. Verify by re-reading the variant's
-price after the save, not the `ProductSave` response.
+### The combination id shape is INVERTED between 10.25.x and 10.28.x
 
-**Variant combinations: group-qualified option keys, ONE option per group per call, and the setup cache key
-must be REUSED.** Three separate rejections with plausible-looking payloads, each with its own verbatim
-error:
+| Build | Working `Ids` shape | What the other shape does |
+|---|---|---|
+| DW 10.25.x | `["<VariantGroupId>.<VariantOptionId>"]`, group-qualified | A bare option id answers **500**, naming a group that is not the one you meant |
+| DW 10.28.5 | `["<VariantOptionId>"]`, bare option ids | The group-qualified id answers **`{"status":"ok"}`** and creates **zero** combination rows |
 
 ```
-Ids: ["VO53"]                    -> 500  key VARGRP36 not present          # bare option id
-Ids: ["VARGRP32.VO53"]           -> ok                                     # group-qualified — required
-Ids: ["VARGRP32.VO53","VARGRP32.VO61"]
-                                 -> 400  specify options in each variant group   # two options of ONE group
+# DW 10.28.5
+POST /Admin/Api/VariantCombinationSave {"ProductId":"<P>","Ids":["<VARGRP>.<VO>"]}
+  -> 200 {"status":"ok"}      GET VariantCombinationsByProductId -> totalCount 0     # silent no-op
+POST /Admin/Api/VariantCombinationSave {"ProductId":"<P>","Ids":["<VO>"]}
+  -> 200 {"status":"ok"}      GET VariantCombinationsByProductId -> totalCount 3     # rows created
 ```
 
-- **Qualify every option with its group** — `"<VariantGroupId>.<VariantOptionId>"`. A bare option id
-  produces a 500 naming a group that is *not* the one you meant, which sends the reader hunting the wrong
-  group.
-- **One option per group per call.** A combination is a point in the matrix, not a set; passing two options
-  from the same group is the 400 above.
-- **Call `VariantCombinationCreationSetup` ONCE and reuse its cache key across the create and the save.**
-  Re-calling it RESETS the matrix, so a helper that fetches a fresh key per combination silently discards
-  the work in progress. Capture the key with the setup call and thread it through the whole batch.
+- **Read the count back after every `VariantCombinationSave`.** `GET VariantCombinationsByProductId?ProductId=<P>`
+  must return a `totalCount` equal to the number of combinations posted. On 10.28.x the response body is
+  identical whether the call wrote three rows or none, so the read-back is the only signal, and a session
+  that trusts the `ok` concludes "combination creation is broken on this build" when only the id shape was
+  wrong.
+- **One option per group per call.** A combination is a point in the matrix, not a set; two options of the
+  same group answer `400 specify options in each variant group` on both builds.
+- **`VariantCombinationCreationSetup` exists only on 10.25.x.** There it is called ONCE and its cache key
+  threaded through the whole batch (re-calling it RESETS the matrix, so a helper fetching a fresh key per
+  combination silently discards the work in progress). On **10.28.5 the verb is gone**:
+  `POST /Admin/Api/VariantCombinationCreationSetup` answers `400 {"successful":false,"message":"Unknown
+  command: 'VariantCombinationCreationSetup'"}`, and `VariantCombinationSave` needs no cache key there.
+  The read model still exposes the field it fed (`VariantCombinationsByProductId` returns
+  `variantCombinationSelectionCacheKey: ""`), so the field's presence is not evidence the verb exists.
+  `VariantCombinationCreate` is likewise unreachable on 10.28.5.
+
+### Per-variant row fields: writable on 10.25.x, unwritable on 10.28.x
+
+**On DW 10.28.5 a variant `EcomProducts` row cannot be written at ROW level through the sanctioned chain.**
+A full-model round-trip `ProductById?Id=<id>&VariantId=<vid>` then `ProductSave` returns `status: ok`,
+echoes every requested value back, leaves `autoId` untouched, and **both readers return the MASTER
+values**. Measured with a master-row control on the same call shape: 4/4 fields landed on the master and
+reverted cleanly, **0 of 19** standard fields landed on the variant, including `number`, `name`, `stock`,
+`active`, `ean`, `weight`, `defaultPrice`, and the description and meta fields. Plan no per-variant SKU,
+name, stock or active-flag beat on this build, and do not spend a session hunting a payload shape.
+
+- **This is NOT the `AllowChangesAcrossVariants` gate.** A per-field gate cannot discard 19 of 19, and
+  `ProductName` and `ProductLongDescription` ship that flag `True` and were discarded with the rest.
+  Reading `EcomProductField.AllowChangesAcrossVariants` remains worth doing on **10.25.x**, where a
+  `False` flag discards that one field's per-variant value by design while the save still answers ok
+  (see [`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.5).
+- **On DW 10.25.x the round-trip works** for `stock`, `active` and `number`: set them on the model read
+  from `ProductById?Id&VariantId` and `ProductSave` persists them. `DefaultPrice` is the one exception
+  there, ignored on every save, so the variant reads back with the MASTER's price (measured across 22
+  variants in three families).
+- The hosted-publish consequence, including the `VariantCombinationSave` re-derive that resets
+  `ProductWeight` and `ProductPrice` on every variant it touches, lives in `dw-demo-hosted`
+  (`publish-to-hosted.md`, "Publishing onto an install that already has content").
+- **Verify with both readers plus a master control.** `GET /Admin/Api/ProductById?Id&VariantId` AND
+  `get_product_by_id(id, variantId)`; master values coming back means the write did not land. Run the
+  identical call against the master row in the same pass, so a null result is proof about the variant and
+  not about the instrument.
+
+### Per-variant price
+
+Per-variant pricing is an `EcomPrices` row, so the write is **`PriceSave` carrying `VariantId`** on every
+build. `DefaultPrice` through `ProductSave` never reaches it.
+
+- **Verify by `PriceById`, not by the product-scoped list.** MCP `get_prices_by_product_id` is served
+  through a cache that lags the write: immediately after six successful `PriceSave` calls it returned an
+  empty list, and moments later returned all six rows. `GET /Admin/Api/PriceById?Id=<priceId>` is not
+  cached, so assert each created id there (or re-read `PricesByProductId` after the cache settles). A
+  verification written against the product-scoped list concludes the price write failed when it landed.
+- **`defaultPrice` on the product model is a different column** (`EcomProducts.ProductPrice`) and stays
+  `0` no matter how many `EcomPrices` rows exist. It is never the price read-back.
+- A NULL-price variant row also breaks the product index build; see
+  [`index-management.md`](../../dw-search-indexing/references/index-management.md) "A NULL-price variant
+  row drops every variant document".
 
 **Run this chain verbatim before concluding a variant row is unwritable.** The verbs *outside* the chain
 answer `status: ok` and change nothing, so a session that probes them in sequence reads like proof that
@@ -213,18 +275,18 @@ success-reporting non-writers, with the working replacement for each:
 
 | Lying/no-op path | What actually writes it |
 |---|---|
-| `patch_products_safe` / `update_products` against a variant id | Full-model round-trip `ProductById?Id&VariantId` → `ProductSave` (step 4) |
+| `patch_products_safe` / `update_products` against a variant id | Full-model round-trip `ProductById?Id&VariantId` → `ProductSave` on 10.25.x; nothing on 10.28.x |
 | MCP `create_variant_combinations` (leaves `ProductActive`/`ProductPrice` NULL) | `VariantCombinationSave` — runs `ExtendAllVariants` (step 3) |
 | `ProductSave` with a hand-built **partial** model | The round-trip — `*Save` commands are whole-entity saves |
 | `DefaultPrice` via `ProductSave` on a variant | `PriceSave` carrying `VariantId` |
 | `VariantCombinationCreate`, `VariantCombinationToggleActive`, `VariantCombinationUpdate` | Not part of the chain — `VariantCombinationSave` covers create + persist |
+| `VariantCombinationSave` with group-qualified ids on 10.28.x | The same verb with bare option ids |
 
-A read that returns the MASTER's values for a combination means the variant row's own fields are NULL and
-the read fell back — the row exists and is enrichable via this chain; it is not evidence the row is
-missing or read-only. And before planning any per-variant write of a specific field, read
-`EcomProductField.AllowChangesAcrossVariants` for it — a `False` flag discards the per-variant value by
-design while the save still answers ok (see
-[`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.5).
+On 10.25.x, a read that returns the MASTER's values for a combination means the variant row's own fields
+are NULL and the read fell back, so the row exists and is enrichable through this chain. On 10.28.5 the
+same read means the row refuses writes: the control above lands 4/4 on the master and 0/19 on the variant
+row, whose own `autoId` and `kind: variant` prove it exists. Neither reading is evidence of a missing or
+read-only row on its own, so run the master control before you decide which one you are looking at.
 
 ### Product relations via the Management API — `RelationGroupSave` is update-only, and the maintenance verbs take composite ids
 
@@ -297,14 +359,21 @@ Learn them as a set:
 | Make an attached asset the primary | `ProductAssetSetAsDefault {DetailId, ProductId, VariantId, LanguageId}` (inverse: `ProductAssetRemoveDefault`) | `Dynamicweb.Products.UI.Commands` — product link |
 | Delete FILES from the archive | `AssetDelete {DirectoryPath, Ids}` | `Dynamicweb.Files.UI.Commands.Files` — **the file archive** |
 
-- **`AssetAddToMultipleProducts.IsDefault` is inert — the add verb has no working default flag.** It is
-  silently accepted (`status: ok`, row created) and the `EcomDetails` row lands with `isDefault=false`,
-  every time, across a whole batch. Setting a primary is a **second call**: `ProductAssetSetAsDefault`
-  with the `DetailId` of the row you just created. Read the row back through
-  `GroupedAssetsByProductId` and assert `isDefault` — a `status: ok` echo does not prove it. (Any bulk
-  wiring helper that attaches a primary must do the follow-up call itself. Where you find a raw
-  `UPDATE EcomDetails SET DetailIsDefault=1` in an existing script, this defect is what it was covering
-  for.)
+- **`AssetAddToMultipleProducts.IsDefault` is inert on the raw `/Admin/Api` verb, and MCP
+  `add_product_image {setAsPrimary:true}` DOES write the flag.** The inert flag is a property of the
+  Management API verb, not of the platform: `AssetAddToMultipleProducts` silently accepts `IsDefault`
+  (`status: ok`, row created) and the `EcomDetails` row lands with `isDefault=false`, every time, across
+  a whole batch, so on that verb setting a primary is a **second call**, `ProductAssetSetAsDefault` with
+  the `DetailId` of the row just created. MCP `add_product_image` is a different code path and honours
+  `setAsPrimary` on the first call: measured 335/335 attachments primary on the first read, with no
+  `ProductAssetSetAsDefault` call made. **Prefer `add_product_image {setAsPrimary:true}` for bulk
+  attach**, two calls per attachment instead of three.
+- **The read-back stays mandatory on both paths.** Read the row through `GroupedAssetsByProductId` (or
+  MCP `get_product_images`) and assert `isPrimary`; a `status: ok` echo does not prove it. Any bulk
+  wiring helper that attaches a primary must do its own follow-up read. Where you find a raw
+  `UPDATE EcomDetails SET DetailIsDefault=1` in an existing script, the raw-verb defect is what it was
+  covering for. On a host where `get_product_asset_categories` returns `[]`, `groupId: 0` is the correct
+  asset-category argument.
 - **`AssetDelete` is NOT the inverse of an asset attach.** It lives under
   `Dynamicweb.Files.UI.Commands.Files`, takes `{DirectoryPath, Ids}` and operates on the **file archive**;
   the product-scoped verb is `ProductAssetDelete {QueryId, ProductId, Ids}`. The two differ by one word

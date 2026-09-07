@@ -5,7 +5,7 @@ Field-validated DW10 B2B distribution-center (DC) scoping knowledge: the DC-as-u
 ## Contents
 
 - [The DC-as-user-group pattern](#the-dc-as-user-group-pattern)
-- [Customer-scoped contract prices — `save_prices` can't set the customer number](#customer-scoped-contract-prices--save_prices-cant-set-the-customer-number)
+- [Contract prices: three scope columns, and MCP `save_prices` reaches only one](#contract-prices-three-scope-columns-and-mcp-save_prices-reaches-only-one)
 - [Naming convention](#naming-convention)
 - [User assignment](#user-assignment)
 - [Surface guidance for setting this up](#surface-guidance-for-setting-this-up)
@@ -32,8 +32,9 @@ wholesale / B2B-distributor scenario that touches DC-aware behavior.
    members of a DC where it's feasible.
 3. **Shipping fees** with per-user-group price matrices — a `ShippingMethodFee` row keyed on
    `(method, user-group)` gives DC-specific freight.
-4. **Cart-time price resolution** scoped by the same user-group — covered by the stock `EcomPrices`
-   resolver when `PriceCustomerGroup` matches a group the user is a member of. (Note: this is
+4. **Cart-time price resolution** scoped by the same user-group, covered by the stock `EcomPrices`
+   resolver when **`PriceUserGroupId`** names a group the user is a member of (the scope column, see
+   "Contract prices" below). (Note: this is
    base-row resolution; `PriceQuantity > 0` tier rows are still ignored by the stock cart — see
    [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11. The
    vendor-recommended pattern for qty-aware DC pricing is ERP-imported pre-graduated rows, one per
@@ -42,30 +43,36 @@ wholesale / B2B-distributor scenario that touches DC-aware behavior.
 This is *not* a custom architecture. Each of the four features is a stock DW10 surface that scopes
 by user-group; "DC = user group" is the convention that makes them compose.
 
-## Customer-scoped contract prices — `save_prices` can't set the customer number
+## Contract prices: three scope columns, and MCP `save_prices` reaches only one
 
-A **contract price** scoped to one customer account (not a whole user-group) lives in an `EcomPrices`
-row whose **`PriceUserCustomerNumber`** equals the buyer's `AccessUserCustomerNumber`. The stock price
-resolver applies that row when the signed-in buyer's customer number matches — **contract pricing is
-native default-provider behavior, zero custom code** (no `IPriceProvider`). The gap is authoring: the
-MCP **`save_prices` tool has no `PriceUserCustomerNumber` parameter** — it can set list / currency /
-`PriceCustomerGroup`-scoped rows, but **cannot scope a row to a customer number**. Author the contract
-row via SQL:
+Contract pricing is native default-provider behavior, zero custom code (no `IPriceProvider`). The whole
+question is which `EcomPrices` column carries the scope, and the two group-shaped names are not
+interchangeable:
 
-```sql
--- Confirm the row's NOT-NULL columns first:
---   SELECT name, is_nullable FROM sys.columns WHERE object_id = OBJECT_ID('EcomPrices') AND is_nullable = 0;
-INSERT INTO EcomPrices (PriceProductId, PriceCurrencyCode, PriceAmount, PriceUserCustomerNumber /*, …*/)
-VALUES (N'<productId>', N'<CUR>', <amount>, N'<buyer AccessUserCustomerNumber>' /*, … */);
-```
+| Scope | Column | Admin API property | Matches |
+|---|---|---|---|
+| A DC (an `AccessUser` group) | `PriceUserGroupId` | `userGroupId` | Every member of that user group |
+| One customer account | `PriceUserCustomerNumber` | `userCustomerNumber` | Every user whose `AccessUserCustomerNumber` equals it |
+| A customer NUMBER, not a group | `PriceCustomerGroupId` | `groupCustomerNumber` | A customer number string, despite the column name |
 
-Restart the host or flush the price cache after a direct SQL write — prices are cached in process and
-the resolver does not observe raw SQL changes.
-**Validate:** sign in as that buyer → the PDP / cart shows the contract price; sign in as a different
-buyer → they see the list price. (Contract price = per-customer; the group-scoped `PriceCustomerGroup`
-resolver of §"Cart-time price resolution" is the per-DC-group counterpart. Quantity-tier
-enforcement — `PriceQuantity > 0` rows — is a separate matter the **stock cart ignores**; see
-[`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11.)
+**A DC-scoped contract price is `PriceUserGroupId`, written through `/Admin/Api/PriceSave`.** MCP
+`save_prices` exposes no `PriceUserGroupId` parameter; its `customerGroupId` argument writes
+`PriceCustomerGroupId`, which matches a customer number. Passing a user-group id to `save_prices` stores
+a number that matches nothing: the call answers `succeeded:1`, the row is visibly there in `EcomPrices`,
+and the group's buyers still see the list price on the PDP, which reads as a price-resolution or cache
+problem. Read the full model from `PriceById`, set `userGroupId` to the group id, leave
+`groupCustomerNumber` empty, and post the whole model back through `PriceSave`. Measured on one buyer:
+list 312.00 before, contract 274.56 after that single change.
+
+Keep MCP `save_prices` for unscoped list/currency rows.
+
+**Validate on the rendered storefront, never on the row.** Sign in as a member of the group: the PDP and
+cart must show the contract price. Sign in as a non-member or stay anonymous: they see the list price. A
+row-exists assertion passes while the storefront is still on list price, which is exactly the failure
+this section describes. (Quantity-tier enforcement, `PriceQuantity > 0` rows, is a separate matter the
+**stock cart ignores**; see
+[`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11, and the
+same three-column table lives at §2.13 there.)
 
 ## Naming convention
 
