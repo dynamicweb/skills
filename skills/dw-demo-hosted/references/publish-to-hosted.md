@@ -12,6 +12,7 @@
 - [Deserialize semantics that decide the outcome](#deserialize-semantics-that-decide-the-outcome)
 - [Publishing onto an install that already has content](#publishing-onto-an-install-that-already-has-content)
 - [What never rides the content export](#what-never-rides-the-content-export)
+- [Restoring a whole site package: do not ring-symlink a package built from source](#restoring-a-whole-site-package-do-not-ring-symlink-a-package-built-from-source)
 - [Indexes — the definition travels, the built data does not](#indexes--the-definition-travels-the-built-data-does-not)
 - [Verify with a browser, not just status codes](#verify-with-a-browser-not-just-status-codes)
 
@@ -109,6 +110,25 @@ The serializer config deliberately excludes per-environment fields, and several 
 | `SettingsSystemCustomizedURLs.includeProductIdInUrlNames` | Product URLs render as `?ProductID=<id>` instead of friendly slugs, so friendly PDP URLs — and any redirect pointing at one — 404. |
 | Area `includeProductsInSitemap` + the on-disk sitemap cache | Sitemap serves stale content; product URLs missing. Clear `Files/System/SitemapXml/` to force a rebuild. |
 | `Files/Icons/1_none.svg` | The "no icon" sentinel. It 404s on an install that never had it (rendering nothing, as intended) but **exists on a stock cloud install**, where it renders a literal **NO ICON** box on every link using the sentinel. Delete it on the target. |
+
+## Restoring a whole site package: do not ring-symlink a package built from source
+
+The platform convention for an IIS-hosted demo site is to symlink `Application\bin` to a shared DW10
+ring. That is right for a stock host and **silently wrong for a transfer package that is a source
+project**. A package shipping `Dynamicweb.Host.Suite.csproj` plus an `Extensions\*.cs` tree (price
+providers, notification subscribers, job estimators) has that logic compiled INTO
+`bin\Debug\net10.0\Dynamicweb.Host.Suite.dll`, along with its own `PackageReference` assemblies. The
+ring's `bin` carries a **stock** host DLL and none of it, so a ring symlink boots a stock host with all
+the customer's business logic gone, **with no error anywhere**.
+
+Check for a `.csproj` and an `Extensions\` tree in the package before deciding. When it is a source
+project: flatten the package's `bin\Debug\net10.0` to `Application\bin` as a **real folder**, write the
+standard ASP.NET Core `web.config` pointing at `.\bin\Dynamicweb.Host.Suite.dll`, and do **not** create
+a `changeversion.txt`, so the ring watcher leaves the site alone. Verify with
+`Get-Item Application\bin` reporting no `LinkType`, and prove the custom logic by a behaviour the stock
+host cannot produce (a custom price provider's quantity-break price on the frontend, for example),
+never by the site rendering at all. A ring symlink at a version-compatible release is the trap: it
+starts, it serves, and it is missing the demo.
 
 ## Indexes — the definition travels, the built data does not
 

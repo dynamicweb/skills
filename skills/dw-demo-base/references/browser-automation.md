@@ -9,6 +9,7 @@
 - [Step 3 — Tool surface in a fresh Claude Code session](#step-3--tool-surface-in-a-fresh-claude-code-session)
 - [Generic verify-flow recipe](#generic-verify-flow-recipe)
 - [Probe-harness discipline — measure the right document, prove the measurement](#probe-harness-discipline--measure-the-right-document-prove-the-measurement)
+- [Driving the DW 10.28 admin shell](#driving-the-dw-1028-admin-shell)
 - [Removal / re-install](#removal--re-install)
 - [Chromium fallback when `chrome` isn't resolvable](#chromium-fallback-when-chrome-isnt-resolvable)
 
@@ -169,6 +170,75 @@ Once verification moves from ad-hoc `browser_evaluate` calls into a scripted pro
 **Disable LCD text before counting hue pixels.** Subpixel text rendering paints glyph edges on the R, G and B stripes independently, so every antialiased glyph carries a warm fringe on one edge and a cool one on the other — real pixels with real hues, and a warm fringe lands squarely in an orange/brown band. The noise floor scales with the amount of **text**, not the amount of paint: a page with zero images and zero elements computing a colour in the band scored 5,788 hits with LCD text on and **0** with Chromium launched `--disable-lcd-text`; across a suite, ~1.03M residual hits collapsed to 0. Launch the audit browser with `--disable-lcd-text` and state the flag in the harness — a reader who reproduces the scan without it gets a different answer. Per-surface tolerance thresholds were rejected (they bury the defect class and would have to scale with text volume), as was post-filtering isolated pixels (cannot distinguish a 1px hairline border from a glyph fringe).
 
 **A standing colour assert — no pixel in a retired hue band outside image content.** Geometry and presence asserts are completely insensitive to a brand change: a sitewide palette swap left 197 of 201 design asserts green in *both* states while the highest-blast-radius surface on the site (94 primary buttons) kept the retired colour — visible only to a human looking at a screenshot, which is what the gate exists to replace. Add an assert parameterised by a retired hue band (h-range, S floor, L range) plus the photo-neutralisation pass, asserting **0 hits per surface**; ship it with the neutralisation post-condition and `--disable-lcd-text` above, without which it reports noise. Demonstrate it **fires** before trusting it — re-serve the pre-change stylesheets through `page.route()` under identical flags and confirm a large non-zero score against a 0 on the shipped state; a pass earned without that control is indistinguishable from a detector that stopped looking. Asserting on the CSS *text* is cheaper but misses a generated file the theme sheet never mentions (the exact defect class); asserting on computed styles per element is better than text but still blind to gradients, SVG fills, and colour arriving through a sheet the walker does not attribute.
+
+**Attribute-flip A/B to attribute a geometry regression.** When the only thing a change touched is an
+ATTRIBUTE that CSS keys on, the pre-change state is reproducible on one live page load by flipping the
+attribute back in the DOM: no redeploy, no revert, no arithmetic. A header pass that moved every row to
+`data-dw-container-width="4"` failed a 992px rail check by 26px and read as the cause; flipping the
+attribute back to `"3"` in the DOM on the same load measured 76px of overflow, so the pass had **halved**
+a standing defect (the desktop nav rail lays out at 1010px while the header container is 960px at that
+viewport, the last width at which DW still serves the desktop header). Print an explicit MADE IT WORSE /
+IMPROVED IT / CHANGED NOTHING verdict from the A/B, and add the failing breakpoint to the sweep so the
+standing defect stays visible rather than being rediscovered.
+
+---
+
+## Driving the DW 10.28 admin shell
+
+Verification-only still applies: these are the mechanics for reaching a screen and reading it back,
+not a licence to author through the UI (`references/surface-priority.md`). The one sanctioned
+authoring exception, PIM grid edit, carries its own read-back/abort guard in
+[`../../dw-demo-pim/references/screen-authoring.md`](../../dw-demo-pim/references/screen-authoring.md).
+
+**Every action-menu item is pre-rendered hidden, so visibility-aware clicks never find them.** Every
+action-menu item for every toolbar on the screen is in the DOM at load time inside collapsed
+containers, and the list is **one shared hidden block** rather than per-menu markup: clicking any of
+~15 `uil-ellipsis-h` buttons on `/Admin/UI/Products/ProductList?Type=ProductsAll` dumps the identical
+40-item list (New query, Add workspace, Manage columns, Import, Export, Add to data model, Bulk
+update, Translate, Combine as variants, ...). Playwright's `locator.click()` and `isVisible()`
+correctly report them as not visible, so a text-matching helper skips them and returns null every
+time. Click through the DOM instead, `page.evaluate(el => el.click())`, and **scope the search to the
+open dialog or modal** when a picker is up: an unscoped text click on "Integration" hits the shell nav
+and navigates away from the wizard.
+
+**A text-keyed click can also succeed on the wrong element.** The shell pre-renders the left tree's
+context menus into the same document, so a product overview carries ~20 anchors whose exact text is
+"Edit", all `dropdown-item`, all with a zero bounding box at x=0,y=0, with hrefs pointing at
+`DynamicStructureOverview` / `ShopEdit` / `ProductCatalogGroupEdit`. The product's own Edit is a
+`button.btn-link` inside the details card at roughly x=1391,y=227. Selecting by text alone picks a
+hidden one, the click reports success, the page loads 200, and the only tell is the URL. Filter on a
+real box first, then assert the destination:
+
+```js
+[...document.querySelectorAll('a,button')]
+  .filter(x => x.innerText.trim() === 'Edit')
+  .filter(x => { const b = x.getBoundingClientRect();
+                 return b.width > 0 && b.x > 0 && b.y > 0; });
+```
+
+**After any scripted navigation, assert the resulting URL matches the screen you meant to reach.**
+Never assert only that the click returned true. Enter product and workspace screens by clicking the
+left nav rather than by constructing a route: those screens resolve their navigation node path from
+tree state and 500 or render empty when entered cold.
+
+**The AI assistant rail is a TOGGLE, and both obvious open-state tells are wrong.** Calling a
+`closeAiRail()` helper once on navigation and again inside the screenshot helper re-opens and
+re-closes the rail, leaving the whole shell translated by the rail width: the tree pane goes
+off-canvas and the content column slides under the purple app rail, so field labels, the first tab
+and the first grid column are clipped. The DOM stays healthy, so every assertion passes while the
+pictures are unusable. The two tells that do not work: "Ask anything" is a **placeholder attribute**,
+not `innerText`, so `/Ask anything/.test(document.body.innerText)` is always false; and
+`button.js-minimize` (title "Minimize") stays in the DOM with a non-zero box after the rail is
+minimised, so testing for its presence is always true.
+
+Close it idempotently by **measuring the ask input's position**: open is
+`rect.width > 0 && rect.x < window.innerWidth - 20`. Click exactly one selector per round, re-measure,
+maximum 3 rounds; a second call on a closed rail then clicks nothing. Measured on 1440x1000: the
+tree-nav `getBoundingClientRect().x` is **192** when correct and **-163** after a double close, which
+is exactly the 355px rail width, and the "General" tab lands at x=85 under the 190px app rail.
+Regression check before every screenshot:
+`document.querySelector(".tree-nav").getBoundingClientRect().x === 192`. Widening the viewport hides
+the symptom while the content stays translated, and reloading the page does not reset the translation.
 
 ---
 

@@ -8,6 +8,7 @@
 
 - [The format lives in the foundational skill](#the-format-lives-in-the-foundational-skill)
 - [Reference source: `theme-default` in the Distribution](#reference-source-theme-default-in-the-distribution)
+- [The Tier-0 motion for a customer re-skin: net-new PAIRS, stock scheme ids](#the-tier-0-motion-for-a-customer-re-skin-net-new-pairs-stock-scheme-ids)
 - [Hand-editing a generated Style asset — edit the `.json` model too](#hand-editing-a-generated-style-asset--edit-the-json-model-too)
 - [Webfonts arrive as an `@import` INSIDE the generated Typography sheet](#webfonts-arrive-as-an-import-inside-the-generated-typography-sheet)
 - [When to use this vs `<customer>_custom.css`](#when-to-use-this-vs-customer_customcss)
@@ -76,6 +77,42 @@ Copy-Item -Recurse "$src\*" "$dst\" -Force   # lands ColorSchemes/Buttons/Typogr
 For a customer re-skin, leave `theme-default`'s files as staged and add the customer's own Styles
 JSON+CSS pairs plus `<customer>_custom.css` on top ([`re-skin.md`](re-skin.md)); hand-edit patterns
 and Area-column wiring follow [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §7.
+
+## The Tier-0 motion for a customer re-skin: net-new PAIRS, stock scheme ids
+
+A customer brand pass has two tempting wrong moves. The first is editing `theme-default`'s `default.*`
+Style assets in place, which the re-skin hard rule forbids and which the next layer update reverts. The
+second is the silent one: creating a net-new ColorScheme group with the **customer's own scheme ids**.
+Every deserialized content row carries a `data-dw-colorscheme` referencing a scheme id **by name**, so
+renaming the ids makes each row resolve to nothing and the site loses its banding with no error.
+`Swift-v2_Master.TryGetColorSchemeStyle` resolves
+`/Files/System/Styles/ColorSchemes/<Area.AreaColorSchemeGroupId>.css`, so the **group** is repointable
+per area while the ids inside the file are the binding key.
+
+The prescribed motion:
+
+1. Add net-new `<customer>.{json,css}` **pairs** under `System/Styles/{ColorSchemes,Typography,Buttons}`.
+   Never edit `theme-default`'s `default.*` or the stock swift / buttons / fonts assets.
+2. **Reuse the seven stock scheme ids verbatim** (`light`, `lightgrey1`, `lightgrey2`, `dark`,
+   `darksubtle`, `primary`, `secondary`) so every existing `data-dw-colorscheme` maps over unchanged.
+3. Per scheme, edit **both the hex and the `rgb` triplet**, in **both** the `.css` and the `.json`.
+   `--dw-color-button-primary` is emitted once per scheme in each notation, so a brand swap is 14
+   literals across 7 schemes, not 7, and the `.json` must carry them or the admin swatch lies.
+4. Repoint the four `Area` style columns by SQL, not by `AreaSave`:
+   `UPDATE Area SET AreaColorSchemeGroupId='<customer>', AreaColorSchemeId='light',
+   AreaTypographyId='<customer>', AreaButtonStyleId='<customer>' WHERE AreaId=<id>;`
+5. Put brand-accent work on `theme-default`'s declared hooks: `--td-accent` / `--td-accent-soft` first
+   (they recolour nav hover, mega-menu hover, the underline caret, outline/ghost hover and chips in a
+   handful of lines), then `--dw-color-accent` as the brand slot. When a token cannot be expressed by
+   the Style-asset `.json` model, declare it in `<customer>_custom.css` **with a written retirement
+   condition** rather than in the generated sheet, so the model never lies.
+6. Head load order is load-bearing: `default_custom.css` **then** `<customer>_custom.css`.
+
+Also rejected: renaming `Area.AreaName` for portal branding. That breaks the composed serializer
+manifests, whose `files[]` paths key off the area name; `MetaSiteName`, the page title and the logo
+name carry the naming instead. Gate on the **served** site: the head links all four sheets in order,
+the served sheets carry the new accent, every `data-dw-colorscheme` in the served HTML is one of the
+seven stock ids and resolves to a rule, and the stock files keep their pre-pass mtimes.
 
 ## Hand-editing a generated Style asset — edit the `.json` model too
 

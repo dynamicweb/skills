@@ -137,6 +137,28 @@ and silently drops part of the input:
 | MCP `update_users` | A `password` property — the schema has no password field, and an extra `password` property is accepted (`succeeded:1`, `updatedOn` bumped) and dropped | DW 10.28.1-Pre | There is no MCP/API password surface at all — use the plaintext escape hatch documented in [`dw-users-permissions`](../../dw-users-permissions/SKILL.md), reference `permission-layers.md` §13 |
 | MCP `patch_products_safe` against a **variant** `EcomProducts` row (`id` + `variantId`) | The **entire patch** — the success items echo the requested values (number, price, isActive) because the echo is the input model, not a post-write read; the variant row's columns stay NULL. The tool writes to the variant *combination* model, not the variant product row (same family as `create_variant_combinations` leaving `ProductActive`/`ProductPrice` NULL — see [`dw-pim-modelling`](../../dw-pim-modelling/SKILL.md), reference `structural-model.md` §2.5) | DW 10.27.x | SQL `UPDATE` on the variant `EcomProducts` row is the canonical variant-enrichment surface. Verify immediately: `SELECT ProductNumber FROM EcomProducts WHERE ProductId=@p AND ProductVariantId=@v` — NULL means the write didn't land |
 | MCP `copy_page` with `destinationParentPageId=0` (top-level copy) | The **implied area** — the copy lands as a top-level page of area 1, not the source page's area, when no `areaId` is passed | DW 10.27.x | Always pass `areaId` explicitly on top-level copies; confirm the response's `areaId` equals the requested area |
+| MCP `set_paragraph_item_fields` | Any field system name that does **not exist on the item type**. The verb counts the fields it was ASKED to write, not the fields it MATCHED, so `{"succeeded":1,"failed":0,"errors":[]}` comes back for a typo or a guessed name and the paragraph renders nothing | DW 10.26.12 | Read the field list from `get_paragraph_item_field_values` (or `Files/System/Items/ItemType_<name>.xml`) BEFORE writing, then read the specific field back with its specific value |
+| MCP `save_paragraphs` | `active` (the response body itself echoes `active: true` back, with a minimal model and with a full model alike; inert, not destructive) | DW 10.28.5 | `hideForPhones` + `hideForTablets` + `hideForDesktops`, which DO write; or `GridRow.GridRowActive = 0` when the paragraph is the sole occupant of its row. `save_paragraphs` DOES write `itemType`, and that write re-mints the item instance with default field values, so every field must be re-stated afterwards |
+| MCP `add_product_image` with a `groupId` | Nothing is dropped, but it is an **ADD, not a move**: the same `filePath` under a new `groupId` mints a second detail row and only flips `isDefault`. It also accepts a `filePath` that does not exist on disk and returns a healthy `detailId` | DW 10.26.12 | Follow every add with `remove_product_image` on details outside the target group, and check the path against `list_files` first. Read back `GroupedAssetsByProductId` and assert exactly one `isDefault` per product |
+
+### A wrong ARGUMENT SHAPE surfaces as a hintless invocation error
+
+Distinct from the silent no-ops above: the tool throws, nothing is written, and the message is the bare
+`"An error occurred invoking '<tool>'."` with no field name and no validation detail. That reads as the
+platform rejecting a value, so the shape is the last thing anyone checks. Two measured cases, both from
+the schema in `tools/list`:
+
+| Tool | Working shape | Failing shape |
+|---|---|---|
+| `patch_products_safe` `customFields` | `[{id: "<full path>", value: "<string>"}]`, both members required, both **strings** | `[{systemName: ..., value: 0}]`, which is the shape `/Admin/Api/ProductById` ECHOES when you read the same fields back |
+| `set_paragraph_item_fields` `fields` | a MAP: `{Layout:'tabs', Title:'Specifications'}` (`additionalProperties: string`) | a list of `{systemName, value}` objects |
+
+For `customFields` the key is the full `ProductCategory|<cat>|<field>` path and **every value must be
+stringified**, numbers included; a multi-select list is a **comma-joined string**, not a JSON array
+(`value:["swine","poultry"]` fails, `value:"swine,poultry"` works). Encode with one helper before the
+call, `Array.isArray(v) ? v.join(",") : String(v)`, and read back per batch: a 121-cell enrichment run
+reported the generic error for every batch and wrote 0 of 121 cells, and there was nothing in the
+response to point at the mistake.
 
 **Rule:** after any critical update through MCP / Management API, round-trip it — read the value back
 through a different surface (or curl the rendered page) before declaring it done. When a silent no-op is

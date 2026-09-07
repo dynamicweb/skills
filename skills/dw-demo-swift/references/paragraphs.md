@@ -212,6 +212,49 @@ the delivered HTML, so content tripwires that grep served HTML do see the change
 all three flags read back `true`, **and** a string unique to that paragraph has zero occurrences in the
 served page.
 
+Two riders on the same motion. **`ParagraphChangeActive` is inert too, and its shape error lies.** The
+body is `{"setActive":<bool>,"ids":["<id>", ...]}`: `ids` is a `List<string>`, numeric ids **500**, and
+any other key name answers `{"status":"invalid","message":"No items selected"}`, so a schema mistake
+reads as a selection problem. With the shape correct the command still returns `{"status":"ok"}` and
+leaves `ParagraphShowParagraph = 1`. And **MCP `save_paragraphs` does not write `active` either**: the
+response body echoes `active: true` back at you, with a minimal model and with a full model alike
+(inert, not destructive: header, itemType, sort and column all survive). The paragraph-level
+`hideForPhones` / `hideForTablets` / `hideForDesktops` trio does write through `save_paragraphs`.
+
+**Where a paragraph is the SOLE occupant of its row, deactivate the ROW instead.**
+`UPDATE GridRow SET GridRowActive = 0 WHERE GridRowId IN (...)` removes the whole band rather than its
+contents, so no empty padded `<section>` is left in the band sequence, and it is one UPDATE to reverse
+when a later phase needs the band back. Regression probe worth keeping: POST `ParagraphChangeActive`
+`{"setActive":false,"ids":["<id>"]}`, assert `{"status":"ok"}` AND assert
+`SELECT ParagraphShowParagraph FROM Paragraph WHERE ParagraphId = <id>` is still 1, so the day the
+command starts working the harness notices.
+
+**`save_paragraphs` DOES write `itemType`, and the write re-mints the item instance.** Swapping the
+attached content model through `save_paragraphs [{id, pageId, itemType:'<Other>'}]` returns ok, and the
+read-back shows both the new `itemType` and a **new `itemId`** carrying default field values. Every
+field must be re-stated afterwards, and the field system names differ between item types (the accordion
+takes `FieldDisplayGroups`, the stock specifications paragraph takes `DisplayGroups`), so a re-state
+copied across from the old type writes nothing.
+
+**`set_paragraph_item_fields` takes a MAP, and it reports success for field names that do not exist.**
+Two separate traps on one verb:
+
+```
+fields: [{systemName:'Layout', value:'tabs'}, ...]   -> "An error occurred invoking
+                                                        set_paragraph_item_fields", nothing written
+fields: {Layout:'tabs', Title:'Specifications', ...} -> ok, all fields read back
+```
+
+The schema declares `fields` as an OBJECT (`additionalProperties: string`), a map of system name to
+value; the natural-looking list of `{systemName, value}` objects fails schema binding and surfaces as
+a bare invocation error with no field name and no validation detail, which reads as the item type
+rejecting a value. Separately, the verb **counts the fields it was ASKED to write, not the fields it
+MATCHED on the item type**: writing `AssetCategories` and `MediaAssets` to a
+`Swift-v2_ProductMediaTable` paragraph returned `{"succeeded":1,"failed":0,"errors":[]}` twice while
+the real field was `ImageAssets` and the table rendered nothing. Never trust the `succeeded` count.
+Read the field list from `get_paragraph_item_field_values` (or `Files/System/Items/ItemType_<name>.xml`)
+**before** writing, and read the specific field back with its specific value afterwards.
+
 **List fields (e.g. `FieldDisplayGroups`)** — `GetParagraphById` returns the value as a comma-joined
 STRING (`"specs_a,specs_b"`), while `ParagraphSave` persists whatever it is given as a JSON ARRAY. A
 read-modify-write therefore stores `["specs_a,specs_b"]`, and a second cycle stores

@@ -4,6 +4,7 @@
 
 - [1. Quick verification ritual](#1-quick-verification-ritual)
 - [2. Per-check sections](#2-per-check-sections)
+- [2a. Post-clone check: `/Files` must resolve to the DW file archive](#2a-post-clone-check-files-must-resolve-to-the-dw-file-archive)
 - [3. Discovery table — read these from project files (the discover-from-project-files rule)](#3-discovery-table--read-these-from-project-files-the-discover-from-project-files-rule)
 - [4. Dual-set env-var propagation pattern — User-scope env-var doesn't propagate](#4-dual-set-env-var-propagation-pattern--user-scope-env-var-doesnt-propagate)
 
@@ -122,6 +123,32 @@ Set-Content -Path $probe -Value "ok"; Remove-Item $probe   # throws if not writa
 **Expected:** two values captured in conversation state and written to the demo's `CUSTOMISATIONS.md`. No default — never guess a version.
 
 ---
+
+## 2a. Post-clone check: `/Files` must resolve to the DW file archive
+
+**Run this on any host cloned with `CopyDemoSite`, before any deserialize.** On the IIS-hosted demo
+sites the web-visible `/Files` root is `<site>\Files`, a **sibling of `Application\`**, and
+`CopyDemoSite` leaves it EMPTY, while DW resolves its own file archive to
+`<site>\Application\wwwroot\Files`. Two different folders. A working site keeps the archive in the
+sibling; a fresh clone does not, and every asset under `/Files` then 404s (`swift.css`, `swift.js`,
+`Styles/*.css`, every icon) while `/Admin` and the page pipeline work perfectly. The storefront
+renders completely unstyled, which reads as a broken deserialize and sends the run down the wrong
+diagnosis.
+
+Assert a known file resolves over HTTP before deserializing anything:
+
+```powershell
+# Expect 200 and a real body (~350 KB for swift.css on a Swift 2.4 site)
+$r = Invoke-WebRequest -SkipCertificateCheck `
+  "https://<host>/Files/Templates/Designs/Swift-v2/Assets/css/swift.css"
+if ($r.StatusCode -ne 200) { throw "/Files does not resolve to the DW file archive on this clone." }
+```
+
+To discriminate the two folders directly, write a probe file into `<site>\Files\__probe.txt` and into
+`<site>\Application\wwwroot\Files\__probe.txt` and GET both: on a broken clone the sibling answers 200
+and the archive answers 404. The remedy that shipped was junctioning `Templates`, `Images`, `Icons`
+and `System\Styles` from the sibling into the real archive, after which the five asset URLs returned
+200 and the home page rendered styled.
 
 ## 3. Discovery table — read these from project files (the discover-from-project-files rule)
 

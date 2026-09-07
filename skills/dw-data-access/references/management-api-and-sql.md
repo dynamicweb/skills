@@ -43,6 +43,27 @@ Reach for the Management API before restarting the host when a cache flush is al
 without a host bounce. See [`cache-invalidation.md`](cache-invalidation.md) for which cache each
 mutation touches and whether a flush suffices.
 
+### `/Admin/Api` is bearer-only: a logged-in admin browser session gets 401
+
+The surface authenticates by API key **only**. A valid admin session cookie is not accepted, and this
+is not a permission problem: an in-page `fetch("/Admin/Api/<verb>", {method:"POST",
+credentials:"same-origin"})` returns **401 with an empty body** for a freshly minted full
+administrator exactly as it does for a restricted persona, with plain, UI-copied and
+`X-Requested-With` header variants alike.
+
+This matters for any verb that writes state **for the calling user** (`MyFavoriteQueryAdd` is the
+worked case): you cannot call it from inside the persona's own session. Two honest routes:
+
+1. Drive the real UI control in the persona's browser session, which is what the admin UI itself does
+   (it does not call `/Admin/Api` for per-user state). This proves what the persona sees.
+2. Call the verb with the bearer token, which acts as the **key user**, and replicate the resulting
+   artefact for the target user through the Files API. Favourites live at
+   `/Files/System/SmartSearches/Ecommerce/Favorites/<AccessUserId>/Favorites.xml` as
+   `<Favorite Name="" SmartSearchID="" />` rows.
+
+Route 1 is preferred wherever the control exists, because route 2 forges an artefact and proves
+nothing about the user's own view.
+
 ### Short command names are not unique — an installed add-in can SHADOW a platform verb
 
 Commands register under a short name, and short-name resolution prefers the add-in. So a solution

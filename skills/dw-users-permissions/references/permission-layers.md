@@ -298,12 +298,33 @@ editing for:
 - **User group → Capability Sets** (`/Admin/UI/Users/CapabilitySetList?UserGroupId=<gid>`) — shows inherited rows in read mode; no Add path is wired.
 
 Out-of-the-box, a non-admin user with `allowBackend=true` on their group sees **the backend chrome but
-no PIM data**: empty Products tree, custom dashboards silently fall back to the default,
-`ProductEdit?ProductId=<id>` renders an empty "New product" form. This is more restrictive than typical
-PIM expectations and requires direct table seeding (Layer A `UnifiedPermission` + Layer B
-`CapabilityLimitation` + 4b `DashboardAccessUserRelation`) to make a non-admin role functional. There
-is no admin-UI route around this for the resources above; direct SQL
+no PIM data**: empty Products tree, custom dashboards silently fall back to the default. This is more
+restrictive than typical PIM expectations and requires direct table seeding (Layer A
+`UnifiedPermission` + Layer B `CapabilityLimitation` + 4b `DashboardAccessUserRelation`) to make a
+non-admin role functional. There is no admin-UI route around this for the resources above; direct SQL
 ([dw-data-access](../../dw-data-access/SKILL.md)) is the path.
+
+**Rule out the query string before attributing an empty product editor to permission starvation.**
+`ProductEdit` resolves its model from the `Type=` parameter, not from `Id=`. With no `Type`, the model
+binder produces an empty `ProductDataModel` and the screen renders in **create** mode: breadcrumb
+"New product", every field empty, a live green "Save and close", `Id=` simply ignored. That is
+identical to what a starved permission set looks like, and it happens to a full administrator.
+
+```
+/Admin/UI/Products/ProductEdit?Id=PROD12384                          -> "New product", fields empty
+/Admin/UI/Products/ProductEdit?Id=PROD12384&Type=ProductById&LanguageId=ENU
+                                                                     -> the product, all layout tabs
+```
+
+Every product deep link needs
+`?Id=<PRODID>&Type=ProductById&LanguageId=<LANG>&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext`,
+and the assertion is that the breadcrumb is the product name, not "New product". The neighbouring
+symptom on the same screens: `DynamicStructureLevelResultsList` and `QueryListScreen?Type=FavoriteQueries`
+entered **cold** produce empty grids and "An unhandled error occurred", because they resolve their
+navigation node path from tree state and a cold URL has no `DynamicStructureNavigationNodePath` and no
+`screenTypeName`. The same screens reached by clicking the left nav work, and the URL the UI itself
+builds carries a per-screen GUID segment plus a five-segment node path. Screenshot and assertion
+harnesses for the Products area must click the left nav, not construct routes.
 
 After any direct insert/update on these three tables, flush three caches via Management API before the
 change is visible to logged-in users:

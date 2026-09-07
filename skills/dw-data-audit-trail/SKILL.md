@@ -83,11 +83,30 @@ Lead with the answer, then evidence. "User Anna changed VAT on this product yest
 If the user wants to revert a change, stop the diagnostic and propose the revert as its own
 step. This skill is read-only — do not chain a revert onto an investigation request.
 
+## Enablement: the key is under `/Settings`, not `/System`
+
+Auditing is off until `/Globalsettings/Settings/Auditing/EnableAuditing` is `True`. That exact path
+is the literal the application reads (embedded in `Dynamicweb.Core.dll`); there is no `/System`
+variant in any assembly. `GlobalSettingSave` does not validate keys, so a write to
+`/Globalsettings/System/Auditing/EnableAuditing` **creates** that node, returns `status: ok`, and
+reads back `True` through `GlobalSettingByKey` while the shipped `<Settings>` node stays `False` and
+`Audit` / `AuditDetail` stay at 0 rows. Symptom: "Review changes" is empty and the flag looks applied.
+
+```json
+{"Model":{"Key":"/Globalsettings/Settings/Auditing/EnableAuditing","Value":"True"}}
+```
+
+Assert the enablement two ways before concluding the audit log is empty: `Files/GlobalSettings.config`
+parsed as `[xml]` must resolve `//Auditing` to exactly **one** node, and `SELECT COUNT(*) FROM Audit`
+must increase across a known write such as a `ProductSave`. The full key-minting trap lives in
+[dw-setup-config](../dw-setup-config/SKILL.md) "`GlobalSettingSave` creates ANY key you name".
+
 ## Limits
 
 - If audit logging is disabled in this installation, say so directly. The honest answer
   ("audit log is off, only signal is the entity's own last-modified field") beats a long
-  fruitless search.
+  fruitless search. Check the enablement section above before reporting it as off: a flag written to
+  the wrong key reads back `True` and produces zero rows.
 - A change attributed to a system/service account usually means an automated process ran —
   trace the scheduled task or integration activity rather than presenting that as the final
   answer.

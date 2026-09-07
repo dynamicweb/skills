@@ -15,6 +15,7 @@
 - [Scoping hooks — one content page vs the whole catalog](#scoping-hooks--one-content-page-vs-the-whole-catalog)
 - [A palette swap is a multi-file, multi-notation sweep](#a-palette-swap-is-a-multi-file-multi-notation-sweep)
 - [CSS that silently never reaches the browser](#css-that-silently-never-reaches-the-browser)
+- [Minifying the custom sheet, and keeping it editable afterwards](#minifying-the-custom-sheet-and-keeping-it-editable-afterwards)
 - [Overriding Swift/Bootstrap-managed layout](#overriding-swiftbootstrap-managed-layout)
 - [Grid galleries and thumbnail strips](#grid-galleries-and-thumbnail-strips)
 - [Floating / overlay header — hero behind the bar](#floating--overlay-header--hero-behind-the-bar)
@@ -214,6 +215,30 @@ Four ways a rule ships, round-trips byte-identical — and does not exist in the
 **A rewriter cannot prove its own rule identity — verify with a parser that shares no code with it.** A stripper that proves "no rule was removed" by normalising both files with its own tokeniser is self-referential: a tokeniser bug deletes the rule from both sides and `before == after` still holds. Diff the **flattened CSSOM** in a headless browser instead — `document.styleSheets[0].cssRules` flattened to `selectorText` plus every declaration name/value/priority, compared position-by-position.
 
 Because of all four, **a CSS deploy must assert CSSOM rule presence**: for each shipped block, assert its marker rule is in `document.styleSheets`, recursing into `@media`/`@supports` groups and indexing each arm of a grouped selector separately (a fixed expected rule *count* rots on every legitimate edit and never says which rule vanished). Pair with a post-deploy smoke that renders real pages and fails on content collapse (`docH >= per-page floor`, `main.innerText >= 400 chars`), horizontal overflow, or a CSSOM rule-count **drop**. Keep the deploy-side scanner and the gate-side detector algorithmically identical.
+
+## Minifying the custom sheet, and keeping it editable afterwards
+
+**`clean-css` level 1 is not whitespace-only.** It reorders selectors inside a comma list
+(`selectorsSortingMethod` defaults to `standard`), strips whitespace inside `var()` and `rgba()` values
+that Blink serialises verbatim, and rewrites values: on the measured sheet it turned
+`background-position-x: initial` into `background-position-x: 0px`, a **semantic edit**. The positional
+CSSOM proof above failed 56 times on a sheet whose rule COUNT was unchanged (687 of 687); disabling
+selector sorting cut it to 11 and `removeWhitespace:false` to 6, and the value rewrite survived all of
+it. Byte-size wins were hiding value-level changes that no size metric reveals.
+
+Minify with a tokeniser that **only** drops comments, collapses whitespace runs outside
+strings / `url()` / comments, and removes whitespace abutting `{ } ;` plus the last `;` before `}`. It
+must never touch whitespace around `:` `,` `>` `+` `~` or inside any value, so `calc()` and `var()`
+fallbacks and descendant combinators stay intact. That cost 5.5 KB against clean-css (22.4 % vs 25.9 %
+on a 158 KB sheet) and made zero semantic edits. **The proof was never weakened to accommodate the
+minifier; the minifier was changed to satisfy the proof.**
+
+**A minified sheet must name its readable master, or the pull-live-and-edit workflow breaks.** The
+standing demo motion is pull the live sheet, append rules, redeploy, which makes the live file the
+de-facto source of truth; minification removes the property that made that safe, so the next pull
+yields minified CSS and the readable master silently diverges. Emit a leading `/*! ... */` banner
+(preserved by the minifier, invisible to the CSSOM, so the rule-identity proof still passes) that names
+the master path and gives the exact minify and proof commands, and commit the readable master.
 
 ## Overriding Swift/Bootstrap-managed layout
 
