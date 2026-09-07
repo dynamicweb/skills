@@ -1,11 +1,16 @@
 <#
 .SYNOPSIS
+    WRITES: a new SQL database, the Files folder tree, the Custom.Mcp add-ins
+    payload, Files/System/mcp-bootstrap.json, and GlobalSettings.Database.config.
     Installs the latest Swift 2 solution onto a fresh Dynamicweb 10 instance.
 
 .DESCRIPTION
     Downloads the latest Swift 2 database, files, and demo data from the Dynamicweb
     downloads portal, imports the database, extracts files, copies the Custom.Mcp
     add-ins payload, writes the bootstrap manifest, and creates the database config.
+    Owning reference: dw-setup-install/SKILL.md (Happy Path). Traps encoded:
+    sqlpackage discovery across install locations, the nested Files/ folder inside
+    the files ZIP, and the one-time TTL on the bootstrap secret.
 
 .PARAMETER TargetServer
     SQL Server instance. Default: localhost.
@@ -37,7 +42,17 @@
 
 .PARAMETER SkipDownload
     Skip downloading if the packages already exist locally.
+
+.EXAMPLE
+    pwsh -NoProfile -File scripts/install-swift2.ps1
+
+    Installs Swift 2 with the defaults: localhost SQL Server, database "swift2",
+    Files folder C:\DwSolutions\Swift2\Files.
+
+.EXAMPLE
+    pwsh -NoProfile -File scripts/install-swift2.ps1 -TargetServer ".\SQLEXPRESS" -TargetDatabase "mybusiness" -FilesPath "C:\MyProject\wwwroot\Files"
 #>
+#Requires -Version 7.0
 
 [CmdletBinding()]
 param(
@@ -205,7 +220,7 @@ function Build-ConnectionString {
     return "Server=$TargetServer;Database=$TargetDatabase;User Id=$SqlUser;Password=$SqlPassword;TrustServerCertificate=True;"
 }
 
-function Download-File {
+function Save-RemoteFile {
     param(
         [string]$Url,
         [string]$Destination
@@ -219,7 +234,7 @@ function Download-File {
     Write-Host "    Downloading $(Split-Path $Destination -Leaf)..." -ForegroundColor Gray
     $previousProgressPreference = $ProgressPreference
     $ProgressPreference = "SilentlyContinue"
-    Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing
+    Invoke-WebRequest -Uri $Url -OutFile $Destination
     $ProgressPreference = $previousProgressPreference
     Write-OK "Downloaded: $(Split-Path $Destination -Leaf) ($([math]::Round((Get-Item $Destination).Length / 1MB, 1)) MB)"
 }
@@ -262,7 +277,7 @@ if (-not $SkipDownload) {
     }
 
     foreach ($download in $Downloads.Values) {
-        Download-File -Url $download.Url -Destination (Join-Path $DownloadPath $download.FileName)
+        Save-RemoteFile -Url $download.Url -Destination (Join-Path $DownloadPath $download.FileName)
     }
 }
 else {

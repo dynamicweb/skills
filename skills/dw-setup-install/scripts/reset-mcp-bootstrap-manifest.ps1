@@ -1,18 +1,25 @@
 <#
 .SYNOPSIS
-    Writes a fresh one-time Dynamicweb MCP bootstrap manifest.
+    WRITES: Files/System/mcp-bootstrap.json (a fresh one-time secret + expiry).
+    Re-arms the Dynamicweb MCP bootstrap flow.
 
 .DESCRIPTION
     Re-arms the local bootstrap flow by writing Files/System/mcp-bootstrap.json with
     a new secret and expiry time. Use this when the original installer-generated
-    manifest has expired.
+    manifest has expired and a full re-install is not wanted.
+    Owning reference: dw-setup-install/SKILL.md (Error Handling,
+    "Bootstrap secret expired").
 
 .PARAMETER FilesPath
     Path to the Dynamicweb Files folder.
 
 .PARAMETER BootstrapSecretTtlMinutes
     Number of minutes before the bootstrap secret expires.
+
+.EXAMPLE
+    pwsh -NoProfile -File scripts/reset-mcp-bootstrap-manifest.ps1 -FilesPath "C:\DwSolutions\Swift2\Files"
 #>
+#Requires -Version 7.0
 
 [CmdletBinding()]
 param(
