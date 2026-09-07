@@ -161,50 +161,17 @@ if (-not $buildName) { throw "No <Build Name> in $idxPath — cannot resolve Bui
 
 Confirm the exact paths against the host's own catalog (`GET /admin/api/api.json`, bearer-authed) when in doubt. Live JSON responses come back **camelCase** even though the catalog declares PascalCase — PowerShell property access is case-insensitive so the probe below is unaffected; case-sensitive consumers must expect camelCase.
 
-**Probe:**
+**Probe** — run the enforced form,
+[`../../dw-search-indexing/scripts/Build-DwProductIndex.ps1`](../../dw-search-indexing/scripts/Build-DwProductIndex.ps1),
+with `-Passes 2` (one instance refreshes per run on a 2-instance index) and the `BuildName`
+resolved from the repository's own XML — NEVER assume `Full` here:
 
 ```powershell
 $repo = '<Repository>'   # read from Files/System/Repositories/ — solution-specific
 $idx  = '<Name>.index'
-$idxPath   = "wwwroot/Files/System/Repositories/$repo/$idx"
-$buildName = ([xml](Get-Content $idxPath -Raw)).SelectSingleNode('//Build/@Name').Value  # NEVER "Full"
-if (-not $buildName) { throw "No <Build Name> in $idxPath — cannot resolve BuildName." }
-
-# Build TWICE — one instance refreshes per run on a 2-instance index.
-foreach ($pass in 1..2) {
-  $posted = Get-Date
-  Invoke-RestMethod `
-    -Uri "https://localhost:$port/admin/api/BuildIndex" `
-    -Method POST `
-    -Headers @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' } `
-    -Body (@{ Repository = $repo; IndexName = $idx; BuildName = $buildName } | ConvertTo-Json) `
-    -SkipCertificateCheck
-
-  # Poll the index status query until Success with a build timestamp fresh against $posted
-  $timeout = (Get-Date).AddMinutes(15)
-  do {
-    Start-Sleep -Seconds 5
-    $status = Invoke-RestMethod `
-      -Uri "https://localhost:$port/admin/api/IndexStatusByRepositoryAndIndexName?Repository=$repo&IndexName=$idx" `
-      -Headers @{ Authorization = "Bearer $token" } `
-      -SkipCertificateCheck
-    Write-Host "Pass $pass  State: $($status.Model.State)  LastRun: $($status.Model.LastRun)"
-    if ($status.Model.State -eq 'Error') {
-      # A never-built index reports index-level State=Error ("no healthy instance is available")
-      # WHILE its first build is still writing — no instance is online until that build
-      # completes. Error is terminal only when the instance's LifecycleState is Failed.
-      $inst = Invoke-RestMethod `
-        -Uri "https://localhost:$port/admin/api/InstanceStatusByName?Repository=$repo&IndexName=$idx&InstanceName=$($idx -replace '\.index$','')" `
-        -Headers @{ Authorization = "Bearer $token" } `
-        -SkipCertificateCheck
-      if ($inst.Model.LifecycleState -eq 'Failed') { throw "BuildIndex failed: instance LifecycleState=Failed." }
-    }
-  } until (($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted) -or (Get-Date) -gt $timeout)
-
-  if (-not ($status.Model.State -eq 'Success' -and [datetime]$status.Model.LastRun -gt $posted)) {
-    throw "BuildIndex pass $pass did not reach a fresh Success state within 15 minutes."
-  }
-}
+$buildName = ([xml](Get-Content "wwwroot/Files/System/Repositories/$repo/$idx" -Raw)).SelectSingleNode('//Build/@Name').Value
+if (-not $buildName) { throw "No <Build Name> in the index XML — cannot resolve BuildName." }
+pwsh -NoProfile -File ../dw-search-indexing/scripts/Build-DwProductIndex.ps1 -Repository $repo -IndexName $idx -BuildName $buildName -Passes 2
 ```
 
 **Assert every instance is current, not just one.** After the two passes, confirm each instance of the index reports a fresh successful build — a single healthy instance masks a stale sibling. Query `InstanceStatusByName` per instance and check `LastSuccessfulBuild` is fresh against the run; any instance still reporting "must be recovered" means the second pass didn't take — recover it (below).
