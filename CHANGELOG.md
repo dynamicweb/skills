@@ -3,6 +3,75 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.31.0]
+
+Fold-back sprint: **corrections**. Every entry replaces published guidance that is wrong on current
+builds, rather than adding a note beside it.
+
+- **Variants through the Management API are version-forked, and `catalog-publishing.md` §2.14 now says
+  so.** The combination id shape is INVERTED between builds: group-qualified `"<VARGRP>.<VO>"` on
+  10.25.x, **bare option ids on 10.28.x**, where the group-qualified form answers `{"status":"ok"}` and
+  creates zero rows, so a `VariantCombinationsByProductId` count read-back after every
+  `VariantCombinationSave` is mandatory. `VariantCombinationCreationSetup` **does not exist on 10.28.5**
+  (`400 Unknown command`) and no cache key is needed there; the read model still returns an empty
+  `variantCombinationSelectionCacheKey`, so the field is not evidence the verb exists. Per-variant row
+  fields (`number`, `stock`, `active`, and 16 more) persist through a round-trip `ProductSave` on
+  10.25.x and **do not land at all on 10.28.5**: 0 of 19 on the variant against 4 of 4 on the master in
+  the same pass, which is not the `AllowChangesAcrossVariants` gate. `publish-to-hosted.md` and
+  `canonical-setup-order.md` step 14 state the same fork; the two files no longer contradict each other.
+- **Per-variant price verification.** `PriceSave` carrying `VariantId` stays the only write, and it is
+  verified by `PriceById`: MCP `get_prices_by_product_id` is cache-lagged and returns an empty list
+  immediately after a successful write. `defaultPrice` on the product model is a different column and is
+  never the read-back.
+- **A NULL-price variant row drops every variant document from the index build**
+  (`index-management.md`). `ProductIndexBuilder.HandlePrices` throws `InvalidCastException` Int32 to
+  Double, caught per document: the master indexes, every variant is silently dropped with one log line
+  each, the build still reports success, and adding an `EcomPrices` row does not stop it.
+- **Group-scoped contract pricing had the wrong remedy published in two files.** The DC scope column is
+  `PriceUserGroupId` (Admin API `userGroupId`), written through `/Admin/Api/PriceSave`;
+  `PriceCustomerGroupId` (`groupCustomerNumber`) matches a customer NUMBER, and MCP `save_prices`'s
+  `customerGroupId` writes that one. `catalog-publishing.md` §2.13 and `dc-scoping.md` now carry the same
+  three-column table and the rendered-price assertion.
+- **`AssetAddToMultipleProducts.IsDefault` is inert on the raw Admin API verb only.** MCP
+  `add_product_image {setAsPrimary:true}` writes the flag on the first call (335/335 measured), so bulk
+  attach is two calls per attachment, not three (`catalog-publishing.md`, `asset-organisation.md`).
+- **Completeness: the per-language claim is deleted and the four-gate chain lands as an ordered flow.**
+  `CompletionLanguages` changes nothing in a query, so a translation-gap worklist cannot be built from
+  completeness. The `Completeness feature` flag is stated with **both** scopes: the admin calculation
+  path stays OFF, while `CompletionRule|<id>` index fields populate only with the flag ON. Added the
+  append-time semantics (`AppendCompletionExpressions` IS the exclude checkbox; the append is
+  `NOT(rule == 100)`, so a document with no value PASSES it) and the completion-rule API traps: a missing
+  `ProductLanguageId` 500s instead of 400ing, `CompletenessOnAllCategoryFields` injects a phantom rule id
+  `0` that must never be round-tripped back, and `CompletionRuleDelete` leaves dangling ids on
+  language-only group rows that `CompletionRuleRemoveFromGroup` 404s on.
+- **No stock widget shows a sum or an average.** `RepositoryCountWidget` accepts `WidgetType=Sum`/`Avg`
+  and renders a Count; `ScalarSqlCountWidget` returns `null` for anything but a COUNT. An inventory-value
+  tile cannot be built honestly. The parameter table in `rules-and-dashboards.md` said the opposite.
+  Added the widget envelope table (drill-down works once the `.query` files live under the `SmartSearches`
+  Shared path; the count honours the query predicate and ignores the query configuration; `Shop`,
+  `IconId` and `AvailableForAdmin` are inert or write-only; thresholds take literal operators) and the
+  full `WidgetColor` member list. `canonical-setup-order.md` step 19 no longer prescribes a state-keyed
+  tile: `ProductWorkflowStateId` is declared and never populated, so the clause is silently dropped.
+- **Workspace level sources rewritten** (`structural-model.md` §2.12). Both previous worked examples were
+  the two failure modes. A level source must be a **non-analysed string field**: an analysed name field
+  tokenises into lower-cased word fragments that all drill to real rows (129 nodes summing to 419 against
+  a 358-product query), and a numeric field renders nodes that drill to nothing. Use the ID field and let
+  DW resolve the display name (`ManufacturerID` gave 106 nodes summing to 358). Validate by the SUM of
+  node counts, not by a drill. `canonical-setup-order.md` no longer repeats `ProductWorkflowStateId`.
+- **`GridRowContainerWidth` is not SQL-only** (`management-api-and-sql.md`).
+  `GridRowSave?Query.Type=GridRowById` writes it (59/59 rows measured) and mints the `GridRowItemId` that
+  MCP `save_grid_rows` leaves NULL; the exact payload shape, the preserved-members behaviour and the
+  `DefinitionId`-clears-`mobileLayout` caveat are documented, with the CSS override kept as the fallback.
+- **Row spacing has two defaults, one per row template** (`Swift-v2_Row` 6, `Swift-v2_RowFlex` 1), so the
+  previous advice to serialize explicit values was itself the defect: a `?? 6` coercion turned 4px into
+  96px on every RowFlex row. A whole-entity save passes a null through as null.
+- **MCP file tools are sandboxed to `/Files/Images`** (`asset-organisation.md`). `/Files/Documents` is
+  unreachable for reads and writes and `move_file` is refused on the destination, so documents go under
+  `Files/Images/<subfolder>/`; `Swift-v2_ProductMediaTable` resolves them by asset category, not by path.
+- **The TLS guidance is scoped by cert class** (`mcp-setup.md`). The bypass remains the only method for a
+  self-signed localhost leaf; on a hosted CA-issued chain, `NODE_EXTRA_CA_CERTS` pointed at a PEM of the
+  CA certs is the correct fix and flips `claude mcp list` to Connected.
+
 ## [4.30.0]
 
 Wave-1 script 7 (final): the mojibake census.

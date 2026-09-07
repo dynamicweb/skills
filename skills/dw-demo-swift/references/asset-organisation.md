@@ -28,8 +28,29 @@ When seeding demo content, prefer these subfolder conventions to keep things tid
 - `Files/Images/products/<sku>/` — per-SKU product images (one folder per hero SKU keeps the demo
   storytelling clean per `dw-demo-pim/references/demo-storytelling.md`)
 - `Files/Images/branding/` — logo, favicon, hero imagery for re-skin
-- `Files/Documents/credit-notes/` — placeholder PDFs for off-invoice rebate visualisations
+- `Files/Images/documents/` (or another `Files/Images/<subfolder>/`): PDFs and other documents:
+  spec sheets, safety data sheets, placeholder PDFs for rebate visualisations
   (project-specific; see the demo's `.planning/REQUIREMENTS.md` for the relevant requirement ID)
+
+**Every MCP file verb is sandboxed to `/Files/Images` for writes, so put documents there too.** The
+Backend MCP file surface validates **both** operands of every call against a permitted-folder allowlist:
+writes are `/Files/Images` only (reads additionally allow `/Files/System/Styles` and `/Files/Templates`),
+so `upload_file`, `create_folder`, `list_files` and `move_file` all refuse a `/Files/Documents/...` path,
+and the usual escape of uploading into the permitted folder and then moving out is closed on the
+destination:
+
+```
+upload_file {path:"/Files/Documents/SDS/<file>.pdf"}
+  -> "Reading '/Files/Documents/SDS/<file>.pdf' is not allowed. Permitted folders: /Files/Images."
+create_folder {path:"/Files/Documents/SDS"}                 -> same refusal
+upload_file {path:"/Files/Images/SDS/<file>.pdf"}           -> ok
+move_file   {destinationPath:"/Files/Documents/SDS/..."}    -> refused on the DESTINATION
+```
+
+Nothing is lost by staying under `/Files/Images`: `Swift-v2_ProductMediaTable` resolves documents by
+**asset category** (`ImageAssets = ["Documents"]`), never by folder path, so the rendered Documents table
+is identical. **A brief that names `/Files/Documents/...` as the target path for agent-executed work
+cannot be run as written**, so say so at plan time rather than after the first refusal.
 
 ## Branding assets — a shared SVG is not safe to edit in place
 
@@ -181,9 +202,14 @@ box off the live PDP — the DPI metadata is not the lever and reading it proves
 ### 7. Attach, then verify per product
 
 Upload and attach through the asset verbs, then read the attachment back **per product** rather than
-trusting the attach response — including which asset is primary (`AssetAddToMultipleProducts`'s
-`IsDefault` behaviour is verb-specific; see
-[`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md)).
+trusting the attach response, including which asset is primary. **Use MCP
+`add_product_image {setAsPrimary:true}`**, which honours the flag on the first call (measured 335/335
+primary, no follow-up call); the raw `/Admin/Api` verb `AssetAddToMultipleProducts` accepts `IsDefault`
+and lands every row with `isDefault=false`, so on that path setting a primary is a second call to
+`ProductAssetSetAsDefault`. Upload each unique image once (one photo serves a whole pack-size ladder),
+attach per product, then assert `isPrimary` through `get_product_images`: two calls per attachment, not
+three. Verb-by-verb detail in
+[`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md).
 Unpaired products fall through to a **branded placeholder**: a CSS fallback keyed on the placeholder
 image's own `src` (`.ratio:has(img[src*=nopic])`) paints a brand-tinted tile with the customer mark,
 capped and centred — the shipped placeholder file itself is usually ACL-locked, so the fallback is
