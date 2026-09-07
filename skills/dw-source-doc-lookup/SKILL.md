@@ -3,6 +3,7 @@ name: dw-source-doc-lookup
 type: flow
 group: source
 mcp: optional
+dynamo: true
 description: 'Consult the live Dynamicweb documentation (doc.dynamicweb.dev) as the source of truth before answering how a feature works, is configured, or fits together, using search_documentation and fetch_documentation_page. Triggers: "how does X work / how do I set up X", verifying an exact field/setting/macro/template-tag/API name, a configured feature that still does not behave as expected. Non-triggers: browsing the Dynamicweb C# source on GitHub for internal APIs/classes -> dw-source-explorer.'
 ---
 

@@ -3,6 +3,7 @@ name: dw-commerce-catalog
 type: knowledge
 group: commerce
 mcp: optional
+dynamo: true
 description: 'Render product catalogs and assortments in Dynamicweb 10, and convert or set a product price in a specific currency through the MCP tools. Triggers: ProductListViewModel, catalog display, assortment rendering, convert an amount between currencies, set a price in a non-default currency. Non-triggers: product workflow -> dw-pim-workflow; orders and checkout -> dw-commerce-orders.'
 ---
 

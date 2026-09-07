@@ -3,6 +3,7 @@ name: dw-demo-base
 type: flow
 group: demo
 mcp: required
+dynamo: false
 compatibility: Requires PowerShell 7.x
 description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, when "pinning the platform" for a Distribution-validating scaffold, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (routes to dw-demo-hosted). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-hosted, dw-demo-erp, dw-integration-bc, dw-demo-foldback) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
 ---

@@ -72,6 +72,12 @@ function buildSkills() {
       const fm = frontmatter(readFileSync(file, "utf8"));
       const name = fm.name;
       if (!name) return null;
+      // Dynamo visibility. Dynamo fetches this manifest and offers every
+      // row to an in-product admin, so skills needing a surface it does
+      // not have (shell, SQL, git, a browser, csproj) are left out. A
+      // missing field means visible, so a new skill is never silently
+      // dropped; the validator is what requires the field.
+      if (String(fm.dynamo).trim().toLowerCase() === "false") return null;
       const type = (fm.type || "").toLowerCase() === "flow" ? "flow" : "knowledge";
       const group = fm.group || (name.match(/^dw-([a-z0-9]+)-/)?.[1] ?? "");
       // MCP-dependence axis (required | optional | none) — lets consumers

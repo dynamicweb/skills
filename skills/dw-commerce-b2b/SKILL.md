@@ -3,6 +3,7 @@ name: dw-commerce-b2b
 type: knowledge
 group: commerce
 mcp: optional
+dynamo: true
 description: 'Implement B2B patterns including customer groups, scoped assortments, and sales workflows, and set up or rebuild a customer assortment through the MCP tools. Triggers: B2B commerce, customer groups, DC scoping, CSR sales-on-behalf, create/build a customer assortment, assortment rebuild not taking effect. Non-triggers: standard ecommerce -> dw-commerce-orders; product data -> dw-pim-modelling.'
 ---
 

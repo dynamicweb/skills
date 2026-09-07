@@ -209,10 +209,19 @@ criteria — lives in
 
 ## Manifest
 
-`manifest.json` (repo root) is a generated index of every skill — `name`, `type`
-(`knowledge` or `flow`), `group`, `mcp` (see below), a one-sentence `description`, and the
-`path` to its `SKILL.md`. The Dynamicweb MCP server ("Dynamo") fetches this single file to
-auto-discover skills; Claude Code does not use it (it loads skills via `marketplace.json`).
+`manifest.json` (repo root) is a generated index of the **Dynamo-visible** skills — `name`,
+`type` (`knowledge` or `flow`), `group`, `mcp` (see below), a one-sentence `description`, and
+the `path` to its `SKILL.md`. The Dynamicweb MCP server ("Dynamo") fetches this single file to
+auto-discover skills; Claude Code does not use it (it loads skills via `marketplace.json`, and
+still sees every skill).
+
+Every skill declares its **Dynamo visibility** in frontmatter — `dynamo: true` puts it in the
+manifest, `dynamo: false` leaves it out entirely. Dynamo runs inside a Dynamicweb install with
+MCP tools and read/write access under `Files/`; it has no shell, SQL, git, browser, or csproj.
+A skill whose steps need one of those (the demo chain, local install/upgrade, ngrok, MCP tool
+authoring, source browsing) is `dynamo: false`, because offering it to an in-product admin is
+noise they cannot act on. The axis is orthogonal to `mcp:` — a demo scaffold is `mcp: required`
+yet `dynamo: false`, and `dw-render-razor` is `mcp: none` yet `dynamo: true`.
 
 Every skill declares its **MCP dependence** in frontmatter — `mcp: required` (the skill's
 steps are Dynamicweb MCP tool calls and it carries an `## MCP preflight` section), `mcp:

@@ -3,6 +3,7 @@ name: dw-demo-swift
 type: flow
 group: demo
 mcp: required
+dynamo: false
 description: 'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, the customer re-skin ladder, and the mobile pass. Triggers: starting a Swift demo (load the baseline), re-skinning to a customer brand, "where do I edit the header/footer", "mobile view" / "mobile pass" / "canvas stretch" / "overflow at 390" / mega-menu won''t collapse, customer-center / impersonation flows, sign-in profiles / switch user, checkout delivery date or custom order fields, paragraph renders empty or stale, Razor pitfalls in custom layouts, language layers, gating pages or paragraphs by group, editing repeater/slider children via the Admin API. Non-triggers: demo setup/MCP/TLS -> dw-demo-base; PIM data modelling -> dw-demo-pim; ERP integration -> dw-demo-erp. Swift 2 only -- never follow `doc.dynamicweb.dev/swift/swift-1/` URLs. Use AFTER dw-demo-base (host running, Serializer installed).'
 ---
 

@@ -3,6 +3,29 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.35.0]
+
+Dynamo visibility: the manifest stops offering skills an in-product admin cannot act on.
+
+- **New `dynamo: true | false` frontmatter field on every skill.** Since Dynamicweb.MCP
+  0.4.4 Dynamo fetches `manifest.json` from this repo and offers every row to an admin
+  working inside a running install. It took all 42 skills, demo scaffolds included. Dynamo's
+  surface is the MCP tool set plus read/write under `Files/`: no shell, no SQL, no git, no
+  browser, no csproj. A skill whose steps need one of those is now `dynamo: false`.
+- **`scripts/build-manifest.mjs` omits `false` rows entirely**, so `manifest.json` drops from
+  42 to **29 skills**. No MCP-side change is needed; the manifest is generated here. A missing
+  field means visible, so a new skill is never silently dropped.
+- **`scripts/validate-skills.py` requires the field** to be present and `true`/`false`.
+- **13 skills marked `dynamo: false`**: the demo chain (`dw-demo-base`, `-pim`, `-swift`,
+  `-headless`, `-erp`, `-hosted`, `-foldback`), `dw-integration-bc` (ngrok), `dw-setup-install`,
+  `dw-setup-upgrade`, `dw-setup-config`, `dw-extend-mcp-tools` (builds the MCP project) and
+  `dw-source-explorer` (browses GitHub source).
+- **Orthogonal to `mcp:`**, and the two disagree often: `dw-demo-base` is `mcp: required` yet
+  `dynamo: false`; `dw-render-razor` is `mcp: none` yet `dynamo: true`. Claude Code is
+  unaffected -- it loads every skill through `marketplace.json`.
+- Authoring rules in `dw-skill-authoring` ("Dynamo visibility"), README ("Manifest") and
+  `CLAUDE.md`.
+
 ## [4.34.0]
 
 Fold-back sprint: **commerce and PIM**. Dynamic relations get a subsystem section that had no prior

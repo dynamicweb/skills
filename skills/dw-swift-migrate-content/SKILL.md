@@ -3,6 +3,7 @@ name: dw-swift-migrate-content
 type: flow
 group: swift
 mcp: required
+dynamo: true
 description: 'Bring the CONTENT of an existing/old website into a Dynamicweb 10 solution as a standard, modern Swift 2 site — extract a source site''s pages/media and rebuild them here. Source-agnostic: a Dynamicweb solution (Swift v1/Rapido/Espresso/custom, read via /dwapi) or any other site (generic HTML crawl). Triggers: import/rebuild a whole existing site''s content in Swift 2, migrate this site''s content into the solution, rebuild an old site as Swift 2. Non-triggers: a faithful Swift 1 1:1 layout port -> dw-swift-migrate-v1; migrating PIM product structure/data -> dw-pim-migrate-dw9; a single new page with design intent -> dw-swift-page-design.'
 ---
 

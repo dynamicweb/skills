@@ -3,6 +3,7 @@ name: dw-pim-migrate-dw9
 type: flow
 group: pim
 mcp: required
+dynamo: true
 description: 'Migrate a Dynamicweb 9 (DW9) solution''s product structure and catalog data into a Dynamicweb 10 PIM with the migrate_dw9_export, run_dw9_product_import, and assign_dw9_products_to_data_models tools. Triggers: upgrade or migrate a DW9 warehouse/catalog to DW10, import a DW9 product export, map DW9 groups onto DW10 Data Models, "0 warehouse shops"/"0 memberships" after a DW9 import. Non-triggers: migrating DW9 CMS content/pages (a separate, unrelated effort); single-product creation or Data Model design -> dw-pim-modelling; an in-place DW9->DW10 platform version upgrade -> dw-setup-upgrade.'
 ---
 
