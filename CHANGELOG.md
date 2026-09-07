@@ -3,6 +3,34 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.24.0]
+
+First shipped script of the default-scripts wave: the shared connection module. The demo-build
+survey found the Admin API / MCP / SQL plumbing re-implemented ~20 times across engagements;
+this is the one implementation the other wave-1 scripts import.
+
+- **New: `dw-data-access/scripts/Dw.Api.psm1`** — `Connect-Dw` / `Assert-DwConnection`
+  (discovery order parameter > `$env:DW_*` > `launchSettings.json` > fail with the fix; the
+  load sentinel for the AMSI-blocked-import trap), `Invoke-DwApi` (UTF-8 byte bodies, depth-50
+  serialization, TLS bypass gated to localhost or an explicit opt-in),
+  `Remove-DwDisplayOnlyMember` (the `modelIdentifier`/`*Icon` round-trip-save strip),
+  `Invoke-DwMcp` / `Get-DwMcpTools` (JSON-RPC handshake, `mcp-session-id`, SSE `data:` unwrap,
+  cursor pagination), `Get-DwSqlRows` / `Get-DwSqlScalar` (raw `SqlDataReader` projected to
+  `pscustomobject`; one-row results stay arrays; nothing returned can hang `ConvertTo-Json`;
+  LOCAL installs only — no remote SQL path ships, by design: arbitrary SQL on a hosted install
+  has no remediation short of a backup restore),
+  `Clear-DwServiceCache` (targeted + `-All`), `Set-DwDbConnectionTrust`. Tokens masked in all
+  output.
+- **`dw-data-access` SKILL.md**: `compatibility: Requires PowerShell 7.x`, the
+  `## Scripts (scripts/)` table, and the canonical import + assert fenced form.
+- **Pointers (one lesson, one home)**: `management-api-and-sql.md` names the module as the
+  enforced calling form at the wrapper section and at the strip/unrolling/AMSI traps;
+  `dw-demo-base` `mcp-setup.md` points its JSON-RPC fallback at `Invoke-DwMcp` instead of a
+  hand-written client.
+- **`marketplace.json`**: `dw-data-access` added to the `dynamicweb-commerce` bundle so
+  `dw-search-indexing`'s upcoming script can import the module under bundle closure; README
+  bundle table updated.
+
 ## [4.23.0]
 
 Enforces the machine-checkable half of the 4.22.0 script contract and brings the four existing
