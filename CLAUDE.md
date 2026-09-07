@@ -57,6 +57,11 @@ Markdown here is authored as **UTF-8 without a BOM** and free of **double-encode
 recurring fold-back hazard. A leading BOM defeats some frontmatter parsers, so the skill silently
 fails to load. The validator errors on both.
 
+The same encoding rules cover everything under a skill's `scripts/` folder (`.ps1`, `.psm1`,
+`.sql`), and no file under `skills/` carries a credential, token, or environment literal (host,
+port, solution path): scripts take those as parameters or read them from `$env:`. The script
+contract itself is in `dw-skill-authoring` ("Shipping scripts").
+
 ## Contributing: every change lands via PR
 
 No direct pushes to `main` — everything lands through a pull request, **one atomic logical
