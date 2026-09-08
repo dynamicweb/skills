@@ -27,7 +27,7 @@ skills/
   dw-commerce-*/            # catalog, orders, B2B
   dw-search-indexing/       # search indexes on Lucene
   dw-users-permissions/     # users, groups, permissions
-  dw-extend-*/              # C# API, providers, scheduled tasks, MCP tools
+  dw-extend-*/              # C# API, providers, scheduled tasks, MCP tools, admin UI
   dw-integration-*/         # Integration Framework, ERP connectors, Business Central
   dw-data-access/           # data-access patterns and caching
   dw-data-audit-trail/      # investigate who/when/why something changed
@@ -46,7 +46,7 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | `dynamicweb-setup` | Provisioning Dynamicweb 10 | setup-install, setup-config, setup-upgrade, setup-cli |
 | `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, content-localization, swift-building, swift-page-blocks, swift-page-design, swift-migrate-v1, swift-migrate-content, headless-delivery |
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions, data-access |
-| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access, data-audit-trail |
+| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, extend-admin-ui, integration-framework, integration-erp, integration-bc, data-access, data-audit-trail |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, source-doc-lookup, extend-mcp-tools |
 | `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, demo-foldback, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
 
@@ -146,6 +146,9 @@ Create and manage scheduled tasks, including `RunSqlScheduledTaskAddIn`.
 
 **[dw-extend-mcp-tools](skills/dw-extend-mcp-tools/SKILL.md)**
 Step-by-step guide for adding new MCP tools to the Dynamicweb MCP project.
+
+**[dw-extend-admin-ui](skills/dw-extend-admin-ui/SKILL.md)**
+Extend the administration interface from your own assembly — list/edit/overview screens, areas and tree nodes, injectors into screens you do not own.
 
 **[dw-integration-framework](skills/dw-integration-framework/SKILL.md)**
 Understand Dynamicweb 10 Integration Framework architecture and patterns.
