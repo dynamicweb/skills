@@ -3,6 +3,34 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.37.0]
+
+New `dw-extend-admin-ui` skill: extending the administration interface from your own assembly.
+
+- **Nothing in the repo covered building admin screens in C#.** `ScreenInjector`,
+  `ListScreenBase`, `EditScreenBase`, `OverviewScreenBase`, `IIdentifiable`,
+  `NavigationNodeProvider` and `NavigationSection` had zero occurrences across all 43 skills. The
+  two files whose names suggested otherwise cover something else: `dw-demo-swift`'s
+  `admin-ui-authoring.md` is about authoring content *through* the admin and the Management API,
+  and `dw-demo-pim`'s `screen-authoring.md` is about configuring screens that already exist. This
+  skill is the missing piece: writing new ones.
+- **`references/screen-anatomy.md`** holds compile-verified skeletons for all three screen types
+  and the `IIdentifiable` round-trip — the string a row hands out has to survive being parsed back
+  into a key, or the row opens onto nothing.
+- **`references/injectors-and-navigation.md`** covers adding to an area tree, an Actions menu and a
+  screen you do not own, each with its silent-failure mode: a node action missing `.With(query)`
+  renders "No results found" with no error, and an `ActionGroup` given only a `Title` renders
+  dimmed and inert.
+- **The routing decision comes first.** Subclassing a core screen compiles, deploys and never
+  renders. Step 1 decides between your own screen, an injector, an action-menu entry and a custom
+  `ScreenType` before any code is written.
+- **`mcp: none`, `dynamo: false`, `type: flow`** — matching `dw-extend-mcp-tools`, the sibling whose
+  situation is the same: the steps build a project, so they need a csproj, a shell and a browser,
+  none of which Dynamo has. `manifest.json` is unchanged at 29 skills.
+- Verified end to end on a live 10.29.1 solution: all three screen types, an area and tree node, a
+  node injected into an existing Content tree, and an entry injected into an existing Actions menu.
+- Registered in `dynamicweb-backend`.
+
 ## [4.36.0]
 
 New `dw-setup-cli` skill: the fourth member of the Setup pillar (install, CLI, config, upgrade).
