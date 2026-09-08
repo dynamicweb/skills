@@ -3,6 +3,31 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.36.0]
+
+New `dw-setup-cli` skill: the fourth member of the Setup pillar (install, CLI, config, upgrade).
+
+- **`dw-setup-cli` covers operating a solution with the `dw` CLI** — installing `.dll`/`.nupkg`
+  add-ins, uploading and updating Files-archive content, exporting the archive, triggering a recycle
+  through `System/CloudHosting/recycle.txt`, and the verification steps that matter. API-key auth
+  only; `dw login` is unavailable on `*.dynamicweb.cloud`.
+- **The recurring theme is that every layer reports success while failing silently.** A `dw files`
+  import without `-o` skips the file and 1.1.2+ prints no API response to reveal it; `dw install`
+  reports success whether or not the assembly loaded. The skill treats reading the state back as
+  mandatory rather than optional.
+- **`references/cli-versions.md` records what changes between 1.0.16, 1.1.2 and 1.1.3.** Three
+  behaviours differ in ways that bite: before 1.1.3 `dw query`/`dw command` appended `&api-key=` to
+  the request URL and printed it on failure, `dw --version` guessed from the working directory (so
+  inside a Node project it reported *that* project's version), and `dw swift` died with
+  `spawn npx ENOENT` on Windows on any current Node. All three are fixed in 1.1.3.
+- **`dw-setup-upgrade` hands over its CLI snippet.** It keeps `dw env` and the `.bacpac` export,
+  which are upgrade-specific, and routes template and add-in work to the new skill so there is one
+  owner rather than two partial ones.
+- **`mcp: none`, `dynamo: false`** — consistent with its three Setup siblings; the skill needs a
+  shell, which Dynamo has no surface for, so it stays out of `manifest.json`.
+- Registered in `dynamicweb-setup`. Worth considering for `dynamicweb-backend` and
+  `dynamicweb-developer` as a separate bundle re-balance.
+
 ## [4.35.0]
 
 Dynamo visibility: the manifest stops offering skills an in-product admin cannot act on.
