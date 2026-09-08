@@ -5,7 +5,7 @@ The evidence behind this skill's claims, grouped by how firmly each one is estab
 Claims here do not all carry the same weight. Treat the last group with suspicion and check before
 relying on it.
 
-**Verified live against a 10.29 cloud solution (2026-09-04):** API-key auth through
+**Verified live against a 10.29 cloud solution:** API-key auth through
 `--host`/`--apiKey`; `dw files` list, import and export; the missing-`-o` silent skip and the `model: []`
 tell; automatic creation of missing remote directories; a `.cshtml` deploy taking effect with no recycle;
 `FileDelete` with a bare body; reading `/Files/Templates` through MCP; MCP `set_paragraph_item_fields`
@@ -47,7 +47,7 @@ platform deletes the marker afterwards, and `dw files` crashes on the HTML error
 class library referencing `Dynamicweb.Application.UI` `10.*` was installed on the same 10.29.1 solution
 and its screens rendered in the admin.
 
-**Verified on 1.1.3 from outside the CLI's own checkout (2026-09-08):** `dw --version` reports the CLI's
+**Verified on 1.1.3 from outside the CLI's own checkout:** `dw --version` reports the CLI's
 version from a directory with no `package.json`, from one holding an unrelated `package.json`, and from
 `C:\Windows\System32`; `dw swift` clones the Swift release; and a failing `dw query` no longer puts the
 API key in its output. Measuring `dw --version` from inside the CLI checkout is worthless — the old

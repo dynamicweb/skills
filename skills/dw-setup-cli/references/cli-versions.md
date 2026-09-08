@@ -46,7 +46,7 @@ npx degit dynamicweb/swift#<tag> C:\path\to\swift
 The wildcard case on 1.0.16 is a real bug, not just a missing feature: `install.js` passes the raw
 `argv.filePath` to the upload step while only the activation step resolves the glob. Tested on 1.0.16, the
 upload therefore tries to open a literal `*` path and the process dies with an unhandled
-`ENOENT ... PartnerDaysExtended.AddIn*.dll` and a Node stack trace. It fails loudly and exits 1 — nothing
+`ENOENT ... Acme.AddIn*.dll` and a Node stack trace. It fails loudly and exits 1 — nothing
 is uploaded and nothing is half-installed. On 1.0.x, always pass a fully resolved path.
 
 To upgrade:
