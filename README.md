@@ -12,7 +12,7 @@ appear in more than one role bundle, with no copying or symlinks.
 .claude-plugin/
   marketplace.json          # plugin registry — role bundles, each curating skills by path
 skills/
-  dw-setup-*/               # install, configure, upgrade a Dynamicweb 10 solution
+  dw-setup-*/               # install, configure, upgrade a solution; drive the dw CLI
   dw-render-*/              # Razor, ViewModels, TemplateTags
   dw-content-modelling/     # item types, paragraphs, content models
   dw-content-localization/ # translate a page/site, create a language version
@@ -43,7 +43,7 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 
 | Plugin | Audience | Skills included |
 |--------|----------|-----------------|
-| `dynamicweb-setup` | Provisioning Dynamicweb 10 | setup-install, setup-config, setup-upgrade |
+| `dynamicweb-setup` | Provisioning Dynamicweb 10 | setup-install, setup-config, setup-upgrade, setup-cli |
 | `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, content-localization, swift-building, swift-page-blocks, swift-page-design, swift-migrate-v1, swift-migrate-content, headless-delivery |
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions, data-access |
 | `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, integration-framework, integration-erp, integration-bc, data-access, data-audit-trail |
@@ -62,6 +62,9 @@ Configure Dynamicweb 10 environment and connection settings.
 
 **[dw-setup-upgrade](skills/dw-setup-upgrade/SKILL.md)**
 Manage Dynamicweb 10 version upgrades and migration mechanics.
+
+**[dw-setup-cli](skills/dw-setup-cli/SKILL.md)**
+Operate a solution with the `dw` CLI — install add-ins, push and pull Files-archive content, trigger a recycle, and prove the change landed.
 
 ### Rendering & Content
 

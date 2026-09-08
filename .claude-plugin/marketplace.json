@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "4.35.0"
+    "version": "4.36.0"
   },
   "plugins": [
     {
@@ -17,7 +17,8 @@
       "skills": [
         "./skills/dw-setup-install",
         "./skills/dw-setup-config",
-        "./skills/dw-setup-upgrade"
+        "./skills/dw-setup-upgrade",
+        "./skills/dw-setup-cli"
       ]
     },
     {
