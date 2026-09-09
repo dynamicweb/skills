@@ -211,10 +211,13 @@ npm i @dynamicweb/cli -g
 
 dw env                                           # switch environments
 dw database -e ./backup                          # export .bacpac
-dw files /templates ./templates --export --recursive  # export templates
-dw files ./templates /templates --import --recursive  # import templates
-dw install ./bin/Release/net10.0/MyAddin.dll    # install custom addon
 ```
+
+Exporting and importing templates and installing add-ins are owned by
+[`dw-setup-cli`](../dw-setup-cli/SKILL.md), including the traps that make a failed run look like a
+successful one — a `dw files` import without `-o` skips silently, and `dw install` reports success
+whether or not the assembly loaded. Be on CLI 1.1.3 or later before an upgrade: earlier versions leak
+`--apiKey` into request URLs, misreport `dw --version`, and cannot run `dw swift` on Windows at all.
 
 For database export, grant the DB user `db_backupoperator`:
 ```sql

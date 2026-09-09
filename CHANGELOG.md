@@ -3,7 +3,7 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
-## [4.36.0]
+## [4.38.0]
 
 The Truvio Commerce rebrand, and the install rule it broke: an AppStore app is installed from the
 AppStore, never from a remembered NuGet id.
@@ -34,6 +34,58 @@ AppStore, never from a remembered NuGet id.
 - Call sites updated: `dw-demo-base` (`scaffold.md` §2.1, `surface-priority.md` scaffold phase,
   `mcp-setup.md` preamble + triage row), `dw-extend-mcp-tools/SKILL.md`, `dw-setup-install/SKILL.md`,
   and `dw-extend-providers/references/addin-lifecycle.md` (the rule generalized to all AppStore AddIns).
+## [4.37.0]
+
+New `dw-extend-admin-ui` skill: extending the administration interface from your own assembly.
+
+- **Nothing in the repo covered building admin screens in C#.** `ScreenInjector`,
+  `ListScreenBase`, `EditScreenBase`, `OverviewScreenBase`, `IIdentifiable`,
+  `NavigationNodeProvider` and `NavigationSection` had zero occurrences across all 43 skills. The
+  two files whose names suggested otherwise cover something else: `dw-demo-swift`'s
+  `admin-ui-authoring.md` is about authoring content *through* the admin and the Management API,
+  and `dw-demo-pim`'s `screen-authoring.md` is about configuring screens that already exist. This
+  skill is the missing piece: writing new ones.
+- **`references/screen-anatomy.md`** holds compile-verified skeletons for all three screen types
+  and the `IIdentifiable` round-trip — the string a row hands out has to survive being parsed back
+  into a key, or the row opens onto nothing.
+- **`references/injectors-and-navigation.md`** covers adding to an area tree, an Actions menu and a
+  screen you do not own, each with its silent-failure mode: a node action missing `.With(query)`
+  renders "No results found" with no error, and an `ActionGroup` given only a `Title` renders
+  dimmed and inert.
+- **The routing decision comes first.** Subclassing a core screen compiles, deploys and never
+  renders. Step 1 decides between your own screen, an injector, an action-menu entry and a custom
+  `ScreenType` before any code is written.
+- **`mcp: none`, `dynamo: false`, `type: flow`** — matching `dw-extend-mcp-tools`, the sibling whose
+  situation is the same: the steps build a project, so they need a csproj, a shell and a browser,
+  none of which Dynamo has. `manifest.json` is unchanged at 29 skills.
+- Verified end to end on a live 10.29.1 solution: all three screen types, an area and tree node, a
+  node injected into an existing Content tree, and an entry injected into an existing Actions menu.
+- Registered in `dynamicweb-backend`.
+
+## [4.36.0]
+
+New `dw-setup-cli` skill: the fourth member of the Setup pillar (install, CLI, config, upgrade).
+
+- **`dw-setup-cli` covers operating a solution with the `dw` CLI** — installing `.dll`/`.nupkg`
+  add-ins, uploading and updating Files-archive content, exporting the archive, triggering a recycle
+  through `System/CloudHosting/recycle.txt`, and the verification steps that matter. API-key auth
+  only; `dw login` is unavailable on `*.dynamicweb.cloud`.
+- **The recurring theme is that every layer reports success while failing silently.** A `dw files`
+  import without `-o` skips the file and 1.1.2+ prints no API response to reveal it; `dw install`
+  reports success whether or not the assembly loaded. The skill treats reading the state back as
+  mandatory rather than optional.
+- **`references/cli-versions.md` records what changes between 1.0.16, 1.1.2 and 1.1.3.** Three
+  behaviours differ in ways that bite: before 1.1.3 `dw query`/`dw command` appended `&api-key=` to
+  the request URL and printed it on failure, `dw --version` guessed from the working directory (so
+  inside a Node project it reported *that* project's version), and `dw swift` died with
+  `spawn npx ENOENT` on Windows on any current Node. All three are fixed in 1.1.3.
+- **`dw-setup-upgrade` hands over its CLI snippet.** It keeps `dw env` and the `.bacpac` export,
+  which are upgrade-specific, and routes template and add-in work to the new skill so there is one
+  owner rather than two partial ones.
+- **`mcp: none`, `dynamo: false`** — consistent with its three Setup siblings; the skill needs a
+  shell, which Dynamo has no surface for, so it stays out of `manifest.json`.
+- Registered in `dynamicweb-setup`. Worth considering for `dynamicweb-backend` and
+  `dynamicweb-developer` as a separate bundle re-balance.
 
 ## [4.35.0]
 
