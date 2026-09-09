@@ -65,6 +65,14 @@ That start creates:
   around fifteen paragraph templates, the CPQ row definitions and row template, the stylesheets and
   scripts, and the shared components.
 
+> **Check which design folder they landed in.** The provider writes to a design folder of its own
+> choosing, and a solution whose design is named anything else gets the whole payload in a folder it
+> never reads. Nothing errors: the page layout fails to resolve, Dynamicweb quietly falls back to the
+> area layout, the CPQ row definition is unknown so the row never renders, and no CPQ stylesheet or
+> script loads. Compare the folder the files landed in against the area's own layout path before
+> assuming an install is complete, and copy the CPQ files into the design the area actually uses if
+> they differ.
+
 The database provider is also the migration channel — it carries renames and data fixes for earlier
 CPQ versions, so it runs again on upgrade.
 

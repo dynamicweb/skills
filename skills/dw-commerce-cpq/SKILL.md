@@ -128,6 +128,12 @@ telling the whole story.
 
 Each of these fails **silently** — no error, no log a page author would see.
 
+**The templates may land in a design folder the solution does not use.** The install writes the
+layouts, row definitions and assets into one particular Swift design folder; if the area's layout
+points at a differently-named design, every CPQ template is invisible. The page then renders through
+the area layout with no CPQ assets and no CPQ rows, and nothing reports an error. Compare the two
+paths first whenever a CPQ page renders as an ordinary page.
+
 **A page with no `CPQ_Tabs` paragraph renders blank.** The CPQ grid row template starts every row at
 `display:none`; the tab script is what reveals them. Add the tabs paragraph with the first row.
 

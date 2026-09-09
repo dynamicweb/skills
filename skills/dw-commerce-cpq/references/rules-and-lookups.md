@@ -253,6 +253,16 @@ A full custom line, for something the catalogue does not have:
 }]
 ```
 
+**The item number is a literal.** Neither `forminput[Input]` nor `${forminput[Input]}` resolves in a
+BOM item's `no` — the rule saves, evaluates, and contributes no line, with nothing logged. Expression
+references do work in the value fields (`qty`, `price`, `cost` take `var[...]`), but the SKU itself
+must be written out. So the shape is **one rule per selectable outcome**, conditioned on that value,
+which is exactly how the vendor's own worked example reads ("if use = Commuting, then Frame item =
+10167"). For an option list of any size, generate the rules rather than hand-writing them.
+
+This is also why `BomRuleConvertToInputOptionCommand` exists, and why an input option carries its own
+`BomItems`: both are ways of avoiding a rule per SKU.
+
 **The rule for what to include**, in the vendor's own words: *"You only include the segments you
 need. If the item is in the DynamicWeb Product table, then information is automatically used.
 Otherwise, you need to specify it in the BomItems section."*
