@@ -45,6 +45,11 @@ marketplace `skills` path basename all match exactly. (Only the role *bundles* i
 `marketplace.json` carry the `dynamicweb-` prefix.) `<domain>` is an area from the taxonomy
 below.
 
+Skill and bundle names are **not** touched by the Truvio Commerce rebrand, and neither is any other
+identifier — namespaces, admin paths, doc URLs. What the rebrand does govern is product prose and the
+`Truvio.Commerce.*` package ids, plus the rule never to write a package id or version from memory:
+[`../../../CLAUDE.md`](../../../CLAUDE.md) ("Product naming").
+
 ## Area taxonomy
 
 The structure mirrors how DW10 organizes itself, so a skill's name predicts where its knowledge

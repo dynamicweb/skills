@@ -3,6 +3,38 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.36.0]
+
+The Truvio Commerce rebrand, and the install rule it broke: an AppStore app is installed from the
+AppStore, never from a remembered NuGet id.
+
+- **The Backend MCP is now `Truvio.Commerce.MCP`** (AppStore app "Truvio Commerce MCP"), formerly
+  `Dynamicweb.MCP`. The pre-rename id still resolves on nuget.org, so an agent writing the id it
+  remembers gets a green restore, a green build and a **stale AddIn with no error to react to** —
+  the exact failure this release exists to prevent. `/admin/mcp` is unchanged.
+- **`backend-mcp-server.md` §1 is inverted.** Was "NuGet `PackageReference` (default), AppStore (last
+  resort)"; is now **AppStore first**. A hand-written `<PackageReference>` for an app the AppStore
+  carries (Backend MCP, PIM for Business Central connector, `StaticLinkManager`) is a defect. The
+  csproj route survives as an **escape hatch that requires an explicit user choice**: report which
+  AppStore route failed, state that **the AppStore version could not be resolved**, name the id and
+  version proposed and where they came from (a live resolve or the user, never memory), then wait for
+  a yes. An existing `Dynamicweb.MCP` reference in a host csproj gets removed.
+- **New `install-anatomy.md` §6, "Package naming after the rebrand, and the AppStore boundary"** —
+  the platform-level home for both rules. Old §6/§7 renumber to §7/§8; the three cross-references in
+  `dw-demo-base/references/scaffold.md` follow.
+- **Repo-wide terminology rule** in `CLAUDE.md` ("Product naming") and `dw-skill-authoring`
+  ("Naming"): the product is **Truvio Commerce (powered by Dynamicweb)**; the rebrand renames product
+  prose only. Namespaces, `Dynamicweb.Suite`, admin paths, `/dwapi/`, DB tables, `GlobalSettings`
+  keys, `dw-*` skill names, `dynamicweb-*` bundles, `doc.dynamicweb.dev` and `github.com/dynamicweb`
+  all keep "Dynamicweb". Newly published packages carry `Truvio.Commerce.*`. **Never write a package
+  id, app name or version from memory.**
+- **Reflection snippets stop hardcoding the assembly name.** `backend-mcp-server.md` §4 and
+  `dw-extend-csharp-api` now resolve the MCP assembly out of `AppDomain.CurrentDomain` matching either
+  id, and find the type by full-name suffix — correct before and after the rename.
+- Call sites updated: `dw-demo-base` (`scaffold.md` §2.1, `surface-priority.md` scaffold phase,
+  `mcp-setup.md` preamble + triage row), `dw-extend-mcp-tools/SKILL.md`, `dw-setup-install/SKILL.md`,
+  and `dw-extend-providers/references/addin-lifecycle.md` (the rule generalized to all AppStore AddIns).
+
 ## [4.35.0]
 
 Dynamo visibility: the manifest stops offering skills an in-product admin cannot act on.
