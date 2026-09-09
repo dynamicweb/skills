@@ -171,6 +171,11 @@ its whole look from `InputSettings` plus `InputStylingText` — the latter is em
 class on every option element, which is how one input becomes image cards and the next becomes a
 swatch tray without either being special-cased in Razor.
 
+**There is no multi-select dropdown.** `select` and `listbox` both render the same single-value
+combobox through `Components/CPQ/select.cshtml` - a visible autocomplete text input over a hidden
+`<select>`. Only `checkbox` and `checkboxLarge` accept more than one answer, so a question that must
+take several and also be compact has no good type; choose which of the two matters.
+
 `colorselector` is worth knowing separately: it is a first-class input type that renders a tray of
 circular swatches from each option's `ColourValue`, falling back to the option value as a CSS
 colour. Where the colours are catalogue products with photography rather than flat hex values, a
