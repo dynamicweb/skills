@@ -149,6 +149,10 @@ leave a live page pointing at a version id that no longer exists.
 **A Lookup List authored as `odata` needs Business Central.** With no connector it returns an empty
 option list and no error. Use `dw_sql` for catalogue-driven options.
 
+**An input rule with no `InputRuleType` never loads.** The loader filters on
+`InputRuleType='CPQOptions'`, so a rule saved without it is enabled, correct, and inert. The engine's
+own log names the symptom: `LoadInputRule=0ms`.
+
 **Rules address inputs by `formInput[Group_Name]`.** Renaming a group or an input silently breaks
 every rule that referenced it, because an unresolved reference is not an error.
 

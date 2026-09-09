@@ -19,6 +19,13 @@ the catalogue-driven Lookup List.
 
 ## Where rules live
 
+> **An input rule needs `InputRuleType = 'CPQOptions'` or it is never loaded.** The loader's own
+> filter is `... and InputRuleEnabled=1 and InputRuleType='CPQOptions' and groupmode='input_rule'`,
+> so a rule saved with an empty type sits in the table, reports itself enabled, and is silently
+> skipped. The symptom is a rule that plainly should fire and does nothing at all — no error, no log
+> entry, no partial effect. Check the type before checking the JSON.
+
+
 Rules are rows in `CPQInputRule`, `CPQBOMRule`, `CPQRouteRule`, `CPQPriceRule` and `CPQOutputRule`,
 and — apart from price and output rules, which key on the model version — they hang off a
 `CPQGroup` whose `GroupMode` says which family it holds (`input_rule`, `bom_rule`, `route_rule`).
@@ -304,6 +311,23 @@ around it.
 emailed** — its columns are a file, a filename, a convert-to-PDF flag, and the email fields. There
 is no action type vocabulary; behaviour is driven by those flags. Do not plan on output actions
 creating records.
+
+## Reading the engine's own log
+
+CPQ writes a daily log to `Files/System/Log/CPQ_API/<yyyy-MM-dd>.log`, and one line there answers
+most "why did my rule not fire" questions before any JSON is inspected:
+
+```
+LoadFormApplyRules timings. ModelVersion=1, Card=, LoadFormInput=68ms, LoadInputRule=0ms,
+ApplyInputRules=1ms, RebuildDwSqlOptions=60ms, LoadBOMRule=2ms, ApplyBOMRule=7ms,
+LoadRouteRule=0ms, ApplyRouteRule=0ms, LoadPriceRules=0ms, ApplyPriceRules=0ms, Total=142ms
+```
+
+Each rule family reports **Load** and **Apply** separately. `LoadInputRule=0ms` beside a healthy
+`LoadBOMRule` says the input rules were never read — a wiring problem such as the missing
+`InputRuleType` above — while a healthy Load with no visible effect points at the actions instead.
+`RebuildDwSqlOptions` is where the Lookup List queries run, so a slow number there is the SQL, not
+the engine.
 
 ## Evaluation order
 
