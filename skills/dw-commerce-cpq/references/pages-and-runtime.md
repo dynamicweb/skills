@@ -216,3 +216,11 @@ Two DOM facts worth knowing before writing such a layer:
   replacing a silently-vanishing question with a stated reason.
 - `.input-control` holds the `.invalid-feedback` message as a plain `div` alongside the options, so
   an option must be identified by the radio or checkbox it wraps, never by position.
+- **Never write a bare `#fragment` to `history.pushState`.** Swift emits
+  `<base href="https://host/">` sitewide, and a bare fragment resolves against the *base*, not the
+  current document - so a step written as `#power` rewrites the address to the site ROOT with that
+  fragment on it, and the customer's next refresh lands on the home page. Write
+  `location.pathname + location.search + '#' + key`.
+- Option images are rendered `object-fit: cover` into a card of fixed height, so the card's aspect
+  ratio silently crops them. Photography generated at one ratio and displayed at another loses the
+  difference from the middle of the frame, which for a centred product shot is the product.
