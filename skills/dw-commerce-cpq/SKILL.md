@@ -78,6 +78,25 @@ stays in sync with it. See [cards-and-erp.md](references/cards-and-erp.md).
 `CPQ_Row` grid rows, driven by a single POST to `/cpqapi/model` per change. See
 [pages-and-runtime.md](references/pages-and-runtime.md).
 
+## Where the logic lives
+
+The boundary that keeps a model maintainable: **the catalogue is data, the model is logic.**
+
+- **Product fields say what a thing *is*** — its size band, its power range, what it physically fits.
+- **CPQ rules say what you will *sell together*** — which options appear, which are excluded, what
+  reaches the BOM. That lives in `CPQInputRule` / `CPQBOMRule` JSON, versioned with the model.
+
+So an answer constraining the next question is configuration in the model, not a relation in the
+catalogue. Four mechanisms do it — `showoptions` / `hideoptions`, `setoptions`, `disableoptions`, and
+a `dw_sql` Lookup List filtered by a `${forminput[...]}` placeholder — and picking the wrong one is
+the usual reason a model stops being maintainable. The rule of thumb: when the constraint is a
+property of the product, let the lookup query express it; when it is a commercial decision, write it
+as a rule. Both, with the choosing table, are in
+[rules-and-lookups.md](references/rules-and-lookups.md) ("Cascading options").
+
+Encoding a commercial rule as product data splits the logic across two systems and leaves neither
+telling the whole story.
+
 ## Build order
 
 1. **Install** the two packages and confirm the schema and templates landed —

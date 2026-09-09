@@ -14,6 +14,7 @@ the catalogue-driven Lookup List.
 - [Price rules](#price-rules)
 - [Output rules](#output-rules)
 - [Evaluation order](#evaluation-order)
+- [Cascading options](#cascading-options)
 - [Lookup Lists from the catalogue](#lookup-lists-from-the-catalogue)
 
 ## Where rules live
@@ -320,6 +321,94 @@ Inputs the server set come back flagged `auto_set`.
 `InputRuleStop` halts processing at that rule, logged as *"Stop flag encountered at rule …"*.
 Whether it stops the group or the whole pass is not established. `CPQBOMRule` and `CPQPriceRule`
 have no stop column.
+
+## Cascading options
+
+The central modelling idiom: an answer to one question changes what can be chosen in the next. This
+is where a configurator earns its keep, and it is **configuration in the model, not data in the
+catalogue**. There are four mechanisms, and choosing the wrong one is the usual reason a model
+becomes unmaintainable.
+
+### 1. Narrow the option set — `showoptions` / `hideoptions`
+
+The input keeps its full option set; a rule reveals the subset that applies. Use when the option
+list is short, fixed, and authored on the input.
+
+```json
+[
+  { "target": "forminput[Power_EngineCount]", "action": "hideoptions", "data": ["Triple", "Quad"] }
+]
+```
+
+Pair it with `ActionsElse` so the options come back when the condition stops holding — a rule that
+only ever hides leaves the form in whatever state the last answer left behind.
+
+### 2. Replace the option set — `setoptions`
+
+A rule supplies the options outright, so different answers produce genuinely different lists rather
+than subsets of one list. The engine also accepts an option set resolved from a variable, which is
+how a long list stays out of the rule body.
+
+Use when the second question's answers have little overlap between branches.
+
+### 3. Enable rather than hide — `enableoptions` / `disableoptions`
+
+Shows the option greyed out instead of removing it. Prefer this when the customer should *see* that
+something exists but is not available for their choices — it answers "why can't I have X?" without
+them asking, which is worth a great deal in a guided sale.
+
+### 4. Let the data do it — a Lookup List with `params`
+
+When the options come from the catalogue and the relationship is expressible as product data, do not
+write a rule at all. Give the second input a `dw_sql` Lookup List whose `filters` reference the first
+input through a `params` placeholder:
+
+```json
+{
+  "fields": { "value": "p.ProductNumber", "label": "p.ProductName" },
+  "filters": { "and": [
+    "p.fitsMinPower <= ${chosenPower}",
+    "p.fitsMaxPower >= ${chosenPower}"
+  ]},
+  "params": { "chosenPower": "${forminput[Power_TotalPower]}" },
+  "sortby": "p.ProductName"
+}
+```
+
+Now adding a product to the catalogue adds an option, and no rule changes. **This is the mechanism to
+reach for whenever the constraint is a property of the product rather than a business decision.**
+
+### Choosing between them
+
+| The relationship is… | Use |
+|---|---|
+| A property of the product (a size band, a power range, a fitting type) | A Lookup List with `params` — attributes on the product, filtering in the query |
+| A business decision with few outcomes (this trim level offers these three finishes) | `showoptions` / `hideoptions` on an authored option set |
+| A business decision whose branches share nothing | `setoptions` |
+| Something the customer should see but cannot have | `disableoptions` |
+
+**Keep the constraint logic in the model.** Product fields answer *what a thing is* — its size band,
+its power range, what it physically fits. The rules answer *what we will sell together*, and those
+belong in `CPQInputRule` JSON where they can be read, versioned and changed without touching the
+catalogue. Encoding a commercial rule as a product relation splits the logic across two systems and
+leaves neither telling the whole story.
+
+### Two behaviours that catch people out
+
+**A hidden input still submits its value.** Hiding a control does not clear it, so a stale answer can
+keep driving downstream rules and BOM lines. When hiding should also reset, set the value in the same
+rule:
+
+```json
+[
+  { "action": "setvalue", "setvalue": { "FormInput[Power_Joystick.visible]": false,
+                                        "FormInput[Power_Joystick]": "" } }
+]
+```
+
+**Every input change re-runs every rule.** There is no dependency graph, so a cascade is only as
+ordered as its rule sequence within a group. Where B depends on A and C depends on B, put them in
+that `Seq` order rather than assuming the engine will work it out.
 
 ## Lookup Lists from the catalogue
 
