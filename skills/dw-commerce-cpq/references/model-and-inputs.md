@@ -150,6 +150,32 @@ Choosing between them:
 ]
 ```
 
+
+The names the templates actually read are a closed set — an unrecognised name is stored and ignored,
+with nothing to say so. On the shipped Swift components they are:
+
+| Setting | Applies to | Effect |
+|---|---|---|
+| `option-columns` | any option input | Column count of the option grid, 2–8. **Unset means one column**, which renders a stack of full-width bars — this is the single most common reason a configurator looks like a form rather than a catalogue |
+| `option-image-class` | any option input | Class placed on each option's `<img>` |
+| `option-inline` | `radio` | Options on one line; defaults to true at two options or fewer |
+| `hide-label` / `no-label` | option inputs / any | Suppress the per-option label; suppress the question label and take the full width |
+| `min` / `max` / `step` / `readonly` | numeric and text | The usual HTML semantics |
+| `value-prefix` / `value-suffix` | numeric and text | Affixes rendered in an input group |
+| `value-format` (or `format`) | numeric and text | `currency`, `inch`, `foot-inches`, `kg`. Sets a default affix and decimal places; `foot-inches` also forces read-only |
+| `thousands-separator` / `decimal-places` | numeric | Override what `value-format` implied |
+| `type` = `list-box`, `show-filter`, `list-box-height` | Lookup List | Render the lookup as a permanent list rather than a search field |
+
+**Presentation belongs in these settings, not in template forks.** A well-built configurator drives
+its whole look from `InputSettings` plus `InputStylingText` — the latter is emitted verbatim as a
+class on every option element, which is how one input becomes image cards and the next becomes a
+swatch tray without either being special-cased in Razor.
+
+`colorselector` is worth knowing separately: it is a first-class input type that renders a tray of
+circular swatches from each option's `ColourValue`, falling back to the option value as a CSS
+colour. Where the colours are catalogue products with photography rather than flat hex values, a
+`radiobox` styled through `InputStylingText` gets closer, because the swatch can be the product shot.
+
 Several of the same names are reachable at runtime through `setproperty`, so a rule can change a
 placeholder or a field width as the configuration progresses.
 

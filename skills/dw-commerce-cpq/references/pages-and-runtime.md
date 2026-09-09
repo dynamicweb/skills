@@ -12,6 +12,7 @@ How a configurator reaches the frontend, and what happens on every keystroke.
 - [The request cycle](#the-request-cycle)
 - [The HTTP surface](#the-http-surface)
 - [Selections and client storage](#selections-and-client-storage)
+- [Customising without forking the frontend](#customising-without-forking-the-frontend)
 
 ## Assembling a page
 
@@ -59,6 +60,16 @@ a group — useful for a dealer-only or internal-only section of a configuration
 
 `CPQ_Summary` takes its input groups as a **comma-separated list where order matters**, so the
 summary can present the configuration in a different order from the form.
+
+
+**`CPQ_Items` is either/or, and the wrong branch is the default-looking one.** With *Show Totals*
+ticked, the template renders **only** the cost / margin / total-sell summary table: no BOM lines, no
+Add-to-Quote or Create-Project buttons, no document action, because the whole of the rest of the
+template sits in the `else` branch. That summary is a dealer's internal view, so a page built with
+Show Totals on shows a customer a margin sheet and no way to proceed. For a customer-facing page
+ticking *Pricing* and *Simple BOM* with Show Totals **off** is what gives priced lines plus the
+actions. The paragraph's values are item values and therefore cached — changing them needs a
+restart before the frontend reflects it.
 
 Note two shipped defects. The `CPQ_Card` paragraph declares a card-template field that its template
 never reads, so whatever is authored there has no effect and the paragraph always falls back to the
@@ -164,3 +175,44 @@ list, so clearing it is part of reproducing a reported problem.
 
 Durable persistence is not the cookie — it is the card item's stored inputs and the configuration
 rows.
+
+## Customising without forking the frontend
+
+CPQ's file update provider rewrites every `CPQ_*.cshtml` and `Assets/js/cpq*.js` in the design
+folder **at each application start**, so a change made in a vendor template survives until the next
+restart and no further. It cannot be relied on, and the loss is silent.
+
+Two seams exist instead, and between them they carry a complete visual and behavioural
+customisation:
+
+- **`Assets/js/cpq-custom.js`.** The master template loads this file *if it exists*, deferred, after
+  every vendor script. Nothing else references it — it is offered purely as a customisation hook.
+- **The theme stylesheet.** A custom theme is a Northwind-owned file the update provider does not
+  touch, selected by the page's theme field (see [Themes](#themes)).
+
+Prefer wrapping the vendor's own functions over watching the DOM. `updateBOM()` and
+`updateModelForm()` are declared as top-level functions in a classic script, so both are properties
+of `window` and can be replaced with a wrapper that calls the original:
+
+```js
+var orig = window.updateBOM;
+window.updateBOM = function () { try { return orig.apply(this, arguments); } finally { redraw(); } };
+```
+
+`updateBOM` fires exactly once per priced configuration, and by the time it runs the parsed BOM is
+already on `window._cpqLatestBomItems` (routes likewise on `window._cpqLatestRouteItems`). Each line
+carries `bomgroup`, `item_no`, `description`, `uom`, `qty`, `unit_cost`, `unit_sell`, `line_sell`
+and `discounted_line_sell`. That array is the right source for anything that has to restate the
+build — a persistent price bar, a summary drawer, a customer-facing offer — because it cannot drift
+from what the engine priced.
+
+Two DOM facts worth knowing before writing such a layer:
+
+- A tab's step is reached by **clicking its own `.nav-link`**. The template's `showTab()` lives
+  inside a `DOMContentLoaded` closure and is not reachable; clicking is also what keeps the vendor's
+  per-tab scroll memory correct.
+- A rule that clears an input's `visible` flag results in `display: none` on the
+  `#<Tab>_visible_<InputName>` wrapper — the node stays in the document. That is the hook for
+  replacing a silently-vanishing question with a stated reason.
+- `.input-control` holds the `.invalid-feedback` message as a plain `div` alongside the options, so
+  an option must be identified by the radio or checkbox it wraps, never by position.
