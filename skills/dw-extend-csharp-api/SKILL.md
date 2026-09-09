@@ -61,8 +61,12 @@ Some Dynamicweb services are `internal` — there's no public type to reference 
 - **No compile-time surface.** Load the assembly, get the type by full name, resolve the instance from `app.Services` (fall back to `Activator.CreateInstance(type, true)` to reach the internal constructor), then call the method via `MethodInfo.Invoke`:
 
 ```csharp
-var asm = Assembly.Load("Dynamicweb.MCP");
-var t   = asm.GetType("Dynamicweb.MCP.Configuration.Services.McpConfigurationService");
+// The MCP assembly name follows the installed package -- `Truvio.Commerce.MCP` since the
+// rebrand, `Dynamicweb.MCP` on a host installed before it. Resolve it, never hardcode it.
+var asm = AppDomain.CurrentDomain.GetAssemblies()
+    .First(a => a.GetName().Name is "Truvio.Commerce.MCP" or "Dynamicweb.MCP");
+var t   = asm.GetTypes()
+    .First(x => x.FullName!.EndsWith(".Configuration.Services.McpConfigurationService"));
 var svc = app.Services.GetService(t) ?? Activator.CreateInstance(t, true);
 t.GetMethod("LinkToken").Invoke(svc, new object[] { configId, tokenId, user });
 ```

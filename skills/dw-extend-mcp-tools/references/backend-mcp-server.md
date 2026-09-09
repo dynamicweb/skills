@@ -2,39 +2,56 @@
 
 ## Contents
 
-- [1. Installing the Backend MCP AddIn](#1-installing-the-backend-mcp-addin--nuget-packagereference-default-appstore-last-resort)
+- [1. Installing the Backend MCP AddIn](#1-installing-the-backend-mcp-addin--appstore-first-csproj-only-as-a-user-approved-escape-hatch)
 - [2. Auth model — prefer API Key over Claude.ai OAuth](#2-auth-model--prefer-api-key-over-claudeai-oauth)
 - [3. The two AccessUserToken rows](#3-the-two-accessusertoken-rows)
 - [4. Headless provisioning — create the token + MCP config in code](#4-headless-provisioning--create-the-token--mcp-config-in-code)
 - [5. What MCP create/update tools do to the data model](#5-what-mcp-createupdate-tools-do-to-the-data-model)
 
-This is the platform-level knowledge for the Dynamicweb Backend MCP server (`Dynamicweb.MCP`,
-exposed at `/admin/mcp`): how to install it, how its auth works, how to provision tokens and configs in
-code, and what its create/update tools actually do to the data model.
+This is the platform-level knowledge for the Backend MCP server — the AppStore app **Truvio Commerce
+MCP** (package `Truvio.Commerce.MCP`, formerly `Dynamicweb.MCP`), exposed at `/admin/mcp`: how to
+install it, how its auth works, how to provision tokens and configs in code, and what its create/update
+tools actually do to the data model.
 
-## 1. Installing the Backend MCP AddIn — NuGet PackageReference (default), AppStore (last resort)
+## 1. Installing the Backend MCP AddIn — AppStore first, csproj only as a user-approved escape hatch
 
-**Default: install the AddIn from NuGet** by adding the package to the host csproj:
+**The app was renamed.** The Backend MCP now ships as **Truvio Commerce MCP**, package id
+**`Truvio.Commerce.MCP`**. The old **`Dynamicweb.MCP`** id is frozen at its last pre-rename version. It
+still resolves on nuget.org, and that is exactly what makes it dangerous: an agent that writes the id it
+*remembers* gets a green restore, a green build, and a stale AddIn — with no error anywhere to react to.
+The endpoint is unchanged (`/admin/mcp`), so the stale install looks right until a tool is missing.
+
+**Rule: an app that is available in the AppStore is installed from the AppStore.** That covers the
+Backend MCP, the PIM for Business Central connector and `StaticLinkManager`. A hand-written
+`<PackageReference>` for such an app is a defect, not a shortcut — package id and version must come from
+the AppStore listing or a live resolve, never from recall. If you find
+`<PackageReference Include="Dynamicweb.MCP" ... />` in a host csproj, remove it and install from the
+AppStore instead.
+
+**The route:** admin → **Settings → AppStore → Available apps** → *Truvio Commerce MCP* → install, then
+restart the host; `/admin/mcp` flips from 404 to live. Under browser automation expect retries — the
+"Available apps" grid is a virtualized component. The host's net10 TFM requirement applies regardless of
+how the package arrives (see [`dw-setup-install`](../../dw-setup-install/SKILL.md), reference
+`install-anatomy.md` §2); a net8 host makes the install a silent no-op.
+
+**Escape hatch — csproj `PackageReference`, and only on an explicit user choice.** When the AppStore
+route genuinely cannot be completed (a locked, already-deployed host; the app not listed; the grid
+unreachable after retries), do **not** quietly pin a package. Stop and tell the user, in these terms:
+
+- which AppStore route failed, and how;
+- that **the AppStore version could not be resolved**, so the pin cannot be guaranteed to match what the
+  AppStore would have installed;
+- the exact id and version you propose, and where that version came from — a live resolve
+  (`dotnet package search Truvio.Commerce.MCP --prerelease`) or the user, never memory.
+
+Only on an explicit "yes" write the reference, resolved id and version, never a remembered one:
 
 ```xml
-<PackageReference Include="Dynamicweb.MCP" Version="<version>" />
+<PackageReference Include="Truvio.Commerce.MCP" Version="<resolved version>" />
 ```
 
-Rebuild and restart. The AddIn registers **at host startup**, so `/admin/mcp` flips from 404 to live
-with no AppStore click. The host's net10 TFM requirement still applies — the loader's runtime check runs
-regardless of how the package arrived (see the install anatomy in
-[`dw-setup-install`](../../dw-setup-install/SKILL.md), reference `install-anatomy.md` §2).
-
-This is the canonical route for an agent-driven build: deterministic, scriptable, and idempotent (just a
-csproj edit), and it sidesteps a flaky UI path — the AppStore "Available apps" grid is a virtualized
-component that browser automation struggles to drive reliably.
-
-Pin the version deliberately — `Dynamicweb.MCP` is a beta-track package, and the version must be
-compatible with the Suite version the host resolves.
-
-**Last resort: the admin AppStore.** Only when you genuinely cannot edit the host csproj (e.g. a locked,
-already-deployed host). Drive it via browser automation, expecting retries on the virtualized grid, and
-ask the user to click it only when automation can't land it after a few attempts.
+Rebuild and restart; the AddIn registers at host startup. Pin deliberately — this is a beta-track
+package and the version must be compatible with the Suite version the host resolves.
 
 ## 2. Auth model — prefer API Key over Claude.ai OAuth
 
@@ -93,8 +110,12 @@ the third is the non-obvious one:
    by reflection, resolving the instance from the live DI container:
 
    ```csharp
-   var asm = Assembly.Load("Dynamicweb.MCP");
-   var t   = asm.GetType("Dynamicweb.MCP.Configuration.Services.McpConfigurationService");
+   // The MCP assembly name follows the installed package -- `Truvio.Commerce.MCP` since the
+   // rebrand, `Dynamicweb.MCP` on a host installed before it. Resolve it, never hardcode it.
+   var asm = AppDomain.CurrentDomain.GetAssemblies()
+       .First(a => a.GetName().Name is "Truvio.Commerce.MCP" or "Dynamicweb.MCP");
+   var t   = asm.GetTypes()
+       .First(x => x.FullName!.EndsWith(".Configuration.Services.McpConfigurationService"));
    var svc = app.Services.GetService(t) ?? Activator.CreateInstance(t, true);
    t.GetMethod("LinkToken").Invoke(svc, new object[] { configId, tokenId, user });
    ```
@@ -105,10 +126,11 @@ password and the token — direct SQL writes don't take until restart; for MCP c
 *insufficient even after restart*, hence the `LinkToken` call.)
 
 > **Brittleness warning.** `McpConfigurationService` is an internal type invoked by reflection — its
-> namespace, method name, and signature can change between DW10 releases without notice, and the
-> `Dynamicweb.MCP` version pin matters. Prefer the admin-UI route whenever the UI is reachable; use this
-> code path only for genuinely headless installs, and re-verify the type/method names against the
-> `Dynamicweb.MCP` version in use.
+> namespace, method name, and signature can change between DW10 releases without notice, and so can the
+> assembly name itself (the rebrand moved it from `Dynamicweb.MCP` to `Truvio.Commerce.MCP`), which is
+> why the snippet resolves the assembly instead of naming it. Prefer the admin-UI route whenever the UI
+> is reachable; use this code path only for genuinely headless installs, and re-verify the type/method
+> names against the MCP version actually installed.
 
 ## 5. What MCP create/update tools do to the data model
 

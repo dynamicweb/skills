@@ -13,7 +13,7 @@ description: 'Step-by-step guide for adding new MCP tools to the Dynamicweb MCP 
 
 | Topic | Where |
 |---|---|
-| The Backend MCP server (`Dynamicweb.MCP` at `/admin/mcp`) — installing the AddIn (NuGet vs AppStore), the auth model (API Key vs Claude.ai OAuth), the two `AccessUserToken` rows, headless token+config provisioning in code, and the silent no-op catalogue for MCP/Management API writes | [`references/backend-mcp-server.md`](references/backend-mcp-server.md) |
+| The Backend MCP server (**Truvio Commerce MCP**, package `Truvio.Commerce.MCP`, formerly `Dynamicweb.MCP`, at `/admin/mcp`) — installing the AddIn (AppStore first; a csproj `PackageReference` only on an explicit user choice, never a remembered package id), the auth model (API Key vs Claude.ai OAuth), the two `AccessUserToken` rows, headless token+config provisioning in code, and the silent no-op catalogue for MCP/Management API writes | [`references/backend-mcp-server.md`](references/backend-mcp-server.md) |
 
 ## Purpose
 
@@ -200,7 +200,7 @@ Register in the domain's `IServiceApi` implementation (e.g., `ProductsServiceApi
 
 ### 7. Document the new tools
 
-Record the new tools in the Dynamicweb.MCP project's own tool catalog/README so they are
+Record the new tools in the MCP project's own tool catalog/README so they are
 discoverable by consumers:
 - Find the matching group table (or create a new group section if none fits)
 - Add a row per tool: `| \`tool_name\` | Short "use when" phrase |`
@@ -224,5 +224,5 @@ After creating all files:
 - [ ] Permission level matches the operation type
 - [ ] Method parameters have `[Description]` attributes
 - [ ] `dotnet build` passes
-- [ ] New tools documented in the Dynamicweb.MCP project tool catalog/README
+- [ ] New tools documented in the MCP project tool catalog/README
 

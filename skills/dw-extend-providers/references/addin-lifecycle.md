@@ -10,6 +10,13 @@ Three durable patterns that recur across DW10 AppStore AddIns. The generic provi
 mechanics (`UpdateProvider`, reflection-based discovery, `[AddInName]`) are owned by the
 [SKILL.md](../SKILL.md) body; these three nuances extend that base.
 
+> **Install route.** An AddIn the AppStore carries is installed **from the AppStore**, not by adding a
+> `<PackageReference>` to the host csproj. Package ids move (the Backend MCP is `Truvio.Commerce.MCP`
+> since the Truvio Commerce rebrand, not `Dynamicweb.MCP`) and a stale id still restores cleanly, so a
+> remembered pin produces a green build and a stale AddIn. The csproj route is an escape hatch that needs
+> an explicit user choice: report which AppStore route failed, state that the AppStore version could not
+> be resolved, name the id and version you propose and where they came from, and wait for a yes.
+
 ## 1. The UpdateProvider-seeds-defaults pattern
 
 An `UpdateProvider` does more than schema migration — it's the standard hook a package uses to

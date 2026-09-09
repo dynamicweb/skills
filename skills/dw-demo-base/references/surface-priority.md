@@ -55,7 +55,7 @@ Until the Backend MCP exists there is nothing at surface 1, and until a bearer e
 
 - **Create the MCP configuration and capture the shown-once API key** (`mcp-setup.md` Step 3).
 - **Create the Management API key** (`mcp-setup.md` Step 6).
-- **AppStore install of the Backend MCP AddIn** when the csproj `PackageReference` route is closed (`../../dw-extend-mcp-tools/references/backend-mcp-server.md` §1 — `PackageReference` stays the default).
+- **AppStore install of the Backend MCP AddIn** (the app **Truvio Commerce MCP**) — the AppStore is the route for an app the AppStore carries; a csproj `PackageReference` is the escape hatch and needs an explicit user choice (`../../dw-extend-mcp-tools/references/backend-mcp-server.md` §1).
 - **Portal downloads** the install scripts can't fetch.
 
 The scaffold ladder: script / CLI / filesystem → Admin API (when a bearer already exists) → **admin UI via the Browser MCP** → headless code recipe (`../../dw-extend-mcp-tools/references/backend-mcp-server.md` §4) → ask the user. Involve the user only when every automated surface is genuinely unreachable — e.g. the Browser MCP tools haven't surfaced in this session yet (they appear in a fresh session; one Claude Code restart loads them) and no API token exists.

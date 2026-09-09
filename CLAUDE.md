@@ -50,6 +50,31 @@ The dependency direction is **one-way and enforced**:
 Decide which category a file is in before editing it; that decides whether demo/customer content
 and demo-skill links are allowed there at all.
 
+## Product naming (the Truvio Commerce rebrand)
+
+The product is **Truvio Commerce (powered by Dynamicweb)**. In skill prose, use that full form on first
+mention in a file and "Truvio Commerce" after it. "Dynamicweb 10" / "DW10" stays correct for the
+platform generation and for the version-shaped facts most of these skills carry.
+
+**The rebrand never renames an identifier.** These keep "Dynamicweb" because they are things you type,
+not branding:
+
+- .NET namespaces, assemblies and package ids that still ship under it (`Dynamicweb.Ecommerce.Services`,
+  `Dynamicweb.Suite`), admin paths (`/admin/api`, `/admin/mcp`), the `/dwapi/` delivery surface, database
+  tables and columns, `GlobalSettings` keys, `appsettings.json` keys.
+- Skill names (`dw-<domain>-<topic>`), the `dynamicweb-*` role bundles, this repo and its marketplace.
+- Documentation URLs (`doc.dynamicweb.dev`) and the GitHub org (`github.com/dynamicweb`).
+
+**Newly published packages and AppStore apps carry the `Truvio.Commerce.*` prefix** —
+`Truvio.Commerce.Serializer`, `Truvio.Commerce.MCP` (the Backend MCP, formerly `Dynamicweb.MCP`),
+`Truvio.Commerce.Distribution`. A pre-rename id usually still resolves on nuget.org, so writing the id
+you remember produces a green build and a stale install with no error to react to. **Never write a
+package id, app name or version from memory** — take it from the AppStore listing, a live resolve, or
+the user. And for an app the AppStore carries, install it from the AppStore: a csproj `PackageReference`
+is an escape hatch that needs an explicit user choice, after reporting that the AppStore version could
+not be resolved
+([`skills/dw-extend-mcp-tools/references/backend-mcp-server.md`](skills/dw-extend-mcp-tools/references/backend-mcp-server.md) §1).
+
 ## Encoding
 
 Markdown here is authored as **UTF-8 without a BOM** and free of **double-encoded UTF-8

@@ -14,7 +14,7 @@ description: 'Install Dynamicweb Swift 2 from scratch — download and import th
 
 | Topic | Where |
 |---|---|
-| Host install anatomy — machine prerequisites (.NET 10 SDK, ProjectTemplates, SQL Express), the mandatory `net10.0` TargetFramework, build-time host-config patches (`ImplicitDistributedTransactions`, `Files\System` build exclusion), MSDTC, release rings, install anti-patterns, and the first-run license gate + headless admin-password recovery | [`references/install-anatomy.md`](references/install-anatomy.md) |
+| Host install anatomy — machine prerequisites (.NET 10 SDK, ProjectTemplates, SQL Express), the mandatory `net10.0` TargetFramework, build-time host-config patches (`ImplicitDistributedTransactions`, `Files\System` build exclusion), MSDTC, release rings, package naming after the Truvio Commerce rebrand and the AppStore-vs-csproj install boundary, install anti-patterns, and the first-run license gate + headless admin-password recovery | [`references/install-anatomy.md`](references/install-anatomy.md) |
 
 ## Scripts (scripts/)
 
