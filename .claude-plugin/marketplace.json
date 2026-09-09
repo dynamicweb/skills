@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "4.37.0"
+    "version": "4.38.0"
   },
   "plugins": [
     {
@@ -54,6 +54,7 @@
         "./skills/dw-commerce-catalog",
         "./skills/dw-commerce-orders",
         "./skills/dw-commerce-b2b",
+        "./skills/dw-commerce-cpq",
         "./skills/dw-search-indexing",
         "./skills/dw-users-permissions",
         "./skills/dw-data-access"
@@ -121,6 +122,7 @@
         "./skills/dw-commerce-catalog",
         "./skills/dw-commerce-b2b",
         "./skills/dw-commerce-orders",
+        "./skills/dw-commerce-cpq",
         "./skills/dw-render-razor",
         "./skills/dw-content-modelling",
         "./skills/dw-data-access",
