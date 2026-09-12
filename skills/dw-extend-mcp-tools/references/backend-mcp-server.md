@@ -200,13 +200,25 @@ from the tool name is a coin flip:
 
 | Family | Parameter | Examples |
 |---|---|---|
-| Entity-by-id reads and deletes | bare **`id`** | `get_product_by_id`, `get_group_by_id`, `get_order_by_id`, `delete_order` — all take `{"id": ...}`, never `productId` / `groupId` / `orderId` |
+| Entity deletes and other single-entity verbs | bare **`id`** | `delete_order` and its family take `{"id": ...}`, never `orderId` |
+| Batch-by-id reads | a **list** member, not `id` | On 0.4.4 the by-id reads are plural — `get_products_by_ids`, `get_groups_by_ids`, `get_orders_by_ids`, `get_users_by_ids`, `get_pages_by_ids` — and take a list; read the member name from the schema rather than assuming `ids`, and never send the singular `id` these tools' retired predecessors took |
 | Product-by-SKU | singular **`sku`** | `get_products_by_sku` |
 | Paragraph, module and grid tools | **`pageId`** or **`paragraphId`** | `get_paragraphs_by_page_id` and `get_grid_rows_by_page_id` take `pageId`; `get_paragraph_item_field_values` and `get_module_settings` take `paragraphId`. Passing `id` to any of them fails |
 
+**A name no server registers answers a second hintless shape**, and it reads like a permission
+problem rather than a typo: `"An error occurred invoking <tool>: Access denied. MCP configuration
+<name> is not allowed to call tool <tool>. Required permission: none. Allowed permission: none."`
+Both sides of that comparison render as `none`, so there is no permission to ask for and nothing to
+grant — on a FullAccess key it means the name is not in this build's `tools/list`, which is what a
+retired singular by-id getter now produces. Together with the bare
+`"An error occurred invoking '<tool>'."` these are the two signs of a **wrong name or a wrong
+argument**, never of a capability the key is missing: re-read `tools/list` before reporting either
+as a gate.
+
 A mis-named argument is not rejected loudly: depending on the tool it surfaces as the bare
 `"An error occurred invoking '<tool>'."` **or as a perfectly successful response with empty
-`content: []`**. So **read an empty result as a possible parameter-name error first**, not as missing
+`content: []`** (`get_item_type_fields` with `itemType` instead of `systemName` is the measured
+case — five real fields become an empty array with no error). So **read an empty result as a possible parameter-name error first**, not as missing
 data — confirm the entity exists through a second surface before concluding anything about the data.
 Take the parameter name from the tool's own schema in `tools/list` rather than from its name.
 

@@ -48,7 +48,7 @@ on 10.28.1: an `update_users` call carrying `allowBackend: false, active: false`
 row still read back as backend-allowed; the identical call with `userType: "default"` added read back
 denied. The only levers that actually deny backend access are `userType` (demote to `Default=5`) and
 `active: false`. So a teardown or "deactivate and deny backend" cleanup must set `userType` in the
-same `update_users` call and then re-read the user with `get_user_by_id`, since the save's own echo is
+same `update_users` call and then re-read the user with `get_users_by_ids`, since the save's own echo is
 not evidence. Assert separately, with `search_users`, that other backend admins survive (count the
 active, backend-allowed users of type 1 and 3) so the cleanup cannot lock everyone out. The
 column-level read-back and the Management API measurement are in

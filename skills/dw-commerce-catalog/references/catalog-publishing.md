@@ -263,7 +263,9 @@ name, stock or active-flag beat on this build, and do not spend a session huntin
   `ProductWeight` and `ProductPrice` on every variant it touches, lives in `dw-demo-hosted`
   (`publish-to-hosted.md`, "Publishing onto an install that already has content").
 - **Verify with both readers plus a master control.** `GET /Admin/Api/ProductById?Id&VariantId` AND
-  `get_product_by_id(id, variantId)`; master values coming back means the write did not land. Run the
+  the MCP batch getter for the same product (`get_products_by_ids`, whose variant
+  member comes from its own `tools/list` schema); master values coming back means the write did not
+  land. Run the
   identical call against the master row in the same pass, so a null result is proof about the variant and
   not about the instrument.
 

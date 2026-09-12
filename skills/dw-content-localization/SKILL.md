@@ -117,7 +117,7 @@ titles) so the whole site doesn't get translated, and name the scope when confir
 A translation write is finished when the target renders, not when `apply_translation` returns.
 After each batch, and once at the end of a run:
 
-1. `get_pages_by_ids` (or the singular `*_by_id` variant the build registers) on a page you just
+1. `get_pages_by_ids` on a page you just
    wrote — compare the stored field against the text sent, field by field. A field absent from the
    read is unwritten, not defaulted.
 2. `fetch_frontend_page_html` on the same page in the target language — the rendered page is the

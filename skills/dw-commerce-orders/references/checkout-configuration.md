@@ -57,7 +57,7 @@ a sick host.
 `save_shipping_methods` using `feeRulesSource: "matrix"`, `maxWeight: 0` and the fee in
 `defaultFee`. With an empty `EcomFees` matrix and `maxWeight = 0`, `defaultFee` (stored as
 `ShippingPriceOverMaxWeight`) is what the cart charges. Read the method back with MCP
-`get_shipping_method_by_id` and assert the fee source and the default fee both landed.
+`get_shipping_methods_by_ids` and assert the fee source and the default fee both landed.
 
 Re-point the countries first, then the fee — a method the delivery step filters out is invisible
 whatever its fee says. The equivalent out-of-product payload is in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "`ShippingSave`

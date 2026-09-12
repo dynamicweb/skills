@@ -79,9 +79,9 @@ Resolution is `AddInManager.GetInstance<CheckoutHandler>(payment.CheckoutSystemN
 Verify the emitted type name from the compiled assembly's metadata before writing it, the same
 discipline a scheduled-task registration uses — a wrong name fails silently.
 
-Surface note: these two columns have no MCP tool (`create_payment` / `update_payment` /
-`save_payment_methods` cover name, description, active, sorting, code, weights, gateway and terms
-code only), so wiring them is Management API `PaymentSave` where the verb reaches them, else `SQL`,
+Surface note: these two columns have no MCP tool (`save_payment_methods` and
+`copy_payment_method` — the whole payment family on 0.4.4 — cover name, description, active,
+sorting, code, weights, gateway and terms code only), so wiring them is Management API `PaymentSave` where the verb reaches them, else `SQL`,
 **local-install only**, owing a payment-service flush or a restart.
 
 The tell that the wiring worked is one line in `EcomOrderDebuggingInfo`:

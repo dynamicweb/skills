@@ -168,7 +168,7 @@ Only an explicit flush of that service turns the detail view over. No applicatio
 needed, and a scheduled task that only runs SQL cannot raise the flush at all, so a nightly date
 shift leaves the detail view stale by design. Say so when designing the job.
 
-In-product, MCP `get_rma_states` and MCP `get_rma_by_id` read through the same cache, so a value
+In-product, MCP `get_rma_states` and MCP `get_rmas_by_ids` read through the same cache, so a value
 that one of them keeps returning after a change made elsewhere is this, not a rendering bug. The
 flush itself is out of product: see
 [`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md)

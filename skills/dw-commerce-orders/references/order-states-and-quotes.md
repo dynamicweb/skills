@@ -70,7 +70,7 @@ things wear one name, and none of them is discoverable from the tools alone:
   flow's Cancelled state with MCP `set_order_state`, then call MCP `delete_order`. Carts and
   incomplete orders take `delete_order` on their own.
 
-Read the order back with MCP `get_order_by_id` after the pair and assert the state moved; a delete
+Read the order back with MCP `get_orders_by_ids` after the pair and assert the state moved; a delete
 that silently did nothing looks identical to one that worked.
 
 **A whole-entity order save is not the way round the refusal**: it demands `Currency` and a billing

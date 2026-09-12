@@ -106,7 +106,7 @@ indefinitely. A *scheduled* import inherits this silently, so any nightly activi
 be visible on the storefront carries the staleness into every run.
 
 Re-saving the affected products with `update_products` or `patch_products_safe` invalidates the
-entry on the write path, which is the in-product repair; verify with `get_product_by_id` reading the
+entry on the write path, which is the in-product repair; verify with `get_products_by_ids` reading the
 field the job wrote. The cache-storage flush itself is out of product: see dw-data-access
 `management-api-and-sql.md` §Flushing the product read-through cache after a Data Integration write,
 and [`../../dw-data-access/references/cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)

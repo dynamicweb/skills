@@ -114,7 +114,7 @@ the browser-side checks that catch a page passing every content assert are in
   (paragraphs included by default). The ONLY one-call clone; there is no style-only clone.
 - `add_repeatable_item` — build Slider/Accordion child items. Keyed by **item identity, not
   paragraph**: pass `parentItemType` (e.g. `Swift-v2_Accordion`), `parentItemId` (the
-  paragraph's `itemId`, from `get_paragraph_by_id` — NOT the paragraph id), `fieldSystemName`
+  paragraph's `itemId`, from `get_paragraphs_by_ids` — NOT the paragraph id), `fieldSystemName`
   (`Accordion_Items`, with the underscore), and `childItemType`
   (`Swift-v2_Accordion_Item`) plus the child `fields` (`Title`, `Text` — wrap as HTML like any
   rich-text field). Slider is the same shape with its own field/child types.

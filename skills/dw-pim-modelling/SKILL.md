@@ -151,7 +151,7 @@ Admin path: **Products > Data > Variant Groups**
 
 | Intent | Tool |
 |---|---|
-| List / inspect variant groups | `get_variant_groups`, `get_variant_group_by_id`, `get_variant_groups_by_product_id` |
+| List / inspect variant groups | `get_variant_groups`, `get_variant_groups_by_ids`, `get_variant_groups_by_product_id` |
 | Create / update a group (`DisplayType` controls storefront UI) | `save_variant_groups` |
 | List / create / update options in a group | `get_variant_options`, `save_variant_options` |
 | Assign variant groups to a product | `assign_variant_groups_to_product` |

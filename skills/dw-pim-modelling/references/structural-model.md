@@ -62,7 +62,7 @@ So in the admin tree, a `ShopType=1` Shop and a `ShopType=3` Channel sit side-by
   surface an inventory would use: it is attached to a shop, it comes back from MCP `get_groups` /
   `get_subgroups` exactly like a Common group, it holds `EcomGroupProductRelation` rows exactly like
   a Common group, and it may carry the same display name as a real category (one solution had the
-  same category name on both trees). MCP `get_group_by_id` omits `GroupType` entirely, so a
+  same category name on both trees). MCP `get_groups_by_ids` omits `GroupType` entirely, so a
   "duplicate legacy tree" label derived from those tools can point straight at the data-model tree,
   and deleting it un-assigns the data model from every product that carries it. **Read `GroupType`
   before any group-tree audit, cleanup or deletion** — from `EcomGroups` by `SQL` where no higher
@@ -243,7 +243,7 @@ fails silently:
 | Rebuild | A Full `Products\|Products.index` rebuild **re-poisons** the values (4 of 5 builds in one day), and the poisoning was present before the build too, so the build triggers rather than causes it | Check and repair after **every** build, not once per pass. The DB stays correct throughout; both the Management and Delivery APIs lie |
 | Completeness | Range (and boolean) category fields never satisfy a completeness rule: a product with every rule field populated in the DB scored 91%. A `patch_products_safe` naming three OTHER scalars silently DELETED both range-typed fields from the product | The worklist can never drain, and there is no warning on the delete |
 
-**The read surfaces disagree, and only one of them is honest.** MCP `get_product_by_id` renders every
+**The read surfaces disagree, and only one of them is honest.** MCP `get_products_by_ids` renders every
 range as the literal string `"RangeValue { Minimum = , Maximum =  }"` whether or not a value exists,
 and the index answers `IsEmpty` for all of them. **`/Admin/Api/ProductById` is the only reader that
 returns the typed value the admin editor renders.** Assert there, and report populated/empty counts
@@ -440,7 +440,7 @@ custom-field path cannot write one.** MCP `get_standard_fields` lists them all, 
 of writable targets and is not: `patch_products_safe` with `customFields: [{ id: "ProductEAN" }]`
 fails every row with `No ProductField or ProductFieldValue based on the given system name`, because
 that path resolves through the product-field tables, and `update_products` exposes no property for it
-either. Read the current value with `get_product_by_id`, which does carry the scalar; the write is
+either. Read the current value with `get_products_by_ids`, which does carry the scalar; the write is
 the product edit screen's own field, and the same holds for every other `EcomProducts` scalar the MCP
 model omits. Outside the product: see dw-data-access `recipes-pim.md` §Writing a standard
 `EcomProducts` scalar the MCP model omits.

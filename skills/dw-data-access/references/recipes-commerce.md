@@ -331,7 +331,7 @@ per-contact suffix makes account-wide delivery addresses a silent no-op").
 
 Account-wide delivery addresses resolve by string equality on `AccessUserCustomerNumber`, so a
 per-contact suffix turns the feature off with no error, warning or log entry. In-product the census
-is `get_users_by_group_id` on the account group (or `get_users_by_customer_number` on the account's
+is `get_users_by_group_id` on the account group (or `get_users_by_customer_numbers` on the account's
 own number) and a comparison of the `customerNumber` values that come back. Where the whole install
 must be swept at once, the `SQL` form answers in one query; it is read-only, owes no flush, and runs
 anywhere the database is reachable rather than on local installs only.

@@ -37,8 +37,9 @@ because it was populated from the same request.
 
 1. Read the entity back with a *different* tool than the one that wrote it — `get_products_by_ids`
    or `get_products_by_sku` after `update_products`, `get_pages_by_ids` after `save_pages`,
-   `get_item_field_values` after `set_item_field_values`. (Some builds register singular `*_by_id`
-   variants instead of the batch forms; read `tools/list` and use what is there.)
+   `get_item_field_values` after `set_item_field_values`. (MCP 0.4.4 registers the **batch** by-id
+   getters and no singular `*_by_id` form for pages, products or users; read `tools/list` and use
+   what is there.)
 2. Compare the **stored value**, field by field, against what was sent. A field that is absent
    from the read is not "defaulted" — it is unwritten.
 3. For anything a visitor sees, read it once more through the surface the visitor uses —
@@ -112,8 +113,8 @@ looks right and is broken. The create path carries sibling-link bookkeeping, ite
 localization overlays, ItemList relations and hidden-flag rules that a row-level copy gets partly
 right and then breaks screens later.
 
-Use the tools that own the copy: `copy_area`, `copy_page`, `copy_paragraph`, `copy_payment`,
-`copy_shipping`, and `create_language_version` for a localized tree. When no copy tool exists for
+Use the tools that own the copy: `copy_area`, `copy_page`, `copy_paragraph`, `copy_payment_method`,
+`copy_shipping_method`, and `create_language_version` for a localized tree. When no copy tool exists for
 the entity, create it through its own create tool and set the fields — or stop and name the admin
 screen that copies it. A structural tree assembled any other way is a defect that surfaces long
 after the session that made it.

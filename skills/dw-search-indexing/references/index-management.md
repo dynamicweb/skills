@@ -398,7 +398,7 @@ After any mutation that touches products, groups, categories, fields, completene
 > `ProductCategoryService` caches. If you mutated a product/category **value** this session — via
 > Direct SQL **or MCP `patch_products_safe` / `update_products` / a freshly-`create_category_fields`
 > value** — those caches are stale and a rebuild **bakes the old (often empty) value into the index**.
-> Symptom: `get_products_by_query` / a dashboard widget returns 0 or stale while `get_product_by_id`
+> Symptom: `get_products_by_query` / a dashboard widget returns 0 or stale while `get_products_by_ids`
 > and the DB are correct. That is an un-flushed read-through cache, **not** an "index quirk", and a
 > host restart is NOT a reliable fix (the `dotnet run` parent/child trap means the bounce may not
 > cold-start). Run the flush step below first, then build, then re-verify.
