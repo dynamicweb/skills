@@ -9,6 +9,14 @@ description: 'Understand Dynamicweb 10 Integration Framework architecture and pa
 
 # Integration Framework
 
+## Where to find things
+
+| If you need to... | Read this reference |
+|---|---|
+| Author, copy or patch a job file on disk — the doubled `Files\Files` path, the UTF-16LE encoding, the `<Schema>` snapshot, the two column element shapes, SqlProvider connection nodes, file-destination paths, and what a job file publishes over HTTP | [references/job-file-format.md](references/job-file-format.md) |
+| Know what a shipped provider actually does when it writes — Ecom key matching and minted ids, the `EcomPrices` identity, the five user tables, the update-only OrderProvider destination and the missing ledger filter, SqlProvider staging clones and datetime precision, the XSLT seam, and restore/reset ordering | [references/provider-behaviour.md](references/provider-behaviour.md) |
+| Write a provider in C# because no shipped provider fits | [references/custom-provider-authoring.md](references/custom-provider-authoring.md) |
+
 ## Without MCP
 
 The knowledge here stands alone; the Dynamicweb MCP tools it names are the way to apply it, and
@@ -84,7 +92,12 @@ After creating the activity:
 
 **Logs** are stored in `/Files/System/Log/Data integration/` as `_lastrun.log` and `_lastrunresult.log`.
 
-Activity XML (job definitions) is stored in `/Files/Files/Integration/jobs/{activityFolder}/{jobName}.xml` and can be copied between solutions.
+**An activity is a file, not a database row.** It lives at
+`<wwwroot>/Files/Files/Integration/jobs/{activityFolder}/{jobName}.xml` — note the doubled
+`Files/Files` — the file name **is** the activity name, and the file is UTF-16LE with a BOM.
+Copying one between solutions works; so does scripting a family of them. The whole format,
+including what re-configuration a copy needs, is in
+[references/job-file-format.md](references/job-file-format.md).
 
 ## Setting Up Activities via MCP Tools
 
@@ -119,7 +132,9 @@ through MCP tools instead.
 - **Dynamicweb provider** — generic access to the whole database. Precise but manual:
   relation tables (e.g. group-product relations) must be mapped explicitly.
 - **User / Order providers** — users and orders, with domain settings (user key field, "export
-  not yet exported orders", order state after export).
+  not yet exported orders", order state after export). The user provider writes five tables and the
+  order provider's export filter has no ledger exclusion — see
+  [references/provider-behaviour.md](references/provider-behaviour.md).
 - **OData provider** — reads/writes a remote OData API via an endpoint. Source modes: full
   replication vs **delta** (changed-since-last-run; never deletes; first run falls back to
   full).
@@ -192,150 +207,13 @@ through MCP tools instead.
 | XML Provider | Both | XML file import/export |
 | JSON Provider | Source | JSON API import |
 | HTTP Provider | Source | Generic HTTP endpoint |
-| Product Provider | Destination | Import products into the DW product catalog |
-| Order Provider | Source | Export orders from DW |
+| Ecom / Product Provider | Destination | Import products into the DW product catalog |
+| User Provider | Destination | Import users, accounts, addresses and impersonation relations |
+| Order Provider | Both | Export orders from DW; as a destination it **updates** orders and cannot create one unless the ids are supplied |
 
-## Building a Custom Provider
-
-Providers are C# classes that implement `ISource`, `IDestination`, or both. All providers inherit from `BaseProvider` (`Dynamicweb.DataIntegration.BaseProvider`).
-
-### Class Skeleton
-
-```csharp
-using Dynamicweb.DataIntegration;
-using Dynamicweb.DataIntegration.Integration;
-using Dynamicweb.DataIntegration.Integration.Interfaces;
-using Dynamicweb.Extensibility.AddIns;
-
-[AddInName("MyCompany.MyProvider")]
-[AddInLabel("My Custom Provider")]
-[AddInDescription("Reads data from the My API.")]
-public class MyProvider : BaseProvider, ISource, IDestination
-{
-    // Source tab parameters
-    [AddInParameter("API Endpoint")]
-    [AddInParameterEditor(typeof(TextParameterEditor), "")]
-    [AddInParameterGroup("Source")]
-    public string ApiEndpoint { get; set; } = "";
-
-    // Destination tab parameters
-    [AddInParameter("Write Timeout")]
-    [AddInParameterEditor(typeof(IntegerParameterEditor), "")]
-    [AddInParameterGroup("Destination")]
-    public int WriteTimeoutSeconds { get; set; } = 30;
-
-    private Schema _schema;
-
-    // Lifecycle
-    public override void Initialize() { /* setup connections */ }
-    public override void Close() { /* cleanup */ }
-
-    public override bool RunJob(Job job)
-    {
-        ReplaceMappingConditionalsWithValuesFromRequest(job);
-        foreach (Mapping mapping in job.Mappings)
-        {
-            if (!mapping.Active) continue;
-            using var reader = GetReader(mapping);
-            using var writer = GetWriter(mapping);
-            while (!reader.IsDone())
-            {
-                var row = reader.GetNext();
-                writer.Write(row);
-            }
-        }
-        return true;
-    }
-
-    // Serialization
-    public override string Serialize()
-    {
-        var xDoc = new XDocument(new XElement("Parameters",
-            CreateParameterNode(GetType(), "ApiEndpoint", ApiEndpoint)));
-        return xDoc.ToString();
-    }
-}
-```
-
-### ISource — Schema and Reader
-
-```csharp
-public Schema GetSchema() => _schema ?? (_schema = GetOriginalSourceSchema());
-
-public Schema GetOriginalSourceSchema()
-{
-    var schema = new Schema();
-    var table = schema.AddTable("MyData");
-    table.AddColumn(new Column("Id", typeof(int), table, isPrimaryKey: true, isNew: false));
-    table.AddColumn(new Column("Name", typeof(string), table, isPrimaryKey: false, isNew: false));
-    table.AddColumn(new Column("Value", typeof(decimal), table, isPrimaryKey: false, isNew: false));
-    return schema;
-}
-
-public ISourceReader GetReader(Mapping mapping) => new MySourceReader(ApiEndpoint, mapping);
-
-public void SaveAsXml(XmlTextWriter writer)
-{
-    writer.WriteElementString("ApiEndpoint", ApiEndpoint);
-    GetSchema().SaveAsXml(writer);
-}
-
-public string ValidateSourceSettings() => ""; // empty = valid; any string = error message
-```
-
-### ISourceReader
-
-```csharp
-public class MySourceReader : ISourceReader
-{
-    private IEnumerator<Dictionary<string, object>> _enumerator;
-    private Dictionary<string, object> _current;
-    private bool _done;
-
-    public MySourceReader(string endpoint, Mapping mapping)
-    {
-        var data = FetchData(endpoint); // returns IEnumerable<Dictionary<string,object>>
-        _enumerator = data.GetEnumerator();
-        _done = !_enumerator.MoveNext();
-        _current = _done ? null : _enumerator.Current;
-    }
-
-    public Dictionary<string, object> GetNext()
-    {
-        var result = _current;
-        _done = !_enumerator.MoveNext();
-        _current = _done ? null : _enumerator.Current;
-        return result;
-    }
-
-    public bool IsDone() => _done;
-    public void Dispose() => _enumerator?.Dispose();
-}
-```
-
-### IDestinationWriter
-
-```csharp
-public class MyDestinationWriter : IDestinationWriter
-{
-    public Mapping Mapping { get; }
-
-    public MyDestinationWriter(Mapping mapping) { Mapping = mapping; }
-
-    public void Write(Dictionary<string, object> row)
-    {
-        foreach (var colMapping in Mapping.GetColumnMappings())
-        {
-            if (!colMapping.Active) continue;
-            string destCol = colMapping.DestinationColumn.Name;
-            object value = colMapping.ConvertInputValueToOutputValue(row[colMapping.SourceColumn.Name]);
-            // Write `value` to `destCol`
-        }
-    }
-
-    public void Close() { /* flush / commit */ }
-}
-```
+What each of these does once it starts writing — key matching, minted ids, required identity
+columns, silent deletes, and the caches it does and does not invalidate — is in
+[references/provider-behaviour.md](references/provider-behaviour.md).
 
 ## Column Mapping Scripting
 
@@ -352,18 +230,13 @@ Column mappings support transformations at the mapping layer:
 | `Invert` | Invert a boolean |
 | `Code` | C# expression evaluated at runtime (via `ScriptTypeProvider`) |
 
-### Custom ScriptTypeProvider
-
-```csharp
-using Dynamicweb.DataIntegration.Providers.ScriptTypeProvider;
-
-[AddInLabel("URL Encode")]
-public class UrlEncodeScriptProvider : ScriptTypeProvider<string>
-{
-    protected override string GetValueTyped(object? input)
-        => Uri.EscapeDataString(input?.ToString() ?? "");
-}
-```
+That list is the whole set: **there is no value-lookup or conversion table at the mapping layer.**
+Translate a source system's codes into the site's own ids with an **XSLT on the source document**
+instead — it runs before the reader and the column mapper, and it keeps the payload
+source-system-native. Per-column null handling is equally narrow: `NullEmptyActionType` is
+`None | Default | Constant | SkipRow`, and `SkipRow` skips the **whole row**, so a per-row exception
+belongs in the source data. Both are worked through in
+[references/provider-behaviour.md](references/provider-behaviour.md).
 
 ## Mapping Conditionals
 
@@ -385,17 +258,34 @@ Context-sensitive values in conditionals and scripting:
 
 ## Activity Groups
 
-Activities can be organized in groups (folders). Groups can inherit source/destination configuration, and subgroups override inherited settings. Groups are just folders in the XML storage at `/Files/Files/Integration/jobs/`.
+Activities can be organized in groups (folders). Groups can inherit source/destination configuration, and subgroups override inherited settings. Groups are just subfolders of the job storage at `/Files/Files/Integration/jobs/`; `Files/System/Integration/Jobs/` holds the platform's shipped quick-setup templates and nothing placed there becomes an activity.
 
 ## Pitfalls
 
-**`RunJob` is only called when the provider is the Destination** — the framework calls `LoadSettings` on the Source, then `RunJob` on the Destination. If your provider is used as both, implement both correctly.
+**A job carries a frozen schema snapshot.** Every activity on a solution goes stale the moment a
+custom product, order or order-line field is added: on the source side the new column is silently
+dropped, on the destination side mapping it is a hard refusal. Read
+`does not exists in the schema` as a stale snapshot, and re-save the mapping through
+`save_integration_activity_mapping` (which reads the live schema) or patch the snapshot by hand —
+[references/job-file-format.md](references/job-file-format.md#the-schema-block-is-a-snapshot-not-a-live-read).
 
-**Schema changes after first run** — if a provider's schema changes after mappings have been created, existing mappings may break. The `OverwriteSourceSchemaToOriginal()` / `OverwriteDestinationSchemaToOriginal()` methods handle schema refresh, but saved column mappings may reference columns that no longer exist.
+**`Job succeeded` proves rows were processed, not that the effect you wanted exists.** An export
+that wrote its file to the wrong directory, an import whose unresolvable rows were deleted before
+the merge, and a restore whose delete half did nothing all log the same success line. Verify the
+artefact path, the destination row count, or the rendered page.
 
-**`ReplaceMappingConditionalsWithValuesFromRequest(job)` must be called in RunJob** — this replaces `@Request()` / `@Session()` / `@User()` tokens in conditional expressions. Forgetting this call leaves tokens unreplaced.
+**A write through a provider does not always invalidate the domain cache.** An EcomProvider import
+that writes product fields leaves the `ProductService` read-through cache stale even with cache
+clearing enabled — the flush verb and the exact storage type name are in
+[references/provider-behaviour.md](references/provider-behaviour.md#ecomprovider-as-a-destination).
 
-**Activity XML can be copied between solutions** — useful for moving tested activities from staging to production. Copy the XML file; re-configure provider credentials in admin after paste.
+**Job files are served anonymously.** `.xml` is not on the static-file blocklist, so a job file and
+anything in it — including a SQL-auth connection string — answers an anonymous HTTP GET. Use
+integrated security and sweep the job folder for credentials
+([references/job-file-format.md](references/job-file-format.md#what-a-job-file-publishes)).
+
+**Writing a provider in C#?** The `RunJob` / `LoadSettings` contract and the rest of the authoring
+pitfalls live in [references/custom-provider-authoring.md](references/custom-provider-authoring.md).
 
 ## Next Steps
 
@@ -403,3 +293,4 @@ Activities can be organized in groups (folders). Groups can inherit source/desti
 - **Business Central connector?** See [dw-integration-bc](../dw-integration-bc)
 - **Triggering activities from code?** See [dw-extend-providers](../dw-extend-providers)
 - **Custom scheduled trigger?** See [dw-extend-scheduled-tasks](../dw-extend-scheduled-tasks)
+- **Writing your own provider?** See [references/custom-provider-authoring.md](references/custom-provider-authoring.md)
