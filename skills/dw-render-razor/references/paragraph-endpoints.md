@@ -5,9 +5,9 @@ custom C#, no new package and no deploy**. That makes it the reachable shape on 
 controllers are discouraged or a change window has a restart budget of zero. It also has a response
 contract that is narrower than `IResponse` looks, and most of this file is that contract.
 
-Surfaces used below: the **template surface** (`.cshtml` on disk), **MCP tools** in `snake_case`
-for the content rows the recipe needs, and one **SQL** note that exists only to say why SQL is the
-wrong rung here.
+Surfaces used below: the **template surface** (`.cshtml` under `Files/Templates/`) and **MCP tools**
+in `snake_case` for the content rows the recipe needs. Those two are the whole surface this recipe
+uses.
 
 ## Contents
 
@@ -61,11 +61,10 @@ wrong rung here.
    The paragraph cache is invalidated by the API write that created the paragraph, so the item-type
    lookup is cache-fresh on the very next request.
 
-   **SQL is the wrong rung for the alternative.** `UPDATE Page SET PageNavigationTag = …` writes
-   the column but leaves `GetPageIdByNavigationTag()` returning `0` until the application pool
-   recycles, because the page cache is not touched by a direct column write. It is also
-   local-install-only — a hosted install has no SQL surface at all — and it owes a host restart.
-   Use the item-type lookup and neither debt exists.
+   Writing the tag is not the alternative: the column write does not refresh the page cache, so
+   `GetPageIdByNavigationTag()` keeps returning `0` until the host restarts. The item-type lookup
+   owes nothing. Outside the product: see dw-data-access `recipes-content.md`
+   §Writing `PageNavigationTag` directly.
 
 5. **Read the request body from the template.** `Dynamicweb.Context.Current.Request.Form["<key>"]`
    is readable from a Razor paragraph, so a POST body reaches the endpoint with nothing depending on
@@ -111,7 +110,7 @@ Given the contract above, two shapes work and one does not:
 |---|---|---|
 | **`Content-Disposition: attachment` via `AddHeader`** plus the payload as the body | Text payloads where the media type does not have to be right | The filename really arrives; the media type still says `text/html`, and the 3-byte prelude still leads the body |
 | **Base64 `data:` URI** on an `<a download="…">` inside the authorised HTML response | Binary payloads, and anything that must land on disk byte-exact | The bytes stay out of every served root, the delivered file is byte-exact and correctly named |
-| ~~`BinaryWrite`~~ | — | Throws under the in-process IIS host. `AllowSynchronousIO` is a host option needing a `web.config` or `Program.cs` edit and an application restart |
+| ~~`BinaryWrite`~~ | — | Throws under the in-process IIS host: it is built on a synchronous `Stream.Write`, which ASP.NET Core disallows. The host option that would relax that is outside the product and outside `Files/` — see dw-setup-config §Host Request-Pipeline Options — so treat `BinaryWrite` as unavailable and use the `data:` URI row above |
 
 **Serving personal data from `/Files` is not the fallback:** `/Files` is served anonymously, so a
 document placed there is readable without a session. Keep the bytes outside every served root and
@@ -163,7 +162,8 @@ template-rendered refusal is a UI affordance — see [`template-compilation.md`]
   render order.
 - [dw-content-modelling](../../dw-content-modelling/SKILL.md) — pages, grid rows, paragraphs and the
   MCP tools that create them.
-- [dw-headless-delivery](../../dw-headless-delivery/SKILL.md) — when the payload belongs on the
-  `/dwapi/` delivery API instead of a paragraph.
+- A payload whose real consumer is a decoupled frontend belongs on the `/dwapi/` delivery API
+  rather than on a paragraph. That is out-of-product work — building and hosting the frontend — and
+  is not a step this skill can take; `dw-headless-delivery` carries it.
 - [dw-extend-csharp-api](../../dw-extend-csharp-api/SKILL.md) — when the work genuinely needs
   compiled code.

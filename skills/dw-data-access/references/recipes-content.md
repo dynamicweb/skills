@@ -13,4 +13,28 @@ it is **local installs only**, and the cache flush or host restart it owes.
 
 ## Contents
 
-_Recipes land here as the per-area folds harvest them._
+- [Writing `PageNavigationTag` directly](#writing-pagenavigationtag-directly)
+
+## Writing `PageNavigationTag` directly
+
+**Surface: `SQL`.** `PageNavigationTag` is not on the MCP `save_pages` model, and no Management API
+command at `/admin/api/...` exposes it either, so the column is only reachable from the database.
+
+```sql
+UPDATE Page SET PageNavigationTag = 'MyTag' WHERE PageId = <pageId>;
+```
+
+Three things this recipe owes:
+
+- **Why the higher surfaces do not cover it** — the field is absent from both the MCP page model and
+  the Management API page command on 10.28.x.
+- **Local installs only** — a hosted install has no SQL surface at all.
+- **The debt it owes** — a host restart. The page cache is not touched by a direct column write, so
+  `GetPageIdByNavigationTag()` keeps returning `0` until the application pool recycles.
+
+Because of that third point the tag is the wrong lookup key for anything a template has just
+created. Resolve a freshly created page or paragraph **by item type** instead: the paragraph cache
+is invalidated by the API write that created the row, so the item-type lookup is cache-fresh on the
+very next request and neither the SQL nor the restart is needed. See
+[dw-render-razor](../../dw-render-razor/SKILL.md) `references/paragraph-endpoints.md` §1 for that
+recipe.
