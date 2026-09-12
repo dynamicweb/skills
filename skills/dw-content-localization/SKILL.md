@@ -112,6 +112,29 @@ titles/names" — pass `get_translatable_content`'s `kinds` filter (`kinds="Page
 titles) so the whole site doesn't get translated, and name the scope when confirming
 ("Translate page titles → French"). The tool description lists the kind values.
 
+## Read the translation back before reporting it done
+
+A translation write is finished when the target renders, not when `apply_translation` returns.
+After each batch, and once at the end of a run:
+
+1. `get_pages_by_ids` (or the singular `*_by_id` variant the build registers) on a page you just
+   wrote — compare the stored field against the text sent, field by field. A field absent from the
+   read is unwritten, not defaulted.
+2. `fetch_frontend_page_html` on the same page in the target language — the rendered page is the
+   only proof the language layer resolves. A page that reads back correctly and renders the master
+   language is a language-version wiring problem, not a translation problem.
+
+Report the failures by page id; do not re-send the same payload hoping for a different result.
+
+## The language-mirror mechanics live in dw-content-modelling
+
+How a language version mirrors the master tree — what `MasterAreaId` implies, which writes
+propagate, how item instances and paragraph children are cloned into the layer, and what a
+structural write does to an existing layer — is documented once, in
+[`dw-content-modelling/references/language-layers.md`](../dw-content-modelling/references/language-layers.md).
+Read it before any structural change to a translated site. This skill owns the translation run
+itself and keeps no second copy of the mirror model.
+
 ## Structural writes on a translated site overwrite translations
 
 Translating is safe; **re-organising the page tree afterwards is not.** On a mastered solution, a

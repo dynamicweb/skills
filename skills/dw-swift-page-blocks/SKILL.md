@@ -240,9 +240,13 @@ composed from this reference.
 
 The look is **file-backed JSON** under `Files/System/Styles` (read/write via the style tools,
 never by hand):
-- `ColorSchemes/swift.json` is a **Group** (`Id:"swift"`) holding a `Schemes[]` array; each
+- A colour-scheme file under `ColorSchemes/` is a **Group** holding a `Schemes[]` array; each
   scheme has `Id`, `Name`, `BackgroundColor`, `ForegroundColor`, `PrimaryButtonColor`,
-  `SecondaryButtonColor`. `save_color_schemes` takes scheme rows tagged with their `GroupId`
+  `SecondaryButtonColor`. **Read the group id and the scheme ids with `get_color_schemes` before
+  referencing either.** Stock Swift ships `swift.json` with group id `swift`; a solution carrying
+  its own theme layer commonly ships `default.json` with group id `default` and its own palette,
+  so a lookup by the stock id misses and the band renders unstyled. The ids and the colours below
+  are illustrative of the stock set, never literals to copy. `save_color_schemes` takes scheme rows tagged with their `GroupId`
   (the service saves them into the backing group). Read before write: a submitted scheme's
   colors are fully overwritten (omitted colors nulled, custom colors cleared); other schemes
   in the group are untouched.
@@ -361,11 +365,15 @@ small related blocks into one multi-column row instead of a long single-column s
     blocks stacked visually → two rows. Parking a paragraph in a column the definition does not
     define is a clean reversible retire. Full law and the row-conversion recipe:
     [`grid-rows-and-binding.md`](../dw-swift-building/references/grid-rows-and-binding.md).
-16. **A new area MUST get `TypographyId` and `ButtonStyleId` set (standard Swift ids: `fonts`
-    / `buttons`) or the whole site renders as unstyled 16px Times New Roman** — Swift's
-    heading/body scale is driven by the area's typography CSS variables, so with the setting
-    empty, heading classes (`h1`/`h2`/`display-*`) do nothing and every page looks broken. Set
-    them in the same `save_areas` call that creates the area.
+16. **A new area MUST get `TypographyId` and `ButtonStyleId` set, to ids this solution actually
+    has, or the whole site renders as unstyled 16px Times New Roman** — Swift's heading/body
+    scale is driven by the area's typography CSS variables, so with the setting empty, heading
+    classes (`h1`/`h2`/`display-*`) do nothing and every page looks broken. **Read the ids first:
+    `get_typographies` and `get_button_styles`.** Stock Swift ships `fonts` / `buttons`; a
+    solution that layers its own theme commonly ships `default` / `default` instead, and writing
+    the stock ids there sets ids that resolve to nothing — applying this fix by literal reproduces
+    the symptom it describes. Set whatever those two tools return, in the same `save_areas` call
+    that creates the area, then read the area back and confirm the ids match.
 
 ## Row layout — settable, and what the row look depends on
 

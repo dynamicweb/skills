@@ -36,6 +36,14 @@ design concern needs nothing beyond the ordinary page/paragraph tools.
 
 ## Before you write — snap to THIS solution (skipping this is what produces broken pages)
 
+**Plan the URL map from `menuText`, because `save_pages` does not carry `urlName`.** On the create
+and the update path alike the call returns succeeded and derives the slug from `menuText`, dropping
+whatever `urlName` was sent. So decide the slug first and **make each page's `menuText` the label
+that produces it**; a slug `menuText` cannot produce is out of product. Read every created page back
+with `get_pages_by_ids` and write cross-links from the slugs it actually returns — never from the
+planned map. A map authored before this constraint is known ships copy whose every internal link
+points at a URL that does not exist.
+
 Template paths, component names, color schemes, and field names differ per solution and are
 stored **verbatim** by `save_paragraphs`/`set_paragraph_item_fields` (no auto-correction). So,
 once up front:

@@ -12,6 +12,7 @@
 - [Check 6: Icon set populated under `Files/Images/Icons/` (Pitfall: blank-blue-button storefront)](#check-6-icon-set-populated-under-filesimagesicons-pitfall-blank-blue-button-storefront)
 - [Check 7: Raw SQL in paragraph templates (DW10 discipline)](#check-7-raw-sql-in-paragraph-templates-dw10-discipline)
 - [Check 8: Style assets staged + emitted (the theme gate)](#check-8-style-assets-staged--emitted-the-theme-gate)
+- [Check 9: The storefront catalogue renders products](#check-9-the-storefront-catalogue-renders-products)
 - [Sweep complete](#sweep-complete)
 
 > Mandatory post-deserialize integrity sweep. Eight sequential checks. Run after [`deserialize-flow.md`](deserialize-flow.md) returns 2xx. The skill refuses to declare deserialize complete until ALL eight pass. Strict-mode Serializer is the first line of defence — this sweep is the second, catching DW10-specific failures strict mode does not detect.
@@ -313,9 +314,38 @@ without errors. Run the polish gate in
 [`deserialize-flow.md`](deserialize-flow.md) "Stage the theme's Style assets" +
 [`styles-assets.md`](styles-assets.md); restart so the resolved style URLs reload.
 
+## Check 9: The storefront catalogue renders products
+
+**What is verified:** the storefront's catalogue query resolves, its index holds documents, and the
+product listing page renders product cards. Checks 1-8 can all pass on a host whose PLP is empty,
+because the catalogue fails *inside* a 200 response instead of failing the request.
+
+1. **The query file resolves.** `Files/System/Repositories/<repo>/Products.query` and
+   `Products.facets` exist, where `<repo>` is the repository the catalogue paragraph itself names —
+   read it with `get_module_settings` on that paragraph's `IndexQuery`, never a tool default. On a
+   Swift storefront that is `ProductsFrontend`. A missing file renders an empty PLP with no error.
+2. **The index holds documents.** `get_product_index_status` for that repository reports
+   `documentCount > 0`. **A completed build with zero documents is a failure, not a success:** a
+   zero-document index cannot serve a query, and the catalogue app writes the resulting exception
+   into the page body. A build that finished before the content load is the usual cause — rebuild
+   with `build_product_index` + `wait_for_product_index` *after* the deserialize and the fixture
+   load, and assert the count again. The preconditions behind a build that never drains (the
+   repository's `Build+Index.task` file and the repository task handler) are in
+   [`index-management.md`](../../dw-search-indexing/references/index-management.md).
+3. **The page renders cards.** `fetch_frontend_page_html` on the shop page returns HTTP 200 **and**
+   at least one product-card element, **and zero occurrences of the emitted error markup**
+   `<pre class="dw-error">` / `<h2 class="dw-error">`. Match the markup, not the bare strings
+   `dw-error` or "Error executing template" — a guide page that quotes those strings as copy is a
+   false positive, and the status code alone proves nothing here.
+
+**Recovery if Check 9 fails:** author or restore the storefront query per
+[`../../dw-demo-pim/references/canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md)
+Step 17, then rebuild the index and re-run all three parts. Do not declare the baseline restored on
+a 200 alone.
+
 ## Sweep complete
 
-When all eight checks pass, deserialize is verified complete. The skill may now declare "baseline restored" to the user.
+When all nine checks pass, deserialize is verified complete. The skill may now declare "baseline restored" to the user.
 
 Log the result + layer name + timestamp in the per-demo `CUSTOMISATIONS.md` as a deserialize event row, and record the resolved commit SHA there too. This is structural — every deserialize is reproducible by re-running this flow against the same layer name at the commit SHA recorded in `CUSTOMISATIONS.md` (consumers pin `origin/main`; the SHA is the forensic reproducibility stamp).
 
