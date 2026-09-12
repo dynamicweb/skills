@@ -3,6 +3,99 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.40.0]
+
+Fold-back sprint: the three render skills. Eighteen demo-build learnings land as two new dw-render-razor references (the template compile contract and the paragraph-as-endpoint response contract), a view-model traps reference, a tag-contexts reference, and one rewrite of the stylesheet cache-buster guidance that was wrong rather than incomplete.
+
+- **A Razor template compiles warnings-as-errors at render time, so every compile message is a hard
+  render failure.** New `dw-render-razor/references/template-compilation.md` collects everything that
+  decides whether a template compiles and which template a request reaches: the symptom table for an
+  `[Obsolete]` call site and the current substitutes on DW 10.28.x, the `@using` rule for extension
+  methods, which helpers exist on `ViewModelTemplate<T>` versus the classic tag base (`GetGlobalValue`
+  and `@Html.Raw()` are absent, with the substitutes that work), `@Include` inlining every partial
+  into one compiled scope, and the `RenderPartial<T> : ViewModelBase` constraint with the three-rule
+  recipe for sharing one file across both template families. Previously these surfaced one compile
+  error at a time, each of which reads as a caching problem because the error page dumps the
+  generated listing and names the file nobody edited.
+
+- **`ParagraphTemplate` paths are fully qualified, because a relative path resolves against
+  `/Files/Templates/` and its miss is an HTTP 200 with English prose in the layout.** The failure is
+  invisible to every metric a storefront gate uses — status code, `dw-error` count, byte size — so
+  the same section tells a reader to grep the served markup for `Template file not found`.
+
+- **The paragraph-as-endpoint pattern now has a response contract.** New
+  `dw-render-razor/references/paragraph-endpoints.md` is one ordered recipe plus one table:
+  `PageClean` + `?ParagraphID=` addressing, keeping the endpoint out of the host page's composition
+  with an inactive grid row (MCP `save_grid_rows`) so the page's own response is unchanged, resolving
+  the endpoint by item type instead of by navigation tag, and what reaches the wire —
+  `Response.StatusCode` yes, `Response.AddHeader` yes, `Response.ContentType` no (the page pipeline
+  stamps `text/html` over it), `BinaryWrite` never (synchronous IO is disallowed under the in-process
+  IIS host), `Response.Clear()` inert. With delivery shapes that do work (attachment header, base64
+  data URI) and the parsing libraries already in bin — EPPlus, MiniExcel, CsvHelper — which make a
+  spreadsheet parse free of a deploy. No PDF renderer ships in bin.
+
+- **Surface rung named where SQL is the pull.** `UPDATE Page SET PageNavigationTag = …` leaves
+  `GetPageIdByNavigationTag()` returning `0` until the app pool recycles, is local-install only, and
+  owes a host restart; the item-type paragraph lookup is cache-fresh and owes nothing, so it is the
+  folded recipe and SQL appears only as the rung that does not reach the operation.
+
+- **A template guard decides what is drawn, not what is allowed.** A Dynamicweb app handles its POST
+  before its template renders, so a Razor-rendered refusal is a UI affordance; the test that tells
+  the two apart is a scripted POST in the same session with a before/after read of the protected
+  value, never a re-read of the page. Under impersonation, `Pageview.User` is the effective user and
+  cannot see the condition at all — `UserContext.Current.ImpersonatingUser` is the real identity.
+  Paired with the notification subscriber that is the rule which holds.
+
+- **`Context.Current.Items["ProductDetails"]` is the last product *rendered* in the request, not the
+  page's product** — so it is populated on a list page too, and `product != null` is not a test for
+  "this is a PDP". Branch on the page's own item type or an explicit view parameter.
+
+- **View-model properties that are nullable, and properties whose name is not their meaning.** New
+  `dw-render-viewmodels/references/viewmodel-traps.md`: `DefaultImage` and `Price` are nullable, and
+  in a template that loops the blast radius is the whole surface rather than the one row — one
+  image-less product replaces a catalogue with a `dw-error` dump at HTTP 200 with the chrome intact,
+  which a status-and-byte-count gate cannot see. Names the two shipped Swift 2.2 templates that
+  dereference `product.DefaultImage.Value` unguarded. Plus `MediaViewModel.Name` holding the detail
+  id while the friendly `EcomDetails.DetailsName` surfaces as `DisplayName`, and `StockLevel` being a
+  label rather than a quantity — a contradiction the skill's own example carried, now corrected.
+
+- **`AddStylesheet` appends the site's own token after any query string the caller supplied.** The
+  guidance in `razor-surfaces-and-pitfalls.md` §3 is rewritten rather than annotated: the site token
+  can be static across edits, deploys and restarts (observed 10.25.x through 10.28.x), which is why
+  an explicit `?v=` buster is needed at all, and the resulting double `?` in the emitted URL is
+  cosmetic — it serves 200 and does bust the cache.
+
+- **Tag names get proved from their renderer, because a blank table is not an unpopulated context.**
+  New `dw-render-templatetags/references/tag-contexts.md` carries the full RMA notification-email tag
+  set, whose prefix is `Ecom:Rma.` (mixed case — the only prefix on the platform that is not the
+  upper-cased entity name), whose order id is `OriginalOrderId` (derived from the first RMA order
+  line; `EcomRmas` has no order column) and whose status splits into `State` and `StateName`. It also
+  names the two things the renderer does not give a template, which still need a subscriber on
+  `Ecommerce.Rma.BeforeRmaEmailSend`. This corrects an earlier reading that the context was
+  unpopulated.
+
+- **A tag inside a loop may carry the parent entity's value.**
+  `Ecom:Cart.ShippingMethod.Price` in Swift's `Shippingmethods` loop is the order's shipping fee,
+  identical on every row, and there is no per-method price tag at all. Invisible on a stock install
+  where every fee is zero and every row reads "Free"; the first non-zero fee makes every method
+  display the selected method's price. With the template-side fix and the general test for any
+  in-loop tag.
+
+- **Reference hygiene.** `razor-surfaces-and-pitfalls.md` crossed the 20 KB reference ceiling, so its
+  `ViewModelTemplate<>` pitfalls section moved wholesale into `template-compilation.md` and the two
+  demo-skill routing rows that pointed at it were repointed. Duplicated worked examples in the two
+  render SKILL.md bodies were replaced with pointers to the reference files that already carry them,
+  bringing both back inside the 16,000-character activation budget.
+
+justdynamics/Truvio.Commerce.Foundry#750, justdynamics/Truvio.Commerce.Foundry#776,
+justdynamics/Truvio.Commerce.Foundry#784, justdynamics/Truvio.Commerce.Foundry#799,
+justdynamics/Truvio.Commerce.Foundry#800, justdynamics/Truvio.Commerce.Foundry#844,
+justdynamics/Truvio.Commerce.Foundry#848, justdynamics/Truvio.Commerce.Foundry#850,
+justdynamics/Truvio.Commerce.Foundry#868, justdynamics/Truvio.Commerce.Foundry#877,
+justdynamics/Truvio.Commerce.Foundry#878, justdynamics/Truvio.Commerce.Foundry#880,
+justdynamics/Truvio.Commerce.Foundry#881, justdynamics/Truvio.Commerce.Foundry#886,
+justdynamics/Truvio.Commerce.Foundry#894, justdynamics/Truvio.Commerce.Foundry#909
+
 ## [4.39.0]
 
 **Correction, same release: Dynamo is MCP-only, and the boundary is now mechanical.** The in-product agent that loads `manifest.json` acts through the MCP tool set and read/write under `Files/`, and through nothing else — no Management API, no serializer, no SQL, no shell, no git, no browser, no host restart — so the first cut of this release told twenty in-product skills to drop to a rung that does not exist there, and gave headless installs and Dynamo one shared table column. The per-instance-type table now gives Dynamo its own column (MCP the only action surface; Management API, serializer and SQL absent; `Files/` read-write present; the admin UI named, never driven; asking the user the only fallback) and leaves headless with every rung. The `dynamo: true` boilerplate is MCP-only: when no tool covers the operation, stop and tell the user which admin screen performs it. `dw-data-access` (it ships PowerShell and is a ladder-and-SQL reference) and `dw-headless-delivery` (a `/dwapi/` catalog for a frontend built outside the product) flip to `dynamo: false` and leave the manifest; the two in-product facts the flip would have cost — success is not proof, and which writes owe a rebuild — become the new `dw-data-write-effects` skill, in MCP terms only. Six per-area `recipes-*.md` skeletons in `dw-data-access` give the out-of-product recipes a home for the folds that follow, `dw-skill-authoring` and `dw-demo-foldback` state the rule, and `scripts/validate-skills.py` enforces it against `scripts/dynamo-baseline.json` — a per-file ratchet over the pre-existing backlog, so no `dynamo: true` file may gain a non-MCP instruction.
