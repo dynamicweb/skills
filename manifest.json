@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-09T11:40:03.915Z",
+  "generatedAt": "2026-09-12T12:13:01.095Z",
   "skills": [
     {
       "name": "dw-content-localization",
@@ -103,7 +103,7 @@
       "type": "knowledge",
       "group": "data",
       "mcp": "optional",
-      "description": "Choose appropriate data-access patterns and optimize caching in Dynamicweb 10.",
+      "description": "Choose the surface to act on a Dynamicweb 10 instance through, and the data-access and caching patterns inside it.",
       "path": "skills/dw-data-access/SKILL.md"
     },
     {
