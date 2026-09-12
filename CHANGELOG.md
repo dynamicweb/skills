@@ -3,6 +3,110 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.42.0]
+
+Fold-back sprint: dw-integration-framework, dw-integration-erp and dw-demo-erp. Forty demo-build learnings give the integration framework its first references (the job-file format, destination-side provider behaviour, custom provider authoring), add feed keying to the ERP skill and a two-way mock recipe to the ERP demo skill, and rewrite three measurably wrong claims in the mock-deltas reference.
+
+A Data Integration activity is a file on disk with a frozen schema snapshot, and the shipped
+providers each lie about something specific on the way in.
+
+- **`dw-integration-framework` gets a `references/` directory** — it had none, while being the
+  emptiest target for the largest issue cluster. Three files: `job-file-format.md` (the on-disk
+  activity), `provider-behaviour.md` (what each shipped provider does when it writes), and
+  `custom-provider-authoring.md` (the C# material lifted out of SKILL.md, which was over the
+  16 KB activation budget). SKILL.md becomes the nav layer with a "Where to find things" table.
+- **The job file is the authoring surface nobody documented.** An activity is
+  `<wwwroot>/Files/Files/Integration/jobs/<name>.xml` — the doubled `Files\Files` is the archive
+  root keeping its own leading segment, so a stored `/Files/X` path is served at `/Files/Files/X`
+  and a single-`Files` URL 404s. The file name **is** the activity name a scheduled task binds to;
+  `Files/System/Integration/Jobs/` is a shipped-template decoy; the file is UTF-16LE with a BOM, so
+  every scripting stack's default UTF-8 write produces a file the runner will not read (and a naive
+  `grep` over one is a false clean). The recipe is copy-an-existing-job, decode with a `utf16le`
+  codec, round-trip, diff against the source, and re-mint the `<mapping uid>` GUID.
+- **A job's `<Schema>` is a cached snapshot, and the failure mode differs by side.** A column added
+  after the job was saved is **silently dropped** on the source side and a **hard refusal** on the
+  destination side, so every activity on a solution goes stale the moment a custom product or order
+  field is created. `does not exists in the schema` now reads as a stale snapshot first, not a
+  mapping typo. A SqlProvider job with no authored `<Schema>` expands the entire database into its
+  own definition on first run and then validates against that.
+- **Two column element shapes, distinguishable only by which end they are on.** A SQL destination
+  writer casts every schema column to `ProviderHelpers.SqlColumn`; a SqlProvider source reader does
+  not cast at all, so the plain `Integration.Column` form makes the same file half right and the
+  `InvalidCastException` points at the destination table instead of the schema. `<limit>` is a
+  character count.
+- **The shipped providers' destination behaviour, measured.** `EcomProvider` matches on
+  ProductId → ProductNumber → ProductName, mints `ImportedPROD<n>` ids for anything it creates
+  regardless of the `CreateMissing*` flags, orphans category field values on an in-place re-key,
+  clears the primary-group flag on multi-group products every run, requires the whole ten-column
+  price identity for `EcomPrices` or throws a `KeyNotFoundException` after the temp tables have
+  loaded, and rewrites every language row of a group in its `EcomGroups` merge. `UserProvider`
+  writes five tables, expands a 255-character group CSV additively, and **silently deletes**
+  unresolved address and impersonation rows while reporting Completed. `OrderProvider` as a
+  destination is update-only (its INSERT lists only the mapped columns) and copies the integration
+  id straight into the line's parent key; as an export source its cart filter does not exclude
+  ledger entries, so imported invoices are posted back as sales orders.
+- **A write through a provider is not automatically a cache invalidation.** An `EcomProvider` run
+  writing extended or global product fields leaves the `ProductService` read-through cache stale
+  even with `DisableCacheClearingAndIndexUpdates=False` — new row in
+  `dw-data-access/references/cache-invalidation.md`, with the storage type name the API accepts.
+  And a state written by a job (or by SQL) raises **no** order-state notification: those fire on
+  `OrderService.Save` only, so "the ERP flips the status and the customer is emailed" is code.
+- **Job files are served anonymously.** `.xml` is not on the static-file blocklist, so a
+  SqlProvider connection string is a database password on a public URL — and DW re-serializes the
+  job on every run, so a hand edit does not hold. Integrated security (`*ServerSSPI`) is the fix;
+  the empty-connection-string fallback is **destination-only**, so a SQL *source* must name an
+  instance (relatively, if it is local). The legacy `JobRunner.aspx` route executes any job on an
+  anonymous GET and the modern authenticated route 404s on affected builds; the only mitigation is
+  an IIS path restriction, unavailable on a shared host.
+- **Restores and resets built on activities need an order and a marker.** Purge the entities the
+  session created **before** restoring tables — the delete half of delete-rows-missing-from-source
+  is unreliable while a parent is live, and the log counts rows written, never rows removed. Scope
+  every reset by a marker column the generator stamps, and **never null an integration key**: it is
+  the already-processed flag, so clearing it re-arms the integration for every row touched.
+  SqlProvider round trips also truncate datetime to whole seconds and stage into a clone whose
+  unique indexes lose their filters.
+- **`dw-integration-erp` gains `references/feed-keying.md`** — the key contract that was entirely
+  undocumented: map the ERP's natural key to `ProductNumber` to update a hand-built catalogue in
+  place, decide on source-derived ids before the first load, keep group names byte-exact because
+  they are the matching key, and apply the three casing fixes the shipped order-export template
+  needs (plus the unit-price column that arrives empty).
+- **`dw-demo-erp` gains a two-directional mock flavor** (`references/two-way-mock.md`): four
+  shipped-provider activities, `OrderStateAfterExport` for the status flip, `OrderIntegrationOrderId`
+  for the document-number writeback, staging tables seeded from live rows so the sync is
+  value-idempotent, and a reset that does not re-arm the export. Zero custom code, zero
+  customisations-ledger rows.
+- **Two corrections in `dw-demo-erp/references/mock-deltas.md`.** `RunSqlScheduledTaskAddIn` has
+  been measured binding, firing, logging `Run returned: True` and executing no SQL at all, so it is
+  demoted below the activity route and no longer treated as self-evidencing. And a far-future
+  `TaskNextRun` is **not** a kill switch: DW fires overdue tasks at application start, so a task
+  carrying a realistic minute/hour pair self-fires on any pool restart — every schedule column goes
+  to `-1` and the cadence lives in the name and a staged execution history. The scheduler-cache
+  rule is broadened from SQL-inserted rows to **every** SQL write to the schedule, inserts and
+  updates alike.
+- **`dw-demo-erp/references/erp-data-shape.md`**: when a rule needs a fact the feed does not carry,
+  add the field at generation time. A correlated proxy (range derived from stock quantity) produces
+  a plausible-looking result and breaks silently on exactly the rows where the two facts diverge.
+
+justdynamics/Truvio.Commerce.Foundry#655, justdynamics/Truvio.Commerce.Foundry#656,
+justdynamics/Truvio.Commerce.Foundry#657, justdynamics/Truvio.Commerce.Foundry#658,
+justdynamics/Truvio.Commerce.Foundry#661, justdynamics/Truvio.Commerce.Foundry#662,
+justdynamics/Truvio.Commerce.Foundry#692, justdynamics/Truvio.Commerce.Foundry#696,
+justdynamics/Truvio.Commerce.Foundry#697, justdynamics/Truvio.Commerce.Foundry#698,
+justdynamics/Truvio.Commerce.Foundry#699, justdynamics/Truvio.Commerce.Foundry#700,
+justdynamics/Truvio.Commerce.Foundry#701, justdynamics/Truvio.Commerce.Foundry#702,
+justdynamics/Truvio.Commerce.Foundry#708, justdynamics/Truvio.Commerce.Foundry#709,
+justdynamics/Truvio.Commerce.Foundry#710, justdynamics/Truvio.Commerce.Foundry#729,
+justdynamics/Truvio.Commerce.Foundry#730, justdynamics/Truvio.Commerce.Foundry#731,
+justdynamics/Truvio.Commerce.Foundry#732, justdynamics/Truvio.Commerce.Foundry#735,
+justdynamics/Truvio.Commerce.Foundry#736, justdynamics/Truvio.Commerce.Foundry#754,
+justdynamics/Truvio.Commerce.Foundry#826, justdynamics/Truvio.Commerce.Foundry#827,
+justdynamics/Truvio.Commerce.Foundry#828, justdynamics/Truvio.Commerce.Foundry#829,
+justdynamics/Truvio.Commerce.Foundry#831, justdynamics/Truvio.Commerce.Foundry#876,
+justdynamics/Truvio.Commerce.Foundry#882, justdynamics/Truvio.Commerce.Foundry#892,
+justdynamics/Truvio.Commerce.Foundry#893, justdynamics/Truvio.Commerce.Foundry#918,
+justdynamics/Truvio.Commerce.Foundry#921, justdynamics/Truvio.Commerce.Foundry#922,
+justdynamics/Truvio.Commerce.Foundry#923, justdynamics/Truvio.Commerce.Foundry#926
+
 ## [4.41.0]
 
 Fold-back sprint: dw-commerce-orders and dw-commerce-catalog. Forty-seven demo-build learnings land as a routed reference set: the RMA and claims surface (previously uncovered), the measured cart-command contracts (the SKILL.md tables described behaviour the platform does not have), checkout configuration, order states and quotes, order notifications, customer-center surfaces, and catalog listing and stock. The SQL-then-API-save ordering is stated once with both measurements.
