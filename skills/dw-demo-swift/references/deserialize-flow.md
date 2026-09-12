@@ -140,21 +140,55 @@ Write-Host "On main $(git -C $dist rev-parse --short HEAD) — record the commit
 $serializeRoot = "Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot"
 # Stage BOTH layers' mode trees: base (framework-only, replace/ only) + surface-swift
 # (replace/ + merge/ — all content + UrlPath). The trees are disjoint, so they overlay cleanly.
-foreach ($layer in 'base','surface-swift') {
+$layers = @('base','surface-swift')               # every layer the edition composes, in composition order
+foreach ($layer in $layers) {
   foreach ($mode in 'replace','merge') {
     if (Test-Path "$dist\layers\$layer\$mode") {
       New-Item -ItemType Directory -Path "$serializeRoot/$mode" -Force | Out-Null
       Copy-Item -Recurse "$dist\layers\$layer\$mode\*" "$serializeRoot/$mode/" -Force
     }
   }
+  # Tree 3 — item-type XMLs of EVERY composed layer, BEFORE deserializing.
+  if (Test-Path "$dist\layers\$layer\itemtypes") {
+    Copy-Item "$dist\layers\$layer\itemtypes\*.xml" `
+      "Dynamicweb.Host.Suite/wwwroot/Files/System/Items/" -Force
+  }
+  # Tree 4 — templates of EVERY composed layer, preserving their sub-paths.
+  if (Test-Path "$dist\layers\$layer\templates") {
+    Copy-Item -Recurse "$dist\layers\$layer\templates\*" `
+      "Dynamicweb.Host.Suite/wwwroot/Files/Templates/" -Force
+  }
 }
-# Also copy the surface's item-type XMLs BEFORE deserializing (the content predicates need them):
-Copy-Item "$dist\layers\surface-swift\itemtypes\*.xml" `
-  "Dynamicweb.Host.Suite/wwwroot/Files/System/Items/" -Force
 # The base+surface deserialize lands framework + all Swift content and an EMPTY catalog — run the
 # sample-data layer's merge/_sql (activated via an edition's sampleData: true), or author
 # the catalog per-demo via dw-demo-pim.
 ```
+
+**Stage FOUR trees per composed layer, not one.** A layer is `<mode>/` YAML *plus three sibling
+directories*, and a composer that copies only the mode trees leaves the other three unstaged with no
+error anywhere: the compose step reports `conflicts: []` and `silentNoOpLayers: []`, and the gap
+surfaces later as a deserialize failure or a blank storefront region. Run these four steps in order,
+for **every** layer the edition composes (feature layers included), before the first POST:
+
+1. **Mode YAML** — copy `<layer>/replace/` and `<layer>/merge/` into `SerializeRoot/<mode>/`
+   (the loop above). *Assert:* each staged `<mode>/<mode>-manifest.json` names only files that exist.
+2. **`config/`** — stage the layer's predicate config to
+   `Files/System/Serializer/Serializer.config.json`. When more than one composed layer ships a
+   config, the staged file is the **union** of their `predicates` lists in composition order (a name
+   collision across layers is an authoring bug, not something to resolve here), with both exclude
+   maps deep-unioned. *Assert:* `GET /Admin/Api/SerializerSettings` returns `needsSetup: false` and a
+   `predicatesSummary` whose replace + merge counts equal the union count — a composed edition that
+   still reports `{"needsSetup":true,"configFilePath":""}` has staged no config at all.
+3. **`itemtypes/`** — copy every composed layer's `itemtypes/*.xml` into `Files/System/Items/`.
+   *Assert:* for every `itemType` named in the staged YAML there is a matching
+   `Files/System/Items/ItemType_<name>.xml`. A missing one fails exactly one entry at merge time with
+   `ERROR deserializing paragraph <guid> on page <n>: Unable to resolve the item type. The item cannot
+   be saved.` — a feature layer's own item type is the usual culprit, because the paragraph that uses
+   it travels in the *content* surface while the XML ships with the *feature* layer.
+4. **`templates/`** — copy every composed layer's `templates/**` into `Files/Templates/**`, preserving
+   sub-paths. *Assert:* every path under each layer's `templates/` exists under `Files/Templates/`.
+   Missing templates do **not** fail the deserialize; they surface afterwards as a blank or erroring
+   storefront region, so this assert is the only thing that catches them.
 
 **Pre-import: re-serialize before merging baseline YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/SerializerSerialize` FIRST so the replace folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
 
