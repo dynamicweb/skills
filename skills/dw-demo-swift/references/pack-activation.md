@@ -244,7 +244,8 @@ foreach ($mode in $pack.fragmentModes) {          # e.g. 'merge', or 'replace','
   if (Test-Path $modeSrc) {
     New-Item -ItemType Directory -Path "$serializeRoot\$mode" -Force | Out-Null
     Copy-Item -Recurse "$modeSrc\*" "$serializeRoot\$mode\" -Force
-    # Mode travels in the JSON body — the one call shape, owned by
+    # Mode travels in the JSON body and nothing goes on the query string: a ?mode=
+    # on the URL overrides the body Mode. One call shape, owned by
     # ../../dw-demo-base/references/serializer-reference.md "Invocation — one shape".
     $body = @{ Mode = $mode; IsDryRun = $false } | ConvertTo-Json
     $resp = Invoke-RestMethod `

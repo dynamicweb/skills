@@ -112,10 +112,16 @@ foreach ($m in @("Replace", "Merge")) {
 
 Run it dry first (`IsDryRun = $true`) and read the entry count, per "Read the ENTRY COUNT" below.
 
-*Tombstone: `?mode=replace` / `?mode=merge` on the query string. The engine still reads a `?mode=`
-parameter, but only as a fallback when the body leaves `Mode` at its `Replace` default — a query
-parameter can therefore never override a body `Mode`, and a call that sets both is ambiguous to read
-and silently body-wins. Send `Mode` in the body and nothing on the query string.*
+**A `?mode=` on the query string OVERRIDES the body `Mode`. Never send both.** Measured on
+0.9.0-beta: `POST /Admin/Api/SerializerDeserialize?mode=merge` with body
+`{"Mode":"Replace","IsDryRun":true}` runs a **Merge**. The engine consults the query parameter only
+when the body `Mode` still holds its `"replace"` default — and since that default is the very string
+the common call sends, a body saying `Replace` is indistinguishable from a body saying nothing, so
+`?mode=merge` wins every time the body says `Replace`. Only a body `Mode` of `Merge` is out of the
+query parameter's reach. The host's own OpenAPI document (`GET /Admin/Api/api.json`) declares a
+request body for this command and no parameters array at all, so the binding is undocumented as well
+as override-shaped. One shape: `Mode` in the body, nothing on the query string. The same
+body-then-query precedence applies to `strictMode`, `dryRun` and `quarantineUnresolvableLinks`.
 
 The response is `{"status":"ok"|"error","message":"..."}`; on a strict-mode
 escalation the HTTP code is 400 with `status:"error"` and the escalated warnings inline in `message`,
