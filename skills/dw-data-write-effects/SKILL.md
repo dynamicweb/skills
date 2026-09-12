@@ -61,7 +61,7 @@ second tool call rebuilds it.
 |---|---|---|
 | Product create, update, delete, group assignment, field or data-model change | The product index — search, filtered listings, and every query that reads through it | `build_product_index`, then `wait_for_product_index`; `get_product_index_status` reports progress and completion. **Read the caution below before trusting the rebuild.** |
 | Assortment membership: products, groups, shops, users or permissions on an assortment | The materialized assortment, so the customer still sees the old catalog | `flag_assortments_for_rebuild`, then `build_assortments` |
-| Price rows, currency changes, price-affecting discount or customer-group edits | Computed prices on products and carts | `force_price_recalculation` |
+| Price rows, currency changes, price-affecting discount or customer-group edits | Computed prices on products and carts | **No catalogue-level recalculation tool exists.** `force_price_recalculation` is an **order** tool — its schema takes one required `id`, an order identifier, and it recomputes that order's cached prices. Called after a catalogue price write it answers the bare invocation error, so a chain that prescribes it here records a failure on a step that never applied. For catalogue prices the follow-up is the product-index rebuild in the first row, which picks up newly written price rows; keep `force_price_recalculation` for the case where an order is in hand |
 | Country, region, or VAT-country relation edits | The country cache behind address, tax and shipping lookups | `clear_country_cache` (or `clear_countries_cache_by_keys` for named entries) |
 
 Two rules make this usable:

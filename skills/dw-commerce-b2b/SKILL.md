@@ -88,15 +88,19 @@ here.
 
 Standard flow: **create** (`save_assortments`, active) → **fill** (`assign_products_to_assortment`
 and/or `assign_groups_to_assortment` — group membership is dynamic, so products later added to
-an assigned group are included on the next build) → **scope** (optional,
-`assign_shops_to_assortment`) → **grant access** (`assign_permissions_to_assortment` — an
-assortment with no permissions and `AllowAnonymousUsers` off is visible to nobody) →
-**build** (`build_assortments` — until this runs, none of the above is live; use
-`get_assortments_for_build` to confirm nothing is left pending) → **wire the storefront**
+an assigned group are included on the next build) → **grant access**
+(`assign_permissions_to_assortment` — an assortment with no permissions and `AllowAnonymousUsers`
+off is visible to nobody) → **build** (`build_assortments` — until this runs, none of the above is
+live; use `get_assortments_for_build` to confirm nothing is left pending) → **wire the storefront**
 (on a query-driven site, confirm the catalog page's index query filters on `AssortmentIDs` —
 see [dw-search-indexing](../dw-search-indexing); an assortment can be built and still leave the
-storefront unfiltered if the query doesn't reference it) → **verify**
-(`check_assortment_product_access` for a representative user + product).
+storefront unfiltered if the query doesn't reference it) → **verify** (read the membership, below).
+
+**A shop relation means the WHOLE shop, so it is not part of a restricted-assortment recipe, and
+`check_assortment_product_access` proves nothing.** Both traps are silent, both survive every
+prescribed verification, and one of them is unrepairable in place — the detail, the measurements and
+the membership read that replaces the access check are in
+[references/dc-scoping.md](references/dc-scoping.md) "A shop relation is a union, not a filter".
 
 **The rebuild step is the #1 footgun via MCP too.** `flag_assortments_for_rebuild` only
 **marks** assortments dirty; it does not build them. `build_assortments` does the actual work

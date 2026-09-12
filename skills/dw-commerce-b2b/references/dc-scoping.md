@@ -5,7 +5,8 @@ Field-validated DW10 B2B distribution-center (DC) scoping knowledge: the DC-as-u
 ## Contents
 
 - [The DC-as-user-group pattern](#the-dc-as-user-group-pattern)
-- [Contract prices: three scope columns, and MCP `save_prices` reaches only one](#contract-prices-three-scope-columns-and-mcp-save_prices-reaches-only-one)
+- [A shop relation is a union, not a filter](#a-shop-relation-is-a-union-not-a-filter)
+- [Contract prices: three scope columns, and which argument matches which](#contract-prices-three-scope-columns-and-which-argument-matches-which)
 - [Contract-versus-list pricing per audience, with no custom code](#contract-versus-list-pricing-per-audience-with-no-custom-code)
 - [Naming convention](#naming-convention)
 - [User assignment](#user-assignment)
@@ -53,7 +54,35 @@ the stock location by matching its display NAME against another table's name col
 correctly and break the moment anyone renames a display string. With the naming convention below,
 the whole chain is one key: user → group `DC-<CODE>` → `StockLocationExternalId = <CODE>`.
 
-## Contract prices: three scope columns, and MCP `save_prices` reaches only one
+## A shop relation is a union, not a filter
+
+**`assign_shops_to_assortment` widens a restricted assortment to the whole shop.** A shop relation
+*means* the whole shop, and the build treats the relation set as a **union**, so adding it after the
+narrow group and product relations replaces the intended scope with the entire catalogue. Measured on
+two builds of the same assortment differing only in that call: with the shop relation the built item
+set equalled every product in the shop; without it, exactly the intended scope. Every tool answers
+success, the relation counts read back correctly and `get_assortments_for_build` comes back empty as it
+should — nothing in the usual verification sees it. Add a shop relation only when the intent genuinely
+is "every product in this shop".
+
+**And it cannot be undone in place.** `remove_shops_from_assortment` answers `succeeded: 1, failed: 0`
+and removes nothing: the relation survives the call, survives a re-flag and rebuild, and is still
+returned by `get_assortment_relations_by_shop_id`. An assortment built wide by a shop relation is
+**deleted and rebuilt**, not repaired.
+
+**`check_assortment_product_access` answers `true` unconditionally, so it is not the gate.** Measured
+against a correctly built, active, permissioned assortment: `true` for an in-scope product, `true` for
+an out-of-scope product, `true` for a user holding no assortment at all, and `true` for anonymous —
+surviving a targeted assortment-service flush and a full host restart. It does not consult the built
+item set, so it can neither fail nor prove anything.
+
+Verify by **reading the membership** instead: `get_assortments_by_product` must return the assortment
+for an in-scope product and must not for an out-of-scope one, and the storefront catalogue must differ
+between a holder and a non-holder. The built item count itself is read outside the product
+([`dw-data-access/references/recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md)
+"Counting an assortment's built item set").
+
+## Contract prices: three scope columns, and which argument matches which
 
 Contract pricing is native default-provider behavior, zero custom code (no `IPriceProvider`). The whole
 question is which `EcomPrices` column carries the scope, and the two group-shaped names are not
@@ -65,16 +94,25 @@ interchangeable:
 | One customer account | `PriceUserCustomerNumber` | `userCustomerNumber` | Every user whose `AccessUserCustomerNumber` equals it |
 | A customer NUMBER, not a group | `PriceCustomerGroupId` | `groupCustomerNumber` | A customer number string, despite the column name |
 
-**A DC-scoped contract price is `PriceUserGroupId`, written through `/Admin/Api/PriceSave`.** MCP
-`save_prices` exposes no `PriceUserGroupId` parameter; its `customerGroupId` argument writes
-`PriceCustomerGroupId`, which matches a customer number. Passing a user-group id to `save_prices` stores
-a number that matches nothing: the call answers `succeeded:1`, the row is visibly there in `EcomPrices`,
-and the group's buyers still see the list price on the PDP, which reads as a price-resolution or cache
-problem. Read the full model from `PriceById`, set `userGroupId` to the group id, leave
-`groupCustomerNumber` empty, and post the whole model back through `PriceSave`. Measured on one buyer:
-list 312.00 before, contract 274.56 after that single change.
+**A DC-scoped contract price is `PriceUserGroupId`, and MCP `save_prices` writes it.** On MCP 0.4.4 the
+price item carries `userGroupId` alongside `userId`, `userCustomerNumber` and `customerGroupId`, and the
+value reaches the column: a row written with `userGroupId` set reads back from `EcomPrices` with
+`PriceUserGroupId` carrying it. An earlier, narrower server exposed no such member, which is why a
+group-scoped price used to be described as unreachable from the tool set and modelled as a discount
+instead; that reason no longer holds, and **a group-scoped price row is a real alternative to a
+discount** — one row per group per product, resolved by the stock price provider with no engine
+activation, against a discount's single rule covering the whole catalogue.
 
-Keep MCP `save_prices` for unscoped list/currency rows.
+Keep the column-to-argument mapping in the table above straight: `customerGroupId` writes
+`PriceCustomerGroupId`, which matches a **customer number** despite the name, so passing a user-group id
+there stores a number that matches nothing — the call answers `succeeded:1`, the row is visibly in
+`EcomPrices`, and the group's buyers still see the list price, which reads as a price-resolution or cache
+problem. `userGroupId` is the member that matches a user group.
+
+**No catalogue-level price recalculation exists in the tool set.** `force_price_recalculation` takes an
+order id and recomputes that order; called after a catalogue price write it answers the bare invocation
+error. Where a price write has to become visible, the follow-up is the product-index rebuild
+([`dw-data-write-effects`](../../dw-data-write-effects/SKILL.md)).
 
 **Validate on the rendered storefront, never on the row.** Sign in as a member of the group: the PDP and
 cart must show the contract price. Sign in as a non-member or stay anonymous: they see the list price. A
