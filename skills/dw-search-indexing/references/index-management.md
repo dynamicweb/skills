@@ -51,15 +51,19 @@ and repository side.
 - **Name the repository, then prove the build drained and the index holds documents.** Five
   preconditions sit behind an empty product listing, all silent when absent, and the build call
   reports success through every one of them. In order, alongside the primary-instance rule:
-  1. **Name the repository explicitly — the default addresses nothing.** `get_product_index_status`,
-     `build_product_index` and `wait_for_product_index` default both `repositoryName` and `indexName`
-     to the literal `Products`, and neither validates that the name resolves to a folder under
-     `Files/System/Repositories/`. On a host with no `Products` repository the status call still
-     answers `status: Idle` with no error, while the repository the storefront actually reads holds
-     a zero-document index. So **never call one of the three without an explicit `repositoryName`**,
-     and take that name from the catalogue paragraph itself: `get_module_settings` on the paragraph
-     returns its `IndexQuery` path (`/Files/System/Repositories/<repo>/Products.query`). The
-     `indexName` default has the same defect on its own axis — the file is `Products.index`.
+  1. **Pass BOTH `repositoryName` AND `indexName` — each default addresses nothing.**
+     `get_product_index_status`, `build_product_index` and `wait_for_product_index` default
+     `repositoryName` and `indexName` to the literal `Products`, and neither validates that the name
+     resolves to a folder under `Files/System/Repositories/` or to an index file inside it. Take the
+     repository name from the catalogue paragraph itself — `get_module_settings` on the paragraph
+     returns its `IndexQuery` path (`/Files/System/Repositories/<repo>/Products.query`) — and pass
+     `indexName` as the **file name including the `.index` suffix** (`Products.index`).
+     Measured on DW 10.28.x with MCP 0.4.4: `{repositoryName}` alone answers
+     `{"repositoryName":"<repo>","indexName":"Products","isBuilding":false,"status":"Idle"}` — a bare
+     `Idle` with **no `documentCount` member at all**; adding `{"indexName":"Products.index"}` answers
+     the full payload with `lastBuildCompleted`, `documentCount` and `indexState`. **A status response
+     carrying no `documentCount` member means the pair addressed nothing** — fix the arguments rather
+     than falling back to the completed state.
   2. **The repository has a `Build+Index.task` file.** The build is drained by a task file inside the
      repository folder (`Files/System/Repositories/<repo>/Build+Index.task`, an
      `IndexBuilderTaskProvider` entry naming the index and the build). With the file missing,
@@ -70,15 +74,19 @@ and repository side.
      DB row on the host — no layer ships or asserts it, so a host with it disabled fails exactly
      like a host with no task file. `get_scheduled_tasks` shows the repository task handler and
      whether it is enabled; disabled or missing → `run_scheduled_task_now` for a one-off drain, and
-     say that the schedule needs fixing. The row carries an enabled flag and a task class, not an
-     add-in name and an active flag.
+     say that the schedule needs fixing. Find the row by `name` equal to `Repository task handler`
+     and gate on `enabled`. Measured members on DW 10.28.x with MCP 0.4.4: `id`, `name`, `enabled`,
+     `intervalMinutes`, `addInTypeName` (the task class), `schedule`, `lastRun`, `lastRunState` and
+     `timeoutSeconds`.
   4. **The first build after any deserialize or fixture load is explicit.** The task file repeats on
      an interval measured in hours, typically a day, so a host whose last drained build predates the
      content load serves an empty index until the next tick — and then self-heals, which is what
      makes this intermittent and easy to misattribute on a retest the following day. Run
      `build_product_index` + `wait_for_product_index` for the named repository **after** the content
      is in, and never count the scheduled drain as the first build.
-  5. **Assert `documentCount` greater than zero, not a completed state.** `get_product_index_status`
+  5. **Assert `documentCount` greater than zero, not a completed state.** Call
+     `get_product_index_status` with both `repositoryName` and `indexName` (precondition 1) — that
+     pair is what makes `documentCount` present at all. `get_product_index_status`
      reporting `Completed` with zero documents is the failure, not the success, and the build's own
      status artefact says so first: a green run whose total count is `0` while products exist in the
      catalogue is the signal, and it finishes in milliseconds because there was nothing to index.

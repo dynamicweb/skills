@@ -72,16 +72,17 @@ Two rules make this usable:
 - **A rebuild is not instant and not a proof.** `build_product_index` returning means the build was
   *accepted*. Poll `get_product_index_status`, or block on `wait_for_product_index`, and then
   re-read the data through a query tool before reporting the change as done.
-- **Name the repository, and end on the document count.** All three index tools default
-  `repositoryName` to the literal `Products` and neither validates it, so on a host without that
-  repository the status call answers `Idle` with no error while the repository the storefront reads
-  is empty. Pass `repositoryName` explicitly, taken from the catalogue paragraph's own `IndexQuery`
-  path (`get_module_settings`), and assert `documentCount` greater than zero — a completed build
-  with zero documents is the failure, not the success, because a zero-document index cannot serve a
-  query at all and the storefront renders the exception inside an HTTP 200 page. The preconditions
-  behind a build that never drains — the task file, the task handler, and the explicit first build
-  after a content load — are owned by the `dw-search-indexing` skill, reference
-  `index-management.md`.
+- **Name the repository AND the index file, then end on the document count.** All three index tools
+  default `repositoryName` and `indexName` to the literal `Products` and neither validates either, so
+  on a host without that repository the status call answers `Idle` with no error while the repository
+  the storefront reads is empty. Pass `repositoryName` explicitly, taken from the catalogue
+  paragraph's own `IndexQuery` path (`get_module_settings`), **and `indexName` as the file name
+  including the suffix (`Products.index`)** — a status response with no `documentCount` member means
+  the pair addressed nothing. Then assert `documentCount` greater than zero: a completed build with
+  zero documents is the failure, not the success, because a zero-document index cannot serve a query
+  at all and the storefront renders the exception inside an HTTP 200 page. The full five
+  preconditions behind a build that never drains are owned by the `dw-search-indexing` skill,
+  reference `index-management.md`.
 
 ### The product rebuild reads through caches the write does not flush
 
