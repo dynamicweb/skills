@@ -79,16 +79,13 @@ are usually right. Each toggle controls cross-website propagation:
 
 After creating the layer, **change `Area.AreaEcomLanguageId`** to the matching PIM
 `EcomLanguages.LanguageId`. Without this, the layer renders all product values in master language
-even though the UI chrome is localized.
-
-```sql
-UPDATE Area SET
-  AreaEcomLanguageId = N'<LANG2>',
-  AreaEcomCurrencyId = N'<EUR>',          -- usually inherited; change for markets with different currency
-  AreaEcomCountryCode = N'<NL>',          -- for default VAT/shipping region
-  AreaActive = 1
-WHERE AreaId = <newAreaId>;
-```
+even though the UI chrome is localized. `save_areas` carries the field, and the admin path is
+Settings → Content → Websites → the layer → regional settings; the same edit sets the currency and
+country code a market needs and flips `active` on. The area row is read from the startup cache, so
+the change is invisible to the frontend until the host is recycled — an admin who owns the host does
+that, and outside the product the column-level recipe is
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-content.md` §"Wire a language
+layer's Area row to the PIM language".
 
 PIM must have the matching `LANG2` row + the products translated to that LanguageId — see
 [dw-pim-localization](../../dw-pim-localization/SKILL.md) (`translation-mechanics.md`).
@@ -107,10 +104,11 @@ normal API route — `ItemTypeNew` → `ItemTypeSave` → `ItemFieldSave` per fi
 above), per §2 "Route B" — then place it on the header rows. An edition that promises a language selector
 should carry the item type rather than leaving every build to re-derive this.
 
-Add it to a header grid row,
-set fields, restart the host (header grid composition is cached). Clicking an entry navigates to the
-same page on the target sibling area via the clone metadata; if a sibling page doesn't exist, the
-link falls back to the layer's frontpage.
+Add it to a header grid row and set its fields. **Header grid composition is cached, so the new
+entry does not appear until the host is recycled** — a fact to plan around, not a step: hand the
+recycle to whoever owns the host, or use the master-template toggle below, which recompiles live.
+Clicking an entry navigates to the same page on the target sibling area via the clone metadata; if a
+sibling page doesn't exist, the link falls back to the layer's frontpage.
 
 **Alternative: a master-template toggle (cache-safe, brandable).** When the OOTB selector paragraph
 is awkward (header grid is cached → restart per insert; every layer needs its own paragraph; or you
@@ -135,26 +133,22 @@ friendly slug. For 3+ layers, resolve siblings via `Area.AreaMasterAreaId` inste
 ### Creating the layer — surface order + host-config prereqs
 
 A language layer is a multi-table CREATE (DW does ~95 page clones + paragraph/grid-row/
-item-localization/sibling-link bookkeeping). The "Surface priority for CREATES" rule applies in full
-— MCP first, then Management API, then admin UI, **never raw SQL `INSERT INTO Area`** (a SQL clone
-produces a partially-cloned tree missing PDPs, sign-in, customer-center, and the sibling-page links).
+item-localization/sibling-link bookkeeping), which is why the platform's own copy is the only
+correct way to mint one: a row-level clone of `Area` produces a partially-cloned tree missing PDPs,
+sign-in, customer-center and the sibling-page links, and nothing repairs it afterwards.
 
-**Host-config prereq — AreaCopy needs distributed transactions.** The AreaCopy opens a second SQL
-connection inside a `TransactionScope`; without the host's distributed-transaction prereqs in place it
-fails with `System.Transactions.TransactionException: The operation is not valid for the state of the
-transaction` (the error LOOKS transactional but is environmental — fix the prereqs, don't change the
-input shape). Those host-config prereqs are owned by [dw-setup-install](../../dw-setup-install/SKILL.md): the
-`Program.cs` `ImplicitDistributedTransactions = true` opt-in (§3.1), the MSDTC service +
-inbound/outbound + firewall setup (§4), and the **net10-host caveat** where even a fully-configured
-host can't promote to MSDTC and needs the `Enlist=false` connection-string workaround (§4.1). Verify
-all of those before treating an AreaCopy `TransactionException` as a content problem.
+**`create_language_version` is the call**, with `copy_area` as the sibling for a full-website copy.
+Pass the master area as the source and the new culture; the layer comes back with its
+`AreaMasterAreaId` back-link set. Read the result back with `get_language_areas` on the master
+before trusting the copy — a copy that fails partway can leave a cruft area behind (deactivate it
+with `save_areas`, and mind that the selector lists every `active` sibling).
 
-**Management API (proven):** `POST /admin/api/AreaCopy` with body
-`{"Model": {"SourceAreaId": <masterId>, "Name": "...", "Culture": "<culture>", "CopyPermissions":
-true, "AsWebsite": false}}`. `AsWebsite=false` = language layer (sibling with `AreaMasterAreaId`
-back-link). Returns `{status:"ok", modelIdentifier:"<newAreaId>"}`. Some 10.25.x builds instead
-accept `Query.`-prefixed query-string params — try the JSON body first, fall back to query-string.
-MCP `copy_area` is documented but observed broken ("Area was not copied") as of DW 10.25.6.
+`copy_area` is observed broken on some builds ("Area was not copied" on DW 10.25.6): when it answers
+that, the copy is an out-of-product operation for whoever owns the host — see
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-content.md` §"Create a language
+layer", which also carries the host-config prereq (the copy opens a second SQL connection inside a
+`TransactionScope`, so a `System.Transactions.TransactionException` on the copy is an environmental
+fault, not a bad input shape) and the reason a row clone is never the fallback.
 
 ### What a full-content AreaCopy does NOT carry (validated DW 10.25.x)
 
@@ -165,13 +159,12 @@ content silently don't make it — run this as a checklist immediately after eve
    repeater children with an **unquoted** SQL CASE, so string item ids parse as column names and the
    INSERT dies with `Invalid column name '...'` (real exception only in the EventViewer log). The
    paragraph clone lands with `ParagraphItemType`/`ParagraphItemId` wiped — a stub that renders
-   nothing. Numeric-id children clone fine. Detect:
-   `SELECT p.ParagraphID, p.ParagraphPageID FROM Paragraph p JOIN Page pg ON pg.PageID =
-   p.ParagraphPageID WHERE pg.PageAreaId = <layerAreaId> AND p.ParagraphItemType = '' AND
-   p.ParagraphModuleSystemName = ''` — every row is a dropped item. Fix per stub: manual SQL clone of
-   the `ItemList` + child rows + `ItemListRelation` + parent, then re-point the stub paragraph. A
-   sanctioned SQL exception (MCP + Management API both proven broken for this shape). **Prevention:
-   give repeater children numeric item ids.**
+   nothing. Numeric-id children clone fine. Detect from inside the product with `search_paragraphs`
+   over the layer's pages: a clone whose item type reads empty is a dropped item, and
+   `get_paragraph_item_field_values` on it returns nothing to bind. Neither MCP nor the Management
+   API can rebuild the dropped child, so the repair is an out-of-product one — see
+   [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-content.md` §"Repair repeater
+   children the copier dropped". **Prevention: give repeater children numeric item ids.**
 2. **SECURITY — permissions are NOT cloned, and `CopyPermissions: true` does not change that for
    frontend pages.** Anon-gates and role-gates on the Permission entity store silently don't apply to
    the layer, so **every protected page in the copy is public until you mirror the rows by hand** — an
@@ -179,10 +172,14 @@ content silently don't make it — run this as a checklist immediately after eve
    while the master stayed correctly gated. `UnifiedPermission` rows are not cloned and the
    `CopyPermissions` flag is not the frontend-page-permission switch; nothing in the `status: ok`
    distinguishes the two. Probe **anonymously, per language, per protected URL** after every copy (the
-   pass state is a redirect to the localised sign-in, not a 200). Mirror every master row onto the layer's sibling page id
-   (`Page.PageMasterPageId` gives the mapping), then
-   `POST /admin/api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Security.Permissions.PermissionService"}`
-   AND restart (the nav tree caches separately). See [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`).
+   pass state is a redirect to the localised sign-in, not a 200). The repair is to mirror every
+   master row onto the layer's sibling page id (`Page.PageMasterPageId` gives the mapping), which is
+   a permission write — an admin-screen operation from inside the product (the entity's
+   **Permissions** panel), and out of the product
+   [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-content.md` §"Mirror
+   permissions onto a fresh language layer". Both the permission cache and the separately-cached nav
+   tree go stale on that write, so the layer keeps serving the old answer until they drop. See
+   [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`).
 3. **Hardcoded page ids in template role-gates miss the clones.** A gate like
    `if (node.PageId == <dashboardId> && !isRole) continue;` stops working on the layer (the clone has
    its own id). Make it master-aware:
@@ -220,19 +217,16 @@ Three rules follow, and each one costs a debugging cycle when it is missed:
    and the menu text — or the mirrored page renders, in the right place, with plausible content, in
    the wrong mode and in the master's language. That is the most expensive failure shape there is:
    it looks right.
-3. **Repair the master's missing grid-row item instance through the platform's own per-type
-   allocator**, the `ItemTypeId(ItemType, Current, Seed)` table — never `MAX(Id)+1` on the
-   `ItemType_<name>` table, which collides the next time the platform allocates. A Swift row renders
-   from the item INSTANCE, so a master row with a NULL `GridRowItemId` renders no columns at all
-   while its own translation renders correctly: a page that is empty in the master language and
-   right in the mirror is this, every time.
-
-```sql
--- local install only: no verb sets GridRowItemId on a master row (10.28.x)
-UPDATE ItemTypeId SET [Current] = [Current] + 1 WHERE ItemType = 'Swift-v2_Row';
--- then INSERT the instance row and stamp GridRow.GridRowItemId with the new value,
--- followed by CacheInformationRefresh on ParagraphService and PageService.
-```
+3. **Recognise the master's missing grid-row item instance.** A Swift row renders from the item
+   INSTANCE, so a master row left with a NULL `GridRowItemId` renders no columns at all while its
+   own translation renders correctly: a page that is empty in the master language and right in the
+   mirror is this, every time. No MCP tool and no verb sets `GridRowItemId` on a master row on
+   10.28.x, so the repair is an out-of-product one and it must go through the platform's per-type
+   allocator rather than a hand-picked id — see [dw-data-access](../../dw-data-access/SKILL.md)
+   `references/recipes-content.md` §"Repair a master grid row with a NULL GridRowItemId". From
+   inside the product, the cheap avoidance is to create the row and its paragraph on the master with
+   `save_grid_rows` + `save_paragraphs` and then read the row back: a row that comes back without an
+   item instance will never render columns.
 
 **Cleanups are soft deletes.** `delete_paragraphs` and `delete_grid_rows` both report success and
 neither `COUNT(*)` falls, so any structural invariant over those tables must count
@@ -274,8 +268,6 @@ The paragraphs render as heading-plus-subline shells with no children, and a pun
 empty bands:
 
 ```
-SELECT * FROM ItemList          -> 0 rows
-SELECT * FROM ItemListRelation  -> 0 rows
 get_repeatable_item_field       -> []
 add_repeatable_item             -> "Field Accordion_Items references item list 324, which no longer exists"
 ```
@@ -284,8 +276,11 @@ add_repeatable_item             -> "Field Accordion_Items references item list 3
 with "The input string was not in a correct format" — it is an int field), which makes the field
 list-less. The next `add_repeatable_item` then mints a fresh `ItemList` and links it; `ItemList` gains a
 row and the child appears in `ItemType_<child>`. **Distinguish the two states before treating a `[]` as
-empty**: `SELECT COUNT(*) FROM ItemList WHERE Id = <pointer>` is the cheap discriminator, and
-`add_repeatable_item`'s own error message names it. A presence-only design assert passes on a shell, so
+empty**: `add_repeatable_item`'s own error message is the in-product discriminator, and it names the
+missing list id. (Sweeping a whole deserialize for dangling pointers at once is a read-only query —
+outside the product: [dw-data-access](../../dw-data-access/SKILL.md)
+`references/recipes-content.md` §"Tell a dangling item-list pointer from an empty list".) A
+presence-only design assert passes on a shell, so
 gate the section on RENDERED HEIGHT, not on the element existing.
 
 **Verification probe — enter through the shop route.** When probing the layer's PDP use
@@ -315,20 +310,21 @@ and **write the file in place** — a move-then-replace strips the app-pool ACL 
 the file itself.
 
 Apply in order: (1) inject the locale into `Translations.xml` for visible keys (aim for ~80-150
-chrome strings, the rest fall back to en-GB gracefully); (2) UPDATE cloned header `Title` fields
-(MiniCart/Favorites store HTML fragments `<div class="dw-paragraph">…</div>` — preserve the wrapper);
-(3) translate DB paragraphs/products/groups. Restart after editing `Translations.xml` (cached at
-startup) and after touching header item rows (composition cache). Same depth-not-width rule as PIM:
+chrome strings, the rest fall back to en-GB gracefully); (2) rewrite the cloned header `Title` fields
+with `set_item_field_values` (MiniCart/Favorites store HTML fragments `<div
+class="dw-paragraph">…</div>` — preserve the wrapper); (3) translate DB paragraphs/products/groups.
+`Translations.xml` is read at startup and the header composition is cached, so neither change shows
+in the frontend until the host is recycled. Same depth-not-width rule as PIM:
 localize the **pages a visitor actually reaches first**, not the whole site.
 
-**SQL files with non-ASCII characters — encoding pitfall.** `sqlcmd` defaults to the system codepage
-(Windows-1252 on western Windows); a UTF-8 `.sql` file with multibyte characters gets mangled at
-parse time and stored corrupted in NVARCHAR even though the literal is `N'...'` (symptom: an accented
-character such as `é` renders as a two-character double-encoded mojibake sequence). Fix: skip the file — build the UPDATE statements in PowerShell (UTF-16 in memory) and pass
-via `Invoke-Sqlcmd -Query`, or save the `.sql` as UTF-8-with-BOM (sqlcmd detects the BOM). The
-PowerShell-inline approach is more robust (the BOM is easy to lose on re-save). To measure damage
-already in a database, the [dw-data-access](../../dw-data-access/SKILL.md) skill ships a read-only
-census script (`Invoke-DwMojibakeCensus.ps1`).
+**Non-ASCII strings survive an MCP write and do not always survive a file-based bulk load.** Writing
+the translated values through `set_item_field_values` / `set_paragraph_item_fields` carries the
+accented characters intact. A bulk load staged as a file on the host is where a `é` turns into a
+two-character double-encoded sequence in an `NVARCHAR` column, because the loading tool reads the
+file in the system codepage — a fact to recognise when a page renders mojibake nobody typed. The
+load-side fix and the read-only census that measures damage already stored are
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-content.md` §"Load translated
+strings without mojibake".
 
 ### Nav-tree leaks the master area on layers — `LocalizeLink` patch
 
@@ -364,17 +360,14 @@ the fix in the design layer.)
 
 ### Friendly URL config — culture-coded area prefixes
 
-For a multi-language site, switch all areas to culture codes so the language switch is visible in the
-URL bar and reads as standard config:
-
-```sql
-UPDATE Area SET AreaUrlName = N'en-us' WHERE AreaId = <master>;
-UPDATE Area SET AreaUrlName = N'nl-nl' WHERE AreaId = <nlLayer>;
-UPDATE Area SET AreaActive = 0 WHERE AreaId = <cruftLayerId>;   -- disable failed-AreaCopy cruft
-```
-
-Restart the host (URL provider caches the area URL map at startup). Combined with `LocalizeLink`
-above this makes the language switch behave coherently.
+For a multi-language site, switch all areas to culture codes (`en-us`, `nl-nl`) so the language
+switch is visible in the URL bar and reads as standard config. `save_areas` carries both the url
+name and the `active` flag, so the same pass also deactivates the cruft area a failed copy left
+behind. The URL provider caches the area URL map at startup, so the new prefixes do not route until
+the host is recycled — until then the old slugs still answer and the new ones 404, which reads as a
+failed write. The column-level form is
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-content.md` §"Culture-coded area
+URL prefixes". Combined with `LocalizeLink` above this makes the language switch behave coherently.
 
 ### Single-storefront clean root — one area owning `/`
 
@@ -394,8 +387,9 @@ links it generates; three classes of stale link survive it:
 - **Item-field links carrying dead page ids** (`Default.aspx?ID=<id>` where the id predates the
   deserialize). The MCP `find_unresolvable_item_pages` tool does NOT find these — it detects
   paragraphs whose item *type* no longer resolves, not stale *values* inside link/rich-text fields.
-  Find them by fetching the rendered page (`curl`) and grepping for `Default.aspx`, then tracing each
-  `<a href>` to its paragraph via the paragraph-id attribute DW renders on each grid column.
+  Find them with `fetch_frontend_page_html` on each page and a scan of the returned markup for
+  `Default.aspx`, then trace each `<a href>` to its paragraph via the paragraph-id attribute DW
+  renders on each grid column.
 - **One item per chrome variant.** Stock Swift ships a separate `Swift-v2_Logo` item per
   header/footer variant page (desktop header, mobile header, desktop footer, mobile footer) — all
   carrying the same baked link. Repointing only the one visible in the first scan leaves the rest
@@ -449,14 +443,13 @@ Some baselines ship pages whose `Page.PageShortCut` points at a hardcoded old UR
 (`Default.aspx?Id=107` is the canonical example — an original page id that doesn't exist
 post-deserialize). The frontend 301-redirects to that stale id, which 404s.
 
-```sql
-SELECT PageId, PageAreaId, PageMenuText, PageShortCut FROM Page
-WHERE PageShortCut LIKE '%Default.aspx%' OR PageShortCut LIKE '%Id=10%';
-UPDATE Page SET PageShortCut = N'' WHERE PageId IN (<aboutPageId>, <clonesPageIds>);
-```
-
-Restart afterwards (page metadata cached). Add content to the now-empty page or it renders as just
-header+footer.
+`PageShortCut` is on no MCP model and on no verb, so clearing it is an out-of-product operation —
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-content.md` §"Clear PageShortCut
+baseline cruft". From inside the product the symptom is identifiable without it: `get_page_by_id` on
+the 404ing page shows a page that exists and is active, and `fetch_frontend_page_html` on its URL
+comes back as a redirect to a page id that `get_page_by_id` cannot resolve. Page metadata is cached,
+so the fix does not take until the host is recycled. Once the shortcut is gone, add content to the
+now-empty page or it renders as just header+footer.
 
 ### Common gotchas
 

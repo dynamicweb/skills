@@ -166,12 +166,14 @@ still renders for anon despite `ParagraphPermission='9'`; page still navigable d
 ignores it. Fix: revert the legacy-column write, add the equivalent entity-store grant through the
 Permissions panel, remove any template shims added to compensate.
 
-### Cache caveat when writing permission rows via SQL
+### A grant written under the admin UI takes effect; one written under it does not
 
-The admin UI invalidates the permission model for you; a direct SQL INSERT does not (DW caches the
-model in process). A SQL-only grant won't take effect — the nav still shows the pages, the gate still
-lets the page render — until the cache drops: **refresh the security cache or restart the host**.
-Verify only after the drop, or you'll misread a working gate as broken.
+The admin UI invalidates the permission model as part of the write. A grant that reached the table by
+any other route does not invalidate anything — DW caches the model in process — so the nav still
+shows the pages and the gate still lets the page render until the cache drops. **A gate that reads as
+broken immediately after an out-of-product grant is usually a stale cache, not a wrong row**: check
+when the model was last invalidated before re-writing the grant. The flush itself and what owes it
+are in [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md`.
 
 ### Where the customer-center nav renders (theming map, not a gating surface)
 
@@ -184,32 +186,25 @@ looks fixed on desktop and broken in the mobile drawer (or vice versa). Test bot
 filters on `PageNavigationTag`.
 
 
-### Write surface — `PermissionSave`
+### Write surface — the Permissions panel
 
-Page, grid-row and paragraph grants are written with the same Admin API verb as every other entity
-grant, nested under `Model` and with `Key` as a string:
-[`grant-mechanics.md`](grant-mechanics.md) §7 carries the literal body, the `PermissionLevel`
-numbers (`1` is `None`, `4` is `Read`) and the upsert semantics.
+Page, grid-row and paragraph grants go through the same surface as every other entity grant, and
+that surface is an admin screen, not an MCP tool: [`grant-mechanics.md`](grant-mechanics.md) §7
+carries the panel, the `PermissionLevel` numbers (`1` is `None`, `4` is `Read`) and the pointer to
+the scripted form.
 
-**The READ side has a trap that inverts its answer: `PermissionsByIdentifier` returns an EMPTY
-`data` array when `SubName` is passed as `""`.** An empty-string sub-name is not treated as "no
-sub-name" — it filters to nothing. Auditing page permissions before a change is exactly when this
-fires, and the empty result reads as "no permissions configured, safe to add mine" while the rows
-sat there the whole time:
+**The READ side has a trap that inverts its answer: the permissions-by-identifier read returns an
+EMPTY result when the sub-name is passed as an empty string.** An empty-string sub-name is not
+treated as "no sub-name" — it filters to nothing. Auditing page permissions before a change is
+exactly when this fires, and the empty result reads as "no permissions configured, safe to add mine"
+while the rows sat there the whole time. **Omit the sub-name entirely when reading**; the write side
+still takes an empty sub-name normally. The literal request pair and the cross-check that proves the
+rows exist are in [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md`
+§"`PermissionsByIdentifier` — the read verb and its empty-SubName trap".
 
-```
-GET /Admin/Api/PermissionsByIdentifier?Key=8460&Name=Page&SubName=   -> {"data":[]}
-GET /Admin/Api/PermissionsByIdentifier?Key=8460&Name=Page            -> {"totalCount":7, …}
-SQL SELECT PermissionUserId, PermissionLevel FROM UnifiedPermission
-      WHERE PermissionName='Page' AND PermissionKey='8460'
-  -> 1270|1   1292|1364   1325|1   Anonymous|1
-```
-
-**Omit `SubName` entirely when reading.** The write side still takes `SubName:""` normally.
-Cross-check the API read against the `UnifiedPermission` SELECT before treating any empty result as
-"no permissions set" (and mind the nvarchar `PermissionUserId` join trap when writing that SELECT: a
-bare `int = PermissionUserId` comparison aborts the whole statement on the literal `'Anonymous'`, so
-use `TRY_CAST`).
+From inside the product the reliable audit is the rendered one: fetch the protected URL
+anonymously with `fetch_frontend_page_html` and treat a redirect to sign-in as the gated state and a
+200 as ungated. Never treat an empty permission read as "no permissions set".
 
 ### Static files under `/Files` bypass page permissions entirely
 

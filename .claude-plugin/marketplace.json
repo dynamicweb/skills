@@ -37,7 +37,8 @@
         "./skills/dw-swift-page-design",
         "./skills/dw-swift-migrate-v1",
         "./skills/dw-swift-migrate-content",
-        "./skills/dw-headless-delivery"
+        "./skills/dw-headless-delivery",
+        "./skills/dw-data-access"
       ]
     },
     {

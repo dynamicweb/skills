@@ -37,23 +37,20 @@ defaults. The only match a storefront user has out of the box is the `Authentica
 `read`, which satisfies `Read` and refuses `Edit` / `Create` / `Delete`.
 
 **Neither the "Enable user account functionality" feature flag, nor group membership, nor
-`AccessUserAdministratorInGroups` has any effect.** The grant is the fix:
+`AccessUserAdministratorInGroups` has any effect.** The fix is one grant, on the `UserGroup` entity
+with sub-name `User`, keyed on the account group, owned by the account-admin group, at level
+`Delete` (340) — which covers the `Read` / `Edit` / `Create` / `Delete` requirements of the whole
+command set, since the level numbers are sparse rather than a ladder
+([`grant-mechanics.md`](grant-mechanics.md) §7). Writing it is an admin-screen operation from inside
+the product (the entity's **Permissions** panel); the scripted form is
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Grant the storefront
+user-management commands".
 
-```
-POST /Admin/Api/PermissionSave
-  {"Model":{"Key":"<accountGroupId>","Name":"UserGroup","SubName":"User",
-            "OwnerId":"<adminGroupId>","Level":340,
-            "IsUserRolePermission":false,"IsExplicitPermission":true}}
-```
-
-(The body is nested under `Model`, `Key` is a string, and `340` is `Delete` — the level numbers are
-sparse, see [`grant-mechanics.md`](grant-mechanics.md) §7.)
-
-Before the grant, `PermissionsByIdentifier?Key=<accountGroupId>&Name=UserGroup&SubName=User` shows only
-inherited owners (`Anonymous=read`, `AuthenticatedFrontend=read`, `Administrator=all`) and an invite loop
-runs 3 passed / 5 failed. After it the identical requests pass 13/13 and the badge actually flips. **A
-gate leg on this surface must POST one `UserGroupCmd` and assert the STATE CHANGED**, because the refusal
-is a 200 with the full action set rendered.
+Before the grant the identifier carries only inherited owners (`Anonymous=read`,
+`AuthenticatedFrontend=read`, `Administrator=all`) and an invite loop runs 3 passed / 5 failed. After
+it the identical requests pass 13/13 and the badge actually flips. **A gate leg on this surface must
+send one `UserGroupCmd` and assert the STATE CHANGED**, because the refusal is a 200 with the full
+action set rendered.
 
 ### The module's real property set, and what is not on it
 
@@ -189,11 +186,13 @@ POST UserDelete {"Ids":[1332]}    -> 500 JSON conversion        alive
 POST UserDelete {"Ids":["1332"]}  -> 200 {"status":"ok"}        gone
 ```
 
-**Assert the row count, never the HTTP status.** Measure the `AccessUser` delta immediately after every
-batch (`SELECT COUNT(*) FROM AccessUser WHERE AccessUserUserName='<probe>'` must be 0), and have the
-helper return `deleted: (countAfter === 0)` rather than `deleted: true`. A clone-hygiene check belongs in
-every build that inherits a host: count `AccessUserType=2` rows and assert every group is reachable from a
-reference, not merely present in the tree. On one inherited host 1,576 of 1,602 groups had a reference
+**Assert the row, never the HTTP status.** Re-read the user immediately after every batch
+(`get_user_by_username` on the probe must come back empty) and have the helper return
+`deleted: (lookupAfter === null)` rather than `deleted: true`; the set-based count form is
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Assert a user delete
+on the row count, not the status". A clone-hygiene check belongs in every build that inherits a host:
+count the group rows and assert every group is reachable from a reference, not merely present in the
+tree. On one inherited host 1,576 of 1,602 groups had a reference
 count of exactly zero, invisible to every storefront probe and every gate assert, and `GroupDelete` in
 batches of 25 removed them with zero collateral (`AccessUserGroupRelation`, `UnifiedPermission`,
 `AccessUserSecondaryRelation`, `AccessUserAddress` and `EcomOrders` deltas all 0).
@@ -229,7 +228,8 @@ concern owned by `dw-commerce-b2b`.)
 ## 17b. Write surfaces for users, groups and impersonation grants
 
 Per operation, the two surfaces and what each one actually writes. MCP tools are `snake_case`;
-Management API verbs are `PascalCase` at `/Admin/Api/<Verb>`. Measured on 10.28.x.
+Management API verbs are `PascalCase`, out of product, and the recipes for them live in
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md`. Measured on 10.28.x.
 
 | Operation | MCP tool | Management API verb | Notes |
 |---|---|---|---|
@@ -286,14 +286,14 @@ The shipped user-index extender writes the impersonation relation onto the user 
 `CanImpersonate` and `CanBeImpersonatedBy`, **already expanded through group inheritance**. Any
 surface built on those fields — a CSR account picker, a scoped user list — therefore reads the
 INDEX as the effective permission model, not the table. Nothing marks the affected documents dirty
-when the relation is written: not the impersonation verbs, not a `CacheInformationRefresh` of
-`UserService`, and not an incremental index build. **After any write to
-`AccessUserSecondaryRelation`, flush `UserService` AND run a Full build, then re-read the index
-document:**
-
-```
-POST /Admin/Api/BuildIndex {"repository":"Users","indexName":"Users.index","buildName":"Full"}
-```
+when the relation is written: not the impersonation verbs, not a `UserService` cache refresh, and not
+an incremental index build. **After any write to the impersonation relation, flush `UserService` AND
+run a FULL build of the Users index, then re-read the index document.** In product that build is
+`build_product_index` against the Users repository and its `Users.index`, with
+`wait_for_product_index` before the re-read; the out-of-product form of the same build is
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Rebuild the Users
+index after an impersonation write". An incremental build does not clear it — the build name has to
+be the full one.
 
 Measured: fifteen group-level grants deleted through `UserImpersonateDelete` and verified row by row
 in SQL, `UserService` flushed by verb, and the affected document still carried all fifteen grants

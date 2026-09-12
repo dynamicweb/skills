@@ -154,8 +154,8 @@ or curl the rendered page) before declaring it done:
 | Save | Field silently dropped | Verified | Working fallback |
 |---|---|---|---|
 | MCP `save_pages` (update path) | `menuText` on an item-typed page — the save re-derives it from the item's title field, and the response echoes the derived value | DW 10.25.x-10.28.x | `set_page_item_fields {Title}` then `save_pages {id}` — see "A page save re-derives `PageMenuText`" below. A direct `PageMenuText` write survives only until the next save of that page. |
-| MCP `save_pages` (create + update) | `urlName` — ignored; the slug is derived from `menuText` instead | DW 10.27.x | Set `menuText` to drive the slug, or SQL `UPDATE Page SET PageUrlName` + host restart. `urlName` won't pin the slug on its own. |
-| Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort (local install only). `ParagraphSave` is still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
+| MCP `save_pages` (create + update) | `urlName` — ignored; the slug is derived from `menuText` instead | DW 10.27.x | Set `menuText` to drive the slug. `urlName` won't pin the slug on its own; pinning a slug that `menuText` cannot produce is out of product ([dw-data-access](../../dw-data-access/SKILL.md) `recipes-content.md` §"Pin a page slug"). |
+| Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` is the working surface. `ParagraphSave` is still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
 
 The tool-behaviour root cause (why these MCP / Management API writes drop fields, and the surface model)
 is in [dw-extend-mcp-tools](../../dw-extend-mcp-tools/SKILL.md) §5.
@@ -195,9 +195,11 @@ menuText, metaTitle, active}`. A `navigationTag` passed alongside is accepted, t
 `succeeded`, the page is created — and `PageNavigationTag` stays empty. That matters more than it
 looks: Swift templates resolve service and form pages with `GetPageIdByNavigationTag("<tag>")`,
 which falls back to `0` and renders a link to `#`, so the page exists and the link goes nowhere.
-Set the tag on a separate surface after the create (Admin API `PageSave`, or a SQL `UPDATE Page SET
-PageNavigationTag` on a local install, batched before the restart the job already owes) and assert
-the column rather than the call's status.
+Create the page with `save_pages`, then read it back with `get_page_by_id` and check the navigation
+tag actually landed: an empty tag means the member was dropped, and setting it is an out-of-product
+write ([dw-data-access](../../dw-data-access/SKILL.md) `recipes-content.md` §"Pin a page slug and
+set PageNavigationTag"). Assert the value rather than the call's status, and treat a template link
+rendering as `#` as the same finding seen from the frontend.
 
 ## A re-parent is invisible to the rendered navigation until the app domain restarts
 

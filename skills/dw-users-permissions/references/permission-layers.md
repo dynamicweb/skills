@@ -350,9 +350,10 @@ Backend authorisation runs on the same `UnifiedPermission` store as the storefro
 `Section` and its `PermissionKey` is the admin area name (§4's first table row). Measured on
 10.28.x.
 
-**Three implicit user ROLES sit under every permission entity.** `GET
-/Admin/Api/PermissionsByIdentifier?Name=Section&Key=<Area>` returns them on any key, with
-`isUserRolePermission: true` and `isExplicitPermission: false`:
+**Three implicit user ROLES sit under every permission entity.** A permission read on any key returns
+them alongside the explicit rows, marked as role permissions rather than explicit ones (the read verb
+and its empty-sub-name trap are in [dw-data-access](../../dw-data-access/SKILL.md)
+`references/recipes-users.md`):
 
 | Implicit role | Default level on every entity |
 |---|---|

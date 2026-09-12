@@ -39,16 +39,12 @@ delivery row, while a buyer on another account sharing the account's unsuffixed 
 all of the other contact's ship-tos — with zero `AccessUserAddress` rows of his own. Same setting,
 same code path, same release; the only difference is whether the two strings are equal.
 
-**The diagnostic is one query, before anyone spends an afternoon on the setting:**
-
-```sql
-SELECT AccessUserCustomerNumber, COUNT(*)
-FROM AccessUser WHERE AccessUserType = 5
-GROUP BY AccessUserCustomerNumber;
-```
-
-If every contact has its own value, the feature cannot work and no setting will fix it. (Read-only,
-so this one runs anywhere the DB is reachable.)
+**The diagnostic is one read, before anyone spends an afternoon on the setting:** list the account's
+contacts with `get_users_by_group_id` (or `get_users_by_customer_number` on the account's own
+number) and compare the `customerNumber` values that come back. If every contact has its own value,
+the feature cannot work and no setting will fix it. The whole-install census is a read-only query —
+outside the product: see [dw-data-access](../../dw-data-access/SKILL.md)
+`references/recipes-commerce.md` §"Census the customer numbers of one account's contacts".
 
 **Where the numbers cannot be normalised** — they are ERP-owned, or a template keys off the suffix
 — scope by the customer GROUP instead: every contact belongs to exactly one group whose customer

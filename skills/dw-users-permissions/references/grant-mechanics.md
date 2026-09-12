@@ -12,7 +12,7 @@ storage model the grants land in is [`permission-layers.md`](permission-layers.m
 - [8. Functional-view entity-type checklist (flag ON)](#8-functional-view-entity-type-checklist-flag-on)
 - [9. Action-button visibility — bump entity grant from Read to Edit](#9-action-button-visibility--bump-entity-grant-from-read-to-edit)
 - [10. Field-level editability — the dual-gate trap](#10-field-level-editability--the-dual-gate-trap)
-- [11. Per-role field-level differentiation (the SQL technique)](#11-per-role-field-level-differentiation-the-sql-technique)
+- [11. Per-role field-level differentiation](#11-per-role-field-level-differentiation)
 - [12. Hide a UI section per group (`CapabilityLimitation`)](#12-hide-a-ui-section-per-group-capabilitylimitation)
 - [13. Plaintext password storage — `EncryptPassword=False` escape hatch](#13-plaintext-password-storage--encryptpasswordfalse-escape-hatch)
 - [14. `UserAddressDelete` resolves through the owning user — orphaned addresses are API-unreachable](#14-useraddressdelete-resolves-through-the-owning-user--orphaned-addresses-are-api-unreachable)
@@ -38,20 +38,22 @@ Effect: when designing or testing a role matrix, never verify a scoping by loggi
 above. Always create a Default-type user in the target group and log in as them. A scoping that "works"
 only because you're testing as Admin is not a scoping.
 
-**`allowBackend=false` is a no-op on an admin row: clear the `userType` instead, then read the column
-back.** `UserSaveCommand` does assign `user.AllowBackend = model.AllowBackend`, but
+**`allowBackend=false` is a no-op on an admin row: clear the `userType` instead, then read the value
+back.** The save does assign `user.AllowBackend = model.AllowBackend`, but
 `Dynamicweb.Security.UserManagement.User.AllowBackend` is computed:
 `get { if (!allowBackend && !IsAdmin) return IsAngel; return true; }`. For `AccessUserType`
-SystemAdministrator (1) or Administrator (3) the getter always returns true, so `AccessUserAllowBackend`
-persists as `1` no matter what the model carried, with no validation error and no warning. Measured on
-10.28.1: `POST /Admin/Api/UserSave {Model:{... allowBackend:false, active:false ...}}` answered ok and
-`SELECT AccessUserActive, AccessUserAllowBackend FROM AccessUser WHERE AccessUserID=3081` returned
-`False, True`; the identical call with `model.userType = "default"` added returned `False, False`. The
-only levers that actually deny backend access are `userType` (demote to `Default=5`) and `Active=false`.
-So a teardown or "deactivate and deny backend" cleanup must set `userType` in the same `UserSave` and
-then assert `AccessUserAllowBackend = 0` from the column, since the API echo is not evidence. Assert
-separately that other backend admins survive (`COUNT` of `AccessUserType IN (1,3) AND Active=1 AND
-AllowBackend=1`) so the cleanup cannot lock everyone out.
+SystemAdministrator (1) or Administrator (3) the getter always returns true, so the stored value
+persists as `1` no matter what the model carried, with no validation error and no warning. Measured
+on 10.28.1: an `update_users` call carrying `allowBackend: false, active: false` answered ok and the
+row still read back as backend-allowed; the identical call with `userType: "default"` added read back
+denied. The only levers that actually deny backend access are `userType` (demote to `Default=5`) and
+`active: false`. So a teardown or "deactivate and deny backend" cleanup must set `userType` in the
+same `update_users` call and then re-read the user with `get_user_by_id`, since the save's own echo is
+not evidence. Assert separately, with `search_users`, that other backend admins survive (count the
+active, backend-allowed users of type 1 and 3) so the cleanup cannot lock everyone out. The
+column-level read-back and the Management API measurement are in
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Deny backend access
+to an admin row".
 
 ## 7. Grant mechanics — `PermissionLevel` bit values and the `PermissionSave` write surface
 
@@ -66,57 +68,35 @@ None=1, Read=4, Edit=20, Create=84, Delete=340, All=1364
 Bit-flag, higher includes lower (`Edit` = `Read | 1<<4` = `4 | 16` = 20). Most action buttons in PIM
 editing screens want `Edit`; the toolbar `Permissions` button on each entity wants `All`.
 
-All recipes below assume direct SQL on the permission tables — the admin UI does not expose them for
-the resources these recipes touch ([`permission-layers.md`](permission-layers.md) §4c). After any insert/update, flush the three caches listed in [`permission-layers.md`](permission-layers.md) §4c
-(`DefaultCapabilityService`, `DefaultCapabilitySetService`, `PermissionService`);
-`DashboardAccessUserRelation` reads bypass the cache (no flush needed). Never verify a recipe logged in
-as Angel / BuiltInAdmin / Administrator — those user classes bypass every check (§6); always test as a
-Default-type user in the target group.
+Two rules hold over every grant below. The permission model is cached, so a write that has not been
+followed by a flush of `DefaultCapabilityService`, `DefaultCapabilitySetService` and
+`PermissionService` reads as though it never landed ([`permission-layers.md`](permission-layers.md)
+§4c); `DashboardAccessUserRelation` reads bypass the cache and need none. And never verify a grant
+signed in as Angel / BuiltInAdmin / Administrator — those user classes bypass every check (§6);
+always test as a Default-type user in the target group.
 
-### Write surface — `PermissionSave` on the Management API
+### Write surface — an admin-screen operation from inside the product
 
-**`POST /Admin/Api/PermissionSave` is the write verb for every entity grant** — `Section`,
-`Page`, `GridRow`, `Paragraph`, `UserGroup`, and the rest of the `[PermissionEntity]` registry.
-It is proven on 10.28.x, it is an upsert, and it is safe to re-run.
+**Writing a grant is an admin-screen operation.** MCP reaches exactly one corner of the permission
+store: `assign_permissions_to_assortment` writes assortment permissions, and there is no page,
+paragraph, section or user-group equivalent. Everything else is authored on the entity's own
+**Permissions** panel in the administration (the toolbar **Permissions** button on the entity's
+screen, reached in the admin at `/Admin/UI/Content/PermissionList?Key=<key>&Name=<name>`). From
+inside the product, ask for the grant to be made there and then verify it on the rendered surface:
+sign in as a member of the owner group and assert the state actually changed.
 
-**The body is nested under `Model`.** `PermissionSaveCommand` is a
-`CommandBase<PermissionDataModel>`, so a flat body of the inner properties is rejected before it
-executes — `HTTP 400 {"Command.Model":["Command.Model cannot be null"]}` — leaving the table
-untouched and saying nothing about what the model is:
+The scripted write verb, its body shape and its upsert semantics are out of product —
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"`PermissionSave` —
+the write verb for every entity grant", which also carries the `PermissionDelete` /
+`PermissionSetPermission` siblings and the read query whose empty-`SubName` trap is in
+[`page-gating.md`](page-gating.md) §15.
 
-```
-POST /Admin/Api/PermissionSave
-{"Model":{"Key":"97","Name":"Page","SubName":"","OwnerId":"9","Level":4,
-          "IsUserRolePermission":false,"IsExplicitPermission":true}}
--> HTTP 200, level echoed as the string "read", modelIdentifier "97|$|Page|$||$|9"
-```
-
-`PermissionDataModel` is `{PermissionLevel Level; String Key; String Name; String SubName; String
-OwnerId; Boolean IsUserRolePermission; Boolean IsExplicitPermission}`. **`Key` is a STRING on
-every entity type**, so a numeric page id is quoted. The response `modelIdentifier` is a composite
-joined with the literal separator `|$|` (`<Key>|$|<Name>|$|<SubName>|$|<OwnerId>`), which is also
-the shape `PermissionDelete`'s `PermissionIdentifier` takes.
-
-**`Level` takes the `PermissionLevel` numbers above, and 1 is `None`, not the bottom of a ladder.**
-This is the trap that inverts a gate: a solution whose gated pages read `Anonymous = 1` and the
-entitled group `= 4` is showing a denial beside a read grant, and reading it as a 0-based ladder
-writes the opposite of what was meant. Print the values beside any level you copy out of a
-database — `None=1, Read=4, Edit=20, Create=84, Delete=340, All=1364`.
-
-Siblings in the same assembly: `PermissionDeleteCommand {String PermissionIdentifier}`,
-`PermissionSetPermissionCommand : ListItemsCommandBase {PermissionLevel PermissionLevel;
-IEnumerable<String> Ids}`, and the read query `PermissionsByIdentifierQuery {String Key; String
-Name; String SubName; …}` (whose empty-`SubName` trap is in
-[`page-gating.md`](page-gating.md) §15).
-
-MCP reaches only one corner of this surface: `assign_permissions_to_assortment` writes assortment
-permissions and there is no page/paragraph/section equivalent, so the Admin API verb is the
-surface for everything else. Verify a write on the rendered surface (sign in as a member of the
-owner group) or with a read-only `SELECT` on `UnifiedPermission`; the admin **Permissions** panel
-(`/Admin/UI/Content/PermissionList?Key=<key>&Name=<name>`) is a verification surface, not the
-authoring path. A direct SQL INSERT is the last resort and stays local-install only: the verb
-self-invalidates the permission cache and a raw INSERT does not ([`permission-layers.md`](permission-layers.md) §4c lists the flush), so prefer
-the verb wherever it reaches.
+Two facts about the stored row travel with every grant regardless of surface. **`Key` is a STRING on
+every entity type**, so a numeric page id is a quoted string wherever it appears. And **the level `1`
+is `None`, not the bottom of a ladder** — this is the trap that inverts a gate: a solution whose
+gated pages read `Anonymous = 1` and the entitled group `= 4` is showing a denial beside a read
+grant, and reading it as a 0-based ladder writes the opposite of what was meant. Print the values
+beside any level read out of a solution — `None=1, Read=4, Edit=20, Create=84, Delete=340, All=1364`.
 
 ## 8. Functional-view entity-type checklist (flag ON)
 
@@ -125,18 +105,25 @@ To make a non-admin's PIM actually *functional* under flag ON (not just visible)
 (Shop / ProductGroup) leaves visible-but-empty trees and blank-column product lists. The full set per
 group:
 
-| What renders | UnifiedPermission grant |
+| What renders | Grant the group needs (entity, key, level) |
 |---|---|
-| Area tree (Products / Assets headers) | `('<gid>', 'Products', 'Section', '', Read)`, `('<gid>', 'Assets', 'Section', '', Read)` |
-| Channel section shows shops | `SELECT '<gid>', ShopId, 'Shop', '', Read FROM EcomShops` |
-| Channel tree expandable to groups | `SELECT '<gid>', GroupID, 'ProductGroup', '', Read FROM EcomGroups` |
-| **Product list columns** (Name / Number / Created / Updated / Type / custom fields) | one row per `ProductField` SystemName: standards from `ProductField.FieldSystemName` constants + customs from `EcomProductField` + category fields from `EcomProductCategoryField.FieldId` (all under `PermissionName='ProductField'`) |
-| **Assets tree shows folders** | single row `('<gid>', '/Files', 'File', '', Read)` — the FilePermissionEntity parent chain cascades to every subfolder/file |
+| Area tree (Products / Assets headers) | `Section` / `Products` / Read, and `Section` / `Assets` / Read |
+| Channel section shows shops | `Shop` / every shop id / Read |
+| Channel tree expandable to groups | `ProductGroup` / every product-group id / Read |
+| **Product list columns** (Name / Number / Created / Updated / Type / custom fields) | `ProductField` / one row per field system name / Read — the standards, every custom product field, and every category field |
+| **Assets tree shows folders** | `File` / `/Files` / Read — a single row; the FilePermissionEntity parent chain cascades to every subfolder and file |
 
 Without the ProductField grants, the product list shows rows but most columns are blank. Without the
 File grant, the Assets tree is empty even though the tab is visible. Both are easy-to-miss because the
 tab + area-section grants alone make the chrome look correct. (Why the cascade stops at these entities
 under flag ON: [`permission-layers.md`](permission-layers.md) §4 "Two entities that demand special attention".)
+
+The Shop, ProductGroup and ProductField rows are one grant per existing row — hundreds of them on a
+real catalog — and the Permissions panel writes one at a time, so seeding a role is a scripted
+out-of-product job: [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md`
+§"Seed the functional-view grants for a backend role". Enumerate what needs granting from inside the
+product first (`get_shops`, `get_groups`, `get_product_fields`, `get_product_category_fields`) so the
+list handed over is the solution's own.
 
 ## 9. Action-button visibility — bump entity grant from Read to Edit
 
@@ -158,34 +145,22 @@ and the attributes-panel-specific construction in
 `dw10source/Dynamicweb.Products.UI/Screens/ProductOverviewScreen.cs:996`
 (`ActionBuilder.Edit<ProductEditScreen>`) and `:1076` (screen-layout-driven "Edit" node).
 
-Fix: bump the entity-grant level on the entities that gate the action. Under flag ON, the Product
-entity inherits level from its parent ProductGroups (highest level wins across all parents). So bumping
-ProductGroup grants to Edit cascades Edit to every product in those groups — no per-Product row needed.
-
-```sql
-UPDATE UnifiedPermission
-SET    PermissionLevel = 20    -- Edit (Read | 1<<4 = 4 | 16)
-WHERE  PermissionUserId IN ('<gid1>', '<gid2>')
-  AND  PermissionName IN ('ProductGroup', 'ProductField', 'File')
-  AND  PermissionLevel = 4;    -- only bump rows currently at Read
-
--- And the area-root section grant (so screen-layout-driven "Edit" tabs work)
-UPDATE UnifiedPermission
-SET    PermissionLevel = 20
-WHERE  PermissionUserId IN ('<gid1>', '<gid2>')
-  AND  PermissionName = 'Section'
-  AND  PermissionKey = 'Products'
-  AND  PermissionLevel = 4;
-```
+Fix: bump the entity-grant level from Read (4) to Edit (20) on the entities that gate the action —
+`ProductGroup`, `ProductField`, `File`, and the area-root `Section` / `Products` grant so that
+screen-layout-driven "Edit" tabs work. Under flag ON, the Product entity inherits level from its
+parent ProductGroups (highest level wins across all parents), so bumping ProductGroup grants to Edit
+cascades Edit to every product in those groups — no per-Product row needed.
 
 What to leave at Read deliberately: `Shop` entities (editing shop config is platform-admin territory)
 and `Section/Assets` (Asset edits flow through the per-product image manager which uses the `File`
 grant). Bump these only when a role explicitly needs to edit shop configuration or upload to the Assets
 tab directly.
 
-Flush `Dynamicweb.Security.Permissions.PermissionService` after the update (via
-`CacheInformationRefresh`, [`permission-layers.md`](permission-layers.md) §4c) — without the flush, logged-in users still see Read-level UI until
-re-auth.
+A level change across an existing grant set is the same many-rows-at-once shape as §8, so it is a
+scripted out-of-product job — [dw-data-access](../../dw-data-access/SKILL.md)
+`references/recipes-users.md` §"Bump entity grants from Read to Edit". Until the permission cache
+drops, logged-in users keep seeing Read-level UI, so the verification is a fresh sign-in as a
+Default-type member of the group, checking that the attributes-panel "Edit" link is there.
 
 ## 10. Field-level editability — the dual-gate trap
 
@@ -207,17 +182,16 @@ Both conditions must pass:
 If only one is granted, every input is readonly. **The Language entity is the easy one to forget**
 because the entity isn't visually represented on the screen — there's no "Language" panel to click.
 With Cap Control ON, `Language.GetPermissionParents()` terminates (no `PermissionSection("Products")`
-fall-through), so no upstream grant cascades — you must insert the row explicitly.
+fall-through), so no upstream grant cascades and the row has to exist explicitly, one per language.
 
-```sql
-INSERT INTO UnifiedPermission (PermissionUserId, PermissionKey, PermissionName, PermissionSubName, PermissionLevel)
-SELECT '<gid>', LanguageID, 'Language', '', 20 FROM EcomLanguages;
-```
+The `PermissionKey` is the language id (e.g. `"LANG1"`, from `get_languages`), not the ISO code. The
+grant itself is one `Language` / `<language id>` / Edit row per language — written on the Permissions
+panel, or scripted for a multi-language install per
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Grant the Language
+entity". The symptom that tells you which half is missing: buttons visible and every input locked
+means the ProductField half landed and the Language half did not.
 
-For multi-language installs, repeat per `LanguageID`. The `PermissionKey` is the language id (e.g.
-`"LANG1"`), not the ISO code.
-
-## 11. Per-role field-level differentiation (the SQL technique)
+## 11. Per-role field-level differentiation
 
 The functional-view bump above ("all standard + custom + category fields to Edit") is the *unlock* — it
 makes the screen functional but gives every role the same write surface. To produce **field-level role
@@ -228,35 +202,19 @@ fields at Read for roles that don't own them. The technique:
 2. Apply the dual-gate fix (Language Edit grants).
 3. Per role, identify the fields that role does NOT own and DOWNGRADE those rows to `Read` (level 4).
 
-The downgrade is a single `UPDATE` per role against a list of `ProductField` SystemNames the role
-should not write. Illustrative example — a content-owning role keeps content/meta/image/custom-category
-fields editable and has commerce/lifecycle/workflow/physical fields downgraded to Read:
+The downgrade is one level change per role against a list of `ProductField` system names the role
+should not write. A content-owning role, for instance, keeps content / meta / image / custom-category
+fields editable and has the commerce, lifecycle, workflow and physical fields downgraded to Read:
+`ProductNumber`, `ProductPrice`, `ProductCost`, `ProductStock`, `ProductActive`,
+`ProductWorkflowStateId`, `ProductDiscontinued`, `ProductDefaultShopID`, `ProductManufacturerID`,
+`ProductType`, `ProductEAN`, `ProductWeight`, `ProductHeight`, `ProductWidth`, `ProductDepth`,
+`ProductVolume`, `ProductCreated`, `ProductUpdated`. The mirror-image role (workflow-owning, no
+content edits) downgrades the custom category fields instead — read the list for the solution in hand
+with `get_product_category_fields`.
 
-```sql
-DECLARE @readOnly TABLE (SystemName nvarchar(100));
-INSERT INTO @readOnly (SystemName) VALUES
-  ('ProductNumber'),('ProductPrice'),('ProductCost'),('ProductStock'),
-  ('ProductActive'),('ProductWorkflowStateId'),('ProductDiscontinued'),
-  ('ProductDefaultShopID'),('ProductManufacturerID'),('ProductType'),
-  ('ProductEAN'),('ProductWeight'),('ProductHeight'),('ProductWidth'),
-  ('ProductDepth'),('ProductVolume'),('ProductCreated'),('ProductUpdated');
-
-UPDATE UnifiedPermission
-SET    PermissionLevel = 4
-WHERE  PermissionUserId = '<role_gid>'
-  AND  PermissionName = 'ProductField'
-  AND  PermissionKey IN (SELECT SystemName FROM @readOnly);
-```
-
-To downgrade all custom category fields for a role (e.g. a workflow-owning role that should not edit
-content), target them in bulk:
-
-```sql
-UPDATE UnifiedPermission SET PermissionLevel = 4
-WHERE PermissionUserId = '<role_gid>' AND PermissionName = 'ProductField'
-  AND PermissionLevel = 20
-  AND PermissionKey IN (SELECT DISTINCT FieldId FROM EcomProductCategoryField);
-```
+The step is one bulk level change per role, so it runs with §9's script rather than on the panel:
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Per-role field-level
+differentiation".
 
 The result is two visually-different Edit screens for the same product — one role sees content / images
 / category fields as editable inputs and commerce / workflow as readonly with lock icons; another sees
@@ -305,10 +263,12 @@ Default-type persona and recording the permission-filtered area list.
 **The passwordless-user trap.** There is **no MCP password tool** — `create_users` (and the Management
 API `UserSave`) create a login with **no usable password**, so a freshly-seeded buyer / CSR / admin
 persona **cannot sign in** until a password is set out-of-band. Naively adding personas via MCP and
-then trying to sign in as them fails at the sign-in screen with no obvious cause. The canonical recovery
-is the SQL escape hatch below (plaintext under `EncryptPassword=False`, which DW auto-rehashes on first
-login). **Validate:** after setting the password, actually sign in as the persona (not as an admin) and
-confirm you reach the account/customer-center landing.
+then trying to sign in as them fails at the sign-in screen with no obvious cause. Setting the password
+is an admin-screen operation from inside the product — Users → the user → the password field — and the
+scripted escape hatch for a whole persona set is
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Seed a password for a
+freshly created login". **Validate:** after the password is set, actually sign in as the persona (not
+as an admin) and confirm you reach the account/customer-center landing.
 
 **A user index is a second copy of the password column.** Every document a user repository builds
 carries `UserPassword` — the stored hash — because the platform's own schema extender declares it, and
@@ -334,21 +294,16 @@ standard install) controls password storage mode for both backend admins and ext
 ```
 
 When `EncryptPassword=False` (typical for development / on-prem solutions), the
-`AccessUser.AccessUserPassword` column stores plaintext. **This unlocks the SQL escape hatch for
-seeding logins** when no MCP / admin-UI / API path is available:
-
-```sql
-UPDATE AccessUser SET AccessUserPassword = 'Password123!'
-WHERE AccessUserUserName IN ('user1', 'user2');
-```
+`AccessUser.AccessUserPassword` column stores plaintext, which is what makes the scripted escape
+hatch possible at all.
 
 The MCP `create_users` tool has no password parameter (verified DW 10.25.8); the Management API
-`UserSave` command likewise **cannot set a password** — a backend user created through the API has no
-usable password until one is set in the admin UI (or via the SQL path below). The admin UI's Users →
-user → password field works but is manual. For automated seeding the SQL update is the fast path.
-Verify the setting before relying on it — production solutions often flip these to `True`, and any
-plaintext seeded under `False` becomes a stale invalid hash after the flip. (DW10's
-`AuthenticationManager.cs:184` auto-rehashes a plaintext seed on first successful login.)
+`UserSave` command likewise **cannot set a password** — a backend user created through either has no
+usable password until one is set. The admin UI's Users → user → password field works and is manual;
+automated seeding is the out-of-product recipe. Check the setting before anyone relies on it —
+production solutions often flip these to `True`, and any plaintext seeded under `False` becomes a
+stale invalid hash after the flip. (DW10's `AuthenticationManager.cs:184` auto-rehashes a plaintext
+seed on first successful login.)
 
 ## 14. `UserAddressDelete` resolves through the owning user — orphaned addresses are API-unreachable
 
@@ -361,10 +316,11 @@ through and the lookup fails:
 POST UserAddressDelete {AddressId: <orphanId>}  -> 404 {"status":"notFound","message":"Address not found: <orphanId>"}
 ```
 
-So the API cannot fix what the health check reports. **Raw SQL `DELETE` is the only route and is sanctioned
-here** — no runtime cache is keyed on `AccessUserAddress`, so the delete needs no flush and no restart. Scope
-it precisely (`AccessUserAddressUserId = 0` **plus** blank address fields): orphans interleave with real
-address ids, so an id-range delete takes live personas' addresses with it.
+So no verb — and no MCP tool — can fix what the health check reports; the delete is an out-of-product
+one ([dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Delete orphaned
+user addresses"). Scope it precisely (`AccessUserAddressUserId = 0` **plus** blank address fields):
+orphans interleave with real address ids, so an id-range delete takes live personas' addresses with
+it.
 
 Two generalisations worth carrying:
 
