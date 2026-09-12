@@ -258,6 +258,24 @@ tokens (`RunSqlScheduledTaskAddIn`, `Get-NetTCPConnection`, ...) so no second co
 another reference. The demo's own copy is retired, or its header points at the shipped script,
 so the next engagement extends the shipped one instead of forking it again.
 
+**An edit that claims to change something asserts that it did.** A scripted rewrite that matches
+nothing returns its input unchanged and logs OK, so the step reports success, the value it was
+supposed to remove survives the composer, the staging and the deserialize, and it surfaces later as
+authored content rather than as a failed edit. Count the files actually rewritten, compare the bytes
+before and after, and **fail closed on a zero-diff rewrite** — every rewrite, not just the ones that
+look risky. Where a script stages a file set, assert it both ways as well: every file the manifest
+names exists on disk, and no staged file is missing from the manifest.
+
+**Write line-wise patterns as `[^\r\n]*\r?\n`, never `.*\n`.** Layer, distribution and shipped
+template text is CRLF. In a JavaScript regex `.` matches any character except a line terminator, and
+`\r` *is* a line terminator, so `/^"key":.*\n/m` can never match a CRLF line: `.*` stops before the
+`\r` and the pattern then demands `\n`. The reason this is nearly invisible is that it discriminates
+by edit **shape**, not by file — `/^("key":).*$/m` with the `m` flag matches fine on CRLF (`$` matches
+before the `\r`), so every value-**rewrite** in the same script keeps working and only the edits that
+consume the line terminator (deleting a whole line) silently no-op. One such edit in a script whose
+other twenty passed is the normal presentation. The same byte fact bites anchors written as source
+literals in a script: an LF anchor matches a CRLF file zero times.
+
 **Smoke-test rule.** A write script is smoke-tested on a local host you own before its PR is
 opened. A hosted install is never the first target: only after the script has passed locally,
 and then under the shared-install discipline in

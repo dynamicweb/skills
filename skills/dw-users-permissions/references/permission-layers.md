@@ -635,6 +635,13 @@ is the SQL escape hatch below (plaintext under `EncryptPassword=False`, which DW
 login). **Validate:** after setting the password, actually sign in as the persona (not as an admin) and
 confirm you reach the account/customer-center landing.
 
+**A user index is a second copy of the password column.** Every document a user repository builds
+carries `UserPassword` — the stored hash — because the platform's own schema extender declares it, and
+no `.index` setting removes it. Standing up a user repository therefore writes one offline-crackable
+hash per account into a Lucene file under the web root's file area. Treat that folder as sensitive and
+keep it out of copies that travel; the full statement is in
+[`dw-search-indexing`](../../dw-search-indexing/references/index-management.md#the-user-index-publishes-a-password-hash-and-the-whole-impersonation-graph).
+
 `GlobalSettings.config` (path: `Dynamicweb.Host.Suite/wwwroot/Files/GlobalSettings.config` on a
 standard install) controls password storage mode for both backend admins and extranet users:
 
@@ -991,6 +998,18 @@ for free because they carry no customer number.
 `AccessUserCustomerNumber`, and the acting user's profiles must carry the matching numbers.
 `OwnAndImpersonatableAccounts` additionally needs the Secondary-users index to be current. `OwnAccounts`
 narrows the directory but still renders it as a directory.
+
+**For a picker that must scale, scope it in the index rather than after the read.** The shipped
+`UserIndexSchemaExtender` publishes the impersonation graph in both directions — `CanImpersonate` on
+the impersonator's document, `CanBeImpersonatedBy` on the target's — already expanded through group
+inheritance, so the whole scope is one arm of a repository query instead of hydrating every hit and
+discarding most of them. Two rules govern building on it, both owned by
+[`dw-search-indexing`](../../dw-search-indexing/references/index-management.md#the-user-index-publishes-a-password-hash-and-the-whole-impersonation-graph):
+those fields are **numeric**, so the arm's right-hand side must declare `System.Int32` /
+`System.Int32[]` or it matches nothing and fails closed
+([`query-expressions.md`](../../dw-search-indexing/references/query-expressions.md#a-numeric-predicate-needs-a-typed-constant));
+and every user document also carries the account's password hash, so a template over the results names
+the fields it renders rather than looping the document.
 
 ### `UserChangeType` does NOT change the user-and-group type
 

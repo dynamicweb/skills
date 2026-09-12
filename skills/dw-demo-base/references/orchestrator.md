@@ -300,7 +300,7 @@ defect class then surfaces when a human eyeballs the site, which is exactly what
 exists to prevent. From the scaffold gate onward, three legs run against a raw deserialize with no
 custom design configuration:
 
-1. **Overflow** — `document.body.scrollWidth === window.innerWidth` at desktop and mobile widths.
+1. **Overflow** — `document.body.scrollWidth === window.innerWidth` AND `window.innerWidth === the requested width`, at desktop and mobile widths. Both readouts: unshrinkable content widens the layout viewport, after which the first comparison holds on a page that renders zoomed out (`dw-demo-base/references/visual-qa.md` "Breakpoints").
 2. **Skeleton / empty-band scan** — a band carrying a heading and no content children, or almost no
    text, is a skeleton.
 3. **Stock-copy tripwire** — the shipped baseline's own copy strings, grepped against the served HTML.

@@ -71,11 +71,35 @@ their children).
 
 ### A numeric predicate needs a typed constant
 
+**The right-hand side's declared `Type` decides the Lucene query shape — not the field's type in the
+index.** A numeric field is written with `NumericUtils` trie encoding, so its terms are not the digits
+a document print shows; a `TermQuery` built from the string `"16"` cannot match the term that encodes
+16. Declare `Type="System.Int32"` (or **`System.Int32[]` for `In`**) and the builder emits a
+`NumericRangeQuery`, which matches. The same file with `Type="System.String"` returns zero rows, in a
+couple of milliseconds, raising nothing and logging nothing — from the builder's point of view it
+built a perfectly valid string query. This is the worst failure mode available: it looks exactly like
+"no rows matched", and in a permission-scoping query it fails **closed**, which is the direction
+nobody investigates. The same applies to a shipped `<Parameter Name="..." Type="System.Int32[]" />`
+carrying an `int[]` runtime value.
+
 **Every authoring surface writes `Type="System.String"` constants — including the admin query editor.**
 The editor's Type dropdown (Code / Constant / Macro / Parameter / Term) selects the value *source*, not
-the CLR type, so a numeric Lucene field is always compared against a string term and matches nothing.
-The field itself is fine: the same file with `Type="System.Int32"` on the constant returns the expected
-rows.
+the CLR type, so a numeric field authored through the editor is always compared against a string term.
+
+Two diagnostics that mislead while chasing this:
+
+- **`Type` is required, and its absence surfaces as `The given key '' was not present in the
+  dictionary`** — which reads like a platform bug rather than a missing attribute. A constant or
+  parameter with no `Type` is the first thing to check when that message appears.
+- **A document read back from a Lucene `DirectoryReader` reports `IsIndexed=False` on every field**,
+  because a stored document carries only its stored companions. "Is this field even indexed?" answers
+  no for fields that are indexed perfectly well; `MultiFields.GetFields` on the directory is the
+  answer, not the document.
+
+Confirm the shape straight against the reader when a numeric arm is in doubt: a `TermQuery` on the
+field returns 0 while `NumericRangeQuery.NewInt32Range` on the same field and the same open reader
+returns the real hit set. Keep a genuine string field in the same query as a control — a string
+comparison against a string field works and proves the rest of the plumbing.
 
 So a numeric predicate is authorable only by writing the `.query` XML by hand. Sequence, given that the
 agent account often cannot overwrite files under the site tree:
@@ -90,6 +114,31 @@ agent account often cannot overwrite files under the site tree:
 
 Assert the row count moves **off the degenerate value** (a string constant on a numeric field returns 0
 or everything), and assert the configuration reads back non-null.
+
+### Set only the parameters you actually have a value for
+
+**An UNSET query parameter drops its arm; a parameter set to the empty string is compared and matches
+nothing.** So "the user did not search" and "the user searched for nothing" are the difference between
+the whole result set and none of it, and the thing that decides it is whether the caller wrote a key
+into `QuerySettings.Parameters`. Nothing in the `.query` distinguishes the two cases — both arms read
+`DefaultValue=""`.
+
+The natural caller shape — loop over the parameters the file declares and assign each one — is exactly
+the shape that breaks: one empty free-text box ANDs in a `Contains ""` that no document carries, and
+the query returns zero with no error and no log entry. Guard each assignment instead:
+
+```csharp
+settings.Parameters["Grantors"] = grantors.ToArray();
+if (!string.IsNullOrWhiteSpace(q))    { settings.Parameters["q"] = q; }
+if (!string.IsNullOrWhiteSpace(acct)) { settings.Parameters["CustomerNumber"] = new[] { acct }; }
+```
+
+Isolate a suspected empty-parameter arm by replacing one arm at a time with a working constant; the
+arm that still returns zero is the one carrying the empty value. Note that the read verbs which never
+populate `QuerySettings.Parameters` at all (`UsersByRepository` and friends) return the **whole**
+index for the same file, so a query that "works through the API and returns nothing from code" is this
+trap, not a discovery or build problem. That asymmetry is also the cheapest proof that a brand-new
+`.query` file is discovered by repository name plus file name with no app-pool restart.
 
 ### `folderPath` on a create is a server-side ABSOLUTE path
 
@@ -111,11 +160,29 @@ choice the wrong one:
 | `Field MatchAny "a"` | correct — single-value `MatchAny` is the reliable form |
 | `Field Equal "a"` | exact and reliable on an analysed field |
 | `Field Contains "a,b"` | analyser-dependent; over-matches on tokenised fields |
+| `Field IsEmpty` | **no working XML serialization on the Lucene provider on 10.28.x.** `OperatorType.IsEmpty` exists, and three shapes (a `System.Boolean` `True` constant, an empty `System.String` constant, and `Equal` against an empty string) all parse and match **nothing**; the fourth (`IsEmpty` with no `Right` element) throws `System.InvalidOperationException: Right expression is missing` out of `ExpressionHelper.DeserializeBinaryExpression` and takes down every module on the page |
+
+**"This field has no value" is not expressible index-side.** That matters most where a SQL filter and
+an index query are supposed to agree: SQL treats an unranged row as unrestricted (`... IS NULL AND NOT
+IN ...`), and the index has no equivalent arm, so the two paths disagree for exactly the rows that
+carry no value. Make the empty case positive instead — give every document a real value (range an
+unassorted product everywhere rather than nowhere), or index a sentinel via `EmptyStringReplacement`
+and compare against it with `Equal`. Whichever you pick, the two paths then agree by construction
+rather than by an operator that silently matches nothing.
 
 **Express alternation as an Or child group of single-value nodes**, authored through the tree-taking
 surface. Two consequences worth stating separately:
 
 - **Exact SKU matching needs `Equal`** (or an Or-group of `Equal`s), never `In`/`MatchAny` with a CSV.
+  **Model the exact-item-number arm as an ANALYSED copy field carrying a high boost, not as an `Equal`
+  against a non-analysed field** — the textbook non-analysed shape is alive in the full search and dead
+  in the header dropdown, because `swift.Typeahead` lower-cases the term before it calls the suggestion
+  endpoint (`&eq=` + `encodeURIComponent(value.toLowerCase())`), and an `Equal` on a non-analysed field
+  can only fire on a case-exact term. A boosted analysed copy field over the identifier columns
+  (`Copy` accepts `Analyzer` and `Boost` — see
+  [`index-management.md`](index-management.md#authoring-a-index-file--the-rules-no-api-surface-reports))
+  plus a `Contains` arm in the free-text OR group behaves identically on both surfaces. Prove it with
+  the term in both casings on the full-search path **and** the dropdown path.
 - **A literal value list does not belong in a shipped query.** Even where `In` works, the admin UI
   renders the expanded per-value form, so anyone opening the query sees hardcoded literals. Key
   defect worklists on a **steward-set flag field** instead, so the query reads as a rule.
@@ -132,6 +199,9 @@ parameter count of 1. Nothing reports an error, so a "worst first" list looks co
 - The property name a result row projects is **not** a sortable field name.
 - Assert monotonicity over the **whole** result set (below), not the first page — a silently dropped sort
   fails that immediately.
+- **A sort orders only the documents that carry the field.** Documents missing it tie and fall back to
+  natural index order, which reads as "descending works, ascending does nothing" — see "Fields that
+  are declared but never populated" below before blaming the sort.
 
 ## Reading results: paging that is not paging
 
@@ -164,6 +234,25 @@ no error:
   signature. The id-shaped variants are frequently not index fields at all, so a clause on one is
   silently dropped and the query returns the whole catalogue. Count that data with a SQL-backed widget
   over the products table instead, and accept that such a tile cannot drill through.
+
+- **A custom product field reaches the index as stored PAYLOAD, and payload is not a predicate.**
+  `ProductIndexSchemaExtender` does write custom product fields into the rebuilt Lucene segment — a
+  query over the index returns their values on every seeded product, and the names are in the `.cfs`
+  — and every predicate against them still returns the whole catalogue unfiltered. Both ways of
+  declaring them queryable fail to materialise at all: an explicit `<Field Source="<CustomField>">`
+  and a `<Copy Sources="<CustomField>">` are each absent from the rebuilt segment after a Full build,
+  checked against the Lucene directory in both instances. **Build such a list in Razor over the
+  product tables at request time, not as a Query Publisher paragraph over the index**, and treat a
+  requirement phrased as "an index query over the custom fields" as not buildable on 10.28.x.
+- **A field the builder populates for only SOME documents is worse than an absent one**, because half
+  the feature works. A price sort orders only documents that carry an indexed price; products with
+  none tie on the missing value and fall back to group order, so descending sort looks correct (the
+  priced rows sort at the head) while ascending sort looks completely inert. Adding an explicit
+  `<Field Source="ProductPrice" Type="System.Double" Analyzed="false">` changes nothing, and that is
+  the tell: the field is declared and unpopulated, so the fix is upstream in the price load, not in
+  the schema. Ship the sort control only once every document carries the value — a control that
+  visibly does not sort costs more than an absent one — and re-check any facet computed from the same
+  source field (a price-range facet's counts derive from it too).
 
 **The standing check before shipping any predicate:** `count(field = X) + count(field ≠ X)` equals
 `count(no predicate)`, and neither side is degenerate. A field that fails it is inert, whatever the picker
@@ -216,7 +305,13 @@ depends on a freshly written field and assert its count moves off "matches every
 | A read-modify-write loop creates duplicates | an unresolvable `Path` appends | take paths from the same read that drives the write |
 | Row count jumps to the whole catalogue after a group save | `Path:"0"` rewrote the ROOT group; `Negate` inverted everything | snapshot counts around every group save; re-post with `Negate:false` |
 | An OR-list or NOT-group returns 0 | a flat create surface dropped the nested group | author through the tree-taking surface |
-| A numeric predicate returns 0 or everything | the constant is `System.String` | hand-write the `.query` with a typed constant; recreate the sidecar |
+| A numeric predicate returns 0 or everything | the constant is `System.String` | hand-write the `.query` with a typed constant (`System.Int32`, `System.Int32[]` for `In`); recreate the sidecar |
+| `The given key '' was not present in the dictionary` from a query render | a constant or parameter carries no `Type` attribute | add `Type`; it is required, not optional |
+| A query returns the whole index through the API and zero from code | the caller set a declared parameter to the empty string — an unset arm is dropped, an empty one is compared | assign only the parameters you have a value for |
+| An `IsEmpty` arm matches nothing, or one shape of it takes the page down | `IsEmpty` has no working serialization on the Lucene provider | express the empty case positively — a sentinel value or a real value on every document |
+| A predicate on a custom product field returns the whole catalogue | the field is stored payload, never a predicate | build the list in Razor over the tables |
+| Ascending sort looks inert while descending looks fine | only some documents carry the sort field | populate the field for every document before shipping the control |
+| An exact-match arm works in full search and never in the typeahead | the dropdown lower-cases the term against a non-analysed field | model the arm as a boosted analysed copy field |
 | A `create` answers `ok` and the query does not exist | `folderPath` was relative | pass the absolute server-side path; read it back |
 | A sort reads back correctly and the rows are unsorted | the sort field does not resolve in the index | use the index system name; assert monotonicity over the full set |
 | Page 2 equals page 1 | the execution verb has no offset | read with `PagingSize > totalCount` |

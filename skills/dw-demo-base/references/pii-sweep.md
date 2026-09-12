@@ -20,7 +20,14 @@
 
 1. **Renaming the user rows fixes nothing.** Every other layer holds an independent denormalised copy that no
    user-table edit touches. Enumerate by **scanning every string column in the database**, not by querying the
-   tables you expect.
+   tables you expect. Orders are the sharpest case: an order row carries its own copy of the customer
+   identity — email, name, customer number — captured at order time, and does not join back to the user
+   row at render time (RMAs the same). A rename therefore leaves the retired identity on every historical
+   order, where it renders on the customer-centre order list and order detail — which is exactly where a
+   prospect looks — while every user-table check reports clean. **So the sweep runs over the RENDERED
+   corpus as each persona, not over the source tables**: the table-level check passed throughout one such
+   incident and proved nothing; the signed-in render is what discriminates. Better still, have generators
+   write the final identity from the start — the rename is what strands the copies.
 2. **A clean clone is not a clean demo.** Stock Swift demo content ships the *platform vendor's* legal pages,
    corporate addresses and an internal author mailing list. Nothing in a normal build removes them.
 3. **A vocabulary sweep cannot find what contains none of your vocabulary.** Add locale-*shaped* patterns and
@@ -161,10 +168,15 @@ than retyping the census queries. Steps 2, 3, and 5 remain yours:
 
 1. **Enumerate** — scan every string column for the identity terms **and** the locale-shaped patterns.
 2. **Classify by sampling values** — person / vendor-branding / infrastructure.
-3. **Fix** — at the layer that owns each hit, not at the user table.
+3. **Fix** — at the layer that owns each hit, not at the user table. For orders that means rewriting the
+   denormalised identity on the order rows themselves, and detaching any fixture order from the live
+   customer number it was denormalised onto (leave the row and its RMA foreign key intact).
 4. **RE-SCAN** — a pass that finds nothing new is the first pass you may believe.
 5. **Render and read** — walk the legal pages, the contact blocks, the email/marketing screens and every
-   language layer with your eyes.
+   language layer with your eyes, **and crawl the signed-in surfaces as each persona**: customer-centre
+   order list, order detail, Account → Orders, and the claim / RMA history. Those pages carry the
+   order-time identity snapshot (rule 1) and are invisible to an anonymous crawl and to a table check
+   alike. Grep the returned bodies, per persona, for every retired identity.
 6. **Assert** — zero term hits across all string columns (documented exemptions only), zero vendor strings in
    the rendered corpus, zero vendor-domain mailboxes in the recipient table, zero foreign dialling codes on
    contact blocks. Every assertion is a predicate over a table, never a per-id check (rule 4).

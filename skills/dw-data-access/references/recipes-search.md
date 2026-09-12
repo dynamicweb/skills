@@ -13,4 +13,47 @@ it is **local installs only**, and the cache flush or host restart it owes.
 
 ## Contents
 
-_Recipes land here as the per-area folds harvest them._
+- [Getting an authored `.index` file onto a hosted install](#getting-an-authored-index-file-onto-a-hosted-install)
+- [Re-running an index build on the Management API](#re-running-an-index-build-on-the-management-api)
+
+## Getting an authored `.index` file onto a hosted install
+
+The `.index` is XML on disk under `Files/System/Repositories/<Repo>/`, and the filesystem is the only
+surface that authors it — no Management API verb and no MCP tool writes an index schema. On a local
+install, edit the file in place.
+
+**Surface: Management API, multipart.** On a hosted install where the file archive is not mounted:
+
+```
+POST /Admin/Api/Upload        (multipart/form-data, the .index file, targeted at the repo folder)
+```
+
+The MCP equivalent is `upload_file` into `Files/System/Repositories/<Repo>/`, which is inside the
+in-product surface and is the route to prefer wherever the tool is present; `read_file` and
+`list_files` give the round-trip read-back. Reach for the multipart verb only where MCP is absent.
+
+Either way the schema rules stay invisible from every read surface: `BuildIndex` answers
+`{"status":"ok"}`, `IndexStatusesByRepository` answers "All instances are fine", and
+`FieldDefinitionBasesByRepositoryAndIndexName` lists the field exactly as declared — while the field
+is not in the index at all.
+
+## Re-running an index build on the Management API
+
+MCP `build_product_index`, `wait_for_product_index` and `get_product_index_status` default
+`indexName` to `Products`, while the real repository index file is `Products.index`. The default
+therefore addresses a nonexistent index and **succeeds vacuously**: `wait_for_product_index` answers
+`{"completed":true,"message":"Full index build completed"}` with the index untouched, and the status
+comes back `{"status":"Idle"}` carrying no `documentCount` and no `lastBuild`.
+
+**Surface: Management API.** The same wrong name here does not succeed vacuously:
+
+```
+POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full","BuildType":"Full"}
+```
+
+A wrong `IndexName` answers not-found, which makes this the confirming re-run for a build that
+"worked" through MCP and changed nothing — worth doing before suspecting the schema. Gate on
+`GET /Admin/Api/IndexStatusesAll`.
+
+The in-product gate needs neither: pass the full file name including the `.index` extension on every
+MCP call, and gate on a **non-zero `documentCount`** rather than on `completed:true`.

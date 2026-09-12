@@ -467,7 +467,12 @@ gate cannot be written without one. Two curl gotchas ride along:
 
 - `/Default.aspx?ID=...` **301-redirects** to the friendly URL, so a probe needs `-L` (0 bytes without
   it) and a POST needs `--post301`, or post straight to the friendly URL.
-- Swift posts cart forms as **multipart** (FormData), so use `-F`, not `--data`.
+- Swift posts **cart** forms as multipart (FormData), so use `-F` there — and only there. This is not
+  a general form rule: an ordinary Razor form declares no `enctype`, a browser posts it
+  urlencoded, and a `-F` probe against one is truncated after the sixth field with the later required
+  fields reported missing. Read the rendered form's `enctype` and match it
+  ([`../../dw-demo-base/references/browser-automation.md`](../../dw-demo-base/references/browser-automation.md)
+  "Post a form the way the rendered form posts it").
 
 **Never clear a cart with a lines-only SQL delete.** DW holds the `Order` object in memory, and a
 `DELETE FROM EcomOrderLines` does not invalidate it: on the next cart command the cached Order

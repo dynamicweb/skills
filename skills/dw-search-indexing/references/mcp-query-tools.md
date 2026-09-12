@@ -114,12 +114,21 @@ under the root AND:
 - groups: `[(GroupKey 0, ParentGroupKey -1, Operator And), (GroupKey 1, ParentGroupKey 0,
   Operator Or)]`
 - expressions:
-  - `(GroupKey 1, Field 'AssortmentIDs', Operator IsEmpty)`
   - `(GroupKey 1, Field 'AssortmentIDs', Operator MatchAny, ValueType 'Macro', Value
     'Dynamicweb.UserManagement.Context:AssortmentIDs')`
 - plus every other pre-existing condition re-referenced by `SourceNodeKey` into GroupKey 0.
 
 Use `MatchAny` (not `Equal`) when both sides can hold multiple IDs.
+
+**The "or no assortment" half of that pattern is only half-buildable, so put every product in an
+assortment instead.** An `IsEmpty` arm on `AssortmentIDs` parses and matches nothing on the Lucene
+provider on 10.28.x, and its no-`Right` form throws and takes the page down (the shapes and the
+mechanism are in
+[`query-expressions.md`](query-expressions.md#operators-what-the-enum-implies-vs-what-matches)). The
+working shape is to range every product somewhere — a product with no natural assortment is ranged
+everywhere rather than nowhere — after which the macro arm alone is the whole filter and the SQL and
+index paths agree. If an OR arm for the empty case is unavoidable, assert its row count before
+shipping it; it will report zero without raising anything.
 
 ## Index must be built before queries return data
 
@@ -127,10 +136,23 @@ A query reads from an index. If the index has never been built, or is stale afte
 field change, queries return zero or wrong results even when the expression is correct. The
 reliable order:
 
-1. `build_product_index` to (re)build.
-2. `wait_for_product_index` (or poll `get_product_index_status`) until it reports complete
-   with a non-zero document count.
+1. MCP `build_product_index` to (re)build — **passing `indexName` explicitly, as the index FILE
+   name including the `.index` extension** (`Products.index`).
+2. MCP `wait_for_product_index` (or poll `get_product_index_status`) until it reports complete
+   **with a non-zero `documentCount`**.
 3. Only then trust query results.
+
+**Pass `indexName` on every call in that sequence.** MCP `build_product_index`,
+`wait_for_product_index` and `get_product_index_status` default `indexName` to `Products`, while the
+real repository index file is `Products.index` — so the default addresses a nonexistent index and
+**succeeds vacuously**: `wait_for_product_index` answers `{"completed":true,"message":"Full index
+build completed"}` with the index untouched, and the status comes back `{"status":"Idle"}` carrying
+no `documentCount` and no `lastBuild`. **A status with no `documentCount` means the tool addressed
+nothing** — gate on the document count, never on `completed:true`; that is the whole in-product
+detection, and it fires on the very first build. A build that "worked" and changed nothing can also
+be confirmed from outside the product, where a wrong index name answers not-found instead of
+succeeding: dw-data-access `recipes-search.md` §Re-running an index build on the Management API. With the file name passed, both Lucene instances rebuild and the status carries a
+document count and `indexState Success`.
 
 `build_product_index` handles the already-running case gracefully — it will not start a second
 concurrent build.

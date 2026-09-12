@@ -192,7 +192,11 @@ A PIM governance dashboard lives or dies on the "click the count, land on the of
 | `Dynamicweb.Insights.UI.Dashboard.Widgets.ScalarSqlCountWidget` | **NO — dead end** | Avoid for governance dashboards. It renders a bare number with NO drill-through. Only use when there's no queryable surrogate (e.g. counting rows in a non-product table). |
 | `Dynamicweb.Insights.UI.Dashboard.Widgets.SqlGridWidget` | No | Same — dead end for drill-through |
 
-**Rule of thumb for every governance metric**: there should be a backing product query in `wwwroot/Files/System/SmartSearches/Ecommerce/Shared/*.query`, and the widget should be a `Repository*Widget` that references its GUID. That gives you both the count AND a click path. If you catch yourself reaching for SQL widgets, first ask "could I express this as a product query?" — almost always yes, via `IsEmpty` / `MatchAny` / `Equal` expressions on the indexed fields. Save shared queries in the Shared folder ONLY — never GUID-duplicate a .query file into the Repositories folder; duplicate GUIDs collide and break query resolution (see [dw-search-indexing](../../dw-search-indexing/SKILL.md)).
+**Rule of thumb for every governance metric**: there should be a backing product query in `wwwroot/Files/System/SmartSearches/Ecommerce/Shared/*.query`, and the widget should be a `Repository*Widget` that references its GUID. That gives you both the count AND a click path. If you catch yourself reaching for SQL widgets, first ask "could I express this as a product query?" — almost always yes, via `MatchAny` / `Equal` expressions on the indexed fields. Assert the row count of
+any `IsEmpty` arm before shipping it — on the Lucene provider on 10.28.x that operator can parse and
+match nothing (see [dw-search-indexing](../../dw-search-indexing/references/query-expressions.md#operators-what-the-enum-implies-vs-what-matches)),
+so a "missing description" tile can read zero because the operator is inert rather than because the
+data is complete. Save shared queries in the Shared folder ONLY — never GUID-duplicate a .query file into the Repositories folder; duplicate GUIDs collide and break query resolution (see [dw-search-indexing](../../dw-search-indexing/SKILL.md)).
 
 ## The widget envelope: what each widget honours and discards
 

@@ -13,6 +13,7 @@
 - [Step 4 — The MCP verification gate](#step-4--the-mcp-verification-gate)
 - [Step 5 — Install Browser MCP (machine-level, do once per Windows account)](#step-5--install-browser-mcp-machine-level-do-once-per-windows-account)
 - [Step 6 — Discover bearer tokens (the discover-from-project-files rule)](#step-6--discover-bearer-tokens-the-discover-from-project-files-rule)
+- [Upgrade a package where it is already referenced — never through the Add-in manager](#upgrade-a-package-where-it-is-already-referenced--never-through-the-add-in-manager)
 - [Triage table — when verification fails](#triage-table--when-verification-fails)
 
 Wire MCP for the Backend MCP server — the AppStore app **Truvio Commerce MCP**, reached from Claude Code as the server `dynamicweb-commerce-mcp` — on a host running `Dynamicweb.Suite` 10.x. Install the app itself from the AppStore first ([`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §1); never pin the pre-rename `Dynamicweb.MCP` package in the host csproj. The canonical flow is **API-Key auth with a static bearer in `.mcp.json`** — five steps in **strict order**:
@@ -277,6 +278,32 @@ If a token isn't in conversation state and no memory entry exists, capture again
 
 ---
 
+## Upgrade a package where it is already referenced — never through the Add-in manager
+
+**A package the host csproj already references is upgraded by bumping the `PackageReference` and
+redeploying `bin` — installing the same package through Settings > Developer > Add-ins bricks the
+whole site.** The Add-in install lands in `Files/System/AddIns/Installed/<pkg>/lib/<tfm>/`, and with
+`AddIns.AllowLoad=True` the AddInManager scans that folder **in addition to** `bin`. Two assemblies
+declaring the same type names make the per-base-type cache throw on the duplicate key, and because
+the notification manager enumerates subscribers on every page view, storefront, `/Admin` and the
+scheduled tasks all go down together — not just the feature the package provides. The Event Viewer
+fills with `System.ArgumentException: An item with the same key has already been added. Key:
+<Namespace>.<Type>` from `AddInManager.AddTypesToCache`, and nothing in the database records the
+install: **the folder is the registry.**
+
+- **Probe (cheap, standing):** compare the basenames of `*.dll` under
+  `Files/System/AddIns/Installed/**/lib/*` against `Application/bin/*.dll` and assert the
+  intersection is empty. A non-empty intersection is the defect, before the site is even loaded.
+- **Recovery:** move `Files/System/AddIns/Installed/<pkg>` out of the tree and recycle. The
+  storefront, `/Admin` and the next scheduled-task tick come back clean immediately.
+- **Do not resolve it the other way** by deleting the assembly from `bin`: an add-in package
+  typically ships only its own DLL, so any dependency the newer version introduced is then missing,
+  and `bin` is the csproj build output that the next build restores anyway. The upgrade belongs in
+  the csproj.
+
+This applies to every package a host references directly — the MCP package and the Serializer engine
+are the two that recur.
+
 ## Triage table — when verification fails
 
 | Symptom | Fix |
@@ -286,6 +313,7 @@ If a token isn't in conversation state and no memory entry exists, capture again
 | `claude mcp list` shows the server but `ToolSearch +dynamicweb` returns 0 / 401 Unauthorized on `/admin/mcp` requests | **Three distinct causes — check in order.** (1) `.mcp.json` still has the literal `<MCP_API_KEY>` placeholder — substitute the plaintext key from the admin UI (Step 3b). (2) No MCP configuration exists on the DW side — admin UI → Settings → Integration → MCP configurations → New, set **Access = Full access**, **Authentication method = API Key**, save, copy the displayed plaintext key (shown once), and paste into `.mcp.json`. (3) Stale bearer (config was deleted/regenerated since the key was last captured) — the configuration row in the admin UI is now linked to a different `AccessUserTokenId`; capture the new key and update `.mcp.json` + per-demo memory. |
 | AppStore install of "Backend MCP" appears to do nothing — no UI confirmation, the MCP configurations menu the app is supposed to add never appears, `/admin/mcp` returns 404 | **Two distinct causes, in order of likelihood.** (1) **Host TFM is net8.** The MCP AddIn loader requires .NET 10 even though the package ships net6/net8 lib binaries. Symptom: install POST returns 200, files drop to `wwwroot/Files/System/AddIns/Installed/<package>.<ver>/lib/` (`Truvio.Commerce.MCP.*` since the rename, `Dynamicweb.MCP.*` on a host installed before it), but AddIn never registers. Fix: pin csproj `<TargetFramework>net10.0</TargetFramework>` and restart the host (verify in startup log: `Dynamicweb is running on .NET 10 or greater`). See [`../../dw-setup-install/references/install-anatomy.md`](../../dw-setup-install/references/install-anatomy.md) §2. (2) **Stuck DB update queue** (or buggy CREATE in update queue). Check `wwwroot/Files/System/Log/EventViewer/*.log` for `Update failed:.*Cannot find the object`. Recovery: `../../dw-setup-upgrade/references/db-update-recovery.md` (Mode A or B depending on triage). |
 | Mid-run MCP call fails with `401 Unauthorized` after a host restart | Should be rare with API-Key auth (the bearer is DB-backed, stateless, and the host revalidates against `AccessUserToken` on every request). If it happens: the admin UI's MCP config was likely deleted/recreated, which generates a new `AccessUserTokenId` and invalidates the old plaintext key. Open the admin UI, confirm the MCP configuration still exists, and capture a fresh key if the link is broken. **Do NOT silently pivot to direct-SQL fallbacks** for create/update operations — that bypasses MCP cache invalidation AND leaves required columns unset (e.g. `EcomDetails.DetailLanguageId` defaulting to empty string, see `dw-demo-pim/references/structural-model.md` §2.10). The MCP-plugin tools (e.g. `import_product_images_from_urls`, `add_product_image`) have NO Management API endpoint backing — there is no plain-HTTP fallback that preserves their column-population guarantees. |
+| Storefront AND `/Admin` both answer 500 after an add-in install, with `An item with the same key has already been added` in the Event Viewer | The package is loaded twice — once from `bin` (csproj `PackageReference`) and once from `Files/System/AddIns/Installed/`. Move the Installed folder out and recycle; upgrade by bumping the `PackageReference`. See "Upgrade a package where it is already referenced" above. |
 | Mid-run MCP call fails with `MCP server "..." requires re-authorization (token expired)` | You're on the legacy Claude.ai OAuth auth method, not API Key — that's exactly the failure mode the API-Key default exists to avoid. Switch the admin UI's MCP configuration to `Authentication method = API Key`, capture the plaintext key, and update `.mcp.json` per Step 3b. After that, host restarts and Claude Code restarts no longer trigger re-auth. |
 
 
