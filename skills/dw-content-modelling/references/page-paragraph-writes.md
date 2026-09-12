@@ -13,7 +13,8 @@ and the paragraph-level levers that scope one listing. Schema design is
 - [Editing page / paragraph / grid-row content through the Management API](#editing-page--paragraph--grid-row-content-through-the-management-api)
 - [Saves that report success but silently drop a field](#saves-that-report-success-but-silently-drop-a-field)
 - [A page save re-derives `PageMenuText` from the item type's title field](#a-page-save-re-derives-pagemenutext-from-the-item-types-title-field)
-- [`save_pages` has no `navigationTag` member, and an unknown key is dropped](#save_pages-has-no-navigationtag-member-and-an-unknown-key-is-dropped)
+- [`save_pages` accepts `navigationTag` and `urlName` and persists neither](#save_pages-accepts-navigationtag-and-urlname-and-persists-neither)
+- [A `RichTextEditor` field drops empty lines on write](#a-richtexteditor-field-drops-empty-lines-on-write)
 - [A re-parent is invisible to the rendered navigation until the app domain restarts](#a-re-parent-is-invisible-to-the-rendered-navigation-until-the-app-domain-restarts)
 - [`place_app_paragraph` leaves `ParagraphItemType` empty, which renders nothing in a Swift 2 grid](#place_app_paragraph-leaves-paragraphitemtype-empty-which-renders-nothing-in-a-swift-2-grid)
 - [Repeatable item-list children render from a cache that no child write crosses](#repeatable-item-list-children-render-from-a-cache-that-no-child-write-crosses)
@@ -154,7 +155,7 @@ or curl the rendered page) before declaring it done:
 | Save | Field silently dropped | Verified | Working fallback |
 |---|---|---|---|
 | MCP `save_pages` (update path) | `menuText` on an item-typed page — the save re-derives it from the item's title field, and the response echoes the derived value | DW 10.25.x-10.28.x | `set_page_item_fields {Title}` then `save_pages {id}` — see "A page save re-derives `PageMenuText`" below. A direct `PageMenuText` write survives only until the next save of that page. |
-| MCP `save_pages` (create + update) | `urlName` — ignored; the slug is derived from `menuText` instead | DW 10.27.x | Set `menuText` to drive the slug. `urlName` won't pin the slug on its own; pinning a slug that `menuText` cannot produce is out of product ([dw-data-access](../../dw-data-access/SKILL.md) `recipes-content.md` §"Pin a page slug"). |
+| MCP `save_pages` (create + update) | `urlName` — a documented member of the input schema, accepted and then not persisted; the slug is derived from `menuText` instead | DW 10.27.x-10.28.x, MCP 0.4.4 | Set `menuText` to drive the slug. `urlName` won't pin the slug on its own; pinning a slug that `menuText` cannot produce is out of product ([dw-data-access](../../dw-data-access/SKILL.md) `recipes-content.md` §"Pin a page slug"). |
 | Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` is the working surface. `ParagraphSave` is still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
 
 The tool-behaviour root cause (why these MCP / Management API writes drop fields, and the surface model)
@@ -188,18 +189,36 @@ matching Title and MenuText at creation time and the whole class of surprise dis
 multi-language solution the same mechanism de-translates language mirrors — see
 [`language-layers.md`](language-layers.md) §3 ("Every save on a mastered page …").
 
-## `save_pages` has no `navigationTag` member, and an unknown key is dropped
+## `save_pages` accepts `navigationTag` and `urlName` and persists neither
 
-The `save_pages` input model is `{id, areaId, parentPageId, itemType, layoutTemplate, masterPageId,
-menuText, metaTitle, active}`. A `navigationTag` passed alongside is accepted, the call returns
-`succeeded`, the page is created — and `PageNavigationTag` stays empty. That matters more than it
+On MCP 0.4.4 `urlName`, `navigationTag`, `showInMenu`, `sort` and `treeSection` are all **first-class
+members** of the `save_pages` input schema, each with its own description — so this is a documented
+write that is accepted and then dropped, not an unknown argument, and there is no better-named tool
+to switch to. A `navigationTag` passed alongside is accepted, the call returns `succeeded`, the page
+is created — and `PageNavigationTag` stays empty. That matters more than it
 looks: Swift templates resolve service and form pages with `GetPageIdByNavigationTag("<tag>")`,
 which falls back to `0` and renders a link to `#`, so the page exists and the link goes nowhere.
-Create the page with `save_pages`, then read it back with `get_page_by_id` and check the navigation
+Create the page with `save_pages`, then read it back with `get_pages_by_ids` and check the navigation
 tag actually landed: an empty tag means the member was dropped, and setting it is an out-of-product
 write ([dw-data-access](../../dw-data-access/SKILL.md) `recipes-content.md` §"Pin a page slug and
 set PageNavigationTag"). Assert the value rather than the call's status, and treat a template link
 rendering as `#` as the same finding seen from the frontend.
+
+## A `RichTextEditor` field drops empty lines on write
+
+A `RichTextEditor` field (Swift's paragraph `Text` among them) normalises its value on the way in
+and **empty lines do not survive**. Single newlines do. The loss happens before any template sees
+the value, so `<pre>` and `white-space: pre-wrap` cannot restore it — they preserve what was stored,
+and the blank lines were never stored.
+
+So **express vertical spacing as markup, never as blank lines**: separate `<p>` elements, or a
+`<br>` pair. That holds inside a `<pre>` block too, which is exactly where an agent copying a source
+document verbatim reaches for blank lines. Copy that arrives as blocks separated by blank lines
+comes out as one flattened run.
+
+The write reports `succeeded` either way and a field read-back shows the text that was sent, so
+**only the rendered page shows the loss** — assert the block separation on the render, not on the
+write.
 
 ## A re-parent is invisible to the rendered navigation until the app domain restarts
 

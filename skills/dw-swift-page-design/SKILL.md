@@ -36,9 +36,11 @@ design concern needs nothing beyond the ordinary page/paragraph tools.
 
 ## Before you write — snap to THIS solution (skipping this is what produces broken pages)
 
-**Plan the URL map from `menuText`, because `save_pages` does not carry `urlName`.** On the create
-and the update path alike the call returns succeeded and derives the slug from `menuText`, dropping
-whatever `urlName` was sent. So decide the slug first and **make each page's `menuText` the label
+**Plan the URL map from `menuText`, because `save_pages` does not persist `urlName`.** `urlName` is a
+first-class member of the `save_pages` input schema on MCP 0.4.4, with its own description — it is
+accepted, not unknown. On the create and the update path alike the call returns succeeded and
+derives the slug from `menuText`, dropping whatever `urlName` was sent, so there is no better-named
+tool to go looking for. So decide the slug first and **make each page's `menuText` the label
 that produces it**; a slug `menuText` cannot produce is out of product. Read every created page back
 with `get_pages_by_ids` and write cross-links from the slugs it actually returns — never from the
 planned map. A map authored before this constraint is known ships copy whose every internal link
@@ -57,13 +59,19 @@ once up front:
    missing tool and **not** a permission gate. The response is to re-read `tools/list` for the
    required arguments and call again, never to conclude the tool is absent or to substitute
    `get_templates` / `get_layouts`. `get_paragraph_templates` also requires `itemType`.
+   **Take every argument name from the tool's own `tools/list` input schema**, never from the
+   prose around it: on MCP 0.4.4 `get_pages_by_parent_id` takes `parentId` and
+   `get_item_type_fields` takes `systemName`, and a wrong key is either that same one-sentence
+   error or, on `get_item_type_fields`, an empty array with no error at all — so an empty result
+   is never proof that the item type has no fields. Both hintless shapes are catalogued in
+   [`dw-swift-page-blocks`](../dw-swift-page-blocks).
 2. Honour the **Field & template contracts** (in `dw-swift-page-blocks`): pass each
    `get_paragraph_templates` value unchanged — a bare file name like `CardImageTop.cshtml`,
    never a `Designs/...` path; build button fields as `{"Label":"…","Link":"…",
    "Style":"primary"}` (not `ButtonText`/`ButtonStyle`); reference only color-scheme ids that
    exist — `save_color_schemes` a brand colour FIRST if you need a new one (a made-up id
    renders a broken band).
-3. Create the page **once**. Check it doesn't already exist (`get_pages_by_parent_id`) before
+3. Create the page **once**. Check it doesn't already exist (`get_pages_by_parent_id`, passing `parentId` + `areaId`) before
    creating; on a multilingual site build on the master layer. Re-running blindly creates
    duplicate pages.
 4. **Read ONE existing well-built page as your format reference** — a front page or a similar
@@ -77,6 +85,31 @@ once up front:
    distinct component, render it (`fetch_frontend_page_html`, or fetch the page and grep for
    `Error executing template`), and only then create the remaining rows. Authoring thirty
    paragraphs before rendering one means every format mistake is paid for thirty times.
+
+## The create order, and the one field it makes mandatory
+
+Four calls per paragraph, in this order: `save_pages` → `save_grid_rows` → `save_paragraphs`
+(`id: 0`, the real `itemType`, the row id and the column) → `set_paragraph_item_fields`. On
+DW 10.28.x with MCP 0.4.4 the bare `save_paragraphs` create **does** mint the underlying item
+instance — the response carries a populated `itemId` — so nothing has to be cloned first to obtain
+one, and `set_paragraph_item_fields` writes straight to it.
+
+**Blank every button field of a freshly created paragraph in that same `set_paragraph_item_fields`
+call.** A bare create materialises the item type's shipped **string** defaults into its
+`ButtonEditor` fields (on `Swift-v2_Text`, `FirstButton` and `SecondButton`); the runtime type of
+those fields is a `ButtonData` object, so the editor throws a `ConverterException` on the raw
+string and the template emits an error block where the copy should be. The page still answers
+**HTTP 200** and the paragraph still reads back with the fields it was asked to write — only the
+render shows it. So send `FirstButton: ""` and `SecondButton: ""` (and the equivalent button fields
+of any other type created bare) alongside `Title` / `Subtitle` / `Text`, and give a button a value
+only as the proper `{"Label":…,"Link":…,"Style":…}` object.
+
+**Assert:** fetch the page and confirm zero occurrences of `ConverterException` and zero emitted
+`<pre class="dw-error">` blocks — not merely that the write returned `succeeded`.
+
+A clone-then-rewrite chain over `copy_paragraph` is a fallback for a build where the create path
+returns an empty `itemId`, nothing more. It is also what used to hide this defect: a clone inherits
+the donor's already-cleared button fields, so it never renders the failure a bare create does.
 
 ## Two modes
 
@@ -96,7 +129,8 @@ You are reproducing a *look*, not necessarily the content.
    - New content in the same *style* → reconstruct: build fresh rows/paragraphs that mirror
      the reference's layout+scheme rhythm but carry the new copy. Use when the content
      differs.
-3. **Build** (reconstruct path): `save_pages` → `save_grid_rows` (mirror the reference's
+3. **Build** (reconstruct path, in the create order above — blanking the button fields in the same
+   `set_paragraph_item_fields` call): `save_pages` → `save_grid_rows` (mirror the reference's
    `DefinitionId` per row, and set `ColorSchemeId` to match its banding) → `save_paragraphs`
    (same component + variant, into the right row/column) → `set_paragraph_item_fields` (the
    new copy/media/links).
@@ -122,8 +156,9 @@ you cannot invent CSS or custom layout the tools don't expose (see the ceiling i
    approximate scheme.
 3. **Plan, then confirm** — show the section→component map so the user can correct a mis-read
    before you write (see Confirm before writing, below).
-4. **Build** in vocabulary order: `save_pages` → `save_grid_rows` → `save_paragraphs` (real
-   variant from `get_paragraph_templates`) → `set_paragraph_item_fields`. Use the user's
+4. **Build** in the create order above: `save_pages` → `save_grid_rows` → `save_paragraphs` (real
+   variant from `get_paragraph_templates`) → `set_paragraph_item_fields`, blanking the button
+   fields in that same call. Use the user's
    supplied copy/images; where the image only shows lorem/placeholder, ask for the real text
    rather than baking in filler.
 
@@ -210,7 +245,11 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
   so a plain `Title` becomes tiny unstyled text glued to the next field. Wrap headings as
   `<h2 class="h1 mb-2">…</h2>`, eyebrows as `<p class="text-uppercase small mb-2">…</p>`, body
   as `<p class="mb-0">…</p>`. This is what gives the page its type hierarchy and vertical
-  rhythm. `Feature` icons are SVG file paths (`/Files/Images/Icons/…svg`), not `bi …` classes.
+  rhythm. **A `RichTextEditor` field drops empty lines on write**, so express vertical spacing as
+  markup (separate `<p>` elements, or a `<br>` pair) and never as blank lines — inside a `<pre>`
+  included, where nothing can restore what was not stored. The write reports success either way and
+  only the rendered page shows the loss (mechanics:
+  [`dw-content-modelling/references/page-paragraph-writes.md`](../dw-content-modelling/references/page-paragraph-writes.md)). `Feature` icons are SVG file paths (`/Files/Images/Icons/…svg`), not `bi …` classes.
 
 ## The visual quality bar — what separates a 6/10 page from a 9–10/10 page
 
@@ -312,7 +351,7 @@ did instead), and any copy/media still needed. Nothing silent.
 
 ## Recovery
 
-- Write fails on item-type/schema validation → re-read `get_item_type_fields` for that
+- Write fails on item-type/schema validation → re-read `get_item_type_fields` (`systemName`) for that
   component and fix the field name; never invent placeholder values to satisfy a required
   field.
 - A row renders structureless → its `DefinitionId` was omitted or wrong; re-set it via

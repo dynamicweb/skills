@@ -322,7 +322,8 @@ wiring, sibling links) that raw SQL skips. When MCP doesn't expose an operation,
 through `POST /Admin/Api/ParagraphSave` — see
 [dw-content-modelling](../../dw-content-modelling/SKILL.md) (`modelling-discipline.md`) §2.
 
-**`save_pages` does not persist `urlName` / `navigationTag` / `hidden` (verified 10.27.x).** Even the
+**`save_pages` accepts `urlName` / `navigationTag` / `hidden` as documented members of its input
+schema and persists none of them (verified 10.27.x-10.28.x on MCP 0.4.4).** Even the
 MCP-first path needs a **targeted** SQL touch-up for these three: a page created via `save_pages` lands
 with a derived URL slug, no navigation tag, and default visibility **regardless of what you pass** for
 those fields. This is the sanctioned "confirmed silent no-op → local SQL fallback" case (round-trip-verify

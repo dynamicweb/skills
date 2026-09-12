@@ -49,6 +49,15 @@ the browser-side checks that catch a page passing every content assert are in
 > argument-validation error — it is **not** an unknown-tool error and **not** a permission gate.
 > Re-read `tools/list` for the required arguments and call again; never swap in
 > `get_templates` / `get_layouts` as a substitute, and never report the tool as absent.
+>
+> **Every argument name comes from that input schema, not from the surrounding prose** — the
+> obvious name is wrong often enough to plan for. Measured on 0.4.4: `get_pages_by_parent_id`
+> takes `parentId` (not `parentPageId`, which every neighbouring tool uses) and
+> `get_item_type_fields` takes `systemName` (not `itemType`). A wrong key fails in one of two
+> hintless ways: the one-sentence invocation error above, or — on `get_item_type_fields` — an
+> **empty array with no error at all**, which reads as a legitimate "this type has no fields".
+> So an empty result is never proof of absence: re-read the schema and call again before
+> concluding anything about the data.
 
 - `get_layouts` — page/area layout (master) templates; read the real Swift design folder name
   (often `Swift-v2`, not guaranteed).
@@ -56,8 +65,8 @@ the browser-side checks that catch a page passing every content assert are in
   per-row toggles are supported.
 - `get_paragraph_templates` — for a component, the real variant template paths (e.g.
   `TextMiddleLeft.cshtml`).
-- `get_item_types` / `get_item_type_fields` — valid paragraph component names and each one's
-  real field system names.
+- `get_item_types` / `get_item_type_fields` (`systemName`) — valid paragraph component names and
+  each one's real field system names.
 - `get_layout_containers` — the default content container.
 - `get_content_apps` — module/app paragraphs (these go through `place_app_paragraph`, NOT
   `save_paragraphs`).

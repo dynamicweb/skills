@@ -28,8 +28,9 @@ it is **local installs only**, and the cache flush or host restart it owes.
 
 ## Writing `PageNavigationTag` directly
 
-**Surface: `SQL`.** `PageNavigationTag` is not on the MCP `save_pages` model, and no Management API
-command at `/admin/api/...` exposes it either, so the column is only reachable from the database.
+**Surface: `SQL`.** `navigationTag` IS a member of the MCP `save_pages` input schema on MCP 0.4.4 —
+it is accepted and then not persisted — and no Management API command at `/admin/api/...` exposes
+`PageNavigationTag` either, so the column is only reachable from the database.
 
 ```sql
 UPDATE Page SET PageNavigationTag = 'MyTag' WHERE PageId = <pageId>;
@@ -37,8 +38,8 @@ UPDATE Page SET PageNavigationTag = 'MyTag' WHERE PageId = <pageId>;
 
 Three things this recipe owes:
 
-- **Why the higher surfaces do not cover it** — the field is absent from both the MCP page model and
-  the Management API page command on 10.28.x.
+- **Why the higher surfaces do not cover it** — the MCP page model carries the member and drops the
+  value on 10.28.x, and the Management API page command has no equivalent.
 - **Local installs only** — a hosted install has no SQL surface at all.
 - **The debt it owes** — a host restart. The page cache is not touched by a direct column write, so
   `GetPageIdByNavigationTag()` keeps returning `0` until the application pool recycles.
@@ -243,10 +244,10 @@ Add content to the now-empty page or it renders as header plus footer.
 
 In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
 (`page-paragraph-writes.md`, "Saves that report success but silently drop a field" and
-"`save_pages` has no `navigationTag` member").
+"`save_pages` accepts `navigationTag` and `urlName` and persists neither").
 
-`save_pages` ignores `urlName` — the slug is derived from `menuText` — and drops `navigationTag`
-silently, so both columns need a second surface. The Management API `PageSave` reaches
+`save_pages` accepts `urlName` and `navigationTag` as documented members and persists neither — the
+slug is derived from `menuText` instead — so both columns need a second surface. The Management API `PageSave` reaches
 `PageNavigationTag`; nothing below `SQL` pins `PageUrlName`. The SQL form is **local installs only**
 and owes a host restart, so batch both before the restart the job already owes, and assert the
 column rather than the call's status.
