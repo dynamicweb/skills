@@ -41,6 +41,15 @@ the browser-side checks that catch a page passing every content assert are in
 ## The MCP tools, by job
 
 **Discover (what exists on THIS solution):**
+
+> **Always pass `areaId`.** `get_row_definitions`, `get_paragraph_templates` and
+> `get_layout_containers` are area-scoped, and `get_paragraph_templates` also requires
+> `itemType`. With a required argument missing or misspelled the add-in answers
+> `An error occurred invoking <tool>.` and nothing else. On MCP 0.4.4 that one sentence is the
+> argument-validation error — it is **not** an unknown-tool error and **not** a permission gate.
+> Re-read `tools/list` for the required arguments and call again; never swap in
+> `get_templates` / `get_layouts` as a substitute, and never report the tool as absent.
+
 - `get_layouts` — page/area layout (master) templates; read the real Swift design folder name
   (often `Swift-v2`, not guaranteed).
 - `get_row_definitions` — valid grid-row `DefinitionId`s + their column count/widths and which

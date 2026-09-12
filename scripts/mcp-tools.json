@@ -1,0 +1,4386 @@
+{
+ "$schema": "internal",
+ "purpose": "Every MCP tool name a skill may cite in backticks. scripts/validate-skills.py errors on a backticked snake_case tool-shaped token that is neither here nor in notTools.",
+ "mcpVersion": "0.4.4",
+ "sources": {
+  "mcp-0.4.4-fullaccess": {
+   "mcpVersion": "0.4.4-BETA",
+   "platform": "Dynamicweb 10.28.x",
+   "toolCount": 604,
+   "note": "the FullAccess tool set of MCP 0.4.4 as returned by tools/list. A key with narrower permissions lists a subset, so a name missing from a running server is a permission question before it is an existence question. This is the primary truth for 0.4.4."
+  },
+  "mcp-0.4.x-narrow": {
+   "mcpVersion": "0.4.x",
+   "platform": "Dynamicweb 10.29.x",
+   "toolCount": 392,
+   "note": "a second server captured with a narrower key. It carries singular id getters (get_page_by_id, get_product_by_id, get_user_by_id) that 0.4.4 FullAccess replaces with plural batch getters (get_pages_by_ids, get_products_by_ids, get_users_by_ids); prefer the plural forms when writing for 0.4.4."
+  },
+  "optional-add-in": {
+   "mcpVersion": "not in the standard tool set",
+   "platform": "any",
+   "toolCount": 11,
+   "note": "tools no captured tools/list registers. They ship, if at all, in an optional migration add-in on top of the standard Dynamicweb MCP add-in. A skill citing one states that availability is build-dependent and names what the reader does when tools/list does not carry it."
+  }
+ },
+ "notTools": [
+  "active_missing_images",
+  "active_missing_short_description",
+  "agent_skills",
+  "app_offline",
+  "bc_reorder",
+  "browser_console_messages",
+  "browser_evaluate",
+  "browser_navigate",
+  "browser_network_requests",
+  "browser_resize",
+  "browser_snapshot",
+  "browser_take_screenshot",
+  "custom_color",
+  "custom_weight",
+  "db_backupoperator",
+  "db_datareader",
+  "db_datawriter",
+  "db_ddladmin",
+  "db_owner",
+  "g_bc_reorder",
+  "g_ean",
+  "g_height_cm",
+  "g_lifecycle_state",
+  "g_notify_email",
+  "g_weight_kg",
+  "gov_copy_paste_descriptions",
+  "impact_signed_off",
+  "incomplete_products",
+  "lifecycle_state",
+  "low_stock_active",
+  "model_overrides",
+  "reference_category",
+  "run_in_background",
+  "snake_case",
+  "sp_rename"
+ ],
+ "tools": {
+  "add_fixed_lines": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "add_impersonatable_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "add_impersonatable_users": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "add_impersonator_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "add_impersonator_users": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "add_order_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "add_product_image": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "add_product_line_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "add_products": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "add_products_by_sku": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "add_products_to_language": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "add_repeatable_item": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "add_rma_comment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "add_rma_order_line": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "add_widgets_to_dashboards": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "adjust_user_loyalty_points": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "apply_brand_color_scheme": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "apply_translation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_categories_to_data_models": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_completion_rules_to_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_completion_rules_to_shops": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_data_model_to_products": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_data_model_to_products_and_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_dw9_products_to_data_models": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "assign_groups_to_assortment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_groups_to_user": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_permissions_to_assortment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_products_to_assortment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_products_to_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_shops_to_assortment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_users_to_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "assign_variant_groups_to_product": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "build_assortments": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "build_pages": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "build_product_index": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "bulk_set_order_field_values": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "bulk_set_product_stock": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "calculate_product_completeness": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "calculate_product_completeness_for_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "calculate_product_completeness_for_languages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "calculate_product_completeness_for_products": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "calculate_query_product_completeness": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "can_check_out_page": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "can_impersonate": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "cancel_email_campaign_schedule": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "check_assortment_product_access": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "check_in_page": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "check_out_page": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "clear_countries_cache_by_keys": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "clear_country_cache": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "close_rma": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "combine_products_as_family": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "combine_products_as_variants": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "complete_order": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "convert_cart_to_order": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "convert_currency": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "copy_area": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "copy_grid_row": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "copy_page": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "copy_paragraph": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "copy_payment": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "copy_payment_method": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "copy_shipping": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "copy_shipping_method": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "copy_tax_setting": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "count_audits_by_query": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "create_adjustment_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_categories": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_category_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_dashboards": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_data_model_structure": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_data_models": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_datasets": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_email_campaign_from_template": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "create_field_options": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_folder": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_integration_activity": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "create_language_version": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_or_update_completeness_rules": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_or_update_feeds": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_or_update_product_queries": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_or_update_workflow_states": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_order_field": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_order_state": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_orders": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_payment": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_product_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_products": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_rma": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_scheduled_task": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "create_shipping": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_shipping_method": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_shops": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_users": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_variant_combinations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "create_voucher_set": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "customize_item_type": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "deactivate_voucher_codes": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_adjustment_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_all_order_lines": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_area": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_assortments": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_button_styles": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_categories": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_category_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_color_scheme_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_color_schemes": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_comment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_completion_rules": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_conditions_from_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_consolidated_payments": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_countries": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_country_translations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_currencies": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_dashboards": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_data_models": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_datasets": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_email_campaign_folders": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_email_campaigns": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_feeds": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_fees": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_fees_by_method": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_field_display_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_field_options": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_file": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_fonts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_grid_rows": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_index_queries": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_index_query_expressions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_integration_activity": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_integration_activity_mapping": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_integration_endpoint": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_item_preset": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_item_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_languages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_ledger_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_manufacturers": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_order": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_order_field": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_order_line": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_order_state": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_pages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_paragraphs": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_payment": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_payment_methods": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_prices": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_prices_for_products": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_product_assignment_rule_mappings": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_product_assignment_rules": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_product_email_notifications": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_product_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_product_queries": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_product_query_expressions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_product_relation_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_product_stock": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_product_units_of_measure": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_product_vat_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_products": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_recurring_order": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_regions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_rewards_from_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_rma": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_roundings": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_shipping": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_shipping_methods": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_shops": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_stock_locations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_tax_setting": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_tax_setting_country_relation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "delete_track_and_trace": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_typographies": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_units": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_user_addresses": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_user_addresses_by_user_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_user_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_users": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_variant_combinations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_variant_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_variant_options": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_vat_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_vat_group_country_relation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_workflow_states": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "delete_workflows": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "drop_item_type_column": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "drop_item_type_table": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "end_recurring_order": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "extract_site_content": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "fetch_documentation_page": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "fetch_frontend_page_html": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "find_unresolvable_item_pages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "flag_assortments_for_rebuild": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "force_price_recalculation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "generate_voucher_codes": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_adjustment_discount": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_adjustment_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_adjustment_discounts_paged": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_all_fees": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_all_rmas": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_allow_anonymous_users_assortment_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_area_by_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_area_permissions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_areas": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortment_ids_by_user": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortment_permissions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortment_permissions_by_user": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortment_relations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortment_relations_by_group_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortment_relations_by_product_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortment_relations_by_shop_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortments": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortments_by_product": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_assortments_for_build": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_audit_details": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_audits_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_audits_by_query": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_available_widgets": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_button_styles": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_child_feeds": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_color_scheme_usage_counts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_color_scheme_usage_info": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_color_schemes": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_comment_by_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_comments": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_completeness_status": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_completion_rule_assignments_for_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_completion_rule_assignments_for_shops": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_completion_rules": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_consolidated_payments_by_paid_order_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_consolidated_payments_by_payment_order_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_content_apps": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_countries": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_country": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_currencies": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_currency": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_dashboard_areas": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_dashboard_widgets": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_dashboards": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_dataset_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_datasets": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_datasets_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_default_user_address": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_deleted_grid_rows": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_deleted_pages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_discount_condition_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_discount_reward_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_dw9_product_import_status": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "get_dynamic_product_relations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_dynamic_relation_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_email_campaign_by_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_email_campaign_folders": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_email_campaign_recipient_preview": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_email_campaign_recipients": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_email_campaign_stats": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_email_campaign_templates": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_email_campaign_top_folders": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_email_campaigns": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_email_campaigns_by_folder": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_extracted_page": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "get_extracted_site": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "get_feed_by_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_feed_providers": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_feed_queries": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_feeds": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_fees_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_fees_by_method": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_fees_by_method_and_country_region": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_field_display_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_field_display_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_field_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_field_value_conversion_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_field_value_conversions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_fonts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_frontend_health": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_grid_row_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_grid_row_definition_usage_info": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_grid_rows_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_grid_rows_by_page_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_group_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_groups_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_groups_for_product": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_groups_paged": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_health_checks": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_health_providers": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_impersonatable_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_impersonatable_users": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_impersonator_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_impersonator_users": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_index_queries": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_index_query_expressions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_index_repositories": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_integration_activities": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_integration_activity": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_integration_activity_logs": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_integration_activity_mappings": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_integration_activity_status": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_integration_endpoints": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_integration_provider_parameters": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_integration_provider_schema": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_integration_providers": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_item_field_values": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_item_field_values_by_preset": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_item_layout_templates": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_item_preset": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_item_presets": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_item_type": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_item_type_column_health": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_item_type_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_item_type_fields_health": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_item_type_table_health": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_item_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_language": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_language_areas": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_languages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_layout_containers": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_layouts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_ledger_payment_info": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_ledger_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_ledger_types_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_loyalty_rewards": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_macro_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_manufacturer_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_manufacturers": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_manufacturers_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_master_areas": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_module_settings": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_navigation_structure": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_not_active_assortment_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_order_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_order_field_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_order_field_values": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_order_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_order_fields_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_order_flows": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_order_line": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_order_lines": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_order_lines_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_order_state_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_order_states": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_order_states_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_order_versions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_orders_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_page_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_page_item_field_values": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_page_permissions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_pages_by_area_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_pages_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_pages_by_parent_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_paragraph_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_paragraph_item_field_values": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_paragraph_templates": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_paragraphs_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_paragraphs_by_page_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_payment": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_payment_method_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_payment_methods": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_payment_methods_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_payments": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_price_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_prices_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_prices_by_product_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_asset_categories": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_assignment_rule_by_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_assignment_rule_mappings": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_assignment_rules": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_by_auto_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_by_external_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_category_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_counts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_email_notification_by_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_email_notification_recipients": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_email_notifications": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_images": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_index_status": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_queries": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_queries_paged": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_query_expressions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_reference_field": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_reference_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_product_relation_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_relations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_stock": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_stock_by_location": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_product_units_of_measure": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_products": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_products_by_auto_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_products_by_external_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_products_by_group_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_products_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_products_by_query": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_products_by_search_filter": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_products_by_sku": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_products_missing_field_values": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_recurring_order_by_base_order_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_recurring_order_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_recurring_orders_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_recurring_orders_for_user": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_region": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_regions_by_country_code": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_repeatable_item_field": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_rma_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_rma_order_lines": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_rma_states": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_rmas_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_rmas_by_order_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_roundings": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_roundings_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_row_definitions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_scheduled_task_add_in_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_scheduled_tasks": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_selected_item_preset": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_shipping": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_shipping_method_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_shipping_methods": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_shipping_methods_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_shippings": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_shop": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_shops": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_standard_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_stock_locations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_subgroups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_tax_settings": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_tax_settings_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_templates": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_top_level_feeds": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_track_and_trace_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_track_and_traces": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_track_and_traces_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_translatable_content": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_typographies": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_unique_audit_actions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_unique_audit_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_unit_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_units": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_units_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_user_address_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_addresses_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_user_addresses_by_type": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_addresses_by_user_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_by_email": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_by_external_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_by_username": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_count_by_group_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_group_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_group_path": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_groups_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_user_groups_by_system_name": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_groups_by_system_names": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_user_groups_by_user_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_user_loyalty_balance": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_user_subgroups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_users_by_customer_number": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_users_by_customer_numbers": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_users_by_emails": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_users_by_external_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_users_by_group_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_users_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_users_by_usernames": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_users_missing_profile_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_variant_combinations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_variant_group_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_variant_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_variant_groups_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_variant_groups_by_product_id": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_variant_groups_paged": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_variant_option_by_id": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_variant_options": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_variant_options_by_ids": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_voucher_codes": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_voucher_sets": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "get_widget_parameters": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "get_workflow_states": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "has_active_assortments": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "has_any_audits": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "import_product_images_from_urls": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "import_site_media": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "is_color_scheme_group_in_use": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "is_color_scheme_in_use": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "is_item_type_customizable": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "is_order_complete": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "list_files": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "migrate_dw9_export": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "move_file": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "move_grid_row": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "move_page": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "move_paragraph": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "patch_data_models": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "patch_datasets": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "patch_products_safe": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "patch_shops": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "place_app_paragraph": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "place_paragraph_in_grid": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "purge_deleted_grid_row": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "purge_deleted_page": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "read_file": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "recalculate_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "redeem_user_loyalty_points": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "remove_all_groups_from_user": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_all_users_from_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_groups_from_assortment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_impersonatable_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "remove_impersonatable_users": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "remove_impersonations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "remove_impersonator_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "remove_impersonator_users": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "remove_permissions_from_assortment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_product_image": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_products_from_assortment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_products_from_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_products_from_language": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_repeatable_items": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_shops_from_assortment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_users_from_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_variant_groups_from_product": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "remove_widgets_from_dashboards": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "rename_color_scheme": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "reorder_pages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "replace_color_scheme": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "replace_index_query_expressions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "replace_product_query_expressions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "resolve_page_layout_template": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "resolve_paragraph_layout_template": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "restore_grid_row": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "restore_page": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "retry_email_campaign": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "run_dw9_product_import": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "run_health_checks": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "run_integration_activity": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "run_product_assignment_rules": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "run_scheduled_task_now": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_areas": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_assortments": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_button_styles": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_color_schemes": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_comment": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_conditions_to_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_consolidated_payments": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_countries": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_country_translation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_currencies": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_currency_translation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_dynamic_relation_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_email_campaign_folders": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_email_campaign_recipients": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_email_campaigns": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_fees": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_field_display_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_field_value_conversion_rules": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_fonts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_grid_row_as_template": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_grid_rows": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_group_translations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_integration_activity_mapping": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_integration_endpoint": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_item_preset": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_item_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_languages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_ledger_types": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_loyalty_reward": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_loyalty_reward_rule": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_manufacturers": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_pages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_paragraphs": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_payment_method_translation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_payment_methods": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_payment_translation": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_prices": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_product_assignment_rule_mappings": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_product_assignment_rules": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_product_email_notification_recipients": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_product_email_notifications": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_product_relation_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_product_relations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_product_units_of_measure": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_product_vat_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_region_translation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_rewards_to_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_roundings": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_shipping_method_translation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_shipping_methods": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_shipping_translation": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_shops": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_stock_locations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_tax_setting": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_tax_setting_country_relation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "save_track_and_trace": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_typographies": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_unit_translation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_units": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_user_addresses": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_user_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_variant_groups": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_variant_options": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_vat_group": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_vat_group_country_relation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "save_vat_group_translation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "schedule_email_campaign": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "schedule_integration_activity": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "search_documentation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "search_orders": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "search_pages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "search_paragraphs": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "search_products_by_name": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "search_users": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "send_email_campaign": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "set_area_permissions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "set_group_languages": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_item_field_values": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_module_settings": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_option_translations": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_order_field_value": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "set_order_payment_method": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_order_state": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_page_item_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_page_menu": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_page_permissions": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "set_paragraph_item_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_primary_variant": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "set_product_primary_image": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_product_stock": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "set_rma_state": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "set_rma_type": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "set_selected_item_preset": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "setup_website_chrome": {
+   "mcpVersion": "unregistered",
+   "source": [
+    "optional-add-in"
+   ]
+  },
+  "sort_grid_rows": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "sort_payment_methods": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "sort_payments": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "sort_shipping_methods": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "sort_shippings": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "test_integration_endpoint": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "toggle_payment_active": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "toggle_payment_method_active": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "toggle_shipping_active": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "toggle_shipping_method_active": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "toggle_tax_setting_active": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "trigger_dynamic_relation_calculation": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "update_adjustment_discounts": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "update_categories": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "update_category_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "update_country_codes": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "update_field_display_group_sort_order": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "update_integration_activity": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "update_order_line": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "update_orders": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "update_payment": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "update_product_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "update_products": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "update_reference_fields": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "update_scheduled_task": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "update_shipping": {
+   "mcpVersion": "0.4.x",
+   "source": [
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "update_users": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "upload_file": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "upload_product_images": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "validate_order_prices": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "validate_page_content": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess"
+   ]
+  },
+  "verify_product_visibility": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  },
+  "wait_for_product_index": {
+   "mcpVersion": "0.4.4",
+   "source": [
+    "mcp-0.4.4-fullaccess",
+    "mcp-0.4.x-narrow"
+   ]
+  }
+ }
+}

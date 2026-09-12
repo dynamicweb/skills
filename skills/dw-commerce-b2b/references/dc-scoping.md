@@ -169,9 +169,10 @@ Structural setup, not gotcha-debugging — prefer MCP whenever possible; escalat
 
 - **`save_user_groups`** — create the DC groups. Set `name`, `customerNumber` (same as name), leave
   `userAndGroupType` empty.
-- **`save_users`** — create buyer rows with `customerNumber` matching their primary DC.
-- **`save_user_group_relations`** (or equivalent — confirm the exact tool name at runtime via
-  `ToolSearch`) — link users to the groups they belong to.
+- **`create_users`** (`update_users` for an existing row) — create buyer rows with
+  `customerNumber` matching their primary DC. No save_users tool is registered.
+- **`assign_users_to_group`**, or **`assign_groups_to_user`** from the other side — link users to
+  the groups they belong to. There is no relation-row tool; both take the pair directly.
 
 When MCP is connected and the volume is small (a handful of DCs + a few personas), this is the right
 surface. Cache invalidation is automatic; no host restart.

@@ -18,7 +18,7 @@ routed below. The sections that follow the table are owned here.
 
 | If you need… | Read |
 |---|---|
-| Template categories (baseline), page presets (the Theme primitive), and the **page-state flags** (`published` / `hidden` / `active` = "Hidden in Menu" semantics; the `publish_pages` both-flags gotcha) | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §6 |
+| Template categories (baseline), page presets (the Theme primitive), and the **page-state flags** (`published` / `hidden` / `active` = "Hidden in Menu" semantics; the both-flags gotcha on the page-state tools) | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §6 |
 | Why a template fails to compile — warnings-as-errors on `[Obsolete]` calls, `@Html.Raw()` and `GetGlobalValue` absent from `ViewModelTemplate<T>`, `product.ProductFieldValues` on the entity not the view model, `@Include` sharing one compiled scope, relative `ParagraphTemplate` misses | [`template-compilation.md`](../../dw-render-razor/references/template-compilation.md) |
 | Serving JSON / CSV / a file from a paragraph — `PageClean` + `?ParagraphID=`, the inactive grid row, and what reaches the wire | [`paragraph-endpoints.md`](../../dw-render-razor/references/paragraph-endpoints.md) |
 | `ToggleFavorite.cshtml` no-op at `FavoriteListId=0` | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §2 |

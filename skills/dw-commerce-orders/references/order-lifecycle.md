@@ -32,7 +32,7 @@ Sibling references in this skill: [`cart-commands.md`](cart-commands.md),
 
 ## Order completion: created orders default to carts, not completed orders
 
-`mcp__dynamicweb-commerce-mcp__create_orders` seeds rows into `EcomOrders` with `OrderComplete=0` —
+`create_orders` seeds rows into `EcomOrders` with `OrderComplete=0` —
 i.e. **carts**, not completed orders. Surfaces that list order history (the account-side Orders
 paragraph, CSR order-impersonation views) filter on `OrderComplete=1` and silently skip the cart
 rows. The symptom is "I created N orders but the My Orders tab is empty," not an error.
@@ -46,7 +46,7 @@ sqlcmd -S "<dwserver>" -d <dwdb> -E -Q `
 ```
 
 Scope the `WHERE` precisely enough to skip rows that are intentionally carts. The
-`mcp__dynamicweb-commerce-mcp__complete_order` tool exists and works on individual orders, but it
+`complete_order` tool exists and works on individual orders, but it
 runs the full price-recalc + workflow chain per call — slow for bulk seeding and able to fail when
 pricing has unresolved currency / country gaps. Direct `UPDATE` is the right tool for bulk
 completion; reserve `complete_order` for flows where the side-effects (workflow, email, inventory)

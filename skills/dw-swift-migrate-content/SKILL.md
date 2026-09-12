@@ -18,6 +18,19 @@ which admin screen performs it; do not substitute a guessed HTTP call, a file ed
 `Files/`, or SQL. The Management API, the serializer and direct SQL are out-of-product surfaces,
 owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a step here.
 
+## Tool availability — check `tools/list` before planning around these
+
+`extract_site_content`, `get_extracted_site`, `get_extracted_page`, `build_pages`,
+`import_site_media`, `apply_brand_color_scheme` and `setup_website_chrome` are **not in the
+standard Dynamicweb MCP tool set**. They ship in an optional migration add-in, so on a build
+without it `tools/list` does not carry them and no permission grant can add them — absence is a
+build fact, not a gate. Call `tools/list` first. When the family is absent, say so, and do the
+work with the registered content tools instead: `get_pages_by_area_id` /
+`get_paragraphs_by_page_id` to read, `save_pages` / `save_grid_rows` / `save_paragraphs` /
+`set_paragraph_item_fields` to write, `save_color_schemes` for the palette, `upload_file` for
+media. That path is slower and per-page; it is not a substitute for a decision, only for the
+construction.
+
 Use this skill when the user wants the CONTENT of an existing/old website brought into this
 solution as a standard, modern **Swift 2** site — extract a source site and rebuild its pages
 here. It is content-first and source-agnostic: the source can be ANY website — a Dynamicweb

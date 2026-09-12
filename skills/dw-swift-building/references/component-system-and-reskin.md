@@ -459,7 +459,8 @@ is what clears it.
 A page with `published=true, hidden=false, active=false` (DB: `PageActive=0, PageHidden=0`) is
 **fully reachable** by direct URL and JS-driven navigation, and correctly hidden from the top nav —
 the right state for almost every utility page. **Gotcha — the MCP page tools cannot express that
-state:** `publish_pages`, `save_pages(active:…)` and `set_page_menu(showInMenu:…)` all flip **both**
+state:** no publish tool is registered; `save_pages(active:…)` and `set_page_menu(showInMenu:…)` are
+the whole in-product page-state surface, and both flip **both**
 columns together (`active/showInMenu: false` writes `PageActive=0` AND `PageHidden=1` — the page
 leaves the nav but also 404s; `true` writes `1/0` — routable but back in the nav). On DW 10.28.4
 `set_page_menu(showInMenu:…)` was measured writing `PageActive` alone and leaving `PageShowInLegend`

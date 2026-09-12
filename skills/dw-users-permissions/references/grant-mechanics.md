@@ -122,7 +122,7 @@ The Shop, ProductGroup and ProductField rows are one grant per existing row — 
 real catalog — and the Permissions panel writes one at a time, so seeding a role is a scripted
 out-of-product job: [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md`
 §"Seed the functional-view grants for a backend role". Enumerate what needs granting from inside the
-product first (`get_shops`, `get_groups`, `get_product_fields`, `get_product_category_fields`) so the
+product first (`get_shops`, `get_groups`, `get_standard_fields`, `get_product_category_fields`) so the
 list handed over is the solution's own.
 
 ## 9. Action-button visibility — bump entity grant from Read to Edit

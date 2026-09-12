@@ -64,7 +64,7 @@ Changes go live only **after a rebuild**. Three rebuild triggers:
 | Scope to one or more shops | `assign_shops_to_assortment` |
 | Grant a user/group access | `assign_permissions_to_assortment` |
 | Inspect what a user can see | `get_assortment_ids_by_user`, `get_assortment_permissions_by_user`, `check_assortment_product_access` |
-| Inspect current relations | `get_assortment_relations*` |
+| Inspect current relations | `get_assortment_relations`, `get_assortment_relations_by_group_id`, `get_assortment_relations_by_product_id`, `get_assortment_relations_by_shop_id` |
 | Mark for rebuild without building now | `flag_assortments_for_rebuild` — body is `{"requests":[{"assortmentId":"<id>"}, …]}` |
 | Rebuild now | `build_assortments` — same `{"requests":[{"assortmentId":"<id>"}, …]}` shape |
 | Find what still needs building | `get_assortments_for_build` |

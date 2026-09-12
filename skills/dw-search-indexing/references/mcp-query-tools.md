@@ -34,6 +34,11 @@ deleted:
   Products > Queries screen. Managed by the `*_index_quer*` tools (`get_index_queries`,
   `delete_index_queries`, `*_index_query_expressions`). Each result reports its `Repository`.
 
+Both families are registered on MCP 0.4.4 — the split is real, not a build difference. A call to
+either that comes back `An error occurred invoking <tool>.` is this add-in's argument-validation
+error (a missing or misnamed required argument), not a missing tool; re-read `tools/list` and call
+again rather than switching families over it.
+
 They share the same `.query` file format but differ in **location, accessor, UI surface, and
 purpose**. The product-query tools are scoped to PIM and will REFUSE an id that resolves to a
 repository index query (and vice versa) — so if a tool says "this is a repository index query,

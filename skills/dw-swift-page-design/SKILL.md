@@ -42,6 +42,13 @@ once up front:
 1. Call `get_item_types`, `get_row_definitions`, `get_paragraph_templates`,
    `get_color_schemes`. From here on use **only the exact strings they return.** Names quoted
    in `dw-swift-page-blocks` are illustrative — never copy them as literal values.
+   **Always pass `areaId`.** `get_row_definitions`, `get_paragraph_templates` and
+   `get_layout_containers` are area-scoped: called with `areaId` omitted they answer
+   `An error occurred invoking <tool>.` and nothing else. On MCP 0.4.4 that one sentence is the
+   add-in's argument-validation error — a missing or misnamed required argument — **not** a
+   missing tool and **not** a permission gate. The response is to re-read `tools/list` for the
+   required arguments and call again, never to conclude the tool is absent or to substitute
+   `get_templates` / `get_layouts`. `get_paragraph_templates` also requires `itemType`.
 2. Honour the **Field & template contracts** (in `dw-swift-page-blocks`): pass each
    `get_paragraph_templates` value unchanged — a bare file name like `CardImageTop.cshtml`,
    never a `Designs/...` path; build button fields as `{"Label":"…","Link":"…",
@@ -145,14 +152,19 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
 
 ### Header, footer and un-reproducible modules
 
-- **Header/footer:** don't hand-build them. `setup_website_chrome(targetAreaId)` creates the
+- **Header/footer:** `setup_website_chrome(targetAreaId)` creates the
   hidden `Header / Footer` folder, a `Swift-v2_Header` page (Logo + horizontal Navigation) and
   a `Swift-v2_Footer` page (Logo + vertical Navigation + copyright), and wires the website's
   `HeaderDesktop`/`HeaderMobile`/`FooterDesktop`/`FooterMobile` Master link fields. It is
   idempotent and `sourceHost` is **optional**, so it works for an original site with no
   migration involved. It requires the area's Swift v2 master `ItemType` (provisioned by
-  `save_areas`). If the tool isn't available it is permission-gated — say so and ask for the
-  grant rather than reconstructing the chrome by hand.
+  `save_areas`). **It is not in the standard MCP tool set** — it ships in an optional migration
+  add-in, so on most builds `tools/list` does not carry it and no permission grant can add it.
+  When it is absent, read the chrome the area already has: `get_areas` for the master's
+  `HeaderDesktop` / `HeaderMobile` / `FooterDesktop` / `FooterMobile` link fields, then
+  `get_pages_by_area_id` and `get_paragraphs_by_page_id` on the pages those fields point at.
+  Reuse that chrome; build a missing one with `save_pages` + `save_paragraphs` and wire the four
+  Master link fields through `save_areas`. Ask for a grant only when `tools/list` shows the tool.
 - **Third-party embeds are not content.** Source pages carry blocks that are really external
   services: an unknown custom element (`<f24-form>`, `<x-*>`), a field whose entire value is a
   `<script>`, an iframe to a non-media host, a loader placeholder. Spot these at the
