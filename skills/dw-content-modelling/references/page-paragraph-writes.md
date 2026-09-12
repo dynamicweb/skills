@@ -14,7 +14,7 @@ and the paragraph-level levers that scope one listing. Schema design is
 - [Saves that report success but silently drop a field](#saves-that-report-success-but-silently-drop-a-field)
 - [A page save re-derives `PageMenuText` from the item type's title field](#a-page-save-re-derives-pagemenutext-from-the-item-types-title-field)
 - [`save_pages` persists `urlName`, and no page read projects it](#save_pages-persists-urlname-and-no-page-read-projects-it)
-- [A `RichTextEditor` field drops empty lines on write](#a-richtexteditor-field-drops-empty-lines-on-write)
+- [A `RichTextEditor` value round-trips byte for byte through the MCP write path](#a-richtexteditor-value-round-trips-byte-for-byte-through-the-mcp-write-path)
 - [A re-parent is invisible to the rendered navigation until the app domain restarts](#a-re-parent-is-invisible-to-the-rendered-navigation-until-the-app-domain-restarts)
 - [`place_app_paragraph` leaves `ParagraphItemType` empty, which renders nothing in a Swift 2 grid](#place_app_paragraph-leaves-paragraphitemtype-empty-which-renders-nothing-in-a-swift-2-grid)
 - [Repeatable item-list children render from a cache that no child write crosses](#repeatable-item-list-children-render-from-a-cache-that-no-child-write-crosses)
@@ -218,21 +218,20 @@ page instead of `#`. A link rendering as `#` means the member was dropped, and s
 out-of-product write ([dw-data-access](../../dw-data-access/SKILL.md) `recipes-content.md`
 §"Set `PageNavigationTag`"). Assert the rendered link rather than the call's status.
 
-## A `RichTextEditor` field drops empty lines on write
+## A `RichTextEditor` value round-trips byte for byte through the MCP write path
 
-A `RichTextEditor` field (Swift's paragraph `Text` among them) normalises its value on the way in
-and **empty lines do not survive**. Single newlines do. The loss happens before any template sees
-the value, so `<pre>` and `white-space: pre-wrap` cannot restore it — they preserve what was stored,
-and the blank lines were never stored.
+`set_paragraph_item_fields` stores a `RichTextEditor` value (Swift's paragraph `Text` among them)
+**verbatim**. Measured on DW 10.28.x with MCP 0.4.4: a 51-character value carrying three consecutive
+newlines and a `<pre>` block with internal blank lines came back from
+`get_paragraph_item_field_values` as the identical 51-character string. So write the value you mean
+and read it back through the field getter to confirm it.
 
-So **express vertical spacing as markup, never as blank lines**: separate `<p>` elements, or a
-`<br>` pair. That holds inside a `<pre>` block too, which is exactly where an agent copying a source
-document verbatim reaches for blank lines. Copy that arrives as blocks separated by blank lines
-comes out as one flattened run.
-
-The write reports `succeeded` either way and a field read-back shows the text that was sent, so
-**only the rendered page shows the loss** — assert the block separation on the render, not on the
-write.
+The normalisation that eats empty lines belongs to the **admin UI's rich-text editor**, which
+rewrites the markup client-side before it posts. A value authored or re-saved there is not the value
+a tool wrote, so a paragraph whose copy matters should be written and verified through the tool
+rather than opened and saved in the editor. Nothing about the MCP write path requires spacing to be
+expressed as markup — that stays a rendering choice (see
+[dw-swift-page-design](../../dw-swift-page-design/SKILL.md)), not a data-loss workaround.
 
 ## A re-parent is invisible to the rendered navigation until the app domain restarts
 

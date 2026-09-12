@@ -55,11 +55,12 @@ the browser-side checks that catch a page passing every content assert are in
 > **Every argument name comes from that input schema, not from the surrounding prose** — the
 > obvious name is wrong often enough to plan for. Measured on 0.4.4: `get_pages_by_parent_id`
 > takes `parentId` (not `parentPageId`, which every neighbouring tool uses) and
-> `get_item_type_fields` takes `systemName` (not `itemType`). A wrong key fails in one of two
-> hintless ways: the one-sentence invocation error above, or — on `get_item_type_fields` — an
-> **empty array with no error at all**, which reads as a legitimate "this type has no fields".
-> So an empty result is never proof of absence: re-read the schema and call again before
-> concluding anything about the data.
+> `get_item_type_fields` takes `systemName` (not `itemType`). A wrong or missing argument **name**
+> fails with the one-sentence invocation error above — measured, `get_item_type_fields` called with
+> `itemType` answers exactly that. An **empty result array** is the other hintless shape and means
+> something different: the lookup ran on the right key and matched nothing, so the value is wrong
+> (a system name that does not exist on this solution). Read a key error against `tools/list` and
+> an empty array against `get_item_types`.
 
 - `get_layouts` — page/area layout (master) templates; read the real Swift design folder name
   (often `Swift-v2`, not guaranteed).

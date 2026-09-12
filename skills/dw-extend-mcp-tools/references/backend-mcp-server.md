@@ -205,22 +205,32 @@ from the tool name is a coin flip:
 | Product-by-SKU | singular **`sku`** | `get_products_by_sku` |
 | Paragraph, module and grid tools | **`pageId`** or **`paragraphId`** | `get_paragraphs_by_page_id` and `get_grid_rows_by_page_id` take `pageId`; `get_paragraph_item_field_values` and `get_module_settings` take `paragraphId`. Passing `id` to any of them fails |
 
-**A name no server registers answers a second hintless shape**, and it reads like a permission
-problem rather than a typo: `"An error occurred invoking <tool>: Access denied. MCP configuration
-<name> is not allowed to call tool <tool>. Required permission: none. Allowed permission: none."`
-Both sides of that comparison render as `none`, so there is no permission to ask for and nothing to
-grant — on a FullAccess key it means the name is not in this build's `tools/list`, which is what a
-retired singular by-id getter now produces. Together with the bare
-`"An error occurred invoking '<tool>'."` these are the two signs of a **wrong name or a wrong
-argument**, never of a capability the key is missing: re-read `tools/list` before reporting either
-as a gate.
+**A name no server registers answers a second hintless shape** that reads like a permission problem:
+`"An error occurred invoking <tool>: Access denied. MCP configuration <name> is not allowed to call
+tool <tool>. Required permission: <p>. Allowed permission: none."` **`<p>` is whatever the tool
+DECLARES, not a statement about registration**, so the message shape settles nothing. Measured on one
+FullAccess key in one session, both names absent from that build's `tools/list`: a retired core getter
+answered `Required permission: none. Allowed permission: none.`, while a verb belonging to an optional
+add-in answered `Required permission: Create. Allowed permission: none.` Reading the second as a real
+capability gate produces a request for a grant that can never be granted.
 
-A mis-named argument is not rejected loudly: depending on the tool it surfaces as the bare
-`"An error occurred invoking '<tool>'."` **or as a perfectly successful response with empty
-`content: []`** (`get_item_type_fields` with `itemType` instead of `systemName` is the measured
-case — five real fields become an empty array with no error). So **read an empty result as a possible parameter-name error first**, not as missing
-data — confirm the entity exists through a second surface before concluding anything about the data.
-Take the parameter name from the tool's own schema in `tools/list` rather than from its name.
+**The only reliable test is the registry**: check the name against this build's `tools/list` (the
+repo's `scripts/mcp-tools.json` is the captured 0.4.4 FullAccess set, with the retired names under
+`notRegisteredOn044`). If the name is absent, it is a wrong name — plan the work without it. If it is
+present and the call is still denied, it is a capability gate worth asking about. Together with the
+bare `"An error occurred invoking '<tool>'."` — the argument-validation error — neither message is
+ever evidence about registration in either direction.
+
+**The two hintless shapes map to two different causes, and reading one for the other sends the fix
+the wrong way.** Measured on `get_item_type_fields` on DW 10.28.x with MCP 0.4.4:
+
+| Shape | What it means | Next move |
+|---|---|---|
+| The bare `"An error occurred invoking '<tool>'."` | A wrong or missing argument **name** — the add-in validates names before dispatch. `{"itemType": "<type>"}` on a tool whose key is `systemName` answers exactly this. | Re-read the tool's schema in `tools/list` and call again with the declared key |
+| A successful response with an **empty** result array | The lookup ran and matched nothing — the key was right, the **value** was not. `{"systemName": "<type that does not exist>"}` answers `{"result":[]}`; the same key with a real type answers its fields. | Check the identifier value: confirm the item type exists (`get_item_types`) before concluding the type has no fields |
+
+So take the parameter name from the tool's own schema in `tools/list` rather than from its name, and
+read an empty result as a lookup that matched nothing rather than as a probable typo.
 
 For `customFields` the key is the full `ProductCategory|<cat>|<field>` path and **every value must be
 stringified**, numbers included; a multi-select list is a **comma-joined string**, not a JSON array

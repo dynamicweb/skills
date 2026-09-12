@@ -3746,7 +3746,7 @@
   }
  },
  "notRegisteredOn044": {
-  "note": "seen on an older, narrower server and ABSENT from the 0.4.4 FullAccess tools/list. Kept here as a lookup so a name that reads plausible is recognised as retired rather than re-cited: a call to one answers 'Access denied ... Required permission: none. Allowed permission: none.', which names no permission to grant and is a wrong-name signal, not a capability gate.",
+  "note": "seen on an older, narrower server and ABSENT from the 0.4.4 FullAccess tools/list. Kept here as a lookup so a name that reads plausible is recognised as retired rather than re-cited. This list and tools/list are the only test of whether a name is registered: an unregistered name answers 'Access denied' naming whatever permission the tool DECLARES, which is sometimes 'none' and sometimes a real permission such as 'Create', so the error text is evidence neither way.",
   "names": [
    "copy_payment",
    "copy_shipping",

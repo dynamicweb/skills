@@ -61,9 +61,10 @@ once up front:
    type. Its only required argument on MCP 0.4.4 is `areaId`.
    **Take every argument name from the tool's own `tools/list` input schema**, never from the
    prose around it: on MCP 0.4.4 `get_pages_by_parent_id` takes `parentId` and
-   `get_item_type_fields` takes `systemName`, and a wrong key is either that same one-sentence
-   error or, on `get_item_type_fields`, an empty array with no error at all — so an empty result
-   is never proof that the item type has no fields. Both hintless shapes are catalogued in
+   `get_item_type_fields` takes `systemName`. A wrong or missing argument **name** answers that
+   same one-sentence error; an **empty result array** means the opposite — the key was right and
+   the lookup matched nothing, so check the identifier value (does that item type exist?) before
+   suspecting the parameter name. Both hintless shapes are catalogued in
    [`dw-swift-page-blocks`](../dw-swift-page-blocks).
 2. Honour the **Field & template contracts** (in `dw-swift-page-blocks`): pass each
    `get_paragraph_templates` value unchanged — a bare file name like `CardImageTop.cshtml`,
@@ -273,11 +274,12 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
   so a plain `Title` becomes tiny unstyled text glued to the next field. Wrap headings as
   `<h2 class="h1 mb-2">…</h2>`, eyebrows as `<p class="text-uppercase small mb-2">…</p>`, body
   as `<p class="mb-0">…</p>`. This is what gives the page its type hierarchy and vertical
-  rhythm. **A `RichTextEditor` field drops empty lines on write**, so express vertical spacing as
-  markup (separate `<p>` elements, or a `<br>` pair) and never as blank lines — inside a `<pre>`
-  included, where nothing can restore what was not stored. The write reports success either way and
-  only the rendered page shows the loss (mechanics:
-  [`dw-content-modelling/references/page-paragraph-writes.md`](../dw-content-modelling/references/page-paragraph-writes.md)). `Feature` icons are SVG file paths (`/Files/Images/Icons/…svg`), not `bi …` classes.
+  rhythm. **Express vertical spacing as markup** — separate `<p>` elements, or a `<br>` pair — because
+  the field renders raw and a blank line between two runs of text is whitespace in the markup, not a
+  gap on the page. (The write path itself is faithful: a `RichTextEditor` value round-trips byte for
+  byte through `set_paragraph_item_fields` on DW 10.28.x, so this is a rendering choice rather than a
+  data-loss workaround —
+  [`dw-content-modelling/references/page-paragraph-writes.md`](../dw-content-modelling/references/page-paragraph-writes.md).) `Feature` icons are SVG file paths (`/Files/Images/Icons/…svg`), not `bi …` classes.
 
 ## The visual quality bar — what separates a 6/10 page from a 9–10/10 page
 
