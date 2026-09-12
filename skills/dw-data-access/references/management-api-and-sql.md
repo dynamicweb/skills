@@ -8,6 +8,8 @@ narrow sanctioned SQL cases.
 ## Contents
 
 - [The Management API admin surface](#the-management-api-admin-surface)
+  - [Flushing the product read-through cache after a Data Integration write](#flushing-the-product-read-through-cache-after-a-data-integration-write)
+  - [Restricting the legacy Data Integration job-runner route](#restricting-the-legacy-data-integration-job-runner-route)
 - [OpenAPI discovery](#openapi-discovery)
 - [Reference-path discovery](#reference-path-discovery)
 - [SQL-direct content seeding — Page / GridRow / Paragraph](#sql-direct-content-seeding--page--gridrow--paragraph)
@@ -209,6 +211,59 @@ windows. So probing is **not free**:
 
 Related and equally cheap: `HealthProviderChecksByProviderName` and its two siblings serve the Insights
 health-provider data over the same bearer, with each check returning the literal SQL it ran.
+
+### Flushing the product read-through cache after a Data Integration write
+
+An inbound Data Integration activity that writes extended or global product fields leaves the
+read-through cache in front of `ProductService` stale even with
+`DisableCacheClearingAndIndexUpdates=False`: the provider clears its own caches, not that one. The
+measured shape is a job that reports rows affected and completes, a page reading the columns with
+raw SQL showing the new values on the next request, and the storefront reading the same fields
+through the product service showing the old ones indefinitely.
+
+**Surface: Management API `CacheInformationRefresh`.** One call, no restart:
+
+```
+POST /Admin/Api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Ecommerce.Products.ProductService"}
+```
+
+The storage type name is `Dynamicweb.Ecommerce.Products.ProductService`. The namespace the
+templates call through, `Dynamicweb.Ecommerce.Services.Products`, is **not** a cache storage type
+and the API answers "Cache storage type not found".
+
+A *scheduled* import inherits the staleness silently, so any nightly activity whose effect must be
+visible on the storefront needs this flush wired next to it. Inside the product there is no tool for
+this storage type: an in-product reader re-saves the affected products through the product tools,
+which invalidates the entry on the write path, or asks for the flush. The full per-surface table is
+[`cache-invalidation.md`](cache-invalidation.md).
+
+### Restricting the legacy Data Integration job-runner route
+
+The legacy route `/admin/public/webservices/integrationv2/JobRunner.aspx?jobsToRun=<job>` executes
+**any** integration job on an anonymous GET — no cookie, no bearer — and on builds where the modern
+`/Admin/Integration/JobRunner` route 404s it is the only route that works. Treat every install as
+exposed until proven otherwise.
+
+**Surface: IIS host configuration.** The only mitigation available is a path restriction committed
+to `applicationHost.config`:
+
+```xml
+<location path="<site>/admin/public/webservices/integrationv2">
+  <system.webServer>
+    <security>
+      <ipSecurity allowUnlisted="false">
+        <add ipAddress="127.0.0.1" allowed="true" />
+      </ipSecurity>
+    </security>
+  </system.webServer>
+</location>
+```
+
+Local installs only, and only where you own the machine: on a shared or hosted install the
+`ipSecurity` section is locked at machine level and the edit is unavailable — a site-level
+`web.config` attempt answers 500 on every URL including `/Admin`. It owes an IIS configuration
+reload. Re-probe the modern route on each platform version: when it stops 404ing it becomes the
+auth-required replacement and the restriction can come off.
 
 ## OpenAPI discovery
 

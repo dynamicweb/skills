@@ -102,17 +102,14 @@ buys the provider's own clearing, which does **not** reach the read-through cach
 `ProductService` for extended or global product fields. The measured shape: the job reports rows
 affected and completes, a page reading those columns with raw SQL shows the new values on the next
 request, and the PDP reading the same fields through the product service keeps showing the old ones
-indefinitely. The repair is one Admin API call, no restart:
+indefinitely. A *scheduled* import inherits this silently, so any nightly activity whose effect must
+be visible on the storefront carries the staleness into every run.
 
-```
-POST /Admin/Api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Ecommerce.Products.ProductService"}
-```
-
-The storage type name is `Dynamicweb.Ecommerce.Products.ProductService`. The namespace templates
-call through, `Dynamicweb.Ecommerce.Services.Products`, is **not** a cache storage type and the API
-answers "Cache storage type not found". A *scheduled* import inherits this silently, so any nightly
-activity whose effect must be visible on the storefront needs the flush wired next to it. See
-[`../../dw-data-access/references/cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)
+Re-saving the affected products with `update_products` or `patch_products_safe` invalidates the
+entry on the write path, which is the in-product repair; verify with `get_product_by_id` reading the
+field the job wrote. The cache-storage flush itself is out of product: see dw-data-access
+`management-api-and-sql.md` §Flushing the product read-through cache after a Data Integration write,
+and [`../../dw-data-access/references/cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)
 for the full per-surface table.
 
 ## UserProvider as a destination

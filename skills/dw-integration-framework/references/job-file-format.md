@@ -24,9 +24,11 @@ Reach for the surfaces in this order.
 | Surface | Use it for |
 |---|---|
 | MCP `create_integration_activity`, `save_integration_activity_mapping`, `get_integration_provider_schema` | Creating an activity and its mappings. The tools read the **live** provider schema at save time, which is the whole reason to prefer them. |
-| Admin API `/admin/api/...` integration verbs | Whatever MCP does not expose on the build in front of you. |
-| **The job file on disk** | Moving an activity between installs, scripting a family of near-identical activities, and any edit the tools above refuse — chiefly patching a stale `<Schema>` snapshot. It is the only authoring surface on a build where a restart is not available. |
+| **The job file on disk** (`Files/Files/Integration/jobs/`) | Moving an activity between installs, scripting a family of near-identical activities, and any edit the tools above refuse — chiefly patching a stale `<Schema>` snapshot. It is the only authoring surface on a build where a restart is not available. |
 | `SQL` | Nothing. There is no activity table to write; a `sys.tables` sweep for `%Integration%` / `%Job%` returns only `ScheduledTask`, `ScheduledTaskExecution` and `ScheduledTaskFolder`. |
+
+Those two are the whole surface. When neither the tools nor the file reaches the operation, name the
+Data Integration admin screen that does it rather than reaching for another transport.
 
 A job file is **build output** whenever it can be: generate it from a script and edit the
 generator, so a schema change is a regeneration rather than a hand-patch.
@@ -215,7 +217,7 @@ answers HTTP 200 to an anonymous request. Whatever the file contains is public.
 | A SqlProvider **source** cannot use the empty-node fallback, so it must name an instance | If the SQL instance is local, name it relatively (`Server=.\<instance>`): the host name and the topology leave the file and only a database name remains. |
 | Job folders are missed by a secrets sweep because the naive grep is a false clean on UTF-16 | Add `Files/Files/Integration/jobs` to the secrets sweep and **decode before grepping**. Also sweep `/Files/System/Items/*.xml` and `/Files/System/Serializer/Serializer.config.json`, which are anonymously readable on the same build. |
 | Generated job XML from a SQL-auth install carries the credential into any repo, backup or transfer package | Do not commit or ship it. |
-| The legacy job-runner route `/admin/public/webservices/integrationv2/JobRunner.aspx?jobsToRun=<job>` executes **any** job on an anonymous GET — no cookie, no bearer — and on builds where the modern `/Admin/Integration/JobRunner` route 404s it is the only route that works | Treat every install as exposed until proven otherwise. The only mitigation available is an IIS path restriction (`ipSecurity`, `allowUnlisted=false` plus a loopback allow entry) committed to `applicationHost.config`; on a shared or hosted install that section is locked at machine level and the edit is unavailable — a site-level `web.config` attempt answers 500 on every URL including `/Admin`. Re-probe the modern route on each platform version: when it stops 404ing it becomes the auth-required replacement. |
+| The legacy job-runner route `.../integrationv2/JobRunner.aspx?jobsToRun=<job>` executes **any** job on an anonymous GET — no cookie, no bearer — and on builds where the modern job-runner route 404s it is the only route that works | Treat every install as exposed until proven otherwise, and keep nothing in a job file that an anonymous run could leak. Closing the route is an IIS host edit, not an in-product one: outside the product, see dw-data-access `management-api-and-sql.md` §Restricting the legacy Data Integration job-runner route. |
 
 A demo or dev install records the exposure; an install destined for go-live asserts zero
 occurrences of `Password=` under the decoded job folder.
