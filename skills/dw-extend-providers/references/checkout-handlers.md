@@ -185,11 +185,8 @@ rather than a contract breach. The fix is the absence of a line; nothing replace
 the **source** (zero executable assignments to `order.CaptureAmount` in the capture region), because
 compiled metadata cannot see a deleted statement.
 
-Admin API shape for driving a capture: `POST /Admin/Api/OrderCapture` needs **both `Currency` and
-`CurrencyCode`** on the model. `{"Model":{"id":"ORDER32"},"CaptureAmount":5.00}` is rejected with
-`{"":["Model validation failed"],"Currency":["The value is required."]}`, and a lower-cased
-`"currency"` is rejected identically. The working body:
-
-```json
-{"Model":{"id":"ORDER32","Currency":"USD","CurrencyCode":"USD"},"CaptureAmount":5.00}
-```
+In the product, capture an order from the order's own screen in the backend; the MCP tool set carries
+no capture verb. Outside the product the capture is an Admin API command whose model is stricter than
+it looks — see
+[dw-data-access `recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md)
+("Driving an order capture from outside the product").

@@ -3,7 +3,7 @@ name: dw-extend-scheduled-tasks
 type: knowledge
 group: extend
 mcp: none
-dynamo: true
+dynamo: false
 description: 'Create and manage scheduled tasks in Dynamicweb 10 including RunSqlScheduledTaskAddIn. Triggers: scheduled tasks, background jobs, RunSqlScheduledTaskAddIn. Non-triggers: notification handling -> dw-extend-providers; MCP tool authoring -> dw-extend-mcp-tools.'
 ---
 
@@ -150,7 +150,7 @@ Flush `Dynamicweb.Scheduling.TaskService` afterwards (`POST /Admin/Api/CacheInfo
 
 **Never treat `RunSqlScheduledTaskAddIn`'s run result as evidence of effect — assert the effect independently.** On a 10.28.x build it bound its parameters, flipped `TaskLastResult` to `True`, left `TaskLastException` empty, and left the target table untouched, down to a bare single-row `INSERT` into an empty table, with a hand-run control and a `JobScheduledTaskAddIn` activity both writing through the same account. Other builds execute correctly, so the rule is verification rather than avoidance: a success signal and a silent no-op are indistinguishable from the task's own result, which also rules the add-in out as a read-verification channel (an `IF ... RAISERROR` assertion passes identically when nothing ran). Prefer `JobScheduledTaskAddIn` over an Integration activity, whose log counts the rows it moved, or your own `BaseScheduledTaskAddIn` where a build and a restart are available; the measurement is in [`references/scheduler-rows-and-runs.md`](references/scheduler-rows-and-runs.md).
 
-> **Content-editing scope guard.** A scheduled task is not a route around a write surface. Create and edit content through MCP tools first, then the Management API — the admin UI is a SPA over `/Admin/Api`, so if the UI can do it an endpoint exists: capture the SPA's network call and replay it, and file a learning where a surface genuinely seems missing. A task that has to touch a table a storefront reads goes through the domain services in C#, not through a statement; the worked recipe is in [`references/scheduler-rows-and-runs.md`](references/scheduler-rows-and-runs.md).
+> **Content-editing scope guard.** A scheduled task is not a route around a write surface. Take the highest rung of the action ladder that reaches the operation ([dw-data-access](../dw-data-access) owns it): MCP tools first, then the Management API — the admin UI is a SPA over `/Admin/Api`, so if the UI can do it an endpoint exists: capture the SPA's network call and replay it, and file a learning where a surface genuinely seems missing. A task that has to touch a table a storefront reads goes through the domain services in C#, not through a statement; the worked recipe is in [`references/scheduler-rows-and-runs.md`](references/scheduler-rows-and-runs.md).
 
 **`Context.Current` is null inside a scheduled task** — tasks run outside an HTTP request. Use static service facades or `DependencyResolver` for data access, not request context. See [dw-data-access](../dw-data-access).
 
@@ -160,7 +160,7 @@ Flush `Dynamicweb.Scheduling.TaskService` afterwards (`POST /Admin/Api/CacheInfo
 
 **Long-running tasks** — Dynamicweb has no built-in timeout and **no overlap guard**, so a long run can be re-entered at the next tick. Carry your own in-flight flag in a row you own. `TaskCheckPrevious` does not do this: it gates on the previous task in the co-queued `TaskSort` order, not on the row's own previous run — see [`references/scheduler-rows-and-runs.md`](references/scheduler-rows-and-runs.md).
 
-**Deploying the assembly swaps a loaded DLL** — stop the app pool, copy the `.dll` (and `.pdb`), then start. A recycle drains the old worker, which keeps `bin/*.dll` locked, so a copy issued right after it can fail or leave stale bytes. The restart cost is the same either way.
+**Deploying the assembly swaps a loaded DLL** — the order is app-pool stop, copy the `.dll` (and `.pdb`), app-pool start, never a recycle, because a draining worker keeps `bin/*.dll` locked. The full deploy loop, including what to check afterwards, is in [dw-setup-cli `addin-install.md`](../dw-setup-cli/references/addin-install.md) ("Copying a host assembly onto a self-hosted IIS install").
 
 **Assembly loading** — the assembly containing your task must be referenced from the host project so it is loaded at startup and discovered by the AddIn scanner.
 

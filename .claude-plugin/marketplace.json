@@ -71,6 +71,7 @@
         "./skills/dw-extend-scheduled-tasks",
         "./skills/dw-extend-mcp-tools",
         "./skills/dw-extend-admin-ui",
+        "./skills/dw-setup-cli",
         "./skills/dw-integration-framework",
         "./skills/dw-integration-erp",
         "./skills/dw-data-access",
