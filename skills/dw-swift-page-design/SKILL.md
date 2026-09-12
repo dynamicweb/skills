@@ -56,7 +56,9 @@ once up front:
    add-in's argument-validation error — a missing or misnamed required argument — **not** a
    missing tool and **not** a permission gate. The response is to re-read `tools/list` for the
    required arguments and call again, never to conclude the tool is absent or to substitute
-   `get_templates` / `get_layouts`. `get_paragraph_templates` also requires `itemType`.
+   `get_templates` / `get_layouts`. `get_paragraph_templates` takes `itemType` **optionally**:
+   omit it for the layout's un-scoped template list, pass it to scope the list to one component
+   type. Its only required argument on MCP 0.4.4 is `areaId`.
    **Take every argument name from the tool's own `tools/list` input schema**, never from the
    prose around it: on MCP 0.4.4 `get_pages_by_parent_id` takes `parentId` and
    `get_item_type_fields` takes `systemName`, and a wrong key is either that same one-sentence
@@ -89,9 +91,25 @@ once up front:
 
 ## The create order, and the one field it makes mandatory
 
-Four calls per paragraph, in this order: `save_pages` → `save_grid_rows` → `save_paragraphs`
-(`id: 0`, the real `itemType`, the row id and the column) → `set_paragraph_item_fields`. On
-DW 10.28.x with MCP 0.4.4 the bare `save_paragraphs` create **does** mint the underlying item
+Four calls per paragraph, in this order, each carrying its `itemType`:
+
+1. `save_pages` — `id: 0`, `areaId`, `parentPageId`, `menuText`, `urlName`, and
+   `itemType: 'Swift-v2_Page'`.
+2. `save_grid_rows` — `id: 0`, `pageId`, **`container: 'Grid'`**, the `definitionId`,
+   `itemType: 'Swift-v2_Row'`, `sort`.
+3. `save_paragraphs` — `id: 0`, `pageId`, the real component `itemType`, the `template` variant,
+   `gridRowId` from step 2 and `gridRowColumn`.
+4. `set_paragraph_item_fields` — the copy, with every button field blanked (below).
+
+**`container` on the row is load-bearing and fails silently.** A Swift 2 layout renders grid rows
+by container name, so a row saved with `container` empty is stored, reads back happily, and is
+placed in no layout container — every paragraph under it is absent from the render tree while the
+page still answers HTTP 200 with no error markup at all. Measured on DW 10.28.x: the same page went
+from 32,669 bytes with the copy missing and zero `ConverterException` to 38,751 bytes with the copy
+present once the row carried `container: 'Grid'` and `itemType: 'Swift-v2_Row'`. Take the container
+name from `get_layout_containers` (its `IsDefault` flag marks it) rather than assuming `Grid`.
+
+On DW 10.28.x with MCP 0.4.4 the bare `save_paragraphs` create **does** mint the underlying item
 instance — the response carries a populated `itemId` — so nothing has to be cloned first to obtain
 one, and `set_paragraph_item_fields` writes straight to it.
 
@@ -105,8 +123,12 @@ render shows it. So send `FirstButton: ""` and `SecondButton: ""` (and the equiv
 of any other type created bare) alongside `Title` / `Subtitle` / `Text`, and give a button a value
 only as the proper `{"Label":…,"Link":…,"Style":…}` object.
 
-**Assert:** fetch the page and confirm zero occurrences of `ConverterException` and zero emitted
-`<pre class="dw-error">` blocks — not merely that the write returned `succeeded`.
+**Assert, on the fetched page, both halves — the copy present AND the error markup absent:** a
+distinctive string from the `Title` or `Text` you wrote **occurs at least once**, and
+`ConverterException` and `<pre class="dw-error">` occur **zero** times. The absence half alone passes
+on a blank page: a paragraph that never entered the render tree emits no error either, so an
+error-free 200 is not evidence the paragraph rendered. Neither half is provable from the write's
+`succeeded` status.
 
 A clone-then-rewrite chain over `copy_paragraph` is a fallback for a build where the create path
 returns an empty `itemId`, nothing more. It is also what used to hide this defect: a clone inherits
@@ -156,8 +178,10 @@ you cannot invent CSS or custom layout the tools don't expose (see the ceiling i
    `dw-swift-page-blocks`). Pick the per-row `ColorSchemeId` that matches each band's background
    (light bands → `light`/`lightgrey1`/`lightgrey2`; dark/accent bands → `dark`/`primary`).
    If the brand colors differ from the shipped schemes, propose a `save_color_schemes` update
-   to the `swift` group (read it first — saves are full overwrites) rather than forcing an
-   approximate scheme.
+   **to that same group — the one `get_areas` reports as the area's `colorSchemeGroupId`** (read it
+   first — saves are full overwrites) rather than forcing an approximate scheme. Writing the brand
+   colour into the other group succeeds and changes nothing on the page, because the area does not
+   paint from it.
 3. **Plan, then confirm** — show the section→component map so the user can correct a mis-read
    before you write (see Confirm before writing, below).
 4. **Build** in the create order above: `save_pages` → `save_grid_rows` → `save_paragraphs` (real

@@ -43,8 +43,10 @@ the browser-side checks that catch a page passing every content assert are in
 **Discover (what exists on THIS solution):**
 
 > **Always pass `areaId`.** `get_row_definitions`, `get_paragraph_templates` and
-> `get_layout_containers` are area-scoped, and `get_paragraph_templates` also requires
-> `itemType`. With a required argument missing or misspelled the add-in answers
+> `get_layout_containers` are area-scoped, and `areaId` is the only argument
+> `get_paragraph_templates` requires on MCP 0.4.4 — its `itemType` is optional: omit it for the
+> layout's un-scoped template list, pass it to scope to one component type. With a required
+> argument missing or misspelled the add-in answers
 > `An error occurred invoking <tool>.` and nothing else. On MCP 0.4.4 that one sentence is the
 > argument-validation error — it is **not** an unknown-tool error and **not** a permission gate.
 > Re-read `tools/list` for the required arguments and call again; never swap in
