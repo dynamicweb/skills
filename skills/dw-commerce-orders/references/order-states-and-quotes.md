@@ -8,7 +8,7 @@ cart and quote. Measured on DW 10.28.x.
 
 - [Building an order-state ladder](#building-an-order-state-ladder)
 - [A deleted state's id is re-issued, and its transition rows survive](#a-deleted-states-id-is-re-issued-and-its-transition-rows-survive)
-- [Removing an order: `OrderCancel` then `OrderDelete`](#removing-an-order-ordercancel-then-orderdelete)
+- [Removing an order: cancel first, then delete](#removing-an-order-cancel-first-then-delete)
 - [`UpdateCartToQuote` and `DowngradeToCart` — what each leaves to the caller](#updatecarttoquote-and-downgradetocart--what-each-leaves-to-the-caller)
 - [Swift 2's Accept-quote button cannot work on a quote](#swift-2s-accept-quote-button-cannot-work-on-a-quote)
 
@@ -24,10 +24,11 @@ a wrong one answers a bare `"An error occurred invoking 'create_order_state'"` n
 - **`color` is a hex literal** (`#F59E0B`). The dashboard-widget palette names are rejected here.
 
 **The tool reaches no other state column.** It has no parameter for `AllowEdit`, `AllowOrder` or any
-of the ten `EcomOrderStates` mail columns, so a full state ladder is always MCP create + a SQL pass
-+ an Admin API `CacheInformationRefresh` of `Dynamicweb.Ecommerce.Orders.OrderStateService` (and
-`…Orders.OrderFlowService` when the flow moved). That SQL is **local-install only**; the mail
-columns themselves are documented in [`order-notifications.md`](order-notifications.md).
+of the ten `EcomOrderStates` mail columns, so in-product a state ladder is MCP create plus the
+backend order-states screen for the rest — name that screen rather than promising the tool covers
+it. The mail columns themselves are documented in
+[`order-notifications.md`](order-notifications.md); the out-of-product completion pass is in
+[`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Building an order-state ladder".
 
 Verify by re-reading `EcomOrderStates` for the flow and asserting both the new ids and a gapless
 sort order, then asserting the state name as the storefront order list renders it.
@@ -44,53 +45,39 @@ Two gaps compose into a corrupt transition table that is invisible in every UI a
   quote-flow state was handed that exact id for a brand-new **order-flow** state, at which point
   the two dangling rules became valid-looking cross-flow transitions.
 
-**Assert the rule table's integrity explicitly** whenever you touch order states — a two-ended
-`LEFT JOIN` is the only check that sees it:
-
-```sql
--- read-only integrity gate; run it in the same transaction as the state writes
-SELECT COUNT(*) FROM EcomOrderStateRules r
-LEFT JOIN EcomOrderStates f ON f.OrderStateId = r.OrderStateRuleFromState
-LEFT JOIN EcomOrderStates t ON t.OrderStateId = r.OrderStateRuleToState
-WHERE f.OrderStateId IS NULL OR t.OrderStateId IS NULL OR f.OrderFlowId <> t.OrderFlowId;
--- must be 0
-```
+**Assert the rule table's integrity explicitly** whenever you touch order states. In-product,
+MCP `get_order_states` and MCP `get_order_flows` give both ends: read every state of every flow,
+then check that each transition the backend order-flow screen renders names a state that still
+exists **and** that both ends sit in the same flow. A transition whose target is missing from
+`get_order_states` is a dangling rule. The two-ended integrity query that sees the whole table at
+once is out of product: see [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "A deleted state's id is re-issued".
 
 When a flow is inherited in this state, rebuilding its rule set from scratch behind that assertion
 is cheaper than repairing it row by row.
 
-## Removing an order: `OrderCancel` then `OrderDelete`
+## Removing an order: cancel first, then delete
 
-Three separate things wear one name, and none of them is discoverable from either verb alone:
+Use MCP `delete_order`, and MCP `update_orders` + `set_order_state` to cancel. Three separate
+things wear one name, and none of them is discoverable from the tools alone:
 
-- **`OrderDelete` is a SOFT delete.** It sets `OrderDeleted = 1` and moves the state, leaving the
-  row in `EcomOrders`. A `COUNT(*)` assertion never moves, even on total success — filter on
-  `OrderDeleted` instead.
-- **It refuses a completed order**, quoting its own rule: only orders that are not completed and
-  whose capture state is Cancelled may be deleted. That excludes **every order a checkout ever
+- **Deleting an order is a SOFT delete.** It sets `OrderDeleted = 1` and moves the state, leaving
+  the row in `EcomOrders`. An order count never moves, even on total success — read the deleted
+  flag instead, and note that MCP `search_orders` keeps returning the row.
+- **A delete refuses a completed order**, quoting its own rule: only orders that are not completed
+  and whose capture state is Cancelled may be deleted. That excludes **every order a checkout ever
   produced** — the one class of row a reset has to remove.
-- **The two verbs bind different key names.** `OrderDelete` binds the plural `Ids`; `OrderCancel`
-  binds the singular `Id`. Reusing the payload fails with
-  `"Selected order is not found. The order id: ."`, whose empty id is the only clue that the key
-  name was wrong.
+- **So the working sequence on a completed order is cancel, then delete.** Move the order into its
+  flow's Cancelled state with MCP `set_order_state`, then call MCP `delete_order`. Carts and
+  incomplete orders take `delete_order` on their own.
 
-```
-POST /Admin/Api/OrderDelete {"OrderId":"…"}   -> {"status":"invalid","message":"No items selected"}
-POST /Admin/Api/OrderDelete {"OrderIds":[…]}  -> {"status":"invalid","message":"No items selected"}
-POST /Admin/Api/OrderDelete {"Ids":["…"]}     -> bound
+Read the order back with MCP `get_order_by_id` after the pair and assert the state moved; a delete
+that silently did nothing looks identical to one that worked.
 
--- the working pair for a completed order
-POST /Admin/Api/OrderCancel {"Id":"<orderId>"}   -> ok
-POST /Admin/Api/OrderDelete {"Ids":["<orderId>"]} -> ok   (OrderDeleted = 1, state moved)
-```
-
-Carts and incomplete orders take `OrderDelete` on their own.
-
-**`OrderSave` is not the way round it**: it is a whole-entity save that demands `Currency` and a
-billing country before it looks at anything, and it re-prices every line from the live catalogue
-(see [`order-lifecycle.md`](order-lifecycle.md) "`OrderSave` on an existing order is a
-reconciliation pass"). Neither is a raw `UPDATE` of `OrderDeleted`: the write is invisible to the
-cached `OrderService` and the next save of that cached entity destroys it.
+**A whole-entity order save is not the way round the refusal**: it demands `Currency` and a billing
+country before it looks at anything, and it re-prices every line from the live catalogue (see
+[`order-lifecycle.md`](order-lifecycle.md) "`OrderSave` on an existing order is a reconciliation
+pass"). The out-of-product verb pair, and the key-name trap that makes one payload fail as the
+other, are in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Removing an order: `OrderCancel` then `OrderDelete`".
 
 ## `UpdateCartToQuote` and `DowngradeToCart` — what each leaves to the caller
 
@@ -131,18 +118,13 @@ quoted number cannot reach a cart even by accident.
 ## Swift 2's Accept-quote button cannot work on a quote
 
 The shipped quotes-list template renders an Accept-quote action whenever the state's `AllowOrder` is
-true, as an htmx `hx-get` against `/dwapi/ecommerce/carts/<order secret>` with a template header
-naming the accept modal — and **that delivery endpoint validates that the order is a CART**:
-
-```
-GET /dwapi/ecommerce/carts/<secret>
-  -> 400  "The cart is not a cart but not completed. IsCart: False Complete: False IsProcessingCheckout: False."
-GET /dwapi/ecommerce/carts/<secret>  + the template header
-  -> 500  "Model is required for view model templates."   (and one event-log entry per attempt)
-```
+true, as an htmx call against the delivery API's cart route with a template header naming the accept
+modal — and **that endpoint validates that the order is a CART**, answering 400 for an order that is
+neither a cart nor complete and 500 once the template header is added.
 
 A quote is by definition not a cart and not complete, so the endpoint refuses **every** order the
-button is ever rendered for. htmx has nothing to swap, the modal that carries the actual command
+button is ever rendered for. The measured request/response pair is in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Swift 2's
+Accept-quote button cannot work on a quote". htmx has nothing to swap, the modal that carries the actual command
 never exists, and the command is never posted: the click does nothing at all — no modal, no toast,
 no navigation, nothing a user would see. The failure **is** recorded, in the event log, which is
 nowhere the user or the developer is looking. The `CustomerCenterCmd=QuoteAccept` command is

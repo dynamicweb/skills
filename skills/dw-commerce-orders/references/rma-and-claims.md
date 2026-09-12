@@ -5,22 +5,21 @@ which surface actually creates a claim, why an RMA that exists can still be invi
 customer center, the three-write state rename, the service cache that every raw-SQL write owes a
 flush to, and the notification mail's own resolution and tag rules.
 
-Surfaces used below, in ladder order: MCP tools (`snake_case`), Admin API verbs (`PascalCase`, at
-`/Admin/Api/<Verb>`), the frontend `CustomerCenterCmd` commands, and direct SQL — which on this
-surface is legitimate for the three tables no verb reaches, and is **local-install only** (a
-hosted install has no SQL rung) and always owes the service flush in
-[Flush the RMA service after every raw-SQL write](#flush-the-rma-service-after-every-raw-sql-write).
+Surfaces used below: MCP tools (`snake_case`) and the frontend `CustomerCenterCmd` commands. The
+out-of-product recipes for this area — the Management API claim and state verbs, the three tables
+no verb reaches, and the service flush each raw write owes — live in
+[`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md).
 
 ## Contents
 
 - [Creating a claim: which surface writes what](#creating-a-claim-which-surface-writes-what)
-- [`RmaSave` binds an EMPTY id and a SINGULAR order-line id](#rmasave-binds-an-empty-id-and-a-singular-order-line-id)
+- [The platform owns the claim id](#the-platform-owns-the-claim-id)
 - [The customer-center list INNER JOINs three tables](#the-customer-center-list-inner-joins-three-tables)
 - [Let the platform mint the claim number — never rename an RMA in SQL](#let-the-platform-mint-the-claim-number--never-rename-an-rma-in-sql)
 - [Renaming an RMA state is three writes](#renaming-an-rma-state-is-three-writes)
 - [Empties differ by writer: guard with a coalesce, never `IS NULL`](#empties-differ-by-writer-guard-with-a-coalesce-never-is-null)
 - [Every save of an existing RMA writes a customer-block comment](#every-save-of-an-existing-rma-writes-a-customer-block-comment)
-- [Flush the RMA service after every raw-SQL write](#flush-the-rma-service-after-every-raw-sql-write)
+- [The RMA list and the RMA detail read from different places](#the-rma-list-and-the-rma-detail-read-from-different-places)
 - [The customer-center RMA app is ViewModel-driven](#the-customer-center-rma-app-is-viewmodel-driven)
 - [The RMA app keys on the signed-in user, not the customer number](#the-rma-app-keys-on-the-signed-in-user-not-the-customer-number)
 - [The RMA notification mail: template root, tag set, and the only route that raises it](#the-rma-notification-mail-template-root-tag-set-and-the-only-route-that-raises-it)
@@ -35,14 +34,17 @@ pick by what you need rather than by convenience:
 | Surface | Writes the order-line relation | Writes a `Created` comment | Writes `RmaCustomerNumber` | Raises the notification mail |
 |---|---|---|---|---|
 | MCP `create_rma` | No (`orderLineCount` is `0` in its own response) | No — the `comment` argument is accepted and dropped | No | No |
-| Admin API `RmaSave` (`/Admin/Api/RmaSave`) | Yes, from the singular root `OrderLineId` | Yes (`Created`) | From the model | No |
+| Management API `RmaSave` (outside the product) | Yes, from the singular root `OrderLineId` | Yes (`Created`) | From the model | No |
 | Frontend `CustomerCenterCmd=addrma` | Yes, `OrderLineId` repeatable | Yes, but `RMAComment`'s text is dropped | Yes, from the order | **Yes** |
 
 **MCP `create_rma` produces a backend-only stub.** It copies the customer name, email and company
 from the order and satisfies none of the three visibility prerequisites, so the RMA is real,
 readable through MCP `get_rmas_by_order_id`, and unreachable from the customer center for ever,
-with no error anywhere. When a claim must appear on the storefront, create it with Admin API
-`RmaSave` and add the comment row, or drive the frontend command.
+with no error anywhere. When a claim must appear on the storefront, drive the frontend command —
+in-product that is the only surface that produces a complete claim. (Outside the product, the
+Management API `RmaSave` + comment-row recipe is in
+[`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md) "Creating a claim:
+which surface writes what".)
 
 **The frontend command is the complete model, and it is also the silent one.**
 `CustomerExperienceCenterHelper.AddRmaFromRequest` reads `OrderLineId`, `RMATypeId` and
@@ -53,30 +55,17 @@ post-command 302 and writes nothing: no exception, no log line, no validation me
 that answers 302 and writes nothing is indistinguishable from one that worked**, so assert on
 `EcomRmas` row count (or an `RmaList` read) after any scripted `addrma`, never on the redirect.
 
-## `RmaSave` binds an EMPTY id and a SINGULAR order-line id
+## The platform owns the claim id
 
-Admin API `RmaSave` branches on `Model.Id`: a non-empty id means "this is an existing RMA" and
-routes the payload down the replacement-order path, re-reading the id you supplied as a
-*replacement order* id. And on a create the order-line binding is the **singular root
-`OrderLineId`** — the plural `OrderLineIds` collection is not bound on 10.28.x. Neither error
-string names the offending field:
+**The platform mints the claim id from the `EcomNumbers` `RMA` counter**, exactly as it does for
+orders and invoices (see [`order-lifecycle.md`](order-lifecycle.md) "The platform OWNS ids and
+timestamps"). MCP `create_rma` never takes an id, and supplying one to the out-of-product save verb
+re-reads it as a *replacement order* id, which is what makes "the id I sent was rejected" read as a
+missing order.
 
-```
-POST /Admin/Api/RmaSave {"Model":{"Id":"<claim-number>", ...}}
-  -> {"status":"notFound","message":"Selected replacement order is not found. The replacement order id: <claim-number>."}
-
-POST /Admin/Api/RmaSave {"Model":{"Id":"", ...},"OrderLineIds":["<orderLineId>"]}
-  -> "Unable to create RMA. Selected products were not found."
-
-POST /Admin/Api/RmaSave {"Model":{"Id":"", ...},"OrderLineId":"<orderLineId>"}
-  -> created; the platform mints the id from the `EcomNumbers` `RMA` counter
-```
-
-**Start from the platform's own model.** `GET /Admin/Api/RmaNew?OrderId=<orderId>` returns a
-fully pre-filled model — customer block, language, default state — and is the right starting
-point for the `RmaSave` payload. Send `Model.Id` empty on every create: the platform owns the id,
-exactly as it does for `OrderSave` and `InvoiceSave` (see
-[`order-lifecycle.md`](order-lifecycle.md) "The platform OWNS ids and timestamps").
+Outside the product: see
+[`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md) "`RmaSave` binds an
+EMPTY id and a SINGULAR order-line id".
 
 ## The customer-center list INNER JOINs three tables
 
@@ -85,55 +74,32 @@ The customer-center list query joins `EcomRmas` to `EcomRmaComments`, `EcomRmaOr
 `RmaDeleted = 0`, and takes the identity from the **order** (`OrderCustomerAccessUserID`, or
 `OrderCustomerNumber` in the customer-number variant) — never from the RMA:
 
-```sql
--- the shape of the app's own list query (read-only; use it to diagnose an invisible RMA)
-SELECT r.RmaId, o.OrderID, r.RmaStateId, MAX(c.RmaCommentCreated) AS DateCreated
-FROM EcomRmas r
-INNER JOIN EcomRmaComments   c  ON r.RmaId = c.RmaCommentRmaId
-INNER JOIN EcomRmaOrderLines rl ON r.RmaId = rl.RmaOrderLineRmaId
-INNER JOIN EcomOrderLines    ol ON rl.RmaOrderLineOrderLineId = ol.OrderLineID
-INNER JOIN EcomOrders        o  ON ol.OrderLineOrderID = o.OrderID
-WHERE o.OrderComplete = 1 AND r.RmaDeleted = 0 AND o.OrderCustomerAccessUserID = <userId>
-GROUP BY r.RmaID, o.OrderID, r.RmaStateID;
-```
-
 So **an RMA with no comment row does not exist as far as the list is concerned**, and that is not
-deducible from the schema. Repairing a stub means inserting the missing `EcomRmaOrderLines` and
-`EcomRmaComments` rows and setting `RmaCustomerNumber` — SQL is legitimate here because no MCP
-tool or Admin API verb writes an RMA comment row on an existing claim other than `RmaCommentSave`
-(which needs the platform-minted id, below), it is **local-install only**, and it owes the service
-flush in [Flush the RMA service](#flush-the-rma-service-after-every-raw-sql-write).
+deducible from the schema. In-product, diagnose an invisible claim by reading the RMA back with MCP
+`get_rmas_by_order_id` and checking its comment and order-line collections against the owning
+order's customer identity: an empty comment collection is the whole answer. Repairing a stub means
+writing the missing relation and comment rows, which no MCP tool does — name the backend RMA screen
+to the user, or, outside the product, see
+[`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md) "The customer-center
+list INNER JOINs three tables" for the list query and the repair.
 
 ## Let the platform mint the claim number — never rename an RMA in SQL
 
 The RMA service holds the entity keyed by **the id it minted**. A raw-SQL rename moves the row but
-not the cached identity, so every subsequent command keyed on the new id misses while every
-command keyed on the old id is now inconsistent with the database:
+not the cached identity, so a renamed claim is unreachable by both ids: every command keyed on the
+new id misses, and every command keyed on the old id is inconsistent with the database.
 
-```
-UPDATE EcomRmas SET RmaId = '<new-number>' WHERE RmaId = '<minted-id>'   -- 1 row
-POST /Admin/Api/RmaCommentSave {"RmaId":"<new-number>", ...}
-  -> "The RMA is not found. Id: <new-number>"
-```
-
-**Publish readable claim numbers through the counter instead.** `EcomNumbers` holds
-`NumberPrefix` and `NumberCounter` for `NumberType = 'RMA'`; set them and the platform mints the
-readable number itself, which also means a claim filed live through the storefront gets the right
-number with no SQL in the loop at all:
-
-```sql
--- local installs only; no verb exposes the EcomNumbers counters. Owes no cache flush:
--- the counter is read at mint time. Prefer this to renaming a minted RMA.
-UPDATE EcomNumbers SET NumberPrefix = '<prefix>', NumberCounter = <n> WHERE NumberType = 'RMA';
-```
-
-If a rename is genuinely unavoidable, make it the **last** write of the build and restart the
-application pool after it, so no later Admin API command is keyed on an id the cache does not
-hold.
+**Readable claim numbers come from the counter instead.** `EcomNumbers` holds `NumberPrefix` and
+`NumberCounter` for `NumberType = 'RMA'`; with those set the platform mints the readable number
+itself, so a claim filed live through the storefront gets the right number with nothing else in the
+loop. No MCP tool exposes the counters — the backend number-series screen is where a person sets
+them. Outside the product: see
+[`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md)
+"Let the platform mint the claim number".
 
 ## Renaming an RMA state is three writes
 
-Admin API `RmaStateSave` with `Translated: true` writes `RmaStateTypeRelation` and
+The state-save verb with `Translated: true` writes `RmaStateTypeRelation` and
 `IsDefaultStateForNewRma` onto `EcomRmaStates` but routes `Name` and `Description` into the
 **translation** store, leaving `EcomRmaStates.RmaStateDefaultName` untouched. The storefront reads
 `EcomRmaStateTranslations`; the backend state list reads `RmaStateDefaultName`. One verb, two
@@ -142,16 +108,17 @@ name, which is only visible to someone looking at both at once.
 
 Treat a state rename as three writes:
 
-| # | Surface | What it sets |
+| # | What it sets | In-product |
 |---|---|---|
-| 1 | Admin API `RmaStateSave` `{Id, RmaStateTypeRelation, IsDefaultStateForNewRma}` | The flags: which RMA types the state serves, and which state new claims start in |
-| 2 | Admin API `RmaStateTranslationSave` `{Id, LanguageId, Name, Description}` | What the storefront renders |
-| 3 | `SQL` — `UPDATE EcomRmaStates SET RmaStateDefaultName = ... WHERE RmaStateId = ...` | What the backend state list renders |
+| 1 | The flags: which RMA types the state serves, and which state new claims start in | The backend RMA-states screen |
+| 2 | The translated name and description, which is what the storefront renders | The backend RMA-states screen, per language |
+| 3 | `EcomRmaStates.RmaStateDefaultName`, which is what the backend state list renders | No MCP tool and no verb writes this column — say so and name the screen |
 
-Step 3 is SQL because no verb writes that column: `RmaStateSave` with `Translated: true` skips it
-and there is no untranslated variant that reaches it. **Local installs only**, and it owes the RMA
-service flush below. Verify all three by reading the storefront badge, the claim-list column and
-the backend state list and asserting they carry the same vocabulary.
+Verify all three by reading the storefront badge, the claim-list column and the backend state list
+with MCP `get_rma_states` and asserting they carry the same vocabulary. Outside the product, the
+three writes are in
+[`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md) "Renaming an RMA state
+is three writes".
 
 Give every state an `RmaStateTypeRelation` covering all RMA types, or part of the lifecycle is
 unreachable for whichever claim type the buyer picks.
@@ -159,16 +126,12 @@ unreachable for whichever claim type the buyer picks.
 ## Empties differ by writer: guard with a coalesce, never `IS NULL`
 
 The API path and the frontend RMA module disagree about what "unset" means on the same column:
-`RmaSave` leaves `EcomRmaOrderLines.RmaOrderLineSerialNumber` **NULL**, the frontend module writes
-an **empty string**. A guarded self-heal written as `WHERE ... IS NULL` therefore fires on
-API-created claims and silently never fires on a storefront-filed one — same statement, same code
-path, zero rows affected, no error.
-
-```sql
--- guard every "is this RMA field unset" test this way; still idempotent on re-render
-UPDATE EcomRmaOrderLines SET RmaOrderLineSerialNumber = @s
- WHERE RmaOrderLineId = @id AND ISNULL(RmaOrderLineSerialNumber, '') = '';
-```
+the save verb leaves `EcomRmaOrderLines.RmaOrderLineSerialNumber` **NULL**, the frontend module
+writes an **empty string**. Any "is this field unset" test therefore has to coalesce; a test for
+NULL alone matches API-created claims and silently never matches a storefront-filed one. Outside the
+product, the guarded repair is in
+[`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md) "Empties differ by
+writer".
 
 Same family, same cause: **the first `EcomRmaComments` row on any RMA is the platform's own
 `Created` event and carries no text**, so `SELECT TOP 1 ... ORDER BY RmaCommentId` looking for the
@@ -177,7 +140,7 @@ first row.
 
 ## Every save of an existing RMA writes a customer-block comment
 
-Any `RmaSave` of an **existing** RMA writes an `EcomRmaComments` row with
+Any save of an **existing** RMA writes an `EcomRmaComments` row with
 `RmaCommentEvent = 'UserInfoChanged'` whose text is a serialisation of the whole customer block —
 name, company, address, email. It fires on every save, **including a pure state transition where
 nothing about the customer was touched**, and `EcomRmaComments` is exactly what a customer-facing
@@ -186,37 +149,30 @@ claim-history template renders.
 Budget for it on any solution whose claim history is customer-facing. Two ways out:
 
 - **Filter the event in the details template** — render only the comment events the buyer should
-  see. This is the option with no cleanup pass and no restart, and it is the right one for a live
-  site.
-- **Delete the rows after a scripted `RmaSave` pass** —
-  `DELETE FROM EcomRmaComments WHERE RmaCommentEvent = 'UserInfoChanged'`. SQL because no verb
-  deletes an RMA comment; **local installs only**; owes the service flush below, because the RMA
-  detail view serves the cached object graph and keeps rendering deleted rows without it.
+  see. This is the option with no cleanup pass and no restart, it is the right one for a live site,
+  and it is the one an in-product reader can do: the template is under `Files/`.
+- **Delete the rows after a scripted save pass** — no MCP tool and no verb deletes an RMA comment,
+  so this is out of product: see
+  [`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md)
+  "Every save of an existing RMA writes a customer-block comment".
 
-## Flush the RMA service after every raw-SQL write
+## The RMA list and the RMA detail read from different places
 
 `RmaList` queries SQL directly. `RmaById` and `RmaComments` serve a **persistent
-`ReturnMerchandiseAuthorizationService` cache that no SQL write invalidates**, so after a raw-SQL
-edit the list grid shows the new data while the detail view keeps serving the pre-write object
-graph — including rows that were deleted. **The correct-looking list is what hides the stale
-detail**, which is why this reads as a rendering bug rather than a cache.
+`ReturnMerchandiseAuthorizationService` cache that no direct write invalidates**, so after a write
+made outside the domain service the list grid shows the new data while the detail view keeps
+serving the pre-write object graph — including rows that were deleted. **The correct-looking list
+is what hides the stale detail**, which is why this reads as a rendering bug rather than a cache.
 
-```
-POST /Admin/Api/CacheInformationRefresh
-{ "CacheTypeName": "Dynamicweb.Ecommerce.Orders.ReturnMerchandiseAuthorization.ReturnMerchandiseAuthorizationService" }
-```
+Only an explicit flush of that service turns the detail view over. No application-pool recycle is
+needed, and a scheduled task that only runs SQL cannot raise the flush at all, so a nightly date
+shift leaves the detail view stale by design. Say so when designing the job.
 
-- **Every raw-SQL write to RMA data is followed by that flush** — no application-pool recycle is
-  needed. MCP `get_rma_states` reading back a state row inserted by SQL is the cheap proof that
-  the flush landed.
-- **Match FULL type names when hunting a cache id.** Filtering the cache list on the substring
-  `rma` also matches `inteRMAtional`, `infoRMAtion` and `foRMAt`, which is what makes the right
-  entry hard to find.
-- **A SQL-only scheduled task cannot call that verb**, so a nightly date shift leaves the RMA
-  detail view stale by design until the cache turns over. Say so when designing the job.
-
-Assert `RmaById` returns the same values as the `RmaList` row after a SQL edit **plus** the flush.
-The per-entity flush table is in
+In-product, MCP `get_rma_states` and MCP `get_rma_by_id` read through the same cache, so a value
+that one of them keeps returning after a change made elsewhere is this, not a rendering bug. The
+flush itself is out of product: see
+[`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md)
+"Flush the RMA service after every raw-SQL write", and the per-entity flush table in
 [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md).
 
 ## The customer-center RMA app is ViewModel-driven
@@ -305,8 +261,10 @@ opposed to the whole comment history including state-change rows.
 
 **Only the frontend raises the mail.** `DWN.ECOM.RMA.BEFORERMAEMAILSEND` is raised from exactly one
 member in the whole bin, `ReturnMerchandiseAuthorizationEmailConfiguration.SendMail(rma)`. Neither
-the MCP RMA tools nor any Admin API command reaches it — they write the entity and return — so MCP
-`set_rma_state` and MCP `create_rma` commit no mail at all, and a subscriber on that notification
-cannot be exercised from a script. Plan an RMA-notification build around the frontend `addrma` and
-the admin RMA state-change UI, and configure `EcomRmaEmailConfigurations` by SQL (no MCP tool or
-Admin API verb reaches that table; **local installs only**; flush the RMA service afterwards).
+the MCP RMA tools nor any out-of-product command reaches it — they write the entity and return — so
+MCP `set_rma_state` and MCP `create_rma` commit no mail at all, and a subscriber on that
+notification cannot be exercised from a script. Plan an RMA-notification build around the frontend
+`addrma` and the admin RMA state-change UI. `EcomRmaEmailConfigurations` itself has no MCP tool:
+name the backend RMA e-mail screen, or see
+[`recipes-commerce-rma.md`](../../dw-data-access/references/recipes-commerce-rma.md)
+"Flush the RMA service after every raw-SQL write" for the out-of-product write.

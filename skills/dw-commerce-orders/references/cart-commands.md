@@ -5,9 +5,10 @@ of its verbs do something narrower — or different — from what their names sa
 read out of `CartHandler.CatchCart` / `CartService` and then measured on DW 10.28.x with Swift 2.
 
 Surface: these are **frontend commands**, posted as `?CartCmd=<cmd>` / `?CustomerCenterCmd=<cmd>`
-or as a hidden form field against a page that hosts a cart app. They are not MCP tools and not
-Admin API verbs; the ladder rung above them for cart data is MCP (`get_order_lines`,
-`delete_order_line`, …) and the Admin API order verbs, and neither can reach the session cart.
+or as a hidden form field against a page that hosts a cart app. They are not MCP tools: MCP
+(`get_order_lines`, `delete_order_line`, …) reads and writes cart *data*, and nothing on any surface
+reaches the session cart itself. The out-of-product recipes for this area are in
+[`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Carts".
 
 ## Contents
 
@@ -34,22 +35,16 @@ that reads as success.
    scripted proof of a cart command fails by default. The surrounding command still runs, so the
    **cart row is created**, the 302 is issued, and nothing is written to `EcomOrderDebuggingInfo`
    or the event log. A probe that checks "did a cart appear" therefore reports success on a
-   request that added zero order lines.
-
-   ```
-   POST /Default.aspx  (default curl UA)   ID=<n>&cartcmd=setmulti&ProductLoopCounter1=1&ProductID1=SKU-0001&Quantity1=3
-     -> 302; a cart is created for the signed-in user; 0 rows in EcomOrderLines
-   the same request with -A "Mozilla/5.0 … Chrome/… Safari/537.36"
-     -> 302; the cart carries SKU-0001 x3
-   ```
+   request that added zero order lines. Assert on order lines — MCP `get_order_lines` on the cart —
+   never on the cart's existence.
 
 2. **A `cartcmd` on the `Default.aspx?ID=<n>` form of the URL is answered with a 301 to the
    search-friendly URL BEFORE the command executes.** A client that does not follow redirects
    performs no command at all and still gets a plausible response.
 
 So a scripted cart proof needs a browser User-Agent and redirect-following — **not necessarily a
-browser**. Note that `curl -L` turns the final checkout POST's receipt redirect into an HTTP 411;
-`curl --post301 --post302` preserves the body.
+browser**. The measured request pairs, and the redirect flag that costs the receipt body, are in
+[`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Two gates every scripted cart command must pass".
 
 ## The command's redirect drops your whole querystring
 
@@ -110,9 +105,8 @@ delete makes `setmulti` the natural command behind an editable order grid, not o
 ## `archive` does not archive — it clears the active-cart pointer
 
 `CartHandler.CatchCart` routes `archive` to `CartService.ClearCart`, whose entire effect is to drop
-the session cart key, remove `EcomCustomerDataLoaded`, and run
-`UPDATE AccessUser SET AccessUserCartID = NULL WHERE AccessUserID = <id>`. There is nothing for it
-to write: **`EcomOrders` has no archived column** — the cart identity columns are `OrderCart`,
+the session cart key, remove `EcomCustomerDataLoaded`, and null the user's active-cart pointer.
+There is nothing for it to write: **`EcomOrders` has no archived column** — the cart identity columns are `OrderCart`,
 `OrderStateId`, `OrderCustomerAccessUserId`, `OrderSecondaryUserId`, `OrderDisplayName`,
 `OrderReference` and `OrderIsRecurringOrderTemplate`. Measured against a named three-line cart:
 zero row delta in `EcomOrders` and `EcomOrderLines`, `OrderCart` still 1, name and lines intact,
@@ -188,19 +182,10 @@ owner is kept instead, and the resulting **order** is stamped with the wrong use
 
 No platform override exists: MCP `get_module_settings` on the checkout paragraph returns
 `ShopSelector`, `CartSelector`, `SetUserDetailsRadio` and `OnReEnterRadio` and nothing about cart
-ownership. Until the platform discards a pointer whose owner does not match, **normalise the
-pointers so that every `AccessUserCartId` is NULL or a cart the user actually owns**:
-
-```sql
--- local installs only. No verb writes AccessUserCartId (CartCmd=archive clears one pointer,
--- for the signed-in user only), and the User object is cached: this write owes ONE
--- application-pool recycle, or a CacheInformationRefresh of the user service.
-UPDATE u SET u.AccessUserCartId = NULL
-FROM AccessUser u
-LEFT JOIN EcomOrders o
-       ON o.OrderId = u.AccessUserCartId AND o.OrderCustomerAccessUserId = u.AccessUserId
-WHERE u.AccessUserCartId IS NOT NULL AND o.OrderId IS NULL;
-```
+ownership. **The only in-product repair is the platform's own `CartCmd=archive`**, which clears the
+pointer for the signed-in user and one user at a time; there is no MCP tool for the column, so a
+bulk normalisation is out of product — see [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "The active-cart pointer is adopted with
+no ownership check" for the sweep that nulls every pointer not backed by a cart the user owns.
 
 Assert it per persona: the `DynamicwebEcomCart<userId>` cookie is **absent** for a user who owns no
 cart, and a rendered cart total matches only carts whose `OrderCustomerAccessUserId` equals that

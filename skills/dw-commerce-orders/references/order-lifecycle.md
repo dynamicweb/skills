@@ -158,14 +158,9 @@ stale read. It then does what almost every order-touching path does, `Services.O
 save says it never happened. No error, no warning, no log line on either side. That is materially worse
 than a stale read, because a stale read at least leaves the database telling the truth.
 
-**State the ordering once and follow it for every SQL touch on a DW-cached table:**
-
-```
-UPDATE …                                            -- the SQL write
-POST /Admin/Api/CacheInformationRefresh             -- flush the owning service by verb
-     {"CacheTypeName":"Dynamicweb.Ecommerce.Orders.OrderService"}
-… then run anything that touches the entity, and let nothing re-save it afterwards.
-```
+**Every SQL touch on a DW-cached table is a write, then a flush of the owning service, then the code
+that reads it — and nothing may re-save the entity afterwards.** The ordered sequence is in
+[`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Order the SQL write and the cache flush".
 
 Both halves of that sequence are load-bearing, and they were measured on the same solution days apart.
 **Skip the flush** and the staged value is read stale and then erased by the next save. **Do the flush**

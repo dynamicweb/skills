@@ -56,21 +56,15 @@ Three facts compose:
   written by the product index builder, and no build setting excludes hidden products — so the
   header's total still counts them.
 - **`Dynamicweb.Ecommerce.Products.Product` has no `Hidden` property at all** (only
-  `ShowInProductList`, a different column), so Admin API `ProductSave`, MCP `patch_products_safe`
-  and MCP `update_products` cannot reach the flag, and the DW10 backend product editor has no
-  control for it. It is a DW9 leftover that is still read and no longer writable.
+  `ShowInProductList`, a different column), so MCP `patch_products_safe`, MCP `update_products` and
+  every save verb cannot reach the flag, and the DW10 backend product editor has no control for it.
+  It is a DW9 leftover that is still read and no longer writable.
 
-**Diagnose it with one count, and clear it with one `UPDATE`:**
-
-```sql
--- read: how many products the listing will count and not render
-SELECT COUNT(*) FROM EcomProducts WHERE ProductHidden = 1;
-
--- the only write path on DW10: no API surface exposes the column, and there is no admin control.
--- Local installs only. Afterwards, invalidate the product cache — an MCP patch_products_safe
--- no-op on the affected ids is enough, and no application-pool recycle is needed.
-UPDATE EcomProducts SET ProductHidden = 0 WHERE ProductHidden = 1;
-```
+**So in-product the flag can be diagnosed but not cleared.** MCP `verify_product_visibility` on a
+product the listing counts and does not render is the in-surface diagnosis; say plainly that
+nothing in the product editor clears the flag. Clearing it is out of product: see
+[`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "`ProductHidden` is
+enforced in SQL and unwritable by every API".
 
 **The durable guard is an assertion that rendered product rows equal the header count** on every
 listing probe. It is the only check that catches this class, and it catches the neighbouring
@@ -100,19 +94,11 @@ completion decrements follows the stock location on the order line:**
 
 So the safe assumption is **both tables move**, and the invariant worth holding is that for every
 product `SUM(StockUnitQuantity)` equals `ProductStock` — which is what makes whichever number the
-storefront renders the one the catalog published:
-
-```sql
--- read-only invariant; snapshot it BEFORE any check that places its own order,
--- or the check fails on its own side effect
-SELECT COUNT(*) FROM (
-  SELECT p.ProductId
-  FROM EcomProducts p
-  LEFT JOIN EcomStockUnit su ON su.StockUnitProductId = p.ProductId
-  GROUP BY p.ProductId, p.ProductStock
-  HAVING ISNULL(SUM(su.StockUnitQuantity), 0) <> p.ProductStock
-) d;   -- must be 0
-```
+storefront renders the one the catalog published. In-product, check it per product: MCP
+`get_product_by_id` carries the aggregate and MCP `get_stock_locations` the per-location rows, and
+snapshot both **before** any check that places its own order, or the check fails on its own side
+effect. The corpus-wide version of the same assertion is in
+[`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "The two stock tables".
 
 The practical consequence runs the other way from the drift: **an inbound integration that re-asserts
 only the product total leaves the per-warehouse breakdown behind**, and the storefront then shows an

@@ -4,18 +4,18 @@ What has to be true on the data side before a checkout can complete, and the tra
 country binding on payment and shipping methods, the fee-rules contract, the posted field names,
 validation groups (which have no admin UI), custom order-line fields, and saved payment cards.
 
-Surfaces below: MCP tools in `snake_case`, Admin API verbs in `PascalCase` at `/Admin/Api/<Verb>`,
-posted form fields as frontend names, and `SQL` in fenced blocks — always with why the higher
-rungs do not reach it, that it is **local-install only**, and what it owes afterwards.
+Surfaces below: MCP tools in `snake_case` and posted form fields as frontend names. The
+out-of-product recipes for this area — the Management API method and global-setting verbs, and the
+tables no verb reaches — are in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Checkout configuration".
 
 ## Contents
 
 - [Method country binding is what decides whether checkout can complete](#method-country-binding-is-what-decides-whether-checkout-can-complete)
-- [`ShippingSave` takes two fee sources, and the flat-rate recipe](#shippingsave-takes-two-fee-sources-and-the-flat-rate-recipe)
+- [A shipping method takes two fee sources, and the flat-rate shape](#a-shipping-method-takes-two-fee-sources-and-the-flat-rate-shape)
 - [The payment radio's posted name drops a syllable the element id carries](#the-payment-radios-posted-name-drops-a-syllable-the-element-id-carries)
 - [Validation groups: a dangling reference validates nothing, silently](#validation-groups-a-dangling-reference-validates-nothing-silently)
 - [Validation fires on the step the field is posted on](#validation-fires-on-the-step-the-field-is-posted-on)
-- [Writing `EcomValidation*` rows by hand](#writing-ecomvalidation-rows-by-hand)
+- [Validation groups have no admin UI](#validation-groups-have-no-admin-ui)
 - [An unset DATE custom order field reads back as a 1970 sentinel](#an-unset-date-custom-order-field-reads-back-as-a-1970-sentinel)
 - [Order-LINE fields need no storage column — but they need a relation row](#order-line-fields-need-no-storage-column--but-they-need-a-relation-row)
 - [Saved payment cards are service-only](#saved-payment-cards-are-service-only)
@@ -40,34 +40,28 @@ methods do, so the payment step looks healthy and only delivery is dead.
 - **Gate it: assert a non-zero delivery-option count for the target country, per persona.** A
   checkout that cannot complete is otherwise invisible until somebody walks the whole flow by hand.
 
-Writing the relation rows directly (`EcomMethodCountryRelation`) is legitimate when the method
-verbs are not in play, and carries one schema trap: **`MethodCountryRelRegionCode` is `NOT NULL`**,
-unlike every other optional column on that table. A country-only relation with no region
-restriction must supply `''`, not `NULL`; `NULL` terminates the whole `INSERT` and nothing in the
-shape of the table hints at it. That write is **local-install only** and owes an order-method cache
-flush before the storefront reflects it — prefer Admin API `ShippingSave` / `PaymentSave` with
-`countryRelationKeys`, which writes the same rows through the domain service.
+Write the relations with MCP `save_shipping_methods` and MCP `save_payment_methods`, passing
+`countryRelationKeys`; both go through the domain service and need no follow-up flush. Read them
+back with MCP `get_shipping_methods` / `get_payment_methods` and assert the target country is on
+every method the checkout has to offer. Writing `EcomMethodCountryRelation` rows directly is an
+out-of-product path with a schema trap of its own: see [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Method country binding".
 
-## `ShippingSave` takes two fee sources, and the flat-rate recipe
+## A shipping method takes two fee sources, and the flat-rate shape
 
-`EcomShippings.ShippingFeeRulesSource` is an int with **exactly two API strings on 10.28.x**:
+`EcomShippings.ShippingFeeRulesSource` is an int with **exactly two accepted strings on 10.28.x**:
 `provider` (1) and `matrix` (2). Anything else — `default`, `fixed` — throws inside the invocation
-and surfaces as a bare `HTTP 500 "Exception has been thrown by the target of an invocation"` with
-no field name, indistinguishable from a broken model, a bad id or a sick host.
+and surfaces as a bare HTTP 500 naming no field, indistinguishable from a broken model, a bad id or
+a sick host.
 
-**To publish a flat freight rate with no fee matrix authored**, save with `feeRulesSource: "matrix"`,
-`maxWeight: 0` and the fee in `defaultFee`:
+**To publish a flat freight rate with no fee matrix authored**, save the method with MCP
+`save_shipping_methods` using `feeRulesSource: "matrix"`, `maxWeight: 0` and the fee in
+`defaultFee`. With an empty `EcomFees` matrix and `maxWeight = 0`, `defaultFee` (stored as
+`ShippingPriceOverMaxWeight`) is what the cart charges. Read the method back with MCP
+`get_shipping_method_by_id` and assert the fee source and the default fee both landed.
 
-```
-POST /Admin/Api/ShippingSave
-{ …, "feeRulesSource": "matrix", "maxWeight": 0, "defaultFee": 18.50,
-     "countryRelationKeys": [ … ] }
--> ok.  EcomShippings.ShippingFeeRulesSource = 2, ShippingPriceOverMaxWeight = 18.50, no EcomFees rows
-```
-
-With an empty `EcomFees` matrix and `maxWeight = 0`, `defaultFee` (stored as
-`ShippingPriceOverMaxWeight`) is what the cart charges. Re-point the countries first, then the
-fee — a method the delivery step filters out is invisible whatever its fee says.
+Re-point the countries first, then the fee — a method the delivery step filters out is invisible
+whatever its fee says. The equivalent out-of-product payload is in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "`ShippingSave`
+takes two fee sources".
 
 ## The payment radio's posted name drops a syllable the element id carries
 
@@ -112,15 +106,17 @@ step were **not** caught moving from step one (where those inputs are absent fro
 **were** caught moving off step two, with each rule's configured message in the step's alert block.
 Bind validation to the step where you want the buyer stopped, and test it there.
 
-## Writing `EcomValidation*` rows by hand
+## Validation groups have no admin UI
 
-There is no admin UI for validation groups, so the rows are written directly into the three tables.
-This is one of the narrow sanctioned SQL cases — no MCP tool and no Admin API verb reaches these
-tables at all — and it is **local-install only**; after the insert, the cart app picks the rows up
-on the next request with no flush, but a paragraph-settings change alongside it owes the usual
-paragraph cache turnover.
+There is no admin screen for validation groups and no MCP tool reaches the three tables, so
+in-product a validation group cannot be created at all: say so, and say that the group has to be
+authored outside the product ([`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Writing `EcomValidation*` rows by hand") before the
+cart app can bind it.
 
-The column contracts are not obvious from the schema:
+What is in surface is the binding and the proof: set the cart app's `ValidationGroups` setting and
+`SelectedValidations` with MCP `set_module_settings`, then submit the step with the field empty and
+assert the step blocks. The column contracts behind the rows, which decide whether a hand-authored
+group works at all:
 
 | Column | Contract |
 |---|---|
@@ -130,24 +126,9 @@ The column contracts are not obvious from the schema:
 | `EcomValidations.ValidationUseAndOperator` | `1` = all rules on the field must validate |
 | `EcomValidationGroups.ValidationGroupDoNotValidateIfAllFieldsAreEmpty` | `0` to validate even when the whole group is blank |
 
-```sql
-INSERT INTO EcomValidationGroups
-  (ValidationGroupId, ValidationGroupName, ValidationGroupDoNotValidateIfAllFieldsAreEmpty)
-VALUES ('VALIDATIONGROUP10', 'Checkout', 0);
-
-INSERT INTO EcomValidations
-  (ValidationId, ValidationGroupId, ValidationFieldName, ValidationUseAndOperator, ValidationFieldType)
-VALUES ('VALIDATION30', 'VALIDATIONGROUP10', '<CustomOrderFieldSystemName>', 1, 'CustomOrderField');
-
-INSERT INTO EcomValidationRules
-  (ValidationRuleId, ValidationRuleValidationId, ValidationRuleType, ValidationRuleParameters)
-VALUES ('VALIDATIONRULE30', 'VALIDATION30',
-        'Dynamicweb.Ecommerce.Orders.Validation.Rules.RequiredRule', '0');
-```
-
-Bind the group to the cart app's `ValidationGroups` setting and list the individual validation ids
-in `SelectedValidations`. Prove it by submitting the step with the field empty and asserting the
-step blocks.
+A group authored against the wrong `ValidationFieldType` string or a short-form rule class name
+binds cleanly and validates nothing, which is the same silent shape as the dangling reference
+above.
 
 ## An unset DATE custom order field reads back as a 1970 sentinel
 
@@ -174,14 +155,13 @@ So adding an order-line field is safe with no schema change and no restart. Writ
 takes three things, and the third is the one that costs a day:
 
 1. **The definition** — an `EcomOrderLineFields` row (`OrderLineFieldSystemName`,
-   `OrderLineFieldName`, `OrderLineFieldLength`). SQL, because no MCP tool or Admin API verb
-   creates one; **local installs only**; flush `Dynamicweb.Ecommerce.Orders.OrderService` and
-   `…Orders.OrderLineFieldService` with Admin API `CacheInformationRefresh` afterwards. **A
-   definition alone is inert:** the cart asks the order-line field service which fields apply to
-   the shop or group it is working in, and with no relation row the answer is none, so a posted
-   value is dropped in silence.
+   `OrderLineFieldName`, `OrderLineFieldLength`). No MCP tool creates one, so in-product this is a
+   "name the screen and stop" step; the out-of-product write and the flush it owes are in
+   [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Order-LINE fields need no storage column". **A definition alone is inert:** the
+   cart asks the order-line field service which fields apply to the shop or group it is working in,
+   and with no relation row the answer is none, so a posted value is dropped in silence.
 2. **An `EcomOrderLineFieldGroupRelation` row** for the shop (a shop relation alone is sufficient;
-   group relations behave identically).
+   group relations behave identically), written the same way.
 3. **The cart input name `OrderLineFieldValue_<orderLineId>_<systemName>`**, posted on
    `cartcmd=updateorderlines`. The platform's own helper produces it
    (`OrderLineFieldValue.GetCartInputFieldName(orderLineId)`). No add-time shape works: the
@@ -240,16 +220,11 @@ leave step one: the order has no order lines, so every request logs
 it. The page re-renders the first step for ever, with no error and no validation message, and it
 reads as a broken step-advance button. **That log line is the only trace there is.**
 
-One write turns the journey on:
-
-```
-POST /Admin/Api/GlobalSettingSave
-{"Model":{"key":"/Globalsettings/Ecom/Cart/DoNotDeleteCartsWithZeroOrderlines","value":"True"}}
-GET  /Admin/Api/GlobalSettingByKey?key=/Globalsettings/Ecom/Cart/DoNotDeleteCartsWithZeroOrderlines
-  -> {"value":"True"}
-```
-
-The setting is absent from a stock `GlobalSettings.config`, and therefore `False`.
+One global setting turns the journey on:
+`/Globalsettings/Ecom/Cart/DoNotDeleteCartsWithZeroOrderlines` set to `True`. It is absent from a
+stock `GlobalSettings.config`, and therefore `False`. **No MCP tool reaches global settings** —
+name the Settings > Global settings screen, or see [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "The zero-value "add a card"
+journey needs one global setting" for the out-of-product write and its read-back.
 
 **Second trap on the same journey: the card page's payment-method whitelist does not decide the
 method.** A buyer whose terms group also offers an on-account method had the zero-value order
