@@ -126,6 +126,29 @@ titles/names" — pass `get_translatable_content`'s `kinds` filter (`kinds="Page
 titles) so the whole site doesn't get translated, and name the scope when confirming
 ("Translate page titles → French"). The tool description lists the kind values.
 
+## A language version binds TWO languages, and the copy advances only one
+
+**`create_language_version` takes a culture, and the culture governs the CMS only.** Every commerce row
+— product group names, payment method names, shipping method names, unit and country translations — is
+keyed on the area's **ecommerce language**, which is a second, independent binding that the copy takes
+verbatim from the source area. So a new language version comes up with the target culture and the
+**source** ecom language, and the result is a page that reads fully translated in its chrome while the
+catalogue navigation, the payment names and the shipping names in the same header render in the source
+language. Nothing errors, and a chrome-only read-back reports a clean pass.
+
+Worse, it is silently ordered: per-language commerce names written **after** the version is created (the
+group translations, the method translations) target a language the new area does not use, so they are
+in the database and unreachable.
+
+So, immediately after `create_language_version` and **before** any per-language commerce name is
+written:
+
+1. Patch the new area with `save_areas`, setting `ecomLanguageId` to the target ecommerce language.
+2. Read it back with `get_area_by_id` and confirm the value echoes.
+3. Assert on the render, not the row: fetch the new prefix and require the catalogue navigation to carry
+   the target-language group names and **zero** source-language ones. The chrome being translated is not
+   evidence — it is the half that was already right.
+
 ## Publish the language version before reading it back
 
 **A language version is not addressable until it is published, and `create_language_version` leaves it
@@ -153,7 +176,9 @@ After each batch, and once at the end of a run:
    publish answered 200 carrying the master `lang` attribute, the master title and the master hero,
    and the very next fetch of the same URL served the target language throughout. Only a page that
    still renders the master language on a **second** fetch is a language-version wiring problem rather
-   than a translation problem.
+   than a translation problem. **A page whose chrome is translated and whose catalogue, payment or
+   shipping names are not is the ecom-language binding above, not a translation gap** — check
+   `ecomLanguageId` on the area before re-running any translation loop.
 
 Report the failures by page id; do not re-send the same payload hoping for a different result.
 

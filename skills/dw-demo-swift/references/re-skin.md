@@ -149,8 +149,10 @@ Three dispositions, in preference order: **rewire** at the customer's own data (
 
 ### Step 0.5a — An assert that cannot fail is not an assert
 
-**Write every assert against what a runner can actually see, not against the surface it guards.** Three
-shapes recur, and each one reports PASS on a broken site:
+**Write every assert against what a runner can actually see, not against the surface it guards.** Five
+shapes recur; the first three report PASS on a broken site, and the last two report FAIL on a correct
+one, which is just as expensive because the usual recovery is to quietly rewrite the assert until it
+passes:
 
 1. **A copy sweep anchored on a bare word.** Swift's own markup carries the word `placeholder` as an HTML
    attribute and as a platform class name on the search modal, so "zero case-insensitive matches of
@@ -158,14 +160,25 @@ shapes recur, and each one reports PASS on a broken site:
    **planted marker** instead — the exact stock-copy tripwire set in Step 0.1, or the literal
    `Placeholder` plus the separator the baseline plants — and state that the attribute and the class are
    expected matches.
-2. **A measurement with no instrument.** The 390/430 viewport pass needs a browser runner; nothing under
-   the skills tree drives one, and the method is described in prose in three files. A pass run without a
-   runner attached records the viewport leg as **UNPROVEN** and says so in the report. Recording UNPROVEN
-   is the correct outcome; reporting PASS on an unrun leg is the defect
-   ([`mobile-pass.md`](mobile-pass.md)).
+2. **A measurement whose instrument was never found.** The 390/430 viewport pass needs a browser runner,
+   and a demo build machine has one — it ships with the demo agent tooling rather than under the skills
+   tree, so a search of the skills folder proves nothing. Resolve it from the demo agent's configuration
+   and **run the leg** ([`mobile-pass.md`](mobile-pass.md)). Only a lookup that genuinely finds no driver
+   makes the leg UNRUNNABLE, reported with the failed lookup named. Reporting PASS on an unrun leg is the
+   defect; so is recording unrunnable without having looked.
 3. **A check that assumes version control.** See the `custom.css` naming rule above: a local-install demo's
    `Files` tree sits under the site root and outside every repository, so a diff-shaped check reports clean
    on a host that has the bug. Restate it against the filesystem or the served page.
+4. **A count over a shared table.** A row count that is not scoped to the rows this build owns counts the
+   stock rows and the other shops' rows too, so the expected number can never be reached on a correct
+   build — measured on one shop-to-group relation table, an unqualified count returned three times the
+   expected figure, all of it correct data. Scope every count by the id prefix the build assigns or by the
+   owning shop, and write the scope into the assert rather than into a comment beside it.
+5. **A rendered count compared against a total.** A paged listing renders **`MIN(page size, total)`** rows
+   behind a load-more control, so "rendered rows equal the header count" holds only while the catalogue
+   fits on one page and fails on every build that outgrows it. Assert the two separately: the rendered card
+   count equals the configured page size while a load-more control is present, and the header total equals
+   the index document count for the shop.
 
 The general form: before writing an assert, name the runner that will execute it and the observation it
 reads. An assert whose observation is unavailable, or whose PASS condition holds on a broken site, gets

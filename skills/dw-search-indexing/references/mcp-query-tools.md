@@ -9,6 +9,7 @@ building a demo host). This file covers the MCP tool surface a normal agent has 
 
 ## Contents
 
+- [A rendered PLP shows MIN(page size, total) — never the header count](#a-rendered-plp-shows-minpage-size-total--never-the-header-count)
 - [Product query vs repository index query — get this right first](#product-query-vs-repository-index-query--get-this-right-first)
 - [Tool map](#tool-map)
 - [The read–edit–verify loop (mandatory for every expression change)](#the-readeditverify-loop-mandatory-for-every-expression-change)
@@ -19,6 +20,23 @@ building a demo host). This file covers the MCP tool surface a normal agent has 
 - [Deleting a query safely](#deleting-a-query-safely)
 - [Dashboard binding](#dashboard-binding)
 - [Query configuration (admin UI settings)](#query-configuration-admin-ui-settings)
+
+## A rendered PLP shows MIN(page size, total) — never the header count
+
+A storefront product list pages server-side behind a load-more control, so the **rendered card count is
+the page size** while the header total is the whole hit count. They are equal only while the catalogue
+fits on one page, which is why an assert written as "rendered rows equal the header count" passes on a
+small seed and then fails on every build that outgrows it — on a correct catalogue.
+
+Assert the two separately:
+
+- the rendered card count equals the configured page size, with a load-more control present;
+- the header total equals the index `documentCount` for the shop's repository (`get_product_index_status`
+  with both `repositoryName` and the full `indexName` including its `.index` suffix).
+
+A mismatch between the header total and the document count is a real finding — a stale index, a
+mis-scoped shop, or a query filtering more than intended. A mismatch between the card count and the
+header total is the paging working.
 
 ## Product query vs repository index query — get this right first
 

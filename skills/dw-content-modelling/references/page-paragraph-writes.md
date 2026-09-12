@@ -199,10 +199,28 @@ different `urlName` ships a link map whose every internal link 404s.
 
 What is missing is a **read**, not the write. No page getter in the 0.4.4 tool set projects
 `urlName` — `get_pages_by_ids` and `get_pages_by_parent_id` return `menuText` and carry no slug
-member at all — so the read-back that confirms a slug is **the served URL**: compose it and assert
-a 200 (and, where label and slug differ, a 404 on the `menuText`-derived form). Inferring the slug
+member at all — so the read-back that confirms a slug is **the served URL**. Inferring the slug
 from a page read is what produced the older "`urlName` is not persisted" reading: the read-model gap
 is real, the write-path drop is not.
+
+**Never carry an absolute page id between runs.** Page ids are minted per host and a re-deserialize
+re-mints them, so an id captured in an earlier pass, copied from another host, or written into a note
+addresses a different page — or nothing — the next time it is used. Resolve pages by **path or title**
+at the point of use (`search_pages`, or `get_pages_by_parent_id` down the branch) and use the id only
+within the run that read it. An id that appears in a worked example is an illustration of a response,
+never a value to reuse.
+
+**Poll that URL; do not fetch it once.** The slug is written immediately at the data layer, but the
+frontend URL resolution runs through a cache the save does not flush synchronously, so the composed
+URL answers **404 for several seconds after a successful save** and 200 shortly afterwards — measured
+on one page, 404 at one second and 200 at six, with the superseded slug going the other way over the
+same window. A single unconditional fetch therefore reproduces, on a correct write, exactly the 404
+this section exists to explain, and sends the reader back to planning the URL map from `menuText`.
+
+So: retry the composed URL until it answers 200, for **at least 15 seconds**, before reading a 404 as
+a failure — a 404 on the first fetch is not evidence the write was dropped. Only once the slug form has
+answered 200 is the discriminator meaningful: then assert a **404** on the `menuText`-derived form,
+where label and slug differ.
 
 `navigationTag` is the member that genuinely is accepted and dropped. On MCP 0.4.4 `navigationTag`,
 `showInMenu`, `sort` and `treeSection` are all **first-class members** of the `save_pages` input

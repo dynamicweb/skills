@@ -40,8 +40,10 @@ design concern needs nothing beyond the ordinary page/paragraph tools.
 `save_pages` persists `urlName` to `Page.PageUrlName` and it **wins over** the `menuText`-derived
 slug, so decide the URL map first and pass each slug as `urlName` while `menuText` carries the human
 label. What no page getter does is *project* `urlName`: `get_pages_by_ids` returns `menuText` and no
-slug member, so a read-back cannot confirm the URL. **Fetch the composed URL and assert 200** before
-writing any cross-link to it. Writing cross-links from `menuText` — or from a page read — ships copy
+slug member, so a read-back cannot confirm the URL. **Poll the composed URL until it answers 200** —
+for at least 15 seconds — before writing any cross-link to it: the slug is written immediately but the
+frontend URL resolution is cached and lags the save by several seconds, so an immediate fetch answers
+404 on a correct write. Writing cross-links from `menuText` — or from a page read — ships copy
 whose every internal link points at a URL that does not exist.
 
 Template paths, component names, color schemes, and field names differ per solution and are
