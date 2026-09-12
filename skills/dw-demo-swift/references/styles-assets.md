@@ -32,6 +32,14 @@ demo's Swift version (from the versions prompt) is only a compatibility check he
 The layer lives in the demo's Distribution clone at `<demo-root>\distribution\layers\theme-default\`;
 it resolves from the live `layers/INDEX.json` on the latest gate-proven `main` (the usual demo consume).
 
+**Do not pull here — assert the scaffold SHA.** The scaffold pass owns the Distribution checkout and
+recorded its SHA in `CUSTOMISATIONS.md` as the build's reproducibility stamp
+([`dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) "This pass owns
+the checkout"). Read `git -C $dist rev-parse HEAD`, compare it with the recorded stamp, and **stop**
+on a mismatch with "distribution checkout moved since scaffold, <recorded> -> <current>" rather than
+continuing on layer content the earlier passes never saw. The clone branch below stays only for a
+checkout that does not exist yet; record its SHA as the stamp if this is the first pass to run.
+
 ```powershell
 $demoRoot = (Get-Location).Path
 $dist     = "$demoRoot\distribution"                 # the Distribution clone (from deserialize-flow §3)

@@ -10,7 +10,7 @@
 - [Where to find a paragraph's wiring (read-only baseline inspection)](#where-to-find-a-paragraphs-wiring-read-only-baseline-inspection)
 - ["Don't customise this paragraph" callouts](#dont-customise-this-paragraph-callouts)
 
-> Swift 2.2 paragraph guardrails for demos. Source-of-truth: paragraphs are exposed in admin UI under each page; backing definitions live in `wwwroot/Files/Templates/Paragraph/` (built-in — read-only) and the page-preset YAML at `<demo-root>\distribution\layers\base\replace\_content\Swift 2\<area>\<page>\<grid-row>\paragraph-*.yml`.
+> Swift 2.2 paragraph guardrails for demos. Source-of-truth: paragraphs are exposed in admin UI under each page; backing definitions live in `wwwroot/Files/Templates/Paragraph/` (built-in — read-only) and the page-preset YAML at `<demo-root>\distribution\layers\surface-swift\replace\_content\Swift 2\<area>\<page>\<grid-row>\paragraph-*.yml`.
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -598,7 +598,7 @@ registry result proves a VERB absent, never a CAPABILITY absent
 
 To trace what a specific paragraph does on a Swift 2.2 page: note the page in admin (e.g.
 `Customer center/CSR/Orders`); the corresponding YAML lives at
-`<demo-root>\distribution\layers\base\replace\_content\Swift 2\Customer center\CSR\Orders\grid-row-1\paragraph-c1-1.yml`;
+`<demo-root>\distribution\layers\surface-swift\replace\_content\Swift 2\Customer center\CSR\Orders\grid-row-1\paragraph-c1-1.yml`;
 the YAML's `Type` field names the paragraph definition and the rest carries its configured properties.
 This is read-only inspection — you don't edit the downloaded baseline YAML; you edit paragraph properties via the
 Admin UI Visual Editor on the live host (which writes to the host's project DB, not back to the baseline copy).

@@ -125,6 +125,13 @@ This is a defense-in-depth check: the convention-based preflight assumes Claude 
 
 ## 8. Cross-references
 
+**The sibling contract — Distribution layers are read-only too.** `customer-context\` is one of
+three guarded-write globs. The third, `distribution[/\\]layers[/\\]`, protects the Distribution
+checkout the demo consumes: it is shared, and a mid-build layer fix is clobbered or blocks the next
+`git pull --ff-only`. Its three branches (Approve+log as a Distribution PR / Change it on the
+instance instead / Cancel) live in [`../SKILL.md`](../SKILL.md) "Three guarded-writes". Read the two
+together: this file's rule is a hard abort, that one has an approve branch.
+
 - `SKILL.md` "Two guarded-writes" section names this file and carries the one-line summary; the canonical abort message is §3 above.
 - `references/customisations.md` has the *related* preflight pattern with three branches; this file has the *same mental model* with one branch (hard abort).
 - Bypass detection: `git status customer-context/` shows changes after a demo build.

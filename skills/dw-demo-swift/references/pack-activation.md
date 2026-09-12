@@ -98,6 +98,14 @@ version**) and resolve the layer from the live `layers/INDEX.json` — a feature
 consumed via an `editions/<name>.json` that composes base + this pack at gate-proven versions. No
 hardcoded machine-wide literals — everything lands under the demo root.
 
+**Do not pull here — assert the scaffold SHA.** The scaffold pass owns the Distribution checkout and
+recorded its SHA in `CUSTOMISATIONS.md` as the build's reproducibility stamp
+([`dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) "This pass owns
+the checkout"). Read `git -C $dist rev-parse HEAD`, compare it with the recorded stamp, and **stop**
+on a mismatch with "distribution checkout moved since scaffold, <recorded> -> <current>" rather than
+continuing on layer content the earlier passes never saw. The clone branch below stays only for a
+checkout that does not exist yet; record its SHA as the stamp if this is the first pass to run.
+
 ```powershell
 $packName = "feature-pricing"       # the feature layer you are installing
 $demoRoot = (Get-Location).Path     # the demo project root

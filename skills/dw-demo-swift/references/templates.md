@@ -1,6 +1,6 @@
 # templates.md
 
-> Swift template / page-preset routing. Source-of-truth: `<demo-root>\distribution\layers\base\replace\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
+> Swift template / page-preset routing. Source-of-truth: `<demo-root>\distribution\layers\surface-swift\replace\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -255,9 +255,10 @@ the listing and language pages are unchanged with no Razor compile-error banner.
 
 ## Swift v2.3.0 templates + swift/2.3 baseline
 
-Target **Swift v2.3.0 templates** at the GitHub repo alongside the **`base` layer data** at
-`<demo-root>\distribution\layers\base\` (a `config/replace/merge` tree; content lives under
-`replace\_content\` + `merge\_content\`). The 2.3.0 release headlines (language selector + improved
+Target **Swift v2.3.0 templates** at the GitHub repo alongside the layer data at
+`<demo-root>\distribution\layers\`. The `base` layer is framework-only (`config/replace/merge`
+tree, `replace\_sql\` only); the Swift content tree lives under
+`layers\surface-swift\replace\_content\` + `merge\_content\`. The 2.3.0 release headlines (language selector + improved
 off-canvas nav) match this base layer. Legacy content-only Swift2.2 baselines predate this model and
 are no longer the default.
 

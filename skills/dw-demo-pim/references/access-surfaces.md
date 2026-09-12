@@ -40,7 +40,7 @@ Two reference sources this demo skill leans on (per-project):
 
 | Ref | How to find it in the current project |
 |---|---|
-| Swift `base` layer (per-demo checkout) | `<demo-root>\distribution\layers\base\` — the demo's checkout of the canonical swift/2.3 `base` layer (a `config/replace/merge` tree, from the Distribution repo `justdynamics/Truvio.Commerce.Distribution`). Its serialized index XML is the copy-paste source for `Products.index` definitions. |
+| Distribution layers (per-demo checkout) | `<demo-root>\distribution\layers\` — the demo's checkout of the Distribution. `base\` is **framework-only** (`replace\_sql\`, no content); the Swift content tree is `surface-swift\replace\_content\`. The serialized index XML under the layer is the copy-paste source for `Products.index` definitions. |
 | DW10 source clone | a local clone of the DW10 source (location per machine — ask/discover, never hardcode) — search `src/Features/Ecommerce` for Ecom internals and `Dynamicweb.Products.UI` for admin UI behavior. Otherwise fall back to https://doc.dynamicweb.dev/ |
 
 When the user gives you a token, port, or path in chat, treat it as scoped to the project in the current working directory — save it in conversation state, not as a global default.
