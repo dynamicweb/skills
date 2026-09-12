@@ -7,7 +7,7 @@ wiring, color-scheme architecture, and the CSS pitfalls that bite re-skins.
 ## Contents
 
 - [1. Canonical surfaces — use these, don't re-implement](#1-canonical-surfaces--use-these-dont-re-implement)
-- [2. `ViewModelTemplate<>` Razor pitfalls](#2-viewmodeltemplate-razor-pitfalls)
+- [2. `ViewModelTemplate<>` Razor pitfalls](#2-viewmodeltemplate-razor-pitfalls) (moved)
 - [3. Project-scoped stylesheet wiring (`CustomHeadInclude`)](#3-project-scoped-stylesheet-wiring-customheadinclude)
 - [4. Color schemes architecture + cascade](#4-color-schemes-architecture--cascade)
 - [5. CSS pitfalls that bite re-skins](#5-css-pitfalls-that-bite-re-skins)
@@ -80,42 +80,15 @@ surfaces in [dw-commerce-orders](../../dw-commerce-orders/SKILL.md) (`order-life
 
 ## 2. `ViewModelTemplate<>` Razor pitfalls
 
-Three pitfalls land repeatedly when authoring custom variants under `Paragraph/<ItemType>/` or
-editing `Designs/Swift-v2/` layouts. All three fail in subtle ways — the error often surfaces under
-the *wrong* file.
+Moved. Compile-time behaviour, which helpers exist on `ViewModelTemplate<T>` versus the classic tag
+base, `@Include` scope sharing, `ParagraphTemplate` path resolution and render order now live in
+[`template-compilation.md`](template-compilation.md) — one home for everything that decides whether
+a template compiles and which template a request reaches.
 
-### `@Html.Raw()` does NOT exist in `ViewModelTemplate<>`
+Serving a non-page payload from a paragraph (JSON, CSV, an upload parse, a file) lives in
+[`paragraph-endpoints.md`](paragraph-endpoints.md).
 
-Layouts inheriting `Dynamicweb.Rendering.ViewModelTemplate<>` (e.g. `Swift-v2_Master.cshtml`, every
-`Paragraph/*` layout) do not expose the MVC `Html` helper. `@Html.Raw(value)` fails with `'Html' does
-not exist in the current context`. **The error surfaces misleadingly** — reported against
-`Swift-v2_Page.cshtml` as a flood of duplicate-using / nullable warnings; scroll to the bottom for the
-real `'Html' does not exist` line.
-
-**Fix.** Default to plain `@var`. Razor encodes, but for content without HTML-special characters
-(`<`, `>`, `&`, `"`, `'`) — CSS custom-property values, brand strings, numeric tokens — the encoding
-is a no-op. `ShortDescription` / `LongDescription` are already HTML strings; emit them directly
-(`@product.ShortDescription`) and DW renders them un-escaped. If a value can legitimately contain
-HTML-special characters, pre-escape in C# before emitting.
-
-### `product.ProductFieldValues` is NOT on `ProductViewModel`
-
-`product.ProductFieldValues` lives on the underlying `Dynamicweb.Ecommerce.Products.Product` entity,
-NOT on `Dynamicweb.Ecommerce.ProductCatalog.ProductViewModel`. Calling it against `Model.Product` (a
-view model) compiles to a runtime error that **surfaces as raw Razor source rendered as page text**
-on the PDP (a page-breaking defect). Fix — resolve the underlying entity:
-
-```cshtml
-@{
-    var entity = Dynamicweb.Ecommerce.Services.Products.GetProductById(
-        product.Id, product.VariantId ?? "", true);
-    var fields = entity?.ProductFieldValues;
-}
-```
-
-The third argument (`true`) materialises `ProductFieldValues`; without it the property returns `null`
-even on a valid entity. (Which fields surface where on the view model: see
-[dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md).)
+The remaining pitfall of this kind is Swift-specific rather than Razor-level:
 
 ### `ToggleFavorite.cshtml` silently no-ops when `FavoriteListId=0`
 
@@ -144,20 +117,37 @@ partial that calls `AddStylesheet`. Convention: `Custom/<name>HeadInclude.cshtml
 
 Wire it once in admin (Settings → Areas → SHOP1 → Site Settings → Master → "Custom <head> include
 file"). After that every page's `<head>` carries
-`<link rel="stylesheet" href="/.../Custom/<name>_custom.css?<ticks>" media="all">`.
+`<link rel="stylesheet" href="/.../Custom/<name>_custom.css?<token>" media="all">`.
 
-**⚠ The `?<ticks>` cache-buster token can be STATIC on some builds (observed DW 10.25.x).** On at
-least one 10.25.x host the emitted token never changed across CSS edits AND host restarts — the
-server served the new file content, but browsers with the URL cached kept the stale copy, so CSS
-edits silently never reached the page. Two consequences:
+### The `AddStylesheet` cache-buster token — what it is and how to force a refetch
 
-1. **Verify the token, not just the server.** After the first CSS edit on a new host, save, reload the
-   page source, and confirm the `?<ticks>` value moved. If it did, the head-include + CSS-file flow
-   works as documented.
-2. **If the token is static on your build, put render-critical CSS in an inline `<style>` block inside
-   the head-include partial** — visibility hides, brand chrome, layout fixes. Razor recompiles live
-   and an inline block has no cache key to go stale. Keep the CSS file for nice-to-have polish only.
-   (This also matters for the `ProductListComponentSelector` CSS-hide lever in
+`AddStylesheet` appends **the site's own token** to the URL it emits, and that token can be static:
+on builds from DW 10.25.x through 10.28.x it has been observed never to change across CSS edits,
+deploys, or host restarts. The server serves the new file content; a browser holding the URL keeps
+the stale copy. That is the reason a stylesheet whose content changed needs an **explicit**
+cache-buster at all.
+
+**Add your own version token to the path you pass to `AddStylesheet`** whenever the CSS content
+changes:
+
+```cshtml
+AddStylesheet("/Files/Templates/Designs/<design>/Custom/<name>_custom.css?v=<token>", "all");
+```
+
+Expect the emitted URL to carry **two** `?` characters — `…_custom.css?v=<token>?0` — because the
+helper appends its own token after whatever query string the caller supplied rather than merging
+into one query string. The malformed-looking URL serves `200` and does bust the browser cache; it
+is cosmetic, and the explicit token is the half that does the work.
+
+Two follow-on rules:
+
+1. **Verify the token moved, not just that the server has the new file.** After the first CSS edit
+   on a new host, save, reload the page source, and read the emitted `href`. Your own `v=` value
+   should be the part that changed.
+2. **Put render-critical CSS in an inline `<style>` block inside the head-include partial** —
+   visibility hides, brand chrome, layout fixes. Razor recompiles live and an inline block has no
+   cache key to go stale. Keep the CSS file for polish. (This also matters for the
+   `ProductListComponentSelector` CSS-hide lever in
    [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) — a hide that lives only in a stale-cached CSS file is no
    hide at all.)
 
