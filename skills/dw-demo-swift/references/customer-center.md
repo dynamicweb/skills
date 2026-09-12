@@ -202,6 +202,20 @@ storefront API  :  POST /dwapi/users/authenticate   { userName, password }      
 must reuse the same web session. A persona-login gate should assert a **signed-in marker on the
 customer-centre page**, not a POST status code.
 
+**Sign out between personas — always, in a demo script and in a probe.** Authenticating a second user
+over a live extranet session does **not** clear the context cart: the platform keeps the previous
+persona's cart, mints a `DynamicwebEcomCart<newUserId>` cookie for the same encrypted order id, and
+**persists that cart id onto the new user's `AccessUser` row**. So the leak is not a session artefact
+that a fresh browser clears — it is written to the user, and it reappears in every later session,
+including from a brand-new profile. The anonymous-to-authenticated transition clears correctly; the
+authenticated-to-authenticated one is the gap.
+
+The explicit log-off path (`/Admin/Public/ExtranetLogoff.aspx`) drops the cookie and the session cart
+correctly, which is what makes the workaround reliable: **navigate through the log-off between logins,
+or use a separate browser profile per persona.** Prove it both ways once — run the two-login script
+with and without the log-off step and assert that in the log-off run the new user's
+`DynamicwebEcomCart<id>` cookie is absent and their `AccessUserCartId` is unchanged.
+
 ## 8. Renaming a persona is a sweep, not a user edit
 
 **A persona is not a user-table row.** It is referenced by hardcoded credentials in shared harnesses, by
@@ -239,6 +253,20 @@ a user row by raw SQL: the in-process user cache is unflushable and the failure 
 "Raw-SQL `AccessUser` writes create a split brain").
 
 ## 9. Checkout delivery date and custom order fields
+
+### Populate the billing block on every buying contact, or their ship-tos vanish at checkout
+
+**Swift's checkout hides ALL delivery addresses when the user's own billing-address fields are
+empty.** `eCom7/CartV2/Step/Helpers/AddressUser.cshtml` builds a comma-joined string from the
+`AccessUser` row's OWN address fields and, when that string is blank, renders "You do not have any
+address yet" **instead of** the delivery-address list — even when the user has `AccessUserAddress`
+ship-to rows that the Admin API happily returns.
+
+So a user import that lands ship-tos but not a billing address produces a persona who cannot check
+out, **with no error anywhere**, and an app-pool recycle does not help: it is a data gap, not a cache
+one. **Fix it in the data — populate the billing block for every buying contact** rather than
+patching the template. Assert it per persona by reaching the delivery-address step in the real
+checkout flow and counting the ship-tos rendered, not by reading the addresses back through the API.
 
 ### The delivery-date beat needs NO custom order field
 

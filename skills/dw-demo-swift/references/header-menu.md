@@ -17,6 +17,7 @@
 - [Platform truth 1 (LRN-nav-03): the Popper-gap bridge](#platform-truth-1-lrn-nav-03-the-popper-gap-bridge)
 - [Platform truth 2 (LRN-nav-04): the nav-link `::after` has THREE claimants](#platform-truth-2-lrn-nav-04-the-nav-link-after-has-three-claimants)
 - [Platform truth 3 (LRN-nav-05): dropdown `min-width`](#platform-truth-3-lrn-nav-05-dropdown-min-width)
+- [Platform truth 4 (LRN-nav-06): the megamenu needs a PANEL-anchored apron](#platform-truth-4-lrn-nav-06-the-megamenu-needs-a-panel-anchored-apron)
 - [Header height: count grid rows before hunting padding](#header-height-count-grid-rows-before-hunting-padding)
 - [Icons: opt-in, keyed on `data-nav-icon`](#icons-opt-in-keyed-on-data-nav-icon)
 - [How to verify (probes)](#how-to-verify-probes)
@@ -162,9 +163,10 @@ fires while the cursor crosses:
 }
 ```
 
-Requires CSS `:has()` (evergreen browsers 2023+). Rejected (all tried, all failed): `margin-top:0`
-(inline transform wins); a `:hover`-gated `::before` bridge; a panel-anchored `.show::before`
-bridge (out-stacked by header layout — hit-tests `DIV.flex-fill`).
+Requires CSS `:has()` (evergreen browsers 2023+). Rejected (both tried, both failed): `margin-top:0`
+(inline transform wins) and a `:hover`-gated `::before` bridge. **A panel-anchored `::before` apron is
+NOT rejected** — it fails only while the panel clips its own pseudo-elements, and it is the bridge
+that works on the megamenu variant, where this item-anchored one cannot anchor at all (truth 4).
 
 ## Platform truth 2 (LRN-nav-04): the nav-link `::after` has THREE claimants
 
@@ -241,6 +243,45 @@ dead strip (31px measured) a downward path lands in.
 
 This is the **horizontal** half of the reach fix; LRN-nav-03 is the **vertical** half. Neither
 alone suffices — the pair is the complete reach fix.
+
+## Platform truth 4 (LRN-nav-06): the megamenu needs a PANEL-anchored apron
+
+**On the megamenu variant, bridge the Popper gap with an apron on the PANEL, and give the panel
+`overflow: visible` so it cannot clip its own pseudo-element.** The two bridges above are both
+unavailable there, and each is unavailable for a reason worth knowing:
+
+- Swift's own stock `::after` bridge on the toggle is dead wherever the caret rules of truth 2 apply,
+  because those rules force that pseudo to `position: static !important` in every open state.
+- The item-anchored `::after` bridge of truth 1 cannot anchor on a megamenu item at all: megamenu
+  items carry Bootstrap's `.position-static` **by design**, so an absolutely-positioned pseudo on the
+  item resolves against a distant ancestor. Un-static-ing the item to fix it breaks the panel's
+  full-bleed sizing.
+
+With both bridges gone the panel is mouse-unreachable: the pointer crosses the ~16px band the
+Popper offset opens, hit-tests as the grid column rather than the item, and Swift's `mouseleave`
+handler closes the panel. A real-pointer walk dies a couple of pixels below the trigger; a synthetic
+jump never sees it.
+
+The apron alone still fails at first, and this is the non-obvious half: `swift.css` sets
+`.dropdown-menu { max-height: 80vh; overflow-y: auto }` globally, and **an auto-overflow box clips
+its own out-of-box pseudo-elements**, so the apron is painted and then cropped away. Restore
+`overflow: visible` on the megamenu panel — safe, because the inner `[data-swift-container]` owns the
+scrolling:
+
+```css
+.megamenu-wrapper .megamenu.dropdown-menu { overflow: visible; max-height: none; }
+.megamenu-wrapper .nav-item.dropdown > .dropdown-menu::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+  height: var(--swift-dynamic-offset, 1rem);   /* rides Swift's own inline offset variable */
+}
+```
+
+Keying the apron height on `--swift-dynamic-offset` makes it track the nav row's padding rather than
+hard-coding a number that goes stale the next time the row height changes. No `:has()`, no script, no
+template edit. Verify with a **real pointer**: dispatch mouse moves in small steps from the trigger
+through the gap into the panel and assert `.megamenu.show` survives the whole walk — the diagnostic
+readout is `document.elementFromPoint()` at the mid-gap point, which must return an element inside
+the item or the panel, not the grid column.
 
 ## Header height: count grid rows before hunting padding
 

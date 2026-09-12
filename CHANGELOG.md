@@ -3,6 +3,110 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.44.0]
+
+Fold-back sprint: dw-demo-swift, dw-swift-building, dw-swift-page-blocks and dw-swift-page-design. Forty-one demo-build learnings land as three foundational references under dw-swift-building (grid-row mechanics, layout verification, shipped-template defects on Swift 2.4.0) and two demo references (the fresh-deserialize sweep, RMA claims in the customer center), with four rewrites of guidance that was wrong: the visually-hidden idiom that caused the overflow its guard exists to prevent, the paragraph-template restart row, the header mega-menu bridge, and the grid-row copy claim. A demo engagement slug that had leaked into the mobile-pass reference is scrubbed.
+
+The Swift cluster: the layout truths a markup assert cannot see, the row mechanics behind a page that
+saves and does not render, and the shipped-template defects a build inherits.
+
+- **A visually-hidden label ships `overflow: hidden` — `clip-path` does not contain overflow.**
+  `re-skin.md`'s floating-header recipe prescribed the `clip` + `clip-path` idiom with no `overflow`
+  declaration, and shipped a standing guard forbidding `overflow` anywhere under the header. Measured
+  A/B/C/D at two device widths: that idiom is the WORST variant (19px and 18px of horizontal overflow
+  against 4px and 0px with the label simply left in flow), because `clip-path` crops painting and
+  creates no scroll container. The rule is rewritten, not annotated, and the guard is re-scoped to the
+  ancestors a megamenu or off-canvas panel escapes through. The accessible name survives in every
+  variant, so containment costs nothing.
+- **Horizontal overflow needs three numbers, not one, and the offender is named by RIGHT EDGE.**
+  `body.scrollWidth <= innerWidth` is satisfied by construction once the browser widens the layout
+  viewport to fit unshrinkable content — a 262px stretch reported as zero. Assert `innerWidth` equals
+  the requested width as well. And a width-sorted offender walk reliably names a closed Bootstrap
+  off-canvas drawer, which tracks the overflow while contributing nothing to it; the element whose
+  right edge equals `documentElement.scrollWidth` is the cause. Both legs are now in the mobile pass
+  and in a new foundational reference, with the recurring Swift causes (a Bootstrap `g-col-N` span
+  over an `auto-fit` grid, the `.mw-75ch` reading measure on authored content).
+- **Every viewport pass owes BOTH auth states.** Swift's mobile header renders a ~48px initials button
+  signed in and a ~123px labelled anchor anonymous, so a signed-in sweep measuring 0 on ten checks and
+  an anonymous sweep measuring 71px on the same pages are both correct. The anonymous control is the
+  wider one.
+- **New `layout-verification.md`** (`dw-swift-building`) — the four defect classes that clear every
+  HTTP and DOM-presence check: horizontal overflow, a control present and styled but under a card's
+  stretched row link (only `elementFromPoint` at its centre sees it), an anchor coloured by its row's
+  *declared* colour scheme rather than the background the page paints, and a band that renders nothing
+  while still paying its spacing. Routed from `dw-swift-page-design`, `dw-demo-swift` and
+  `dw-swift-page-blocks`.
+- **New `grid-rows-and-binding.md`** (`dw-swift-building`) — one home for the row mechanics that were
+  being rediscovered one attribute at a time. `GridRowCopy` carries **five** donor attributes
+  (paragraphs, spacing, the paragraph's `ParagraphTemplate`, `GridRowSort`, `GridRowContainerWidth`)
+  and does **not** append, correcting the older "copy appends only" claim; normalisation is part of the
+  copy step. The column-binding law is stated in full: binding is by `ParagraphGridRowColumn`, never by
+  sort, so a one-column row drops every paragraph after the first and a doubled-up multi-column row
+  renders the other column empty — with parking-in-an-undefined-column as a clean reversible retire.
+  An inert row still pays its spacing plus the flex wrapper's padding, so `GridRowActive = 0` through
+  `GridRowSave` is the lever and `ParagraphShowParagraph` is inert. And an idempotency marker must be a
+  string the row RENDERS: an id-range check misses on the next run and duplicates the work.
+- **New `shipped-template-defects.md`** (`dw-swift-building`) — what the shipped Swift 2 templates do
+  not do. Two Swift 2.4.0 templates call `System.Web.HttpUtility` and do not compile on DW 10.29/.NET
+  10 (one serves raw Razor to a visitor, the other fails silently because nothing watches an invitation
+  mail render); the product-search dropdown dereferences `DefaultImage` unguarded where its shipped
+  sibling null-guards the same field, so it throws for every term that MATCHES on a catalogue without
+  images; the order list and detail never render the payment method although every sibling detail
+  template does, so a payment-method migration has no customer surface to verify on.
+- **"No prices" is a claim about display, not delivery.** Swift 2's add-to-cart component posts
+  `ProductPrice` / `ProductDiscount` as hidden inputs on the PDP *and* on every product card, and the
+  card wrapper emits `data-product-price` for analytics. A template money guard wraps OUTPUT and
+  reaches none of them, and a tags-stripped census is blind to them by construction — which is how a
+  fifteen-surface audit reports zero currency strings on a page delivering every price twice per
+  product. The honest position is "not displayed"; the stronger claim means forking two shipped
+  components. Relatedly, a bare currency-symbol `notContains` can never pass on a Swift list page,
+  because the shipped `PriceRange` facet emits currency-shaped option labels for every visitor — anchor
+  the census on the decimal and pair it with a byte floor.
+- **New `fresh-deserialize-sweep.md`** (`dw-demo-swift`) — the prospect-visible fiction a baseline
+  ships, swept BEFORE the demo path is built, precisely because none of it is on the demo path and it
+  survives a rebrand that edits every page a build touches. Six families, including one that exists
+  only in an ATTRIBUTE: the shipped logo template falls back to the vendor name when its name field is
+  empty, so blanking the field — the natural rebrand action — restores the word. The sweep therefore
+  runs over the raw served HTML, and the rebrand rule is **name every field, never blank one**. Also
+  carries the default-currency check (symbol, culture, rate and patterns, asserted by a symbol being
+  PRESENT) and the rule that a licence-gated surface is retired rather than demoed as a dead button.
+- **New `rma-claims.md`** (`dw-demo-swift`) — a warranty, service or claims surface is the platform's
+  own RMA machine renamed, never a parallel entity: the comment trail, the backend transition screen
+  and the claim numbering come free, and only the vocabulary and two templates are data. Includes the
+  serial-number column that exists with no frontend input, and the shipped `<BoughtFromDate>` that
+  silently empties the claim form's order picker on any install that is not brand new.
+- **The megamenu needs a PANEL-anchored apron** (`header-menu.md`, platform truth 4). Both documented
+  bridges are unavailable there — the caret rules force the stock toggle pseudo to `position: static`,
+  and megamenu items carry `.position-static` by design so an item-anchored pseudo cannot anchor — and
+  the apron itself fails until `overflow: visible` is restored on the panel, because an auto-overflow
+  box clips its own out-of-box pseudo-elements. The older "panel-anchored bridge rejected" line is
+  corrected rather than left standing.
+- **`ParagraphTemplate`, `ParagraphGridRowColumn` and `ParagraphModuleSettings` are not content
+  fields.** `cache-invalidation.md` listed `ParagraphTemplate` under the one SQL pattern that needs no
+  restart; all three are measured as needing one, and a module paragraph reads its settings once at
+  application start, so a repoint commits and stays invisible with no error and nothing in the log.
+  A SQL-written `ParagraphTemplate` also puts its paragraph on the never-whole-model-save list.
+- **`AreaSave` writes `AreaDomainLock` wrong**, stringifying the model's boolean into the literal
+  `"False"` in a column the URL builder reads as a host name — so every absolute URL for the new area
+  points at `https://false:443/`. It rides in on the full-model round trip that the master-binding rule
+  makes mandatory. Stated beside the existing `AreaDomain` repair as one rule: the columns `AreaSave`
+  does not write correctly are repaired by SQL in the same step, and a green response is not evidence.
+- **A customisation ban is scoped to the presales-demo context, and a lifted ban still owes the
+  surface.** The payment-provider / checkout-handler ban now names the condition that lifts it (an MVP
+  or delivery build whose signed scope names the mechanism), requires the brief to cite the ban it
+  overrides, and states that where the corpus carries no recipe, writing one is part of the work.
+- Smaller corrections in place: a headless create applies the item type's XML `defaultValue`, so a
+  `ButtonEditor` field manufactures the exact bare-label string that aborts the whole paragraph at
+  render; a cloned model posted with `id: 0` is not a create path; signing a second persona in over a
+  live session transfers the cart and **persists it onto the new user's row**; Swift's checkout hides
+  ALL delivery addresses when the user's own billing block is empty (a data gap, not a cache one); the
+  shipped dashboard widgets carry no scope parameter at all, so an aggregate board needs alternate
+  templates and a zero-orders persona to assert with; `PageHidden` breaks the page's own friendly URL
+  while `Default.aspx?ID=n` still redirects to it, which is the diagnostic signature; field display
+  groups leave the parent row empty after a successful save because the data lands in three child
+  tables; and staging a theme's disk overlay does nothing until the area's `CustomHeadInclude` is
+  wired, which the integrity sweep now asserts as a fourth stylesheet.
+
 ## [4.43.0]
 
 Fold-back sprint: dw-search-indexing, dw-pim-modelling, dw-pim-localization, dw-demo-base and dw-demo-foldback. Twenty-eight demo-build learnings land the index-file authoring rules that are invisible through the API as one table, sharpen the PIM structural and localization references in their existing homes, and fold the demo-base host and fold-back rules; four supersede sweeps rewrite the scroll-width-only mobile assert, the multipart cart-form rule, the deserialize output-directory option and the governance-metric recommendation where they lived.

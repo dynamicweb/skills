@@ -271,6 +271,19 @@ look broken/boring, and each maps to a contract in `dw-swift-page-blocks`:
 The published page is best inspected by rendering it in a browser (e.g. open its URL) — the
 title-size and missing-image problems are obvious visually but invisible in the stored JSON.
 
+**Four defects clear every check above and still ship a broken page**, because each needs a
+measurement rather than a read: horizontal overflow at phone widths, a control that is present and
+styled but sits under a card's stretched row link so clicks land on the anchor, an anchor coloured by
+its row's *declared* colour scheme rather than by the background the page actually paints, and a row
+that renders nothing while still paying its spacing. When the page is designed rather than merely
+valid, run the browser leg in
+[`dw-swift-building/references/layout-verification.md`](../dw-swift-building/references/layout-verification.md)
+— it names the probe for each and the offender-reporting shape that makes a failure attributable.
+Three rules from it are worth carrying even without the probes: measure overflow as
+`innerWidth === requested` **and** `body.scrollWidth === innerWidth`; measure **both** auth states,
+because Swift's mobile header renders a wider control when nobody is signed in; and adjudicate
+overflow by measurement, never from a full-page capture.
+
 Then read the structure back (`get_grid_rows_by_page_id` + `get_paragraphs_by_page_id`) and
 confirm rows/components/schemes match the plan. If publishing, that is a separate write —
 propose it as its own step. Report: rows + components created, color schemes used per band,

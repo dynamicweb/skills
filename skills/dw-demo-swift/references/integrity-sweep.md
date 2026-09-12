@@ -271,8 +271,8 @@ pack covers URL substring scans, hard-coded slugs, category-name branching, mast
 
 ## Check 8: Style assets staged + emitted (the theme gate)
 
-**What is verified:** the Areas' style wiring resolves to real files, and the storefront actually
-emits the three style links. `TryGet*Style` fails **silently** when the file behind an Area's
+**What is verified:** the Areas' style wiring resolves to real files, the storefront emits every
+style link, **and the theme's own custom sheet is wired through the area's `CustomHeadInclude`**. `TryGet*Style` fails **silently** when the file behind an Area's
 style id is absent, and `swift.css` alone renders a page that looks "almost right" — structural
 layout intact, every font in the browser's serif fallback, buttons unstyled. Hosts have shipped
 in that state without anyone noticing, because nothing errors.
@@ -296,6 +296,10 @@ $html = (Invoke-WebRequest "https://localhost:$port/" -SkipCertificateCheck -Use
 foreach ($dir in 'ColorSchemes','Buttons','Typography') {
     if ($html -notmatch "Styles/$dir/[^""]+\.css") { throw "Home <head> emits no $dir stylesheet — empty-state pitfall." }
 }
+# 3. The theme's custom sheet is reached — it loads ONLY through the area's CustomHeadInclude
+if ($html -notmatch 'Custom/default_custom\.css') {
+    throw "Home <head> emits no default_custom.css — set Swift-v2_Master.CustomHeadInclude on the area (styles-assets.md)."
+}
 ```
 
 **Beyond the mechanical probe:** a full-page screenshot of the home page must read as a
@@ -304,7 +308,8 @@ A page in serif fallback with browser-default buttons fails this check even when
 without errors. Run the polish gate in
 [`visual-qa.md`](../../dw-demo-base/references/visual-qa.md) before declaring the host ready.
 
-**Recovery:** stage the theme's three pairs and rewire the Areas per
+**Recovery:** stage the theme's Style pairs, wire `Swift-v2_Master.CustomHeadInclude` to the staged
+`DefaultHeadInclude.cshtml`, and rewire the Areas per
 [`deserialize-flow.md`](deserialize-flow.md) "Stage the theme's Style assets" +
 [`styles-assets.md`](styles-assets.md); restart so the resolved style URLs reload.
 

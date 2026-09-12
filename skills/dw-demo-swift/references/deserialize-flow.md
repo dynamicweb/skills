@@ -298,6 +298,34 @@ A clean deserialize can still leave the **site root (`/`) returning 404** even t
 
 **There is no `AreaDns` table on 10.27.x** — do not look for one; the older DNS-binding table is gone and the binding lives on the `Area` row itself. **`AreaSave` cannot set `AreaDomain`.** It accepts both `domain` and `hostNames` and maps neither onto the column, so the write is a silent no-op that answers 200, and a full model carrying `hostNames` additionally returns HTTP **500**. A green `AreaSave` response is not evidence the domain is set: read `SELECT AreaDomain FROM Area WHERE AreaId = <id>` back. Set both columns by SQL (`UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>`), then **restart the host** — `Area` rows are materialised at startup, so the new root binding is not live until the bounce (see [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md), the `Area`-row row). These binding columns are per-environment and excluded from serialization, so they arrive unset on a fresh host — set them at provisioning, don't expect them from the baseline.
 
+### `AreaSave` writes `AreaDomainLock` WRONG — repair it in the same step
+
+**`Area.AreaDomainLock` is an `nvarchar` column holding a HOST NAME, and the area save model exposes
+`domainLock` as a BOOLEAN.** `AreaSave` stringifies `false` into the four-character string `"False"`,
+and the URL builder treats a non-empty `AreaDomainLock` as the authoritative host — so **every
+absolute URL the platform generates for that area points at a host of literally `false`**
+(`/Default.aspx?ID=<n>` answers 301 to `https://false:443/<path>`), while the area itself and all its
+pages are correct. The save answers 200 and its response never mentions the column.
+
+It is easy to hit precisely because of the rule that protects you elsewhere: the working reference
+area's own column is empty, but its **model** carries `domainLock: false`, not null — so
+"round-trip the FULL model, never a hand-built partial" (the rule that keeps `AreaSave` from wiping
+the master item bindings) is exactly what carries the defect onto every copied area.
+
+**State it as one rule: the columns `AreaSave` does not write correctly are set by SQL immediately
+after the save, in the same step — and a green `AreaSave` response is not evidence that any of them
+landed.** The list so far is `AreaDomain` (silently NOT written) and `AreaDomainLock` (silently
+written WRONG):
+
+```sql
+UPDATE Area SET AreaDomainLock = N'' WHERE AreaId = <newAreaId>;
+```
+
+Local installs only; pair it with the same host restart the other `Area` columns owe. Gate it by
+asserting that no served body or `Location` header anywhere in the new area contains `false:443`.
+Setting the column to the real host also works and buys nothing — it locks the area to that host for
+no benefit, and the working reference area carries an empty one.
+
 ## 8. Mandatory next step
 
 After this flow returns 2xx, **immediately run [`integrity-sweep.md`](integrity-sweep.md)**. The skill refuses to declare deserialize complete until the sweep passes.

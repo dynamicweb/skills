@@ -11,6 +11,7 @@
 - [7. Email flow bootstrap — folders and the fully-prefixed schema](#7-email-flow-bootstrap--folders-and-the-fully-prefixed-schema)
 - [8. Keeping seeded dates current — the demo clock](#8-keeping-seeded-dates-current--the-demo-clock)
 - [9. Deterministic recipe preference + idempotency](#9-deterministic-recipe-preference--idempotency)
+- [10. The shipped dashboard widgets are customer-centre-only](#10-the-shipped-dashboard-widgets-are-customer-centre-only)
 
 > The demo-context seeding step that makes the Swift Customer Center land. From base **2.3.2**, the Customer Center **Overview** is a tile dashboard (Orders, Quotes, Carts, Favorites, Addresses, Profile, Returns) instead of a bare order list, and a stock **"My returns"** RMA page ships in the buyer tree. Tiles route to real function pages — but a tile that opens onto an empty list reads as a broken demo. This step seeds every list the buyer (and the CSR) will open. The underlying seeding *mechanics* are foundational; this file is the demo-swift *orchestration* that sequences them and states the coverage bar.
 >
@@ -140,3 +141,32 @@ Verify by reading order dates back through the delivery API after idle days and 
 - Prefer recipes an agent can run **deterministically** and re-run safely: Management API commands and idempotent SQL (`WHERE NOT EXISTS` / stable seed ids) over UI clicking. Several of these have **no MCP surface** (favorites, `AccessUserSecondaryRelation`, order-state backfills) and are SQL-only — see the owners above.
 - Make the seed **idempotent**: key rows on stable ids/order numbers (e.g. `OrderID LIKE 'ORDER%'`) so a second run does not double-seed. The demo is re-provisioned often; a seed that only works on a virgin DB is a liability. For the email stats seed (§6) key on the message id — one `EmailMessage` per campaign email — so a re-run replaces its recipient/click rows instead of doubling the counts.
 - After seeding orders, **complete them** (`OrderComplete=1` + `OrderCompletedDate`) and, where you raised returns, confirm the RMA row exists — then rebuild the order/products indexes and clear the user cache so the storefront lists and the CSR impersonation views pick the rows up in the same session.
+
+## 10. The shipped dashboard widgets are customer-centre-only
+
+**The shipped `Swift-v2_Dashboard_*` item types carry only `Title` and `BaseLink` — there is no shop,
+group, user or scope parameter on any of them**, and their shipped partials are HTMX fragments that
+call the delivery API's order search with a delivery-API token, which scopes orders to the
+**authenticated user**. So an aggregate or corporate board built on them renders the signed-in user's
+own history on every number, chart and list tile, with no error and no misconfiguration. That is
+correct for a customer-centre dashboard and structurally unable to express an aggregate one — the
+scoping is the partial's design, not a setting that was missed.
+
+**To build an aggregate board on the shipped card chrome, keep the item type and repoint the paragraph
+at an alternate template** under `Paragraph/Swift-v2_Dashboard_<Type>/`, rendering server-side from a
+parameterised query. No add-in, no scheduled task and no shipped `.cshtml` touched — the same
+alternate-template pattern used for audience pricing and stock. Two rules travel with it, and both
+have cost a rebuild:
+
+- An explicit `ParagraphTemplate` beats the item type's own default, and the property is
+  write-inert through `ParagraphSave` on some builds — so **every repointed paragraph joins the
+  never-whole-model-save list** ([`paragraphs.md`](paragraphs.md)).
+- **Assert each tile while signed in as a persona with ZERO personal orders.** That persona is what
+  discriminates the shipped partial from the alternate template; as any user with orders, both look
+  plausible. Add one click-through assert per tile, including a negative (a filter value that must
+  return the other set and nothing of the first).
+
+Reaching for the backend dashboards instead answers a different question: backend **query** widgets
+click through, but stock counter widgets are dead tiles and grid-widget rows are not clickable, and
+orders, claims, applications and part demand are not product queries — so a backend board cannot
+deliver "every tile clicks through".
