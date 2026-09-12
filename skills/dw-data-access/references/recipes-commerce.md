@@ -28,6 +28,9 @@ restart it owes. RMA and claims: [`recipes-commerce-rma.md`](recipes-commerce-rm
 **Checkout configuration**
 
 - [Method country binding is what decides whether checkout can complete](#method-country-binding-is-what-decides-whether-checkout-can-complete)
+- [Counting an assortment's built item set](#counting-an-assortments-built-item-set)
+- [The v2 discount engine needs a global-settings activation](#the-v2-discount-engine-needs-a-global-settings-activation)
+- [The method save models carry the countries and the fees the MCP tools do not](#the-method-save-models-carry-the-countries-and-the-fees-the-mcp-tools-do-not)
 - [`ShippingSave` takes two fee sources, and the flat-rate recipe](#shippingsave-takes-two-fee-sources-and-the-flat-rate-recipe)
 - [Writing `EcomValidation*` rows by hand](#writing-ecomvalidation-rows-by-hand)
 - [Order-LINE fields need no storage column — but they need a relation row](#order-line-fields-need-no-storage-column--but-they-need-a-relation-row)
@@ -201,9 +204,85 @@ restriction must supply `''`, not `NULL`; `NULL` terminates the whole `INSERT` a
 shape of the table hints at it. That write is **local installs only** and owes an order-method
 cache flush before the storefront reflects it.
 
+## Counting an assortment's built item set
+
+`check_assortment_product_access` answers `true` for every product, every user and anonymous alike, so
+it cannot be used to confirm an assortment's scope, and no tool projects the materialised item set. The
+in-product membership read is `get_assortments_by_product` on an in-scope and an out-of-scope product;
+the **count** is out of product.
+
+**Surface: `SQL`.**
+
+```sql
+SELECT COUNT(*) FROM EcomAssortmentItems WHERE AssortmentItemAssortmentId = '<assortmentId>';
+SELECT COUNT(*) FROM EcomAssortmentShopRelations WHERE AssortmentShopRelationAssortmentId = '<assortmentId>';
+```
+
+An item count equal to the whole catalogue is the signature of a shop relation on the assortment: the
+build unions the relation sets, so one shop relation replaces the intended scope. The second query is
+how a shop relation is confirmed present after `remove_shops_from_assortment` reported removing it —
+that tool is write-inert, so the assortment is deleted and rebuilt rather than repaired.
+
+- **Why the higher surfaces do not cover it** — no tool projects the built item set, and the only access
+  read answers `true` unconditionally.
+- **Local installs only** — on a hosted install, compare the storefront catalogue rendered to a holder
+  against the one rendered to a non-holder.
+- **The debt it owes** — none; these are reads.
+
+## The v2 discount engine needs a global-settings activation
+
+Rows written by the v2 (Adjustments) discount tools land in `EcomDiscounts` and are **read by nothing at
+cart time** until the new discount experience is activated in the host's global settings. The baseline
+ships no activation block, so on a stock host a correctly conditioned, correctly rewarded, active
+discount leaves the signed-in cart at full list price with no error anywhere in the chain — while a
+customer-number contract price in the same cart resolves correctly, which makes it read as a
+mis-configured discount rather than a dormant engine.
+
+**Surface: host configuration** (`GlobalSettings`), then a **host restart**. Confirm before building:
+the Ecommerce global-settings file carries no discount-experience key on an unactivated host — a grep
+for the discount term returns only the order-line organisation setting.
+
+- **Why the higher surfaces do not cover it** — no MCP tool and no Management API verb activates the
+  engine, and no read reports that it is dormant; `get_adjustment_discount` serves the rows back
+  either way.
+- **Local installs only** — on a hosted install this is a request to whoever owns the host.
+- **The debt it owes** — a host restart, then the only valid proof: sign in as a member of the
+  conditioned group, add a product with a known list price, and read the **cart line amount**.
+
+## The method save models carry the countries and the fees the MCP tools do not
+
+MCP `save_shipping_methods` carries only `id`, `name`, `description`, `active`, `allowAnonymousUsers`,
+`eligibleForFreeShipping`, `serviceSystemName`, `code`, `agentCode`, `agentServiceCode`, `minWeight`,
+`maxWeight`, `freeFeeAmount` and `sorting`; `save_payment_methods` carries only `id`, `name`,
+`description`, `active`, `code`, `termsCode`, `gatewayId`, `checkoutSystemName`, `allowAnonymousUsers`
+and `sorting`. Neither has `countryRelationKeys`, `feeRulesSource` or `defaultFee`, and the reads are
+just as narrow. The Management API save models do carry them, so country binding and fees are an
+out-of-product step on this MCP line (or an admin-screen edit in product).
+
+```
+POST /admin/api/ShippingSave
+{ "model": { "Id": "<id>", "Name": "<name>", "Description": "…", "Active": true, "Sorting": 1,
+             "DefaultFee": 9.50, "FreeFeeAmount": 0, "EligibleForFreeShipping": false,
+             "CountryRelationKeys": ["<code>", "<code>"], "FeeRulesSource": "matrix",
+             "MaxWeight": 0, "AllowAnonymousUsers": true } }
+```
+
+Two shape rules, both measured: **the `model` wrapper is mandatory** (omitting it answers
+`400 Command.Model cannot be null`), and **`Name` is mandatory on every save**, including one that
+only means to add country relations (a model of `Id` plus `CountryRelationKeys` answers
+`400 Name: The value is required`). `PaymentSave` takes the same wrapper and the same mandatory name.
+Read the echo back: it carries the relation keys, the fee source and the default fee.
+
+- **Why the higher surfaces do not cover it** — the MCP models are a narrower projection, on both the
+  write and the read side.
+- **Hosted installs included** — this is an API call, not SQL.
+- **The debt it owes** — none; both go through the domain service. Gate on the rendered delivery step
+  showing a non-zero option count for the target country.
+
 ## `ShippingSave` takes two fee sources, and the flat-rate recipe
 
-MCP `save_shipping_methods` is rung 1. The Management API equivalent, for when MCP is absent:
+MCP `save_shipping_methods` is rung 1 for name, description, activation and sorting; it does not carry
+the fee fields. The Management API equivalent:
 
 ```
 POST /admin/api/ShippingSave
@@ -331,7 +410,7 @@ per-contact suffix makes account-wide delivery addresses a silent no-op").
 
 Account-wide delivery addresses resolve by string equality on `AccessUserCustomerNumber`, so a
 per-contact suffix turns the feature off with no error, warning or log entry. In-product the census
-is `get_users_by_group_id` on the account group (or `get_users_by_customer_number` on the account's
+is `get_users_by_group_id` on the account group (or `get_users_by_customer_numbers` on the account's
 own number) and a comparison of the `customerNumber` values that come back. Where the whole install
 must be swept at once, the `SQL` form answers in one query; it is read-only, owes no flush, and runs
 anywhere the database is reachable rather than on local installs only.

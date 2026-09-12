@@ -48,7 +48,7 @@ on 10.28.1: an `update_users` call carrying `allowBackend: false, active: false`
 row still read back as backend-allowed; the identical call with `userType: "default"` added read back
 denied. The only levers that actually deny backend access are `userType` (demote to `Default=5`) and
 `active: false`. So a teardown or "deactivate and deny backend" cleanup must set `userType` in the
-same `update_users` call and then re-read the user with `get_user_by_id`, since the save's own echo is
+same `update_users` call and then re-read the user with `get_users_by_ids`, since the save's own echo is
 not evidence. Assert separately, with `search_users`, that other backend admins survive (count the
 active, backend-allowed users of type 1 and 3) so the cleanup cannot lock everyone out. The
 column-level read-back and the Management API measurement are in
@@ -122,7 +122,7 @@ The Shop, ProductGroup and ProductField rows are one grant per existing row — 
 real catalog — and the Permissions panel writes one at a time, so seeding a role is a scripted
 out-of-product job: [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md`
 §"Seed the functional-view grants for a backend role". Enumerate what needs granting from inside the
-product first (`get_shops`, `get_groups`, `get_product_fields`, `get_product_category_fields`) so the
+product first (`get_shops`, `get_groups`, `get_standard_fields`, `get_product_category_fields`) so the
 list handed over is the solution's own.
 
 ## 9. Action-button visibility — bump entity grant from Read to Edit
@@ -260,15 +260,19 @@ Default-type persona and recording the permission-filtered area list.
 
 ## 13. Plaintext password storage — `EncryptPassword=False` escape hatch
 
-**The passwordless-user trap.** There is **no MCP password tool** — `create_users` (and the Management
-API `UserSave`) create a login with **no usable password**, so a freshly-seeded buyer / CSR / admin
-persona **cannot sign in** until a password is set out-of-band. Naively adding personas via MCP and
-then trying to sign in as them fails at the sign-in screen with no obvious cause. Setting the password
-is an admin-screen operation from inside the product — Users → the user → the password field — and the
-scripted escape hatch for a whole persona set is
-[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Seed a password for a
-freshly created login". **Validate:** after the password is set, actually sign in as the persona (not
-as an admin) and confirm you reach the account/customer-center landing.
+**The passwordless-user trap.** There is **no MCP password tool** — `create_users` creates a login
+with **no usable password**, so a freshly-seeded buyer / CSR / admin persona **cannot sign in** until a
+password is set. Naively adding personas and then trying to sign in as them fails at the sign-in screen
+with no obvious cause, and every persona-dependent proof downstream (a gate check, a price-visibility
+check, a signed-in cart line) depends on this step.
+
+**From inside the product, the password is set on the admin screen** — Users → the user → the password
+field — one persona at a time. **Outside the product there IS a command for it**, so a whole persona set
+can be seeded without touching the database and without a local install: see
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Set a password on an
+existing login". Do not plan around "the admin screen is the only route" — that was true of the user
+save verb, not of the surface as a whole. **Validate:** after the password is set, actually sign in as
+the persona (not as an admin) and confirm you reach the account/customer-center landing.
 
 **A user index is a second copy of the password column.** Every document a user repository builds
 carries `UserPassword` — the stored hash — because the platform's own schema extender declares it, and
@@ -297,10 +301,12 @@ When `EncryptPassword=False` (typical for development / on-prem solutions), the
 `AccessUser.AccessUserPassword` column stores plaintext, which is what makes the scripted escape
 hatch possible at all.
 
-The MCP `create_users` tool has no password parameter (verified DW 10.25.8); the Management API
-`UserSave` command likewise **cannot set a password** — a backend user created through either has no
-usable password until one is set. The admin UI's Users → user → password field works and is manual;
-automated seeding is the out-of-product recipe. Check the setting before anyone relies on it —
+The MCP `create_users` tool has no password parameter; the `UserSave` command **accepts a password
+member and drops it** — it answers success and the stored password stays empty, which is the specific
+shape that makes the trap hard to see. A backend user created through either has no usable password
+until one is set. The admin UI's Users → user → password field works and is manual; the dedicated
+command in the out-of-product recipe is the automated route, and unlike the plaintext escape hatch
+below it works whatever the encryption mode. Check the setting before anyone relies on it —
 production solutions often flip these to `True`, and any plaintext seeded under `False` becomes a
 stale invalid hash after the flip. (DW10's `AuthenticationManager.cs:184` auto-rehashes a plaintext
 seed on first successful login.)

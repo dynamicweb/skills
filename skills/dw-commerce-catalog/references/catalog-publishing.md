@@ -42,7 +42,7 @@ save replaces the shop relations, leaving the storefront as the group's home —
 tree and URL provider cache the old homing; see the slug gotcha below). If a seeding flow parks
 catalog groups in a data shop first, the publish step owes every storefront group this re-home.
 
-**Group URL slug gotcha — `ShopUrlDataProvider` lazy cache.** When a Swift frontend uses path-based group URLs (e.g. `/swift-2/shop/headsets`), the resolver is `Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider`'s static `Lazy<>` indexes (`InitializeProductUrlDataIndex`, `InitializeGroupProductRelationIndex`). Those indexes are populated at first request and only reset when `Notifications.Ecommerce.Group.AfterSave` fires — which fires from MCP `save_groups` and admin-UI saves but NOT from raw `UPDATE EcomGroups SET GroupMetaUrl = ...` SQL. Symptom: SQL-set slugs work in the DB, but `/shop/<slug>` 404s indefinitely until the host restarts OR a group is re-saved through MCP. Index rebuild via `/admin/api/BuildIndex` does NOT flush this — it's separate from Lucene. Recovery after raw-SQL changes to GroupMetaUrl / GroupNumber / any field used by URL resolution: re-save one group through `mcp__dynamicweb-commerce-mcp__save_groups` (idempotent — same payload pattern, same id), or restart the host.
+**Group URL slug gotcha — `ShopUrlDataProvider` lazy cache.** When a Swift frontend uses path-based group URLs (e.g. `/swift-2/shop/headsets`), the resolver is `Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider`'s static `Lazy<>` indexes (`InitializeProductUrlDataIndex`, `InitializeGroupProductRelationIndex`). Those indexes are populated at first request and only reset when `Notifications.Ecommerce.Group.AfterSave` fires — which fires from MCP `save_groups` and admin-UI saves but NOT from raw `UPDATE EcomGroups SET GroupMetaUrl = ...` SQL. Symptom: SQL-set slugs work in the DB, but `/shop/<slug>` 404s indefinitely until the host restarts OR a group is re-saved through MCP. Index rebuild via `/admin/api/BuildIndex` does NOT flush this — it's separate from Lucene. Recovery after raw-SQL changes to GroupMetaUrl / GroupNumber / any field used by URL resolution: re-save one group through `save_groups` (idempotent — same payload pattern, same id), or restart the host.
 
 **Same cache-flush rule applies to `EcomGroupProductRelation` mutations** — fired via the native "Publish to channel" action (§2.3a below): `Notifications.Ecommerce.Group.AfterSave` fires, cache flushes, channel URLs resolve immediately. Fired via raw SQL `INSERT INTO EcomGroupProductRelation`: notification doesn't fire, cache stays stale until host restart. See §2.3a.
 
@@ -127,7 +127,7 @@ The `PermissionLevel.Edit` gate is a Layer C entity check
 `EcomPrices` ships a `PriceQuantity` column that *looks* like quantity-break tier pricing — and the Dynamicweb documentation reinforces that read ("Customers receive the best applicable price for their order volume"). In practice the stock DW10 cart-line-add resolver picks the matching `PriceQuantity = 0` row first and stops. Tested with rows fully unscoped (no user group, no customer number, no shop scoping) — still doesn't honor qty breaks. Confirmed against the cart pricing path; the PDP price-tier *display* table works, the *cart charge* does not.
 
 **Surface-independence — this is the platform, not the surface.** This gotcha fires the same regardless of whether the tier rows were inserted via:
-- MCP `save_prices` / `create_or_update_prices`
+- MCP `save_prices` (the only registered price-write tool; no create_or_update_prices variant exists)
 - Management API
 - Direct SQL `INSERT INTO EcomPrices`
 - Admin UI
@@ -191,6 +191,18 @@ frontend user price context, so it returns the default price even when customer 
 Verify in the storefront cart as the signed-in user, never via recalc.
 
 ## 2.14 Variants via the Management API (no SQL)
+
+**On DW 10.28.x, price is the only per-variant value any API writes — read this before planning the beat.**
+The MCP path fails the same way the Management API path does: `create_variant_combinations` creates the
+combination rows and inherits nothing from the master (number empty, active and price NULL, name and every
+custom field empty, contrary to the tool's own text), and `combine_products_as_variants` produces active
+rows but copies no scalar column onto them — it substitutes the **master's** price on every combination,
+leaves the number empty, and deletes the standalone products that held the real values, so those are
+discarded rather than moved. What lands is `save_prices` carrying `productId` **and** `variantId`, asserted
+with `get_prices_by_product_id`. Per-variant number, name and stock have no working write surface on this
+build; where they are required the repair is out of product
+([`dw-data-access/references/recipes-pim.md`](../../dw-data-access/references/recipes-pim.md)) and therefore
+local-install only.
 
 Building per-variant product rows through the Management API alone, the chain that replaces any
 per-variant `EcomProducts` SQL insert. **The chain is version-forked between DW 10.25.x and DW 10.28.x**,
@@ -263,7 +275,9 @@ name, stock or active-flag beat on this build, and do not spend a session huntin
   `ProductWeight` and `ProductPrice` on every variant it touches, lives in `dw-demo-hosted`
   (`publish-to-hosted.md`, "Publishing onto an install that already has content").
 - **Verify with both readers plus a master control.** `GET /Admin/Api/ProductById?Id&VariantId` AND
-  `get_product_by_id(id, variantId)`; master values coming back means the write did not land. Run the
+  the MCP batch getter for the same product (`get_products_by_ids`, whose variant
+  member comes from its own `tools/list` schema); master values coming back means the write did not
+  land. Run the
   identical call against the master row in the same pass, so a null result is proof about the variant and
   not about the instrument.
 

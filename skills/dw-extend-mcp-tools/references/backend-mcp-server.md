@@ -167,7 +167,7 @@ and silently drops part of the input:
 | Tool (surface) | What gets silently dropped | Verified | Working fallback |
 |---|---|---|---|
 | MCP `save_pages` (update path) | `menuText` — the response even echoes the OLD value | DW 10.25.x | SQL `UPDATE Page SET PageMenuText` + host restart (the nav tree caches menu text) |
-| MCP `save_pages` (create + update) | `urlName` — the slug you pass is **ignored**; DW derives the slug from `menuText` instead | DW 10.27.x | Set the intended `menuText` (the slug follows it), or SQL `UPDATE Page SET PageUrlName` + host restart. Don't expect `urlName` to pin the slug independently. |
+| MCP `save_pages` (create + update) | `navigationTag` — the tag you pass is **ignored**; `PageNavigationTag` stays empty | DW 10.27.x-10.28.x | Management API `PageSave` reaches the column. (`urlName` is not in this class on 10.28.x: it persists and wins over the `menuText`-derived slug — what no page getter does is *project* it, so confirm the slug by fetching the URL.) |
 | Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort (local install only). `ParagraphSave` IS still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
 | MCP `delete_area`, `delete_users`, `delete_paragraphs` | The **entire delete** — `succeeded:1` returned, row still in the DB afterwards | DW 10.27.x + 10.28.1-Pre | SQL `DELETE` (children first: paragraphs → grid rows → pages → area), then restart for the page-tree cache. Always round-trip a delete with a `SELECT COUNT(*)` |
 | MCP `build_product_index` (+ `wait_for_product_index`) | The **target**. It builds its own default repository/index pair (`Products`/`Products` — its own success message says so) while the solution's queries commonly read a *different* instance (`ProductsBackend\|Products.index`). The index the queries read is never touched, so freshly written values stay invisible across repeated rebuilds and a recycle, and the earlier reading of this row ("no Lucene segments are written") was the same incident diagnosed from the wrong end | DW 10.26.x–10.28.x | Read `sourceIndex` off the queries, then `POST /Admin/Api/BuildIndex {Repository, IndexName, BuildName}` for **that** index, resolving `BuildName` from `IndexBuildersByRepositoryAndIndexName`. Verify with a query whose predicate depends on the freshly written field — its count must move off "matches everything" — not with the tool's status or a marker file |
@@ -200,15 +200,47 @@ from the tool name is a coin flip:
 
 | Family | Parameter | Examples |
 |---|---|---|
-| Entity-by-id reads and deletes | bare **`id`** | `get_product_by_id`, `get_group_by_id`, `get_order_by_id`, `delete_order` — all take `{"id": ...}`, never `productId` / `groupId` / `orderId` |
+| Entity deletes and other single-entity verbs | bare **`id`** | `delete_order` and its family take `{"id": ...}`, never `orderId` |
+| Batch-by-id reads | a **list** member, not `id` | On 0.4.4 the by-id reads are plural — `get_products_by_ids`, `get_groups_by_ids`, `get_orders_by_ids`, `get_users_by_ids`, `get_pages_by_ids` — and take a list; read the member name from the schema rather than assuming `ids`, and never send the singular `id` these tools' retired predecessors took |
 | Product-by-SKU | singular **`sku`** | `get_products_by_sku` |
 | Paragraph, module and grid tools | **`pageId`** or **`paragraphId`** | `get_paragraphs_by_page_id` and `get_grid_rows_by_page_id` take `pageId`; `get_paragraph_item_field_values` and `get_module_settings` take `paragraphId`. Passing `id` to any of them fails |
 
-A mis-named argument is not rejected loudly: depending on the tool it surfaces as the bare
-`"An error occurred invoking '<tool>'."` **or as a perfectly successful response with empty
-`content: []`**. So **read an empty result as a possible parameter-name error first**, not as missing
-data — confirm the entity exists through a second surface before concluding anything about the data.
-Take the parameter name from the tool's own schema in `tools/list` rather than from its name.
+**An access denial is the FIRST symptom of a stale tool name, not of a scope problem.** That is the
+reading to reach for, because the alternative reading — the key is under-scoped — points at the one
+thing that cannot be the cause and costs a detour through credentials before anyone re-reads the name.
+Tool names get renamed between builds: one measured session found an entire step's chain of ten
+payment and shipping verbs absent because the family had been renamed to a `_method` suffix and the
+update verbs folded into bulk saves, and every one of them answered as a permission refusal on a
+FullAccess key that every other write in the same pass went through. **A tool chain copied from prose
+is stale until checked against `tools/list`**; regenerate it from the registry rather than from the
+document that carries it.
+
+A name no server registers answers this hintless shape:
+`"An error occurred invoking <tool>: Access denied. MCP configuration <name> is not allowed to call
+tool <tool>. Required permission: <p>. Allowed permission: none."` **`<p>` is whatever the tool
+DECLARES, not a statement about registration**, so the message shape settles nothing. Measured on one
+FullAccess key in one session, both names absent from that build's `tools/list`: a retired core getter
+answered `Required permission: none. Allowed permission: none.`, while a verb belonging to an optional
+add-in answered `Required permission: Create. Allowed permission: none.` Reading the second as a real
+capability gate produces a request for a grant that can never be granted.
+
+**The only reliable test is the registry**: check the name against this build's `tools/list` (the
+repo's `scripts/mcp-tools.json` is the captured 0.4.4 FullAccess set, with the retired names under
+`notRegisteredOn044`). If the name is absent, it is a wrong name — plan the work without it. If it is
+present and the call is still denied, it is a capability gate worth asking about. Together with the
+bare `"An error occurred invoking '<tool>'."` — the argument-validation error — neither message is
+ever evidence about registration in either direction.
+
+**The two hintless shapes map to two different causes, and reading one for the other sends the fix
+the wrong way.** Measured on `get_item_type_fields` on DW 10.28.x with MCP 0.4.4:
+
+| Shape | What it means | Next move |
+|---|---|---|
+| The bare `"An error occurred invoking '<tool>'."` | A wrong or missing argument **name** — the add-in validates names before dispatch. `{"itemType": "<type>"}` on a tool whose key is `systemName` answers exactly this. | Re-read the tool's schema in `tools/list` and call again with the declared key |
+| A successful response with an **empty** result array | The lookup ran and matched nothing — the key was right, the **value** was not. `{"systemName": "<type that does not exist>"}` answers `{"result":[]}`; the same key with a real type answers its fields. | Check the identifier value: confirm the item type exists (`get_item_types`) before concluding the type has no fields |
+
+So take the parameter name from the tool's own schema in `tools/list` rather than from its name, and
+read an empty result as a lookup that matched nothing rather than as a probable typo.
 
 For `customFields` the key is the full `ProductCategory|<cat>|<field>` path and **every value must be
 stringified**, numbers included; a multi-select list is a **comma-joined string**, not a JSON array

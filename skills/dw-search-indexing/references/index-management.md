@@ -46,8 +46,58 @@ and repository side.
   </Schema>
   ```
 
-  Then rebuild: `POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`. **Symptom check:** if PLP/PDP render `numHits must be > 0` and the index built `state=success`, this is the cause — not a missing query file, not a missing `Products.query`, not a paragraph misconfiguration. The data on disk is the diagnostic: a healthy Products index segment is ~270 KB at 30 docs; 53 bytes means the schema accepted zero documents.
+  Then rebuild: `POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`. **Symptom check:** `numHits must be > 0` on the PLP/PDP always means the index holds **zero documents**, whatever the build reported. A schema the extender never populated is one way to get there; a build that ran before the content landed is the other, and the preconditions below separate them. Check the document count first, then the schema. The data on disk is the diagnostic: a healthy Products index segment is ~270 KB at 30 docs; 53 bytes means the schema accepted zero documents.
 - MCP `create_or_update_product_queries` saves `.query` XML but leaves `<Source Repository="" Item="" />` empty — fix via `sed` or patch the file before index build.
+- **Name the repository, then prove the build drained and the index holds documents.** Five
+  preconditions sit behind an empty product listing, all silent when absent, and the build call
+  reports success through every one of them. In order, alongside the primary-instance rule:
+  1. **Pass BOTH `repositoryName` AND `indexName` — each default addresses nothing.**
+     `get_product_index_status`, `build_product_index` and `wait_for_product_index` default
+     `repositoryName` and `indexName` to the literal `Products`, and neither validates that the name
+     resolves to a folder under `Files/System/Repositories/` or to an index file inside it. Take the
+     repository name from the catalogue paragraph itself — `get_module_settings` on the paragraph
+     returns its `IndexQuery` path (`/Files/System/Repositories/<repo>/Products.query`) — and pass
+     `indexName` as the **file name including the `.index` suffix** (`Products.index`).
+     Measured on DW 10.28.x with MCP 0.4.4: `{repositoryName}` alone answers
+     `{"repositoryName":"<repo>","indexName":"Products","isBuilding":false,"status":"Idle"}` — a bare
+     `Idle` with **no `documentCount` member at all**; adding `{"indexName":"Products.index"}` answers
+     the full payload with `lastBuildCompleted`, `documentCount` and `indexState`. **A status response
+     carrying no `documentCount` member means the pair addressed nothing** — fix the arguments rather
+     than falling back to the completed state.
+  2. **The repository has a `Build+Index.task` file.** The build is drained by a task file inside the
+     repository folder (`Files/System/Repositories/<repo>/Build+Index.task`, an
+     `IndexBuilderTaskProvider` entry naming the index and the build). With the file missing,
+     `build_product_index` answers *queued* and succeeds, `get_product_index_status` never advances,
+     and an agent polling as instructed concludes the build is slow. `get_index_repositories` shows
+     the repository; read the folder to confirm the file. Absent → nothing will ever drain.
+  3. **The repository task handler is enabled.** The drain itself is a scheduled task, and it is a
+     DB row on the host — no layer ships or asserts it, so a host with it disabled fails exactly
+     like a host with no task file. `get_scheduled_tasks` shows the repository task handler and
+     whether it is enabled; disabled or missing → `run_scheduled_task_now` for a one-off drain, and
+     say that the schedule needs fixing. Find the row by `name` equal to `Repository task handler`
+     and gate on `enabled`. Measured members on DW 10.28.x with MCP 0.4.4: `id`, `name`, `enabled`,
+     `intervalMinutes`, `addInTypeName` (the task class), `schedule`, `lastRun`, `lastRunState` and
+     `timeoutSeconds`.
+  4. **The first build after any deserialize or fixture load is explicit.** The task file repeats on
+     an interval measured in hours, typically a day, so a host whose last drained build predates the
+     content load serves an empty index until the next tick — and then self-heals, which is what
+     makes this intermittent and easy to misattribute on a retest the following day. Run
+     `build_product_index` + `wait_for_product_index` for the named repository **after** the content
+     is in, and never count the scheduled drain as the first build.
+  5. **Assert `documentCount` greater than zero, not a completed state.** Call
+     `get_product_index_status` with both `repositoryName` and `indexName` (precondition 1) — that
+     pair is what makes `documentCount` present at all. `get_product_index_status`
+     reporting `Completed` with zero documents is the failure, not the success, and the build's own
+     status artefact says so first: a green run whose total count is `0` while products exist in the
+     catalogue is the signal, and it finishes in milliseconds because there was nothing to index.
+     A zero-document index cannot serve a query **at all** — the collector is sized from the reader's
+     document count and rejects a hit count of 0, so the catalogue app throws
+     `numHits must be > 0` and the frontend writes that exception into the page body **inside an
+     HTTP 200 response**. The on-disk tell is as cheap: instance directories exist under
+     `Files/System/Indexes/<repo>/…` carrying only `segments.gen` / `segments_N` of a few dozen
+     bytes, with no payload files. Compare the build's last successful timestamp against the
+     deserialize and fail when the build predates it.
+
 - Rebuild the index after ANY product/group/channel mutation.
 
 ## Authoring a `.index` file — the rules no API surface reports
@@ -152,7 +202,7 @@ Canonical shape (dashboard-backing queries go in the Shared tree — see locatio
       "negate": false,
       "rootExpressions": [
         { "field": "ProductIsActive", "operator": "Equal", "value": "True" },
-        { "field": "ProductShortDescription", "operator": "IsEmpty", "value": "" }
+        { "field": "ProductShortDescription", "operator": "Equal", "value": "__empty__" }
       ],
       "expressions": []
     }
@@ -162,20 +212,46 @@ Canonical shape (dashboard-backing queries go in the Shared tree — see locatio
 
 Hard constraints:
 - `sourceIndex` is `RepositoryName|IndexName` — a pipe, no spaces (discover valid values via `get_product_queries`). **It also names the index a rebuild must target**: a convenience "build the product index" surface builds its own default pair, not this one ([`query-expressions.md`](query-expressions.md) "Build verbs")
-- every `value` is a string; `IsEmpty` uses `value: ""` — and **assert the row count of any `IsEmpty`
-  arm**, because the operator can parse and match nothing on the Lucene provider
-  ([`query-expressions.md`](query-expressions.md#operators-what-the-enum-implies-vs-what-matches)); a
-  backlog query that reads zero is as likely to be inert as it is to be satisfied
+- every `value` is a string. **Do not author an `IsEmpty` arm.** On the Lucene provider on 10.28.x
+  the operator parses and matches nothing, so a backlog query built on it reads zero and looks like a
+  fully enriched catalogue
+  ([`query-expressions.md`](query-expressions.md#operators-what-the-enum-implies-vs-what-matches)).
+  Express "has no value" positively: set `EmptyStringReplacement` on the index to a sentinel
+  (`__empty__` above) and filter on the sentinel with `Equal`, per
+  [`../SKILL.md`](../SKILL.md) "NULL values". Assert the row count of any emptiness arm either way
 - **exactly one item in `groupExpressions` — a second group is not preserved.** Later groups' conditions are merged into the root `And` and their own `operator`/`negate` are dropped, so an intended OR-list or NOT-group is written as a flat `And` and returns 0 rows with `success: true`. Anything with alternation or negation goes through the expression-replacement surface that takes a real tree ([`query-expressions.md`](query-expressions.md) "Authoring expressions")
 - `folderPath` — the virtual path above is the shape that has been validated on a local install. **On at least one cloud host the same verb requires the server-side ABSOLUTE filesystem path and silently no-ops on anything else** (answering `ok`, persisting nothing). Whichever form you pass, read the query back by name before treating the create as done; that assert is what makes the difference invisible
 - the MCP model supports only **constant** test values — for Parameter, Macro, Term, or Code test values, say so explicitly and recommend the Dynamicweb admin UI
 - completion wiring: integer rule IDs in `configuration.completionRules`, language ID strings in `configuration.completionLanguages`
 
-Typical editorial backlog queries: `active_missing_short_description` (`ProductIsActive=True` + `ProductShortDescription IsEmpty`), `active_missing_images` (image field `IsEmpty`), `low_stock_active` (`ProductStock LessThan "5"`), `incomplete_products` (completion rule IDs + languages attached). Remember the saved `.query` leaves `<Source Repository="" Item="" />` empty — patch it before the index build (see above).
+Typical editorial backlog queries, all on the sentinel-plus-`Equal` shape: `active_missing_short_description` (`ProductIsActive Equal True` + `ProductShortDescription Equal "__empty__"`), `active_missing_images` (image field `Equal "__empty__"`), `low_stock_active` (`ProductStock LessThan "5"`), `incomplete_products` (completion rule IDs + languages attached). The sentinel is whatever `EmptyStringReplacement` is set to on the index — read it before authoring, and assert a non-zero count on a catalogue known to have gaps. Remember the saved `.query` leaves `<Source Repository="" Item="" />` empty — patch it before the index build (see above).
+
+### The index schema's `Source` attribute and the indexed field name are two different spellings
+
+A facet or an index-schema field has two names and they are not the same string:
+
+| Where | Category field | Global custom product field |
+|---|---|---|
+| `<Field Source="…">` in the `.index` schema — **where the value is read FROM** | the authoring name, `ProductCategory\|<Category>\|<field>` | `CustomField_<systemName>` |
+| The indexed field name a query predicate or a facet binds to — **where the value is read AS** | `CustomField_<SystemName>` | `CustomField_<SystemName>` |
+
+Measured on one build, same field, same rebuild, only the `Source` spelling differing: a global product
+field sourced by its bare system name indexes **nothing** and its facet renders empty, while the same
+field sourced as `CustomField_<systemName>` renders with its expected buckets. Neither spelling errors;
+the build answers success with a full document count either way. A `<Field>` also takes exactly **one**
+`Source`, so an attribute modelled on several categories cannot be faceted as a single field without a
+copy field or a duplicated scalar.
+
+The schema and the facet files themselves have no tool and no verb —
+[`dw-data-access/references/recipes-search.md`](../../dw-data-access/references/recipes-search.md)
+"Storefront facets are three files under the repository folder" carries the file shapes; in-product,
+`read_file` and `list_files` read them and nothing writes them.
 
 ### Custom product fields index as `CustomField_<SystemName>`
 
-A **custom** product field (a category field or a custom `EcomProductField`, as opposed to a standard one) lands in the Lucene index under the field name **`CustomField_<SystemName>`** — e.g. a custom field `RoomType` is queryable/facetable as `CustomField_RoomType`, not as `RoomType`, not as `ProductCategory|<Cat>|RoomType` (that pipe form is the *authoring/value* system name from [`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.8, not the *index* name). Referencing it by any other plausible pattern **fails silently** — the facet renders empty and the query returns nothing, with **no error** to point at the wrong name. When a facet you added is defined but always empty, check the index field name is `CustomField_<SystemName>` first. Confirm the exact indexed name against the built segment (or the index schema's field list) rather than guessing the casing/prefix.
+**Authoring side versus index side — one field, two names.** The pipe form `ProductCategory|<Cat>|<Field>` is the *authoring/value* system name (from [`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.8): it is what a value write and a completion-rule definition name, and it is correct there — see [`dw-pim-completeness/references/rules-and-dashboards.md`](../../dw-pim-completeness/references/rules-and-dashboards.md) step 4. This section is the *index* side.
+
+A **custom** product field (a category field or a custom `EcomProductField`, as opposed to a standard one) lands in the Lucene index under the field name **`CustomField_<SystemName>`** — e.g. a custom field `RoomType` is queryable/facetable as `CustomField_RoomType`, not as `RoomType`, and not as `ProductCategory|<Cat>|RoomType` in an index predicate or a facet. Referencing it by any other plausible pattern **fails silently** — the facet renders empty and the query returns nothing, with **no error** to point at the wrong name. When a facet you added is defined but always empty, check the index field name is `CustomField_<SystemName>` first. Confirm the exact indexed name against the built segment (or the index schema's field list) rather than guessing the casing/prefix.
 
 ## Dashboard query location — Shared ONLY, never duplicate to Repositories
 
@@ -351,7 +427,7 @@ After any mutation that touches products, groups, categories, fields, completene
 > `ProductCategoryService` caches. If you mutated a product/category **value** this session — via
 > Direct SQL **or MCP `patch_products_safe` / `update_products` / a freshly-`create_category_fields`
 > value** — those caches are stale and a rebuild **bakes the old (often empty) value into the index**.
-> Symptom: `get_products_by_query` / a dashboard widget returns 0 or stale while `get_product_by_id`
+> Symptom: `get_products_by_query` / a dashboard widget returns 0 or stale while `get_products_by_ids`
 > and the DB are correct. That is an un-flushed read-through cache, **not** an "index quirk", and a
 > host restart is NOT a reliable fix (the `dotnet run` parent/child trap means the bounce may not
 > cold-start). Run the flush step below first, then build, then re-verify.

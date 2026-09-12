@@ -130,7 +130,14 @@ level copied out of a solution.
 
 **Priority rule:** When a user belongs to multiple groups with different permission levels on the same item, **the highest level wins**.
 
-**Important note on None:** In the new permission model, `None` does NOT override a higher permission from another group. `None` means "no access from this group's context" but doesn't actively deny access granted by another group.
+**How to deny, given highest-wins:** `None` on its own does not override a higher permission from
+another group — it means "no access from this group's context", not a hard deny. That is precisely
+why a gate is written as a **pair**: an explicit `AuthenticatedFrontend → None` deny on the entity
+**plus** a `<group id> → Read` grant on the same entity. The deny removes the broad inherited grant
+that would otherwise win; the group grant restores it for the intended audience. A bare group grant
+with no deny leaves the entity open to every signed-in user. The worked recipe and its enforcement
+points are in [`references/page-gating.md`](references/page-gating.md) "Group-scoped gates need the
+deny+grant pair".
 
 ### System-Wide Default Roles
 
@@ -247,7 +254,7 @@ The permission internals are split across four references that share one section
 
 **"Allow backend login" must be checked** — user type alone does not grant backend access. Editors must also have "Allow backend login" checked on their user account.
 
-**Permission "None" is not a hard deny** — in the new model, a user in two groups where one has None and another has Edit on the same item gets Edit access (highest wins). Use explicit permission management rather than relying on None as a deny mechanism.
+**A gate is a deny plus a grant, never a grant alone** — highest wins, so a user in two groups where one has None and another has Edit gets Edit. `None` alone is not a hard deny, and that is the reason the working shape pairs an explicit `AuthenticatedFrontend → None` deny with a per-group `Read` grant on the same entity. Shipping the grant without the deny leaves the entity readable by every signed-in user, and the gate passes review because the intended persona does see it. See [`references/page-gating.md`](references/page-gating.md).
 
 **Permissions were rebuilt for DW10** — DW9 permission configurations cannot be migrated. Must be reconfigured from scratch after upgrade. See [dw-setup-upgrade](../dw-setup-upgrade).
 

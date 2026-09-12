@@ -42,7 +42,7 @@ last-modified summary — cheaper to read first.
 
 ## MCP tools
 
-- `get_audit_by_id` / `get_audits_by_ids` — read specific audit rows.
+- `get_audits_by_ids` — read specific audit rows (a batch call; there is no single-id variant).
 - `get_audits_by_query` / `count_audits_by_query` — filter with an `AuditQuery` shape (above).
 - `get_audit_details` — the full detail of one audit event (old/new value where captured).
 - `get_unique_audit_types` / `get_unique_audit_actions` — discover what `Type`/action values

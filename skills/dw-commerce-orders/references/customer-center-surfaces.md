@@ -81,7 +81,7 @@ Each order line:
 
 ```
 ?CustomerCenterCmd=Reorder&OrderId={OrderId}
-?CustomerCenterCmd=AcceptQuote&QuoteId={QuoteId}
+?CustomerCenterCmd=QuoteAccept&QuoteId={QuoteId}
 ```
 
 Change cart state (B2B quote/cart flows):

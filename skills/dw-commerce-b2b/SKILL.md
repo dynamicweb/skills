@@ -64,7 +64,7 @@ Changes go live only **after a rebuild**. Three rebuild triggers:
 | Scope to one or more shops | `assign_shops_to_assortment` |
 | Grant a user/group access | `assign_permissions_to_assortment` |
 | Inspect what a user can see | `get_assortment_ids_by_user`, `get_assortment_permissions_by_user`, `check_assortment_product_access` |
-| Inspect current relations | `get_assortment_relations*` |
+| Inspect current relations | `get_assortment_relations`, `get_assortment_relations_by_group_id`, `get_assortment_relations_by_product_id`, `get_assortment_relations_by_shop_id` |
 | Mark for rebuild without building now | `flag_assortments_for_rebuild` — body is `{"requests":[{"assortmentId":"<id>"}, …]}` |
 | Rebuild now | `build_assortments` — same `{"requests":[{"assortmentId":"<id>"}, …]}` shape |
 | Find what still needs building | `get_assortments_for_build` |
@@ -88,15 +88,19 @@ here.
 
 Standard flow: **create** (`save_assortments`, active) → **fill** (`assign_products_to_assortment`
 and/or `assign_groups_to_assortment` — group membership is dynamic, so products later added to
-an assigned group are included on the next build) → **scope** (optional,
-`assign_shops_to_assortment`) → **grant access** (`assign_permissions_to_assortment` — an
-assortment with no permissions and `AllowAnonymousUsers` off is visible to nobody) →
-**build** (`build_assortments` — until this runs, none of the above is live; use
-`get_assortments_for_build` to confirm nothing is left pending) → **wire the storefront**
+an assigned group are included on the next build) → **grant access**
+(`assign_permissions_to_assortment` — an assortment with no permissions and `AllowAnonymousUsers`
+off is visible to nobody) → **build** (`build_assortments` — until this runs, none of the above is
+live; use `get_assortments_for_build` to confirm nothing is left pending) → **wire the storefront**
 (on a query-driven site, confirm the catalog page's index query filters on `AssortmentIDs` —
 see [dw-search-indexing](../dw-search-indexing); an assortment can be built and still leave the
-storefront unfiltered if the query doesn't reference it) → **verify**
-(`check_assortment_product_access` for a representative user + product).
+storefront unfiltered if the query doesn't reference it) → **verify** (read the membership, below).
+
+**A shop relation means the WHOLE shop, so it is not part of a restricted-assortment recipe, and
+`check_assortment_product_access` proves nothing.** Both traps are silent, both survive every
+prescribed verification, and one of them is unrepairable in place — the detail, the measurements and
+the membership read that replaces the access check are in
+[references/dc-scoping.md](references/dc-scoping.md) "A shop relation is a union, not a filter".
 
 **The rebuild step is the #1 footgun via MCP too.** `flag_assortments_for_rebuild` only
 **marks** assortments dirty; it does not build them. `build_assortments` does the actual work
@@ -201,11 +205,13 @@ Structure: Quote Flow → Quote States. Each state has:
 1. Customer creates a quote cart — Shopping Cart app must have **"Checkout to quote"** enabled
 2. Submitted quote appears under **Commerce > Quotes**
 3. Staff manages quotes through the quote flow states
-4. Customer uses the Customer Experience Center with `AcceptQuote` to convert to an order:
-
-```
-?CustomerCenterCmd=AcceptQuote&QuoteId={QuoteId}
-```
+4. Customer accepts the quote, converting it to an order. **The accept path is not the
+   Customer Center command.** The shipped Swift 2 Accept-quote button and the
+   `CustomerCenterCmd=QuoteAccept` command are both measured inert on a quote, so a quote beat
+   scripted around either dies silently on stage. The working path, the measurement behind it and
+   the one canonical command spelling are in
+   [`dw-commerce-orders/references/order-states-and-quotes.md`](../dw-commerce-orders/references/order-states-and-quotes.md)
+   "Swift 2's Accept-quote button cannot work on a quote". Read it before demoing this beat.
 
 ## Cart Flows (B2B Multi-Step Ordering)
 
@@ -281,7 +287,7 @@ User groups support **segment search queries** on the Groups tab — users match
 
 **Impersonation requires explicit configuration** — a user cannot impersonate by default; both the "can impersonate" and "can be impersonated by" sides must be configured.
 
-**Quote flow vs order flow** — quotes and orders use separate flow configurations. A quote accepted via `AcceptQuote` enters the **order flow** at its default state, not the quote flow.
+**Quote flow vs order flow** — quotes and orders use separate flow configurations. An accepted quote enters the **order flow** at its default state, not the quote flow.
 
 **Anonymous assortments** — if no assortment has the Anonymous flag, anonymous users see no products. For a mixed B2C/B2B store, ensure an anonymous-accessible assortment exists with the appropriate product scope.
 

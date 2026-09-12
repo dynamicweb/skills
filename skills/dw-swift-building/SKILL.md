@@ -41,8 +41,16 @@ Read the current site first so you understand:
 - Always read page and area item values before writing them, when those tools are available.
 - Only create a page when a required business page is genuinely missing.
 - Only deactivate a demo category page after confirming it is demo-only.
-- Never hardcode environment-specific URL prefixes in custom HTML (for example `/en-us/...` or `/vinhuset/...`).
+- Never hardcode environment-specific URL prefixes in custom HTML (for example `/en-us/...`).
 - Always derive the canonical shop-root path at runtime and build all custom links from that path.
+- **Measure the storefront prefix once per host; never derive it from a field.** The area's url name
+  is not the addressable segment — on a single-area host it is commonly decorative, and the live
+  prefix is the **area culture** rendered as a path segment (`en-US` → `/en-us/`). A URL composed
+  from the url name 404s, which reads like a failed publish and sends the agent debugging the write
+  path instead of the address. So fetch one page that certainly exists under each candidate prefix,
+  keep the one that answers 200, and let every later verify step and every documented URL take the
+  prefix from that measurement. (Area resolution on a shared host is by domain, which is why the url
+  name mints no prefix there — `dw-content-modelling`, `language-layers.md`.)
 
 ## Key Tools
 - Site structure: `get_areas`, `get_pages_by_area_id`, `get_pages_by_parent_id`, `get_navigation_structure`
@@ -93,6 +101,14 @@ Patch the existing area with:
 - language
 - currency
 - country
+
+**Bind only what `save_areas` exposes.** The tool has no frontpage member of any name, so an instruction
+to bind the site-root page id cannot be followed from this surface and does not need to be: the frontpage
+resolves from page sort order while the area's redirect-first-page flag is set, which is the shipped
+state. Read the area back with `get_area_by_id` after the patch and confirm each bound value echoes;
+a value that does not appear in that echo was not accepted. The per-environment `Area` binding columns
+that no tool writes are named, with their restart debt, in
+[`dw-data-access/references/cache-invalidation.md`](../dw-data-access/references/cache-invalidation.md).
 
 ### 4. Update Core Page Metadata
 Patch the main pages so the site is clearly branded for the new business:

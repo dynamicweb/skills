@@ -187,7 +187,7 @@ POST UserDelete {"Ids":["1332"]}  -> 200 {"status":"ok"}        gone
 ```
 
 **Assert the row, never the HTTP status.** Re-read the user immediately after every batch
-(`get_user_by_username` on the probe must come back empty) and have the helper return
+(`get_users_by_usernames` on the probe must come back empty) and have the helper return
 `deleted: (lookupAfter === null)` rather than `deleted: true`; the set-based count form is
 [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Assert a user delete
 on the row count, not the status". A clone-hygiene check belongs in every build that inherits a host:

@@ -70,7 +70,7 @@ things wear one name, and none of them is discoverable from the tools alone:
   flow's Cancelled state with MCP `set_order_state`, then call MCP `delete_order`. Carts and
   incomplete orders take `delete_order` on their own.
 
-Read the order back with MCP `get_order_by_id` after the pair and assert the state moved; a delete
+Read the order back with MCP `get_orders_by_ids` after the pair and assert the state moved; a delete
 that silently did nothing looks identical to one that worked.
 
 **A whole-entity order save is not the way round the refusal**: it demands `Currency` and a billing
@@ -130,6 +130,10 @@ no navigation, nothing a user would see. The failure **is** recorded, in the eve
 nowhere the user or the developer is looking. The `CustomerCenterCmd=QuoteAccept` command is
 likewise inert when posted by hand, in every shape, in both an `AllowOrder=false` state (where
 inertness is correct) and an `AllowOrder=true` state (where it is not).
+
+**`QuoteAccept` is the command's one spelling.** `AcceptQuote` reads plausibly and is the spelling a
+reader reaches for first; it names nothing. Neither posts a working accept, so the spelling matters
+only for reading a captured request — this file is the single home for both facts.
 
 **Use `OrderService.DowngradeToCart` from Razor as the accept path** until the pairing is fixed. A
 quote flow whose only documented accept path is a dead button is worse than no accept path, because

@@ -48,11 +48,16 @@ Checks (errors fail the build, warnings are printed but do not):
     drains. A `scripts/` directory or a `compatibility:` key naming PowerShell in
     a `dynamo: true` skill is always an error, never baselined.
     `--update-dynamo-baseline` rewrites the baseline from the current tree.
+  - MCP tool names: every backticked snake_case token shaped like a tool name
+    must appear in `scripts/mcp-tools.json` (the merged registered tool set of
+    the supported MCP builds) or in that file's `notTools` allowlist. The error
+    names the file, the line and the closest registered name.
 
 Run from anywhere: `python3 scripts/validate-skills.py`. Exit code 0 = clean.
 """
 from __future__ import annotations
 
+import difflib
 import json
 import re
 import sys
@@ -146,6 +151,7 @@ PS_IMPORT_LINE_RE = re.compile(r"^\s*(?:Import-Module\b|\.\s+\S)")
 # on a surface it does not have. Counted per file and ratcheted against
 # DYNAMO_BASELINE so the pre-existing backlog can drain without a flag day.
 DYNAMO_BASELINE = REPO / "scripts" / "dynamo-baseline.json"
+MCP_TOOLS = REPO / "scripts" / "mcp-tools.json"
 DYNAMO_PATTERNS = (
     ("Management API route", re.compile(r"(?i)/admin/api")),
     ("sqlcmd", re.compile(r"(?i)\bsqlcmd\b")),
@@ -247,6 +253,75 @@ def check_dynamo_surface() -> None:
                 err(f"{key}: {len(hits)} non-MCP instruction(s) in a `dynamo: true` "
                     f"skill, baseline {allowed} — Dynamo's surface is the MCP tools "
                     f"plus read/write under `Files/`. First: {first}")
+
+
+# ---------------------------------------------------------------- MCP tools
+# A backticked snake_case token in a skill reads as an MCP tool name, and a
+# name that no server registers is a step the agent cannot execute. Every such
+# token must resolve in scripts/mcp-tools.json (the merged registered tool set)
+# or be listed in that file's `notTools` escape for prose that only looks like
+# a tool name (PowerShell parameters, SQL columns, config keys, file stems).
+TOOL_SHAPE = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$")
+INLINE_CODE = re.compile("`([^`\n]{2,120})`")
+
+
+def mcp_registry() -> tuple[set[str], set[str]] | None:
+    if not MCP_TOOLS.is_file():
+        err(f"{rel(MCP_TOOLS)} is missing — tool names cannot be validated")
+        return None
+    try:
+        doc = json.loads(MCP_TOOLS.read_text(encoding=ENCODING))
+    except json.JSONDecodeError as e:
+        err(f"{rel(MCP_TOOLS)}: invalid JSON ({e})")
+        return None
+    return set(doc.get("tools", {})), set(doc.get("notTools", []))
+
+
+def tool_tokens(line: str) -> list[str]:
+    """Every backticked token in `line` shaped like an MCP tool name.
+
+    A span is a candidate when its leading identifier is snake_case and the
+    rest of the span is empty or an argument list — `save_pages`,
+    `save_pages(pages)`, `get_row_definitions(areaId)`. A span carrying an
+    operator, a path separator or prose is not a tool citation.
+    """
+    out: list[str] = []
+    for span in INLINE_CODE.findall(line):
+        head = span.split("(", 1)[0].strip()
+        rest = span[len(span.split("(", 1)[0]):].strip()
+        if rest and not (rest.startswith("(") and rest.endswith(")")):
+            continue
+        if TOOL_SHAPE.match(head):
+            out.append(head)
+    return out
+
+
+def check_mcp_tool_names() -> None:
+    reg = mcp_registry()
+    if reg is None:
+        return
+    registered, not_tools = reg
+    for f in scan_files():
+        text = read_text_checked(f)
+        if text is None:
+            continue
+        fenced = False
+        for i, line in enumerate(text.splitlines(), 1):
+            if line.lstrip().startswith("```"):
+                fenced = not fenced
+                continue
+            if fenced:
+                continue
+            for name in tool_tokens(line):
+                if name in registered or name in not_tools:
+                    continue
+                near = difflib.get_close_matches(name, registered, n=1, cutoff=0.72)
+                hint = (f"closest registered name is `{near[0]}`" if near
+                        else "no registered name is close; say plainly that the "
+                             "operation is not on MCP and name the admin screen "
+                             "(in-product) or the dw-data-access recipe (outside)")
+                err(f"{rel(f)}:{i}: `{name}` is not a registered MCP tool — {hint}. "
+                    f"Add it to notTools in {rel(MCP_TOOLS)} if it is not a tool name.")
 
 
 def write_dynamo_baseline() -> int:
@@ -753,6 +828,7 @@ def main() -> int:
     check_script_imports()
     check_orphan_scripts()
     check_dynamo_surface()
+    check_mcp_tool_names()
 
     for w in warnings:
         print(f"WARN  {w}")

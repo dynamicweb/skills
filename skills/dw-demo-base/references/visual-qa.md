@@ -38,7 +38,19 @@ Capture and check at minimum two widths via `browser_resize`: **desktop (1440 or
 ## Driving the instrument — device descriptor, auth state, and the minimum leg
 
 The instrument for every geometry finding is a **headless browser reading computed geometry**, and
-how it is launched decides whether the numbers mean anything. Three launch facts:
+how it is launched decides whether the numbers mean anything.
+
+**The instrument exists on a demo build machine — find it, do not conclude it is absent.** The browser
+driver ships with the demo agent tooling rather than under the skills tree, so a search of `skills/` for
+a script finds nothing and reads as "no runner on this box", which is wrong: passes that recorded the
+viewport leg as unrunnable were measuring the wrong directory. **Resolve the driver's location from the
+demo agent's own configuration** — read the configured tools path and look for the browser-probe folder
+under it — and never hardcode a machine-specific path into a skill, a note or an assert; the path differs
+per build machine and a literal one rots on the next. Install and fallback mechanics are in
+[browser-automation.md](browser-automation.md). Only when that lookup genuinely finds nothing is a
+viewport leg reported UNRUNNABLE, and then with the lookup that failed named beside it.
+
+Three launch facts:
 
 - **Drive it at a real device descriptor**, not at a resized desktop window. The descriptor is what
   makes `window.innerWidth` comparable to a requested width, and the comparison is the leg that
@@ -64,6 +76,15 @@ Minimum leg, per configured page, per device descriptor, **per auth state**:
 What each of those four is actually looking for, why a width-sorted offender list names an innocent
 element, and the recurring Swift 2 causes are foundational and live in
 [dw-swift-building](../../dw-swift-building/SKILL.md) `references/layout-verification.md`.
+
+**Those four are a fixed checklist, and a per-customer verification file INHERITS them rather than
+restating them.** A restated list drifts: measured on one build, a customer verification file carried
+the overflow leg and silently dropped the other three, so a run that completed it reported a clean
+verification having never hit-tested a control, measured a contrast pair, or looked for a row that
+renders nothing while still paying its spacing. Bind the two: a verification file names this checklist
+by reference, and any leg it cannot run is reported **UNRUNNABLE with the reason** in the verification
+output — never omitted. A leg that is absent from the output is indistinguishable from a leg that
+passed, which is the whole defect.
 
 ## Programmatic detectors — run before eyeballing
 

@@ -41,20 +41,47 @@ the browser-side checks that catch a page passing every content assert are in
 ## The MCP tools, by job
 
 **Discover (what exists on THIS solution):**
+
+> **Always pass `areaId`.** `get_row_definitions`, `get_paragraph_templates` and
+> `get_layout_containers` are area-scoped, and `areaId` is the only argument
+> `get_paragraph_templates` requires on MCP 0.4.4 — its `itemType` is optional: omit it for the
+> layout's un-scoped template list, pass it to scope to one component type. With a required
+> argument missing or misspelled the add-in answers
+> `An error occurred invoking <tool>.` and nothing else. On MCP 0.4.4 that one sentence is the
+> argument-validation error — it is **not** an unknown-tool error and **not** a permission gate.
+> Re-read `tools/list` for the required arguments and call again; never swap in
+> `get_templates` / `get_layouts` as a substitute, and never report the tool as absent.
+>
+> **Every argument name comes from that input schema, not from the surrounding prose** — the
+> obvious name is wrong often enough to plan for. Measured on 0.4.4: `get_pages_by_parent_id`
+> takes `parentId` (not `parentPageId`, which every neighbouring tool uses) and
+> `get_item_type_fields` takes `systemName` (not `itemType`). A wrong or missing argument **name**
+> fails with the one-sentence invocation error above — measured, `get_item_type_fields` called with
+> `itemType` answers exactly that. An **empty result array** is the other hintless shape and means
+> something different: the lookup ran on the right key and matched nothing, so the value is wrong
+> (a system name that does not exist on this solution). Read a key error against `tools/list` and
+> an empty array against `get_item_types`.
+
 - `get_layouts` — page/area layout (master) templates; read the real Swift design folder name
   (often `Swift-v2`, not guaranteed).
 - `get_row_definitions` — valid grid-row `DefinitionId`s + their column count/widths and which
   per-row toggles are supported.
 - `get_paragraph_templates` — for a component, the real variant template paths (e.g.
   `TextMiddleLeft.cshtml`).
-- `get_item_types` / `get_item_type_fields` — valid paragraph component names and each one's
-  real field system names.
+- `get_item_types` / `get_item_type_fields` (`systemName`) — valid paragraph component names and
+  each one's real field system names.
 - `get_layout_containers` — the default content container.
 - `get_content_apps` — module/app paragraphs (these go through `place_app_paragraph`, NOT
   `save_paragraphs`).
 
 **Read (inspect a page's structure & style):**
-- `get_page_by_id`, `get_pages_by_area_id`, `get_pages_by_parent_id` — the tree.
+- `get_pages_by_parent_id` (`parentId` + `areaId`), `get_pages_by_area_id` — the tree, and the
+  **page-metadata read** on MCP 0.4.4. `get_pages_by_ids` reads a known set of ids. There is no
+  single-page getter in the 0.4.4 tool set, so a step that needs one page's metadata reads the
+  parent's children and picks it out.
+  **Nothing in that projection carries `navigationTag`.** An assert on a navigation tag therefore
+  belongs on the frontend — render the page and assert the nav item or the resolved link — never on
+  a page read, and a step that cannot be written that way is dropped rather than left unrunnable.
 - `get_grid_rows_by_page_id` — the rows. **Returns only `DefinitionId` per row, NOT the
   columns** — join to `get_row_definitions` to learn the column layout.
 - `get_paragraphs_by_page_id` — paragraphs with their `GridRowId` + column + `ItemType` +
@@ -90,7 +117,7 @@ the browser-side checks that catch a page passing every content assert are in
   (paragraphs included by default). The ONLY one-call clone; there is no style-only clone.
 - `add_repeatable_item` — build Slider/Accordion child items. Keyed by **item identity, not
   paragraph**: pass `parentItemType` (e.g. `Swift-v2_Accordion`), `parentItemId` (the
-  paragraph's `itemId`, from `get_paragraph_by_id` — NOT the paragraph id), `fieldSystemName`
+  paragraph's `itemId`, from `get_paragraphs_by_ids` — NOT the paragraph id), `fieldSystemName`
   (`Accordion_Items`, with the underscore), and `childItemType`
   (`Swift-v2_Accordion_Item`) plus the child `fields` (`Title`, `Text` — wrap as HTML like any
   rich-text field). Slider is the same shape with its own field/child types.
@@ -231,16 +258,28 @@ composed from this reference.
 
 The look is **file-backed JSON** under `Files/System/Styles` (read/write via the style tools,
 never by hand):
-- `ColorSchemes/swift.json` is a **Group** (`Id:"swift"`) holding a `Schemes[]` array; each
+- A colour-scheme file under `ColorSchemes/` is a **Group** holding a `Schemes[]` array; each
   scheme has `Id`, `Name`, `BackgroundColor`, `ForegroundColor`, `PrimaryButtonColor`,
-  `SecondaryButtonColor`. `save_color_schemes` takes scheme rows tagged with their `GroupId`
+  `SecondaryButtonColor`. **Read the group id and the scheme ids with `get_color_schemes` before
+  referencing either.** Stock Swift ships `swift.json` with group id `swift`; a solution carrying
+  its own theme layer commonly ships `default.json` with group id `default` and its own palette,
+  so a lookup by the stock id misses and the band renders unstyled. The ids and the colours below
+  are illustrative of the stock set, never literals to copy. `save_color_schemes` takes scheme rows tagged with their `GroupId`
   (the service saves them into the backing group). Read before write: a submitted scheme's
   colors are fully overwritten (omitted colors nulled, custom colors cleared); other schemes
   in the group are untouched.
-- Shipped scheme ids: `light` (#FFF/#242424), `lightgrey1` (#ededed), `lightgrey2` (#f2f2f2),
-  `dark` (#242424/#fff), `darksubtle` (#575757), `primary` (#004fff/#fff — brand accent),
-  `secondary`. A given solution may rename/add these — `get_color_schemes` is the source of
-  truth; reference only ids it returns, and `save_color_schemes` a new one before using it.
+- Scheme ids are unique **only within their group**, and a solution commonly carries two groups.
+  Measured on a stock-plus-theme host: `get_color_schemes` returned both a `default` and a `swift`
+  group, each defining `light`, `lightgrey1`, `lightgrey2`, `dark`, `darksubtle`, `primary` and
+  `secondary`, with different colours behind the same ids (`primary` #004fff in one, #1F2933 in the
+  other). **`save_grid_rows` carries `colorSchemeId` and no group member**, so which palette a row
+  paints from is decided by the **area's** `colorSchemeGroupId`, not by anything the row carries.
+  So: read `get_color_schemes`, read `get_areas` for the area's `colorSchemeGroupId`, and choose
+  only from the schemes in THAT group. Copying an id out of the other group resolves, renders, and
+  paints a colour nobody chose — and a read-back of the row cannot reveal it, because the row only
+  stores the id. Changing which palette a page bands from is an **area-level** change, not a
+  row-level one. A given solution may also rename or add schemes — `get_color_schemes` is the
+  source of truth; `save_color_schemes` a new one before using it.
 - Typography (`Typography/fonts.json`, default font **Inter**, modular scale 1.333) and
   Buttons (`Buttons/buttons.json` — Shape/border/padding; button *colors* come from the
   scheme, not here) are single objects.
@@ -352,11 +391,15 @@ small related blocks into one multi-column row instead of a long single-column s
     blocks stacked visually → two rows. Parking a paragraph in a column the definition does not
     define is a clean reversible retire. Full law and the row-conversion recipe:
     [`grid-rows-and-binding.md`](../dw-swift-building/references/grid-rows-and-binding.md).
-16. **A new area MUST get `TypographyId` and `ButtonStyleId` set (standard Swift ids: `fonts`
-    / `buttons`) or the whole site renders as unstyled 16px Times New Roman** — Swift's
-    heading/body scale is driven by the area's typography CSS variables, so with the setting
-    empty, heading classes (`h1`/`h2`/`display-*`) do nothing and every page looks broken. Set
-    them in the same `save_areas` call that creates the area.
+16. **A new area MUST get `TypographyId` and `ButtonStyleId` set, to ids this solution actually
+    has, or the whole site renders as unstyled 16px Times New Roman** — Swift's heading/body
+    scale is driven by the area's typography CSS variables, so with the setting empty, heading
+    classes (`h1`/`h2`/`display-*`) do nothing and every page looks broken. **Read the ids first:
+    `get_typographies` and `get_button_styles`.** Stock Swift ships `fonts` / `buttons`; a
+    solution that layers its own theme commonly ships `default` / `default` instead, and writing
+    the stock ids there sets ids that resolve to nothing — applying this fix by literal reproduces
+    the symptom it describes. Set whatever those two tools return, in the same `save_areas` call
+    that creates the area, then read the area back and confirm the ids match.
 
 ## Row layout — settable, and what the row look depends on
 

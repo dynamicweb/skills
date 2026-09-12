@@ -36,22 +36,51 @@ design concern needs nothing beyond the ordinary page/paragraph tools.
 
 ## Before you write — snap to THIS solution (skipping this is what produces broken pages)
 
+**Pin every slug with `urlName`, and confirm it on the served URL.** On DW 10.28.x with MCP 0.4.4
+`save_pages` persists `urlName` to `Page.PageUrlName` and it **wins over** the `menuText`-derived
+slug, so decide the URL map first and pass each slug as `urlName` while `menuText` carries the human
+label. What no page getter does is *project* `urlName`: `get_pages_by_ids` returns `menuText` and no
+slug member, so a read-back cannot confirm the URL. **Poll the composed URL until it answers 200** —
+for at least 15 seconds — before writing any cross-link to it: the slug is written immediately but the
+frontend URL resolution is cached and lags the save by several seconds, so an immediate fetch answers
+404 on a correct write. Writing cross-links from `menuText` — or from a page read — ships copy
+whose every internal link points at a URL that does not exist.
+
 Template paths, component names, color schemes, and field names differ per solution and are
 stored **verbatim** by `save_paragraphs`/`set_paragraph_item_fields` (no auto-correction). So,
 once up front:
 1. Call `get_item_types`, `get_row_definitions`, `get_paragraph_templates`,
    `get_color_schemes`. From here on use **only the exact strings they return.** Names quoted
    in `dw-swift-page-blocks` are illustrative — never copy them as literal values.
+   **Always pass `areaId`.** `get_row_definitions`, `get_paragraph_templates` and
+   `get_layout_containers` are area-scoped: called with `areaId` omitted they answer
+   `An error occurred invoking <tool>.` and nothing else. On MCP 0.4.4 that one sentence is the
+   add-in's argument-validation error — a missing or misnamed required argument — **not** a
+   missing tool and **not** a permission gate. The response is to re-read `tools/list` for the
+   required arguments and call again, never to conclude the tool is absent or to substitute
+   `get_templates` / `get_layouts`. `get_paragraph_templates` takes `itemType` **optionally**:
+   omit it for the layout's un-scoped template list, pass it to scope the list to one component
+   type. Its only required argument on MCP 0.4.4 is `areaId`.
+   **Take every argument name from the tool's own `tools/list` input schema**, never from the
+   prose around it: on MCP 0.4.4 `get_pages_by_parent_id` takes `parentId` and
+   `get_item_type_fields` takes `systemName`. A wrong or missing argument **name** answers that
+   same one-sentence error; an **empty result array** means the opposite — the key was right and
+   the lookup matched nothing, so check the identifier value (does that item type exist?) before
+   suspecting the parameter name. Both hintless shapes are catalogued in
+   [`dw-swift-page-blocks`](../dw-swift-page-blocks).
 2. Honour the **Field & template contracts** (in `dw-swift-page-blocks`): pass each
    `get_paragraph_templates` value unchanged — a bare file name like `CardImageTop.cshtml`,
    never a `Designs/...` path; build button fields as `{"Label":"…","Link":"…",
    "Style":"primary"}` (not `ButtonText`/`ButtonStyle`); reference only color-scheme ids that
    exist — `save_color_schemes` a brand colour FIRST if you need a new one (a made-up id
    renders a broken band).
-3. Create the page **once**. Check it doesn't already exist (`get_pages_by_parent_id`) before
+3. Create the page **once**. Check it doesn't already exist (`get_pages_by_parent_id`, passing `parentId` + `areaId`) before
    creating; on a multilingual site build on the master layer. Re-running blindly creates
    duplicate pages.
-4. **Read ONE existing well-built page as your format reference** — a front page or a similar
+4. **Read ONE existing well-built page as your format reference** — reached through
+   `get_pages_by_parent_id`, which is the page-metadata read on MCP 0.4.4 (there is no single-page
+   getter in that tool set, and no page read projects `navigationTag`; assert a navigation tag on
+   the render instead) — a front page or a similar
    page in this solution. `get_paragraphs_by_page_id` then `get_item_field_values` on one
    instance of each component type you plan to use, and `get_grid_rows_by_page_id` for the
    row settings a real designer used here. Copy those value shapes verbatim. This is the
@@ -62,6 +91,51 @@ once up front:
    distinct component, render it (`fetch_frontend_page_html`, or fetch the page and grep for
    `Error executing template`), and only then create the remaining rows. Authoring thirty
    paragraphs before rendering one means every format mistake is paid for thirty times.
+
+## The create order, and the one field it makes mandatory
+
+Four calls per paragraph, in this order, each carrying its `itemType`:
+
+1. `save_pages` — `id: 0`, `areaId`, `parentPageId`, `menuText`, `urlName`, and
+   `itemType: 'Swift-v2_Page'`.
+2. `save_grid_rows` — `id: 0`, `pageId`, **`container: 'Grid'`**, the `definitionId`,
+   `itemType: 'Swift-v2_Row'`, `sort`.
+3. `save_paragraphs` — `id: 0`, `pageId`, the real component `itemType`, the `template` variant,
+   `gridRowId` from step 2 and `gridRowColumn`.
+4. `set_paragraph_item_fields` — the copy, with every button field blanked (below).
+
+**`container` on the row is load-bearing and fails silently.** A Swift 2 layout renders grid rows
+by container name, so a row saved with `container` empty is stored, reads back happily, and is
+placed in no layout container — every paragraph under it is absent from the render tree while the
+page still answers HTTP 200 with no error markup at all. Measured on DW 10.28.x: the same page went
+from 32,669 bytes with the copy missing and zero `ConverterException` to 38,751 bytes with the copy
+present once the row carried `container: 'Grid'` and `itemType: 'Swift-v2_Row'`. Take the container
+name from `get_layout_containers` (its `IsDefault` flag marks it) rather than assuming `Grid`.
+
+On DW 10.28.x with MCP 0.4.4 the bare `save_paragraphs` create **does** mint the underlying item
+instance — the response carries a populated `itemId` — so nothing has to be cloned first to obtain
+one, and `set_paragraph_item_fields` writes straight to it.
+
+**Blank every button field of a freshly created paragraph in that same `set_paragraph_item_fields`
+call.** A bare create materialises the item type's shipped **string** defaults into its
+`ButtonEditor` fields (on `Swift-v2_Text`, `FirstButton` and `SecondButton`); the runtime type of
+those fields is a `ButtonData` object, so the editor throws a `ConverterException` on the raw
+string and the template emits an error block where the copy should be. The page still answers
+**HTTP 200** and the paragraph still reads back with the fields it was asked to write — only the
+render shows it. So send `FirstButton: ""` and `SecondButton: ""` (and the equivalent button fields
+of any other type created bare) alongside `Title` / `Subtitle` / `Text`, and give a button a value
+only as the proper `{"Label":…,"Link":…,"Style":…}` object.
+
+**Assert, on the fetched page, both halves — the copy present AND the error markup absent:** a
+distinctive string from the `Title` or `Text` you wrote **occurs at least once**, and
+`ConverterException` and `<pre class="dw-error">` occur **zero** times. The absence half alone passes
+on a blank page: a paragraph that never entered the render tree emits no error either, so an
+error-free 200 is not evidence the paragraph rendered. Neither half is provable from the write's
+`succeeded` status.
+
+A clone-then-rewrite chain over `copy_paragraph` is a fallback for a build where the create path
+returns an empty `itemId`, nothing more. It is also what used to hide this defect: a clone inherits
+the donor's already-cleared button fields, so it never renders the failure a bare create does.
 
 ## Two modes
 
@@ -81,7 +155,8 @@ You are reproducing a *look*, not necessarily the content.
    - New content in the same *style* → reconstruct: build fresh rows/paragraphs that mirror
      the reference's layout+scheme rhythm but carry the new copy. Use when the content
      differs.
-3. **Build** (reconstruct path): `save_pages` → `save_grid_rows` (mirror the reference's
+3. **Build** (reconstruct path, in the create order above — blanking the button fields in the same
+   `set_paragraph_item_fields` call): `save_pages` → `save_grid_rows` (mirror the reference's
    `DefinitionId` per row, and set `ColorSchemeId` to match its banding) → `save_paragraphs`
    (same component + variant, into the right row/column) → `set_paragraph_item_fields` (the
    new copy/media/links).
@@ -100,15 +175,21 @@ you cannot invent CSS or custom layout the tools don't expose (see the ceiling i
    (→ `3Columns`/`4Columns` of `Card`/`Feature`)? image-beside-text (→ `2Columns_8-4`)? a
    quote (`Blockquote`)? an FAQ (`Accordion`)? a CTA bar (`Button`)? Map each band to a
    (layout `DefinitionId` + component + variant) from the vocabulary.
-2. **Read the palette.** Pick the per-row `ColorSchemeId` that matches each band's background
+2. **Read the palette — from the area's group.** `get_color_schemes` can return the same ids in two
+   groups with different colours, and `save_grid_rows` has no group member, so choose only ids that
+   exist in the group `get_areas` reports as the area's `colorSchemeGroupId` (details in
+   `dw-swift-page-blocks`). Pick the per-row `ColorSchemeId` that matches each band's background
    (light bands → `light`/`lightgrey1`/`lightgrey2`; dark/accent bands → `dark`/`primary`).
    If the brand colors differ from the shipped schemes, propose a `save_color_schemes` update
-   to the `swift` group (read it first — saves are full overwrites) rather than forcing an
-   approximate scheme.
+   **to that same group — the one `get_areas` reports as the area's `colorSchemeGroupId`** (read it
+   first — saves are full overwrites) rather than forcing an approximate scheme. Writing the brand
+   colour into the other group succeeds and changes nothing on the page, because the area does not
+   paint from it.
 3. **Plan, then confirm** — show the section→component map so the user can correct a mis-read
    before you write (see Confirm before writing, below).
-4. **Build** in vocabulary order: `save_pages` → `save_grid_rows` → `save_paragraphs` (real
-   variant from `get_paragraph_templates`) → `set_paragraph_item_fields`. Use the user's
+4. **Build** in the create order above: `save_pages` → `save_grid_rows` → `save_paragraphs` (real
+   variant from `get_paragraph_templates`) → `set_paragraph_item_fields`, blanking the button
+   fields in that same call. Use the user's
    supplied copy/images; where the image only shows lorem/placeholder, ask for the real text
    rather than baking in filler.
 
@@ -145,14 +226,19 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
 
 ### Header, footer and un-reproducible modules
 
-- **Header/footer:** don't hand-build them. `setup_website_chrome(targetAreaId)` creates the
+- **Header/footer:** `setup_website_chrome(targetAreaId)` creates the
   hidden `Header / Footer` folder, a `Swift-v2_Header` page (Logo + horizontal Navigation) and
   a `Swift-v2_Footer` page (Logo + vertical Navigation + copyright), and wires the website's
   `HeaderDesktop`/`HeaderMobile`/`FooterDesktop`/`FooterMobile` Master link fields. It is
   idempotent and `sourceHost` is **optional**, so it works for an original site with no
   migration involved. It requires the area's Swift v2 master `ItemType` (provisioned by
-  `save_areas`). If the tool isn't available it is permission-gated — say so and ask for the
-  grant rather than reconstructing the chrome by hand.
+  `save_areas`). **It is not in the standard MCP tool set** — it ships in an optional migration
+  add-in, so on most builds `tools/list` does not carry it and no permission grant can add it.
+  When it is absent, read the chrome the area already has: `get_areas` for the master's
+  `HeaderDesktop` / `HeaderMobile` / `FooterDesktop` / `FooterMobile` link fields, then
+  `get_pages_by_area_id` and `get_paragraphs_by_page_id` on the pages those fields point at.
+  Reuse that chrome; build a missing one with `save_pages` + `save_paragraphs` and wire the four
+  Master link fields through `save_areas`. Ask for a grant only when `tools/list` shows the tool.
 - **Third-party embeds are not content.** Source pages carry blocks that are really external
   services: an unknown custom element (`<f24-form>`, `<x-*>`), a field whose entire value is a
   `<script>`, an iframe to a non-media host, a loader placeholder. Spot these at the
@@ -190,7 +276,12 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
   so a plain `Title` becomes tiny unstyled text glued to the next field. Wrap headings as
   `<h2 class="h1 mb-2">…</h2>`, eyebrows as `<p class="text-uppercase small mb-2">…</p>`, body
   as `<p class="mb-0">…</p>`. This is what gives the page its type hierarchy and vertical
-  rhythm. `Feature` icons are SVG file paths (`/Files/Images/Icons/…svg`), not `bi …` classes.
+  rhythm. **Express vertical spacing as markup** — separate `<p>` elements, or a `<br>` pair — because
+  the field renders raw and a blank line between two runs of text is whitespace in the markup, not a
+  gap on the page. (The write path itself is faithful: a `RichTextEditor` value round-trips byte for
+  byte through `set_paragraph_item_fields` on DW 10.28.x, so this is a rendering choice rather than a
+  data-loss workaround —
+  [`dw-content-modelling/references/page-paragraph-writes.md`](../dw-content-modelling/references/page-paragraph-writes.md).) `Feature` icons are SVG file paths (`/Files/Images/Icons/…svg`), not `bi …` classes.
 
 ## The visual quality bar — what separates a 6/10 page from a 9–10/10 page
 
@@ -252,6 +343,13 @@ section→component map IS the thing to confirm — get it right before writing.
 
 ## Verify + summary
 
+**Address the page by a measured prefix, not a derived one.** Before the first fetch, confirm the
+storefront prefix by fetching a page that certainly exists under each candidate and keeping the one
+that answers 200: the live prefix is the area culture as a path segment (`en-US` → `/en-us/`), and
+the area's url name is commonly decorative, so a URL built from it 404s and reads like a failed
+publish. Every verify URL and every URL written into page copy comes from that measurement
+([`dw-swift-building`](../dw-swift-building/SKILL.md) Core Rules).
+
 **Fetch the rendered page** with `fetch_frontend_page_html` and read it — confirm it shows
 real content, NOT raw `{"Label":…}` JSON, overlapping/garbled text, or "the selected option no
 longer exist". Reading back the stored structure is **not enough**: a page with perfectly
@@ -292,7 +390,7 @@ did instead), and any copy/media still needed. Nothing silent.
 
 ## Recovery
 
-- Write fails on item-type/schema validation → re-read `get_item_type_fields` for that
+- Write fails on item-type/schema validation → re-read `get_item_type_fields` (`systemName`) for that
   component and fix the field name; never invent placeholder values to satisfy a required
   field.
 - A row renders structureless → its `DefinitionId` was omitted or wrong; re-set it via

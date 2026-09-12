@@ -41,7 +41,7 @@ back-compat but the runtime renderer ignores them.
 
 This makes per-role dashboards **fully derivable from the layer**: base 2.4.0's Customer Center puts buyer tiles and CSR tiles on ONE shared `Overview` page, each tile paragraph (and its grid row) gated `Customers=all / CSR=none` or `CSR=all / Customers=none`, all `Anonymous=none` — a buyer and a CSR open the same URL and see different tiles, zero custom code. (Per-role tiles on one shared page were previously believed impossible via YAML; that was the pre-0.8.0 engine, which serialized permissions page-level only.)
 
-**Engine floor is load-bearing.** An engine **≤ 0.7.1-beta silently drops** the row/paragraph `permissions:` blocks on deserialize (`IgnoreUnmatchedProperties`) → the tiles render **ungated** (a security regression). A base that carries these blocks declares `minSerializerVersion` in its contract; consume it only on ≥ 0.8.0-beta.
+**Engine floor is load-bearing.** An engine **≤ 0.7.1-beta silently drops** the row/paragraph `permissions:` blocks on deserialize (`IgnoreUnmatchedProperties`) → the tiles render **ungated** (a security regression). A base that carries these blocks declares the engine floor in `layers/base/base.contract.json` `minSerializerVersion`; read that floor from the layer and consume the base only on an engine at or above it.
 
 **Ordering trap (handled in-engine, ≥ 0.8.0-beta).** AccessUser groups deserialize AFTER the content that references them; the engine defers unresolvable-group permission sets to an end-of-run re-apply pass (with a user-group cache refresh) so group grants land instead of collapsing to the `Anonymous=None` safety fallback. Verify with a permissions-parity check: every serialized `permissions:` block ⇔ matching `UnifiedPermission` rows (count + owner + level + SubName).
 
@@ -113,9 +113,16 @@ as "blank homepage", not "please sign in".
 2. Put the rows on the subtree root; children inherit (`Page.PermissionType = 0` keeps a page
    inheriting rather than carrying its own rows). No template edits: nav, redirect and
    child-render all self-filter.
-3. **Verify by SIGNING IN as one persona from each DENIED group.** "Anonymous is redirected" proves
-   nothing: Anonymous is the one identity a positive-only grant does deny, which is exactly why the
-   broken shape reads as working. A row read-back is not proof either — `PermissionsByIdentifier`
+3. **Verify by SIGNING IN as one persona from each DENIED group, AND as one from a granted group, in
+   the same pass.** "Anonymous is redirected" proves nothing: Anonymous is the one identity a
+   positive-only grant does deny, which is exactly why the broken shape reads as working. A denied
+   signed-in user does not get a redirect or a 403 either — the page answers **HTTP 200 with a
+   near-empty body** (a shell of a few hundred bytes), so the observation is the **rendered body size**,
+   not the status code. And address the page **by id** (`/Default.aspx?ID=<pageId>`) rather than by a
+   composed friendly path: a subtree whose friendly url does not resolve answers 404 for every identity,
+   granted and denied alike, so the check passes without ever reaching the gate. PASS needs both halves —
+   a full page for the granted persona and a near-empty one for the denied — and a run where both
+   personas receive the same response is a broken check, not a pass. A row read-back is not proof either — `PermissionsByIdentifier`
    has the empty-`SubName` trap below and answers for keys that carry nothing. Most-permissive wins
    across a user's groups, so a user holding one granted group and three denied ones is admitted by
    design; design the group map for that rather than fighting it.

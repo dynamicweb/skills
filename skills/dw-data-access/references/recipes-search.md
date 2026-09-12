@@ -15,6 +15,7 @@ it is **local installs only**, and the cache flush or host restart it owes.
 
 - [Getting an authored `.index` file onto a hosted install](#getting-an-authored-index-file-onto-a-hosted-install)
 - [Re-running an index build on the Management API](#re-running-an-index-build-on-the-management-api)
+- [Storefront facets are three files under the repository folder](#storefront-facets-are-three-files-under-the-repository-folder)
 
 ## Getting an authored `.index` file onto a hosted install
 
@@ -28,9 +29,11 @@ install, edit the file in place.
 POST /Admin/Api/Upload        (multipart/form-data, the .index file, targeted at the repo folder)
 ```
 
-The MCP equivalent is `upload_file` into `Files/System/Repositories/<Repo>/`, which is inside the
-in-product surface and is the route to prefer wherever the tool is present; `read_file` and
-`list_files` give the round-trip read-back. Reach for the multipart verb only where MCP is absent.
+**`upload_file` cannot do this.** The tool restricts writes to `/Files/Images` (media) and
+`/Files/Files/Integration` (integration source files) and refuses everything else, template and config
+locations explicitly included — so the repository folder has no in-product write surface at all.
+`read_file` and `list_files` do reach it, so the round-trip read-back is in-product even though the write
+is not.
 
 Either way the schema rules stay invisible from every read surface: `BuildIndex` answers
 `{"status":"ok"}`, `IndexStatusesByRepository` answers "All instances are fine", and
@@ -57,3 +60,39 @@ A wrong `IndexName` answers not-found, which makes this the confirming re-run fo
 
 The in-product gate needs neither: pass the full file name including the `.index` extension on every
 MCP call, and gate on a **non-zero `documentCount`** rather than on `completed:true`.
+
+## Storefront facets are three files under the repository folder
+
+A PLP filter sidebar is **file-only work**. No MCP tool and no Management API verb edits a facet or an
+index schema: the query tools (`get_index_queries`, `get_index_query_expressions`,
+`replace_index_query_expressions`, `delete_index_query_expressions`, `delete_index_queries`) reach the
+query's *expressions* and nothing else. A branded catalogue that inherits the shipped facets therefore
+renders **no filter sidebar at all** while every structural assert passes — 200, a full card count, no
+error markup, an index build reporting success — because the facets are defined over fields the new data
+has no values for.
+
+**Surface: the filesystem** (local install), or the multipart upload verb above (hosted). Three files
+under `Files/System/Repositories/<Repo>/`, one entry each per facet:
+
+| File | The entry a facet needs |
+|---|---|
+| `Products.index` | one `<Field Source="…" Name="<X>_Facet" SystemName="<X>_Facet" Analyzed="false"/>` inside `<Schema><Fields>` |
+| `Products.query` | one `<Parameter Name="<X>" Type="System.String[]"/>` plus one `<BinaryExpression Operator="In">` binding the `<X>_Facet` field expression to the `<X>` parameter |
+| `Products.facets` | one `<Facet Name="…" Field="<X>_Facet" QueryParameter="<X>">` block |
+
+**The `Source` attribute spells the two kinds of custom field differently**, and the wrong spelling fails
+silently — the facet renders nothing, the build still answers success with a full document count:
+
+| Field kind | `Source` spelling |
+|---|---|
+| Category field | the fully qualified authoring name, `ProductCategory|<Category>|<field>` |
+| Global custom product field | `CustomField_<systemName>` — the **bare system name resolves to nothing** |
+
+**A `<Field>` takes exactly one `Source`.** An attribute modelled on several categories (the same
+measurement declared on three of them) cannot be faceted as one field without a copy field or a duplicated
+scalar; plan the data model with that in mind rather than discovering it at facet time.
+
+- **Why the higher surfaces do not cover it** — no tool and no verb reaches a facet or an index schema.
+- **Local installs only** for the in-place edit; hosted installs use the multipart upload above.
+- **The debt it owes** — a full index rebuild, then a PLP fetch asserting both the facet buckets and one
+  filtered URL returning the expected product count. The rebuild alone is not the assert.

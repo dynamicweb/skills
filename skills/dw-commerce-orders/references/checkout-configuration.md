@@ -12,6 +12,7 @@ tables no verb reaches — are in [`recipes-commerce.md`](../../dw-data-access/r
 
 - [Method country binding is what decides whether checkout can complete](#method-country-binding-is-what-decides-whether-checkout-can-complete)
 - [A shipping method takes two fee sources, and the flat-rate shape](#a-shipping-method-takes-two-fee-sources-and-the-flat-rate-shape)
+- [A blank id on a bulk method save can OVERWRITE an existing method](#a-blank-id-on-a-bulk-method-save-can-overwrite-an-existing-method)
 - [The payment radio's posted name drops a syllable the element id carries](#the-payment-radios-posted-name-drops-a-syllable-the-element-id-carries)
 - [Validation groups: a dangling reference validates nothing, silently](#validation-groups-a-dangling-reference-validates-nothing-silently)
 - [Validation fires on the step the field is posted on](#validation-fires-on-the-step-the-field-is-posted-on)
@@ -40,11 +41,22 @@ methods do, so the payment step looks healthy and only delivery is dead.
 - **Gate it: assert a non-zero delivery-option count for the target country, per persona.** A
   checkout that cannot complete is otherwise invisible until somebody walks the whole flow by hand.
 
-Write the relations with MCP `save_shipping_methods` and MCP `save_payment_methods`, passing
-`countryRelationKeys`; both go through the domain service and need no follow-up flush. Read them
-back with MCP `get_shipping_methods` / `get_payment_methods` and assert the target country is on
-every method the checkout has to offer. Writing `EcomMethodCountryRelation` rows directly is an
-out-of-product path with a schema trap of its own: see [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Method country binding".
+**The MCP method tools do not carry countries or fees.** Measured on MCP 0.4.4, the complete property
+list of `save_shipping_methods` is `id`, `name`, `description`, `active`, `allowAnonymousUsers`,
+`eligibleForFreeShipping`, `serviceSystemName`, `code`, `agentCode`, `agentServiceCode`, `minWeight`,
+`maxWeight`, `freeFeeAmount`, `sorting`; `save_payment_methods` carries `id`, `name`, `description`,
+`active`, `code`, `termsCode`, `gatewayId`, `checkoutSystemName`, `allowAnonymousUsers`, `sorting`.
+There is no `countryRelationKeys`, no `feeRulesSource` and no `defaultFee` on either, and the reads are
+just as narrow — `get_shipping_methods_by_ids` projects no relation set, so the gate below cannot be run
+from MCP either.
+
+So the split is: **use the MCP tools for name, description, activation and sorting**, which is most of a
+debrand, and **write country relations and fees out of product**, where the method save models do carry
+them ([`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Method country
+binding" and "`ShippingSave` takes two fee sources"). In product, the reader who cannot reach that
+surface sets the relations on the method's own admin screen; there is no tool path. Writing
+`EcomMethodCountryRelation` rows directly is a third rung with a schema trap of its own, in the same
+recipes file.
 
 ## A shipping method takes two fee sources, and the flat-rate shape
 
@@ -53,15 +65,38 @@ out-of-product path with a schema trap of its own: see [`recipes-commerce.md`](.
 and surfaces as a bare HTTP 500 naming no field, indistinguishable from a broken model, a bad id or
 a sick host.
 
-**To publish a flat freight rate with no fee matrix authored**, save the method with MCP
-`save_shipping_methods` using `feeRulesSource: "matrix"`, `maxWeight: 0` and the fee in
-`defaultFee`. With an empty `EcomFees` matrix and `maxWeight = 0`, `defaultFee` (stored as
-`ShippingPriceOverMaxWeight`) is what the cart charges. Read the method back with MCP
-`get_shipping_method_by_id` and assert the fee source and the default fee both landed.
+**To publish a flat freight rate with no fee matrix authored**, the method needs
+`feeRulesSource: "matrix"`, `maxWeight: 0` and the fee in `defaultFee`. With an empty `EcomFees` matrix
+and `maxWeight = 0`, `defaultFee` (stored as `ShippingPriceOverMaxWeight`) is what the cart charges.
+**Two of those three are not on the MCP model** (see the property lists above), so the fee is an
+out-of-product write or an admin-screen edit; `maxWeight` is the one MCP can set. Following this shape
+against the MCP tools alone produces methods with no country relations and no fee, which is exactly the
+dead delivery step the section above exists to prevent — so name the surface before starting the step.
 
 Re-point the countries first, then the fee — a method the delivery step filters out is invisible
 whatever its fee says. The equivalent out-of-product payload is in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "`ShippingSave`
 takes two fee sources".
+
+## A blank id on a bulk method save can OVERWRITE an existing method
+
+**`save_shipping_methods` with no `id` does not reliably create — it can land on an occupied id and
+overwrite the method that was there, silently.** The tool's own text offers a blank id as the create
+route; measured on one call, four id-less items landed on four sequential ids of which three were
+occupied, so three shipped methods were renamed and re-described in place and only one row was new. Ten
+methods went in and eleven came out. Nothing errored, nothing was skipped, and the succeeded count
+equalled the number of items sent — an overwrite and a create return the **identical** echo shape, so
+the result cannot be audited from itself.
+
+The rule, for `save_shipping_methods` and for every bulk save with an optional string id
+(`save_payment_methods` included):
+
+1. **Read the ids first** (`get_shipping_methods` / `get_payment_methods`) and keep the census.
+2. **Create with an explicit unused id**, chosen past the highest existing one — never by omitting it.
+   `create_shipping_method` (name and active only) allocates correctly and is the safe create path where
+   the extra fields can be filled in a follow-up save.
+3. **Assert on a second census**: the count rose by exactly the number of items sent, every pre-existing
+   id still carries its pre-existing name, and every new id is one you chose. The response echo names the
+   ids it assigned, so the damage is visible there too — read it rather than the succeeded count.
 
 ## The payment radio's posted name drops a syllable the element id carries
 

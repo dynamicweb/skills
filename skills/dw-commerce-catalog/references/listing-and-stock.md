@@ -95,7 +95,7 @@ completion decrements follows the stock location on the order line:**
 So the safe assumption is **both tables move**, and the invariant worth holding is that for every
 product `SUM(StockUnitQuantity)` equals `ProductStock` — which is what makes whichever number the
 storefront renders the one the catalog published. In-product, check it per product: MCP
-`get_product_by_id` carries the aggregate and MCP `get_stock_locations` the per-location rows, and
+`get_products_by_ids` carries the aggregate and MCP `get_stock_locations` the per-location rows, and
 snapshot both **before** any check that places its own order, or the check fails on its own side
 effect. The corpus-wide version of the same assertion is in
 [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "The two stock tables".

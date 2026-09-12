@@ -81,7 +81,7 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 | Artifact | Source (in the Distribution clone) | Working tree | Consumed by |
 |---|---|---|---|
 | Serialized base | `layers/base` (kind base) — **framework-only**: 16 framework SQL sets in `replace/_sql/` (countries, currencies, languages, shops, payments, shippings, VAT, order flow/states, AccessUser), **zero content, zero pages, empty catalog by design** | `<demo-root>\distribution\layers\base\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Swift content surface | `layers/surface-swift` (kind surface) — ALL Swift content: both areas (`Swift 2` + `Swift 2 Nederlands`) in `replace/_content/` + `merge/_content/`, `UrlPath` in `replace/_sql/`, and its **own item-type XMLs** (`itemtypes/`, 128 `ItemType_Swift-v2_*.xml`) | `<demo-root>\distribution\layers\surface-swift\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
+| Swift content surface | `layers/surface-swift` (kind surface) — ALL Swift content: the one `Swift 2` area in `replace/_content/` + `merge/_content/`, `UrlPath` in `replace/_sql/`, and its **own item-type XMLs** (`itemtypes/`, 128 `ItemType_Swift-v2_*.xml`) | `<demo-root>\distribution\layers\surface-swift\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
 | Demo catalog + identities *(optional)* | `layers/sample-data` (kind sample-data) — ships ALL demo content as SQL files (`merge/_sql/catalog.sql`: products / groups / prices; `merge/_sql/identities.sql`: buyer + CSR); editions activate it via `sampleData: true` (e.g. `swift-demo`); otherwise author per-demo via the [`dw-demo-pim`](../dw-demo-pim/SKILL.md) recipes | `<demo-root>\distribution\layers\sample-data\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
 | Demo theme / style assets | `layers/theme-default` (kind theme — pure disk-overlay `files/`, no serialized DB content). **The ONE presentation layer** — every Swift demo starts from `theme-default` and re-skins on top of it; there is no theme choice and no separate overlay layers (the header-nav affordance CSS ships inside `theme-default`'s `default_custom.css`) | `<demo-root>\distribution\layers\theme-default\` | [`dw-demo-swift/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) |
 | Feature pack | `layers/<name>` (kind feature) | `<demo-root>\distribution\layers\<name>\` | [`dw-demo-swift/references/pack-activation.md`](../dw-demo-swift/references/pack-activation.md) |
@@ -142,9 +142,9 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 
 The action ladder — MCP tools, then the Management API at `/admin/api/...`, then the serializer, then direct SQL as a local-install-only last resort, with the admin UI as verification only — is foundational and owned by [`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance". A demo splits it into **two phases** by the MCP verification gate. **Scaffold phase** (before the gate): the admin UI via the Browser MCP is an action surface, scoped to the bootstrap one-clicks. **Build phase** (after the gate — and hosted/headless installs from the first request): the foundational ladder applies without exception; take the highest rung that reaches the operation and a "UI-only" operation means the endpoint hasn't been found yet. On hosted installs there is no SQL rung: probe for MCP, else Management API, else ask the user ([`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)). The demo deltas — the phase gate, the scaffold ladder, the long-form SQL-cloning ban — are owned by [references/surface-priority.md](references/surface-priority.md). This phase rule is owned by this skill and inherited by every sister skill.
 
-## Two guarded-writes (always-on rules)
+## Three guarded-writes (always-on rules)
 
-These are mandatory write-time preflight rules. They share one mental model -- "guarded write triggered by path glob" -- with two glob patterns and two outcomes.
+These are mandatory write-time preflight rules. They share one mental model -- "guarded write triggered by path glob" -- with three glob patterns and three outcomes.
 
 1. **Custom code path** (the customisations-ledger preflight -- three branches). Before writing any file matching:
    - `Dynamicweb.Host.Suite/Controllers/**/*.cs`
@@ -162,6 +162,17 @@ These are mandatory write-time preflight rules. They share one mental model -- "
 
 2. **Customer-context path** (the customer-context read-only contract -- hard abort, no approve branch). Any write to a path containing `customer-context\` (case-insensitive, both separators) aborts and redirects to `<demo>\notes\` or `<demo>\extracts\`. The canonical abort message, path-matching rule, and detection signature live in `references/customer-context.md`.
 
+3. **Distribution layer path** (the layer read-only contract -- three branches, same shape as rule 1). Before writing any file matching `distribution[/\\]layers[/\\]` (case-insensitive, both separators):
+
+   **Invoke `AskUserQuestion`** with this exact shape:
+   > "This edits a Distribution layer, not this demo. The clone may be shared with other demos and the next `git pull --ff-only` will clobber or refuse. [Approve+log as a Distribution PR / Change it on the instance instead / Cancel]"
+
+   - **Approve+log** -> make the edit on a branch of the Distribution checkout and log it as a pull request against the Distribution, never as a loose working-tree change; append the row to `<demo>\CUSTOMISATIONS.md`.
+   - **Change it on the instance instead** -> abort the write; make the fix on the running host (admin UI or MCP) and, if it must persist, raise it as a layer issue.
+   - **Cancel** -> abort.
+
+   Branding never edits a layer: a re-skin writes theme files and instance content, not layer YAML. The same rule is restated where branding work happens -- `dw-demo-swift/references/re-skin.md`, `styles-assets.md` and `deserialize-flow.md` -- and this is its enforcement point.
+
 **Rationale:** Many B2B customers are fleeing heavily-customised legacy commerce/ERP stacks; the customisation budget is itself a pitch beat at the demo's closing slide. Every approved row is a deliberate trade-off; every Cancel/Refactor is a small win.
 
 ## Artifact hygiene — the demo root is not a scratchpad (always-on rule)
@@ -176,7 +187,7 @@ Ephemeral build evidence (QA screenshots, host logs, Playwright DOM/a11y dumps) 
    | `notes\logs\` | host stdout/stderr logs | the "Host lifecycle authority" `Start-Process` recipe below |
    | `notes\snapshots\` | Playwright DOM / accessibility dumps | `references/browser-automation.md` |
 
-2. **Root allowlist.** Only these may sit at the demo root: the plan doc (`DEMO-PLAN.md`), `CLAUDE.md`, `CUSTOMISATIONS.md`, `.gitignore`, `.mcp.json`, and directories. Anything else an agent wants to write at root routes to `notes\` instead — the same redirect wording as the customer-context contract ("did you mean `<demo>\notes\`?"). The harness enforces this end-of-phase (see the Foundry root-allowlist check).
+2. **Root allowlist.** Only these may sit at the demo root: the plan doc (`DEMO-PLAN.md`, whose five-section contract is in [references/demo-tactics.md](references/demo-tactics.md)), `CLAUDE.md` (dropped by the entry check in [references/customer-context.md](references/customer-context.md) §6), `CUSTOMISATIONS.md`, `.gitignore`, `.mcp.json`, and directories. **Audit the root on entry as well as end-of-phase** — a solution scaffolded by anything other than [references/scaffold.md](references/scaffold.md) commonly arrives carrying extra root files already, and reporting them on the first pass is cheaper than carrying them to the hand-over. Anything else an agent wants to write at root routes to `notes\` instead — the same redirect wording as the customer-context contract ("did you mean `<demo>\notes\`?"). The harness enforces this end-of-phase (see the Foundry root-allowlist check).
 
 3. **Naming rule — name evidence for what it IS.** An evidence dump is named for its content (`admin-a11y-snapshot-*.md`, `home-desktop-*.jpeg`), never for what it was captured *during*. Security-suggestive names for non-secret dumps (e.g. an accessibility snapshot saved as `apikeylist.md`) are forbidden — they read as leaked-secrets files to any human or scanner.
 

@@ -21,7 +21,7 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Grant the Language entity — the dual-gate half nothing cascades](#grant-the-language-entity--the-dual-gate-half-nothing-cascades)
 - [Per-role field-level differentiation](#per-role-field-level-differentiation)
 - [Grant the storefront user-management commands](#grant-the-storefront-user-management-commands)
-- [Seed a password for a freshly created login](#seed-a-password-for-a-freshly-created-login)
+- [Set a password on an existing login](#set-a-password-on-an-existing-login)
 - [Assert a user delete on the row count, not the status](#assert-a-user-delete-on-the-row-count-not-the-status)
 - [Delete orphaned user addresses](#delete-orphaned-user-addresses)
 - [Rebuild the Users index after an impersonation write](#rebuild-the-users-index-after-an-impersonation-write)
@@ -253,18 +253,53 @@ POST /Admin/Api/PermissionSave
 Before the grant, the read on the same identifier shows only inherited owners; after it the identical
 storefront requests pass and the state actually changes.
 
-## Seed a password for a freshly created login
+## Set a password on an existing login
 
 In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
 (`grant-mechanics.md` §13), which carries the `EncryptPassword` settings and the passwordless-user
 trap.
 
-There is no MCP password tool and `UserSave` cannot set a password either, so a freshly seeded
-persona cannot sign in until a password is set out of band. The admin UI's Users → user → password
-field works and is manual; for automated seeding the `SQL` escape hatch is the fast path, and it is
-only valid while `EncryptPassword` is `False` — plaintext seeded under `False` becomes a stale
-invalid hash after the flip. **Local installs only**, no flush owed (authentication reads the column
-per attempt), and Dynamicweb auto-rehashes a plaintext seed on the first successful login.
+There is no MCP password tool, and `UserSave` **accepts a password member and drops it** — three
+attempts across two model shapes answered `{"status":"ok"}` with the stored password still empty. The
+command that works is a dedicated one, and it is not discoverable: there is no command listing, an
+empty body answers `Model validation failed` without naming the model, and **the key member is
+`userId` while every neighbouring user command keys on `id`** (an `id` there answers
+`User not found. ID: 0`).
+
+**Surface: Management API.**
+
+```
+POST /Admin/Api/UserSetPassword   {"model": {"userId": <int>, "password": "<generated>"}}
+-> {"status":"ok"};  the stored password column is non-empty afterwards
+```
+
+Neighbouring spellings do not exist (`UserChangePassword`, `UserPasswordSave`, `UserResetPassword`,
+`UserPasswordChange`, `ChangePassword` all answer `400 Unknown command`), so a 400 on one of those is
+not evidence that the capability is missing.
+
+- **Why the higher surfaces do not cover it** — no MCP tool has a password member, and the user save
+  verb drops the one it accepts.
+- **Hosted installs included** — this is an API call, not SQL, and it is independent of the
+  encryption mode.
+- **The debt it owes** — none; authentication reads the column per attempt.
+
+**Prove the credential, do not assume it.** A stored value is not a working login:
+
+```
+POST /dwapi/users/authenticate   {"username": "<name>", "password": "<generated>"}   (JSON)
+-> 200 with a token.   The same endpoint form-encoded answers 415.
+```
+
+For the persona-dependent asserts that need a *session* rather than a token — a gated page, a
+price-visibility comparison, a signed-in cart line — drive the storefront sign-in form instead: POST
+the lowercase `username` / `password` fields to the customer-centre page on a cookie session with a
+browser user agent, then assert on a page fetched **with** that cookie.
+
+### The plaintext escape hatch, where the command is unavailable
+
+Only valid while `EncryptPassword` is `False` — plaintext seeded under `False` becomes a stale
+invalid hash after the flip. **Local installs only**, no flush owed, and Dynamicweb auto-rehashes a
+plaintext seed on the first successful login.
 
 ```sql
 UPDATE AccessUser SET AccessUserPassword = 'Password123!'

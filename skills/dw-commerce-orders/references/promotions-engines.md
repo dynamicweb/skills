@@ -8,6 +8,8 @@ payload shapes, voucher code constraints, and the encrypted gift-card code.
 
 - [Two discount engines coexist — and the short verb writes the one the admin screen does not read](#two-discount-engines-coexist--and-the-short-verb-writes-the-one-the-admin-screen-does-not-read)
 - [A voucher campaign is load-bearing on BOTH engines at once](#a-voucher-campaign-is-load-bearing-on-both-engines-at-once)
+- [The v2 engine has an activation precondition, and an inactive one accepts everything](#the-v2-engine-has-an-activation-precondition-and-an-inactive-one-accepts-everything)
+- [MCP conditions and rewards take an ARRAY of id/value pairs](#mcp-conditions-and-rewards-take-an-array-of-idvalue-pairs)
 - [v2 conditions and rewards — assembly-qualified types, an error that echoes nothing, and required fields at create time](#v2-conditions-and-rewards--assembly-qualified-types-an-error-that-echoes-nothing-and-required-fields-at-create-time)
 - [Legacy discount writes — three traps that compound](#legacy-discount-writes--three-traps-that-compound)
 - [Vouchers — code constraints, additive generation, insert-only](#vouchers--code-constraints-additive-generation-insert-only)
@@ -60,6 +62,56 @@ The working shape is a **pair**:
 
 **Never leave both active — the reward pays twice.** Assert exactly one of the paired discounts is active,
 and that the Vouchers grid renders a discount name and value at all.
+
+## The v2 engine has an activation precondition, and an inactive one accepts everything
+
+**Rows in the v2 tables are data with no consumer until the new discount experience is activated in the
+host's global settings — and nothing in the write chain reports that.** Measured on a stock baseline:
+three percentage tiers created with `create_adjustment_discounts`, conditioned on real user groups,
+rewarded with real percentages, active in the table and correct on read-back — and the signed-in cart
+charged full list price on every one of them. A customer-number contract price resolved correctly in the
+same cart, which is what makes the failure read as a mis-configured discount rather than as a dormant
+engine.
+
+- **Confirm the activation before building any v2 discount.** The baseline ships no activation block, so
+  on an unconfigured host the cart resolver never consults the v2 rows at all. The block itself is host
+  configuration: it is set outside the product and takes a host restart
+  ([`dw-data-access/references/recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md)
+  "The v2 discount engine needs a global-settings activation"). In product, the honest move is to say out
+  loud that a group discount cannot be demonstrated on this host until someone activates the engine —
+  not to keep building rows.
+- **Know which table each engine reads.** The legacy engine reads `EcomDiscount` (singular); the v2
+  engine reads `EcomDiscounts` (plural). A populated plural table on an unactivated solution is the exact
+  signature of this fault.
+- **The only evidence is the rendered line amount.** Sign in as a member of the conditioned group, add a
+  product with a known list price, and read the cart line. A read-back of the discount, its conditions
+  and its rewards passes on a dormant engine and proves nothing.
+
+## MCP conditions and rewards take an ARRAY of id/value pairs
+
+`save_conditions_to_discounts` and `save_rewards_to_discounts` declare `parameters` as an **array of
+`{id, value}` objects**, while the tool description describes a dictionary keyed by the parameter name.
+The schema is the truth:
+
+```
+parameters: [{"id": "<ParameterName>", "value": "<string>"}]        # accepted
+parameters: {"<ParameterName>": "<string>"}                          # rejected
+```
+
+Two consequences worth the same attention as the shape itself:
+
+- **The rejection is an opaque STRING, not a bulk response.** The whole body is
+  `An error occurred invoking '<tool>'.` — so a loop that projects `succeeded` and `failed` off the
+  response reads **neither**, prints empty counts, and moves on with a clean-looking run while the
+  discounts sit there with no conditions and no rewards.
+- **Therefore read the discount back and assert.** After `create_adjustment_discounts` plus conditions
+  plus rewards, call `get_adjustment_discount` on each and require `conditions` and `rewards` to be
+  non-empty, with the display values resolving to the group name and the percentage. This read-back is
+  the only thing that catches a shape error on this pair of tools.
+
+The comma-separated form stays correct for the **value** of a multi-value parameter (`"12,18,24"`, never
+a JSON array); it was never the shape of the wrapper. Parameter *names* are not the C# property names —
+see the rule further down this file.
 
 ## v2 conditions and rewards — assembly-qualified types, an error that echoes nothing, and required fields at create time
 

@@ -10,7 +10,7 @@
 - [6. Sign-in profiles / switch user (Swift 2.4) — not impersonation](#6-sign-in-profiles--switch-user-swift-24--not-impersonation)
 - [7. Signing in AS a persona — the field names, and the right assertion target](#7-signing-in-as-a-persona--the-field-names-and-the-right-assertion-target)
 - [8. Renaming a persona is a sweep, not a user edit](#8-renaming-a-persona-is-a-sweep-not-a-user-edit)
-- [9. Checkout delivery date and custom order fields](#9-checkout-delivery-date-and-custom-order-fields)
+- [9. Checkout — paths, method names, delivery date and custom order fields](#9-checkout--paths-method-names-delivery-date-and-custom-order-fields)
 - [10. The storefront account-admin page (Swift 2.4 UserGroups app)](#10-the-storefront-account-admin-page-swift-24-usergroups-app)
 - [11. The B2B DC pattern (one AccessUser group per Stock Location)](#11-the-b2b-dc-pattern-one-accessuser-group-per-stock-location)
 
@@ -32,7 +32,7 @@ Rebuilding is never the right answer. The stock section already supports imperso
 
 ## 2. Page-tree map
 
-Source-of-truth: `<demo-root>\distribution\layers\base\replace\_content\Swift 2\Customer center\` deserialized into a running host. Backtick-quote any path string when copying into other tools -- folder names contain spaces.
+Source-of-truth: `<demo-root>\distribution\layers\surface-swift\replace\_content\Swift 2\Customer center\` deserialized into a running host. Backtick-quote any path string when copying into other tools -- folder names contain spaces.
 
 ```
 Customer center/
@@ -51,6 +51,25 @@ From base **2.3.2** the Overview landing is a **tile dashboard** (stock `Swift-v
 From base **2.4.0** the Overview is a **per-role tile dashboard on one shared page**: the buyer tiles (Orders / Quotes / Carts / Favorites / Addresses / Profile / Returns) AND the CSR tiles (Accounts / Orders / Carts / Users) live on the same `Overview` page, each tile (and its grid row) carrying a serialized `permissions:` block so a buyer sees only buyer tiles and a CSR sees only CSR tiles — no code, no split landing. The old separate `CSR/` tile dashboard was retired (its function pages stay); a CSR now lands on the same Overview and sees the CSR tiles. This gating is derived entirely from the base-layer YAML (serializer ≥ 0.8.0-beta) — see §3 and [`page-gating.md`](../../dw-users-permissions/references/page-gating.md) §15.
 
 This is the canonical tree any Customer-360 / sales-on-behalf demo references (`Customer center/CSR/{Orders, Accounts, Carts, Users}`). It's pre-built, paragraph-driven, requires no custom Razor.
+
+**Prove a CSR gate as a PAIR, by page id, on the body length.** The natural negative check — sign in as a
+buyer-only persona, fetch the CSR accounts path, expect something other than a 200 with content — fails
+twice over on this tree. First, the CSR subtree commonly has **no resolvable friendly URL**: the composed
+path 404s for every persona, the authorised CSR included, so the check passes without ever reaching the
+gate and would pass identically on a solution with the exposure it exists to catch. Second, a denied Swift
+page answers **HTTP 200 with a near-empty body** (a low-hundreds-of-bytes shell), so no status-code
+comparison can see the deny either. The runnable form:
+
+1. Read the CSR page ids from the page tree (`get_pages_by_parent_id` down the `Customer center/CSR/`
+   branch) rather than composing a path from memory.
+2. Fetch the SAME page id as the denied persona **and** as the authorised CSR persona, in one pass:
+   `/Default.aspx?ID=<pageId>` addresses a page by id whatever its url resolution does.
+3. PASS requires **both** halves: the CSR persona receives a full page, and the denied persona receives a
+   body an order of magnitude smaller. A run where both personas receive the same response is a broken
+   assert, not a pass — including the run where both receive 404.
+
+An assert that never succeeds for the authorised persona is not a gate. The vendor-generic half of this
+rule lives in [`page-gating.md`](../../dw-users-permissions/references/page-gating.md) §15.
 
 **The impersonation entrypoint is the `Customer center/CSR/Users/` page, not `CSR/Accounts/`.** Accounts is by design a company directory (no impersonate button); Users lists individual users and carries the "Impersonate" link. Opening Accounts and seeing "no impersonate button" is expected — send the CSR to Users. The full mechanics are foundational (§3).
 
@@ -252,7 +271,34 @@ a user row by raw SQL: the in-process user cache is unflushable and the failure 
 ([`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)
 "Raw-SQL `AccessUser` writes create a split brain").
 
-## 9. Checkout delivery date and custom order fields
+## 9. Checkout — paths, method names, delivery date and custom order fields
+
+### Resolve the checkout URLs by walking the cart subtree
+
+**Resolve the checkout URLs by walking the cart subtree, never by composing a remembered path.** The
+shopping-cart branch (`Cart` with children for the empty cart, the anonymous checkout, the user checkout
+and the quote checkout) resolves its friendly urls **outside the culture prefix** that every content page
+carries — the checkout screens answer at bare `/checkout` and `/user/checkout` while `/` content sits under
+`/<culture>/`. A path composed as `<culture>/cart/checkout-user` 404s, which reads as a failed publish and
+sends the pass debugging the content tree. Read the page ids from the tree, fetch each by
+`/Default.aspx?ID=<pageId>` following redirects, and record the `url` each one lands on: that measured url
+is the one every later assert and every demo link uses. This is the same measured-prefix discipline the
+language layer needs ([`language-layers.md`](language-layers.md)).
+
+**Read the shipped method names before asserting on them.** The stock payment and shipping rows on the
+current baseline carry **English** names, while several still describe themselves in the platform vendor's
+home locale in the `description` field — so an assert that sweeps for that locale's method names passes
+vacuously before any work is done, and the debrand that actually matters is the descriptions. Start the
+step with `get_payment_methods` and `get_shipping_methods`, debrand the names **and** the descriptions,
+deactivate the carriers the demo does not use, and write the asserts against the rows just read rather than
+against a remembered name list.
+
+**The first checkout screen carries no method radios.** It collects customer details; the payment and
+shipping options render on a later step that only a cart past that step reaches. So "the checkout renders at
+least one payment and one shipping option" is a **persona-dependent leg** driven through the flow, not a
+GET — a cart driven straight to the checkout url renders neither, correctly. Assert the method rows
+themselves with the read tools, and keep the rendered-radio assert on the driven leg.
+
 
 ### Populate the billing block on every buying contact, or their ship-tos vanish at checkout
 

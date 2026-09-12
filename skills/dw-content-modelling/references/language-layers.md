@@ -139,9 +139,12 @@ sign-in, customer-center and the sibling-page links, and nothing repairs it afte
 
 **`create_language_version` is the call**, with `copy_area` as the sibling for a full-website copy.
 Pass the master area as the source and the new culture; the layer comes back with its
-`AreaMasterAreaId` back-link set. Read the result back with `get_language_areas` on the master
-before trusting the copy — a copy that fails partway can leave a cruft area behind (deactivate it
-with `save_areas`, and mind that the selector lists every `active` sibling).
+`AreaMasterAreaId` back-link set, and **unpublished** — deliberately, so untranslated content is not
+live. An unpublished layer is not addressable at any prefix, so a fetch of the new layer before the
+publish answers 404 whatever URL is composed; that 404 is the unpublished state and not a failed copy.
+Read the result back with `get_language_areas` on the master before trusting the copy — a copy that
+fails partway can leave a cruft area behind (deactivate it with `save_areas`, and mind that the
+selector lists every `active` sibling).
 
 `copy_area` is observed broken on some builds ("Area was not copied" on DW 10.25.6): when it answers
 that, the copy is an out-of-product operation for whoever owns the host — see
@@ -445,9 +448,10 @@ post-deserialize). The frontend 301-redirects to that stale id, which 404s.
 
 `PageShortCut` is on no MCP model and on no verb, so clearing it is an out-of-product operation —
 [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-content.md` §"Clear PageShortCut
-baseline cruft". From inside the product the symptom is identifiable without it: `get_page_by_id` on
-the 404ing page shows a page that exists and is active, and `fetch_frontend_page_html` on its URL
-comes back as a redirect to a page id that `get_page_by_id` cannot resolve. Page metadata is cached,
+baseline cruft". From inside the product the symptom is identifiable without it: a page read
+(`get_pages_by_parent_id` on its parent, or `get_pages_by_ids`) shows the 404ing page exists and is
+active, while `fetch_frontend_page_html` on its URL comes back as a redirect to a page id no page
+read resolves. Page metadata is cached,
 so the fix does not take until the host is recycled. Once the shortcut is gone, add content to the
 now-empty page or it renders as just header+footer.
 

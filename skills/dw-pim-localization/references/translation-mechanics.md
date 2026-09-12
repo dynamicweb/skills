@@ -181,8 +181,10 @@ with no group rows for the new language it returns **null** — group-driven fro
 (`Swift-v2_ProductGroupGrid`, group-name surfaces) render **empty**, not English-fallback. The proven
 shape on 10.25 is a per-language `EcomGroups` row per group (clone the default-language rows overriding
 `GroupLanguageId` + `GroupName` via a dynamic column-list INSERT that excludes identity columns). A
-blank category grid on a language layer is this gap, every time. Use `update_groups` MCP with
-`languageId=<new>` OR direct SQL `INSERT INTO EcomGroupTranslation` / per-language `EcomGroups` rows.
+blank category grid on a language layer is this gap, every time. In product: `save_groups` writes the
+group row and `save_group_translations` writes the per-language name; no update_groups tool is registered.
+Outside the product the bulk path is the per-language `EcomGroups` clone: see
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-pim.md`.
 
 **Cache invalidation:** After bulk-translating products, run the `build_assortments` MCP tool
 plus a full Products `BuildIndex`
@@ -411,7 +413,7 @@ changes such as `OrderStateColor` are a different surface — those are cached a
    INSERT INTO EcomLanguages (LanguageId, LanguageCulture, LanguageCode2, LanguageName, LanguageNativeName, LanguageIsDefault)
    VALUES (N'<langId>', N'<culture>', N'<iso2>', N'<englishName>', N'<nativeName>', 0);
    ```
-3. **Translate group names** first (groups must be translated so the navigation tree localizes) — see the group-translation null gotcha above. Use `update_groups` MCP with `languageId=<new>` OR direct SQL.
+3. **Translate group names** first (groups must be translated so the navigation tree localizes) — see the group-translation null gotcha above. Use `save_groups` plus `save_group_translations` with the target `languageId`.
 4. **Translate product name + short description** via `update_products`/`patch_products_safe` with `languageId=<new>`. Custom-field translation can be deferred; the fallback handles it.
 5. **Rebuild the index** + run `build_assortments` if assortments are in play.
 6. **Do NOT sweep the unused `EcomLanguages` rows.** Currency records are per language: every unused
