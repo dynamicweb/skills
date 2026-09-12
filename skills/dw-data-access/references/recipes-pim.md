@@ -16,6 +16,8 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Writing a standard `EcomProducts` scalar the MCP model omits](#writing-a-standard-ecomproducts-scalar-the-mcp-model-omits)
 - [Asset-category names — `EcomDetailsGroupTranslation` has no verb](#asset-category-names--ecomdetailsgrouptranslation-has-no-verb)
 - [Reading translations back off the delivery API](#reading-translations-back-off-the-delivery-api)
+- [Verifying a data model's per-category fields and option sets](#verifying-a-data-models-per-category-fields-and-option-sets)
+- [Writing the per-variant `EcomProducts` row on 10.28.x](#writing-the-per-variant-ecomproducts-row-on-1028x)
 
 ## Writing a standard `EcomProducts` scalar the MCP model omits
 
@@ -64,6 +66,65 @@ VALUES ('<detailsGroupId>', '<defaultLanguageId>', '<name>');
 Afterwards re-run the empty-string probe on the rendered surface: the row is not proof, the render
 is. Inside the product, asset-category names are an admin-screen edit under the product's asset
 categories.
+
+## Verifying a data model's per-category fields and option sets
+
+`get_product_category_fields` cannot verify a data model it has just created: it returns every category
+field on the solution whatever `categoryId` is passed, carries no id member, renders the field type as a
+number in `typeName`, and reports `options: []` on every list field. Twenty-four rows on a six-field
+category is the tool, not a collapsed model. The write is correct in both tables — only the read is
+wrong — so the proof has to come from the storage.
+
+**Surface: `SQL`.**
+
+```sql
+SELECT FieldId, FieldCategoryId, FieldType FROM EcomProductCategoryField ORDER BY FieldCategoryId;
+SELECT FieldOptionFieldId, COUNT(*) FROM EcomFieldOption GROUP BY FieldOptionFieldId;
+```
+
+The first query answers the per-category assignment; the second answers the option sets, which hang off
+the shared `reference_category` field id (`ProductCategory|reference_category|<field>`) rather than off the
+concrete category, which is why the tool's `options` array is empty and why a concrete-category lookup
+finds nothing.
+
+- **Why the higher surfaces do not cover it** — the only read tool for these rows ignores its
+  `categoryId` argument and does not resolve the option set.
+- **Local installs only** — a hosted install has no SQL surface; there the create call's own
+  `succeeded`/`failed` counts are the write proof and the admin data-model screen is the read.
+- **The debt it owes** — none; these are reads.
+
+Never re-send an option set because the tool reported it empty: the options are already there and a
+re-send stacks duplicates.
+
+## Writing the per-variant `EcomProducts` row on 10.28.x
+
+On DW 10.28.x no API writes a variant product row. `create_variant_combinations` creates the rows and
+inherits nothing from the master; `combine_products_as_variants` produces active rows but copies no scalar
+column, substituting the master price and leaving the number empty while deleting the standalone rows that
+held the real values; and `patch_products_safe`, `update_products` and `ProductSave` (with `Id` and
+`VariantId`) each answer success and leave the row untouched. Per-variant **price** has a working
+in-product surface (`save_prices` with `productId` and `variantId`); per-variant number, name, unit,
+active and stock do not.
+
+**Surface: `SQL`,** on the rows a combination create has already made:
+
+```sql
+UPDATE EcomProducts
+SET ProductNumber  = '<master number>-<suffix>',
+    ProductActive  = 1,
+    ProductDefaultUnitId = '<unitId>',
+    ProductStock   = <qty>
+WHERE ProductId = '<masterId>' AND ProductVariantId = '<dot-joined option ids>';
+```
+
+- **Why the higher surfaces do not cover it** — every documented write surface reports success and writes
+  nothing to the variant row on this build; the echo is the request model, not a post-write read.
+- **Local installs only** — on a hosted install plan no per-variant SKU or stock beat at all.
+- **The debt it owes** — a product-service cache flush (see [`cache-invalidation.md`](cache-invalidation.md))
+  and an index rebuild before the storefront reflects it.
+
+`ProductNumber` must be unique across the master and every variant in the family; a collision is silently
+dropped by downstream consumers that flatten the family.
 
 ## Reading translations back off the delivery API
 

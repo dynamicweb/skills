@@ -192,6 +192,18 @@ Verify in the storefront cart as the signed-in user, never via recalc.
 
 ## 2.14 Variants via the Management API (no SQL)
 
+**On DW 10.28.x, price is the only per-variant value any API writes — read this before planning the beat.**
+The MCP path fails the same way the Management API path does: `create_variant_combinations` creates the
+combination rows and inherits nothing from the master (number empty, active and price NULL, name and every
+custom field empty, contrary to the tool's own text), and `combine_products_as_variants` produces active
+rows but copies no scalar column onto them — it substitutes the **master's** price on every combination,
+leaves the number empty, and deletes the standalone products that held the real values, so those are
+discarded rather than moved. What lands is `save_prices` carrying `productId` **and** `variantId`, asserted
+with `get_prices_by_product_id`. Per-variant number, name and stock have no working write surface on this
+build; where they are required the repair is out of product
+([`dw-data-access/references/recipes-pim.md`](../../dw-data-access/references/recipes-pim.md)) and therefore
+local-install only.
+
 Building per-variant product rows through the Management API alone, the chain that replaces any
 per-variant `EcomProducts` SQL insert. **The chain is version-forked between DW 10.25.x and DW 10.28.x**,
 and on 10.28.x the wrong shape answers `status: ok` and writes nothing. Establish the build first

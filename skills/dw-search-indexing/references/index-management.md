@@ -226,6 +226,27 @@ Hard constraints:
 
 Typical editorial backlog queries, all on the sentinel-plus-`Equal` shape: `active_missing_short_description` (`ProductIsActive Equal True` + `ProductShortDescription Equal "__empty__"`), `active_missing_images` (image field `Equal "__empty__"`), `low_stock_active` (`ProductStock LessThan "5"`), `incomplete_products` (completion rule IDs + languages attached). The sentinel is whatever `EmptyStringReplacement` is set to on the index — read it before authoring, and assert a non-zero count on a catalogue known to have gaps. Remember the saved `.query` leaves `<Source Repository="" Item="" />` empty — patch it before the index build (see above).
 
+### The index schema's `Source` attribute and the indexed field name are two different spellings
+
+A facet or an index-schema field has two names and they are not the same string:
+
+| Where | Category field | Global custom product field |
+|---|---|---|
+| `<Field Source="…">` in the `.index` schema — **where the value is read FROM** | the authoring name, `ProductCategory\|<Category>\|<field>` | `CustomField_<systemName>` |
+| The indexed field name a query predicate or a facet binds to — **where the value is read AS** | `CustomField_<SystemName>` | `CustomField_<SystemName>` |
+
+Measured on one build, same field, same rebuild, only the `Source` spelling differing: a global product
+field sourced by its bare system name indexes **nothing** and its facet renders empty, while the same
+field sourced as `CustomField_<systemName>` renders with its expected buckets. Neither spelling errors;
+the build answers success with a full document count either way. A `<Field>` also takes exactly **one**
+`Source`, so an attribute modelled on several categories cannot be faceted as a single field without a
+copy field or a duplicated scalar.
+
+The schema and the facet files themselves have no tool and no verb —
+[`dw-data-access/references/recipes-search.md`](../../dw-data-access/references/recipes-search.md)
+"Storefront facets are three files under the repository folder" carries the file shapes; in-product,
+`read_file` and `list_files` read them and nothing writes them.
+
 ### Custom product fields index as `CustomField_<SystemName>`
 
 **Authoring side versus index side — one field, two names.** The pipe form `ProductCategory|<Cat>|<Field>` is the *authoring/value* system name (from [`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.8): it is what a value write and a completion-rule definition name, and it is correct there — see [`dw-pim-completeness/references/rules-and-dashboards.md`](../../dw-pim-completeness/references/rules-and-dashboards.md) step 4. This section is the *index* side.

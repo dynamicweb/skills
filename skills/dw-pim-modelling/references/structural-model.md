@@ -27,8 +27,8 @@ Deep field-validated knowledge for Dynamicweb 10 PIM structural modelling. Getti
 - `4` **DataStructure** (holds data models — NOT customer-facing)
 
 **Rules:**
-- **One Shop per brand/market** — don't create duplicates. To rename the default `SHOP1`, send the WHOLE model through `save_shops` (see the full-replace rule below); `UPDATE EcomShops SET ShopName = '...' WHERE ShopId = 'SHOP1'` is the SQL fallback where the tool is permission-blocked.
-- **MCP `save_shops` is a FULL-ENTITY REPLACE, not a partial update.** `ShopTools.SaveShops` binds the request item into a fresh `Shop` entity and saves it whole, so a name-only payload resets every column not sent: measured on one host, `{"shops":[{"id":"SHOP1","name":"AgriHub Store"}]}` answered `succeeded:1` and left `ShopAutoBuildIndex` false (was true), `ShopOrderFlowId` NULL (was 1), `ShopImageFolder` / `ShopImagePatternMain` NULL, `ShopAlternativeImagePatterns` empty (was 9 entries), `ShopCompletionRules` NULL, and `ShopCreated` restamped to now. Its sibling `save_areas` documents "on update only the fields you send are changed"; `save_shops` does not, and the response model projects only `id`/`name`/`usageType`/`topLevelProductGroups`, so the damage is invisible in the echo. **Snapshot the row first** (`SELECT * FROM EcomShops WHERE ShopId=... FOR JSON PATH`), send the complete model, then diff the row back. `ShopAutoBuildIndex` silently flipping to false is the leg that costs a later index rebuild.
+- **One Shop per brand/market** — don't create duplicates. To rename the default shop, send `save_shops` its id and the new name and nothing else (see the partial-update rule below).
+- **`save_shops` is a TRUE PARTIAL UPDATE on MCP 0.4.4 and later — send the id plus only the fields you mean to change.** Measured on 0.4.4 with DW 10.28.x: an id-and-name payload changes exactly one column, leaving `UsageType`, the auto-build-index flag, the image folder and patterns, the order-flow id, the completion rules and the created stamp untouched. The tool's own description states the behaviour, and **the tool description wins over any prose when the two disagree** — read it before composing a payload. An older, narrower server bound the request item into a fresh entity and saved it whole, so a name-only save there reset every column not sent; that behaviour is retired, and a snapshot-and-resend written for it is both unnecessary work and the riskier motion, because it re-sends values read before any concurrent write.
 - **Channels for feeds** — each external system (Shopify, Home Depot, OrderEase, etc.) gets its own ShopType=3 shop with its own group tree. Products get related INTO those groups to control what the feed publishes.
 - **DataStructure for data models** — a separate ShopType=4 shop owns the data model tree. Never park data models under the commerce shop.
 - **EVERY shop needs a language relation** — insert into `EcomShopLanguageRelation(ShopId, LanguageId, IsDefault)`. Missing this causes "channel with no name" display in admin.
@@ -95,7 +95,31 @@ Then trigger a Products index rebuild (`POST /admin/api/BuildIndex {"Repository"
 
 Use `INSERT INTO EcomProducts (col1,col2,...) SELECT m.col1, m.col2, ... FROM @combinations v INNER JOIN EcomProducts m ON m.ProductId = v.MasterId AND m.ProductVariantId = ''` — copy master, override 3 fields. Make `ProductNumber` one of the overridden fields, not a copied one.
 
-**MCP `create_variant_combinations` gotcha — it leaves the combo rows NULL where it matters.** The MCP tool creates the per-variant `EcomProducts` rows for you, but it leaves **`ProductActive`** and **`ProductPrice`** **NULL** on the combinations. A NULL-active, NULL-price variant is **invisible storefront-wide** — it does not render in the PDP variant selector and an add-to-cart for it no-ops, exactly like a missing combination row, so it reads as "the tool didn't create them" when the rows are actually there. After `create_variant_combinations`, always set `ProductActive=1` and a real `ProductPrice` (and the §2.5a extras — `ProductDefaultUnitId`, per-variant `ProductStock`) on the new combo rows, then restart/flush. Verify by selecting the combo rows and confirming none have `ProductActive IS NULL` or a NULL price before declaring variants done.
+**On 10.28.x no write surface reaches a variant `EcomProducts` row, and the two variant tools each drop
+part of what they promise.** This is the single most expensive thing to discover late, so plan the beat
+around it rather than against it.
+
+| Call | What it does | What it does NOT do |
+|---|---|---|
+| `create_variant_combinations` | Creates the combination rows | Inherits nothing from the master: number empty, active and price NULL, name and descriptions and every custom field empty. The tool's own text says the combination inherits the master row; measured, it does not |
+| `combine_products_as_variants` | Re-parents standalone products as combinations, and the rows come out active | Copies no scalar column onto the combination: the per-product number is empty and the price is the **master's** on every combination. The standalone rows are deleted, so their number and price are **discarded, not moved** |
+| `patch_products_safe` / `update_products` with `id` + `variantId` | Answers `succeeded: 1` and echoes every requested value | Writes nothing to the variant row. The echo is the request model, never a post-write read |
+
+**The working sequence on this build:**
+
+1. `save_variant_groups` + `save_variant_options` for the vocabulary, then
+   `assign_variant_groups_to_product`.
+2. `create_variant_combinations` for the combination rows.
+3. **Per-variant PRICE with `save_prices`**, carrying `productId` **and** `variantId` (plus
+   `currencyCode`, `amount`, and `quantity: 0`). This one lands, persists, and is resolved by the stock
+   price provider — it is the whole of the per-variant differentiation that works.
+4. Read the price rows back with `get_prices_by_product_id`; that read is the assert.
+
+**Per-variant `ProductNumber`, name and stock have no working write surface on 10.28.x.** Plan no
+per-variant SKU beat and promise none; a brief that needs per-variant SKUs on this build needs the
+out-of-product repair path ([`dw-data-access/references/recipes-pim.md`](../../dw-data-access/references/recipes-pim.md))
+and therefore a local install. Where the per-variant rows must carry active, number, unit and stock
+values, they are set outside the product in the same place.
 
 **Enum properties on Management API save models bind by NAME, so a variant write that reuses the DB
 ordinal silently zeroes the column.** `VariantGroupTranslationSave` with `DisplayType` read straight out
@@ -212,7 +236,8 @@ back with the new value and dropped. Assert every row in this table against raw 
 | `ProductFieldSave` with `Sort` | `status: ok`, response model carries the new `sort` | `FieldSortOrder` unchanged (71 sort writes, 0 rows moved) | `ProductCategoryFieldSaveSort` (next row) |
 | `ProductFieldSave` with `TemplateName` | `status: ok`, response carries the new `templateName` | `FieldTemplateTag` unchanged | Nothing. `FieldTemplateTag` is **create-only** (below) |
 | `ProductCategoryFieldSaveSort` with BARE field ids in `OrderedIds` | `{"status":"ok","model":null}` | Zero rows moved. Each `OrderedId` resolves as a fully-qualified product-field id, a bare system name resolves to nothing, and the empty set is written as a no-op | Build every id as `ProductCategory\|<CategoryId>\|<fieldSystemName>`, in the wanted order. A top-level `CategoryId` property on the body does NOT help: the qualification must be inside each id. Qualified ids rewrote all 18 sort orders to a gapless 1..18 |
-| `create_category_fields` echo | `fieldOptions: []` and `allowChangesAcrossLanguages: false` even when five options and `true` were sent | **Both persisted correctly.** The echo renders the per-category field copy before the shared `reference_category` option set is attached | Read back with `get_product_category_fields`, which shows all five options with translations on every target category. This echo lies in the safe direction, so do not "fix" a field that is already correct |
+| `create_category_fields` echo | `fieldOptions: []` and `allowChangesAcrossLanguages: false` even when five options and `true` were sent | **Both persisted correctly.** The echo renders the per-category field copy before the shared `reference_category` option set is attached | The echo lies in the safe direction, so do not "fix" a field that is already correct. `get_product_category_fields` does **not** settle it either — see the row below |
+| `get_product_category_fields` read-back | Returns every category field on the solution whatever `categoryId` is passed, carries no id member, renders the field type as a number in `typeName`, and reports `options: []` on every list field | **The write is correct in both tables; only the read is wrong.** The projection is the reference-field pool rather than the per-category rows, and it does not resolve the option set, which hangs off the shared `reference_category` field id rather than off the concrete category | Treat it as a **label-only listing**: useful for "does a field with this label exist", useless as proof of per-category assignment or of an option set. Twenty-four rows on a six-field category is the tool, not a collapsed model, and an empty `options` array is never grounds to re-send options — re-sending stacks duplicates. The per-category field set and the option counts are read outside the product ([`dw-data-access/references/recipes-pim.md`](../../dw-data-access/references/recipes-pim.md)); in-product, the create call's own `succeeded`/`failed` counts are the write proof |
 
 **`FieldTemplateTag` is write-once at field CREATE, through every surface.** `ProductFieldSave` drops
 it, and so does the admin field-edit screen (`/Admin/UI/Products/ProductAttributeEdit/<guid>?FieldId=…`):
