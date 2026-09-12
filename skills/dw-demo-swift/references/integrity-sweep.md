@@ -309,10 +309,19 @@ A page in serif fallback with browser-default buttons fails this check even when
 without errors. Run the polish gate in
 [`visual-qa.md`](../../dw-demo-base/references/visual-qa.md) before declaring the host ready.
 
+**This check fails on a clean one-shot deserialize.** The field is in the serializer's
+`excludeFieldsByItemType`, so no content can carry it: a freshly deserialized host has it empty, the three
+Style-asset sheets link normally, nothing errors, and only this probe sees that the theme's whole Tier-1
+token block is absent. Treat a missing `Custom/default_custom.css` as a FAIL of the deserialize, not as a
+polish item.
+
 **Recovery:** stage the theme's Style pairs, wire `Swift-v2_Master.CustomHeadInclude` to the staged
 `DefaultHeadInclude.cshtml`, and rewire the Areas per
 [`deserialize-flow.md`](deserialize-flow.md) "Stage the theme's Style assets" +
-[`styles-assets.md`](styles-assets.md); restart so the resolved style URLs reload.
+[`styles-assets.md`](styles-assets.md); restart so the resolved style URLs reload. On a site whose field
+already points at a **customer** head include, the fix is not to repoint the field back: the field holds one
+path and `default_custom.css` is registered from inside the default include, so the customer include must
+register both sheets itself, `default_custom.css` first ([`styles-assets.md`](styles-assets.md)).
 
 ## Check 9: The storefront catalogue renders products
 

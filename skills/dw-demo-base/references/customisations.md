@@ -57,7 +57,9 @@ The ledger is **append-only by convention.** The audit recipe reads it; the writ
 
 ## 2. Drop the template at scaffold time
 
-This snippet executes during a fresh scaffold flow. It is idempotent in the sense that running it twice overwrites the existing ledger -- which is fine on first scaffold and not what you want afterwards. Skip this block if `CUSTOMISATIONS.md` already exists in the working directory:
+This snippet executes during a fresh scaffold flow. It is idempotent in the sense that running it twice overwrites the existing ledger -- which is fine on first scaffold and not what you want afterwards. Skip this block if `CUSTOMISATIONS.md` already exists in the working directory.
+
+**Check for the ledger on entry, not only at scaffold.** A solution scaffolded by anything other than `references/scaffold.md` never ran this block, so the ledger is absent and the write-time preflight has nothing to append to -- the same absent-carrier-file gap the customer-context contract closes with its own entry check ([customer-context.md](customer-context.md) §6). Test for the file on first load in a demo solution and drop the template when it is missing:
 
 ```powershell
 $skill = "$HOME\.claude\skills\dw-demo-base"

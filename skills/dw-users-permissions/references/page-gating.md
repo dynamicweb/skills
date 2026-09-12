@@ -113,9 +113,16 @@ as "blank homepage", not "please sign in".
 2. Put the rows on the subtree root; children inherit (`Page.PermissionType = 0` keeps a page
    inheriting rather than carrying its own rows). No template edits: nav, redirect and
    child-render all self-filter.
-3. **Verify by SIGNING IN as one persona from each DENIED group.** "Anonymous is redirected" proves
-   nothing: Anonymous is the one identity a positive-only grant does deny, which is exactly why the
-   broken shape reads as working. A row read-back is not proof either — `PermissionsByIdentifier`
+3. **Verify by SIGNING IN as one persona from each DENIED group, AND as one from a granted group, in
+   the same pass.** "Anonymous is redirected" proves nothing: Anonymous is the one identity a
+   positive-only grant does deny, which is exactly why the broken shape reads as working. A denied
+   signed-in user does not get a redirect or a 403 either — the page answers **HTTP 200 with a
+   near-empty body** (a shell of a few hundred bytes), so the observation is the **rendered body size**,
+   not the status code. And address the page **by id** (`/Default.aspx?ID=<pageId>`) rather than by a
+   composed friendly path: a subtree whose friendly url does not resolve answers 404 for every identity,
+   granted and denied alike, so the check passes without ever reaching the gate. PASS needs both halves —
+   a full page for the granted persona and a near-empty one for the denied — and a run where both
+   personas receive the same response is a broken check, not a pass. A row read-back is not proof either — `PermissionsByIdentifier`
    has the empty-`SubName` trap below and answers for keys that carry nothing. Most-permissive wins
    across a user's groups, so a user holding one granted group and three denied ones is admitted by
    design; design the group map for that rather than fighting it.

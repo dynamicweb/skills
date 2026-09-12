@@ -7,7 +7,7 @@
 - [3. Write-time preflight (mandatory, hard abort)](#3-write-time-preflight-mandatory-hard-abort)
 - [4. Path-matching rule](#4-path-matching-rule)
 - [5. Three-place rule communication (skill-composition mitigation)](#5-three-place-rule-communication-skill-composition-mitigation)
-- [6. Per-demo CLAUDE.md drop at scaffold time](#6-per-demo-claudemd-drop-at-scaffold-time)
+- [6. Per-demo CLAUDE.md drop — an ENTRY check, not a scaffold step](#6-per-demo-claudemd-drop--an-entry-check-not-a-scaffold-step)
 - [7. Detection signature for bypass](#7-detection-signature-for-bypass)
 - [8. Cross-references](#8-cross-references)
 
@@ -64,14 +64,23 @@ Edge cases the rule deliberately accepts:
 The rule is communicated in **three** structurally-inescapable places so the convention survives skill composition:
 
 1. `dw-demo-base/SKILL.md` body -- the "Two guarded-writes" section. This is the skill orchestrator's summary; any agent loading the skill sees it.
-2. The per-demo `<demo>\CLAUDE.md` dropped at scaffold time -- so subsequent skills (PIM, Swift, future) inherit the rule via the project's `CLAUDE.md`. This is the cross-skill inheritance mechanism.
+2. The per-demo `<demo>\CLAUDE.md` dropped by the §6 entry check -- so subsequent skills (PIM, Swift, future) inherit the rule via the project's `CLAUDE.md`. This is the cross-skill inheritance mechanism, and it is the one of the three that is a *file* rather than a document: if the file is absent the three places are two, and any sister skill loaded without `dw-demo-base` inherits nothing. That is why the drop is an entry check and not a scaffold step.
 3. This file -- long-form rationale + path-matching rule.
 
 A future skill that does not read `SKILL.md` still has `CLAUDE.md` as a fallback. A future tool that ignores `CLAUDE.md` still has the `SKILL.md` body. **Defense in depth via redundancy.**
 
-## 6. Per-demo CLAUDE.md drop at scaffold time
+## 6. Per-demo CLAUDE.md drop — an ENTRY check, not a scaffold step
 
-At scaffold time, append the following block to `<demo>\CLAUDE.md` (create the file if it doesn't exist; this complements any project-level `CLAUDE.md` guidance):
+**Run this on first load in any demo solution, whoever scaffolded the folder.** A solution scaffolded by
+anything other than [`scaffold.md`](scaffold.md) — a launcher, a clone, a hand-made folder — never ran the
+drop, so the marker is absent and the contract is communicated in two places rather than three. Nothing later
+in this skill re-checks it: §7 detects a *bypass* of the rule, not the absence of the rule's own carrier file.
+So the first thing `dw-demo-base` does in a demo solution is read `<demo>\CLAUDE.md`, look for the marker line,
+and run the idempotent recipe below when it is missing. Pair it with the root-allowlist audit
+(`SKILL.md` "Artifact hygiene" rule 2) in the same check: a launcher-scaffolded root commonly carries files
+that are not on the allowlist, and one report on entry beats discovering them at hand-over.
+
+Append the following block to `<demo>\CLAUDE.md` (create the file if it doesn't exist; this complements any project-level `CLAUDE.md` guidance):
 
 ```markdown
 ## Customer-context read-only contract

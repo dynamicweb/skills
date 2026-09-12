@@ -11,6 +11,7 @@
 - [The `<customer>_custom.css` naming hard rule](#the-customer_customcss-naming-hard-rule)
 - [Re-skin smell: "Swift-v2_Text shim + foreign cshtml"](#re-skin-smell-swift-v2_text-shim--foreign-cshtml)
 - [Step 0 — the zero-state pass](#step-0--the-zero-state-pass)
+- [Step 0.5a — An assert that cannot fail is not an assert](#step-05a--an-assert-that-cannot-fail-is-not-an-assert)
 - [Recipe](#recipe)
 - [Scoping hooks — one content page vs the whole catalog](#scoping-hooks--one-content-page-vs-the-whole-catalog)
 - [A palette swap is a multi-file, multi-notation sweep](#a-palette-swap-is-a-multi-file-multi-notation-sweep)
@@ -45,12 +46,23 @@ This file keeps the demo-specific spine: the zero-state pass, the escalation lad
 
 **The ladder starts FROM `theme-default`** — the single presentation layer every edition composes (no theme choice, no overlay layers in the Distribution). Stage its `files/` onto the host first ([`styles-assets.md`](styles-assets.md)): it carries the default Styles JSON+CSS pairs, `default_custom.css` (including the header-nav affordance core — [`header-menu.md`](header-menu.md)), and `DefaultHeadInclude.cshtml`. Customer overrides go in `<customer>_custom.css`, never by editing `theme-default`'s own files.
 
-| Tier | Surface | What it touches | Owner |
-|------|---------|-----------------|-------|
-| 0 | Admin UI Style Tools (Settings → Content → Styles) | Color schemes, button shape, typography — generates the `Styles/*.{json,css}` pairs | [styles-assets.md](styles-assets.md) + [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §7 |
-| 1 | `Custom/<customer>_custom.css` | Brand variables, hover states, hacks the schemes don't cover | this file (naming rule below) + [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 (wiring) |
-| 2 | New layout-only `.cshtml` content layouts | Pixel-perfect reshaping of an item type's render | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9 |
-| 3 | Controller / provider `.cs` (customisations-ledger preflight) | Anything that needs server-side logic | [dw-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md) |
+| Tier | Surface | Reachable over MCP? | What it touches | Owner |
+|------|---------|---------------------|-----------------|-------|
+| 0 | `save_color_schemes` / `save_typographies` / `save_button_styles` + `save_areas` (the same writes the admin Style Tools make) | **Yes** | Color schemes, button shape, typography — writes the `Styles/*.{json,css}` pairs and binds them to the area | [styles-assets.md](styles-assets.md) + [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §7 |
+| 1 | `Custom/<customer>_custom.css` + `Custom/<customer>HeadInclude.cshtml` | **No — filesystem only** | Brand variables, hover states, hacks the schemes don't cover | this file (naming rule below) + [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 (wiring) |
+| 2 | New layout-only `.cshtml` content layouts | **No — filesystem only** | Pixel-perfect reshaping of an item type's render | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9 |
+| 3 | Controller / provider `.cs` (customisations-ledger preflight) | **No — filesystem + build** | Anything that needs server-side logic | [dw-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md) |
+
+**Tiers 1 to 3 are filesystem work, so they are local-install-only.** `upload_file` is the only archive
+write tool and it is scoped to `/Files/Images` (media) and `/Files/Files/Integration` (integration drop
+files); template and config locations are deliberately not writable, and no other tool reaches them. Brand
+*assets* therefore upload fine — a logo and a favicon land under `/Files/Images` over MCP — while the
+customer stylesheet, the customer head include and every layout-only `.cshtml` have **no tool surface at
+all**. On a hosted install reached only by URL and an API key, the re-skin ceiling is Tier 0 plus the admin
+Style Tools, exactly as the missing SQL rung is a ceiling there ([`dw-demo-hosted`](../../dw-demo-hosted/SKILL.md));
+say that out loud in the plan doc's ceilings section rather than discovering it at Tier 1. A demo that needs
+Tier 1 on a hosted install needs a design-assets write surface, which is a tool request and not a
+documentation workaround.
 
 Before climbing the ladder, run the Pre-escalation "search the source first" check in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9 — most "I need a custom template" reflexes resolve to a canonical surface (permission entity store for role gates, `Page.Loaded` subscriber for redirects, `CustomHeadInclude` for a project stylesheet, `Pageview.User.*` for identity).
 
@@ -61,7 +73,7 @@ Before climbing the ladder, run the Pre-escalation "search the source first" che
 - The override file: `Files/Templates/Designs/Swift-v2/Custom/<customer>_custom.css`
 - Wired via a head-include partial: `Custom/<customer>HeadInclude.cshtml` registered on the Master area's `CustomHeadInclude` field (the `AddStylesheet` wiring, the site token that does not move, and the explicit `?v=` buster live in [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 — put demo-critical CSS in an inline `<style>` block).
 
-Verification: `git diff --name-only -- '*custom.css'` must never show a path ending in `custom.css` other than `<customer>_custom.css`. Any file named exactly `custom.css` in the diff is a re-skin bug — revert it and move the rules (this is grep #9 of the discipline audit in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §10).
+Verification is a **directory listing of the `Custom/` folder**, not a diff: list it and require `custom.css` to still be the shipped hotpink placeholder, `default_custom.css` untouched, and exactly one added sheet, named `<customer>_custom.css`. A listing works wherever the `Files` tree lives; a version-control diff does not, because a local-install demo keeps its `Files` tree under the site root and outside every repository, so the diff silently reports nothing on a host that has the bug. Any file named exactly `custom.css` carrying brand rules is a re-skin bug — revert it and move the rules (this is grep #9 of the discipline audit in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §10).
 
 ## Re-skin smell: "Swift-v2_Text shim + foreign cshtml"
 
@@ -103,7 +115,11 @@ Extend the list with any string the composed edition adds — the check is the *
 Three first-class steps, each visible in the first five seconds of a demo — never left "for polish":
 
 1. **Frontpage title and meta title** — `save_pages` with the customer's own `metaTitle`; assert the served `<title>` no longer matches the tripwire list.
-2. **Area name** — surfaces in admin, the page tree, and generated meta; set it to the customer slug.
+2. **`Swift-v2_Master.MetaSiteName`** — the site name that surfaces in generated meta and in the served
+   `<title>` chain; set it to the customer's own name. **Leave `Area.AreaName` alone**: a composed
+   serializer manifest keys its `files[]` paths off the area name, so renaming the area breaks the
+   manifests, and `MetaSiteName`, the page title and the logo name carry the naming instead
+   ([`styles-assets.md`](styles-assets.md) "Also rejected"). Assert the served `<title>`, not the field.
 3. **Header and footer brand** — the logo asset *and* the wordmark text. The footer brand is a separate paragraph from the header one and is the one that survives a logo swap. Assert both from the served `header` and `footer` fragments, not the logo field.
 
 ### Step 0.3 — Resolve every `defaultValue` field
@@ -130,6 +146,30 @@ Three dispositions, in preference order: **rewire** at the customer's own data (
 ### Step 0.5 — Prove the catalogue has pixels
 
 `document.images.length` on the frontpage and shop landing catches the whole class: a seeded catalogue with no attached assets renders as grey placeholder tiles, and every structural PLP assert passes over it. Assert a floor per surface (`> 0` on the frontpage, a per-category coverage target on the PLP) in this pass, not at polish. Sourcing the imagery is its own brief — [`asset-organisation.md`](asset-organisation.md) "Catalogue imagery is its own brief"; what belongs here is only the measurement.
+
+### Step 0.5a — An assert that cannot fail is not an assert
+
+**Write every assert against what a runner can actually see, not against the surface it guards.** Three
+shapes recur, and each one reports PASS on a broken site:
+
+1. **A copy sweep anchored on a bare word.** Swift's own markup carries the word `placeholder` as an HTML
+   attribute and as a platform class name on the search modal, so "zero case-insensitive matches of
+   `placeholder` on every page" can never pass, on any site, however clean. Anchor the sweep on the
+   **planted marker** instead — the exact stock-copy tripwire set in Step 0.1, or the literal
+   `Placeholder` plus the separator the baseline plants — and state that the attribute and the class are
+   expected matches.
+2. **A measurement with no instrument.** The 390/430 viewport pass needs a browser runner; nothing under
+   the skills tree drives one, and the method is described in prose in three files. A pass run without a
+   runner attached records the viewport leg as **UNPROVEN** and says so in the report. Recording UNPROVEN
+   is the correct outcome; reporting PASS on an unrun leg is the defect
+   ([`mobile-pass.md`](mobile-pass.md)).
+3. **A check that assumes version control.** See the `custom.css` naming rule above: a local-install demo's
+   `Files` tree sits under the site root and outside every repository, so a diff-shaped check reports clean
+   on a host that has the bug. Restate it against the filesystem or the served page.
+
+The general form: before writing an assert, name the runner that will execute it and the observation it
+reads. An assert whose observation is unavailable, or whose PASS condition holds on a broken site, gets
+rewritten into one over served markup or a tool read-back — or it is dropped and recorded as unproven.
 
 ### Step 0.6 — Arm the asserts on gate run one
 
