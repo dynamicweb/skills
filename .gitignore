@@ -3,3 +3,4 @@
 # names and the retired codename, so they must never be committed to this public
 # repo (see dw-demo-base/references/iterate-plugin.md, "What to scrub").
 notes/
+__pycache__/
