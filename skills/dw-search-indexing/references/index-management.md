@@ -249,13 +249,11 @@ After any mutation that touches products, groups, categories, fields, completene
 > host restart is NOT a reliable fix (the `dotnet run` parent/child trap means the bounce may not
 > cold-start). Run the flush step below first, then build, then re-verify.
 
-Run the enforced form — [`../scripts/Build-DwProductIndex.ps1`](../scripts/Build-DwProductIndex.ps1)
-owns the flush-build-poll mechanics (the cache flush, the non-blocking POST, the freshness-guarded
-poll, the Error-vs-first-build distinction, and the 10.28.x status-verb fallback):
-
-```powershell
-pwsh -NoProfile -File scripts/Build-DwProductIndex.ps1 -Repository Products -IndexName Products.index
-```
+Run the enforced form — [`Build-DwProductIndex.ps1`](../../dw-data-access/scripts/Build-DwProductIndex.ps1),
+an out-of-product script owned by [`dw-data-access`](../../dw-data-access/SKILL.md) — which carries
+the flush-build-poll mechanics (the cache flush, the non-blocking POST, the freshness-guarded poll,
+the Error-vs-first-build distinction, and the 10.28.x status-verb fallback). In-product the rebuild
+is MCP `build_product_index` followed by `wait_for_product_index`.
 
 The contract the script implements, kept here because extensions must honor it:
 

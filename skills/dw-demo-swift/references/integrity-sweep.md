@@ -162,7 +162,7 @@ if (-not $buildName) { throw "No <Build Name> in $idxPath — cannot resolve Bui
 Confirm the exact paths against the host's own catalog (`GET /admin/api/api.json`, bearer-authed) when in doubt. Live JSON responses come back **camelCase** even though the catalog declares PascalCase — PowerShell property access is case-insensitive so the probe below is unaffected; case-sensitive consumers must expect camelCase.
 
 **Probe** — run the enforced form,
-[`../../dw-search-indexing/scripts/Build-DwProductIndex.ps1`](../../dw-search-indexing/scripts/Build-DwProductIndex.ps1),
+[`../../dw-data-access/scripts/Build-DwProductIndex.ps1`](../../dw-data-access/scripts/Build-DwProductIndex.ps1),
 with `-Passes 2` (one instance refreshes per run on a 2-instance index) and the `BuildName`
 resolved from the repository's own XML — NEVER assume `Full` here:
 
@@ -171,7 +171,7 @@ $repo = '<Repository>'   # read from Files/System/Repositories/ — solution-spe
 $idx  = '<Name>.index'
 $buildName = ([xml](Get-Content "wwwroot/Files/System/Repositories/$repo/$idx" -Raw)).SelectSingleNode('//Build/@Name').Value
 if (-not $buildName) { throw "No <Build Name> in the index XML — cannot resolve BuildName." }
-pwsh -NoProfile -File ../dw-search-indexing/scripts/Build-DwProductIndex.ps1 -Repository $repo -IndexName $idx -BuildName $buildName -Passes 2
+pwsh -NoProfile -File ../dw-data-access/scripts/Build-DwProductIndex.ps1 -Repository $repo -IndexName $idx -BuildName $buildName -Passes 2
 ```
 
 **Assert every instance is current, not just one.** After the two passes, confirm each instance of the index reports a fresh successful build — a single healthy instance masks a stale sibling. Query `InstanceStatusByName` per instance and check `LastSuccessfulBuild` is fresh against the run; any instance still reporting "must be recovered" means the second pass didn't take — recover it (below).

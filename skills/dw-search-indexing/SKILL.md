@@ -4,7 +4,6 @@ type: knowledge
 group: search
 mcp: optional
 dynamo: true
-compatibility: Requires PowerShell 7.x
 description: 'Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, product index setup — and design/fix a PIM product query or repository index query through the MCP tools. Triggers: set up a product, content, user, or SQL index, configure repositories and index instances, tune analyzers or field boosts, understand Lucene scoring, build/restructure/delete a product query or a repository index query (e.g. ProductsFrontend), a query returns nothing/everything unexpectedly. Non-triggers: PIM data modelling -> dw-pim-modelling; product completeness -> dw-pim-completeness.'
 ---
 
@@ -12,22 +11,23 @@ description: 'Build and configure Dynamicweb 10 search indexes on Lucene — ind
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are rung 1 of the action ladder
-and the preferred way to apply it. With no Dynamicweb MCP server connected, drop **one** rung, not to
-SQL: the Management API at `/admin/api/...` reaches the same domain services over a different
-transport, and the serializer carries bulk, id-preserving loads. Direct SQL is the last rung, is
-local-install only, and owes a cache flush or restart. When no rung reaches the operation, work in
-advisory mode — explain, review, or produce payloads and configuration for the user to apply — rather
-than guessing an endpoint or editing files. Full ladder:
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the way to apply it, and
+in-product they are the only way — the MCP tool set plus read/write under `Files/` is the whole
+surface these steps may use. When no tool covers the operation, **stop and tell the user**, naming
+the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
+outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
+product, are never a step in this skill, and are owned by
 [`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
-## Scripts (scripts/)
+## Rebuilding an index
 
-| Script | Reads / writes | What it does |
-|---|---|---|
-| [Build-DwProductIndex.ps1](scripts/Build-DwProductIndex.ps1) | Writes: rebuilds a Lucene index (flushes product caches first) | The flush-build-poll recipe with the freshness guard, the Error-vs-first-build distinction, the 10.28.x status-verb fallback, and `-Passes 2` for multi-instance indexes; never re-fires on a timeout |
-
-Run with `pwsh -NoProfile -File scripts/Build-DwProductIndex.ps1 -Repository <repo> -IndexName <name>.index`; the contract it implements is in [references/index-management.md](references/index-management.md).
+In-product, a product index rebuild is `build_product_index`, then `wait_for_product_index` or
+`get_product_index_status` — see
+[`dw-data-write-effects`](../dw-data-write-effects/SKILL.md) for what a write owes before the
+rebuild is worth issuing. The out-of-product enforced form (the flush-build-poll script) lives with
+the other out-of-product surfaces in
+[`dw-data-access`](../dw-data-access/SKILL.md) "Scripts (scripts/)"; the contract it implements is
+in [references/index-management.md](references/index-management.md).
 
 ## Engine
 

@@ -9,6 +9,17 @@ markdown and configuration files — no build system and no runtime code. The to
 `scripts/validate-skills.py`, a structural linter, and `scripts/build-manifest.mjs`, which
 regenerates `manifest.json` from the skills' frontmatter; run both before every commit.
 
+The linter also **ratchets the Dynamo surface**: a `dynamo: true` skill is served to the agent
+running inside the product, whose whole surface is the MCP tool set plus read/write under `Files/`,
+so its SKILL.md and references are scanned for instructions on any other surface (`/admin/api`,
+`sqlcmd`, `Invoke-RestMethod`, fenced shell or SQL blocks, `git`, `dotnet`, `.csproj`, a browser
+driver) and the per-file count is compared with `scripts/dynamo-baseline.json`. A file above its
+baseline fails; below its baseline is fine, so the pre-existing backlog drains without a flag day.
+Shipping a `scripts/` directory or declaring `compatibility: Requires PowerShell` in a
+`dynamo: true` skill is always an error. `python scripts/validate-skills.py
+--update-dynamo-baseline` rewrites the baseline — only after the violations it records are
+genuinely pre-existing.
+
 **Authoring or editing a skill?** The frontmatter contract, naming, area taxonomy, length
 budgets, body voice, validation, and the PR workflow live in the `dw-skill-authoring` skill
 (`.claude/skills/dw-skill-authoring/SKILL.md`). This file carries only what governs *every*

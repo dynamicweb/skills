@@ -11,13 +11,12 @@ description: 'Render product catalogs and assortments in Dynamicweb 10, and conv
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are rung 1 of the action ladder
-and the preferred way to apply it. With no Dynamicweb MCP server connected, drop **one** rung, not to
-SQL: the Management API at `/admin/api/...` reaches the same domain services over a different
-transport, and the serializer carries bulk, id-preserving loads. Direct SQL is the last rung, is
-local-install only, and owes a cache flush or restart. When no rung reaches the operation, work in
-advisory mode — explain, review, or produce payloads and configuration for the user to apply — rather
-than guessing an endpoint or editing files. Full ladder:
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the way to apply it, and
+in-product they are the only way — the MCP tool set plus read/write under `Files/` is the whole
+surface these steps may use. When no tool covers the operation, **stop and tell the user**, naming
+the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
+outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
+product, are never a step in this skill, and are owned by
 [`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 ## App and Template Overview

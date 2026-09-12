@@ -146,9 +146,19 @@ and body markers, never appended to the `description` — trigger budget stays t
 ## Dynamo visibility (`dynamo:` field)
 
 Dynamo serves `manifest.json` to admins working **inside** a running Dynamicweb install. Its
-surface is the MCP tool set plus read/write under `Files/`: no shell, no SQL, no git, no
-browser, no csproj, no host restart. A skill whose steps need one of those cannot be acted on
-there, and offering it is noise.
+surface is the **MCP tool set plus read/write under `Files/`, and nothing else**: no
+Management/Admin API HTTP call, no serializer, no SQL, no shell, no git, no browser, no csproj,
+no host restart. A skill whose steps need one of those cannot be acted on there, and offering it
+is worse than noise — it is an instruction the reader will try to follow and cannot.
+
+**A `dynamo: true` skill contains no instruction outside that surface.** This is a property of the
+file, not of the paragraph at the top of it: every section, table row and reference under the skill
+has to hold. When a recipe needs a lower rung, it does not get a warning label — it **moves** to a
+`dynamo: false` skill (`dw-data-access/references/recipes-<area>.md` for the domain areas,
+`dw-setup-cli` for add-in deploy and app-pool work, `dw-setup-config` for host configuration), and
+the `dynamo: true` skill keeps a **one-line pointer** to it. `scripts/validate-skills.py` enforces
+this mechanically against `scripts/dynamo-baseline.json`, so a new violation fails the build while
+the pre-existing backlog is drained deliberately.
 
 - **`dynamo: true`** — the skill is useful to an in-product admin and goes into the manifest.
   Every pim, commerce, content, users, search, render and swift skill is here.
@@ -156,6 +166,17 @@ there, and offering it is noise.
   it out of `manifest.json` entirely: the demo chain, `dw-setup-*`, `dw-integration-bc`
   (ngrok), `dw-extend-mcp-tools` (builds the MCP project), `dw-source-explorer` (browses
   GitHub). Claude Code still loads these normally through `marketplace.json`.
+
+**The marker paragraph's text depends on the `dynamo` value, not only on `mcp:`.** A
+`dynamo: true` skill's `## Without MCP` / `## MCP preflight` paragraph states the in-product limit
+as the instruction: the MCP tool set plus `Files/` is the whole surface, and when no tool covers the
+operation the step is to stop and name the admin screen, never to substitute an HTTP call, a file
+edit outside `Files/`, or SQL — the other surfaces are named only as out-of-product things owned by
+`dw-data-access`. A `dynamo: false` foundational skill's paragraph says the opposite: the whole
+ladder is available, so with no MCP server drop **one** rung to the Management API, then the
+serializer, with SQL last and local-install only. Copy the wording from a sibling skill at the same
+`dynamo` value rather than reconstructing it; demo skills keep their own preflight plus the ladder
+pointer.
 
 The axis is **orthogonal to `mcp:`** and the two disagree often: `dw-demo-base` is
 `mcp: required` yet `dynamo: false`, and `dw-render-razor` is `mcp: none` yet `dynamo: true`.
@@ -212,6 +233,10 @@ on from the name alone:
 **"Verb" means a Management API command; "tool" means MCP.** Never call an MCP tool a verb, and never
 head a mixed column "Verb". "Endpoint" means an HTTP route (`/admin/api/<Verb>`, `/admin/mcp`), not a
 single tool. **A table whose rows mix surfaces carries a `Surface` column.**
+
+**In a `dynamo: true` skill, naming the surface is also a filter, not only a label:** if naming it
+honestly produces "Management API", "serializer" or "SQL", the recipe does not belong in that file
+at all — move it to the `dynamo: false` owner and leave a one-line pointer.
 
 **Every SQL recipe states three things inline:** why the higher surfaces do not cover it (which rung
 was tried and what it did), that it is **local installs only**, and the **cache flush or host restart

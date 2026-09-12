@@ -1,0 +1,19 @@
+{
+  "skills/dw-commerce-b2b/references/dc-scoping.md": 3,
+  "skills/dw-commerce-catalog/references/catalog-publishing.md": 21,
+  "skills/dw-commerce-orders/references/order-lifecycle.md": 9,
+  "skills/dw-content-modelling/references/modelling-discipline.md": 18,
+  "skills/dw-data-audit-trail/SKILL.md": 3,
+  "skills/dw-extend-providers/references/addin-lifecycle.md": 8,
+  "skills/dw-extend-scheduled-tasks/SKILL.md": 2,
+  "skills/dw-pim-completeness/references/rules-and-dashboards.md": 7,
+  "skills/dw-pim-localization/references/translation-mechanics.md": 6,
+  "skills/dw-pim-modelling/references/structural-model.md": 8,
+  "skills/dw-pim-workflow/references/workflow-engine.md": 1,
+  "skills/dw-render-razor/references/razor-surfaces-and-pitfalls.md": 2,
+  "skills/dw-search-indexing/references/index-management.md": 7,
+  "skills/dw-search-indexing/references/query-authoring.md": 2,
+  "skills/dw-swift-building/references/component-system-and-reskin.md": 6,
+  "skills/dw-swift-page-blocks/SKILL.md": 1,
+  "skills/dw-users-permissions/references/permission-layers.md": 16
+}

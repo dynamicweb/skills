@@ -11,12 +11,12 @@ description: 'Create a language version of a Dynamicweb 10 website and translate
 
 ## MCP preflight
 
-This skill drives the Dynamicweb MCP server — its steps are rung-1 tool calls. Before starting,
-verify the Dynamicweb MCP tools are available. If they are not, say so and pick the next rung
-deliberately: the Management API at `/admin/api/...` reaches the same domain services, and the
-serializer carries bulk, id-preserving loads. Direct SQL is local-install only and out of scope for
-these steps; guessed HTTP calls and file edits substitute for nothing. Ladder:
-[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
+This skill drives the Dynamicweb MCP server — its steps are tool calls, and the MCP tool set plus
+read/write under `Files/` is the whole surface they may use. Verify the tools are available before
+starting. If a step's tool is missing, **stop at that step** and tell the user what is missing and
+which admin screen performs it; do not substitute a guessed HTTP call, a file edit outside
+`Files/`, or SQL. The Management API, the serializer and direct SQL are out-of-product surfaces,
+owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a step here.
 
 Use this skill for "make an <language> version of this website" or "translate this page/site
 from one language to another." Translation is the one thing only the model can do here. The

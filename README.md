@@ -30,6 +30,7 @@ skills/
   dw-extend-*/              # C# API, providers, scheduled tasks, MCP tools, admin UI
   dw-integration-*/         # Integration Framework, ERP connectors, Business Central
   dw-data-access/           # data-access patterns and caching
+  dw-data-write-effects/    # proving a write landed, and the rebuilds it owes
   dw-data-audit-trail/      # investigate who/when/why something changed
   dw-source-explorer/       # browse Dynamicweb source on GitHub
   dw-source-doc-lookup/     # consult the live Dynamicweb documentation
@@ -45,10 +46,10 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 |--------|----------|-----------------|
 | `dynamicweb-setup` | Provisioning Dynamicweb 10 | setup-install, setup-config, setup-upgrade, setup-cli |
 | `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, content-localization, swift-building, swift-page-blocks, swift-page-design, swift-migrate-v1, swift-migrate-content, headless-delivery |
-| `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions, data-access |
-| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, extend-admin-ui, integration-framework, integration-erp, integration-bc, data-access, data-audit-trail |
+| `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions, data-access, data-write-effects |
+| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, extend-admin-ui, integration-framework, integration-erp, integration-bc, data-access, data-write-effects, data-audit-trail |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, source-doc-lookup, extend-mcp-tools |
-| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, demo-foldback, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
+| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, demo-foldback, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, data-write-effects, swift-building) |
 
 ## Skills
 
@@ -161,6 +162,9 @@ Live "PIM for Business Central connector" demos — expose the local DW host pub
 
 **[dw-data-access](skills/dw-data-access/SKILL.md)**
 Choose appropriate data-access patterns and optimize caching.
+
+**[dw-data-write-effects](skills/dw-data-write-effects/SKILL.md)**
+Prove a write landed (success is not proof — round-trip it) and know which mutations owe a follow-up rebuild: product index, assortments, price recalculation, country cache.
 
 **[dw-data-audit-trail](skills/dw-data-audit-trail/SKILL.md)**
 Investigate why something changed, who changed a record, when a value was set, or inspect version/history for any Dynamicweb 10 entity.
