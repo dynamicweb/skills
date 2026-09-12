@@ -174,7 +174,7 @@ A finding that matches no row is new knowledge: fix it, then fold it back ([`dw-
 
 ## The fix loop
 
-Findings are data/content defects — fix them through the build-phase action surfaces (MCP → Admin API → SQL last resort, per [`surface-priority.md`](surface-priority.md); this file changes nothing about Playwright staying verification-only). Then:
+Findings are data/content defects — fix them through the build-phase action surfaces (MCP → Management API → serializer → SQL last resort, local install only, per [`surface-priority.md`](surface-priority.md); this file changes nothing about Playwright staying verification-only). Then:
 
 1. Apply the fix, plus the cache flush / restart its recipe demands ([`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)).
 2. Re-navigate cold, re-run the detectors, re-screenshot at both breakpoints.

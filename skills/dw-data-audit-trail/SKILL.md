@@ -11,10 +11,12 @@ description: 'Investigate why something changed, who changed a record, when a va
 
 ## MCP preflight
 
-This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
-verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
-MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
-for the tool calls this skill names.
+This skill drives the Dynamicweb MCP server — its steps are rung-1 tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, say so and pick the next rung
+deliberately: the Management API at `/admin/api/...` reaches the same domain services, and the
+serializer carries bulk, id-preserving loads. Direct SQL is local-install only and out of scope for
+these steps; guessed HTTP calls and file edits substitute for nothing. Ladder:
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 Use this when the question is about history — why something changed, who changed it, when a
 value was set — for any Dynamicweb entity. This skill is **read-only**: if the investigation

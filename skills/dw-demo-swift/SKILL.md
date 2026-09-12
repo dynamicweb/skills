@@ -16,6 +16,11 @@ verify the Dynamicweb MCP tools are available. If they are not, stop and tell th
 MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
 for the tool calls this skill names.
 
+The ladder those rungs belong to is foundational —
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"; the demo deltas
+(phase gate, scaffold one-clicks, Browser MCP) are in
+[`dw-demo-base/references/surface-priority.md`](../dw-demo-base/references/surface-priority.md).
+
 Baseline content deserialize, frontend / Swift / customer-center playbook, and re-skin recipe for Dynamicweb 10 demo builds. **Use AFTER** `dw-demo-base` -- assumes a host is running, the demo's versions are captured, and the Serializer is installed in the host (per base's [`../dw-demo-base/references/serializer-reference.md`](../dw-demo-base/references/serializer-reference.md) "Installation").
 
 This SKILL.md is pure nav. Swift is a knowledge book, not a recipe -- see references for any specific topic.

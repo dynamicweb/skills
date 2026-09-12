@@ -57,7 +57,7 @@ item fields, not in any `.cshtml`, so no amount of template editing will change 
 | Product images, Integration source files | **MCP** | Typed, and inside its writable paths |
 | Reading a template just to inspect it | Either | MCP `read_file` is cheaper than an export |
 | Anything MCP covers | **MCP**, never `dw command` | See below |
-| Nothing above fits and no MCP server exists | `dw command` + `CommandByName` | Last resort |
+| Nothing above fits and no MCP server exists | `dw command` + `CommandByName` | A CLI transport for the **Management API** (rung 2 of the action ladder in [`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"), not a surface of its own — so it ranks below MCP and above the serializer |
 
 ### Never hand-build an API call when MCP can do it
 

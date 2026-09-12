@@ -17,6 +17,10 @@ MCP, and every step after the MCP wiring assumes it is live. If the MCP wiring f
 and fix it before continuing — do not substitute direct SQL or file edits for the tool
 calls later steps name.
 
+The ladder those rungs belong to is foundational —
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"; this skill owns
+only the demo deltas ([references/surface-priority.md](references/surface-priority.md)).
+
 The foundation skill for any Dynamicweb 10 demo. **Use FIRST** on every new Dynamicweb demo. Sister skills (`dw-demo-pim`, `dw-demo-swift`) inherit the `.mcp.json`, `CUSTOMISATIONS.md`, and TLS bypass that this skill establishes -- they are **Use AFTER**, never standalone.
 
 This SKILL.md is a nav layer only. Each step of the canonical flow links to a `references/<topic>.md` that owns the verbatim recipe, gotchas, and verification gate for that topic.
@@ -98,7 +102,7 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 | Install Browser MCP (`@playwright/mcp`); recover from browser-launch errors | references/browser-automation.md |
 | **Read a storefront screenshot critically** — programmatic defect detectors, the interaction pass, the eyeball checklist, symptom→fix routing, per-page definition of done | **references/visual-qa.md** |
 | **Sweep for real-person PII and vendor boilerplate** — whole-database string sweep, stock vendor legal copy, locale-shaped patterns. **Blocking pre-demo leg**, hardest on a cloned host | **references/pii-sweep.md** |
-| The surface contract — scaffold vs build phases, surfaces per instance type, why SQL-cloning structural trees fails | references/surface-priority.md |
+| The demo deltas on the action ladder — scaffold vs build phases, the bootstrap one-clicks, Browser MCP scope (the ladder itself is foundational, in `dw-data-access`) | references/surface-priority.md |
 | Generic demo-storytelling tactics (audience framing, one-source-N-shapes, the customer-wording glossary) | references/demo-tactics.md |
 | Manage the customisation budget; audit it at end of phase | references/customisations.md |
 | Honor the customer-context read-only contract | references/customer-context.md |
@@ -134,7 +138,7 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 
 ## Surface priority for CREATES (always-on rule)
 
-Creating things in DW10 has a strict surface priority, split into two phases by the MCP verification gate. **Scaffold phase** (before the gate): the admin UI via the Browser MCP is an action surface, scoped to the bootstrap one-clicks. **Build phase** (after the gate — and hosted/headless installs from the first request): **MCP first → Management API → direct SQL last resort (local only, sanctioned cases only)**; the admin UI is **verification-only** — every UI click is an Admin API call underneath, so a "UI-only" operation means the endpoint hasn't been found yet. On hosted installs there is no SQL rung: probe for MCP, else Management API, else ask the user ([`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)). The full contract — the surface table, the scaffold ladder, why SQL-cloning structural trees is forbidden — is owned by [references/surface-priority.md](references/surface-priority.md). This rule is owned by this skill and inherited by every sister skill.
+The action ladder — MCP tools, then the Management API at `/admin/api/...`, then the serializer, then direct SQL as a local-install-only last resort, with the admin UI as verification only — is foundational and owned by [`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance". A demo splits it into **two phases** by the MCP verification gate. **Scaffold phase** (before the gate): the admin UI via the Browser MCP is an action surface, scoped to the bootstrap one-clicks. **Build phase** (after the gate — and hosted/headless installs from the first request): the foundational ladder applies without exception; take the highest rung that reaches the operation and a "UI-only" operation means the endpoint hasn't been found yet. On hosted installs there is no SQL rung: probe for MCP, else Management API, else ask the user ([`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)). The demo deltas — the phase gate, the scaffold ladder, the long-form SQL-cloning ban — are owned by [references/surface-priority.md](references/surface-priority.md). This phase rule is owned by this skill and inherited by every sister skill.
 
 ## Two guarded-writes (always-on rules)
 

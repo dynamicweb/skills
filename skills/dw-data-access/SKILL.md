@@ -5,19 +5,72 @@ group: data
 mcp: optional
 dynamo: true
 compatibility: Requires PowerShell 7.x
-description: 'Choose appropriate data-access patterns and optimize caching in Dynamicweb 10. Triggers: data access, API vs SQL, cache invalidation, SQL gotchas. Non-triggers: C# API usage -> dw-extend-csharp-api; specific domain logic -> domain-specific skills.'
+description: 'Choose the surface to act on a Dynamicweb 10 instance through, and the data-access and caching patterns inside it. Triggers: the action ladder, which surface, MCP vs Management API vs serializer vs SQL, data access, API vs SQL, cache invalidation, SQL gotchas. Non-triggers: C# API usage -> dw-extend-csharp-api; specific domain logic -> domain-specific skills.'
 ---
 
 # Data Access in Dynamicweb 10
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
-apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
-review, or produce payloads and configuration for the user to apply — and do not substitute
-direct SQL, file edits, or guessed HTTP calls for those tool calls.
+The knowledge here stands alone; the Dynamicweb MCP tools it names are rung 1 of the action ladder
+and the preferred way to apply it. With no Dynamicweb MCP server connected, drop **one** rung, not to
+SQL: the Management API at `/admin/api/...` reaches the same domain services over a different
+transport, and the serializer carries bulk, id-preserving loads. Direct SQL is the last rung, is
+local-install only, and owes a cache flush or restart. When no rung reaches the operation, work in
+advisory mode — explain, review, or produce payloads and configuration for the user to apply — rather
+than guessing an endpoint or editing files. The full ladder is the next section, and this skill owns
+it for the whole corpus.
 
-## When to Use the Service API vs Raw SQL
+## Surfaces into a Dynamicweb instance — the action ladder
+
+Four surfaces change a Dynamicweb 10 instance from outside the process. They are **ranked, not
+interchangeable**: each rung down does less of the platform's own bookkeeping. Take the highest rung
+that reaches the operation, and name that rung in the recipe.
+
+| Rung | Surface | Names look like | Use it for |
+|---|---|---|---|
+| 1 | **MCP tools** (Dynamicweb MCP server, ~260 tools) | `snake_case` — `save_pages`, `patch_products_safe` | The default for anything that creates or mutates a structural row. Calls DW's domain services, so relation wiring, cache invalidation, index refresh and validation all fire. |
+| 2 | **Management/Admin API** (`/admin/api/...`, bearer) | `PascalCase` — `ParagraphSave`, `BuildIndex` | The same domain services over a different transport. Use it when MCP does not expose the operation, and for admin-grade actions MCP never wraps (`CacheInformationRefresh`, `FeatureManagementToggle`). The `dw command` CLI is this rung over a different transport, not a surface of its own. |
+| 3 | **Serializer** (`SerializerDeserialize`, layer `replace`/`merge` trees) | `PascalCase` verb, layer paths | Bulk, id-preserving loads and cross-install moves. **A layer beats a rung-1 or rung-2 loop** as soon as the write is bulk (hundreds of rows, a whole content tree) or ids and relations must survive. Dry-run (`IsDryRun`) first. |
+| 4 | **Direct SQL** | `sqlcmd` / `Invoke-Sqlcmd` / T-SQL | **Last resort, local installs only.** Sanctioned cases: cleanup/teardown, bulk schema-drift fixes, reads, and operations proven absent from rungs 1-3. Bypasses every service. |
+
+**Which rungs exist, per instance type:**
+
+| Rung | Local install | Hosted (cloud) | Headless / Dynamo (in-product) |
+|---|---|---|---|
+| 1 MCP | Present | **Probe first** — version-dependent; primary when present | Probe first; in Dynamo it is the only write surface |
+| 2 Management API | Present | Present — **the floor** when MCP is absent | Present (headless); **absent in Dynamo** |
+| 3 Serializer | Present if the AddIn is installed | Present if installed; engine versions must match across installs | Not available |
+| 4 Direct SQL | Present | **Does not exist** | **Does not exist** |
+| Admin UI | **Verification only** | Verification only | n/a |
+| Ask the user | When rungs 1-3 genuinely cannot reach it | When rungs 1-3 cannot reach it — there is no SQL floor | Same |
+
+**Rules that hold at every rung:**
+
+- **The admin UI is not an action surface.** It is a SPA client of `/admin/api/...`; every click is a
+  rung-2 call. "This exists only in the UI" means the endpoint has not been found yet. **When a
+  surface looks closed:** check `/admin/api/docs/`, then **capture the admin UI's own HTTP call** —
+  drive the admin *read-only*, read the network traffic, replay it. Reading the SPA's traffic is
+  verification-grade; clicking Save is not.
+- **A verb-registry negative proves a verb absent, never a capability absent.** Enumerating the
+  registries and finding no `X*` command proves that *name* is missing, nothing more: some writes have
+  no command of their own and ride inside a parent entity's save payload. Guessing command names is not
+  free either — each unresolvable name writes an `[Application/AddInManager]` error row onto the
+  customer-visible Insights dashboard, so batch the probing.
+- **Success is not proof.** Rung 1-2 writes can return `ok` and silently drop part of the input, and
+  read verbs then serve a cached model that agrees with the lie. Round-trip through a different
+  surface, the stored row, or the rendered page.
+- **Ordering when rungs must mix:** all rung 1-2 writes first, then the SQL touch-up, and nothing
+  re-saves the entity afterwards. Any command that re-saves an entity (*recalculate* commands included)
+  writes DW's **cached** model back over whatever SQL wrote behind it.
+- **A SQL recipe states three things**: why rungs 1-3 do not cover the operation, that it is **local
+  installs only**, and the cache flush or host restart it owes —
+  [`references/cache-invalidation.md`](references/cache-invalidation.md) carries the per-mutation table.
+- **Never SQL-clone a structural tree** (Area / Page / Paragraph / GridRow / Item). The create path
+  carries sibling-link bookkeeping, item-instance cloning, localization overlays, ItemList relations
+  and hidden-flag rules a raw `INSERT ... SELECT` gets partly right and then breaks ten screens later.
+
+## In-process C#: Service API vs the Database class
 
 | Use case | Approach |
 |----------|----------|

@@ -11,10 +11,12 @@ description: 'Migrate a Dynamicweb 9 (DW9) solution''s product structure and cat
 
 ## MCP preflight
 
-This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
-verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
-MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
-for the tool calls this skill names.
+This skill drives the Dynamicweb MCP server — its steps are rung-1 tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, say so and pick the next rung
+deliberately: the Management API at `/admin/api/...` reaches the same domain services, and the
+serializer carries bulk, id-preserving loads. Direct SQL is local-install only and out of scope for
+these steps; guessed HTTP calls and file edits substitute for nothing. Ladder:
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 The migration runs in a fixed order — **structure → product data → assignment → verify** — and
 each phase depends on the one before it: never start the product import before the structure

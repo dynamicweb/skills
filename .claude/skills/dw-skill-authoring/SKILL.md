@@ -71,7 +71,7 @@ Swift, Core, From Scratch, Headless (`/dwapi/`).
 | `users` | Implementation | Users, groups, the Permission entity store |
 | `extend` | Extending | Custom backend code, subscribers, scheduled tasks, MCP tools |
 | `integration` | Extending | Source/target providers, ERP, BC connector |
-| `data` | cross-cutting | Data-access surface priority (API > SQL), cache invalidation |
+| `data` | cross-cutting | The action ladder (MCP > Management API > serializer > SQL), data-access patterns, cache invalidation |
 | `source` | cross-cutting | Navigating the Dynamicweb platform source and documentation |
 | `demo` | Presales | The presales demo chain; flow skills with demo-only guardrails |
 
@@ -122,12 +122,15 @@ can filter on it:
 
 - **`mcp: required`** — the skill's steps *are* MCP tool calls; it cannot run without the
   server (the demo chain, tool-driven flows like `dw-pim-migrate-dw9`, `dw-swift-page-design`).
-  The body must open with a **`## MCP preflight`** section: verify the tools are available,
-  and stop — never substitute direct SQL, file edits, or guessed HTTP calls — when they are not.
+  The body must open with a **`## MCP preflight`** section: verify the tools are available, and
+  when they are not, name the next rung of the action ladder deliberately (the Management API,
+  then the serializer) — never a guessed HTTP call, a file edit, or SQL, which is local-install
+  only and out of scope for MCP-driven steps.
 - **`mcp: optional`** — the knowledge stands alone; MCP tools are the preferred way to apply
   it (most `knowledge` skills that name tools, e.g. `dw-pim-modelling`, `dw-search-indexing`).
-  The body must carry a **`## Without MCP`** section stating the standalone path (advisory
-  mode, produce payloads/config for the user to apply).
+  The body must carry a **`## Without MCP`** section stating the next rung down the action ladder
+  (the Management API, then the serializer; SQL last and local-install only) and the standalone
+  path when no rung reaches it (advisory mode, produce payloads/config for the user to apply).
 - **`mcp: none`** — pure platform knowledge or an offline flow (`dw-render-*`, `dw-setup-*`,
   `dw-extend-*`, `dw-source-explorer`). No marker section; the skill must read the same
   whether or not an MCP server exists. Note `dw-extend-mcp-tools` is `none`: it teaches
@@ -191,6 +194,28 @@ holds at every tier; the same gate written as three more paragraphs holds only a
 **Concrete commands beat prose.** Include the exact `dotnet`, `git`, `Invoke-RestMethod`,
 `sqlcmd`, or PowerShell snippet that worked — a runnable line instructs more precisely than a
 paragraph describing it.
+
+**Name the surface, every recipe, every row.** A reader must be able to tell which rung of the
+action ladder (`skills/dw-data-access/SKILL.md` "Surfaces into a Dynamicweb instance") a call is
+on from the name alone:
+
+- **MCP tools** in `snake_case` backticks, introduced as "MCP `save_pages`".
+- **Management API commands** in `PascalCase` backticks, introduced as "Management API
+  `ParagraphSave`" with the route (`/admin/api/...`) on first use in a file. MCP tools and
+  Management API commands are generated from the same C# methods and are near-homonyms
+  (`get_products` / `GetProducts`), so casing alone does not carry first use — and the two
+  behaviours do diverge.
+- **Serializer** operations as "serializer `SerializerDeserialize`" or by layer and mode, never as a
+  bare Management API command. **SQL** labelled `SQL` in a fenced `sql` block, never inline as though
+  it were a command.
+
+**"Verb" means a Management API command; "tool" means MCP.** Never call an MCP tool a verb, and never
+head a mixed column "Verb". "Endpoint" means an HTTP route (`/admin/api/<Verb>`, `/admin/mcp`), not a
+single tool. **A table whose rows mix surfaces carries a `Surface` column.**
+
+**Every SQL recipe states three things inline:** why the higher surfaces do not cover it (which rung
+was tried and what it did), that it is **local installs only**, and the **cache flush or host restart
+it owes**. A SQL recipe missing any of the three is incomplete.
 
 **Keep dates out of the body.** The date lives in `git log`. No "today", no "(verified <date>)".
 Provenance citations name roles, never individuals — "per the Dynamicweb vendor architect".

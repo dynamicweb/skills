@@ -11,10 +11,12 @@ description: 'Bring the CONTENT of an existing/old website into a Dynamicweb 10 
 
 ## MCP preflight
 
-This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
-verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
-MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
-for the tool calls this skill names.
+This skill drives the Dynamicweb MCP server — its steps are rung-1 tool calls. Before starting,
+verify the Dynamicweb MCP tools are available. If they are not, say so and pick the next rung
+deliberately: the Management API at `/admin/api/...` reaches the same domain services, and the
+serializer carries bulk, id-preserving loads. Direct SQL is local-install only and out of scope for
+these steps; guessed HTTP calls and file edits substitute for nothing. Ladder:
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 Use this skill when the user wants the CONTENT of an existing/old website brought into this
 solution as a standard, modern **Swift 2** site — extract a source site and rebuild its pages

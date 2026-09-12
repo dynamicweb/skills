@@ -16,6 +16,11 @@ verify the Dynamicweb MCP tools are available. If they are not, stop and tell th
 MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
 for the tool calls this skill names.
 
+The ladder those rungs belong to is foundational —
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"; the demo deltas
+(phase gate, scaffold one-clicks, Browser MCP) are in
+[`dw-demo-base/references/surface-priority.md`](../dw-demo-base/references/surface-priority.md).
+
 PIM modelling, structural mental model, governance, and recovery for Dynamicweb 10 demo builds. **Use AFTER** `dw-demo-base` -- this skill assumes MCP is connected with >200 tools. If MCP isn't connected, fix that there first ([dw-demo-base/references/mcp-setup.md](../dw-demo-base/references/mcp-setup.md)).
 
 ## How to run me
@@ -55,7 +60,7 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 
 | If you need to... | Read this reference |
 |---|---|
-| Pick the right access surface (MCP / API / SQL / FS) for a given task | references/access-surfaces.md |
+| Which rung of the action ladder a given PIM task belongs on, and the per-project reference paths | references/access-surfaces.md |
 | Understand the structural model (incl. §2.3a native "Publish to channel" action, §2.5a single-axis variants, §2.11 Pricing / `PriceQuantity>0` cart gotcha, §2.12 Dynamic Workspaces) | references/structural-model.md |
 | Pick the right setup-order variant — Storefront-first or **PIM-first** (no `ShopType=1` shop, Dynamic Workspaces + workflow-driven) | references/canonical-setup-order.md (§0 decision matrix at top) |
 | Diagnose "rules don't show", build dashboards, recover from missing seed rows or stale indexes | references/governance.md |

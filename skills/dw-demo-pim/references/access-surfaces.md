@@ -1,20 +1,36 @@
 # access-surfaces.md
 
-> Four-surface decision matrix for Dynamicweb 10 instance access (MCP / Management API / direct SQL / filesystem). Use this to pick the fastest surface for any given PIM task. Loaded from `~/.claude/skills/dw-demo-pim/SKILL.md` "Where to find things" table.
+> The PIM-specific application of the action ladder, plus the per-project reference paths a PIM demo
+> leans on. Loaded from `dw-demo-pim/SKILL.md` "Where to find things".
 
-## Access surfaces
+## The ladder, applied to PIM work
 
-You have FOUR independent surfaces into a Dynamicweb 10 instance. Use whichever is fastest for the task — they're not redundant:
+The ranking of surfaces — MCP tools, then the Management API at `/admin/api/...`, then the serializer,
+then direct SQL as a local-only last resort with the admin UI as verification only — is foundational
+and owned by [`dw-data-access`](../../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
+Read it there; it is not restated here. The demo-phase deltas (scaffold vs build, the bootstrap
+one-clicks, Browser MCP scope) are in
+[`../../dw-demo-base/references/surface-priority.md`](../../dw-demo-base/references/surface-priority.md).
 
-1. **MCP (`dynamicweb-commerce-mcp`)** — ~260 tools, rich schemas, slow to auth but convenient for create/update. Tokens expire mid-session; re-auth with `/mcp`.
+**Take the highest rung that reaches the PIM task — speed is not the tie-breaker.** What that means
+per rung, in PIM work:
 
-2. **Management API** — `https://localhost:<PORT>/admin/api/` with `Authorization: Bearer CLAUDE.xxx` tokens. **Spec UI at `/admin/api/docs/`**. Best for admin operations the MCP doesn't expose (BuildIndex, IndexStatus, cache invalidation, feature flags, rule-usage inspection). Always reach for the API before restarting the host when you need a cache flush. Full admin-endpoint catalog + the runtime OpenAPI-discovery probe: [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md).
+| Rung | PIM operations it owns | PIM-specific notes |
+|---|---|---|
+| 1 MCP (`dynamicweb-commerce-mcp`) | Creating and updating products, groups, variant groups and options, data models, field and category definitions, prices, assortments — `create_products`, `patch_products_safe`, `save_groups`, `create_variant_combinations` | Rich schemas and read-modify-write, so untouched fields survive. Tokens expire mid-session; re-auth with `/mcp`. |
+| 2 Management API (`/admin/api/...`, bearer) | The admin-grade PIM actions MCP does not wrap: `BuildIndex`, `IndexStatus`, `CacheInformationRefresh`, `FeatureManagementToggle`, `CompletionSettingsSourceById`, rule-usage inspection | Spec UI at `/admin/api/docs/`. Reach for `CacheInformationRefresh` before restarting the host for a cache flush. Catalog and the OpenAPI-discovery probe: [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md). |
+| 3 Serializer | Loading a whole catalog, data-model tree or index definition from a layer, and moving PIM content between installs | Prefer a layer over a several-hundred-call MCP loop, and whenever product/group ids must survive the move. Dry-run first. |
+| 4 Direct SQL (`sqlcmd -S <server> -E -d <db>`) | Cleanup and teardown of a bad load, reads and census queries, bulk schema-drift repair that rungs 1-3 provably do not expose | **Local installs only** — a hosted PIM instance has no SQL rung at all. Every SQL step states why rungs 1-3 do not cover it and the flush or restart it owes ([`cache-invalidation.md`](cache-invalidation.md)). Schemas are discoverable via `INFORMATION_SCHEMA.COLUMNS`. Never SQL-clone a structural tree, and never use SQL because it is quicker to type. |
 
-3. **Direct SQL** — `sqlcmd -S "localhost\SQLEXPRESS" -E -d <DB>` or via PowerShell when heredocs get mangled. Schemas are discoverable via `INFORMATION_SCHEMA.COLUMNS`. Fastest for bulk corrections and structural fixes.
+**Structural PIM fixes belong on rung 1 or 2, not on SQL.** A group re-parent, a variant-group
+rewiring, a field moving between global and category storage and a data-model change all carry
+relation, index and completeness bookkeeping the create path performs and a raw `UPDATE` does not.
 
-4. **Filesystem** — repositories, queries, feed templates, indexes live as XML/cshtml/xslt files under `wwwroot/Files/System/Repositories/` and `wwwroot/Files/Templates/`. Copy patterns from any Swift reference installation when starting fresh.
-
-Surface choice is task-driven, not preference-driven. Common shortcuts: bulk schema fixes → SQL; cache flush after rule-table mutation → Management API `CacheInformationRefresh`; rich create/update with field schemas → MCP; copy a `.query` or `.index` file from a Swift baseline → filesystem.
+**The filesystem is not a rung on this ladder — it is a different store.** Repositories, queries, feed
+templates and index definitions live as XML/cshtml/xslt files under
+`wwwroot/Files/System/Repositories/` and `wwwroot/Files/Templates/`; copying a `.query` or `.index`
+file from a Swift reference installation is a file operation, and it needs the matching `BuildIndex`
+on rung 2 before the change is visible.
 
 ## Management API + OpenAPI discovery + per-project reference paths
 

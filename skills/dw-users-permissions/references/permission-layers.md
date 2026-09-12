@@ -851,7 +851,7 @@ Level:"<read|edit|create|delete|all|none>"}`. It is the surface a language-layer
 row by row, and the surface the frontend user-management grant below depends on. `assign_permissions_to_assortment`
 writes assortment permissions; there is still no page/paragraph equivalent in MCP. Verify every write with a
 read-only `SELECT` on `UnifiedPermission`, and flush the security cache or restart before believing a read
-(cache caveat above). Direct SQL INSERT stays the last resort. The admin **Permissions** panel
+(cache caveat above). Direct SQL INSERT stays the last resort (local install only). The admin **Permissions** panel
 (`/Admin/UI/Content/PermissionList?Key=<pageId>&Name=Page`) is a verification surface, not the authoring
 path.
 

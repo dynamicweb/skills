@@ -11,10 +11,14 @@ description: 'Manage users, groups, and the Permission entity store in Dynamicwe
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
-apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
-review, or produce payloads and configuration for the user to apply — and do not substitute
-direct SQL, file edits, or guessed HTTP calls for those tool calls.
+The knowledge here stands alone; the Dynamicweb MCP tools it names are rung 1 of the action ladder
+and the preferred way to apply it. With no Dynamicweb MCP server connected, drop **one** rung, not to
+SQL: the Management API at `/admin/api/...` reaches the same domain services over a different
+transport, and the serializer carries bulk, id-preserving loads. Direct SQL is the last rung, is
+local-install only, and owes a cache flush or restart. When no rung reaches the operation, work in
+advisory mode — explain, review, or produce payloads and configuration for the user to apply — rather
+than guessing an endpoint or editing files. Full ladder:
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 ## User Entity Structure
 
