@@ -3,6 +3,127 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.46.0]
+
+Fold-back sprint: dw-content-modelling, dw-content-localization, dw-users-permissions and dw-commerce-b2b. Thirty-eight demo-build learnings land with two reference splits (the permission layers reference becomes four files, the modelling discipline reference three, section numbering continuous), the MCP-tool versus Admin-API command tables extended in B2B and introduced in permissions, and one correction: the flat PermissionSave body published in two places returns 400 and is rewritten to the nested model shape with the sparse level enum.
+
+Content, users/permissions and B2B: the permission write surface corrected, four oversized
+references split by topic, and every recipe named for the surface it runs on.
+
+- **`PermissionSave` takes a nested `{Model:{…}}` body, `Key` is a string, and `PermissionLevel`
+  is sparse — the previously published flat body is wrong.** The flat shape returns HTTP 400
+  `Command.Model cannot be null` and writes nothing, and the level numbers are `None=1, Read=4,
+  Edit=20, Create=84, Delete=340, All=1364`, so a row at level `1` is a denial. Reading a solution's
+  own rows as a 0-based ladder writes the opposite of what was meant on a page that is supposed to be
+  gated. The corrected body, the enum values, the composite `|$|` identifier and the upsert semantics
+  now live in one place (`grant-mechanics.md` §7); the two flat examples elsewhere in the corpus were
+  rewritten.
+- **Backend authorisation is the `Section` entity plus three implicit user roles, and the
+  `Section` grant's LEVEL cascades to the screens under it.** A non-Administrator backend user
+  resolves as `AuthenticatedFrontend`, which grants nothing, so a new backend identity signs in to an
+  admin shell with no navigation at all until one `Section` row exists — and at `Read` that area
+  renders with every Save command silently withheld. The old "UI permissions hide elements without
+  affecting functional access, and do not cascade" wording described Capability Control and was being
+  read as the `Section` rule; both are now stated side by side, with the area keys (the `AreaBase`
+  subclass names) and the fact that no API enumerates them.
+- **A positive-only page grant denies nobody.** A group with no explicit row inherits its parent's
+  permission, and the parent of a root-level page is the permissive area default — so the gate that
+  reads as working (anonymous is redirected) admits every signed-in persona it did not name. The rule
+  is now one explicit row per group, verified by signing in as a denied persona rather than by reading
+  the rows back. Paired with it: **page permissions resolve against the EFFECTIVE user**, so a
+  staff-gated page is unreachable for the whole of an impersonation session — land the impersonation
+  redirect on a customer-visible page and put staff affordances in the impersonation bar.
+- **New MCP-tool versus Management-API-verb table for users, groups and impersonation.** The three
+  write shapes differ per operation and per element type: `UserGroupRelationSave` is a list command
+  that answers `HTTP 200 "No items selected"` for the documented single-relation body,
+  `UsersAddToGroups` takes string ids, `UserImpersonateAdd` takes int ids, and its undocumented
+  counterpart `UserImpersonateDelete` inherits string ids from `ListItemsCommandBase` — there is no
+  `…ToRemove` property to find. Every refusal on this surface arrives as HTTP 200, so the assertion is
+  the relation table.
+- **An MCP `update_users` / `save_user_groups` call is a whole-entity save against the cache** —
+  partial in what you may send, total in what it writes. `update_users {"users":[{"id":N}]}` is not a
+  no-op: it is precisely the call that reverts a SQL write made on that row a second earlier, and
+  `save_user_groups` blanks every column outside its own model. This is now the stated exception to
+  the standing "SQL write plus an API touch to invalidate" recipe in `cache-invalidation.md`.
+- **An impersonation grant is denormalised into the Users index, and nothing marks it dirty.**
+  Removal needs a Full `BuildIndex`, not a cache flush — and the natural set-equality proof passes
+  regardless, because it is structurally blind to a stale grant on the other identity's document.
+  `AccessUserAdministratorInGroups` is documented as unusable in the same pass: it reads back empty
+  through every API, so an account-admin role rests on group membership.
+- **Assortment work: the flag, the build and the relation write are three independent
+  operations.** `assign_products_to_assortment` sets no rebuild flag; `flag_assortments_for_rebuild`
+  and `build_assortments` take an array of request objects, not a flat id list, and fail opaquely on
+  the plausible shape; a SQL-set `AssortmentRebuildRequired` is invisible to the builder's in-process
+  cache, so SQL is a read path here. Two safety rules join them: count an assortment's built items
+  before activating it (a zero-item assortment is a catalogue blackout for every holder, not a no-op),
+  and check `EcomAssortmentGroupRelations` before removing any group even while assortments are
+  disabled. Enabling assortments prunes live cart lines outside the buyer's range, silently, on every
+  cart load.
+- **Contract-versus-list pricing per audience is stock configuration, not code.** Informative price
+  rows honour `PriceUserGroupId` exactly like ordinary rows, so a group-scoped pair (net + informative
+  list) plus the shipped `ShowInformativePrice` field gives one audience a struck-through list price
+  and the other the list price alone — configured by the second audience having NO rows.
+- **New `account-shape.md`: the customer number identifies the account, not the contact.** Four
+  stock features compare it as an exact string, so a per-contact suffix turns all four off while the
+  settings still read as enabled; the reference carries the one-query diagnostic, the group-scoped
+  fallback that must post literal delivery fields, the measured recipe for normalising a suffix away
+  (templates first, data last, revert proven in a rolled-back transaction, user index rebuilt), and
+  the account-wide favourites pattern — `RetrieveListBasedOn = UseCustomerNumber` plus impersonation,
+  with the `FavoriteCmd` vocabulary and its `FavoriteListId=0` silent no-op.
+- **A page save re-derives `PageMenuText` from the item type's title field — and `reorder_pages`
+  saves.** An ordering call renames every sibling whose item Title differs from its menu text, and on
+  a translated site it replaces the mirrors' translations with the master's wording. The durable shape
+  is `set_page_item_fields {Title}` then `save_pages {id}`; `set_page_menu` reports success and
+  changes nothing.
+- **The language mirror inherits unevenly.** A `save_*` on a mastered page creates the mirror page,
+  its grid row and its paragraph — carrying the paragraph's template and NOT its field values — while
+  leaving the MASTER's grid row without an item instance, so the master renders blank and the
+  translation renders correctly. Create on the master only, set the mirror's values explicitly, and
+  repair a master row through the platform's per-type allocator rather than `MAX(Id)+1`.
+- **`place_app_paragraph` leaves `ParagraphItemType` empty, and a Swift 2 grid column renders a
+  paragraph through its item type** — so the paragraph is live and correct in the database and
+  invisible on the page, with every assertion passing. Copy a working app paragraph instead and rebind
+  its grid row. Also folded: `save_pages` has no `navigationTag` member and drops the key; a re-parent
+  is invisible to the rendered navigation until the app domain restarts while a PageActive change is
+  live immediately; repeatable item-list children render from a cache that only a new parent item
+  crosses; `<QueryConditions>` in `ParagraphModuleSettings` is the per-paragraph query-default lever.
+- **The item-type XML-drop trap is stated as a condition, not an absolute.** The definition is
+  materialised when it is LOADED: on a local install an app-pool restart is enough, on the hosted
+  boxes previously measured it never was and the API route is the fix. What holds everywhere is the
+  ordering, and the positive half is now recorded too — `ItemTypeSave` plus `ItemFieldSave` create the
+  table and a renderable paragraph type live on the next request, with no restart and no cache flush,
+  which is what makes a new type affordable inside a no-restart change window. The stock Swift
+  `ButtonEditor` string `defaultValue` is named as the producer of the `ConverterException` that the
+  consequences table already described.
+- **Swift stock copy falls through to retail-worded defaults on the site's own culture.** A key
+  with no row for the site language renders its shipped `DefaultValue`, so a B2B storefront reads like
+  a webshop in the stock and price blocks while `Translations.xml` looks complete.
+- **Four oversized references split by topic.** `permission-layers.md` (76 KB) became
+  `permission-layers.md` (the storage model), `grant-mechanics.md`, `page-gating.md` and
+  `user-group-operations.md`; `modelling-discipline.md` (54 KB) became `modelling-discipline.md`,
+  `page-paragraph-writes.md` and `language-layers.md`. Section numbering is continuous across each
+  family, so every existing §-reference still resolves; the ten inbound links in other skills were
+  repointed.
+
+justdynamics/Truvio.Commerce.Foundry#640, justdynamics/Truvio.Commerce.Foundry#643,
+justdynamics/Truvio.Commerce.Foundry#673, justdynamics/Truvio.Commerce.Foundry#690,
+justdynamics/Truvio.Commerce.Foundry#691, justdynamics/Truvio.Commerce.Foundry#720,
+justdynamics/Truvio.Commerce.Foundry#743, justdynamics/Truvio.Commerce.Foundry#746,
+justdynamics/Truvio.Commerce.Foundry#751, justdynamics/Truvio.Commerce.Foundry#752,
+justdynamics/Truvio.Commerce.Foundry#753, justdynamics/Truvio.Commerce.Foundry#770,
+justdynamics/Truvio.Commerce.Foundry#773, justdynamics/Truvio.Commerce.Foundry#779,
+justdynamics/Truvio.Commerce.Foundry#794, justdynamics/Truvio.Commerce.Foundry#795,
+justdynamics/Truvio.Commerce.Foundry#798, justdynamics/Truvio.Commerce.Foundry#801,
+justdynamics/Truvio.Commerce.Foundry#802, justdynamics/Truvio.Commerce.Foundry#814,
+justdynamics/Truvio.Commerce.Foundry#815, justdynamics/Truvio.Commerce.Foundry#833,
+justdynamics/Truvio.Commerce.Foundry#835, justdynamics/Truvio.Commerce.Foundry#842,
+justdynamics/Truvio.Commerce.Foundry#845, justdynamics/Truvio.Commerce.Foundry#853,
+justdynamics/Truvio.Commerce.Foundry#857, justdynamics/Truvio.Commerce.Foundry#866,
+justdynamics/Truvio.Commerce.Foundry#867, justdynamics/Truvio.Commerce.Foundry#898,
+justdynamics/Truvio.Commerce.Foundry#901, justdynamics/Truvio.Commerce.Foundry#903,
+justdynamics/Truvio.Commerce.Foundry#929, justdynamics/Truvio.Commerce.Foundry#930,
+justdynamics/Truvio.Commerce.Foundry#931, justdynamics/Truvio.Commerce.Foundry#932
+
 ## [4.45.0]
 
 Fold-back sprint: dw-extend-providers, dw-extend-scheduled-tasks, dw-extend-mcp-tools, dw-extend-csharp-api, dw-data-access references, dw-setup-config and dw-setup-cli. Forty-six demo-build learnings land the scheduler contract (a scheduled-task run result is not evidence of effect; the schedule is served from a service cache; overdue tasks fire at app start), the notification-subscriber and provider contracts, the table of columns that fall outside an MCP tool's model when the Admin API command carries them, the SQL cache debt as UPDATE, flush, then touch with the per-entity taxonomy, a new SQL-direct gotchas reference, and the host-assembly copy recipe for the CLI skill. A scheduled-task code sample that used a logger enum member which does not exist is corrected.
