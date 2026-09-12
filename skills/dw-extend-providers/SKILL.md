@@ -14,6 +14,9 @@ description: 'Build providers, notification subscribers, and AddIns for Dynamicw
 | Topic | Where |
 |---|---|
 | AddIn lifecycle patterns — the UpdateProvider-seeds-defaults pattern, `*Pipeline` DI registration and the post-install host-restart stuck state, and the `StaticLinkManager` admin-deeplink AddIn (endpoints, settings, troubleshooting) | [`references/addin-lifecycle.md`](references/addin-lifecycle.md) |
+| Notification contracts — which notifications can actually refuse an operation, why the user before-save hook cannot and does not reach the password, which cart step raises the order-validation hook, which of the three product-catalog notifications is the detail page, and the `Standard.Page.Loaded` redirect that makes a page unreachable | [`references/notification-contracts.md`](references/notification-contracts.md) |
+| Custom checkout handlers — the `CheckoutHandler` base and its two entry points, wiring `PaymentCheckoutSystemName` / `PaymentAddInType`, the doubled callback parameter that renders a blank page, the four-character gateway-code column, the posted card form persisted into `OrderGatewayResult`, and the capture contract | [`references/checkout-handlers.md`](references/checkout-handlers.md) |
+| Price providers, fee providers and order-validation rules — attribute activation with no UI step, what an exclusive price provider's scope test decides, why `FeeProvider.FindFee` must return `null`, where a payment surcharge really belongs, and how to add a custom validation `Rule` | [`references/pricing-fees-and-validation.md`](references/pricing-fees-and-validation.md) |
 
 ## Notification Subscribers
 
@@ -74,7 +77,14 @@ public class OrderAuditSubscriber : NotificationSubscriber
 
 ### Cancellable notifications
 
-Some notifications use `CancelableNotificationArgs`. Set `Cancel = true` to abort the operation:
+**Refusal is per notification, not a platform guarantee.** A subscriber can abort an operation only
+where the args type carries a refusal member (`CancelableNotificationArgs.Cancel`, or an
+`IList<ValidationError>`) **and** the caller reads it back — the cart and order-delete families do,
+the user before-save family does not. Throwing is never a veto: `NotificationManager.Notify` catches,
+logs and continues. Read the args type before designing a guard; the measured contracts are in
+[`references/notification-contracts.md`](references/notification-contracts.md).
+
+Where the args are cancellable, set `Cancel = true` to abort the operation:
 
 ```csharp
 [Subscribe(Ecommerce.Order.BeforeDelete)]
@@ -94,7 +104,7 @@ public class PreventOrderDeleteSubscriber : NotificationSubscriber
 
 | Constant | When it fires | Args type |
 |----------|--------------|----------|
-| `Standard.Page.Loaded` | After a page is loaded for rendering | `LoadedArgs(PageView pageview)` |
+| `Standard.Page.Loaded` | After a page is loaded for rendering. A subscriber here **can redirect**, which makes a page unreachable while every content API still reports it fine — see [`references/notification-contracts.md`](references/notification-contracts.md) | `LoadedArgs(PageView pageview)` |
 | `Standard.Page.OnBeforeRenderParagraphs` | Before paragraphs render | `OnBeforeRenderParagraphsArgs(PageView, paragraphs)` |
 | `Standard.Page.Saved` | After a page is saved in admin | `PageNotificationArgs(Page, Page?)` |
 | `Standard.Page.OnBeforeSave` | Before page save | `PageNotificationArgs(Page)` |
@@ -108,7 +118,7 @@ public class PreventOrderDeleteSubscriber : NotificationSubscriber
 | Constant | When it fires |
 |----------|--------------|
 | `Ecommerce.Order.BeforeSave` | Before order save (can validate) |
-| `Ecommerce.Order.AfterSave` | After order save |
+| `Ecommerce.Order.AfterSave` | After **every** save of an order, a completed one included — a state pass, a capture, a recalculate or an ERP import each raise it, so anything accrued here needs a durable idempotency key |
 | `Ecommerce.Order.BeforeDelete` | Before order delete (cancellable) |
 | `Ecommerce.Order.AfterDelete` | After order delete |
 | `Ecommerce.Order.State.Changed` | Order state transitions |
@@ -131,13 +141,13 @@ All providers inherit from `ConfigurableAddIn` (directly or indirectly), giving 
 
 | Provider base | Namespace | Use for |
 |--------------|-----------|--------|
-| `PriceProvider` | `Dynamicweb.Ecommerce.Prices` | Custom pricing logic (override or supplement standard price rules) |
-| `CheckoutHandler` | `Dynamicweb.Ecommerce.Cart` | Payment gateway integration |
+| `PriceProvider` | `Dynamicweb.Ecommerce.Prices` | Custom pricing logic (override or supplement standard price rules). An exclusive provider's own scope test is the whole specification — see [`references/pricing-fees-and-validation.md`](references/pricing-fees-and-validation.md) |
+| `CheckoutHandler` | `Dynamicweb.Ecommerce.Cart` | Payment gateway integration. Zero abstract members, so nothing forces an override — see [`references/checkout-handlers.md`](references/checkout-handlers.md) |
 | `ShippingProvider` | `Dynamicweb.Ecommerce.Cart` | Shipping method / carrier integration |
 | `CartCalculationProvider` | `Dynamicweb.Ecommerce.Cart` | Custom cart calculation (taxes, discounts, loyalty) |
 | `StockLevelProvider` | `Dynamicweb.Ecommerce.Stocks` | Override stock calculation from external systems |
 | `TaxProvider` | `Dynamicweb.Ecommerce.Products.Taxes` | External tax service (AvaTax, Vertex) |
-| `FeeProvider` | `Dynamicweb.Ecommerce.Orders` | Manipulate shipping fees on orders |
+| `FeeProvider` | `Dynamicweb.Ecommerce.Orders` | The **shipping** fee on an order. `FindFee` must return `null` for orders it does not price; a payment/card surcharge belongs elsewhere — see [`references/pricing-fees-and-validation.md`](references/pricing-fees-and-validation.md) |
 | `BaseProvider` | `Dynamicweb.DataIntegration` | Custom Integration Framework source/destination |
 | `NavigationProvider` | `Dynamicweb.Frontend.NavigationProviders` | Add custom nodes to navigation |
 | `UpdateProvider` | `Dynamicweb.Updates` | Database migrations (tables, columns, indexes) |
