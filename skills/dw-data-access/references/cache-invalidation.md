@@ -61,8 +61,10 @@ If you used MCP for a row whose mutation type appears in the table below, you sh
 | **Direct SQL UPDATE on `EcomOrderStates.OrderStateColor` (or other state-row columns read at render time)** | `OrderStates.GetStateById()` in-memory cache | (none) | YES — the badge's inline-style attribute holds the stale color even after a full page reload; storefront-rendered order-state badges and CSS variables fed by `Services.Orders.GetStateById(...).Color` keep the old hex until restart |
 | MCP `save_paragraphs` / `save_pages` / `save_grid_rows` | Page-composition cache | (auto via MCP) | No — these are the preferred surface for content seeding; the four "Direct SQL INSERT" rows above are the SQL-fallback equivalents |
 | **Paragraph-soft-hide / delete inside a `@RenderGrid(otherPageId)` nested grid** (e.g. Swift's `Swift-v2_ProductListComponentSelector` PLP wrapper) | RenderGrid HTML cache (keyed by source page id) | (none — survives host restart) | **No surface fix** — `ParagraphDeleted=1` / `ParagraphShowParagraph=0` are not observed even after restart. CSS-hide is the only reliable lever; see [dw-swift-building](../../dw-swift-building/SKILL.md) for the worked recipe. |
+| **Direct SQL INSERT/UPDATE/DELETE on `EcomProductsRelated`** (cross-sell / "goes well with" relations) | `Dynamicweb.Ecommerce.Products.ProductRelatedGroupService` **and** `Dynamicweb.Ecommerce.Products.ProductRelatedService` — their own storage types, which nothing else reaches | `POST /admin/api/CacheInformationRefresh` on **both** fully qualified names | No, but the flush is mandatory and is the **whole** story: `ProductViewModel.RelatedGroups` returns 0 until it runs. A `ProductService` flush does nothing, and a **Full product-index build does nothing** — the build rewrites Lucene, not the domain cache the ViewModel reads. Other products' pre-existing relations keep rendering throughout, which makes it read as a data difference. (`ProductRelatedLimit*` columns `NULL` vs `''` is a red herring — A/B'd, identical either way.) |
+| **Direct SQL UPDATE on `Paragraph.ParagraphModuleSettings`** | Paragraph cache — the settings are re-serialised from it on the next save | (none) | No, but it must be the **last** write to that paragraph: a later `ParagraphSave` (MCP or Admin API) rewrites module settings from the cached copy. The column's own read/write shape is in [`sql-direct-gotchas.md`](sql-direct-gotchas.md) |
 | Service-cache enumerate | All services | `GET /admin/api/GetServiceCaches` | n/a (read-only) |
-| Specific service cache flush | Single service | `POST /admin/api/CacheInformationRefresh {CacheTypeName:...}` | No |
+| Specific service cache flush | Single service | `POST /admin/api/CacheInformationRefresh {CacheTypeName:...}` — the **fully qualified** type name, and it must be one the platform actually registers. There is no naming rule to infer it from: `ProductRelatedGroupService` and `ProductRelatedService` exist while `RelatedService`, `RelatedGroupService`, `ProductGroupService` and `ProductRelationService` all answer "Cache storage type not found". Enumerate with `GetServiceCaches` rather than guessing | No |
 | Feature flag toggle | (varies; flag-specific) | `POST /admin/api/FeatureManagementToggle {FeatureTypeName:...}` — **DO NOT use for Completeness flag, see [dw-pim-completeness](../../dw-pim-completeness/SKILL.md) (`rules-and-dashboards.md` "Completeness rules")** | Varies |
 | Rule-usage inspection | (read-only) | `GET /admin/api/CompletionSettingsSourceById?Id=<ruleId>` | n/a |
 | **Direct SQL INSERT/UPDATE/DELETE on `UnifiedPermission`** (entity grants, Layer A / C) | `Dynamicweb.Security.Permissions.PermissionService` ServiceCache | `POST /admin/api/CacheInformationRefresh {CacheTypeName:"Dynamicweb.Security.Permissions.PermissionService"}` | No — but logged-in users do not see the change until flush + re-auth; new logins always see fresh state. See [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`) for the admin-UI gap that forces this SQL surface. |
@@ -80,16 +82,61 @@ For `Page` / `Paragraph` / `GridRow` / `EcomPrices`, the cache-vs-live behavior 
 - **Re-ordering existing rows** (`GridRow.GridRowSort` re-sort) — requires restart. Even though each individual row's content fields read live, the cache holds the *ordered list* and won't re-sort until reload. Same applies to `ParagraphSort` if you re-sort paragraphs within a GridRow.
 - **Changing price amount or scope** — requires restart. The resolved-price cache keys by (product, currency, customer-group, shop, qty-band, validity-window) and doesn't reactively reload on column changes.
 
-### Mixing MCP and SQL on the same rows — MCP first, SQL last, one restart
+### Mixing MCP and SQL on the same rows — UPDATE, flush, then touch
 
-MCP `save_pages` / `save_grid_rows` / `save_paragraphs` load the row from the **domain-service cache**
-and persist the **full row back**, including every column their API model does not expose. A SQL-written
-value on such a column (`GridRowTopSpacing`, `GridRowVerticalAlignment`, `Page.PageItemId`,
-`PageColorSchemeId`, `PageHidden` …) is silently reverted by the next MCP save of that row — the save
-isn't "merging", it's writing back its stale copy. Sequence a mixed-surface authoring pass as:
-**all MCP/structural writes first → SQL for the unexposed columns last → one host restart** to flush
-the composition/nav/URL caches together. If an MCP save must happen after the SQL step, re-apply the
-SQL afterwards.
+**A SQL write to a cached entity is not merely read stale: the next API save of that entity writes
+the cached copy back over the row and erases it**, with no error and no log line on either side. A
+`SELECT` immediately after the `UPDATE` says the write succeeded; a `SELECT` after the next unrelated
+save says it never happened. That is materially worse than a stale read, because a stale read at
+least leaves the database telling the truth, and the erasure happens at an unpredictable later moment
+inside code that has nothing to do with your change.
+
+The mechanism is the same on every cached aggregate. MCP `save_pages` / `save_grid_rows` /
+`save_paragraphs` load the row from the **domain-service cache** and persist the **full row back**,
+including every column their API model does not expose — so a SQL-written `GridRowTopSpacing`,
+`GridRowVerticalAlignment`, `Page.PageItemId`, `PageColorSchemeId` or `PageHidden` is reverted by the
+next MCP save of that row. On `EcomOrders` it is worse, because almost every order-touching code path
+ends in `EcomServices.Orders.Save(order)`: a token or status staged by `UPDATE` was gone from the
+database after one capture pass that had loaded the order through the read-through
+`OrderService.GetById`.
+
+**The ordering is always: `UPDATE` → flush the owning service → then run anything that touches the
+entity.**
+
+```
+UPDATE EcomOrders SET ... WHERE OrderId = '<id>';
+POST /Admin/Api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Ecommerce.Orders.OrderService"}
+-- only now run the code that reads or re-saves that order
+```
+
+Two corollaries:
+
+- **Nothing may re-save the entity between the flush and the read that must see the value.** Any verb
+  that re-saves an entity — the *recalculate* family included — writes DW's cached model back over
+  whatever SQL wrote behind it.
+- For a mixed-surface authoring pass over content rows the same order applies at batch scale: **all
+  MCP/structural writes first → SQL for the unexposed columns last → the flush or the one host
+  restart**. If an MCP save must happen after the SQL step, re-apply the SQL afterwards.
+
+This is the rule that makes staging rows on DW-owned tables workable at all; a staging technique with
+no flush step is a technique that silently un-stages itself.
+
+### Verify the invalidation pattern per entity — three patterns, and they do not generalise
+
+**"SQL write plus a recycle is enough" is not a DW10 rule.** In-process entity caches are cleared on
+a per-entity-type basis, so the same build and the same recycle behave oppositely on neighbouring
+entities. Before treating a write as live, establish which of three patterns the entity follows:
+
+| Pattern | What it takes | Measured example |
+|---|---|---|
+| **Self-invalidating** — the domain-service write clears the read path inline | nothing further | MCP `save_unit_translation`: the rendered storefront page showed the new unit label on the very next request, with no recycle |
+| **Recycle-clears-it** — a SQL write is invisible until the pool recycles, then correct | one app-pool recycle (a targeted `CacheInformationRefresh` where one reaches the service) | `EcomLanguages`: a SQL default-language correction was reflected by `get_languages` immediately after one recycle, with no `save_languages` call. `EcomStockLocationTranslations`: invisible to `get_stock_locations` for minutes, correct after the recycle |
+| **Needs an API round trip** — a recycle does **not** clear it | a save through the domain service on that exact id | `AccessUser` group rows: a SQL rename survived a **full app-pool recycle** unchanged and `get_user_group_by_id` kept serving the pre-write name; one MCP `save_user_groups` on the id corrected it immediately, with no further recycle. The same is true of every other `AccessUser` column — see the split-brain section below |
+
+**The probe, for any entity you write by SQL:** read it back through its `get_*` tool immediately
+after the write, again after the recycle, and — if still stale — after an API round trip. Record which
+of the three fired. Do not carry a conclusion from one entity to another; two entities on one build
+disagreed in opposite directions.
 
 ### Raw-SQL `AccessUser` writes create a split brain that nothing can flush — and it surfaces three endpoints away
 

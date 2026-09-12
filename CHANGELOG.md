@@ -3,6 +3,123 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.45.0]
+
+Fold-back sprint: dw-extend-providers, dw-extend-scheduled-tasks, dw-extend-mcp-tools, dw-extend-csharp-api, dw-data-access references, dw-setup-config and dw-setup-cli. Forty-six demo-build learnings land the scheduler contract (a scheduled-task run result is not evidence of effect; the schedule is served from a service cache; overdue tasks fire at app start), the notification-subscriber and provider contracts, the table of columns that fall outside an MCP tool's model when the Admin API command carries them, the SQL cache debt as UPDATE, flush, then touch with the per-entity taxonomy, a new SQL-direct gotchas reference, and the host-assembly copy recipe for the CLI skill. A scheduled-task code sample that used a logger enum member which does not exist is corrected.
+
+Extending a Dynamicweb 10 instance: the scheduler's real contract, the checkout/provider contracts,
+what an MCP tool's model leaves out, and the cache debt a SQL write owes.
+
+- **`RunSqlScheduledTaskAddIn` executes no SQL on 10.28.x and reports success anyway** — it binds its
+  parameters, logs `Run returned: True`, sets `TaskLastResult True`, and writes nothing. Measured
+  down to a bare single-row `INSERT`, with a hand-run control and a `JobScheduledTaskAddIn` activity
+  both writing through the same account. `dw-extend-scheduled-tasks` now routes SQL-shaped background
+  work to `JobScheduledTaskAddIn` or a C# `BaseScheduledTaskAddIn`, and the SKILL.md pitfall that
+  prescribed an assertion-SQL diagnostic through that add-in is retired. The `dw-demo-erp` DB-staged
+  mock, whose RESET rung was built on it, is corrected in the same pass.
+- **New `dw-extend-scheduled-tasks/references/scheduler-rows-and-runs.md`** — the scheduler facts the
+  column names actively mislead about. `TaskParentId` must be `NULL`, never `0` (the scheduler walks
+  the parent list, and a `0` produces no log line anywhere). `TaskBegin`'s time of day is the slot and
+  `TaskNextRun` is derived, so a hand-set next run is a one-shot and a single on-demand run silently
+  re-plans the task. `TaskCheckPrevious` gates on the previous task in the co-queued `TaskSort` order,
+  not on the row's own previous run — there is no overlap guard, and a flagged task with no queued
+  predecessor runs normally. `TaskRun` ignores `TaskEnabled` entirely, which makes "registered
+  disabled, driven only by `TaskRun`" the safe shape for a destructive job. The run history is on
+  disk under `Files/System/Log/ScheduledTasks`; there is no `ScheduledTaskLog` table, and the
+  `TaskLast*` columns read as "this platform records nothing" on a solution that has never thrown.
+  Also the row contract for a SQL registration, the task list as a flushable `TaskService` cache
+  rather than an app-start snapshot, and the domain-service recipe for clearing an indexed PIM field.
+- **The scheduled-task sample code compiles now.** `Dynamicweb.Logging.LogLevel` has no
+  `Informational` member (it is `Information`), and under `ImplicitUsings` both `ILogger` and
+  `LogLevel` are ambiguous with `Microsoft.Extensions.Logging`; the sample carries explicit aliases.
+- **New provider contracts in `dw-extend-providers`.** `checkout-handlers.md`: the base is
+  `Dynamicweb.Ecommerce.Cart.CheckoutHandler` with zero abstract members, `PaymentCheckoutSystemName`
+  is a .NET type name and `PaymentAddInType` stores the enum *name*; `GetBaseUrl(order)` already
+  carries the callback order id, and appending it again renders a blank page with nothing logged;
+  `OrderTransactionPayGatewayCode` is `nvarchar(4)`, so a longer code makes `SetOrderComplete` throw
+  and the order completes with every transaction column empty; `SetOrderComplete` persists the whole
+  posted payment form into `OrderGatewayResult`, so an inline card form must never POST the PAN;
+  and the platform maintains `order.CaptureAmount`, so a handler that writes it stores double.
+  `pricing-fees-and-validation.md`: `FeeProvider.FindFee` must return `null` (the manager breaks on
+  the first non-null, so a zero price suppresses everything after it), `FindFee` is the *shipping*
+  fee and a card surcharge belongs on the payment-fee notification, price and fee providers activate
+  by attribute with no UI step, an exclusive price provider's own scope test is the whole
+  specification, and every shipped ordering rule parses through `Double.TryParse` so a date
+  comparison always needs a custom discovered `Rule`. `notification-contracts.md`: refusal is per
+  notification and never platform-wide, the user before-save hook cannot veto and does not reach the
+  password path, cart order-validation is raised at the checkout step only, the product-catalog
+  notifications are annotated with their raiser so a per-view write lands on the detail path, and a
+  `Standard.Page.Loaded` subscriber can redirect a page out of reach invisibly to every content API.
+- **`dw-extend-mcp-tools` names the one cause behind "MCP and the Admin API disagree":** the tool
+  carries its own model, which is a subset of the domain service's, and nothing says which columns
+  fall outside it. New `references/tool-surface-gaps.md` catalogues the measured cases — write-only
+  shop language relations with no read-back, custom order fields absent from the order read, the
+  shipping/payment group restrictions and method-country relations no tool exposes, two translation
+  entities with no verb in either direction, `delete_products` leaving group relations and category
+  field values dangling, and `force_price_recalculation` broken on this build. The identifier
+  parameter convention is also recorded: by-id tools take a bare `id`, paragraph and module tools
+  take `pageId`/`paragraphId`, and a mis-named argument can return a successful empty `content: []`.
+- **A raw SQL write to a cached entity is not merely read stale — the next API save erases it.**
+  `dw-data-access/references/cache-invalidation.md` now states the ordering once: `UPDATE`, flush the
+  owning service, then touch the entity, with nothing re-saving it in between. Alongside it, the
+  per-entity invalidation taxonomy — self-invalidating, recycle-clears-it, needs-an-API-round-trip —
+  because "SQL plus a recycle is enough" behaved oppositely on two entities of one build. New rows
+  for `EcomProductsRelated` (its own `ProductRelatedGroupService` / `ProductRelatedService` storage
+  types; a `ProductService` flush and a full index build both do nothing) and for
+  `Paragraph.ParagraphModuleSettings`, plus a note that cache type names are not inferable.
+- **New `dw-data-access/references/sql-direct-gotchas.md`** — `ParagraphModuleSettings` holds XML in
+  an `nvarchar(max)` column, so `CONVERT(xml, …)` on the assignment fails with an error that reads
+  backwards; and IDENTITY allocation is not transactional, so every id printed by a rolled-back dry
+  run is invalid at commit time (capture with `SCOPE_IDENTITY`, assert on counts and relationships).
+- **The Dynamicweb file archive is public by extension, not by permission** — new
+  `dw-setup-config/references/host-exposure-and-paths.md`. `.xml` and `.json` are not on the
+  static-file blocklist and a `/Files` request never reaches the page pipeline, so integration job
+  files publish their `SqlProvider` connection credentials anonymously and a role-gated asset library
+  gates the browser without gating a byte. The fix is the provider's own `<SourceServerSSPI>` /
+  `<DestinationServerSSPI>` switches, which survive Dynamicweb re-serialising the job files; a
+  site-level `requestFiltering` deny is unavailable where the `<security>` section is machine-locked.
+  Same file: a `web.config` `<location path="." inheritInChildApplications="false">` means an
+  explicitly configured sub-path loses the ASP.NET Core handler and 404s while the filter under test
+  still passes.
+- **Config reload semantics and a mail-server prerequisite in `dw-setup-config`.** A product-index
+  `.query` file hot-reloads and `GlobalSettings.config` does not, so query shapes are free to iterate
+  and a settings change costs the recycle. And mail-dependent sign-in is *disabled*, not degraded,
+  when SMTP is unreachable: a magic-link token is not committed unless the send succeeds, so the
+  saved `.eml` carries a well-formed link that can never redeem.
+- **C# API additions in `dw-extend-csharp-api`.** Loyalty accrual goes through
+  `LoyaltyService.CreateTransaction`, which writes the ledger and the balance together, with
+  `ObjectElement` as the durable dedupe — `AddPointsToUserPointBalance` moves the balance with no
+  audit trail, and `Order.AfterSave` fires on every save of a completed order. And a Razor template
+  compiles into its own dynamic assembly with no `InternalsVisibleTo`, so every member it references,
+  `const` strings included, must be `public`.
+- **`dw-setup-cli`** gains the self-hosted deploy order: app-pool **stop**, copy the DLL, **start** —
+  a recycle drains the old worker, which keeps `bin/*.dll` locked.
+
+justdynamics/Truvio.Commerce.Foundry#647, justdynamics/Truvio.Commerce.Foundry#652,
+justdynamics/Truvio.Commerce.Foundry#664, justdynamics/Truvio.Commerce.Foundry#666,
+justdynamics/Truvio.Commerce.Foundry#676, justdynamics/Truvio.Commerce.Foundry#679,
+justdynamics/Truvio.Commerce.Foundry#680, justdynamics/Truvio.Commerce.Foundry#684,
+justdynamics/Truvio.Commerce.Foundry#706, justdynamics/Truvio.Commerce.Foundry#707,
+justdynamics/Truvio.Commerce.Foundry#711, justdynamics/Truvio.Commerce.Foundry#712,
+justdynamics/Truvio.Commerce.Foundry#716, justdynamics/Truvio.Commerce.Foundry#742,
+justdynamics/Truvio.Commerce.Foundry#755, justdynamics/Truvio.Commerce.Foundry#756,
+justdynamics/Truvio.Commerce.Foundry#758, justdynamics/Truvio.Commerce.Foundry#759,
+justdynamics/Truvio.Commerce.Foundry#797, justdynamics/Truvio.Commerce.Foundry#806,
+justdynamics/Truvio.Commerce.Foundry#807, justdynamics/Truvio.Commerce.Foundry#808,
+justdynamics/Truvio.Commerce.Foundry#809, justdynamics/Truvio.Commerce.Foundry#810,
+justdynamics/Truvio.Commerce.Foundry#811, justdynamics/Truvio.Commerce.Foundry#812,
+justdynamics/Truvio.Commerce.Foundry#816, justdynamics/Truvio.Commerce.Foundry#841,
+justdynamics/Truvio.Commerce.Foundry#846, justdynamics/Truvio.Commerce.Foundry#847,
+justdynamics/Truvio.Commerce.Foundry#849, justdynamics/Truvio.Commerce.Foundry#852,
+justdynamics/Truvio.Commerce.Foundry#854, justdynamics/Truvio.Commerce.Foundry#856,
+justdynamics/Truvio.Commerce.Foundry#875, justdynamics/Truvio.Commerce.Foundry#883,
+justdynamics/Truvio.Commerce.Foundry#888, justdynamics/Truvio.Commerce.Foundry#889,
+justdynamics/Truvio.Commerce.Foundry#891, justdynamics/Truvio.Commerce.Foundry#915,
+justdynamics/Truvio.Commerce.Foundry#916, justdynamics/Truvio.Commerce.Foundry#917,
+justdynamics/Truvio.Commerce.Foundry#919, justdynamics/Truvio.Commerce.Foundry#924
+
+folded into the `dw-data-access` per-entity section; the issue itself is a duplicate of #676)
+
 ## [4.44.0]
 
 Fold-back sprint: dw-demo-swift, dw-swift-building, dw-swift-page-blocks and dw-swift-page-design. Forty-one demo-build learnings land as three foundational references under dw-swift-building (grid-row mechanics, layout verification, shipped-template defects on Swift 2.4.0) and two demo references (the fresh-deserialize sweep, RMA claims in the customer center), with four rewrites of guidance that was wrong: the visually-hidden idiom that caused the overflow its guard exists to prevent, the paragraph-template restart row, the header mega-menu bridge, and the grid-row copy claim. A demo engagement slug that had leaked into the mobile-pass reference is scrubbed.

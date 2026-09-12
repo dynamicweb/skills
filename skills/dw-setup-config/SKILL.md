@@ -14,6 +14,7 @@ description: 'Configure Dynamicweb 10 environment and connection settings. Trigg
 | Topic | Where |
 |---|---|
 | Tracking, Insights and health providers — which tables the Marketing widgets actually read (`Tracking*`, not `Statv2*`), the `DoNotTrackConnectionCloseHeader` empty-tracking trap, the 10.28.x cookie-write defect, `Tracking/Level` parse fallback, the `TrackingSession%` table-name resolution hazard, health providers over `/Admin/Api`, the partially-contained-DB `ContentDataHealthProvider` 500, and `GeneralLog`/`ScheduledTaskExecution` retention | [`references/tracking-insights.md`](references/tracking-insights.md) |
+| The file archive is public by extension (`.xml` / `.json` are not blocked, so job-file credentials and gated asset libraries are anonymously downloadable), integrated security for `SqlProvider` activities, and the `web.config` `<location>` that unhooks the app from a configured sub-path | [`references/host-exposure-and-paths.md`](references/host-exposure-and-paths.md) |
 
 ## Configuration Files and Their Priority
 
@@ -27,6 +28,18 @@ Dynamicweb 10 uses a layered configuration system. All `.config` files in `/File
 | `GlobalSettings.Database.config` | `/Files/` root | DB connection only — overrides GlobalSettings |
 | `web.config` | Solution root (IIS only) | Environment variables, process path |
 | `launchSettings.json` | Project root | VS / .NET CLI launch profiles |
+
+### Which config surfaces reload, and which cost a restart
+
+The reload semantics differ per file, and the difference is a restart budget:
+
+| Surface | Reload |
+|---|---|
+| A product-index `.query` file | **Hot** — watched and re-read within seconds. Iterate query shapes freely; a storefront listing empties and refills on the edit alone |
+| `GlobalSettings.config` (and its `GlobalSettings.*.config` overrides) | **Restart.** An ecommerce switch flipped here changes nothing at all until the app pool recycles |
+
+So sequence a change window as: settle every `.query` shape first, for free, then spend the one
+recycle on the `GlobalSettings` change.
 
 ## appsettings.json
 
@@ -197,6 +210,26 @@ Access via **Settings** in the Dynamicweb admin:
 
 Cloud default: `smtp.dynamicweb-cms.com`. On Azure App Service, check **"Do not use SMTP pickup directory"** and use an external SMTP relay — the pickup directory is not supported on App Service.
 
+**Point `/Globalsettings/System/MailServer/Server` at a reachable SMTP service on every host,
+including an offline dev or demo box** (`127.0.0.1` works on Windows with the IIS SMTP feature).
+Mail-dependent sign-in is **disabled, not degraded, when the send throws**: a magic-link token is not
+committed unless the send succeeds. With an unreachable server the user gets an `EmailException`
+stack trace rendered onto the sign-in page, Dynamicweb still saves a correct, fully formed message
+with a real one-time URL — and opening that URL, immediately and well inside its expiry, returns the
+sign-in form with `MfaVerificationFailed`. It reads as "magic link is broken in Dynamicweb" and it is
+"mail is down". Changing that one setting makes the identical link redeem first time.
+
+Where the token has to be read out of the platform rather than an inbox, note that the location moves
+with the outcome:
+
+| Send outcome | Where the message is |
+|---|---|
+| **Failed** | `Files/System/Log/EmailHandler/<timestamp>_<guid>.eml`, logged as "The message was saved for reference" — a complete message whose link does **not** work |
+| **Succeeded** | No copy is written at all; the message is wherever the SMTP service put it. With an unroutable recipient on a Windows host that is the service's Badmail folder, which quotes the original verbatim |
+
+So an acceptance criterion of "the outgoing mail is visible in the mail log" is satisfiable on a host
+where the link provably does not work. Assert the sign-in, not the mail.
+
 ## Dynamicweb Cloud Control Files
 
 Place these files in `/Files/System/CloudHosting/` to trigger platform operations:
@@ -265,6 +298,11 @@ change — inline the bytes into the authorised response as a base64 `data:` URI
 5. **SMTP relay verified** — send a test email from the admin before go-live.
 6. **`GlobalSettings.Database.config` in place and gitignored** — no DB credentials in version control.
 7. **IIS app pool: `LoadUserProfile = true`** — required for Windows auth scenarios.
+8. **File-archive exposure enumerated** — anonymously request every extension you ship under `/Files`
+   and record what answers 200. Integration job files carry integrated security rather than a
+   connection string (grep them as UTF-16LE), and any asset library that is meant to be gated is
+   moved off the web root or put behind an authenticated handler. See "The file archive is public by
+   extension" above.
 
 ## Recommended .gitignore Entries
 

@@ -203,6 +203,32 @@ Order? order = service.GetById(orderId);
 | `Services.Feeds` | `FeedService` | GetFeed, GetFeeds |
 | `Services.CompletionRules` | `CompletionRuleService` | GetCompletionRule, GetCompletionRules |
 
+## Loyalty points: the ledger writes both, the balance call writes one
+
+Two APIs in two assemblies do different amounts of work, and the one whose name says "points" does
+less:
+
+| Call | Assembly | What it writes |
+|---|---|---|
+| `UserService.AddPointsToUserPointBalance(User, double)` | `Dynamicweb.Core` | `AccessUser.AccessUserPointBalance`, and nothing else — **no ledger row, so no audit trail and nothing to dedupe against** |
+| `LoyaltyService.CreateTransaction(UserTransaction[, OrderLine \| User])` (via `Services.Loyalty`) | `Dynamicweb.Ecommerce` | `EcomLoyaltyUserTransaction` **and** the balance, in one call |
+
+**Accrue with `CreateTransaction`, and use the ledger as the dedupe.** Stamp the order id into
+`UserTransaction.ObjectElement` (e.g. `"ACCRUAL:<orderId>"`), call
+`ClearUserTransactionCache(userId)` — the read is cached — then scan `GetUserTransactions(userId)`
+for that value before accruing. That survives recycles and worker swaps, which a process-local set
+of order ids does not, and it matters because `Ecommerce.Order.AfterSave` fires on **every** save of
+a completed order (an order-state pass, a gateway capture, a recalculate, an ERP status import), so
+an unguarded accrual double-counts silently while `EcomLoyaltyUserTransaction` sits at zero rows.
+
+`UserTransaction` carries `{ Id, UserId, User, RewardId, Points, TransactionDate, ObjectType
+(EcomOrderLine | User | OrderDiscount | ScheduledTask), ObjectElement, Comment }`;
+`UserTransactionService` is a cache facade only, with no `Save` and no `Get`.
+
+Two things to know when reading the numbers back: the repository **rounds `Points` to a whole
+number** on the way in (13.49 stores as 14), and `AccessUserPointBalance` is not maintained as the
+sum of the ledger — never assert `balance == SUM(points)`.
+
 ## Razor Code-Behind Pattern
 
 In Razor templates, write custom logic inside `@{ }` blocks. Access services the same way:
@@ -226,6 +252,23 @@ In Razor templates, write custom logic inside `@{ }` blocks. Access services the
     <p>@product.Name — @product.DefaultPrice</p>
 }
 ```
+
+### Everything a template references must be `public` — const strings included
+
+A Razor template compiles into its **own dynamic assembly**
+(`CompiledRazorTemplates.Dynamic.RazorEngine_<guid>`) with no `InternalsVisibleTo`, so `internal`
+members of your host assembly are simply not there. Declare every member a template will touch
+`public`, including `const` strings on a static helper class.
+
+The failure is loud on the surface and silent everywhere upstream: the C# build is clean, the deploy
+is clean, and a metadata verification pass sees the constants emitted (they are — just not public).
+At render time the page returns a full error dump reading `'<HelperClass>' does not contain a
+definition for '<Constant>'`. Because the **same class's public methods resolve happily**, the
+message reads as "the wrong assembly is loaded" and sends you to `bin`; the error names the class,
+not the accessibility.
+
+**Reference one member from Razor before deploying**, not after. Widening a `const` is a rebuild, and
+a rebuild is a host restart.
 
 ## Pitfalls
 

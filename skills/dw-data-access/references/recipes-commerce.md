@@ -38,6 +38,10 @@ restart it owes. RMA and claims: [`recipes-commerce-rma.md`](recipes-commerce-rm
 - [`ProductHidden` is enforced in SQL and unwritable by every API](#producthidden-is-enforced-in-sql-and-unwritable-by-every-api)
 - [The two stock tables: asserting the aggregate matches the locations](#the-two-stock-tables-asserting-the-aggregate-matches-the-locations)
 
+**Order capture**
+
+- [Driving an order capture from outside the product](#driving-an-order-capture-from-outside-the-product)
+
 ---
 
 # Orders and order states
@@ -295,3 +299,25 @@ SELECT COUNT(*) FROM (
   HAVING ISNULL(SUM(su.StockUnitQuantity), 0) <> p.ProductStock
 ) d;   -- must be 0
 ```
+
+## Driving an order capture from outside the product
+
+Surface: Management API `OrderCapture` via `POST /Admin/Api/OrderCapture`. The MCP tool set carries
+no capture verb, so in the product the capture is done from the order's screen in the backend; this
+is the headless route. The handler-side contract it drives — `OrderService.Capture` calling exactly
+one of `IRemoteCapture` / `IRemotePartialCapture` and owning `order.CaptureAmount` itself — is in
+`dw-extend-providers`, `references/checkout-handlers.md` ("Capture: the platform owns the running
+total"), where that skill ships.
+
+The model needs **both `Currency` and `CurrencyCode`**.
+`{"Model":{"id":"ORDER32"},"CaptureAmount":5.00}` is rejected with
+`{"":["Model validation failed"],"Currency":["The value is required."]}`, and a lower-cased
+`"currency"` is rejected identically. The working body:
+
+```json
+{"Model":{"id":"ORDER32","Currency":"USD","CurrencyCode":"USD"},"CaptureAmount":5.00}
+```
+
+Read the capture back from the order rather than from the command's response: the platform stamps
+`CaptureAmount` and `CaptureInfo` on a freshly loaded order and fires
+`DWN_ECOM_ORDER_AFTER_ORDER_CAPTURED` after the handler returns.

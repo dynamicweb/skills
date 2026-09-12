@@ -143,6 +143,21 @@ and creates orphans / stale caches. (The admin UI is a SPA client of `/admin/api
 Admin API call underneath — so the Management API reaches the same services as a second transport, and
 "this only exists in the UI" means the endpoint hasn't been found yet, not that one is missing.)
 
+### The one cause behind "MCP and the Admin API disagree": the tool's model is a subset
+
+An MCP tool and the Management API verb behind it are generated over the **same** domain service, but
+the tool carries its own **model**, and that model is a *subset* of what the service accepts and
+returns. Neither the tool description nor its schema says which columns fall outside it. Everything
+below — the silent no-ops, the write-only fields with no read-back, the entities with no verb at all,
+the deletes that leave relation rows behind — is that one fact in different clothes.
+
+So, as a standing rule: **a column you cannot see in the tool's model is not a column the tool
+handles.** Round-trip through the Management API verb, the rendered page, or the stored row before
+concluding a value landed, and reach for the raw verb (or `SQL`, local-install only, with its owed
+flush) only after naming which rung was tried. The catalogue of measured gaps — read-only families,
+write-only families, entities with no translation verb, and referentially incomplete deletes — is in
+[`tool-surface-gaps.md`](tool-surface-gaps.md).
+
 ### Silent no-ops — a success status does not guarantee the field was applied
 
 A `succeeded` / `status: ok` response from an MCP or Management API write does NOT guarantee every field
@@ -177,6 +192,23 @@ the schema in `tools/list`:
 |---|---|---|
 | `patch_products_safe` `customFields` | `[{id: "<full path>", value: "<string>"}]`, both members required, both **strings** | `[{systemName: ..., value: 0}]`, which is the shape `/Admin/Api/ProductById` ECHOES when you read the same fields back |
 | `set_paragraph_item_fields` `fields` | a MAP: `{Layout:'tabs', Title:'Specifications'}` (`additionalProperties: string`) | a list of `{systemName, value}` objects |
+
+#### The identifier-parameter convention is split, and a wrong name fails hintlessly
+
+The by-id tools and the paragraph/module tools disagree about what to call the identifier, so guessing
+from the tool name is a coin flip:
+
+| Family | Parameter | Examples |
+|---|---|---|
+| Entity-by-id reads and deletes | bare **`id`** | `get_product_by_id`, `get_group_by_id`, `get_order_by_id`, `delete_order` — all take `{"id": ...}`, never `productId` / `groupId` / `orderId` |
+| Product-by-SKU | singular **`sku`** | `get_products_by_sku` |
+| Paragraph, module and grid tools | **`pageId`** or **`paragraphId`** | `get_paragraphs_by_page_id` and `get_grid_rows_by_page_id` take `pageId`; `get_paragraph_item_field_values` and `get_module_settings` take `paragraphId`. Passing `id` to any of them fails |
+
+A mis-named argument is not rejected loudly: depending on the tool it surfaces as the bare
+`"An error occurred invoking '<tool>'."` **or as a perfectly successful response with empty
+`content: []`**. So **read an empty result as a possible parameter-name error first**, not as missing
+data — confirm the entity exists through a second surface before concluding anything about the data.
+Take the parameter name from the tool's own schema in `tools/list` rather than from its name.
 
 For `customFields` the key is the full `ProductCategory|<cat>|<field>` path and **every value must be
 stringified**, numbers included; a multi-select list is a **comma-joined string**, not a JSON array

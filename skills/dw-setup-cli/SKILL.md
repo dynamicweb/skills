@@ -182,7 +182,7 @@ here.
 
 | Task | Reference | The trap it documents |
 |---|---|---|
-| Install a `.dll`/`.nupkg` add-in, queued or immediate, and trigger a recycle | [references/addin-install.md](references/addin-install.md) | `dw install` reports success whether or not your assembly loaded |
+| Install a `.dll`/`.nupkg` add-in, queued or immediate, trigger a recycle, or copy a host assembly onto a self-hosted IIS install (stop, copy, start) | [references/addin-install.md](references/addin-install.md) | `dw install` reports success whether or not your assembly loaded |
 | Upload, update, export, delete or move Files-archive content | [references/files-archive.md](references/files-archive.md) | without `-o` an import silently skips, and 1.1.2+ prints no API response to tell you |
 
 Whichever you run, Step 3 is not optional.

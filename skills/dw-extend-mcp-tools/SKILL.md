@@ -13,7 +13,8 @@ description: 'Step-by-step guide for adding new MCP tools to the Dynamicweb MCP 
 
 | Topic | Where |
 |---|---|
-| The Backend MCP server (**Truvio Commerce MCP**, package `Truvio.Commerce.MCP`, formerly `Dynamicweb.MCP`, at `/admin/mcp`) — installing the AddIn (AppStore first; a csproj `PackageReference` only on an explicit user choice, never a remembered package id), the auth model (API Key vs Claude.ai OAuth), the two `AccessUserToken` rows, headless token+config provisioning in code, and the silent no-op catalogue for MCP/Management API writes | [`references/backend-mcp-server.md`](references/backend-mcp-server.md) |
+| The Backend MCP server (**Truvio Commerce MCP**, package `Truvio.Commerce.MCP`, formerly `Dynamicweb.MCP`, at `/admin/mcp`) — installing the AddIn (AppStore first; a csproj `PackageReference` only on an explicit user choice, never a remembered package id), the auth model (API Key vs Claude.ai OAuth), the two `AccessUserToken` rows, headless token+config provisioning in code, the silent no-op catalogue for MCP/Management API writes, and the identifier-parameter convention (`id` vs `pageId`/`paragraphId`) | [`references/backend-mcp-server.md`](references/backend-mcp-server.md) |
+| Where an existing tool's model is narrower than the domain service behind it — write-only fields with no read-back, read-only fields a save cannot reach, entities with no verb at all, a delete that leaves relation rows dangling, and version-pinned broken tools. Read it before adding a tool to a domain that already has one | [`references/tool-surface-gaps.md`](references/tool-surface-gaps.md) |
 
 ## Purpose
 
