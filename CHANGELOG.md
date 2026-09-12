@@ -3,6 +3,96 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.43.0]
+
+Fold-back sprint: dw-search-indexing, dw-pim-modelling, dw-pim-localization, dw-demo-base and dw-demo-foldback. Twenty-eight demo-build learnings land the index-file authoring rules that are invisible through the API as one table, sharpen the PIM structural and localization references in their existing homes, and fold the demo-base host and fold-back rules; four supersede sweeps rewrite the scroll-width-only mobile assert, the multipart cart-form rule, the deserialize output-directory option and the governance-metric recommendation where they lived.
+
+- **A `.index` file is authored on the filesystem, and every rule that matters there is invisible from
+  the API.** `BuildIndex`, `IndexStatusesByRepository` and `FieldDefinitionBasesByRepositoryAndIndexName`
+  all report a healthy index while a declared field is absent, so `dw-search-indexing` now carries one
+  table of the authoring rules — `Field/@Source` is a database column while `Copy/@Sources` are index
+  system names, a `Copy` field may carry `Analyzer` and `Boost`, `Skip*` settings sit on the `<Build>`
+  nodes and are read at build time (no restart), an extension-declared field cannot be overridden from
+  the file — plus the standing rule that an index schema is asserted against the Lucene directory,
+  never against the API, and the negative fact that no backend free-text or wildcard search setting
+  exists on this build.
+
+- **The shipped user index carries a password hash and the whole impersonation graph in the same
+  document.** Standing up a user repository writes one hash per account into a Lucene file under the
+  web root, from the platform's own schema extender, with no switch; the same extender publishes
+  `CanImpersonate` / `CanBeImpersonatedBy`, group-expanded and numeric, which makes a permission-scoped
+  user picker one query arm. Both facts are stated together in `dw-search-indexing`, with pointers from
+  `dw-users-permissions` where readers of a permission-scoping query actually look.
+
+- **A repository `.query` gets its Lucene query shape from the right-hand side's declared `Type`, and a
+  parameter set to the empty string is not an unset one.** A numeric field needs `System.Int32` /
+  `System.Int32[]`; a string type against it matches nothing, silently, failing closed. A missing `Type`
+  surfaces as `The given key '' was not present in the dictionary`, and `IsIndexed=False` on a stored
+  document is not a diagnostic. Separately, an unset parameter drops its arm while an empty one is
+  compared and matches nothing — so a caller assigns only the parameters it has a value for.
+
+- **A field declared in the index schema is not thereby queryable.** Custom product fields arrive as
+  stored payload and no `Field` or `Copy` declaration makes them filterable; a field the builder
+  populates for only some documents produces a sort that works in one direction and looks inert in the
+  other; and `IsEmpty` has no working serialization on the Lucene provider, so "this field has no
+  value" is expressed positively (a sentinel, or a real value on every document) or not at all. The
+  complementary-count check that catches all three is restated where each lands.
+
+- **Say what actually triggers a rebuild.** `ShopAutoBuildIndex` does not fire for a product written
+  through the Management API or an MCP tool, so the promise is a scheduled Update build, not a
+  save-triggered one. The MCP index tools default `indexName` to a name the repository does not carry
+  and then succeed vacuously; pass the index file name, and gate on the document count rather than on
+  `completed: true`.
+
+- **PIM structural facts that no read surface reports**: `EcomGroups.GroupType` is the only thing
+  separating the data-model tree from the catalogue tree and the MCP group reads omit it, so a
+  group-tree cleanup reads it first; `ProductId` is a 30-character column while `ProductNumber` is 255,
+  with nothing validating the difference before a bulk import; a per-location attribute has no home
+  outside `EcomStockUnit`; asset categories are `EcomDetailsGroup` with two shipped rows, so a
+  document's type comes from its own name; and the standard fields `get_standard_fields` lists are
+  `EcomProducts` columns that the MCP custom-field path cannot write — the reachable write is a
+  `ProductById` → `ProductSave` round trip.
+
+- **"Falls back to the default language" means that one layer and no other.** Translation rows stranded
+  under a non-default layer are invisible rather than fallen back, so they are authored under the live
+  default language; and a missing translation is never an error — one view model returns the system
+  name and another returns the raw id, which makes the delivery API unusable for verifying an
+  asset-category translation.
+
+- **Demo-build gates that passed while the thing they guard was broken.** A serializer dry run's entry
+  count is the blast radius, not a count, because deserialize is driven by the manifest under
+  `SerializeRoot` and ignores the config's predicates and `outputDirectory` — scoping a run means
+  swapping the manifest, with a byte-for-byte unstage assertion. A mobile overflow check comparing
+  `scrollWidth` to `innerWidth` cannot fire once unshrinkable content has widened the layout viewport,
+  so `innerWidth` is asserted against the requested width as well. A PII sweep runs over the rendered
+  corpus as each persona, because orders keep their own copy of the customer identity. A form probe
+  matches the rendered form's `enctype` instead of assuming multipart. And a scripted edit asserts a
+  non-zero diff, with line-wise patterns written `[^\r\n]*\r?\n` against CRLF layer text.
+
+- **Two demo-host hazards**: a restored database routinely carries orphaned shop/group relation rows
+  that no surface reports and that make a group audit unreadable — a standing post-restore query now
+  catches them; and a package the host csproj already references must be upgraded there, because an
+  Add-in-manager install of the same package duplicates type keys and takes the whole site down.
+
+justdynamics/Truvio.Commerce.Foundry#644, justdynamics/Truvio.Commerce.Foundry#672,
+justdynamics/Truvio.Commerce.Foundry#674, justdynamics/Truvio.Commerce.Foundry#675,
+justdynamics/Truvio.Commerce.Foundry#681, justdynamics/Truvio.Commerce.Foundry#695,
+justdynamics/Truvio.Commerce.Foundry#714, justdynamics/Truvio.Commerce.Foundry#715,
+justdynamics/Truvio.Commerce.Foundry#721, justdynamics/Truvio.Commerce.Foundry#727,
+justdynamics/Truvio.Commerce.Foundry#740, justdynamics/Truvio.Commerce.Foundry#761,
+justdynamics/Truvio.Commerce.Foundry#762, justdynamics/Truvio.Commerce.Foundry#763,
+justdynamics/Truvio.Commerce.Foundry#765, justdynamics/Truvio.Commerce.Foundry#766,
+justdynamics/Truvio.Commerce.Foundry#771, justdynamics/Truvio.Commerce.Foundry#783,
+justdynamics/Truvio.Commerce.Foundry#787, justdynamics/Truvio.Commerce.Foundry#803,
+justdynamics/Truvio.Commerce.Foundry#804, justdynamics/Truvio.Commerce.Foundry#879,
+justdynamics/Truvio.Commerce.Foundry#899, justdynamics/Truvio.Commerce.Foundry#900,
+justdynamics/Truvio.Commerce.Foundry#904, justdynamics/Truvio.Commerce.Foundry#945
+
+and the stage/unstage recipe; the engine ask — honour `outputDirectory` on the deserialize path, or
+hard-fail when manifest entries are not accounted for by the config predicates — stays with the
+serializer), justdynamics/Truvio.Commerce.Foundry#728 (skill half: the `innerWidth` assertion and the
+vertical-navigation rule; the harness probe change and the layer fix stay with their owners)
+
 ## [4.42.0]
 
 Fold-back sprint: dw-integration-framework, dw-integration-erp and dw-demo-erp. Forty demo-build learnings give the integration framework its first references (the job-file format, destination-side provider behaviour, custom provider authoring), add feed keying to the ERP skill and a two-way mock recipe to the ERP demo skill, and rewrite three measurably wrong claims in the mock-deltas reference.
