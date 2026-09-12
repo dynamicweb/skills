@@ -35,9 +35,10 @@ because it was populated from the same request.
 
 **Round-trip through something other than the write's own response.** After a write:
 
-1. Read the entity back with a *different* tool than the one that wrote it — `get_product_by_id`
-   or `get_products_by_sku` after `update_products`, `get_page_by_id` after `save_pages`,
-   `get_item_field_values` after `set_item_field_values`.
+1. Read the entity back with a *different* tool than the one that wrote it — `get_products_by_ids`
+   or `get_products_by_sku` after `update_products`, `get_pages_by_ids` after `save_pages`,
+   `get_item_field_values` after `set_item_field_values`. (Some builds register singular `*_by_id`
+   variants instead of the batch forms; read `tools/list` and use what is there.)
 2. Compare the **stored value**, field by field, against what was sent. A field that is absent
    from the read is not "defaulted" — it is unwritten.
 3. For anything a visitor sees, read it once more through the surface the visitor uses —
@@ -57,7 +58,7 @@ second tool call rebuilds it.
 
 | The write | What goes stale | The follow-up |
 |---|---|---|
-| Product create, update, delete, group assignment, field or data-model change | The product index — search, filtered listings, and every query that reads through it | `build_product_index`, then `wait_for_product_index`; `get_product_index_status` reports progress and completion |
+| Product create, update, delete, group assignment, field or data-model change | The product index — search, filtered listings, and every query that reads through it | `build_product_index`, then `wait_for_product_index`; `get_product_index_status` reports progress and completion. **Read the caution below before trusting the rebuild.** |
 | Assortment membership: products, groups, shops, users or permissions on an assortment | The materialized assortment, so the customer still sees the old catalog | `flag_assortments_for_rebuild`, then `build_assortments` |
 | Price rows, currency changes, price-affecting discount or customer-group edits | Computed prices on products and carts | `force_price_recalculation` |
 | Country, region, or VAT-country relation edits | The country cache behind address, tax and shipping lookups | `clear_country_cache` (or `clear_countries_cache_by_keys` for named entries) |
@@ -71,9 +72,28 @@ Two rules make this usable:
   *accepted*. Poll `get_product_index_status`, or block on `wait_for_product_index`, and then
   re-read the data through a query tool before reporting the change as done.
 
-Everything not in this table is self-invalidating through the tool that wrote it. Cache flushing by
-verb, host restarts, and the ordering rules for mixed surfaces are out of scope here and belong to
-[`dw-data-access`](../dw-data-access/SKILL.md).
+### The product rebuild reads through caches the write does not flush
+
+**A product index rebuild can index pre-write values, and it reports success either way.** On this
+platform line the index builder reads product and category data through the `ProductService`,
+`ProductCategoryFieldValueService` and `ProductCategoryService` caches, and an MCP product write does
+not flush them. This fires on the MCP patch surface, not only on out-of-product writes: patch a
+field, call `build_product_index`, poll to completion, and the index can still serve the old value
+while everything reports done. The correct order is **write, flush, rebuild, re-verify**.
+
+**No MCP tool flushes those caches.** In product, that makes the flush the one step of this table
+you cannot take yourself. So: after a product write and before the rebuild, **tell the user to flush
+from the admin — Settings → System info → Cache — and wait for that** before calling
+`build_product_index`. If the rebuild has already run, flush and rebuild again. Never report the
+change as live on the strength of a completed rebuild alone; re-read the value through
+`get_products_by_query` or `get_products_by_search_filter` and say plainly when the read still
+disagrees. The mechanism, the affected services and the out-of-product flush verb are in
+[`dw-data-access/references/cache-invalidation.md`](../dw-data-access/references/cache-invalidation.md).
+
+Every other write in this table is flushed by the tool that made it. **Everything not in this table
+is self-invalidating through the tool that wrote it, with that one read-through exception.** Cache
+flushing by verb, host restarts, and the ordering rules for mixed surfaces are out of scope here and
+belong to [`dw-data-access`](../dw-data-access/SKILL.md).
 
 ## Never clone a structural tree outside the create path
 

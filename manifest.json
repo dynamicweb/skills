@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-12T14:06:59.980Z",
+  "generatedAt": "2026-09-12T14:50:13.182Z",
   "skills": [
     {
       "name": "dw-content-localization",
@@ -121,14 +121,6 @@
       "mcp": "none",
       "description": "Build providers, notification subscribers, and AddIns for Dynamicweb 10.",
       "path": "skills/dw-extend-providers/SKILL.md"
-    },
-    {
-      "name": "dw-integration-erp",
-      "type": "knowledge",
-      "group": "integration",
-      "mcp": "none",
-      "description": "Configure ERP connectors and data ownership in Dynamicweb 10.",
-      "path": "skills/dw-integration-erp/SKILL.md"
     },
     {
       "name": "dw-integration-framework",
