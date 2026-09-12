@@ -8,6 +8,10 @@ A Claude plugin marketplace of skills for Dynamicweb 10, bundled by role. The re
 markdown and configuration files — no build system and no runtime code. The tooling is
 `scripts/validate-skills.py`, a structural linter, and `scripts/build-manifest.mjs`, which
 regenerates `manifest.json` from the skills' frontmatter; run both before every commit.
+**Both run on the repo checkout, not on a solution host:** `validate-skills.py` needs Python 3.12
+on `PATH` and the manifest builder needs Node, and the Dynamicweb hosts where skills are exercised
+ship neither — so the tool-name registry and the Dynamo ratchet are inert there and a measurement
+session cannot have run them.
 
 The linter also **ratchets the Dynamo surface**: a `dynamo: true` skill is served to the agent
 running inside the product, whose whole surface is the MCP tool set plus read/write under `Files/`,
