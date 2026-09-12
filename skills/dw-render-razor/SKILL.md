@@ -268,11 +268,32 @@ When you need the current loop position:
 
 ## Deep reference
 
+[references/template-compilation.md](references/template-compilation.md) — **why a template fails to
+compile, which template a request resolves to, and what the render can still decide**:
+
+- **Warnings-as-errors** — an `[Obsolete]` call site is a hard render failure, with the current
+  substitutes; extension methods need a `@using` for their namespace, not only for the types named.
+- **Which helpers exist on `ViewModelTemplate<T>` versus the classic tag base** — `GetGlobalValue`
+  and `@Html.Raw()` are absent, with the substitute that works; `product.ProductFieldValues` lives
+  on the entity, not the view model.
+- **`@Include` inlines into the includer's compiled class** — one scope across every partial a page
+  pulls in, so locals need a per-file prefix; and how to share one file between a ViewModel template
+  and a classic step template when `RenderPartial<T>` cannot.
+- **`ParagraphTemplate` path resolution** — a relative path resolves against `/Files/Templates/`, and
+  a miss is an HTTP 200 with prose in the layout.
+- **Render order** — `Context.Current.Items["ProductDetails"]` is the last product rendered, not the
+  page's product; a template guard is a UI affordance, not an authorisation rule.
+
+[references/paragraph-endpoints.md](references/paragraph-endpoints.md) — **serving a non-page payload
+from a paragraph**: the `PageClean` + `?ParagraphID=` recipe, keeping the endpoint out of the host
+page's composition, resolving the endpoint by item type, the response contract (`StatusCode` and
+`AddHeader` reach the wire, `ContentType` and `BinaryWrite` do not), attachment and data-URI
+delivery, and the parsing libraries already in bin.
+
 [references/razor-surfaces-and-pitfalls.md](references/razor-surfaces-and-pitfalls.md) — field-validated depth on:
 
 - **Canonical `Services.*` surfaces** — get products/URLs/groups the platform way (never raw SQL, URL parsing, or hard-coded area prefixes in templates); `AddStylesheet`/`AddScript` hoisting; cross-cutting redirects via a `Page.Loaded` `NotificationSubscriber`; per-category behavior via `ProductGroupFieldValues`; product field arrays instead of regex on descriptions.
-- **`ViewModelTemplate<>` pitfalls** — `@Html.Raw()` does not exist (and the compile error surfaces under the wrong file); `product.ProductFieldValues` lives on the entity, not `ProductViewModel`; the Swift `ToggleFavorite.cshtml` `FavoriteListId=0` no-op.
-- **Project-scoped stylesheet wiring** — the `Area.Item.CustomHeadInclude` head-include partial, and the `?<ticks>` cache-buster token that can be static on some builds.
+- **Project-scoped stylesheet wiring** — the `Area.Item.CustomHeadInclude` head-include partial, the site cache-buster token that does not move, and the explicit `?v=` token that forces a refetch.
 - **Color schemes** — the `ColorScheme.config` / `colorscheme.json` / `colorscheme.css` triad, the area→page→row→paragraph cascade, and the diagnostic playbook when a scheme isn't applying.
 - **CSS pitfalls that bite re-skins** — over-broad `[data-dw-button]` selectors, bare landmark selectors (`footer { }`), colorscheme specificity wars, un-vendored typography fonts, emoji color-font fallback.
 
