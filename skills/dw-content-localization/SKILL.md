@@ -112,6 +112,28 @@ titles/names" — pass `get_translatable_content`'s `kinds` filter (`kinds="Page
 titles) so the whole site doesn't get translated, and name the scope when confirming
 ("Translate page titles → French"). The tool description lists the kind values.
 
+## Structural writes on a translated site overwrite translations
+
+Translating is safe; **re-organising the page tree afterwards is not.** On a mastered solution, a
+page's `PageMenuText` is re-derived from the page item's title field on every save, and on a mirror
+page the save resolves that title through the MASTER's item. So any save on a mirror — a
+`save_pages` re-parent, a `set_page_menu` that sets only `showInMenu`, and `reorder_pages`, which
+re-saves every child it orders — pulls the master's wording down over the translated navigation
+label, with no error and a response that echoes the master's text as the current value.
+
+Two rules for any navigation or ordering work on a translated site:
+
+- **Put the translation in the page item's `Title`, not in `PageMenuText`.** Repair with
+  `set_page_item_fields {pageId: <mirrorId>, fields: {Title: "<translated label>"}}`, never with
+  another `set_page_menu` (it reports success and changes nothing). Once Title and MenuText agree,
+  no later save can drift them apart.
+- **Capture every mirror's `PageMenuText` before a bulk change and diff after.** The site's own
+  navigation is otherwise the first place anyone notices.
+
+The full mirror-inheritance model — what a save on a mastered page creates automatically, which
+parts carry across and which arrive as item-type defaults — is in
+[dw-content-modelling](../dw-content-modelling/SKILL.md) (`language-layers.md`).
+
 ## Product detail pages are mostly PIM data
 
 A product detail page (e.g. a product-list/detail page type) renders products dynamically.

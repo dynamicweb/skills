@@ -385,7 +385,7 @@ fixes the invariant.
 language layer's component selectors still point at the MASTER's component pages, both areas share one
 cache entry and whichever context renders first wins. Repoint the layer's `ComponentSource` at the
 layer's own component-page clones (separate ids, separate cache entries) — see
-[`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §3.
+[`language-layers.md`](../../dw-content-modelling/references/language-layers.md) §3.
 
 ## 6. Template categories, page presets, page-state flags
 

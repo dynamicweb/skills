@@ -6,6 +6,7 @@ Field-validated DW10 B2B distribution-center (DC) scoping knowledge: the DC-as-u
 
 - [The DC-as-user-group pattern](#the-dc-as-user-group-pattern)
 - [Contract prices: three scope columns, and MCP `save_prices` reaches only one](#contract-prices-three-scope-columns-and-mcp-save_prices-reaches-only-one)
+- [Contract-versus-list pricing per audience, with no custom code](#contract-versus-list-pricing-per-audience-with-no-custom-code)
 - [Naming convention](#naming-convention)
 - [User assignment](#user-assignment)
 - [Surface guidance for setting this up](#surface-guidance-for-setting-this-up)
@@ -43,6 +44,15 @@ wholesale / B2B-distributor scenario that touches DC-aware behavior.
 This is *not* a custom architecture. Each of the four features is a stock DW10 surface that scopes
 by user-group; "DC = user group" is the convention that makes them compose.
 
+**Join a DC to its stock location on `EcomStockLocation.StockLocationExternalId`.** There is no
+`Code` column on `EcomStockLocation` — the external id IS the warehouse/ERP code, and it is the
+only safe join key; the full column set is `StockLocationId`, `StockLocationName`,
+`StockLocationDescription`, `StockLocationLanguageId`, `StockSortOrder`, `StockLocationGroupId`,
+`StockLocationCategoryId`, `StockLocationUserId`, `StockLocationExternalId`. Templates that reach
+the stock location by matching its display NAME against another table's name column resolve
+correctly and break the moment anyone renames a display string. With the naming convention below,
+the whole chain is one key: user → group `DC-<CODE>` → `StockLocationExternalId = <CODE>`.
+
 ## Contract prices: three scope columns, and MCP `save_prices` reaches only one
 
 Contract pricing is native default-provider behavior, zero custom code (no `IPriceProvider`). The whole
@@ -73,6 +83,48 @@ this section describes. (Quantity-tier enforcement, `PriceQuantity > 0` rows, is
 **stock cart ignores**; see
 [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11, and the
 same three-column table lives at §2.13 there.)
+
+## Contract-versus-list pricing per audience, with no custom code
+
+"Same catalogue, same portal: dealers see their NET with the MSRP struck through, service centres
+see the MSRP only, anonymous visitors see no price" is the standard B2B ask, and the three obvious
+builds — a custom `IPriceProvider`, a second shop per audience, an if-group-else in the price
+template — are all unnecessary. Four stock mechanisms compose:
+
+1. `EcomPrices` rows are scoped by `PriceUserGroupId` (the table above).
+2. **`PriceIsInformative` rows honour `PriceUserGroupId` exactly like ordinary rows.** This is the
+   undocumented fact the whole pattern rests on: an informative row lands on
+   `ProductViewModel.PriceInformative` for members of the named group and resolves to `0` for
+   everyone else.
+3. Swift's shipped `Swift-v2_ProductPrice` paragraph carries a `ShowInformativePrice` item field
+   that renders `PriceInformative` struck through above the price, and already guards on
+   `PriceInformative.Price == 0` — so an audience with no rows falls back to
+   `EcomProducts.ProductPrice` with no second number and no template branch.
+4. The area's `AnonymousUsers` price setting hides both from anonymous visitors.
+
+The recipe:
+
+1. One user group per commercial model. **Membership in the group is the only switch** — that is
+   what makes the pattern demonstrable as configuration rather than code.
+2. Per product, a PAIR of rows on that `PriceUserGroupId`, written through Admin API `PriceSave`
+   (MCP `save_prices` cannot reach `PriceUserGroupId`, above): `PriceIsInformative = 0` carrying
+   the contract/NET amount, and `PriceIsInformative = 1` carrying the list/MSRP amount.
+3. **The audience that sees list pricing is configured by having NO price rows**, not by a rule.
+4. Switch `ShowInformativePrice` on for the PDP and PLP price paragraphs — a shipped item field
+   that the baseline leaves off.
+5. Wording only ("Your dealer NET" rather than "RRP") rides an alternate paragraph template
+   selected per paragraph through `Paragraph.ParagraphTemplate`, so the stock template stays
+   byte-untouched.
+
+**Probe the pair on ONE product before generating hundreds.** Write the two rows, fetch the PDP as
+a member and as a non-member, and confirm the member sees both numbers and the non-member sees the
+single list number with the contract amount absent from the response. One install generated 414
+rows over 160 products only after that two-row probe.
+
+Two follow-ons a storefront hits immediately: the `schema.org` offer price legitimately becomes the
+contract price for a signed-in member, so any assertion on `itemprop="price"` has to become
+per-audience assertions rather than one; and quantity-break rows need the price-table paragraph to
+sit in its own grid row.
 
 ## Naming convention
 
@@ -106,7 +158,7 @@ wiring**.
 
 When the people in those groups are single-identity buyers (one person, one account, one login), the
 DC-group wiring above still holds but the user SHAPE has no clean answer in Swift 2.4: section 17 of
-[`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) carries the
+[`user-group-operations.md`](../../dw-users-permissions/references/user-group-operations.md) carries the
 `Login.xml` `AllowedParents` trade-off and the recommended default.
 
 ## Surface guidance for setting this up

@@ -21,7 +21,7 @@
 
 The entire vendor-generic content-side language-layer model is owned by the `dw-content-modelling`
 foundational skill — staged in
-[`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §3
+[`language-layers.md`](../../dw-content-modelling/references/language-layers.md) §3
 ("Content-side language layers"). That section owns:
 
 - The sibling-`Area`-row mental model (`AreaMasterAreaId` back-link; the two-table
@@ -46,7 +46,7 @@ simply not the frontend-page-permission switch, and nothing in the `status: ok` 
 state after a routine language-layer creation: the customer-center dashboard served in full to an
 **anonymous** visitor at the layer's localised path, while the master language stayed correctly gated.
 This is the same class as the `UnifiedPermission` rows the copier drops
-([`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §3, "What a
+([`language-layers.md`](../../dw-content-modelling/references/language-layers.md) §3, "What a
 full-content AreaCopy does NOT carry") — and it is the one with a security consequence, so treat it as a
 blocking post-copy step, not a polish item.
 
@@ -245,7 +245,7 @@ keys or every page on the layer; the rest fall back to the master language grace
 
 ## Cross-references
 
-- [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §3 — the
+- [`language-layers.md`](../../dw-content-modelling/references/language-layers.md) §3 — the
   full content-side language-layer model and verification checklists.
 - [`../../dw-demo-pim/references/localization.md`](../../dw-demo-pim/references/localization.md) — the
   product side (translate product names, descriptions, custom fields).
