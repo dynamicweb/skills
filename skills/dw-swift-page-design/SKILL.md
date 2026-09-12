@@ -317,6 +317,13 @@ section→component map IS the thing to confirm — get it right before writing.
 
 ## Verify + summary
 
+**Address the page by a measured prefix, not a derived one.** Before the first fetch, confirm the
+storefront prefix by fetching a page that certainly exists under each candidate and keeping the one
+that answers 200: the live prefix is the area culture as a path segment (`en-US` → `/en-us/`), and
+the area's url name is commonly decorative, so a URL built from it 404s and reads like a failed
+publish. Every verify URL and every URL written into page copy comes from that measurement
+([`dw-swift-building`](../dw-swift-building/SKILL.md) Core Rules).
+
 **Fetch the rendered page** with `fetch_frontend_page_html` and read it — confirm it shows
 real content, NOT raw `{"Label":…}` JSON, overlapping/garbled text, or "the selected option no
 longer exist". Reading back the stored structure is **not enough**: a page with perfectly

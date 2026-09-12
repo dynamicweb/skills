@@ -121,7 +121,11 @@ After each batch, and once at the end of a run:
    wrote — compare the stored field against the text sent, field by field. A field absent from the
    read is unwritten, not defaulted.
 2. `fetch_frontend_page_html` on the same page in the target language — the rendered page is the
-   only proof the language layer resolves. A page that reads back correctly and renders the master
+   only proof the language layer resolves. **Address it by a measured prefix**: the storefront path
+   segment is the area culture (`fr-FR` → `/fr-fr/`), not the area's url name, which is commonly
+   decorative — fetch a page that certainly exists under each candidate prefix and keep the one that
+   answers 200, rather than composing the URL from a field. A 404 here reads like a broken language
+   layer when it is only the wrong prefix. A page that reads back correctly and renders the master
    language is a language-version wiring problem, not a translation problem.
 
 Report the failures by page id; do not re-send the same payload hoping for a different result.

@@ -5,7 +5,7 @@
 ## What the page contains
 
 - The demo logins — one row per user with username, display name, role. **Neutral phrasing only.**
-- Key URLs — homepage, shop landing, per-category shop URLs, sign-in, customer center, `/Admin`.
+- Key URLs — homepage, shop landing, per-category shop URLs, sign-in, customer center, `/Admin`. **Measure the prefix before writing any of them**: it is the area culture as a path segment (`en-US` → `/en-us/`), not the area's url name, which is commonly decorative — fetch a known page under each candidate and keep the one that answers 200 (`dw-swift-building` Core Rules). A cheat-sheet full of 404s is worse than none.
 - A small "catalogue at a glance" facts panel — counts, not pitch angles.
 
 ## Customer-safety rules
