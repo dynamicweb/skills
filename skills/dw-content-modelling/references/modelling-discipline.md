@@ -718,7 +718,7 @@ worth knowing when authoring content programmatically (validated DW 10.25.x):
      UPDATE to reverse.
   2. **`hideForDesktops` + `hideForTablets` + `hideForPhones` all `true`** for a paragraph that shares
      a row. Server-side suppression, fully reversible.
-  3. `Paragraph.ParagraphShowParagraph = 0` by SQL as a last resort.
+  3. `Paragraph.ParagraphShowParagraph = 0` by SQL as a last resort (local install only).
 
   `ParagraphDelete` is not on that list: it is irreversible and it orphans the grid row.
 - **`PageCopy` inherits the source's `shortCut`.** A page that carries a shortcut redirect produces a
@@ -738,7 +738,7 @@ or curl the rendered page) before declaring it done:
 |---|---|---|---|
 | MCP `save_pages` (update path) | `menuText` — the response even echoes the OLD value | DW 10.25.x | SQL `UPDATE Page SET PageMenuText` + host restart (the nav tree caches menu text) |
 | MCP `save_pages` (create + update) | `urlName` — ignored; the slug is derived from `menuText` instead | DW 10.27.x | Set `menuText` to drive the slug, or SQL `UPDATE Page SET PageUrlName` + host restart. `urlName` won't pin the slug on its own. |
-| Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort. `ParagraphSave` is still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
+| Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort (local install only). `ParagraphSave` is still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
 
 The tool-behaviour root cause (why these MCP / Management API writes drop fields, and the surface model)
 is in [dw-extend-mcp-tools](../../dw-extend-mcp-tools/SKILL.md) §5.

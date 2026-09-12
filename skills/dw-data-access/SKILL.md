@@ -3,21 +3,83 @@ name: dw-data-access
 type: knowledge
 group: data
 mcp: optional
-dynamo: true
+dynamo: false
 compatibility: Requires PowerShell 7.x
-description: 'Choose appropriate data-access patterns and optimize caching in Dynamicweb 10. Triggers: data access, API vs SQL, cache invalidation, SQL gotchas. Non-triggers: C# API usage -> dw-extend-csharp-api; specific domain logic -> domain-specific skills.'
+description: 'Choose the surface to act on a Dynamicweb 10 instance through, and the data-access and caching patterns inside it. Triggers: the action ladder, which surface, MCP vs Management API vs serializer vs SQL, data access, API vs SQL, cache invalidation, SQL gotchas. Non-triggers: C# API usage -> dw-extend-csharp-api; specific domain logic -> domain-specific skills.'
 ---
 
 # Data Access in Dynamicweb 10
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
-apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
-review, or produce payloads and configuration for the user to apply — and do not substitute
-direct SQL, file edits, or guessed HTTP calls for those tool calls.
+This skill is not served to the in-product agent, so the whole action ladder is available. The MCP
+tools it names are rung 1 and the preferred way to apply it. With no MCP server connected, drop
+**one** rung, not to SQL: the Management API at `/admin/api/...` reaches the same domain services
+over a different transport, and the serializer carries bulk, id-preserving loads. Direct SQL is the
+last rung, is local-install only, and owes a cache flush or restart. When no rung reaches the
+operation, work in advisory mode. The full ladder is the next section, and this skill owns it for
+the whole corpus — including the in-product agent's own, much narrower surface, which is stated
+here so the rest of the corpus can see what it may not ask for.
 
-## When to Use the Service API vs Raw SQL
+## Surfaces into a Dynamicweb instance — the action ladder
+
+Four surfaces change a Dynamicweb 10 instance from outside the process. They are **ranked, not
+interchangeable**: each rung down does less of the platform's own bookkeeping. Take the highest rung
+that reaches the operation, and name that rung in the recipe.
+
+| Rung | Surface | Names look like | Use it for |
+|---|---|---|---|
+| 1 | **MCP tools** (Dynamicweb MCP server, ~260 tools) | `snake_case` — `save_pages`, `patch_products_safe` | The default for anything that creates or mutates a structural row. Calls DW's domain services, so relation wiring, cache invalidation, index refresh and validation all fire. |
+| 2 | **Management/Admin API** (`/admin/api/...`, bearer) | `PascalCase` — `ParagraphSave`, `BuildIndex` | The same domain services over a different transport. Use it when MCP does not expose the operation, and for admin-grade actions MCP never wraps (`CacheInformationRefresh`, `FeatureManagementToggle`). The `dw command` CLI is this rung over a different transport, not a surface of its own. |
+| 3 | **Serializer** (`SerializerDeserialize`, layer `replace`/`merge` trees) | `PascalCase` verb, layer paths | Bulk, id-preserving loads and cross-install moves. **A layer beats a rung-1 or rung-2 loop** as soon as the write is bulk (hundreds of rows, a whole content tree) or ids and relations must survive. Dry-run (`IsDryRun`) first. |
+| 4 | **Direct SQL** | `sqlcmd` / `Invoke-Sqlcmd` / T-SQL | **Last resort, local installs only.** Sanctioned cases: cleanup/teardown, bulk schema-drift fixes, reads, and operations proven absent from rungs 1-3. Bypasses every service. |
+
+**Which surfaces exist, per instance type:**
+
+Headless and Dynamo are different things and do not share a column. A **headless** install is an
+ordinary instance whose frontend is decoupled; it keeps every rung. **Dynamo** is the agent running
+*inside* the product: its whole surface is the MCP tool set plus read/write under `Files/`.
+
+| Surface | Local install | Hosted (cloud) | Headless | Dynamo (in-product) |
+|---|---|---|---|---|
+| 1 MCP tools | Present | **Probe first** — version-dependent; primary when present | Probe first | **The only action surface** |
+| 2 Management API | Present | Present — **the floor** when MCP is absent | Present | **Absent** |
+| 3 Serializer | Present if the AddIn is installed | Present if installed; engine versions must match | Present if installed | **Absent** |
+| 4 Direct SQL | Present | **Does not exist** | **Does not exist** | **Absent** |
+| Read/write under `Files/` | Present | Through the file archive | Through the file archive | **Present** — the second and last surface |
+| Admin UI | **Verification only** | Verification only | n/a | The user's own screen: **name it, never drive it** |
+| Ask the user | When rungs 1-3 genuinely cannot reach it | When rungs 1-3 cannot reach it — there is no SQL floor | Same | **The only fallback**: no tool, no rung — stop and say which screen does it |
+
+A skill marked `dynamo: true` therefore carries no instruction outside that last column. Where an
+operation needs a lower rung, the recipe lives here (`references/recipes-<area>.md`) and the
+in-product skill keeps a one-line pointer to it.
+
+**Rules that hold at every rung:**
+
+- **The admin UI is not an action surface.** It is a SPA client of `/admin/api/...`; every click is a
+  rung-2 call. "This exists only in the UI" means the endpoint has not been found yet. **When a
+  surface looks closed:** check `/admin/api/docs/`, then **capture the admin UI's own HTTP call** —
+  drive the admin *read-only*, read the network traffic, replay it. Reading the SPA's traffic is
+  verification-grade; clicking Save is not.
+- **A verb-registry negative proves a verb absent, never a capability absent.** Enumerating the
+  registries and finding no `X*` command proves that *name* is missing, nothing more: some writes have
+  no command of their own and ride inside a parent entity's save payload. Guessing command names is not
+  free either — each unresolvable name writes an `[Application/AddInManager]` error row onto the
+  customer-visible Insights dashboard, so batch the probing.
+- **Success is not proof.** Rung 1-2 writes can return `ok` and silently drop part of the input, and
+  read verbs then serve a cached model that agrees with the lie. Round-trip through a different
+  surface, the stored row, or the rendered page.
+- **Ordering when rungs must mix:** all rung 1-2 writes first, then the SQL touch-up, and nothing
+  re-saves the entity afterwards. Any command that re-saves an entity (*recalculate* commands included)
+  writes DW's **cached** model back over whatever SQL wrote behind it.
+- **A SQL recipe states three things**: why rungs 1-3 do not cover the operation, that it is **local
+  installs only**, and the cache flush or host restart it owes —
+  [`references/cache-invalidation.md`](references/cache-invalidation.md) carries the per-mutation table.
+- **Never SQL-clone a structural tree** (Area / Page / Paragraph / GridRow / Item). The create path
+  carries sibling-link bookkeeping, item-instance cloning, localization overlays, ItemList relations
+  and hidden-flag rules a raw `INSERT ... SELECT` gets partly right and then breaks ten screens later.
+
+## In-process C#: Service API vs the Database class
 
 | Use case | Approach |
 |----------|----------|
@@ -181,6 +243,7 @@ catch
 | Script | Reads / writes | What it does |
 |---|---|---|
 | [Dw.Api.psm1](scripts/Dw.Api.psm1) | Writes nothing on import; each function states its own | The shared Dynamicweb connection module: `Connect-Dw`/`Assert-DwConnection` (discovery + load sentinel), `Invoke-DwApi` (+ `Remove-DwDisplayOnlyMember` for round-trip saves), `Invoke-DwMcp`/`Get-DwMcpTools` (JSON-RPC handshake, SSE, pagination), `Get-DwSqlRows`/`Get-DwSqlScalar` (array-safe, DataRow-free reads; LOCAL installs only — no remote SQL path exists by design), `Clear-DwServiceCache`, `Set-DwDbConnectionTrust` |
+| [Build-DwProductIndex.ps1](scripts/Build-DwProductIndex.ps1) | Writes: rebuilds a Lucene index (flushes product caches first) | The enforced flush-build-poll form with the freshness guard, the Error-vs-first-build distinction, the 10.28.x status-verb fallback, and `-Passes 2` for multi-instance indexes; never re-fires on a timeout. The contract it implements is owned by `dw-search-indexing` ("index-management"); in-product the same rebuild is MCP `build_product_index` |
 | [Invoke-DwMojibakeCensus.ps1](scripts/Invoke-DwMojibakeCensus.ps1) | Read-only (optionally writes a JSON census) | Double-encoded-UTF-8 census per table.column: broken markers vs healthy typography, U+FFFD contexts as escaped spans; markers built from code points. Local installs only |
 
 Scripts in other skills import it `$PSScriptRoot`-relative and assert the load (see the fenced
@@ -193,6 +256,19 @@ Assert-DwConnection
 ```
 
 ## Deep references
+
+Out-of-product recipes harvested from the in-product skills live one per area. Each names its
+surface per the repo convention (MCP `snake_case`, Management API `PascalCase` with the route,
+serializer by command or by layer and mode, `SQL` in a fenced block).
+
+| Area | Reference | Reach for it when |
+|---|---|---|
+| Commerce | [references/recipes-commerce.md](references/recipes-commerce.md) | Orders, carts, checkout, RMA, discounts, catalog publishing — below rung 1 |
+| Content | [references/recipes-content.md](references/recipes-content.md) | Pages, paragraphs, grid rows, item types, language layers — below rung 1 |
+| PIM | [references/recipes-pim.md](references/recipes-pim.md) | Products, groups, variants, completeness, product translation — below rung 1 |
+| Users | [references/recipes-users.md](references/recipes-users.md) | Users, groups, permissions, page gating — below rung 1 |
+| Search | [references/recipes-search.md](references/recipes-search.md) | Indexes, repositories, queries, index builds — below rung 1 |
+| Swift | [references/recipes-swift.md](references/recipes-swift.md) | Swift 2 re-skin, template and asset work that leaves `Files/` — below rung 1 |
 
 - [references/management-api-and-sql.md](references/management-api-and-sql.md) — the `/admin/api/` Management API surface (admin-endpoint catalog, `BuildIndex`/`IndexStatus`, `CacheInformationRefresh`/`GetServiceCaches`), verb shadowing by installed add-ins, the read-model-is-not-a-save-model trap (`modelIdentifier`/`*Icon` stripping), admin-screen `Type=` query discovery, OpenAPI/reference-path discovery, PowerShell SQL-read footguns (`DataRow` unrolling, `[ordered]@{}` integer keys, AMSI-blocked helpers), and the SQL-direct Page/GridRow/Paragraph required-column schema (kept for forensics and the narrow sanctioned SQL cases).
 - [references/cache-invalidation.md](references/cache-invalidation.md) — the post-mutation cache table: which cache each mutation touches, which surface flushes it, and when a host restart is owed. Covers the edit-vs-insert rule for content tables, the "MCP first, SQL last, one restart" ordering rule, the raw-SQL `AccessUser` split-brain, and the index-build-reads-through-cache ordering trap (flush-then-rebuild).

@@ -1,6 +1,6 @@
 # Surface priority — scaffold vs build, by instance type
 
-`SKILL.md` "Surface priority for CREATES" carries the always-on summary; this reference is the sole owner of the full rule — the surface table, the pattern, and the canonical statement of the surface contract: which surfaces exist on each instance type, which of them are action surfaces in each phase, plus the long-form anti-pattern detail on why SQL-cloning structural trees fails. The *platform mechanism* underneath the discipline — why an MCP create triggers all the domain-service bookkeeping (ItemRelation cloning, ItemList propagation, cache/index refresh) that raw SQL misses, and why the admin UI is a SPA over `/admin/api/...` rather than a separate surface — is owned by [`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §5.
+The action ladder itself — the four rungs (MCP tools, the Management API at `/admin/api/...`, the serializer, direct SQL last and local-installs-only), which rungs exist per instance type, and the rules that hold at every rung — is foundational and owned by [`../../dw-data-access/SKILL.md`](../../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance". **This reference owns only the demo deltas**: the two-phase model split by the MCP verification gate, the scaffold-phase bootstrap one-clicks, the Browser MCP's scope, and the long-form detail behind the SQL-cloning ban and the silent-no-op round-trip rule. `SKILL.md` "Surface priority for CREATES" carries the always-on summary. The *platform mechanism* underneath the discipline — why an MCP create triggers all the domain-service bookkeeping (ItemRelation cloning, ItemList propagation, cache/index refresh) that raw SQL misses, and why the admin UI is a SPA over `/admin/api/...` rather than a separate surface — is owned by [`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §5.
 
 ## Contents
 
@@ -21,33 +21,26 @@ A demo engagement has two phases with different surface rules, split by the **MC
 
 ## Surfaces by instance type
 
+The rung-by-rung table (MCP / Management API / serializer / SQL, per local, hosted and headless) lives in the foundational owner, [`../../dw-data-access/SKILL.md`](../../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance". Two rows are demo-only and live here:
+
 | Surface | Local install | Hosted (cloud) | Headless |
 |---|---|---|---|
-| **MCP** (`dynamicweb-commerce-mcp`) | Action surface 1 | Probe first — version-dependent; action surface 1 when present | Probe first; action surface 1 when present |
-| **Admin/Management API** (`/admin/api/...`) | Action surface 2 | Action surface 2 (primary when MCP is absent) | Action surface 2 (primary when MCP is absent) |
-| **Direct SQL** (`sqlcmd`) | Action surface 3 — last resort, sanctioned cases only | **Does not exist** | **Does not exist** |
-| **Admin UI via Playwright** | Scaffold phase: action surface for the bootstrap one-clicks. Build phase: **verification only** | Verification only (needs interactive credentials) | Not reachable |
+| **Admin UI via Playwright** | Scaffold phase: action surface for the bootstrap one-clicks below. Build phase: **verification only** | Verification only (needs interactive credentials) | Not reachable |
 | **Ask the user** | Scaffold phase: last resort when no automated surface can reach the operation | Last resort for an operation neither MCP nor the API exposes (there is no SQL floor) | Same as hosted |
+
+Hosted and headless demos start in the build phase from the first request — credentials are handed over and there is nothing to scaffold ([`dw-demo-hosted`](../../dw-demo-hosted/SKILL.md)).
 
 ## Build phase — the strict rule
 
-| Surface | Use for | Why |
-|---------|---------|-----|
-| 1. **MCP (`dynamicweb-commerce-mcp`)** | **Default — try this first for anything that creates a structural row** (pages, paragraphs, areas, products, groups, orders, users, etc.) | Calls DW's domain services. Triggers ALL the bookkeeping a UI click would: ItemRelation cloning, ItemList propagation, sibling-page linking, cache invalidation, index refresh, child-row creation, validation. ~260 tools. |
-| 2. **Management API** (`/admin/api/...`) | Fallback when MCP doesn't expose the operation. Usually admin-grade actions: `BuildIndex`, `CacheInformationRefresh`, `FeatureManagementToggle`, anything in `/admin/api/docs/`. | Same DW domain services as MCP, just a different transport. |
-| 3. **Direct SQL** (`sqlcmd ...`, local installs only) | **LAST RESORT** — only for: (a) cleanup/teardown, (b) bulk schema-drift fixes, (c) reading data, (d) cases where you've confirmed both higher surfaces don't support the operation and a vendor patch is the only alternative. | Bypasses every DW service. Misses bookkeeping. Creates orphans. Corrupts caches. **You will not figure out the full bookkeeping for a non-trivial create via SQL — DW does too much per service call.** |
+**Take the highest rung of the foundational ladder that reaches the operation** ([`../../dw-data-access/SKILL.md`](../../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"), and the admin UI is verification-only. The demo-specific additions to that rule:
 
-**Clause (a) covers brand re-content removal — do not mis-route it as create-shaped work.** BULK REMOVAL of the generic/sample rows a baseline ships (the stock demo catalog, sample pages, placeholder groups) while re-contenting a host to a brand is exactly case (a) cleanup/teardown — SQL is sanctioned for it on a local install, subject to the cache/restart the removed table owes (see [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)). Removal is not a create, so it is not gated by the "MCP-first for structural creates" rule and there is no MCP/recipe prerequisite to clear first. The create-shaped discipline (and the SQL-cloning ban below) governs what you *build* to replace the sample data, not the teardown that clears it. Track what you delete so a re-run converges.
+**Clause (a) of the sanctioned SQL cases covers brand re-content removal — do not mis-route it as create-shaped work.** BULK REMOVAL of the generic/sample rows a baseline ships (the stock demo catalog, sample pages, placeholder groups) while re-contenting a host to a brand is exactly cleanup/teardown — SQL is sanctioned for it on a local install, subject to the cache/restart the removed table owes (see [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)). Removal is not a create, so it is not gated by the "MCP-first for structural creates" rule and there is no MCP/recipe prerequisite to clear first. The create-shaped discipline (and the SQL-cloning ban below) governs what you *build* to replace the sample data, not the teardown that clears it. Track what you delete so a re-run converges.
 
-Pattern to follow:
+**Discovery, in a demo:** when MCP does not expose the operation, work the Management API — via the `/admin/api/docs/` catalogue, a local clone of the DW10 source for binder shapes (see [`dw-demo-hosted/references/online-mode.md`](../../dw-demo-hosted/references/online-mode.md) "dw10source as binder disambiguator"), or by navigating the admin UI **read-only** with Playwright and reading the SPA's traffic (`mcp__playwright__browser_network_requests`). Reading network calls is verification-grade; clicking Save is not. A "UI-only" operation means the endpoint has not been found yet.
 
-1. Try MCP. If the tool name suggests it (e.g. `copy_area`, `copy_page`, `save_pages`), use it.
-2. If MCP errors or doesn't expose the operation, work the Management API. The operation exists there — the admin UI is a SPA over `/admin/api/...`, so every UI click has an endpoint. Discover it via the `/admin/api/docs/` catalogue, a local clone of the DW10 source for binder shapes (see [`dw-demo-hosted/references/online-mode.md`](../../dw-demo-hosted/references/online-mode.md) "dw10source as binder disambiguator"), or by navigating the admin UI **read-only** with Playwright and reading the SPA's traffic (`mcp__playwright__browser_network_requests`) — reading network calls is verification-grade; clicking Save is not.
-3. Local installs only: after 1–2 are exhausted, reach for SQL — and even then, prefer SQL for cleanup of a previous bad attempt rather than for the create.
+Local installs only: once the higher rungs are exhausted, prefer SQL for cleanup of a previous bad attempt rather than for the create.
 
-Driving the admin UI to *make* a build-phase change is off-contract on every instance type. A "UI-only" operation means the endpoint hasn't been found yet — go back to step 2.
-
-This rule is owned by `dw-demo-base` and inherited by every sister skill.
+This phase rule is owned by `dw-demo-base` and inherited by every sister skill.
 
 ## Scaffold phase (local) — the bootstrap one-clicks
 
@@ -66,18 +59,17 @@ The scaffold phase ends when the MCP verification gate passes; from that point t
 
 ## Admin UI is verification-only during the build
 
-The admin UI is a SPA client of the Admin API — every click it makes lands on `/admin/api/...`. Two consequences:
+Every admin click lands on `/admin/api/...`, so the UI is a rung-2 client, not a surface — the rule and the "a verb-registry negative proves a verb absent, never a capability absent" corollary are in [`../../dw-data-access/SKILL.md`](../../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance". What that means for a demo build:
 
-- **No operation exists only in the UI.** When neither MCP nor the documented Management API seems to cover something, the endpoint exists anyway. Find it via `/admin/api/docs/`, the `dw10source` command classes, or read-only Playwright network watching (`mcp__playwright__browser_network_requests`) — then call the endpoint directly as surface 2.
-- **A verb-registry brute-force proves a VERB absent, never a CAPABILITY absent.** This is the failure mode that makes the rule above easy to talk yourself out of. Enumerating both verb registries and finding no `ItemEntry*` / `ItemList*` / `ItemEntrySave` verb is an *honest, correct* result — and the inference "so item lists are unreachable from the API" was wrong for a year, because the write is **not its own verb**: it rides inside `ParagraphSave` as an array on the parent paragraph's projected list field. No registry probe can ever find a capability that has no verb of its own, so a negative registry result is not evidence of anything except the absence of that name. **Before concluding a surface is closed, capture the admin UI's own HTTP call for the operation** (read-only Playwright + `browser_network_requests`) and replay it. Where the wrong conclusion has already been written down, expect the *more specific* document to be the stale one — and that is the one an agent reaches for first. (Worked example: [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §"How repeater children are stored".)
-- **The positive form of the same discovery: the screen route's `Type=` parameter names its backing query.** Every admin screen route carries `Type=<query name>`, and that value is a Management API query the bearer can call directly — so admin-screen state is assertable with no browser in the loop, once the route→query map has been harvested by driving the admin **read-only** one time. Guessing verb names instead is not free: each unresolvable name writes an `[Application/AddInManager]` Error row onto the customer-visible Insights Monitoring dashboard, so batch the probing, do it early, and clear the log before a demo. Both are owned by [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) "Discovering admin screens and their backing queries".
 - **Driving the admin SPA via Playwright to *make* a build-phase change is the worst of both worlds** — fragile selectors wrapped around the same service call you could have made directly, with no machine-readable response to verify against. Playwright's job during the build is verification: navigate, screenshot, DOM-grep to confirm a change landed (see `references/browser-automation.md`).
+- **The positive form of the discovery step: the screen route's `Type=` parameter names its backing query.** Every admin screen route carries `Type=<query name>`, and that value is a Management API query the bearer can call directly — so admin-screen state is assertable with no browser in the loop, once the route→query map has been harvested by driving the admin **read-only** one time. Owned by [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) "Discovering admin screens and their backing queries".
+- **Where a wrong "this is unreachable" conclusion has already been written down, expect the *more specific* document to be the stale one** — and that is the one an agent reaches for first. (Worked example: [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §"How repeater children are stored", where the write rides inside `ParagraphSave` as an array on the parent paragraph's projected list field.)
 
 Sister-skill references that document admin click-paths (e.g. `dw-demo-swift/references/admin-ui-authoring.md`, `re-skin.md`) are maps of *what is configurable and where* — for a human doing manual authoring, and as verification targets — not instructions for Claude to drive the SPA.
 
 ## Anti-pattern: SQL-cloning structural trees
 
-Cloning a tree (Area / Page / Paragraph / GridRow / Item) via raw SQL `INSERT INTO ... SELECT FROM` is forbidden unless you have a working *and tested* recipe in this skill. The structural tables look simple but every create-path involves:
+The ban is in [`../../dw-data-access/SKILL.md`](../../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"; this is the detail behind it. Cloning a tree (Area / Page / Paragraph / GridRow / Item) via raw SQL `INSERT INTO ... SELECT FROM` stays forbidden unless you have a working *and tested* recipe in this skill. The structural tables look simple but every create-path involves:
 
 - `*MasterPageId` / `*MasterAreaId` sibling-link bookkeeping (DW expects matching ranges across the tree)
 - Item instance cloning vs sharing (some item types fork per language layer; some don't — DW knows which)

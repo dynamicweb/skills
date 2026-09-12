@@ -16,6 +16,11 @@ verify the Dynamicweb MCP tools are available. If they are not, stop and tell th
 MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
 for the tool calls this skill names.
 
+The ladder those rungs belong to is foundational —
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"; the demo deltas
+(phase gate, scaffold one-clicks, Browser MCP) are in
+[`dw-demo-base/references/surface-priority.md`](../dw-demo-base/references/surface-priority.md).
+
 ERP integration patterns for Dynamicweb 10 demos. Owns the source/target rule, the mock-delta pattern, the generic ERP data shape, and the scenarios-first planning habit. **Use AFTER** `dw-demo-base`.
 
 This SKILL.md is a nav layer. Each topic links to a `references/<topic>.md` that owns the verbatim recipe and gotchas.

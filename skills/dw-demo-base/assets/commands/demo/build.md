@@ -26,7 +26,7 @@ From the signed-off analysis, build the demo moments using the right skills:
 - Catalog scoping, assortments, completeness → `dw-demo-pim`.
 - ERP / integration beats → `dw-demo-erp` (mock) or `dw-integration-bc` (live BC).
 
-Honour the surface-priority rule (MCP → Management API → admin UI verify-only → SQL last resort)
+Honour the surface-priority rule (MCP → Management API → serializer → admin UI verify-only → SQL last resort, local install only)
 and the `CUSTOMISATIONS.md` ledger preflight from `dw-demo-base`.
 
 ## 4. Single validation pass (acceptance — customer-build phase)

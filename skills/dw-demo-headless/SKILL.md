@@ -16,6 +16,11 @@ verify the Dynamicweb MCP tools are available. If they are not, stop and tell th
 MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
 for the tool calls this skill names.
 
+The ladder those rungs belong to is foundational —
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"; the demo deltas
+(phase gate, scaffold one-clicks, Browser MCP) are in
+[`dw-demo-base/references/surface-priority.md`](../dw-demo-base/references/surface-priority.md).
+
 Build a **headless-commerce demo**: a Next.js storefront (from the `vercel/commerce`
 starter) that reads a Dynamicweb 10 backend through the **Delivery API** (`/dwapi/**`), backed
 by a **dedicated, presentation-agnostic serialized baseline** that is its own product line —

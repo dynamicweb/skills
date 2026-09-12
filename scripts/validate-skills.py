@@ -35,6 +35,19 @@ Checks (errors fail the build, warnings are printed but do not):
   - WARN if a SKILL.md body exceeds 500 lines or 16000 characters (split into
     references/) — the character budget is what actually bounds activation cost.
   - WARN if a references/ file over 100 lines lacks a top-of-file table of contents.
+  - Dynamo surface ratchet: a `dynamo: true` skill is served to the agent running
+    inside the product, whose whole surface is the MCP tool set plus read/write
+    under `Files/`. Its SKILL.md and references/*.md are scanned for instructions
+    on a surface Dynamo does not have (`/admin/api`, `sqlcmd`/`Invoke-Sqlcmd`,
+    `Invoke-RestMethod`/`Invoke-WebRequest`, fenced powershell/pwsh/bash/sh/sql
+    blocks, `git add|commit|push|...`, `dotnet run|build|publish`, `.csproj`,
+    `Playwright`, `browser_`), and the per-file count is compared with
+    `scripts/dynamo-baseline.json`. A file ABOVE its baseline (a missing entry
+    means 0) is an error naming the file, the count, the baseline and the first
+    three matching lines; below is fine, so the baseline shrinks as the backlog
+    drains. A `scripts/` directory or a `compatibility:` key naming PowerShell in
+    a `dynamo: true` skill is always an error, never baselined.
+    `--update-dynamo-baseline` rewrites the baseline from the current tree.
 
 Run from anywhere: `python3 scripts/validate-skills.py`. Exit code 0 = clean.
 """
@@ -125,6 +138,124 @@ ENVIRONMENT_LITERAL_RES = (
 # string is the path relative to the importing script's folder.
 PS_IMPORT_TARGET_RE = re.compile(r"['\"]([^'\"]+\.psm?1)['\"]")
 PS_IMPORT_LINE_RE = re.compile(r"^\s*(?:Import-Module\b|\.\s+\S)")
+
+
+# --- Dynamo surface ratchet -------------------------------------------------
+# Dynamo (the in-product agent) can act through the MCP tool set and read/write
+# under `Files/`, and through nothing else. Each pattern below is an instruction
+# on a surface it does not have. Counted per file and ratcheted against
+# DYNAMO_BASELINE so the pre-existing backlog can drain without a flag day.
+DYNAMO_BASELINE = REPO / "scripts" / "dynamo-baseline.json"
+DYNAMO_PATTERNS = (
+    ("Management API route", re.compile(r"(?i)/admin/api")),
+    ("sqlcmd", re.compile(r"(?i)\bsqlcmd\b")),
+    ("Invoke-Sqlcmd", re.compile(r"(?i)\bInvoke-Sqlcmd\b")),
+    ("Invoke-RestMethod", re.compile(r"(?i)\bInvoke-RestMethod\b")),
+    ("Invoke-WebRequest", re.compile(r"(?i)\bInvoke-WebRequest\b")),
+    ("shell/sql fenced block",
+     re.compile(r"^\s*```\s*(?:powershell|pwsh|bash|sh|sql)\s*$", re.IGNORECASE)),
+    ("git command", re.compile(
+        r"(?i)\bgit\s+(?:add|commit|push|pull|clone|checkout|rebase|merge)\b")),
+    ("dotnet command", re.compile(r"(?i)\bdotnet\s+(?:run|build|publish)\b")),
+    (".csproj", re.compile(r"(?i)\.csproj\b")),
+    ("Playwright", re.compile(r"(?i)\bPlaywright\b")),
+    ("browser_ tool", re.compile(r"\bbrowser_")),
+)
+
+
+def dynamo_skills() -> list[Path]:
+    """Every skill folder whose SKILL.md declares `dynamo: true`."""
+    out: list[Path] = []
+    for skill_dir in sorted(SKILLS_DIR.iterdir()):
+        md = skill_dir / "SKILL.md"
+        if not md.is_file():
+            continue
+        text = read_text_checked(md)
+        if text is None:
+            continue
+        if parse_frontmatter(text).get("dynamo", "").strip().lower() == "true":
+            out.append(skill_dir)
+    return out
+
+
+def dynamo_scan_files(skill_dir: Path) -> list[Path]:
+    """The files a `dynamo: true` skill ships to the in-product agent."""
+    files = [skill_dir / "SKILL.md"]
+    files += sorted((skill_dir / "references").glob("*.md"))
+    return [f for f in files if f.is_file()]
+
+
+def dynamo_violations(f: Path) -> list[tuple[int, str, str]]:
+    """(line number, pattern label, line text) for every non-MCP instruction."""
+    text = read_text_checked(f)
+    if text is None:
+        return []
+    hits: list[tuple[int, str, str]] = []
+    for i, line in enumerate(text.splitlines(), 1):
+        for label, rx in DYNAMO_PATTERNS:
+            if rx.search(line):
+                hits.append((i, label, line.strip()))
+                break
+    return hits
+
+
+def dynamo_key(f: Path) -> str:
+    return rel(f).replace("\\", "/")
+
+
+def dynamo_counts() -> dict[str, int]:
+    """Per-file violation counts across every `dynamo: true` skill."""
+    counts: dict[str, int] = {}
+    for skill_dir in dynamo_skills():
+        for f in dynamo_scan_files(skill_dir):
+            n = len(dynamo_violations(f))
+            if n:
+                counts[dynamo_key(f)] = n
+    return counts
+
+
+def check_dynamo_surface() -> None:
+    baseline: dict[str, int] = {}
+    if DYNAMO_BASELINE.is_file():
+        try:
+            baseline = json.loads(DYNAMO_BASELINE.read_text(encoding=ENCODING))
+        except json.JSONDecodeError as e:
+            err(f"{rel(DYNAMO_BASELINE)}: invalid JSON ({e})")
+            return
+    else:
+        warn(f"{rel(DYNAMO_BASELINE)} is missing — every baseline reads as 0")
+
+    for skill_dir in dynamo_skills():
+        skill = skill_dir.name
+        # Always an error, never baselined: a skill Dynamo can act on cannot
+        # ship executables, and cannot require a shell to be useful.
+        if (skill_dir / "scripts").is_dir():
+            err(f"{skill}: `dynamo: true` but ships a scripts/ directory — "
+                "Dynamo has no shell; flip to `dynamo: false` or move the script")
+        compat = parse_frontmatter(
+            read_text_checked(skill_dir / "SKILL.md") or "").get("compatibility", "")
+        if re.search(r"(?i)powershell", compat):
+            err(f"{skill}: `dynamo: true` with `compatibility: {compat.strip()}` — "
+                "a PowerShell requirement cannot be true of an in-product skill")
+        for f in dynamo_scan_files(skill_dir):
+            hits = dynamo_violations(f)
+            key = dynamo_key(f)
+            allowed = baseline.get(key, 0)
+            if len(hits) > allowed:
+                first = "; ".join(f"L{n} [{label}] {line[:80]}"
+                                  for n, label, line in hits[:3])
+                err(f"{key}: {len(hits)} non-MCP instruction(s) in a `dynamo: true` "
+                    f"skill, baseline {allowed} — Dynamo's surface is the MCP tools "
+                    f"plus read/write under `Files/`. First: {first}")
+
+
+def write_dynamo_baseline() -> int:
+    counts = dynamo_counts()
+    DYNAMO_BASELINE.write_text(
+        json.dumps(dict(sorted(counts.items())), indent=2) + "\n", encoding="utf-8")
+    print(f"wrote {rel(DYNAMO_BASELINE)}: {len(counts)} file(s), "
+          f"{sum(counts.values())} violation(s)")
+    return 0
 
 
 def err(msg: str) -> None:
@@ -621,6 +752,7 @@ def main() -> int:
     check_script_contract()
     check_script_imports()
     check_orphan_scripts()
+    check_dynamo_surface()
 
     for w in warnings:
         print(f"WARN  {w}")
@@ -635,4 +767,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if "--update-dynamo-baseline" in sys.argv[1:]:
+        sys.exit(write_dynamo_baseline())
     sys.exit(main())

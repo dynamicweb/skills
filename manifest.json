@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-09T11:40:03.915Z",
+  "generatedAt": "2026-09-12T13:17:36.416Z",
   "skills": [
     {
       "name": "dw-content-localization",
@@ -99,12 +99,12 @@
       "path": "skills/dw-content-modelling/SKILL.md"
     },
     {
-      "name": "dw-data-access",
+      "name": "dw-data-write-effects",
       "type": "knowledge",
       "group": "data",
       "mcp": "optional",
-      "description": "Choose appropriate data-access patterns and optimize caching in Dynamicweb 10.",
-      "path": "skills/dw-data-access/SKILL.md"
+      "description": "What a write to a Dynamicweb 10 instance actually leaves behind — how to prove it landed, and which mutations owe a follow-up MCP call before anything downstream reflects them.",
+      "path": "skills/dw-data-write-effects/SKILL.md"
     },
     {
       "name": "dw-extend-csharp-api",
@@ -129,14 +129,6 @@
       "mcp": "none",
       "description": "Create and manage scheduled tasks in Dynamicweb 10 including RunSqlScheduledTaskAddIn.",
       "path": "skills/dw-extend-scheduled-tasks/SKILL.md"
-    },
-    {
-      "name": "dw-headless-delivery",
-      "type": "knowledge",
-      "group": "headless",
-      "mcp": "none",
-      "description": "Build decoupled frontends using the Dynamicweb 10 /dwapi/ delivery API.",
-      "path": "skills/dw-headless-delivery/SKILL.md"
     },
     {
       "name": "dw-integration-erp",
