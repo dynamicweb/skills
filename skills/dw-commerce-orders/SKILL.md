@@ -26,7 +26,7 @@ Orders move through configurable **Order Flows**: `Settings > Areas > Commerce >
 Orders can be created by:
 - Cart checkout
 - Subscription auto-generation
-- Quote conversion (`AcceptQuote` command)
+- Quote conversion (the Customer Center command is inert; see the quotes reference)
 - External import (ERP/POS)
 
 **Cancellation operations:**

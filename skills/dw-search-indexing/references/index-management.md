@@ -152,7 +152,7 @@ Canonical shape (dashboard-backing queries go in the Shared tree — see locatio
       "negate": false,
       "rootExpressions": [
         { "field": "ProductIsActive", "operator": "Equal", "value": "True" },
-        { "field": "ProductShortDescription", "operator": "IsEmpty", "value": "" }
+        { "field": "ProductShortDescription", "operator": "Equal", "value": "__empty__" }
       ],
       "expressions": []
     }
@@ -162,20 +162,25 @@ Canonical shape (dashboard-backing queries go in the Shared tree — see locatio
 
 Hard constraints:
 - `sourceIndex` is `RepositoryName|IndexName` — a pipe, no spaces (discover valid values via `get_product_queries`). **It also names the index a rebuild must target**: a convenience "build the product index" surface builds its own default pair, not this one ([`query-expressions.md`](query-expressions.md) "Build verbs")
-- every `value` is a string; `IsEmpty` uses `value: ""` — and **assert the row count of any `IsEmpty`
-  arm**, because the operator can parse and match nothing on the Lucene provider
-  ([`query-expressions.md`](query-expressions.md#operators-what-the-enum-implies-vs-what-matches)); a
-  backlog query that reads zero is as likely to be inert as it is to be satisfied
+- every `value` is a string. **Do not author an `IsEmpty` arm.** On the Lucene provider on 10.28.x
+  the operator parses and matches nothing, so a backlog query built on it reads zero and looks like a
+  fully enriched catalogue
+  ([`query-expressions.md`](query-expressions.md#operators-what-the-enum-implies-vs-what-matches)).
+  Express "has no value" positively: set `EmptyStringReplacement` on the index to a sentinel
+  (`__empty__` above) and filter on the sentinel with `Equal`, per
+  [`../SKILL.md`](../SKILL.md) "NULL values". Assert the row count of any emptiness arm either way
 - **exactly one item in `groupExpressions` — a second group is not preserved.** Later groups' conditions are merged into the root `And` and their own `operator`/`negate` are dropped, so an intended OR-list or NOT-group is written as a flat `And` and returns 0 rows with `success: true`. Anything with alternation or negation goes through the expression-replacement surface that takes a real tree ([`query-expressions.md`](query-expressions.md) "Authoring expressions")
 - `folderPath` — the virtual path above is the shape that has been validated on a local install. **On at least one cloud host the same verb requires the server-side ABSOLUTE filesystem path and silently no-ops on anything else** (answering `ok`, persisting nothing). Whichever form you pass, read the query back by name before treating the create as done; that assert is what makes the difference invisible
 - the MCP model supports only **constant** test values — for Parameter, Macro, Term, or Code test values, say so explicitly and recommend the Dynamicweb admin UI
 - completion wiring: integer rule IDs in `configuration.completionRules`, language ID strings in `configuration.completionLanguages`
 
-Typical editorial backlog queries: `active_missing_short_description` (`ProductIsActive=True` + `ProductShortDescription IsEmpty`), `active_missing_images` (image field `IsEmpty`), `low_stock_active` (`ProductStock LessThan "5"`), `incomplete_products` (completion rule IDs + languages attached). Remember the saved `.query` leaves `<Source Repository="" Item="" />` empty — patch it before the index build (see above).
+Typical editorial backlog queries, all on the sentinel-plus-`Equal` shape: `active_missing_short_description` (`ProductIsActive Equal True` + `ProductShortDescription Equal "__empty__"`), `active_missing_images` (image field `Equal "__empty__"`), `low_stock_active` (`ProductStock LessThan "5"`), `incomplete_products` (completion rule IDs + languages attached). The sentinel is whatever `EmptyStringReplacement` is set to on the index — read it before authoring, and assert a non-zero count on a catalogue known to have gaps. Remember the saved `.query` leaves `<Source Repository="" Item="" />` empty — patch it before the index build (see above).
 
 ### Custom product fields index as `CustomField_<SystemName>`
 
-A **custom** product field (a category field or a custom `EcomProductField`, as opposed to a standard one) lands in the Lucene index under the field name **`CustomField_<SystemName>`** — e.g. a custom field `RoomType` is queryable/facetable as `CustomField_RoomType`, not as `RoomType`, not as `ProductCategory|<Cat>|RoomType` (that pipe form is the *authoring/value* system name from [`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.8, not the *index* name). Referencing it by any other plausible pattern **fails silently** — the facet renders empty and the query returns nothing, with **no error** to point at the wrong name. When a facet you added is defined but always empty, check the index field name is `CustomField_<SystemName>` first. Confirm the exact indexed name against the built segment (or the index schema's field list) rather than guessing the casing/prefix.
+**Authoring side versus index side — one field, two names.** The pipe form `ProductCategory|<Cat>|<Field>` is the *authoring/value* system name (from [`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.8): it is what a value write and a completion-rule definition name, and it is correct there — see [`dw-pim-completeness/references/rules-and-dashboards.md`](../../dw-pim-completeness/references/rules-and-dashboards.md) step 4. This section is the *index* side.
+
+A **custom** product field (a category field or a custom `EcomProductField`, as opposed to a standard one) lands in the Lucene index under the field name **`CustomField_<SystemName>`** — e.g. a custom field `RoomType` is queryable/facetable as `CustomField_RoomType`, not as `RoomType`, and not as `ProductCategory|<Cat>|RoomType` in an index predicate or a facet. Referencing it by any other plausible pattern **fails silently** — the facet renders empty and the query returns nothing, with **no error** to point at the wrong name. When a facet you added is defined but always empty, check the index field name is `CustomField_<SystemName>` first. Confirm the exact indexed name against the built segment (or the index schema's field list) rather than guessing the casing/prefix.
 
 ## Dashboard query location — Shared ONLY, never duplicate to Repositories
 

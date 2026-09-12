@@ -131,6 +131,10 @@ nowhere the user or the developer is looking. The `CustomerCenterCmd=QuoteAccept
 likewise inert when posted by hand, in every shape, in both an `AllowOrder=false` state (where
 inertness is correct) and an `AllowOrder=true` state (where it is not).
 
+**`QuoteAccept` is the command's one spelling.** `AcceptQuote` reads plausibly and is the spelling a
+reader reaches for first; it names nothing. Neither posts a working accept, so the spelling matters
+only for reading a captured request — this file is the single home for both facts.
+
 **Use `OrderService.DowngradeToCart` from Razor as the accept path** until the pairing is fixed. A
 quote flow whose only documented accept path is a dead button is worse than no accept path, because
 the demo and the test both pass by inspection.

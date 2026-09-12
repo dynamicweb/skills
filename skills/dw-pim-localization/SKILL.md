@@ -116,11 +116,19 @@ When creating language versions (via "Add languages"), you can assign the new la
 
 See [dw-pim-workflow](../dw-pim-workflow) for workflow setup.
 
-## Completeness per Language
+## Completeness has no per-language dimension
 
-Product completeness is calculated per language context. A product might be 100% complete in English but 40% complete in German. Completion rules and queries can be scoped to a specific language, enabling language-specific workflows for translation progress.
+**Per-language completeness is not queryable on this platform line.** A completion rule carries a
+language list and the admin panel accepts it, but the appended query expression is built from
+`CompletionRule|<id>`, a single per-product index value that the language list never reaches: a query
+configured for several languages returns exactly the products any one of them returns. A
+translation-progress worklist ("complete in English, incomplete in the target language") therefore
+**cannot** be built from completeness. Model it as an explicit per-language field query instead —
+filter on the translated fields themselves for the target language.
 
-See [dw-pim-completeness](../dw-pim-completeness) for completeness rule setup.
+The measurement and the four-gate chain behind it live in
+[dw-pim-completeness](../dw-pim-completeness/SKILL.md) "Completeness has no per-language dimension";
+this skill keeps no second copy.
 
 ## Auto-Translation
 

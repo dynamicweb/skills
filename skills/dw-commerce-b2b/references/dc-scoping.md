@@ -133,7 +133,7 @@ sit in its own grid row.
 | `AccessUserGroupName` (display) | the DC code (e.g. `DC-<CODE>`) | Short, scannable in admin tree. |
 | `AccessUserUserName` (system / login name) | same `DC-<CODE>` form | Consistent identifier for admin URL lookups and SQL joins. |
 | `AccessUserCustomerNumber` | **same `DC-<CODE>` form** | This is the key bit — see below. |
-| `AccessUserUserAndGroupType` | leave NULL | A non-NULL type **hides the group from the default admin Users tree** (see "Admin Users tree filters typed groups" below). DC groups want to be visible. |
+| `AccessUserUserAndGroupType` | leave NULL **for a DC scoping group** | A non-NULL type **hides the group from the default admin Users tree** (see "Admin Users tree filters typed groups" below). DC groups want to be visible. A **B2B account group** is the other role and needs `SystemAccount`; see below. |
 
 **Why `AccessUserCustomerNumber` matches the group name.** It lets a single SQL JOIN (or a single
 Razor `Model.Groups.Where(g => g.CustomerNumber == userDcCode)` lookup) drive a DC-band resolver —
@@ -233,9 +233,16 @@ Use this as the post-seed sanity check, not as the seeding surface — it's slow
 This is a separate admin-tree filter from the "typed groups are categorised under their own admin
 section" expectation; both behaviors coexist and the visibility filter is the dominant one.
 
-**For DC groups, leave `AccessUserUserAndGroupType` NULL.** DC groups belong in the default admin
-tree. Typed groups (e.g. a `SystemAccount` type for service accounts) are appropriate for groups the
-operator *should not* see in routine browsing.
+**For a DC scoping group, leave `AccessUserUserAndGroupType` NULL.** DC groups belong in the
+default admin Users tree, and a non-NULL type hides them from it.
+
+**The opposite rule applies to a B2B account group**, which must carry
+`AccessUserUserAndGroupType = 'SystemAccount'` or it never lists under Accounts — the Accounts
+page filters on exactly that value. The two rules are not in conflict: they are two different group
+roles reading the same column. State which role a group plays before setting the column. The
+account-group side is in
+[`dw-commerce-orders/references/order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md)
+"Why the Accounts page can be empty while Users is populated".
 
 **If you need a typed group and still want to navigate to it**:
 - Either filter at cshtml level (`Model.Groups.Where(g => g.CustomerNumber?.StartsWith("..."))`)

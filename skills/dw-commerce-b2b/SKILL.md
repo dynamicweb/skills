@@ -201,11 +201,13 @@ Structure: Quote Flow → Quote States. Each state has:
 1. Customer creates a quote cart — Shopping Cart app must have **"Checkout to quote"** enabled
 2. Submitted quote appears under **Commerce > Quotes**
 3. Staff manages quotes through the quote flow states
-4. Customer uses the Customer Experience Center with `AcceptQuote` to convert to an order:
-
-```
-?CustomerCenterCmd=AcceptQuote&QuoteId={QuoteId}
-```
+4. Customer accepts the quote, converting it to an order. **The accept path is not the
+   Customer Center command.** The shipped Swift 2 Accept-quote button and the
+   `CustomerCenterCmd=QuoteAccept` command are both measured inert on a quote, so a quote beat
+   scripted around either dies silently on stage. The working path, the measurement behind it and
+   the one canonical command spelling are in
+   [`dw-commerce-orders/references/order-states-and-quotes.md`](../dw-commerce-orders/references/order-states-and-quotes.md)
+   "Swift 2's Accept-quote button cannot work on a quote". Read it before demoing this beat.
 
 ## Cart Flows (B2B Multi-Step Ordering)
 
@@ -281,7 +283,7 @@ User groups support **segment search queries** on the Groups tab — users match
 
 **Impersonation requires explicit configuration** — a user cannot impersonate by default; both the "can impersonate" and "can be impersonated by" sides must be configured.
 
-**Quote flow vs order flow** — quotes and orders use separate flow configurations. A quote accepted via `AcceptQuote` enters the **order flow** at its default state, not the quote flow.
+**Quote flow vs order flow** — quotes and orders use separate flow configurations. An accepted quote enters the **order flow** at its default state, not the quote flow.
 
 **Anonymous assortments** — if no assortment has the Anonymous flag, anonymous users see no products. For a mixed B2C/B2B store, ensure an anonymous-accessible assortment exists with the appropriate product scope.
 

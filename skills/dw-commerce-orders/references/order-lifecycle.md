@@ -383,10 +383,14 @@ mixed-source-orders requirement (badge by source channel) maps onto this 1:1 —
 whatever the order's `OrderSource` column holds; rendering is paragraph-driven, no controller changes.
 
 **Why the Accounts page can be empty while Users is populated.** The Accounts page's `UserGroups`
-module filters by `ListGroupType` (stock = `SystemAccount`). An account group appears under Accounts
-**only when its `AccessUser` row carries `AccessUserUserAndGroupType = 'SystemAccount'`**. A group made
-via `save_user_groups` lands with that column NULL, so it never lists under Accounts even though its
-members show under Users. Fix: set the flag on the account group, then refresh the security cache
+module filters by `ListGroupType` (stock = `SystemAccount`). A **B2B account group** appears under
+Accounts **only when its `AccessUser` row carries `AccessUserUserAndGroupType = 'SystemAccount'`**. A
+group made via `save_user_groups` lands with that column NULL, so it never lists under Accounts even
+though its members show under Users. **State the group's role before setting this column:** a **DC
+scoping group** wants the opposite value — NULL, so it stays visible in the default Users tree — and
+a non-NULL type hides it (see
+[`dw-commerce-b2b/references/dc-scoping.md`](../../dw-commerce-b2b/references/dc-scoping.md)
+"For a DC scoping group, leave `AccessUserUserAndGroupType` NULL"). Fix: set the flag on the account group, then refresh the security cache
 (restart is the reliable way). Do **not** switch the module to `ListGroupType=''` to list everything —
 that surfaces internal staff groups as if they were customer accounts.
 
