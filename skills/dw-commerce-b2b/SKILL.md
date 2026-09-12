@@ -65,12 +65,26 @@ Changes go live only **after a rebuild**. Three rebuild triggers:
 | Grant a user/group access | `assign_permissions_to_assortment` |
 | Inspect what a user can see | `get_assortment_ids_by_user`, `get_assortment_permissions_by_user`, `check_assortment_product_access` |
 | Inspect current relations | `get_assortment_relations*` |
-| Mark for rebuild without building now | `flag_assortments_for_rebuild` |
-| Rebuild now | `build_assortments` |
+| Mark for rebuild without building now | `flag_assortments_for_rebuild` — body is `{"requests":[{"assortmentId":"<id>"}, …]}` |
+| Rebuild now | `build_assortments` — same `{"requests":[{"assortmentId":"<id>"}, …]}` shape |
 | Find what still needs building | `get_assortments_for_build` |
 
 Removal mirrors each assign tool (`remove_products_from_assortment`,
 `remove_groups_from_assortment`, etc.).
+
+**`flag_assortments_for_rebuild` and `build_assortments` take an ARRAY OF REQUEST OBJECTS**, each
+carrying one `assortmentId` — not the flat `{"assortmentIds":["…"]}` that reads naturally from the
+tool name. The flat shape fails with the bare `An error occurred invoking '<tool>'.`, which names
+no argument and does not distinguish a wrong shape from a wrong id.
+
+**Setting `EcomAssortment.AssortmentRebuildRequired` in SQL does not reach the builder.**
+`AssortmentService.GetAssortmentsForBuild()` reads an in-process cache, and no public flush exists
+for it, so a correct SQL `UPDATE` leaves `get_assortments_for_build` returning `[]` while the rows
+on disk are flagged — a scheduled SQL flagger would report success nightly and rebuild nothing.
+Flag through `flag_assortments_for_rebuild` (or, in code, `AssortmentService`'s typed
+`FlagAssortmentForRebuild(Assortment)`, which needs a small add-in because it takes a typed
+`Assortment` and the untyped scheduled-task add-ins cannot construct one). SQL stays a read path
+here.
 
 Standard flow: **create** (`save_assortments`, active) → **fill** (`assign_products_to_assortment`
 and/or `assign_groups_to_assortment` — group membership is dynamic, so products later added to
@@ -88,6 +102,36 @@ storefront unfiltered if the query doesn't reference it) → **verify**
 **marks** assortments dirty; it does not build them. `build_assortments` does the actual work
 and may run asynchronously. Never report an assortment as ready right after an assign call —
 it is not, until a build completes.
+
+**A membership write does not flag anything.** `assign_products_to_assortment` /
+`remove_products_from_assortment` write `EcomAssortmentProductRelations` and leave
+`AssortmentRebuildRequired` false and `AssortmentLastBuildDate` unchanged — relation writes and the
+rebuild flag are independent operations in the underlying service, and the assign call gives no
+signal either way. **Follow every membership batch with an explicit `flag_assortments_for_rebuild`
+plus `build_assortments`**, then assert the new membership on `get_assortment` or a storefront
+catalogue count. Without it the nightly builder never picks the change up.
+
+**Count the built items before activating a segment assortment.** An assortment bound to a PIM
+data-model group (a data-model or data-model-folder group, not a catalogue group) carries no
+`EcomGroupProductRelation` rows and builds to ZERO items — and activating a zero-item assortment
+does not "add nothing", it takes the whole catalogue away from everyone who holds it, because a
+holder's visible set becomes the empty intersection. Run `build_assortments` and check the
+assortment's item count is non-zero as the pre-flight for switching `Active` on.
+
+**Enabling assortments prunes live carts, silently.** Once `UseAssortments` is on, the cart is
+re-evaluated on every load and order lines whose product is outside the buyer's assortment set are
+removed with no message and no log entry, recalculating the total; re-adding the line and loading
+the cart again removes it again. Completed orders are untouched — only live carts. So a seeded
+demo cart can quietly lose lines the first time a buyer opens it: check every seeded cart line
+against the owner's assortment range before enabling the feature, and give the product stock in the
+right location or reseed the line with an in-range SKU rather than fighting the pruning.
+
+**Check `EcomAssortmentGroupRelations` before removing or detaching any product group — even while
+assortments are disabled.** `UseAssortments = False` means a broken assortment-group relation
+produces no error and no symptom until the feature is switched on, so a group that inventory work
+has labelled a duplicate legacy tree can be load-bearing for several assortments. Run
+`get_assortment_relations_by_group_id` (or the equivalent `SELECT`) for every group being removed
+and require zero rows, unconditionally.
 
 **Anonymous access.** If the catalog should be visible to not-signed-in visitors, the
 assortment needs anonymous access enabled (`get_allow_anonymous_users_assortment_ids` shows
@@ -190,11 +234,20 @@ var states = OrderStateService.GetStatesByFlow(flowId);
 
 ## Account Hierarchy (Company-Level Order Visibility)
 
-Users sharing a **Customer Number** can see each other's orders in the Customer Experience Center.
+Users sharing a **Customer Number** can see each other's orders, delivery addresses and favourites
+lists in the Customer Experience Center.
 
 User field: **User > Commerce tab > Customer Number**
 
-CEC setting: **"Retrieve list based on: Own orders and orders from users with same customer number"** — enables company-wide order visibility.
+CEC setting: **`RetrieveListBasedOn = UseCustomerNumber`** ("Own orders and orders from users with
+same customer number") — enables company-wide visibility, and the same key drives the favourites
+app.
+
+**The customer number identifies the ACCOUNT, not the contact.** Every feature above compares it as
+an exact string, so a per-contact suffix (a role suffix, a site suffix, an appended contact id)
+turns all of them off while the settings still read back as enabled — see
+[references/account-shape.md](references/account-shape.md) for the diagnostic query, the
+group-scoped fallback and the recipe for normalising a suffix away.
 
 **Integration tip:** Set the Customer Number from the ERP during user sync to link CRM accounts to Dynamicweb users.
 
@@ -217,7 +270,10 @@ User groups support **segment search queries** on the Groups tab — users match
 
 ## Deep reference
 
-[references/dc-scoping.md](references/dc-scoping.md) — the field-validated distribution-center scoping internals: the DC-as-user-group pattern (one `AccessUserGroup` per DC composing Assortments, group prices, and shipping availability), customer-scoped contract prices (`save_prices` cannot set the customer number — the `EcomPrices.PriceUserCustomerNumber` SQL fallback), the `AccessUser` bulk-seeding schema, the admin Users tree filtering typed groups out of view, the verification flow, and when not to use the pattern.
+| Read it for | Reference |
+|---|---|
+| Distribution-center scoping internals: the DC-as-user-group pattern (one `AccessUserGroup` per DC composing Assortments, group prices and shipping availability), the stock-location join key, the three price scope columns and which one MCP `save_prices` reaches, contract-versus-list pricing per audience with no custom code, the `AccessUser` bulk-seeding schema, the admin Users tree filtering typed groups out of view, the verification flow, and when not to use the pattern | [references/dc-scoping.md](references/dc-scoping.md) |
+| The customer number as the account key: what resolves "the same customer" by exact string match, what a per-contact suffix silently disables, the measured recipe for normalising one away, and account-wide favourites lists (impersonation plus `RetrieveListBasedOn = UseCustomerNumber`, and the `FavoriteCmd` vocabulary) | [references/account-shape.md](references/account-shape.md) |
 
 ## Pitfalls
 

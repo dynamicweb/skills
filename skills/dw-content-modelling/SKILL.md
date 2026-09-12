@@ -294,79 +294,42 @@ IEnumerable<FileViewModel> files = item.GetFiles("Attachments");
 Beyond designing the schema, actually creating/editing/copying/moving/publishing a page or
 paragraph through the MCP tools has its own discipline.
 
-**Domain anchor.** The page entity is `Dynamicweb.Content.Page`. Key fields:
+The page entity is `Dynamicweb.Content.Page`. Before writing, read the **parent** (its item type
+and layout constrain the child), the **item type schema** (required fields, localizable flags,
+references), one published **sibling** at the same level, and decide the **language layer** —
+master or translation — up front.
 
-- **`AreaId`** — the website. Every page belongs to exactly one area, set at construction and
-  effectively immutable.
-- **`ParentPageId`** — tree position. `0` means top-level under the area.
-- **`Active`** vs **`Published`** — these are different. `Active` controls inclusion in
-  navigation/availability; `Published` controls whether the page is live. A page can be
-  `Active` but unpublished, or vice versa. `ActiveTo` adds a time-bound expiry.
-- **`IsFolder`** / **`IsTemplate`** — folders hold structure but render nothing; templates are
-  the source for `CopyOf` clones. Don't treat them as content pages.
-- **`NavigationTag`**, **`MenuText`**, **`Sort`** — navigation surface. `Sort` is integer order
-  among siblings.
-- **`LayoutTemplate`**, **`ParentLayoutTemplate`**, `LayoutApplyToSubPages` — layout
-  inheritance. Setting these wrong is the most common cause of "the new page looks broken".
-- **Items** — a page is item-typed via `Dynamicweb.Content.Items.Item`. The item type is the
-  schema (above); required fields, references, and translatable flags live there.
+**`Active` and `Published` are different**, and saving a page does not publish it: `Active`
+controls navigation/availability, `Published` controls whether the page is live, so a "make it
+live" request is a second call. `LayoutTemplate` / `ParentLayoutTemplate` set wrong is the most
+common cause of "the new page looks broken".
 
-**Read before write:**
+**Paragraphs — two insertion paths.** For any type that appears in `get_item_types`, including
+custom ones, create with `save_paragraphs` and set `ItemType` to the exact system name. For a
+standalone application or module listed in `get_content_apps`, use `place_app_paragraph` — except
+on a Swift 2 site, where a grid column renders a paragraph through its item type and
+`place_app_paragraph` leaves `ParagraphItemType` empty, so the paragraph is correct in the database
+and invisible on the page; copy a working app paragraph of the same module instead. Whichever tool
+creates it, `save_paragraphs` / `set_paragraph_item_fields` store field values **verbatim** — read
+the target item type's real field names and an existing sibling's value shapes first (button fields
+as `ButtonData` JSON, rich-text fields with their own HTML) rather than guessing.
 
-1. **Parent** — confirm the parent page or area. The parent's item type and layout often
-   constrain the child.
-2. **Item type** — read the item type schema: required fields, localizable flags, references
-   (image, file, page link).
-3. **Sibling** — read one published sibling at the same level. Copy conventions for layout,
-   navigation, access.
-4. **Language layer** — multilingual sites use translation layers on top of the master
-   language. Decide *up front* whether to write on master (translations inherit) or on a
-   specific translation. Mixing the two is the most common source of "the change is not
-   visible" reports.
+**Confirm before writing.** State the page and parent ("Create About page under Company"), the item
+type, language, and whether it will be published. For paragraph edits, name the paragraph and the
+page it lives on. If a write fails on item-type or schema validation, re-read the item type schema
+and fix the field — do not invent placeholder values to satisfy required fields.
 
-**Required field shortlist.** Most installations require at minimum: `AreaId`,
-`ParentPageId`, item type, name. Many add: `MenuText`, `NavigationTag`, `Sort`,
-`LayoutTemplate`, access permissions.
-
-**Publish is a separate write.** Saving a page sets `Active`/data; it does not set
-`Published`. After the create/edit, propose a follow-up publish call as its own step if the
-user said "make it live". If the user said "draft only", stop after save.
-
-**Paragraphs — two insertion paths.** Choosing the wrong one fails silently or with a
-confusing error:
-
-- **App/module paragraph** (`place_app_paragraph`) — for a standalone Dynamicweb application
-  or module (e.g. a product list, search module, form). These appear in `get_content_apps`.
-  If the component is NOT listed there, this path fails.
-- **Item-typed paragraph** (`save_paragraphs`) — for any item-typed component, i.e. any type
-  that appears in `get_item_types`, including any custom solution-specific paragraph types.
-  Create with `save_paragraphs`, setting `ItemType` to the exact system name from
-  `get_item_types`.
-
-To pick: call `get_item_types` and check if the type exists there (→ `save_paragraphs`); if
-not, call `get_content_apps` (→ `place_app_paragraph`); if found in neither, find an existing
-paragraph of that type on another page to copy its structure. Whichever tool creates it,
-`save_paragraphs`/`set_paragraph_item_fields` store field values **verbatim** — read the
-target item type's real field names and an existing sibling's value shapes first (button
-fields as `{"Label","Link","Style"}` JSON, rich-text fields with their own HTML) rather than
-guessing.
-
-**Confirm before writing.** State the page and parent ("Create About page under Company"),
-the item type, language, and whether it will be published. For paragraph edits, name the
-paragraph and the page it lives on.
-
-**Recovery.** If the write fails on item-type or schema validation, read the item type schema
-again, fix the missing or wrong field, and retry. Do not invent placeholder values to satisfy
-required fields.
+The write surfaces themselves — which saves drop a field, which labels the platform re-derives,
+which caches a structural write leaves stale — are in
+[references/page-paragraph-writes.md](references/page-paragraph-writes.md).
 
 ## Deep reference
 
-[references/modelling-discipline.md](references/modelling-discipline.md) — field-validated depth on:
-
-- **Editor-manageable pages, not HTML blobs** — one paragraph/field per editor concern; rich-text fields carry prose only; the "could an editor change it without seeing HTML?" gate.
-- **Custom item types — the `<Prefix>_*` discipline** — why an XML drop alone makes a type readable but never writable (`ItemFieldSave` materialises the table), the write-ACE on `Files\System\Items\**`, Routes A/B for creating types, editor-choice-becomes-column-type (`TextEditor` → `nvarchar(255)` hard errors), and repeater-field storage plus the `ParagraphSave` edit path for repeater children (and why neither the save response nor `GetParagraphById` can verify a child write — the rendered page can).
-- **Content-side language layers** — the `Area` sibling-row model, `AreaCopy`, what a full-content copy does NOT carry (string-id repeater children, permissions, hardcoded page-id gates, component selectors), the three-layer translation cascade, and friendly-URL/root wiring.
-- **Editing content through the Management API** — `ButtonData` binder asymmetry, `ShowParagraph` no-op, `PageCopy` shortcut inheritance, and the saves that report success but silently drop a field.
+| Read it for | Reference |
+|---|---|
+| Editor-manageable page modelling (one paragraph/field per editor concern) and the custom item-type `<Prefix>_*` discipline: why an XML drop leaves a type readable and unwritable until the definition loads, why that differs by host class, the write-ACE on the items folder, Routes A/B and their zero-restart cost, editor-choice-becomes-column-type, and repeater-child storage | [references/modelling-discipline.md](references/modelling-discipline.md) |
+| Writing pages, paragraphs and grid rows: the Management API binder's sharp edges, saves that report success and drop a field, `PageMenuText` re-derived from the item title on every save (`reorder_pages` included), the missing `navigationTag` member, `place_app_paragraph` rendering nothing on Swift 2, the nav-tree cache a re-parent does not invalidate, repeatable-child caching, and `<QueryConditions>` as the per-paragraph query-default lever | [references/page-paragraph-writes.md](references/page-paragraph-writes.md) |
+| Language layers and multi-area binding: the `Area` sibling-row model, what `AreaCopy` does not carry, what a save on a mastered page does to its mirror (structure crosses, values do not), the translation cascade, friendly-URL/root wiring, and two areas sharing one host | [references/language-layers.md](references/language-layers.md) |
 
 ## Pitfalls
 

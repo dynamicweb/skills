@@ -113,15 +113,20 @@ Groups support a **segment search query** — users matching the query are dynam
 
 From lowest to highest:
 
-| Level | Includes | Description |
-|-------|---------|-------------|
-| Not set | — | No rights (no explicit entry) |
-| None | — | No rights (explicit deny) |
-| Read | — | Can view content and settings |
-| Edit | Read | Can edit existing items |
-| Create | Read, Edit | Can create new items |
-| Delete | Read, Edit, Create | Can delete items |
-| All | All lower | Can set permissions on this item |
+| Level | Stored value | Includes | Description |
+|-------|---|---------|-------------|
+| Not set | (no row) | — | No rights (no explicit entry) |
+| None | `1` | — | No rights from this group's context |
+| Read | `4` | — | Can view content and settings |
+| Edit | `20` | Read | Can edit existing items |
+| Create | `84` | Read, Edit | Can create new items |
+| Delete | `340` | Read, Edit, Create | Can delete items |
+| All | `1364` | All lower | Can set permissions on this item |
+
+**The stored values are a sparse bit-flag enum, not a 0-based ladder.** A `UnifiedPermission` row
+at level `1` is `None`; level `4` is `Read`. Reading a database of `Anonymous = 1 / <group> = 4` as
+"1 is read, 4 is higher" writes the opposite of what was meant — print these numbers beside any
+level copied out of a solution.
 
 **Priority rule:** When a user belongs to multiple groups with different permission levels on the same item, **the highest level wins**.
 
@@ -153,12 +158,22 @@ Permissions can be set at the level of:
 
 **Effect:** Users only see order data (Orders, Carts, Quotes, Subscriptions, Ledgers, RMAs) from shops they have Read access to.
 
-### UI Permissions (v10.21+)
+### Backend areas: the `Section` grant, and the separate UI-visibility dimension
 
-A second permission dimension — set on **Areas** and **Navigation tree sections** only. Hides UI elements **without affecting functional access** (a user still has the functional permission but doesn't see the menu item).
+Two different mechanisms are both described as "area permissions", and mixing them up produces a
+role that looks configured and cannot save:
 
-- Does **not** cascade down the tree
-- Applied per area/navigation node independently
+- **A `Section` grant is an ordinary entity permission** (`UnifiedPermission`, `PermissionName =
+  'Section'`, `PermissionKey` = the admin area name). A backend user who is not an Administrator
+  has no grant on any area and sees an admin shell with NO navigation at all until one is written.
+  **The level on the `Section` row is the level the screens beneath it operate at** — at `Read` the
+  area, its tree and its edit screens render with every write command withheld; at `Edit` the Save
+  commands appear. Grant the level the role must operate at.
+- **Capability Control (v10.21+)** is the separate visibility dimension, stored in
+  `CapabilityLimitation` and set per area / navigation-tree section. It hides UI elements without
+  changing what an action is authorised to do, and it does not cascade a level down the tree.
+
+Both are detailed in [references/permission-layers.md](references/permission-layers.md) §3 and §4d.
 
 ### Restricting Frontend Page Access
 
@@ -170,6 +185,11 @@ To restrict a page or branch:
    **Authenticated users (frontend) → None** and grant **Read** to the target groups. The explicit
    broad-role deny is load-bearing: a bare group grant is silently overridden by the inherited
    Authenticated-users grant (highest wins) and does not gate.
+3. Write an explicit row for **every** user group as well — `None` for the ones that must not see
+   the page. A group with no row inherits its parent's permission, and the parent of a root-level
+   page is the permissive area default, so a positive-only grant admits every group it did not
+   name. Prove the gate by signing in as a persona from each denied group; "anonymous is
+   redirected" is what an incomplete gate looks like.
 
 A denied anonymous visitor is auto-redirected to the first page in the website that carries the
 UserAuthentication app — keep that page active and un-restricted.
@@ -213,7 +233,15 @@ service.RemoveGroupRelations(user, new[] { group });
 
 ## Deep reference
 
-[references/permission-layers.md](references/permission-layers.md) — the field-validated permission internals: the three-layer model (Layer A — the `UnifiedPermission` storage table, Layer B — Capability Control UI-section visibility via `CapabilityLimitation`, Layer C — entity-level grants written into Layer A), the `CapabilityControlFeature` flag, per-role field-level differentiation recipes, the caches that must be flushed after direct-SQL permission seeding (`DefaultCapabilityService`, `DefaultCapabilitySetService`, `PermissionService`), the render-time page/grid-row/paragraph entity store (including the layer-YAML `permissions:` block from base 2.4.0), the unflushable `AccessUser` cache split-brain, and frontend-gating composition with DC user groups.
+The permission internals are split across four references that share one section numbering, so a
+§-number is unique across all four:
+
+| Read it for | Reference |
+|---|---|
+| The storage model — `UnifiedPermission` / `CapabilityLimitation` / `DashboardAccessUserRelation`, the `CapabilityControlFeature` flag, the entity registry, and the backend `Section` entity with its three implicit user roles (§1-§5) | [references/permission-layers.md](references/permission-layers.md) |
+| Who bypasses every check, the `PermissionLevel` numbers, the `PermissionSave` write surface, and the recipes that build a non-admin backend role: action buttons, field-level editability, per-role differentiation, UI-section hides, the plaintext-password escape hatch, orphaned addresses (§6-§14) | [references/grant-mechanics.md](references/grant-mechanics.md) |
+| Render-time gating of storefront pages, grid rows and paragraphs — the layer-YAML `permissions:` block, the explicit-row-per-group rule, highest-level-wins resolution, impersonation resolving against the effective user, the `/Files` bypass, and the customer-number-suffix presentation flag (§15-§16) | [references/page-gating.md](references/page-gating.md) |
+| Writing users, groups and impersonation grants — the MCP-tool versus Management-API-verb table, whole-entity cache saves, the Users-index copy of an impersonation grant, and the Swift `UserGroups` storefront app (§17) | [references/user-group-operations.md](references/user-group-operations.md) |
 
 ## Pitfalls
 
@@ -222,6 +250,11 @@ service.RemoveGroupRelations(user, new[] { group });
 **Permission "None" is not a hard deny** — in the new model, a user in two groups where one has None and another has Edit on the same item gets Edit access (highest wins). Use explicit permission management rather than relying on None as a deny mechanism.
 
 **Permissions were rebuilt for DW10** — DW9 permission configurations cannot be migrated. Must be reconfigured from scratch after upgrade. See [dw-setup-upgrade](../dw-setup-upgrade).
+
+**An MCP user/group save writes the WHOLE entity from cache** — `update_users` carrying only an id,
+or `save_user_groups` carrying only name and parent, re-saves every other column from the cached
+model and blanks what the tool's model does not carry. It is the one call guaranteed to undo a SQL
+write made on the same row ([references/user-group-operations.md](references/user-group-operations.md) §17b).
 
 **Dynamic group membership has latency** — segment-query-based group membership is evaluated at query time, not in real time. Changes in the underlying data (e.g., a user's country changes) may not immediately affect group membership.
 

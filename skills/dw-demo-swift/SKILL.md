@@ -108,7 +108,7 @@ Every "fake pattern" in a Swift demo (raw SQL probes on `AccessUserGroupRelation
 | Surface you're about to hand-roll | Use instead — owned by |
 |---|---|
 | Read user / user groups (`Pageview.User`, `Pageview.User.GetGroups()`) | [`dw-render-viewmodels`](../dw-render-viewmodels/SKILL.md) "User identity / groups" |
-| Gate a Page/Paragraph by role or group (the permission entity store — `UnifiedPermission` rows keyed `PermissionName='Page'`/`'Paragraph'`; group gates need the broad-role deny pair; NOT the legacy `*Permission` columns — required reading before any storefront gating work) | [`permission-layers.md`](../dw-users-permissions/references/permission-layers.md) §15 |
+| Gate a Page/Paragraph by role or group (the permission entity store — `UnifiedPermission` rows keyed `PermissionName='Page'`/`'Paragraph'`; group gates need the broad-role deny pair; NOT the legacy `*Permission` columns — required reading before any storefront gating work) | [`page-gating.md`](../dw-users-permissions/references/page-gating.md) §15 |
 | Read prices (`Services.Prices`, custom `PriceProvider`) | [`catalog-publishing.md`](../dw-commerce-catalog/references/catalog-publishing.md) §2.12 |
 | Read customer orders (`Services.Orders.GetCustomerOrdersByType` / `GetOrdersBySearch`) | [`order-lifecycle.md`](../dw-commerce-orders/references/order-lifecycle.md) "canonical order read surface" |
 | Get product / friendly URLs; `AddStylesheet`/`AddScript` hoisting; cross-cutting redirects (`Page.Loaded` subscriber); per-category behavior; product-field arrays | [`razor-surfaces-and-pitfalls.md`](../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 |

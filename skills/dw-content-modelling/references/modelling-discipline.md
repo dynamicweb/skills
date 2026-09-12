@@ -1,15 +1,15 @@
-# Modelling discipline: editor-manageable content, custom item types, language layers
+# Modelling discipline: editor-manageable content and custom item types
 
-Vendor-generic DW10 content-modelling knowledge: editor-manageable page modelling, the custom
-item-type `<Prefix>_*` discipline (including the XML/`ItemFieldSave` activation mechanics and
-repeater-child edit path), content-side language layers, and the Management API editing sharp edges.
+Vendor-generic DW10 content-modelling knowledge: editor-manageable page modelling and the custom
+item-type `<Prefix>_*` discipline, including the XML/`ItemFieldSave` activation mechanics and the
+repeater-child edit path. Two siblings carry the rest of the content-modelling depth:
+[`page-paragraph-writes.md`](page-paragraph-writes.md) for the page/paragraph/grid-row write
+surfaces, and [`language-layers.md`](language-layers.md) for language layers and multi-area binding.
 
 ## Contents
 
 - [1. Editor-manageable pages, not HTML blobs](#1-editor-manageable-pages-not-html-blobs)
 - [2. Custom item types — the `<Prefix>_*` discipline](#2-custom-item-types--the-prefix_-discipline)
-- [3. Content-side language layers](#3-content-side-language-layers)
-- [Editing page / paragraph / grid-row content through the Management API](#editing-page--paragraph--grid-row-content-through-the-management-api)
 - [Cross-references](#cross-references)
 
 ## 1. Editor-manageable pages, not HTML blobs
@@ -86,9 +86,9 @@ cshtml" pattern.
 
 ### What this looks like in practice
 
-**Dropping the XML makes the type fully READABLE but never WRITABLE until a FIELD is saved — and no
-restart will ever fix it.** Three independent subsystems are involved and the file only reaches one of
-them:
+**Dropping the XML makes the type fully READABLE and leaves it unwritable until the definition is
+LOADED — and which event loads it differs by host class.** Three independent subsystems are
+involved and the file only reaches one of them:
 
 - The item-type **metadata** provider parses the XML **on demand**, which is why every read verb works
   immediately — `ItemTypeById` returns the type with its `displayName`, category and `fieldsCount`, and
@@ -105,8 +105,20 @@ them:
   `Files/System/Log/items/ActivationWorkflow`. One such denial sat unnoticed for weeks, breaking every write
   to a single `ItemType_<Prefix>_<Concept>.xml` while every read of it looked perfect.
 
-So an XML-only deployment produces a type that is fully introspectable and completely unwritable: a
-`ParagraphSave` of that type returns **HTTP 500 `Invalid object name 'ItemType_<Prefix>_<Concept>'`**.
+So an XML-only deployment produces a type that is fully introspectable and, until something loads
+the definition, completely unwritable: a `ParagraphSave` or an `INSERT` against the type returns
+**`Invalid object name 'ItemType_<Prefix>_<Concept>'`** (HTTP 500 through the API), which reads like
+a SQL typo rather than a timing problem because every read verb already reports the type and its
+fields.
+
+**What loads it is host-class-dependent, so state the condition rather than an absolute.** On a
+local IIS host on 10.28.x an app-pool restart alone materialises the table and the same `INSERT`
+succeeds on the next request — the definition is read when the application starts. On hosted cloud
+installs the same sequence was measured twice with no table after any number of restarts, and the
+API route below was the only fix. **What holds on every host class is the ORDERING**: the table
+does not exist at the moment the file lands, so never write the first row in the same batch as the
+XML drop, put the load step (a restart locally, `ItemFieldSave` everywhere) between the two, and
+gate item-type readiness on a REAL WRITE rather than on a metadata read.
 `ItemTypeHealthAll` has no row for an XML-dropped type (health only compares types it already knows have
 schema), `ItemTypeListReload` returns `ok` and changes nothing, and repeated sanctioned recycles change
 nothing. `ItemTypeSave` will not adopt the orphan either — it is create-only and returns **HTTP 400 "System
@@ -142,6 +154,16 @@ your authored XML as authored:
    `Templates\Designs\Swift-v2\Paragraph\<Prefix>\<Prefix>_<ConceptName>\<Prefix>_<ConceptName>.cshtml`.
    The type is then a new "Add paragraph" picker entry in the Visual Editor under your project's category,
    and the storefront renders it on the next GET.
+
+**Route B costs no restart and no cache flush.** Measured on 10.28.x with the worker process
+unchanged across the whole sequence: `ItemTypeSave` created the `ItemType_<SystemName>` table AND
+wrote the `Files/System/Items/<SystemName>.xml` descriptor in one call; eight `ItemFieldSave` calls
+added their eight columns; a paragraph of the brand-new type placed on a brand-new page rendered
+with its own template and every field read through `Model.Item.GetString()` **on the next request**.
+Field VALUES are live on the next request too — `set_paragraph_item_fields` on the new type changed
+what the paragraph rendered with no cache verb at all. This is the positive half of the loud XML-drop
+trap above, and it is what makes a new paragraph type affordable inside a change window that allows
+no restart.
 
 `POST ItemTypeDelete {SystemName, DeletePages:false}` frees the name **and** removes the XML — it is the
 reset lever when a type is genuinely mis-authored, not a required step on the way to a working table.
@@ -353,398 +375,13 @@ Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\*" -F
 
 This is also grep #6 of the discipline audit grep-pack in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md).
 
-## 3. Content-side language layers
-
-> Content-side localization — adding a language layer to a website. Sister concern to the PIM/product
-> side ([dw-pim-localization](../../dw-pim-localization/SKILL.md) (`translation-mechanics.md`)), which translates product names / descriptions
-> / custom fields.
-
-**TL;DR:** A language layer is a **sibling `Area` row** under the same Website, with
-`AreaMasterAreaId` pointing back to the master area and `AreaCulture` / `AreaEcomLanguageId` set to
-the new locale. Admin flow is Settings → Content → Websites → "+ New website Language" → pick the
-master to copy from. All pages/paragraphs/grid-rows from the master are cloned at create-time; from
-then on the Language Management settings decide whether subsequent master changes propagate. Frontend
-switches between layers via the OOTB `Swift-v2_LanguageSelector` paragraph.
-
-### The two-table mental model
-
-| Side | Table | Identifier | Notes |
-|------|-------|-----------|-------|
-| Content | `Area` | int `AreaId`, sibling rows share `AreaMasterAreaId` | One `Area` row per language layer. Master has `AreaMasterAreaId=0` or NULL; siblings point back to it. |
-| PIM | `EcomLanguages` | string `LanguageId` like `LANG1` | Separate identifier space; bridged via `Area.AreaEcomLanguageId`. |
-
-The legacy `Languages` (content) table is empty in a fresh dw10-suite scaffold and can be ignored —
-modern DW10 stores all language-layer state on the `Area` row itself.
-
-### What gets created (admin UI)
-
-Settings → Content → Websites → context menu → "+ New website Language" → pick master → name +
-regional setting → Create. Backstage DW10 INSERTs an `Area` row (`AreaName`, `AreaCulture`,
-`AreaMasterAreaId` = master's id, `AreaEcomLanguageId`/`AreaEcomCurrencyId`/`AreaEcomCountryCode`
-inherited from master), then clones every Page/paragraph/grid-row under the master into the new Area.
-Clones are created in whatever state the Language Management settings dictate.
-
-### The eight Language Management knobs
-
-Settings → Areas → Content → Language Management. Read but **don't change** during a build — defaults
-are usually right. Each toggle controls cross-website propagation:
-
-| Setting | What it does |
-|---------|-------------|
-| Unpublish new paragraphs and rows | New master paragraphs/rows → unpublished on layer (default ON) |
-| Unpublish new pages | New master pages → unpublished on layer |
-| Allow paragraph operations (create/copy/move/delete/sort) | Layer editors can structurally edit paragraphs (default OFF — translators only edit text) |
-| Copy master changes to language versions if values are the same (Pages) | Copy edited master page value when the layer still held the old value; stops once a translator overrides |
-| Copy master changes to language versions if values are the same (Paragraphs) | Same logic for paragraphs |
-| Compare paragraphs as text | When detecting "same value," ignore HTML formatting differences |
-| Make published / unpublished status independent of master | Master publish/unpublish does NOT cascade |
-
-### Wiring the area to PIM language
-
-After creating the layer, **change `Area.AreaEcomLanguageId`** to the matching PIM
-`EcomLanguages.LanguageId`. Without this, the layer renders all product values in master language
-even though the UI chrome is localized.
-
-```sql
-UPDATE Area SET
-  AreaEcomLanguageId = N'<LANG2>',
-  AreaEcomCurrencyId = N'<EUR>',          -- usually inherited; change for markets with different currency
-  AreaEcomCountryCode = N'<NL>',          -- for default VAT/shipping region
-  AreaActive = 1
-WHERE AreaId = <newAreaId>;
-```
-
-PIM must have the matching `LANG2` row + the products translated to that LanguageId — see
-[dw-pim-localization](../../dw-pim-localization/SKILL.md) (`translation-mechanics.md`).
-
-### The Swift OOTB language switcher
-
-`ItemType_Swift-v2_LanguageSelector` renders a list of all active sibling areas for the current
-master. Fields (verify per DW version): `Label`, `Icon`, `ShowLanguageName`, `ShowLanguageCurrency`,
-`HideLanguageFlag`, `LanguageNameFormat` ("Native"/"English"/"Code").
-
-**Swift 2.4 ships the selector's Razor but NOT its item type — verify the type exists before planning
-around the paragraph.** The 2.4 deserialize set omits `Swift-v2_LanguageSelector`: the template is present
-under `Designs/Swift24`, there is no item-type XML and no backing table, and the paragraph therefore cannot
-be placed at all. It is not a broken install and no restart produces it. Create the type through the
-normal API route — `ItemTypeNew` → `ItemTypeSave` → `ItemFieldSave` per field (six fields for the shape
-above), per §2 "Route B" — then place it on the header rows. An edition that promises a language selector
-should carry the item type rather than leaving every build to re-derive this.
-
-Add it to a header grid row,
-set fields, restart the host (header grid composition is cached). Clicking an entry navigates to the
-same page on the target sibling area via the clone metadata; if a sibling page doesn't exist, the
-link falls back to the layer's frontpage.
-
-**Alternative: a master-template toggle (cache-safe, brandable).** When the OOTB selector paragraph
-is awkward (header grid is cached → restart per insert; every layer needs its own paragraph; or you
-want a branded pill), a small comment-delimited block in `Swift-v2_Master.cshtml` just before
-`@ContentPlaceholder()` does the same job with none of the content-cache friction (Razor recompiles
-live). The sibling-page resolution is two asymmetric lookups:
-
-```csharp
-int target = 0;
-if (Pageview.Area.ID == <masterAreaId>)
-    // master → layer: find the clone whose MasterPageId points at the current page
-    target = Dynamicweb.Content.Services.Pages.GetPageIDByMasterID(Pageview.Page.ID, <layerAreaId>);
-else
-    // layer → master: the clone carries the back-link directly
-    target = Pageview.Page.MasterPageId != 0 ? Pageview.Page.MasterPageId : 0;
-if (target == 0) { target = <counterpartAreaHomePageId>; }  // page only exists on one side
-```
-
-Emit `<a href="/Default.aspx?ID=@target" hreflang="...">` — DW's URL provider rewrites to the
-friendly slug. For 3+ layers, resolve siblings via `Area.AreaMasterAreaId` instead of hardcoding ids.
-
-### Creating the layer — surface order + host-config prereqs
-
-A language layer is a multi-table CREATE (DW does ~95 page clones + paragraph/grid-row/
-item-localization/sibling-link bookkeeping). The "Surface priority for CREATES" rule applies in full
-— MCP first, then Management API, then admin UI, **never raw SQL `INSERT INTO Area`** (a SQL clone
-produces a partially-cloned tree missing PDPs, sign-in, customer-center, and the sibling-page links).
-
-**Host-config prereq — AreaCopy needs distributed transactions.** The AreaCopy opens a second SQL
-connection inside a `TransactionScope`; without the host's distributed-transaction prereqs in place it
-fails with `System.Transactions.TransactionException: The operation is not valid for the state of the
-transaction` (the error LOOKS transactional but is environmental — fix the prereqs, don't change the
-input shape). Those host-config prereqs are owned by [dw-setup-install](../../dw-setup-install/SKILL.md): the
-`Program.cs` `ImplicitDistributedTransactions = true` opt-in (§3.1), the MSDTC service +
-inbound/outbound + firewall setup (§4), and the **net10-host caveat** where even a fully-configured
-host can't promote to MSDTC and needs the `Enlist=false` connection-string workaround (§4.1). Verify
-all of those before treating an AreaCopy `TransactionException` as a content problem.
-
-**Management API (proven):** `POST /admin/api/AreaCopy` with body
-`{"Model": {"SourceAreaId": <masterId>, "Name": "...", "Culture": "<culture>", "CopyPermissions":
-true, "AsWebsite": false}}`. `AsWebsite=false` = language layer (sibling with `AreaMasterAreaId`
-back-link). Returns `{status:"ok", modelIdentifier:"<newAreaId>"}`. Some 10.25.x builds instead
-accept `Query.`-prefixed query-string params — try the JSON body first, fall back to query-string.
-MCP `copy_area` is documented but observed broken ("Area was not copied") as of DW 10.25.6.
-
-### What a full-content AreaCopy does NOT carry (validated DW 10.25.x)
-
-A `StructureAndContent` copy that returns `status: ok` is **not** a complete clone. Four classes of
-content silently don't make it — run this as a checklist immediately after every AreaCopy.
-
-1. **Custom items with STRING-id repeater children are dropped (copier bug).** The copier remaps
-   repeater children with an **unquoted** SQL CASE, so string item ids parse as column names and the
-   INSERT dies with `Invalid column name '...'` (real exception only in the EventViewer log). The
-   paragraph clone lands with `ParagraphItemType`/`ParagraphItemId` wiped — a stub that renders
-   nothing. Numeric-id children clone fine. Detect:
-   `SELECT p.ParagraphID, p.ParagraphPageID FROM Paragraph p JOIN Page pg ON pg.PageID =
-   p.ParagraphPageID WHERE pg.PageAreaId = <layerAreaId> AND p.ParagraphItemType = '' AND
-   p.ParagraphModuleSystemName = ''` — every row is a dropped item. Fix per stub: manual SQL clone of
-   the `ItemList` + child rows + `ItemListRelation` + parent, then re-point the stub paragraph. A
-   sanctioned SQL exception (MCP + Management API both proven broken for this shape). **Prevention:
-   give repeater children numeric item ids.**
-2. **SECURITY — permissions are NOT cloned, and `CopyPermissions: true` does not change that for
-   frontend pages.** Anon-gates and role-gates on the Permission entity store silently don't apply to
-   the layer, so **every protected page in the copy is public until you mirror the rows by hand** — an
-   observed state is a customer-center dashboard served in full to an anonymous visitor on the layer
-   while the master stayed correctly gated. `UnifiedPermission` rows are not cloned and the
-   `CopyPermissions` flag is not the frontend-page-permission switch; nothing in the `status: ok`
-   distinguishes the two. Probe **anonymously, per language, per protected URL** after every copy (the
-   pass state is a redirect to the localised sign-in, not a 200). Mirror every master row onto the layer's sibling page id
-   (`Page.PageMasterPageId` gives the mapping), then
-   `POST /admin/api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Security.Permissions.PermissionService"}`
-   AND restart (the nav tree caches separately). See [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`).
-3. **Hardcoded page ids in template role-gates miss the clones.** A gate like
-   `if (node.PageId == <dashboardId> && !isRole) continue;` stops working on the layer (the clone has
-   its own id). Make it master-aware:
-   ```csharp
-   int MasterId(int id){ var p = Dynamicweb.Content.Services.Pages.GetPage(id); return (p!=null && p.MasterPageId>0)?p.MasterPageId:id; }
-   if (MasterId(node.PageId) == <dashboardId> && !isRole) { continue; }
-   ```
-4. **Component selectors still point at the MASTER's component pages.** The clone of a
-   `ProductComponentSelector` (and the slider's `ListComponentSource`) keeps the master's page id in
-   `ComponentSource`; the layer's PDP renders master-language labels and both areas share one
-   `RenderGrid` cache entry. Repoint the layer's selector items at the layer's own component-page
-   clones via `set_item_field_values`. (The shared-cache mechanics live in
-   [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) "ProductListComponentSelector".)
-
-### A DANGLING item-list pointer reads exactly like an empty list
-
-Same shape of damage as class 1 above, from a different cause, and the read side cannot tell you which you
-are looking at. **An item-list field can point at an `ItemList` id that no longer exists, and the read verb
-answers `[]` — indistinguishable from "nobody has added items yet".** Observed after a serializer
-deserialize left `ItemList` and `ItemListRelation` **completely empty** while the parent items still
-carried their pointers (`ItemType_Swift-v2_Slider.Items = 323`, an accordion's `Accordion_Items = 324`).
-The paragraphs render as heading-plus-subline shells with no children, and a punch list records them as
-empty bands:
-
-```
-SELECT * FROM ItemList          -> 0 rows
-SELECT * FROM ItemListRelation  -> 0 rows
-get_repeatable_item_field       -> []
-add_repeatable_item             -> "Field Accordion_Items references item list 324, which no longer exists"
-```
-
-**Reset the pointer to the STRING `"0"`** with `set_paragraph_item_fields` (an empty string is rejected
-with "The input string was not in a correct format" — it is an int field), which makes the field
-list-less. The next `add_repeatable_item` then mints a fresh `ItemList` and links it; `ItemList` gains a
-row and the child appears in `ItemType_<child>`. **Distinguish the two states before treating a `[]` as
-empty**: `SELECT COUNT(*) FROM ItemList WHERE Id = <pointer>` is the cheap discriminator, and
-`add_repeatable_item`'s own error message names it. A presence-only design assert passes on a shell, so
-gate the section on RENDERED HEIGHT, not on the element existing.
-
-**Verification probe — enter through the shop route.** When probing the layer's PDP use
-`/Default.aspx?ID=<layer-shop-page>&ProductID=X[&VariantID=Y]`. Hitting the PDP wrapper page id
-directly renders without ecom product context — every product component returns null and the page
-looks catastrophically broken when nothing is wrong.
-
-### The three-layer translation cascade — localize all three
-
-Swift v2 pulls user-visible strings from **three independent sources** — none cascades into the
-others:
-
-| Layer | What it contains | Where it lives |
-|-------|------------------|----------------|
-| **1. `Translations.xml`** | UI chrome strings called via `@Translate("...")` (Search here, Sign in, Add to cart…) | `Files/Templates/Designs/Swift-v2/Translations.xml`. Stock ships ~2170 keys with en-GB/da-DK/nb-NO/en-US/en-DK/nl-NL — no fr-FR, no de-DE. Adding a locale = bulk-inject `<translation culture="<locale>">` children. |
-| **2. Per-clone Item `Title` fields** | Header chrome — `Swift-v2_MyAccount`, `_MiniCart`, `_Favorites` render their label from `Model.Item.GetString("Title")`, NOT `@Translate` | `ItemType_Swift-v2_<Type>` rows. The clone copies English `Title` into every layer's item row — each needs an UPDATE. Map header-page→item-id via `Paragraph.ParagraphItemId` filtered by `ParagraphPageId`. |
-| **3. DB content** | Paragraphs, products, groups, page menu text | `ItemType_Swift-v2_Text`/`_Poster`/`_Feature` rows on layer page clones; `EcomProducts`/`EcomGroups` per `ProductLanguageId`; `Page.PageMenuText` |
-
-Apply in order: (1) inject the locale into `Translations.xml` for visible keys (aim for ~80-150
-chrome strings, the rest fall back to en-GB gracefully); (2) UPDATE cloned header `Title` fields
-(MiniCart/Favorites store HTML fragments `<div class="dw-paragraph">…</div>` — preserve the wrapper);
-(3) translate DB paragraphs/products/groups. Restart after editing `Translations.xml` (cached at
-startup) and after touching header item rows (composition cache). Same depth-not-width rule as PIM:
-localize the **pages a visitor actually reaches first**, not the whole site.
-
-**SQL files with non-ASCII characters — encoding pitfall.** `sqlcmd` defaults to the system codepage
-(Windows-1252 on western Windows); a UTF-8 `.sql` file with multibyte characters gets mangled at
-parse time and stored corrupted in NVARCHAR even though the literal is `N'...'` (symptom: an accented
-character such as `é` renders as a two-character double-encoded mojibake sequence). Fix: skip the file — build the UPDATE statements in PowerShell (UTF-16 in memory) and pass
-via `Invoke-Sqlcmd -Query`, or save the `.sql` as UTF-8-with-BOM (sqlcmd detects the BOM). The
-PowerShell-inline approach is more robust (the BOM is easy to lose on re-save). To measure damage
-already in a database, the [dw-data-access](../../dw-data-access/SKILL.md) skill ships a read-only
-census script (`Invoke-DwMojibakeCensus.ps1`).
-
-### Nav-tree leaks the master area on layers — `LocalizeLink` patch
-
-DW10's `NavigationTreeViewModel` builds nav node `Link` values rooted at the **master area's Shop
-page**, regardless of the requesting page's area. On a layer home page the header dropdown renders
-`<a href="/<masterUrlName>/shop?GroupID=…">` — clicking it dumps the visitor into the master's
-storefront. The friendly URL provider itself is correct; the bug is the nav tree's choice of page id.
-Affected Swift v2 templates: `Navigation/Navigation.cshtml`,
-`Paragraph/Swift-v2_MenuRelatedContent/Menu.cshtml`,
-`Paragraph/Swift-v2_MenuProductGroupImages/Menu.cshtml`, plus any custom nav template using
-`@node.Link`. Drop this helper into each affected template and call it everywhere `node.Link` is
-emitted:
-
-```csharp
-string LocalizeLink(string link)
-{
-    if (string.IsNullOrEmpty(link)) return link;
-    var area = Pageview?.Area;
-    if (area == null || area.MasterAreaId <= 0) return link;  // master or no layer: passthrough
-    var master = Dynamicweb.Content.Services.Areas.GetArea(area.MasterAreaId);
-    if (master == null || string.IsNullOrEmpty(master.UrlName) || string.IsNullOrEmpty(area.UrlName)) return link;
-    var masterPrefix  = "/" + master.UrlName.Trim('/') + "/";
-    var currentPrefix = "/" + area.UrlName.Trim('/') + "/";
-    if (link.StartsWith(masterPrefix, StringComparison.OrdinalIgnoreCase))
-        return currentPrefix + link.Substring(masterPrefix.Length);
-    return link;
-}
-```
-
-Then `href="@node.Link"` → `href="@LocalizeLink(node.Link)"`. Razor recompiles live; no restart.
-(Patching the tree builder upstream would mean shipping a custom AddIn; the per-template helper keeps
-the fix in the design layer.)
-
-### Friendly URL config — culture-coded area prefixes
-
-For a multi-language site, switch all areas to culture codes so the language switch is visible in the
-URL bar and reads as standard config:
-
-```sql
-UPDATE Area SET AreaUrlName = N'en-us' WHERE AreaId = <master>;
-UPDATE Area SET AreaUrlName = N'nl-nl' WHERE AreaId = <nlLayer>;
-UPDATE Area SET AreaActive = 0 WHERE AreaId = <cruftLayerId>;   -- disable failed-AreaCopy cruft
-```
-
-Restart the host (URL provider caches the area URL map at startup). Combined with `LocalizeLink`
-above this makes the language switch behave coherently.
-
-### Single-storefront clean root — one area owning `/`
-
-For a single-storefront site (a common solution shape), make the storefront area answer `/` with no
-`/<area-slug>/` prefix on child URLs:
-
-1. Set `urlIgnoreForChildren = true` on the storefront area (`save_areas` exposes it; admin: Website
-   settings → Domain and URL). Child pages then live at `/` — `/<area-slug>/shop` becomes `/shop`.
-2. Deactivate leftover sibling areas (`active = false`) — e.g. the stock "Standard" area a suite
-   scaffold ships alongside the deserialized storefront — so root routing has one candidate.
-3. Restart the host: the URL provider and nav tree cache the area URL map at startup; the change is
-   invisible until then.
-
-**After the switch, sweep the rendered HTML for legacy links** — the URL provider rewrites only the
-links it generates; three classes of stale link survive it:
-
-- **Item-field links carrying dead page ids** (`Default.aspx?ID=<id>` where the id predates the
-  deserialize). The MCP `find_unresolvable_item_pages` tool does NOT find these — it detects
-  paragraphs whose item *type* no longer resolves, not stale *values* inside link/rich-text fields.
-  Find them by fetching the rendered page (`curl`) and grepping for `Default.aspx`, then tracing each
-  `<a href>` to its paragraph via the paragraph-id attribute DW renders on each grid column.
-- **One item per chrome variant.** Stock Swift ships a separate `Swift-v2_Logo` item per
-  header/footer variant page (desktop header, mobile header, desktop footer, mobile footer) — all
-  carrying the same baked link. Repointing only the one visible in the first scan leaves the rest
-  stale; enumerate every instance with `search_paragraphs` filtered by item type and repoint them
-  all (`set_item_field_values`).
-- **Hand-typed hrefs in rich-text fields.** Editor-authored `<a href="/<area-slug>/...">` markup
-  keeps the old prefix verbatim; update the field value.
-
-Not every `Default.aspx?ID=` hit is cruft: stock module output emits some by design (the
-UserAuthentication app's sign-up / forgot-password / redirect sub-links, Swift's CartSummary AJAX
-endpoint). Verify the target page id exists in the area and leave module-emitted links alone —
-patching them means customizing stock module rendering. A `PageShortCut` holding `Default.aspx?ID=`
-of an id that EXISTS (e.g. a sign-in folder shortcutting to its form page) is likewise intentional;
-only clear shortcuts whose target id is dead (next section).
-
-### `PageShortCut` baseline cruft — "About Us"/"Privacy" 404 after deserialize
-
-Some baselines ship pages whose `Page.PageShortCut` points at a hardcoded old URL
-(`Default.aspx?Id=107` is the canonical example — an original page id that doesn't exist
-post-deserialize). The frontend 301-redirects to that stale id, which 404s.
-
-```sql
-SELECT PageId, PageAreaId, PageMenuText, PageShortCut FROM Page
-WHERE PageShortCut LIKE '%Default.aspx%' OR PageShortCut LIKE '%Id=10%';
-UPDATE Page SET PageShortCut = N'' WHERE PageId IN (<aboutPageId>, <clonesPageIds>);
-```
-
-Restart afterwards (page metadata cached). Add content to the now-empty page or it renders as just
-header+footer.
-
-### Common gotchas
-
-- **Empty layer shows master content.** Check `Area.AreaEcomLanguageId` points at a `LanguageId` that
-  actually has translation rows in `EcomProductTranslation`. Bridging is two-step.
-- **LanguageSelector shows only one language.** It lists only areas with `AreaActive=1` AND
-  `AreaMasterAreaId = (current area's master)`. Flip `AreaActive=1` after creating the sibling.
-- **URL slug collides.** Two siblings with the same `AreaUrlName` route the second to 404. Pick
-  distinct slugs.
-- **Page-count drift.** New master pages land **unpublished** on the layer (default "Unpublish new
-  pages"). Either freeze the master after creating layers, or turn that knob off.
-- **Custom CSS / fonts.** Tier-0 Style assets are area-row-scoped via `AreaColorSchemeGroupId` etc.;
-  newly-cloned layers **inherit the master's style ids** — brand stays consistent for free. Verify if
-  a market needs a different palette. See [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md).
-
-## Editing page / paragraph / grid-row content through the Management API
-
-The Management API hits the same DW domain services as MCP and the admin UI, so the bookkeeping
-(ItemRelation cloning, cache invalidation, notifications) fires correctly. The binder has sharp edges
-worth knowing when authoring content programmatically (validated DW 10.25.x):
-
-- **Paragraph item fields** save through `ParagraphSave` round-trips of `GetParagraphById`. String /
-  HTML fields persist directly. `ButtonData` fields have a binder asymmetry: GET returns a JSON
-  *string*, but the save binder wants the *object*
-  (`{"Label": ..., "Link": ..., "LinkType": "page", "Style": "primary"}`).
-  - **Never seed a `ButtonData` field with a plain label string.** The render side deserializes the
-    stored value as ButtonData JSON; a bare `"Shop now"` in `Button`/`FirstButton`/`SecondButton`
-    throws `ConverterException: Cannot deserialize json string to … ButtonData` and replaces the whole
-    paragraph (often the whole section) with a Razor error block. Store a full JSON object
-    (`{"SelectedValue":"","Label":"…","Link":"/…","LinkType":"url","Style":"primary"}`) or an **empty
-    string** for "no button" — templates guard on empty via `TryGetButton`. Seed/import sweeps should
-    treat any non-empty non-JSON value on a `*Button*` item field as a defect.
-- **`ShowParagraph` cannot be changed via the API** — both the `ParagraphSave` round-trip and
-  `ParagraphChangeActive` silently no-op. `ParagraphSave {"showParagraph": false}` on the full model
-  returns 200 and leaves `Paragraph.ParagraphShowParagraph = 1`; a **correctly shaped**
-  `ParagraphChangeActive` returns `{"status":"ok"}` and changes nothing either. Its body shape is
-  undocumented and worth recording, because a schema mistake is reported as a domain error: the shape
-  is `{"setActive":<bool>,"ids":["<id>", ...]}` where `ids` is a `List<string>`, so **numeric ids 500**
-  and **any other key name answers `{"status":"invalid","message":"No items selected"}`** rather than
-  naming the field. Hide a paragraph in this order:
-  1. **`GridRow.GridRowActive = 0`** when the paragraph is the sole occupant of its row. It removes the
-     whole band rather than its contents, so no empty padded `<section>` is left behind, and it is one
-     UPDATE to reverse.
-  2. **`hideForDesktops` + `hideForTablets` + `hideForPhones` all `true`** for a paragraph that shares
-     a row. Server-side suppression, fully reversible.
-  3. `Paragraph.ParagraphShowParagraph = 0` by SQL as a last resort (local install only).
-
-  `ParagraphDelete` is not on that list: it is irreversible and it orphans the grid row.
-- **`PageCopy` inherits the source's `shortCut`.** A page that carries a shortcut redirect produces a
-  copy that 301s elsewhere (`DestinationType` is `folder|section|website`; the
-  `X-DWAPP-REDIR-REASON` header names the middleware). Clear `shortCut` on the copy.
-- **Grid rows: `GridRowCopy {PageId, Id}`** (copy a known row to the target page) is far more reliable
-  than `GridRowCreate`, whose definition lookup is fussy about grid naming. Then point the paragraph's
-  `gridRowId` / `gridRowColumn` at the copied row.
-
-### Saves that report success but silently drop a field
-
-Two content saves report `status: ok`, bump `updatedDate`, and silently drop part of the input — so
-**round-trip-verify any critical content edit** (read the value back through a different surface,
-or curl the rendered page) before declaring it done:
-
-| Save | Field silently dropped | Verified | Working fallback |
-|---|---|---|---|
-| MCP `save_pages` (update path) | `menuText` — the response even echoes the OLD value | DW 10.25.x | SQL `UPDATE Page SET PageMenuText` + host restart (the nav tree caches menu text) |
-| MCP `save_pages` (create + update) | `urlName` — ignored; the slug is derived from `menuText` instead | DW 10.27.x | Set `menuText` to drive the slug, or SQL `UPDATE Page SET PageUrlName` + host restart. `urlName` won't pin the slug on its own. |
-| Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort (local install only). `ParagraphSave` is still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
-
-The tool-behaviour root cause (why these MCP / Management API writes drop fields, and the surface model)
-is in [dw-extend-mcp-tools](../../dw-extend-mcp-tools/SKILL.md) §5.
-
 ## Cross-references
 
+- [`page-paragraph-writes.md`](page-paragraph-writes.md) — creating and editing pages, paragraphs
+  and grid rows: the Management API binder's sharp edges, the saves that drop a field, and the
+  caches a structural write does not invalidate.
+- [`language-layers.md`](language-layers.md) — the `Area` sibling-row model, `AreaCopy`, the
+  translation cascade, and what a save does to a language mirror.
 - [dw-extend-mcp-tools](../../dw-extend-mcp-tools/SKILL.md) — MCP create/update tool behaviour and the silent-no-op
   table from the tool's perspective.
 - [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) — Style assets, the re-skin escalation ladder / item-type
@@ -754,6 +391,6 @@ is in [dw-extend-mcp-tools](../../dw-extend-mcp-tools/SKILL.md) §5.
 - [dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md) — `Pageview.User.GetGroups()` and other viewmodel
   accessors used by template role-gates.
 - [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`) — the Permission entity store that AreaCopy fails to
-  clone (point 2 above).
+  clone.
 - [dw-pim-localization](../../dw-pim-localization/SKILL.md) (`translation-mechanics.md`) — the product side (translate product names,
   descriptions, custom fields).

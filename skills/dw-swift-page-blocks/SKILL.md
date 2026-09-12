@@ -78,7 +78,12 @@ the browser-side checks that catch a page passing every content assert are in
   `get_item_types` name, target `GridRowId` + column, and `Template` to the bare template name
   returned by `get_paragraph_templates` **verbatim** (see Field & template contracts). Inline
   grid placement is supported.
-- `place_app_paragraph` — for app/module paragraphs only (the ones in `get_content_apps`).
+- `place_app_paragraph` — for app/module paragraphs only (the ones in `get_content_apps`). It
+  leaves `ParagraphItemType` empty, and a Swift 2 grid column renders a paragraph **through its
+  item type** — so the paragraph lands live and correct in the database and nothing appears on the
+  page. Inside a grid, copy a working app paragraph of the same module instead (it carries the
+  `Swift-v2_App` item instance) and rebind the copy's grid row; details in
+  [dw-content-modelling](../dw-content-modelling/SKILL.md) (`page-paragraph-writes.md`).
 - `set_paragraph_item_fields` / `set_page_item_fields` — fill field values (copy, media,
   links).
 - `copy_page` — one-shot clone of a page incl. its grid, paragraphs, and `ColorSchemeId` refs
@@ -286,7 +291,8 @@ small related blocks into one multi-column row instead of a long single-column s
 4. Style writes aren't patch-safe: a saved color scheme has its own colors overwritten
    (sibling schemes survive); typography/button/font replace the whole object. Read first.
 5. Component routing: item-typed → `save_paragraphs(ItemType=…)`; app/module →
-   `place_app_paragraph`. Wrong tool = broken paragraph.
+   `place_app_paragraph`, whose result renders nothing inside a Swift 2 grid column (see above) —
+   copy an existing app paragraph there. Wrong tool = broken paragraph.
 6. Unset text fields can render placeholder copy from the item's default values — blank
    fields you don't use.
 7. `Template` for an item-typed paragraph is a **bare file name** (e.g. `CardImageTop.cshtml`)

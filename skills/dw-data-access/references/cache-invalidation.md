@@ -163,6 +163,13 @@ Three rules follow:
 - **A repair that re-saves through `UserById` must pass the DB values in EXPLICITLY.** The obvious escape
   hatch — fetch the model, save it back — fetches the **cached** object, so saving it blindly writes the
   stale value back into the database and *undoes the fix*. Supply the DB truth as a field override.
+- **An MCP write on the same row is the one call guaranteed to destroy the SQL write, not to flush it.**
+  `update_users` and `save_user_groups` are partial in what you may SEND and whole-entity in what they
+  WRITE: each loads the cached entity, applies the properties in the request and saves everything back, so
+  `update_users {"users":[{"id":<id>}]}` reverts the column SQL just wrote, and `save_user_groups` blanks
+  every column outside its own model. Order it the other way — the service-surface write FIRST, the SQL
+  write second — or spend the restart. Measured on 10.28.x; the detail is in
+  [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`user-group-operations.md` §17b).
 - **Assert the downstream surface, not just the row**: per touched user, `SELECT` and `UserById` agree, and
   the storefront profile-switch endpoint returns `200`.
 
