@@ -272,28 +272,7 @@ The parser sees the first `"` after `GetString(` as the end of the Razor express
 <a href="@orderLink">Order</a>
 ```
 
-### Real-World Example
-
-From Swift's SavedCardList template:
-
-```html
-<!-- ✓ Single quotes on data attribute, double in GetString -->
-<a href='@savedCardUrl' class='d-block text-decoration-none'>
-    <span>@cardName</span>
-</a>
-
-<!-- ✓ Or build the variable first -->
-@{
-    string deleteUrl = savedCard.GetString("Ecom:CustomerCenter.SavedCards.DeleteUrl");
-    string formAction = GetString("Ecom:RMA.AddURL");
-}
-
-<form action="@formAction" method="post">
-    <!-- form content -->
-</form>
-
-<a href="@deleteUrl" class="btn btn-link">@Translate("Delete")</a>
-```
+A fuller worked template using this pattern is in [Example: Customer Card Management](#example-customer-card-management) below.
 
 ### When to Use Each Pattern
 
@@ -353,13 +332,22 @@ Within a loop, `LoopItem` provides the same accessor methods as the top-level co
 @GetString("Ecom:Order.id")    ❌ No error, no value
 ```
 
-**No compile-time checking.** Typos go undetected:
+**No compile-time checking — and a blank table is not an empty context.** `GetString` returns an
+empty string for an unknown tag, so five misspelled names render exactly like a context the platform
+never populated. Prove the names from the renderer that builds the context rather than inferring
+them from the entity name; the conventions differ per context (the RMA notification context is
+`Ecom:Rma.*`, mixed case, with `OriginalOrderId` and `StateName`). Tag tables and the method:
+[`tag-contexts.md`](references/tag-contexts.md).
 
 ```html
 <!-- Both look valid, but only one works -->
-@GetString("Ecom:RMA.ID")            ✓ Works
+@GetString("Ecom:RMA.ID")            ✓ Works in the customer-center RMA context
 @GetString("Ecom:RMA.RequestID")     ❌ Silent fail, no error
 ```
+
+**A tag inside a loop may carry the parent's value.** `Ecom:Cart.ShippingMethod.Price` in the
+`Shippingmethods` loop is the order's shipping fee, identical on every row — see
+[`tag-contexts.md`](references/tag-contexts.md) §3.
 
 **Performance:** TemplateTags loads all data upfront, no lazy-loading. Large loops with many properties accessed can be slow compared to ViewModels.
 
@@ -489,6 +477,11 @@ Real-world TemplateTags template from Swift's SavedCardList:
 | **Performance** | All data loaded upfront | Lazy-loaded on access |
 | **Learning curve** | Memorize string paths | Direct C# properties |
 | **Status** | Legacy, being phased out | Modern, recommended |
+
+## References
+
+- [Tag contexts](references/tag-contexts.md) — proving a tag name from its renderer, the full RMA
+  notification-email tag set (`Ecom:Rma.*`), and tags whose value is parent-scoped inside a loop.
 
 ## Next Steps
 

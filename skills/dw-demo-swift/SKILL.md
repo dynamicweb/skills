@@ -107,7 +107,9 @@ Every "fake pattern" in a Swift demo (raw SQL probes on `AccessUserGroupRelation
 | Read prices (`Services.Prices`, custom `PriceProvider`) | [`catalog-publishing.md`](../dw-commerce-catalog/references/catalog-publishing.md) §2.12 |
 | Read customer orders (`Services.Orders.GetCustomerOrdersByType` / `GetOrdersBySearch`) | [`order-lifecycle.md`](../dw-commerce-orders/references/order-lifecycle.md) "canonical order read surface" |
 | Get product / friendly URLs; `AddStylesheet`/`AddScript` hoisting; cross-cutting redirects (`Page.Loaded` subscriber); per-category behavior; product-field arrays | [`razor-surfaces-and-pitfalls.md`](../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §1 |
-| `ViewModelTemplate<>` Razor pitfalls (`@Html.Raw` absent, `ProductFieldValues`, `ToggleFavorite`) | [`razor-surfaces-and-pitfalls.md`](../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §2 |
+| Why a template fails to compile; `@Include` scope; `ParagraphTemplate` paths | [`template-compilation.md`](../dw-render-razor/references/template-compilation.md) |
+| Serving JSON / CSV / a file from a paragraph | [`paragraph-endpoints.md`](../dw-render-razor/references/paragraph-endpoints.md) |
+| `ToggleFavorite.cshtml` no-op at `FavoriteListId=0` | [`razor-surfaces-and-pitfalls.md`](../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §2 |
 | Custom item types — the `<Prefix>_*` discipline | [`modelling-discipline.md`](../dw-content-modelling/references/modelling-discipline.md) §2 |
 
 **Legacy dotted-path redirects (`.htm` / `.asp`) are IIS-only — don't fail the polish gate on localhost.** Seeded 301 redirects from legacy URLs behave differently per host: extensionless stems 301 correctly on the Kestrel dev host, but literal `.htm` / `.asp` rows 404 there (ASP.NET Core drops dotted paths before DW's redirect provider sees them) while on production IIS the same rows reach the provider and 301 as intended. Store the literal dotted rows for production, demo the extensionless stems on localhost; the polish gate asserts the stems 301 on the dev host and flags dotted-path 404s as IIS-only rows, not defects.

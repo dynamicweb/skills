@@ -92,32 +92,20 @@ Model.Item.GetInt32("Quantity")  // → 0 if missing/null
 
 ## Template Example: Text + Image + Buttons
 
-From Swift's `ImageTopTextLeft.cshtml`:
+Swift's `ImageTopTextLeft.cshtml` is the canonical shape — the full file is in
+[references/swift-imagetext-template.cshtml](references/swift-imagetext-template.cshtml):
 
 ```razor
 @inherits Dynamicweb.Rendering.ViewModelTemplate<Dynamicweb.Frontend.ParagraphViewModel>
 @using Dynamicweb.Frontend
 
 @if (Model.Item.TryGetImageFile("Image", out ImageFileViewModel image)) {
-    <figure class="m-0 position-relative">
-        <img src="@image.ToGetImage()" class="img-fluid" alt="@Model.Item?.GetString("AltText")" />
-        @if (Model.Item.TryGetLink("ImageLink", out LinkViewModel link)) {
-            <a href="@link.Url" class="stretched-link"></a>
-        }
-    </figure>
+    <img src="@image.ToGetImage()" alt="@Model.Item?.GetString("AltText")" />
 }
-
-<div data-swift-text class="mb-0-last-child">
-    @if (Model.Item.TryGetString("Title", out string title)) {
-        <h3>@title</h3>
-    }
-    @if (Model.Item.TryGetString("Text", out string text)) {
-        <p>@text</p>
-    }
-    @if (Model.Item.TryGetButton("FirstButton", out ButtonViewModel btn)) {
-        <a href="@btn.Link.Url" class="btn btn-@btn.Style">@btn.Label</a>
-    }
-</div>
+@if (Model.Item.TryGetString("Title", out string title)) { <h3>@title</h3> }
+@if (Model.Item.TryGetButton("FirstButton", out ButtonViewModel btn)) {
+    <a href="@btn.Link.Url" class="btn btn-@btn.Style">@btn.Label</a>
+}
 ```
 
 **Key patterns:**
@@ -163,8 +151,9 @@ Several relations surface on `ProductViewModel` under different names than the u
 
 - `ManufacturerName` — **NOT** `Manufacturer.Name`. The manufacturer relation flattens to a single string on the view model; there is no `Manufacturer` navigation property.
 - `product.DefaultUnit` / `product.DefaultUnitName` — neither resolves on `ProductViewModel`. Unit data lives on `product.PriceUnitDescription` if at all; for "per box / each" suffixes prefer a static string in the layout or a custom field via `product.GetField("...")`.
-- `product.ProductFieldValues` — lives on the underlying `Dynamicweb.Ecommerce.Products.Product` **entity**, not on the view model. Reading it off `Model.Product` (a view model) compiles but renders raw Razor source as page text on the PDP. To read the field collection, resolve the entity:
-  `Dynamicweb.Ecommerce.Services.Products.GetProductById(product.Id, product.VariantId ?? "", true)` — the `true` materialises `ProductFieldValues` (without it the property is `null` even on a valid entity). See [dw-render-razor](../dw-render-razor/SKILL.md) for the Razor-side pitfall and the canonical accessor.
+- `product.ProductFieldValues` — lives on the underlying `Dynamicweb.Ecommerce.Products.Product` **entity**, not on the view model, and reading it off a view model renders raw Razor source as page text on the PDP. Resolve the entity first: [`template-compilation.md`](../dw-render-razor/references/template-compilation.md) §2.
+
+**`DefaultImage` and `Price` are nullable, and the blast radius is the surface, not the row.** A template that loops over a result set renders in one compiled unit, so one image-less product replaces the entire list with an error dump at HTTP 200. Guard every dereference (`product?.DefaultImage?.Value`) — the full rule, the other name traps, and the two shipped Swift 2 templates that miss it are in [`viewmodel-traps.md`](references/viewmodel-traps.md).
 
 **Inline styles vs CSS file (one-paragraph enrichment):** for a single content-layout enrichment, prefer inline `style="..."` that consumes the project's CSS variables (e.g. `style="color: var(--brand)"`) over adding more rules to a project CSS file — the layout file stays self-contained and the upgrade diff stays one file.
 
@@ -245,40 +234,16 @@ From Swift's related-products list (simplified):
     <tr>
         <td>@product.Number</td>
         <td><a href="@product.GetProductLink(GetPageIdByNavigationTag("Shop"))">@product.Name</a></td>
-        <td>@product.Price.PriceFormatted</td>
+        <td>@product.Price?.PriceFormatted</td>
         <td>
-            @if (product.StockLevel > 0) { <span class="text-success">In Stock</span> }
+            @if (product.Stock > 0) { <span class="text-success">In Stock</span> }
             else { <span class="text-danger">Out of Stock</span> }
         </td>
     </tr>
 }
 
-@* Facet sidebar *@
-@if (Model.FacetGroups != null)
-{
-    @foreach (var facetGroup in Model.FacetGroups)
-    {
-        @foreach (var facet in facetGroup.Facets)
-        {
-            <div class="filter-group">
-                <h5>@facet.Name</h5>
-                @foreach (var option in facet.Options)
-                {
-                    <label>
-                        <input type="checkbox" name="@facet.QueryParameter" value="@option.Value" />
-                        @option.Label (@option.Count)
-                    </label>
-                }
-            </div>
-        }
-    }
-}
-
-@* Pagination *@
-@for (int p = 1; p <= Model.PageCount; p++)
-{
-    <a href="?PageNum=@p" class="@(p == Model.CurrentPage ? "active" : "")">@p</a>
-}
+@* Facet sidebar and pagination: the full worked template, including FacetGroups and
+   PageCount, is in references/swift-product-list.cshtml *@
 ```
 
 ## User identity / groups — `Pageview.User`
@@ -322,6 +287,9 @@ Example: custom sorting of items by a computed field:
 - [ProductViewModel](references/product-viewmodel.cs) — single product with pricing, images, variants
 - [ProductListViewModel](references/product-list-viewmodel.cs) — product list page with pagination, filters, facets
 - [PriceViewModel](references/price-viewmodel.cs) — currency-aware pricing with VAT
+
+**Traps:**
+- [View-model traps](references/viewmodel-traps.md) — nullable properties and the blast-radius rule; properties whose name is not their meaning (`MediaViewModel.Name` is the detail id, `StockLevel` is a label)
 
 **Template Examples:**
 - [Swift Template: Content Image](references/swift-image-template.cshtml) — simple image + link pattern

@@ -19,7 +19,9 @@ routed below. The sections that follow the table are owned here.
 | If you need… | Read |
 |---|---|
 | Template categories (baseline), page presets (the Theme primitive), and the **page-state flags** (`published` / `hidden` / `active` = "Hidden in Menu" semantics; the `publish_pages` both-flags gotcha) | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §6 |
-| `ViewModelTemplate<>` Razor pitfalls — `@Html.Raw()` absent, `product.ProductFieldValues` not on `ProductViewModel` (raw-source-renders-on-PDP), `ToggleFavorite.cshtml` no-op at `FavoriteListId=0` | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §2 |
+| Why a template fails to compile — warnings-as-errors on `[Obsolete]` calls, `@Html.Raw()` and `GetGlobalValue` absent from `ViewModelTemplate<T>`, `product.ProductFieldValues` on the entity not the view model, `@Include` sharing one compiled scope, relative `ParagraphTemplate` misses | [`template-compilation.md`](../../dw-render-razor/references/template-compilation.md) |
+| Serving JSON / CSV / a file from a paragraph — `PageClean` + `?ParagraphID=`, the inactive grid row, and what reaches the wire | [`paragraph-endpoints.md`](../../dw-render-razor/references/paragraph-endpoints.md) |
+| `ToggleFavorite.cshtml` no-op at `FavoriteListId=0` | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §2 |
 | Customer-number-suffix-as-role-flag (`CUST-…-BROWSE` read off `Pageview.User.CustomerNumber` to hide price / gate a storefront affordance) | [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §16 |
 | SQL-direct Page/GridRow/Paragraph required columns (the `PageActiveFrom`/`PageActiveTo` silent-404 vector et al.) | [`sql-direct-seeding.md`](sql-direct-seeding.md) → [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) |
 | Paragraph types + the component-first gate | [`paragraphs.md`](paragraphs.md) |

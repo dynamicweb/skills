@@ -225,6 +225,37 @@ Drive:\
         ...
 ```
 
+## Host Request-Pipeline Options
+
+These are host options, not Dynamicweb settings: they live in `web.config` (or `Program.cs`) next
+to the solution, and every change owes an application restart. Nothing inside the product reaches
+them.
+
+### `AllowSynchronousIO` — what it unblocks, and why it is rarely the answer
+
+ASP.NET Core disallows synchronous IO on the request stream by default. Any code path that writes
+the response through a synchronous `Stream.Write` therefore throws
+`Synchronous operations are disallowed` under the in-process IIS host. The Dynamicweb response
+member built on that path is `Response.BinaryWrite(byte[])`, called from a Razor template.
+
+Enabling it is a host edit:
+
+```xml
+<!-- web.config, under <system.webServer> for the in-process module -->
+<aspNetCore ...>
+  <handlerSettings>
+    <handlerSetting name="allowSynchronousIO" value="true" />
+  </handlerSettings>
+</aspNetCore>
+```
+
+or, in `Program.cs`, `services.Configure<IISServerOptions>(o => o.AllowSynchronousIO = true)`.
+
+Either way: the edit is outside `/Files/`, it needs an application restart, and it relaxes a
+platform-wide protection for one call site. Prefer the template-side shape that needs no host
+change — inline the bytes into the authorised response as a base64 `data:` URI on an
+`<a download="…">` — and keep this option for a host you own and have measured.
+
 ## Go-Live Checklist
 
 1. **`DisableDebug` = `true`** — Settings > System > Global Settings. Required for production performance.
