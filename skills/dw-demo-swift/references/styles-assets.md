@@ -74,6 +74,27 @@ $dst = "<demo>\Dynamicweb.Host.Suite\wwwroot\Files"
 Copy-Item -Recurse "$src\*" "$dst\" -Force   # lands ColorSchemes/Buttons/Typography + Custom defaults
 ```
 
+**Staging the files is not the last step — wire the head include, or none of it loads.** The overlay
+lands `DefaultHeadInclude.cshtml` and `default_custom.css` on disk, and the include is only ever
+reached through the area item field `Swift-v2_Master.CustomHeadInclude`, which nothing in the overlay
+sets. Until that field points at the staged include, the theme's custom sheet and its CSS custom
+properties are simply absent from every rendered page — with no error, and with the Style-asset
+sheets themselves loading normally, so three of the four sheets link and the fourth does not.
+
+```
+Swift-v2_Master.CustomHeadInclude = /Files/Templates/Designs/Swift-v2/Custom/DefaultHeadInclude.cshtml
+```
+
+Set it once per environment, by SQL or by a full `websiteItem` round-trip through `AreaSave`. **The
+field is environment-owned** — it sits in the serializer config's `excludeFieldsByItemType`, so the
+deserializer will neither write it nor overwrite it: it must be set on the host rather than shipped
+in content, and it survives a re-deserialize afterwards.
+
+Gate it on the rendered page, not on the file copy: fetch `/` and assert **all four** theme sheets
+are linked (the three Style-asset sheets plus `Custom/default_custom.css`) and at least one of the
+theme's inline custom properties is present; then re-run the deserialize and re-assert, which is what
+proves the field is environment-owned rather than merely set.
+
 For a customer re-skin, leave `theme-default`'s files as staged and add the customer's own Styles
 JSON+CSS pairs plus `<customer>_custom.css` on top ([`re-skin.md`](re-skin.md)); hand-edit patterns
 and Area-column wiring follow [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §7.

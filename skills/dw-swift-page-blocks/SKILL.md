@@ -25,6 +25,13 @@ types, color schemes, and the MCP tools that compose them. Load this whenever yo
 [dw-swift-migrate-v1](../dw-swift-migrate-v1) both build on it. It is reference, not an
 action — those flow skills drive the actual writes.
 
+**Row mechanics live in `dw-swift-building`.** What `GridRowCopy` carries from a donor row, the
+column-binding law behind gotcha 15, the spacing an inert row still pays, and idempotent row minting
+are in
+[`dw-swift-building/references/grid-rows-and-binding.md`](../dw-swift-building/references/grid-rows-and-binding.md);
+the browser-side checks that catch a page passing every content assert are in
+[`dw-swift-building/references/layout-verification.md`](../dw-swift-building/references/layout-verification.md).
+
 > Everything below is the **shipped Swift v2** default set. Never trust this list blind on a
 > live solution — a customer may have added, removed, or renamed components. Snap to reality
 > with `get_row_definitions`, `get_item_types`, `get_paragraph_templates`,
@@ -242,6 +249,12 @@ Pages do not carry a theme (the `Swift-v2_Page` item type is basically just Titl
 - A paragraph can override the row's scheme with its own `ColorSchemeId` on `save_paragraphs`.
 - Mechanism: the row renders `data-dw-colorscheme="<id>"` and `swift.css` maps it to colors.
   **"Applying a scheme" = just setting the id** — no CSS, no class.
+- **The generated scheme sheet colours the row's ANCHORS from the declared scheme name, not from
+  whatever ends up painting the row.** So a row authored `dark` and later repainted a light colour
+  in a project stylesheet keeps white `tel:` / `mailto:` links against the new background —
+  measured at 1.05:1, invisible, with every markup assert green and `dw-error` 0. **Any custom
+  paint over a scheme row must change the SCHEME, not only the background**; only a contrast probe
+  catches the mismatch.
 
 So a page's appearance = (area styles as base) + per-row layout + per-row color scheme.
 **Alternating schemes between rows** (default → `light` → `lightgrey2` → `lightgrey1`) is what
@@ -316,15 +329,23 @@ small related blocks into one multi-column row instead of a long single-column s
     `GridRowSelectorByPage`; passing `'Grid'` there throws). The row ITEM is not the tell — it
     mints on the failure path too — so assert `GridRowContainer` is non-empty after every
     create and delete the row when it is not. `GridRowSave` with `ID:0` answers 404: it is
-    update-only. `GridRowCopy` carries the source's container and the copy renders.
+    update-only. `GridRowCopy` carries the source's container and the copy renders — along with
+    four other donor attributes that need normalising after every copy (paragraphs, spacing,
+    `ParagraphTemplate`, `GridRowSort`, `GridRowContainerWidth`); it does **not** append. See
+    [`grid-rows-and-binding.md`](../dw-swift-building/references/grid-rows-and-binding.md).
 14. Batching: `set_item_field_values` takes a list spanning DIFFERENT items, so a whole page's
     field values fit in one or two calls — prefer it to one `set_paragraph_item_fields` per
     paragraph. For repeatable children (slider slides, accordion rows) pass an explicit
     `sort` to `add_repeatable_item`, or parallel calls race and scramble the order.
-15. **A grid-column CELL renders exactly ONE paragraph.** Stacking a second paragraph into the
-    same `GridRowId` + `gridRowColumn` (higher `Sort`) saves fine, reads back fine, and NEVER
-    renders — the content is silently invisible, with no error anywhere. One paragraph per
-    cell; need two blocks stacked visually → two rows.
+15. **A grid-column CELL renders exactly ONE paragraph — binding is by COLUMN, never by sort.**
+    Both shipped row templates iterate `Model.Columns` and render `column.Paragraph`, singular, so
+    a second paragraph on the same `GridRowId` + `gridRowColumn` saves fine, reads back fine, and
+    NEVER renders, with no error anywhere. In a one-column definition that is *every* paragraph
+    after the first; in a multi-column definition the doubled-up column renders its first paragraph
+    and **the other column renders empty**, which is the tell. One paragraph per cell; need two
+    blocks stacked visually → two rows. Parking a paragraph in a column the definition does not
+    define is a clean reversible retire. Full law and the row-conversion recipe:
+    [`grid-rows-and-binding.md`](../dw-swift-building/references/grid-rows-and-binding.md).
 16. **A new area MUST get `TypographyId` and `ButtonStyleId` set (standard Swift ids: `fonts`
     / `buttons`) or the whole site renders as unstyled 16px Times New Roman** — Swift's
     heading/body scale is driven by the area's typography CSS variables, so with the setting

@@ -222,6 +222,24 @@ screen for display groups**; a brief that says "check it in the UI" becomes "rea
 `FieldDisplayGroupAll`". Create, translate and wire them entirely through
 `FieldDisplayGroupSave` + `FieldDisplayGroupTranslationSave` + the paragraph item-field verbs.
 
+The write is Admin API `FieldDisplayGroupSave` via `/Admin/Api/FieldDisplayGroupSave`, posting
+`{"model": {Id, SystemName, Name, SortIndex, ShopIds[], FieldIds[]}}`
+(`Dynamicweb.Products.UI.Models.Settings.FieldDisplayGroupModel`). There is **no MCP tool** for
+display groups, and the admin screen does not bind — so this verb is the whole surface.
+
+**The parent `EcomFieldDisplayGroups` row is NOT the source of truth, and reading it is what makes a
+successful save look failed.** After an `ok` response, `FieldDisplayGroupName`,
+`FieldDisplayGroupFieldIds` and `FieldDisplayGroupShopIds` on the parent row are all still empty:
+those denormalised columns are legacy and are not populated. The data lands in the child tables —
+`EcomFieldDisplayGroupFields`, `EcomFieldDisplayGroupShops` and `EcomFieldDisplayGroupTranslation`,
+where the **translation row is keyed on the SYSTEM NAME with `GroupId = 0`**. Audit the child tables,
+or read back through `FieldDisplayGroupAll`; a parent-row check reports every write as a failure.
+
+One rendering consequence worth knowing before the template is written:
+`GetProductDisplayGroupFieldsByGroupSystemNames` returns only groups that **have values for the
+product**, so a product with nothing in the group yields nothing at all rather than an empty group —
+**author the empty state in the template**, not as a fallback on a group the reader expects to exist.
+
 `FieldDisplayGroupSave` semantics, all measured:
 
 - `Id: 0` creates; a save is a **whole-entity replace**, so post the full model.
@@ -421,6 +439,27 @@ documenting a "ShowInMenu flag" is writing one of the other four. `PageShowInLeg
 its own with zero collateral: read the full model with `GetPageById`, set `ShowInLegend`, `PageSave` the
 COMPLETE model back. `PageSave` is a whole-entity save, so a partial model blanks area, parent, name and
 item type and 404s the page.
+
+**`PageHidden` is a navigation flag, not access control and not a publish flag — and it breaks the
+page's own URL.** The URL provider drops a hidden page from the friendly-URL map, but the **link
+builder does not know that**: it still resolves the page id to the friendly URL the page would have
+had, so the redirect target and the served map disagree. The signature is exact and worth carrying as
+a diagnostic: **a brand-new friendly URL 404s while `/Default.aspx?ID=<n>` 301s to it correctly —
+check `PageHidden` first.** Everything else the symptom points at (`PageActive`, the item type, the
+layout, the area) will be fine.
+
+Hiding also does not do the job it is usually being asked for: a hidden page stays readable by anyone
+who guesses or is handed its id. **Keep any page you intend to link to, redirect to or reach by URL
+visible to the URL layer, and keep it out of the storefront with page permissions instead** — which
+is strictly stronger (anonymous visitors get the sign-in redirect, wrong-group personas get the
+permission page, permitted personas get 200, and the navigation carries no reference to it). Reserve
+`PageHidden` for pages whose content genuinely should not be reachable at all. Assert every new page
+at its **friendly** URL, not by the existence of the `Page` row: a row-level or API-level check
+passes on a page whose URL 404s.
+
+On the tool side, measured on 10.28.x: MCP `set_page_menu(showInMenu: …)` does **not** move
+`PageHidden` (it reports `published: false` and changes nothing), while MCP `save_pages(active: true)`
+is what clears it.
 
 A page with `published=true, hidden=false, active=false` (DB: `PageActive=0, PageHidden=0`) is
 **fully reachable** by direct URL and JS-driven navigation, and correctly hidden from the top nav —
