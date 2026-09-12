@@ -206,6 +206,16 @@ Two operational facts worth keeping in mind without loading upstream docs:
 
 ## Common failure patterns and diagnostics
 
+### Strict-mode false positives — a 400 whose warnings describe no defect
+
+Strict mode escalates *every* warning, so a run that writes correctly can still answer 400. Before
+treating a 400 as a payload defect, check the escalated warning list against this table: when every
+listed warning is one of these, the run is sound and the response code carries no information.
+
+| Escalated warning | Fires when | Why it is a false positive | Do this |
+|---|---|---|---|
+| `Warning: Area with ID <n> not found. Skipping entry 'content/area-<n>...'` | A **dry run** (`IsDryRun: true`) whose replace tree would create that area for the first time. The run reports `0 failed` and every `content/area-<n>` entry reports `C0 U0 S0 F0`. | The content provider resolves the target area by id *before* applying `area.yml`. A dry run never writes, so the area cannot come into existence mid-run and the provider takes its skip branch; the live path instead logs `Area created: ID=`. On an empty target the preview of a first-ever content import is structurally incapable of returning 200. | Confirm the escalated list contains **only** this warning, then proceed to the live run with the same body and `IsDryRun: false`. The live run returns 200 and creates the area. Assert: with `SELECT COUNT(*) FROM Area` = 0 the dry run 400s on this warning alone, and the live run answers 200 with `SELECT COUNT(*) FROM Area` = 1. |
+
 ### "FK orphan on EcomGroupId" (or any FK warning)
 
 **Symptom:** `WARNING: Could not re-enable FK constraints for [EcomShopGroupRelation]: ... FOREIGN KEY constraint "DW_FK_..."`.
