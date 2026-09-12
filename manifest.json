@@ -1,6 +1,31 @@
 {
-  "version": 1,
-  "generatedAt": "2026-09-12T17:33:20.881Z",
+  "version": 2,
+  "generatedAt": "2026-09-12T17:54:43.890Z",
+  "worksOn": {
+    "dw": {
+      "floor": ">=10.28.1",
+      "measured": "10.28.10"
+    },
+    "swift": {
+      "floor": "==2.4",
+      "measured": "2.4.0"
+    },
+    "apps": [
+      {
+        "id": "Dynamicweb.MCP",
+        "floor": ">=0.4.4",
+        "measured": "0.4.4",
+        "required": false
+      },
+      {
+        "id": "Truvio.Commerce.Serializer",
+        "floor": ">=0.9.0",
+        "measured": "0.9.0-beta",
+        "required": false,
+        "scope": "only the skills that cover the serializer"
+      }
+    ]
+  },
   "skills": [
     {
       "name": "dw-content-localization",
