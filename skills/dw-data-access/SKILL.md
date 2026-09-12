@@ -79,6 +79,42 @@ in-product skill keeps a one-line pointer to it.
   carries sibling-link bookkeeping, item-instance cloning, localization overlays, ItemList relations
   and hidden-flag rules a raw `INSERT ... SELECT` gets partly right and then breaks ten screens later.
 
+## Reading the host's versions
+
+Do this once per session, before any recipe whose facts are version-specific, and keep the result as
+the session's `hostVersions` note. Four vendor axes: the Dynamicweb release, the MCP add-in, the
+serializer add-in, and the Swift tag.
+
+**Full host** (any rung 1-4 surface available):
+
+1. **Dynamicweb release** — `GET /admin/api/api.json` (rung 2, bearer) and read `info.version`. That
+   is the running platform build, not the NuGet package version and not the hosting ring.
+2. **App versions** — list the folder names under `Files/System/AddIns/Installed/`. Each is
+   `<id>.<version>`, so the installed MCP build is the folder starting `Dynamicweb.MCP.` and the
+   serializer the one starting `Truvio.Commerce.Serializer.`. A missing folder means the add-in is
+   not installed, which is an answer, not an error.
+3. **Swift tag** — read `Files/System/Truvio/swift.stamp.json` and take its `tag`/`version`. When the
+   file is absent the site carries no Swift marker at all: ask the user which Swift release the
+   solution tracks and record the answer. Never infer it from a template folder name.
+
+**MCP-only** (the in-product agent, and any session with rung 1 alone): `list_files` on
+`Files/System/AddIns/Installed` gives the app versions the same way, and `read_file` on the Swift
+stamp gives the Swift tag. The platform release is not readable this way — record that axis as
+`unknown`. Record `unknown` for any axis you cannot read, and never guess one.
+
+**Then compare.** The skills' own compatibility statement ships in `manifest.json` as `worksOn`: a
+`floor` per axis (what the corpus claims to work on) and `measured` (the host its facts were last
+observed on). For each axis that read as a concrete version, compare the host against the floor:
+
+- host below the floor → **warn the user before acting**: name the axis, the host version and the
+  floor, and say that recipes may reference behavior the host does not have.
+- host at or above the floor, but not equal to `measured` → proceed; treat any step that fails in a
+  version-shaped way as a re-measure candidate, and file it rather than working around it silently.
+- axis `unknown` → proceed, and suppress floor warnings for that axis only.
+
+An add-in whose `required` flag is false is not a blocker: its floor applies only to the skills that
+cover it, and the scope is stated in `worksOn` beside the app.
+
 ## In-process C#: Service API vs the Database class
 
 | Use case | Approach |
@@ -263,6 +299,7 @@ serializer by command or by layer and mode, `SQL` in a fenced block).
 
 | Area | Reference | Reach for it when |
 |---|---|---|
+| Versions | [Reading the host's versions](#reading-the-hosts-versions) (above) | Before any version-specific recipe: read the four vendor axes off the host and compare them with the manifest's `worksOn` |
 | Commerce | [references/recipes-commerce.md](references/recipes-commerce.md) | Orders, carts, checkout, discounts, catalog publishing — below rung 1 |
 | Commerce — RMA | [references/recipes-commerce-rma.md](references/recipes-commerce-rma.md) | Claims, RMA states, the RMA service flush — below rung 1 |
 | Content | [references/recipes-content.md](references/recipes-content.md) | Pages, paragraphs, grid rows, item types, language layers — below rung 1 |
