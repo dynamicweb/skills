@@ -324,14 +324,17 @@ because the catalogue fails *inside* a 200 response instead of failing the reque
    `Products.facets` exist, where `<repo>` is the repository the catalogue paragraph itself names —
    read it with `get_module_settings` on that paragraph's `IndexQuery`, never a tool default. On a
    Swift storefront that is `ProductsFrontend`. A missing file renders an empty PLP with no error.
-2. **The index holds documents.** `get_product_index_status` for that repository reports
-   `documentCount > 0`. **A completed build with zero documents is a failure, not a success:** a
-   zero-document index cannot serve a query, and the catalogue app writes the resulting exception
-   into the page body. A build that finished before the content load is the usual cause — rebuild
-   with `build_product_index` + `wait_for_product_index` *after* the deserialize and the fixture
-   load, and assert the count again. The preconditions behind a build that never drains (the
-   repository's `Build+Index.task` file and the repository task handler) are in
-   [`index-management.md`](../../dw-search-indexing/references/index-management.md).
+2. **The index holds documents.** `get_product_index_status`, called with that `repositoryName`
+   explicitly — the tool defaults it to the literal `Products` and answers `Idle` for a repository
+   that does not exist on the host — reports `documentCount > 0`. **A completed build with zero
+   documents is a failure, not a success:** a zero-document index cannot serve a query at all, and
+   the catalogue app writes the resulting `numHits must be > 0` exception into the page body. A
+   build that finished before the content load is the usual cause, and the daily drain would have
+   healed it overnight, so rebuild explicitly with `build_product_index` + `wait_for_product_index`
+   *after* the deserialize and the fixture load, and assert the count again. The five preconditions
+   behind a build that never drains, with their asserts, are in
+   [`index-management.md`](../../dw-search-indexing/references/index-management.md) — run them there
+   rather than restating them here.
 3. **The page renders cards.** `fetch_frontend_page_html` on the shop page returns HTTP 200 **and**
    at least one product-card element, **and zero occurrences of the emitted error markup**
    `<pre class="dw-error">` / `<h2 class="dw-error">`. Match the markup, not the bare strings

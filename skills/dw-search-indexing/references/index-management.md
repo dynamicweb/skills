@@ -46,13 +46,50 @@ and repository side.
   </Schema>
   ```
 
-  Then rebuild: `POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`. **Symptom check:** if PLP/PDP render `numHits must be > 0` and the index built `state=success`, this is the cause — not a missing query file, not a missing `Products.query`, not a paragraph misconfiguration. The data on disk is the diagnostic: a healthy Products index segment is ~270 KB at 30 docs; 53 bytes means the schema accepted zero documents.
+  Then rebuild: `POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`. **Symptom check:** `numHits must be > 0` on the PLP/PDP always means the index holds **zero documents**, whatever the build reported. A schema the extender never populated is one way to get there; a build that ran before the content landed is the other, and the preconditions below separate them. Check the document count first, then the schema. The data on disk is the diagnostic: a healthy Products index segment is ~270 KB at 30 docs; 53 bytes means the schema accepted zero documents.
 - MCP `create_or_update_product_queries` saves `.query` XML but leaves `<Source Repository="" Item="" />` empty — fix via `sed` or patch the file before index build.
-- **A repository with no `Build+Index.task` file is never rebuilt, whatever the build call returns.** The build is drained by a task file inside the repository folder (`Files/System/Repositories/<RepoName>/Build+Index.task`, an `IndexBuilderTaskProvider` entry naming the index and the build), and the drain itself is a **scheduled task** on the host — the repository task handler. With the file missing, `build_product_index` answers *queued* and succeeds, `get_product_index_status` never advances, and an agent polling as instructed concludes the build is slow. Preconditions, in order, alongside the primary-instance rule:
-  1. `get_index_repositories` shows the repository, and `Files/System/Repositories/<RepoName>/Build+Index.task` exists. Absent file → nothing will ever drain; create it before building.
-  2. `get_scheduled_tasks` shows the repository task handler, enabled. Disabled or missing → `run_scheduled_task_now` for a one-off drain, and say that the schedule needs fixing.
-  3. `build_product_index` for the repository the storefront's catalog paragraph actually names (read it from `get_module_settings`, never a tool default), then `wait_for_product_index`.
-  4. **Assert `documentCount > 0`, not just a completed state.** `get_product_index_status` reporting `Completed` with zero documents is the failure, not the success: a zero-document index cannot serve a query at all — the collector is sized from the reader and rejects a zero hit count — so the catalogue page renders an in-page error inside an HTTP 200. A build that completes in milliseconds with a total count of 0 while products exist is this state; rebuild after the content load rather than before it.
+- **Name the repository, then prove the build drained and the index holds documents.** Five
+  preconditions sit behind an empty product listing, all silent when absent, and the build call
+  reports success through every one of them. In order, alongside the primary-instance rule:
+  1. **Name the repository explicitly — the default addresses nothing.** `get_product_index_status`,
+     `build_product_index` and `wait_for_product_index` default both `repositoryName` and `indexName`
+     to the literal `Products`, and neither validates that the name resolves to a folder under
+     `Files/System/Repositories/`. On a host with no `Products` repository the status call still
+     answers `status: Idle` with no error, while the repository the storefront actually reads holds
+     a zero-document index. So **never call one of the three without an explicit `repositoryName`**,
+     and take that name from the catalogue paragraph itself: `get_module_settings` on the paragraph
+     returns its `IndexQuery` path (`/Files/System/Repositories/<repo>/Products.query`). The
+     `indexName` default has the same defect on its own axis — the file is `Products.index`.
+  2. **The repository has a `Build+Index.task` file.** The build is drained by a task file inside the
+     repository folder (`Files/System/Repositories/<repo>/Build+Index.task`, an
+     `IndexBuilderTaskProvider` entry naming the index and the build). With the file missing,
+     `build_product_index` answers *queued* and succeeds, `get_product_index_status` never advances,
+     and an agent polling as instructed concludes the build is slow. `get_index_repositories` shows
+     the repository; read the folder to confirm the file. Absent → nothing will ever drain.
+  3. **The repository task handler is enabled.** The drain itself is a scheduled task, and it is a
+     DB row on the host — no layer ships or asserts it, so a host with it disabled fails exactly
+     like a host with no task file. `get_scheduled_tasks` shows the repository task handler and
+     whether it is enabled; disabled or missing → `run_scheduled_task_now` for a one-off drain, and
+     say that the schedule needs fixing. The row carries an enabled flag and a task class, not an
+     add-in name and an active flag.
+  4. **The first build after any deserialize or fixture load is explicit.** The task file repeats on
+     an interval measured in hours, typically a day, so a host whose last drained build predates the
+     content load serves an empty index until the next tick — and then self-heals, which is what
+     makes this intermittent and easy to misattribute on a retest the following day. Run
+     `build_product_index` + `wait_for_product_index` for the named repository **after** the content
+     is in, and never count the scheduled drain as the first build.
+  5. **Assert `documentCount` greater than zero, not a completed state.** `get_product_index_status`
+     reporting `Completed` with zero documents is the failure, not the success, and the build's own
+     status artefact says so first: a green run whose total count is `0` while products exist in the
+     catalogue is the signal, and it finishes in milliseconds because there was nothing to index.
+     A zero-document index cannot serve a query **at all** — the collector is sized from the reader's
+     document count and rejects a hit count of 0, so the catalogue app throws
+     `numHits must be > 0` and the frontend writes that exception into the page body **inside an
+     HTTP 200 response**. The on-disk tell is as cheap: instance directories exist under
+     `Files/System/Indexes/<repo>/…` carrying only `segments.gen` / `segments_N` of a few dozen
+     bytes, with no payload files. Compare the build's last successful timestamp against the
+     deserialize and fail when the build predates it.
+
 - Rebuild the index after ANY product/group/channel mutation.
 
 ## Authoring a `.index` file — the rules no API surface reports
