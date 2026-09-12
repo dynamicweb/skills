@@ -223,9 +223,12 @@ x default" factor — convert a market rate into this model before saving.
 
 A product index is required for the Product Catalog app to serve results. The full setup (repository → index → instances → build configuration → fields → query → build), facet field rules, and auto-rebuild triggers live in [dw-search-indexing](../dw-search-indexing).
 
-## Deep reference
+## Where to find things
 
-[references/catalog-publishing.md](references/catalog-publishing.md) — the field-validated catalog internals: Catalog-vs-Channel group trees (the published-to story), the native "Publish to channel" action, channels + feeds (and the `/dwapi/feeds/{id}` URL shape), assortments-vs-channels, the pricing traps (tier rows not honored by the stock cart, the canonical price read surface, customer-specific contract prices), and the Management API chains for variants (no SQL), product relations, images, and shops — including the `ShopSave` `UsageType` trap and the create-vs-update verb split.
+| Reference | Load it for |
+|---|---|
+| [references/catalog-publishing.md](references/catalog-publishing.md) | Catalog-vs-Channel group trees (the published-to story), the native "Publish to channel" action, channels + feeds, assortments-vs-channels, the pricing traps (tier rows not honored by the stock cart, the canonical price read surface, customer-specific contract prices), and the variant, product-relation, image and shop chains — including the shop `UsageType` trap and the create-vs-update split |
+| [references/listing-and-stock.md](references/listing-and-stock.md) | why a default sort kills search relevance and what to order a group listing with instead, `ProductHidden` (counted by the index, dropped by the entity fetch, unwritable by every API), the `AssetCategories` duplication, what order completion decrements in the two stock tables, and the unscoped-price stock-location sentinel |
 
 ## Pitfalls
 
@@ -234,6 +237,8 @@ A product index is required for the Product Catalog app to serve results. The fu
 **Set facet fields to non-analyzed** — an analyzed facet field splits values like "Light Blue" into "light" and "blue", corrupting facet display and filtering.
 
 **Search index out of sync after deletes** — only full rebuilds remove deleted products. An Update build does not detect deletions.
+
+**A list's header count exceeds the rows it renders** — hidden products are counted by the index and dropped by the entity fetch. Assert rendered rows equal the header count on every listing probe; see [references/listing-and-stock.md](references/listing-and-stock.md).
 
 **`Model.FacetGroups` is null** — if the app is not configured with a facet group in its Index settings, `FacetGroups` is null (not an empty list). Always null-check before iterating.
 

@@ -31,7 +31,9 @@ Orders can be created by:
 
 **Cancellation operations:**
 - **Cancel** — uncaptured orders only; cancels payment authorizations and returns stock
-- **Delete** — orders not yet completed or cancelled
+- **Delete** — a **soft** delete (`OrderDeleted = 1`, the row stays in `EcomOrders`) that refuses a
+  completed order. `OrderCancel {Id}` then `OrderDelete {Ids}` is the working pair — note the
+  singular/plural key split — see [references/order-states-and-quotes.md](references/order-states-and-quotes.md)
 - **Refund** — full or partial; requires a refund-capable payment provider
 
 ## Shopping Cart App
@@ -82,9 +84,11 @@ All checkout data is submitted via a form with `id="ordersubmit"`. These are the
 ### Payment and Shipping
 
 ```html
-<!-- Radio buttons: one per payment method -->
+<!-- Radio buttons: one per payment method.
+     NOTE the asymmetry: the element id carries "Paymentmethod",
+     the POSTED NAME is EcomCartPaymethodID. Shipping is not symmetrical. -->
 <input type="radio" name="EcomCartPaymethodID"
-       id="EcomCartPaymethodID_{PaymentMethodID}"
+       id="EcomCartPaymentmethodID_{PaymentMethodID}"
        value="{PaymentMethodID}" />
 
 <!-- Radio buttons: one per shipping method -->
@@ -105,37 +109,44 @@ All checkout data is submitted via a form with `id="ordersubmit"`. These are the
 <input name="EcomOrderSavedCardCreate" value="True" />
 ```
 
-**Custom order line fields:** Submit by system name directly — no prefix needed.
+**Custom order line fields:** post `OrderLineFieldValue_<orderLineId>_<systemName>` on
+`cartcmd=updateorderlines`, after the line exists and after the field has a shop/group relation row.
+The full write path is in [references/checkout-configuration.md](references/checkout-configuration.md).
 
 ## Cart Commands
 
 Trigger via URL parameter `?CartCmd=` or as a hidden form field `<input name="CartCmd" value="..." />`.
 
+**Two gates every scripted cart command must pass:** send a **browser User-Agent** (the add family
+is refused outright for `curl`/`wget`, and still creates the cart row) and **follow redirects** (the
+`Default.aspx?ID=` form 301s before the command runs). The command's own 302 then rebuilds the URL
+from the page id, so **no parameter of your own survives alongside a cart command**.
+
 ### Product Commands
 
 | Command | Required params | Optional params |
 |---------|----------------|----------------|
-| `add` | `productid` | `variantid`, `cartid`, `unitid`, `Quantity`, `EcomOrderLineFieldInput_{FieldSystemName}` |
+| `add` | `productid` | `variantid`, `cartid`, `unitid`, `Quantity` |
 | `addmulti` | `productid`, `Quantity` | Multiple products |
-| `setmulti` | `productid1`, `Quantity1`... | Indexed multi-product |
-| `incorderline` | `key` (orderline key) | — |
-| `decorderline` | `key` | — |
-| `delorderline` | `key` | — |
-| `updateorderlines` | `QuantityOrderLine{ID}` for each line | — |
-| `emptycart` | — | — |
-| `deleteallorderlines` | — | — |
+| `setmulti` | `ProductLoopCounter<n>`, `ProductID<n>`, `Quantity<n>` | **SETS** the quantity rather than adding; `0` deletes the line; a duplicate product in one post is last-row-wins |
+| `incorderline` / `decorderline` / `delorderline` | `key` (orderline key) | — |
+| `updateorderlines` | `QuantityOrderLine{ID}` for each line | `OrderLineFieldValue_<orderLineId>_<systemName>` |
+| `emptycart` / `deleteallorderlines` | — | — |
 
 ### Cart Object Commands
 
 | Command | Required params | Notes |
 |---------|----------------|-------|
-| `archive` | — | Archive current cart |
-| `copy` | `CartId`, `CartName`, `CartUserId` | `CartUserId` must be current or impersonatable user |
-| `createnew` | — | Create new empty cart |
-| `setcart` | `Cartid` | Switch to a different cart |
+| `archive` | — | **Clears the user's active-cart pointer** — it archives nothing; `EcomOrders` has no archived column |
+| `copyExtended` | `CartName`, `CartUserId` | Copies the **session's ACTIVE cart** — `CartId` is not read. The only ownership move |
+| `createnew` | — | Needs `SetActive=true`, or the new cart never becomes the session's |
+| `setcart` | `Cartid` | Selects a cart; **never transfers one**, and does not clear the previous holder's pointer |
 | `setdiscount` | `OrderDiscount` or `OrderDiscountPercentage` | Requires impersonation rights |
-| `setname` | `CartName` | Rename current cart |
+| `setname` | `CartName` | Writes `OrderDisplayName` — there is no cart-name column |
 | `loadorder` | `OrderId` | Load a previous order as cart |
+
+Full contracts, the ownership traps and the cart-page-is-a-write rule:
+[references/cart-commands.md](references/cart-commands.md).
 
 ## Payment Methods
 
@@ -163,83 +174,10 @@ Admin path: **Settings > Commerce > Order Management > Shipping**
 
 ## OrderViewModel / OrderListViewModel
 
-### OrderListViewModel — Customer Experience Center
-
-```razor
-@inherits Dynamicweb.Rendering.ViewModelTemplate<Dynamicweb.Ecommerce.Frontend.OrderListViewModel>
-```
-
-| Property | Description |
-|----------|-------------|
-| `Model.Orders` | Collection of orders |
-| `Model.PageCount` | Total pages |
-| `Model.CurrentPage` | Current page (1-indexed) |
-
-Each order in `Model.Orders`:
-
-| Property | Description |
-|----------|-------------|
-| `order.Id` | Order ID |
-| `order.CreatedAt` | Creation date |
-| `order.CustomerName` | Customer display name |
-| `order.Price.PriceFormatted` | Total formatted price |
-| `order.StateName` | Current order state name |
-
-### CEC Query String Filters
-
-| Parameter | Description |
-|-----------|-------------|
-| `PageNum` | Page number |
-| `PageSize` | Orders per page |
-| `SortBy` / `SortOrder` | Sorting |
-| `FilterOrderStateId` | Filter by state |
-| `FilterFromDate` / `FilterToDate` | Date range |
-| `FilterOrderId` | Specific order ID |
-| `FilterText` | Free-text search |
-| `FilterCustomerName` | Customer name filter |
-| `FilterProductId` / `FilterProductNumber` | Product filter |
-
-### OrderViewModel — Order Detail
-
-```razor
-@inherits Dynamicweb.Rendering.ViewModelTemplate<Dynamicweb.Ecommerce.Frontend.OrderViewModel>
-```
-
-| Property | Description |
-|----------|-------------|
-| `Model.Id` | Order ID |
-| `Model.CompletedDate` | Completion date |
-| `Model.StateName` | Current state |
-| `Model.OrderLines` | Collection of order lines |
-| `Model.ShippingMethod.Name` | Shipping method name |
-| `Model.ShippingFee.PriceWithVatFormatted` | Shipping cost |
-| `Model.PaymentMethod.Name` | Payment method name |
-| `Model.Price.PriceWithVatFormatted` | Order total |
-
-Each order line:
-
-| Property | Description |
-|----------|-------------|
-| `line.ProductName` | Product name |
-| `line.Quantity` | Ordered quantity |
-| `line.TotalPriceWithProductDiscounts.PriceWithVatFormatted` | Line total |
-| `line.OrderLineFields` | Custom order line field values |
-
-### CustomerCenter Commands
-
-```
-?CustomerCenterCmd=Reorder&OrderId={OrderId}
-?CustomerCenterCmd=AcceptQuote&QuoteId={QuoteId}
-```
-
-Change cart state (B2B quote/cart flows):
-```html
-<form method="post">
-    <input name="CustomerCenterCmd" value="cartchangestate" />
-    <input name="CartID" value="{CartID}" />
-    <input name="StateId" value="{StateId}" />
-</form>
-```
+The customer-center order list and detail render through
+`Dynamicweb.Ecommerce.Frontend.OrderListViewModel` and `OrderViewModel`. Their property sets, the
+query-string filters the list honours, and the `CustomerCenterCmd` commands are in
+[references/customer-center-surfaces.md](references/customer-center-surfaces.md).
 
 ## Investigating an Order
 
@@ -314,12 +252,18 @@ groups before retrying. The full engine internals (the two coexisting discount e
 condition/reward payload shapes, voucher constraints) are in
 [references/promotions-engines.md](references/promotions-engines.md).
 
-## Deep reference
+## Where to find things
 
-Field-validated internals, split across two references:
-
-- [references/order-lifecycle.md](references/order-lifecycle.md) — what `create_orders` actually writes (carts by default, no `OrderCustomerNumber`), the platform-owns-ids-and-timestamps rule on every `*Save`, the re-save-reverts-raw-SQL trap (`OrderRecalculate` writes the cached order back), the `GetOrderList`↔`EcomShops` inner join, invoices as `EcomOrders` rows (`InvoiceSave` requires `OrderStateId`), subscriptions (no create verb — one flag plus an `EcomRecurringOrder` row), the persistent RMA service cache, reorder mechanics, CSR sales-on-behalf impersonation, and account-section seeding.
-- [references/promotions-engines.md](references/promotions-engines.md) — the two coexisting discount engines (and which verb writes the one the admin screen reads), the voucher grid's legacy-row projection, v2 condition/reward payload shapes, voucher code constraints, and the encrypted gift-card code.
+| Reference | Load it for |
+|---|---|
+| [references/order-lifecycle.md](references/order-lifecycle.md) | what `create_orders` writes, the platform-owns-ids-and-timestamps rule on every `*Save`, the re-save-reverts-raw-SQL trap and the **UPDATE → flush → touch** ordering, `GetOrderById` returning resolved defaults, the `GetOrderList` inner join on `EcomShops`, invoices, subscriptions, the order read surface, reorder, CSR impersonation, account seeding |
+| [references/cart-commands.md](references/cart-commands.md) | `CartCmd` / `CustomerCenterCmd` contracts — the bot-User-Agent refusal, the querystring-dropping redirect, `setmulti` semantics, `archive` / `copyExtended` / `setcart` / `createnew`, the cross-user cart pointer, and "rendering the cart page is a write" |
+| [references/checkout-configuration.md](references/checkout-configuration.md) | method country binding, `ShippingSave` fee sources and the flat-rate recipe, the posted payment/shipping field names, validation groups (no admin UI), the 1970 date sentinel, order-line fields, saved payment cards, the zero-value add-a-card journey |
+| [references/order-states-and-quotes.md](references/order-states-and-quotes.md) | building a state ladder, the re-issued state id and dangling transition rows, `OrderCancel` + `OrderDelete`, `UpdateCartToQuote` / `DowngradeToCart`, the dead Accept-quote button |
+| [references/order-notifications.md](references/order-notifications.md) | three mail settings and their three resolution roots, the template failure that is mailed to the customer, the page-route confirmation body, cart-flow mail, asserting on Queue UNION Badmail |
+| [references/customer-center-surfaces.md](references/customer-center-surfaces.md) | the apps' declared settings keys, nothing-rendered vs the empty state, which apps honour `RetrieveListBasedOn`, the omitted payment method, translation-resolved fields |
+| [references/rma-and-claims.md](references/rma-and-claims.md) | creating a claim the customer center can see, claim numbering, state renames, the RMA service cache flush, the ViewModel-driven RMA app, the RMA notification mail |
+| [references/promotions-engines.md](references/promotions-engines.md) | the two coexisting discount engines (and which verb writes the one the admin screen reads), the voucher grid's legacy-row projection, v2 condition/reward payload shapes, voucher code constraints, the encrypted gift-card code |
 
 ## Pitfalls
 
@@ -327,7 +271,7 @@ Field-validated internals, split across two references:
 
 **`EcomOrderCustomerCountry` expects ISO code** — passing a display name ("Germany") instead of the code ("DE") causes country lookup to fail.
 
-**Payment/shipping availability** — if no payment or shipping method is available for the customer's country/group combination, checkout halts. Always test with the target country context.
+**Payment/shipping availability** — a method whose country-relation set does not contain the order's delivery country is filtered out, and the step then renders **zero options, no error and no empty state**, so checkout silently cannot complete. Payment often masks it: the shipped payment methods may already relate to the target country while none of the shipping methods do. Assert a non-zero delivery-option count for the target country.
 
 **Quote vs order** — "Checkout to quote" on the Shopping Cart app changes the checkout step output. The quote appears under Commerce > Quotes, not Commerce > Orders.
 

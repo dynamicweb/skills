@@ -263,7 +263,8 @@ serializer by command or by layer and mode, `SQL` in a fenced block).
 
 | Area | Reference | Reach for it when |
 |---|---|---|
-| Commerce | [references/recipes-commerce.md](references/recipes-commerce.md) | Orders, carts, checkout, RMA, discounts, catalog publishing — below rung 1 |
+| Commerce | [references/recipes-commerce.md](references/recipes-commerce.md) | Orders, carts, checkout, discounts, catalog publishing — below rung 1 |
+| Commerce — RMA | [references/recipes-commerce-rma.md](references/recipes-commerce-rma.md) | Claims, RMA states, the RMA service flush — below rung 1 |
 | Content | [references/recipes-content.md](references/recipes-content.md) | Pages, paragraphs, grid rows, item types, language layers — below rung 1 |
 | PIM | [references/recipes-pim.md](references/recipes-pim.md) | Products, groups, variants, completeness, product translation — below rung 1 |
 | Users | [references/recipes-users.md](references/recipes-users.md) | Users, groups, permissions, page gating — below rung 1 |
