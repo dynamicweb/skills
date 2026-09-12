@@ -102,6 +102,14 @@ Patch the existing area with:
 - currency
 - country
 
+**Bind only what `save_areas` exposes.** The tool has no frontpage member of any name, so an instruction
+to bind the site-root page id cannot be followed from this surface and does not need to be: the frontpage
+resolves from page sort order while the area's redirect-first-page flag is set, which is the shipped
+state. Read the area back with `get_area_by_id` after the patch and confirm each bound value echoes;
+a value that does not appear in that echo was not accepted. The per-environment `Area` binding columns
+that no tool writes are named, with their restart debt, in
+[`dw-data-access/references/cache-invalidation.md`](../dw-data-access/references/cache-invalidation.md).
+
 ### 4. Update Core Page Metadata
 Patch the main pages so the site is clearly branded for the new business:
 - homepage

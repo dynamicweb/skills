@@ -57,7 +57,8 @@ per-page copy traps below.
    `get_translatable_content` returns an object with `Units` (this batch) plus `HasMore` and
    `NextSkip`. A large page has more units than one batch can carry, so you **must loop**:
    call `get_translatable_content(areaId: <id>, skip: 0, take: 20)` (or `pageId:` for one
-   page), translate that batch's `Units`, write it back with `apply_translation(units)`, and
+   page), translate that batch's `Units`, write it back with `apply_translation` — **whose payload
+   key is `translations`, not `units`** — and
    **while `HasMore` is true, call again with `skip = NextSkip`** (same `take`). Continue
    until `HasMore` is false. Stopping while `HasMore` is true leaves the rest of the page —
    e.g. an accordion of questions at the bottom — in the source language. Each unit is tagged
@@ -65,6 +66,13 @@ per-page copy traps below.
    normally spans **several pages** — translate the whole batch and pass **all** of its units
    (every page included) in a **single** `apply_translation` call; the server groups them by
    `PageId` and saves each page once, so never make one call per page.
+   - **The write payload is `{"translations": [ … ]}`.** The read returns its batch under `Units`, so
+     `units` is the obvious key and it is wrong — and a required-property failure here is reported with
+     **no field name at all**: the whole response body is the bare sentence
+     `An error occurred invoking 'apply_translation'.` That sentence sends the caller hunting through
+     the unit shape, which is the half that is already right. Every member **inside** each unit is named
+     exactly as this skill says; only the wrapper differs. Rekeying the identical payload to
+     `translations` answers with the succeeded / failed / skipped counts.
    - Preserve HTML tags, attributes, entities, and any placeholders/merge tokens exactly —
      translate only the human-readable text between them. Do not translate URLs, file paths,
      system names, option keys, or code.
@@ -74,9 +82,14 @@ per-page copy traps below.
      target language requires it. Translate the whole unit, leaving no part in the source
      language; if a unit is already in the target language leave it unchanged, and words that
      are identical in the source and target languages may be left as-is.
-   - When returning units to `apply_translation`, keep each unit's `PageId`, `Kind`,
+   - When returning units in `translations`, keep each unit's `PageId`, `Kind`,
      `ParagraphId` and `FieldSystemName` unchanged and set `TranslatedText`. Empty translations
      are rejected, so omit anything you chose not to translate.
+   - **Filter the `(EMPTY)` sentinel out of the payload before translating.** An unset field comes back
+     with `sourceText` set to the literal string `(EMPTY)` — a presentation marker so a human reading the
+     list can see which fields are blank, on the same list that is also the write payload. Translating it
+     faithfully, which is what the rule above asks for, writes the word into the field. `(EMPTY)` is not
+     text: drop those units, and count them as skipped rather than as translated in the final summary.
    - **Run to completion silently — one job, one message.** Translating a page or a whole
      site is ONE authorized job after the first confirmation. Do **not** post a message,
      summary, or "translated a batch / shall I continue?" between batches **or between
@@ -101,7 +114,8 @@ If the user points at a website that is already a language version (its area has
 
 For "translate this one page", use `get_translatable_content(pageId: <id>, skip: 0, take:
 20)` and **loop while `HasMore` is true, calling again with `skip = NextSkip`** (same rule as
-above), translating each batch's `Units` and writing it back with `apply_translation(units)`.
+above), translating each batch's `Units` and writing it back in `apply_translation`'s `translations`
+payload.
 This is exactly what catches a bottom-of-page accordion/FAQ that a single un-looped call would
 miss.
 
@@ -111,6 +125,14 @@ When the user scopes the request to part of a page — most commonly "translate 
 titles/names" — pass `get_translatable_content`'s `kinds` filter (`kinds="PageField"` for
 titles) so the whole site doesn't get translated, and name the scope when confirming
 ("Translate page titles → French"). The tool description lists the kind values.
+
+## Publish the language version before reading it back
+
+**A language version is not addressable until it is published, and `create_language_version` leaves it
+unpublished on purpose.** So the read-back below has to come after a publish, not before it: on an
+unpublished area every candidate prefix answers 404 equally, which makes the prefix probe useless and
+reads as a failed copy even when the run reported every page copied. Publish with `save_areas` once the
+translation loop is done (`published: true` on the new area id), then read back.
 
 ## Read the translation back before reporting it done
 
@@ -125,8 +147,13 @@ After each batch, and once at the end of a run:
    segment is the area culture (`fr-FR` → `/fr-fr/`), not the area's url name, which is commonly
    decorative — fetch a page that certainly exists under each candidate prefix and keep the one that
    answers 200, rather than composing the URL from a field. A 404 here reads like a broken language
-   layer when it is only the wrong prefix. A page that reads back correctly and renders the master
-   language is a language-version wiring problem, not a translation problem.
+   layer when it is only the wrong prefix — or, before the publish above, the unpublished state.
+   **A first fetch that renders the master language immediately after a publish is a stale render:
+   re-fetch once before reading anything into it.** Measured on one run, the fetch straight after the
+   publish answered 200 carrying the master `lang` attribute, the master title and the master hero,
+   and the very next fetch of the same URL served the target language throughout. Only a page that
+   still renders the master language on a **second** fetch is a language-version wiring problem rather
+   than a translation problem.
 
 Report the failures by page id; do not re-send the same payload hoping for a different result.
 

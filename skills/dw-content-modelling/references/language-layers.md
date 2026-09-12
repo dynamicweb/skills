@@ -139,9 +139,12 @@ sign-in, customer-center and the sibling-page links, and nothing repairs it afte
 
 **`create_language_version` is the call**, with `copy_area` as the sibling for a full-website copy.
 Pass the master area as the source and the new culture; the layer comes back with its
-`AreaMasterAreaId` back-link set. Read the result back with `get_language_areas` on the master
-before trusting the copy — a copy that fails partway can leave a cruft area behind (deactivate it
-with `save_areas`, and mind that the selector lists every `active` sibling).
+`AreaMasterAreaId` back-link set, and **unpublished** — deliberately, so untranslated content is not
+live. An unpublished layer is not addressable at any prefix, so a fetch of the new layer before the
+publish answers 404 whatever URL is composed; that 404 is the unpublished state and not a failed copy.
+Read the result back with `get_language_areas` on the master before trusting the copy — a copy that
+fails partway can leave a cruft area behind (deactivate it with `save_areas`, and mind that the
+selector lists every `active` sibling).
 
 `copy_area` is observed broken on some builds ("Area was not copied" on DW 10.25.6): when it answers
 that, the copy is an out-of-product operation for whoever owns the host — see
