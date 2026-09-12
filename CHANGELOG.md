@@ -3,6 +3,90 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.41.0]
+
+Fold-back sprint: dw-commerce-orders and dw-commerce-catalog. Forty-seven demo-build learnings land as a routed reference set: the RMA and claims surface (previously uncovered), the measured cart-command contracts (the SKILL.md tables described behaviour the platform does not have), checkout configuration, order states and quotes, order notifications, customer-center surfaces, and catalog listing and stock. The SQL-then-API-save ordering is stated once with both measurements.
+
+- **`dw-commerce-orders` is now a routed reference set, not one growing file.** The single 32KB
+  `order-lifecycle.md` covered order seeding and saves and nothing else, so every cart, checkout,
+  RMA, state-machine and notification learning had no home. Split into
+  `cart-commands.md`, `checkout-configuration.md`, `order-states-and-quotes.md`,
+  `order-notifications.md`, `customer-center-surfaces.md` and `rma-and-claims.md`, with a
+  "Where to find things" routing table in `SKILL.md`; `order-lifecycle.md` keeps seeding, saves,
+  invoices, subscriptions, the read surface and CSR impersonation.
+
+- **The RMA / claims surface is documented for the first time.** Which of the three creation
+  surfaces writes what (MCP `create_rma` produces a backend-only stub; Admin API `RmaSave` binds an
+  empty `Model.Id` and the singular `OrderLineId`; the frontend `addrma` is the complete model and
+  the only route that raises the mail), why the customer-center list INNER JOINs the comment and
+  order-line tables so a commentless RMA can never appear, that a state rename is three writes
+  across two stores plus the backend default-name column, that the API and the frontend write
+  different empties into the same column, that every save of an existing RMA logs a customer-block
+  comment into the customer-visible history, and the `ReturnMerchandiseAuthorizationService` flush
+  every raw-SQL write owes. The customer-center RMA app is ViewModel-driven while the only shipped
+  templates are DW9 tag templates, and it is the one app in the family that ignores
+  `RetrieveListBasedOn`.
+
+- **Cart commands say what they do, replacing a table that said what they sound like.** `archive`
+  clears the active-cart pointer and archives nothing (model archiving as a cart-flow order state);
+  `copyExtended` copies the session's active cart and ignores `CartId` — which makes the shipped
+  saved-carts link a live defect — and is the only ownership move; `setcart` selects a cart and
+  never transfers it, leaving two users pointing at one; `createnew` needs `SetActive`; `setname`
+  writes `OrderDisplayName`; `setmulti` SETS quantities, deletes at zero and is last-row-wins for a
+  duplicate product. Plus the two gates every scripted cart proof must pass (the bot User-Agent
+  refusal that still mints the cart, and the pre-command 301), the redirect that drops the whole
+  querystring, the unchecked `AccessUserCartId` adoption that leaks a cart across users, and the
+  fact that rendering the cart page persists the order header.
+
+- **Checkout configuration gets the data-side contracts a checkout needs before it can complete.**
+  Method country binding (a cart delivering outside the relation set gets zero options, no error
+  and no empty state, with payment masking it), the two legal `feeRulesSource` values and the
+  flat-rate recipe, the payment radio whose posted name drops a syllable the element id carries,
+  validation groups (no admin UI, the hand-written row contract, a dangling reference that
+  validates nothing, and the rule that a field gates the step it is posted on), the 1970 sentinel
+  on unset date order fields, saved cards as service-only because the checksum hashes the identity
+  the INSERT assigns, and the global setting that makes the zero-value add-a-card journey possible.
+
+- **Order-LINE fields need no storage column, and the `EcomOrderField` trap does not generalise.**
+  Values live in the `OrderLineFieldValues` blob already present on every line, so adding one is a
+  row rather than a maintenance window — but the definition is inert without a shop/group relation
+  row, and the entry is materialised at line-creation time, so a line that predates the relation can
+  never take a value.
+
+- **The SQL-then-save ordering is stated once.** A raw write to a DW-cached table is not merely read
+  stale: the next save of the cached entity writes the whole entity back and destroys it, silently
+  and at an unpredictable later moment. The working sequence is UPDATE, flush the owning service
+  with `CacheInformationRefresh`, then touch — proven on both sides, by a staged value erased
+  without the flush and by a bulk column repoint that survived with it.
+
+- **Order states, removal and the cart/quote conversion.** `delete_order_state` leaves dangling
+  transition rows and the id generator re-issues a freed id into any flow, so a two-ended LEFT JOIN
+  integrity assertion is mandatory whenever states are touched; `OrderDelete` is a soft delete that
+  refuses completed orders, and `OrderCancel {Id}` then `OrderDelete {Ids}` is the working pair
+  (note the singular/plural key split); `UpdateCartToQuote` leaves `IsCart` set and
+  `DowngradeToCart` renames the original order and inserts a copy under the old id, so any
+  bookkeeping row keyed on the order id must be written against the pre-call id. Swift 2's
+  Accept-quote button loads its modal from an endpoint that refuses any order that is not a cart,
+  so it can never work on a quote.
+
+- **Notification mail: three settings, three resolution roots, and an artefact that under-reports.**
+  The order-state template is a bare file name under one fixed folder, the RMA template resolves at
+  the Templates root, and the cart app's `Mail1Template` is design-relative — and when
+  `Mail1Template` is empty the body is a *page*, leaving the shipped mail template as dead code that
+  grep cannot distinguish from the live one. A template that will not load is mailed to the customer
+  rather than aborting the send, cart-flow states notify exactly like order-flow states, and the
+  honest assertion surface on a black-hole SMTP host is Queue UNION Badmail, on content.
+
+- **`dw-commerce-catalog` gains a listing-and-stock reference.** Any default sort on the catalog
+  paragraph or the query replaces search relevance (and the header search shares that paragraph), so
+  group listings are ordered with `UseGroupSortInGroupContext` and scaffolding is hidden with
+  `ProductExcludeFromIndex`, never with a sort or a root `GroupID` default. `ProductHidden` is
+  enforced in the entity SELECT, absent from the index and unwritable by every DW10 API, so a
+  listing counts hidden products and renders none — assert rendered rows equal the header count.
+  Plus the `AssetCategories` double-listing, what order completion decrements in the two stock
+  tables (it follows the stock location on the line, so assume both move and make the inbound sync
+  own both), and the `0`-not-`NULL` stock-location convention on unscoped price rows.
+
 ## [4.40.0]
 
 Fold-back sprint: the three render skills. Eighteen demo-build learnings land as two new dw-render-razor references (the template compile contract and the paragraph-as-endpoint response contract), a view-model traps reference, a tag-contexts reference, and one rewrite of the stylesheet cache-buster guidance that was wrong rather than incomplete.
