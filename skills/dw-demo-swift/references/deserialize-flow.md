@@ -187,31 +187,13 @@ Copy-Item "$dist\layers\surface-swift\itemtypes\*.xml" `
 
 ## 4. Step 2 — POST against running host
 
-> **Engine 0.8.x callers:** the two-pass shape below is stamped to **0.6.9-beta**. From 0.8.x the predicate `mode` enum is `Replace`/`Merge` (`Deploy`/`Seed` are rejected, not aliased) and the run's mode moves into the JSON body — `POST /Admin/Api/SerializerDeserialize {"Mode":"Replace","IsDryRun":false}`. Check the engine before reusing a config or a snippet: [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Replace vs Merge".
+> **The call shape lives in one place.** `SerializerDeserialize` is invoked with `Mode` in a flat JSON body, and the canonical snippet, the dry-run gate, the response shape and the engine/platform floors are owned by [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Invocation — one shape". Read it before the first POST and call it from there; this section owns only the *sequence* and what each pass lands in a Swift build.
 
-**Two POSTs — both with an explicit `?mode=`, replace first then merge.** On engine **0.6.9-beta** each pass must name its mode: `?mode=replace` then `?mode=merge`. **Do NOT rely on a bare `POST /Admin/Api/SerializerDeserialize`** — on 0.6.9 a mode-less POST targets the **legacy `deploy` folder** (not `SerializeRoot/replace/`), and against a layer that stages `replace/`+`merge/` it returns **HTTP 400 `deploy contains no YAML files`**. Pass `?mode=replace` explicitly for the first pass so the engine reads `SerializeRoot/replace/`. (The engine also accepts the legacy `Deploy`/`Seed` names as aliases for `replace`/`merge`.) With base + surface-swift staged (§3), the replace pass lands the base's framework `_sql/` plus the surface's areas/pages/UrlPath (source-wins); the merge pass applies the surface's `merge/_content/` rows. Neither layer carries a catalog — the storefront comes up with an **empty catalog by design**; that is expected, not a missing-products failure. Run the `sample-data` layer's `merge/_sql` (activated via the `swift-demo` edition's `sampleData: true`) or author the catalog per-demo via [`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md). (The two-POST mechanic still matters generally: feature-pack fragments deserialize in `merge` mode — see [`pack-activation.md`](pack-activation.md).)
+**Two passes, replace first then merge**, each a separate `SerializerDeserialize` call carrying `Mode` in its body (`Replace`, then `Merge`) — run each as a dry run first and gate on the entry count, per the reference. A run reads only its own mode subfolder, so a `Mode` that names a subfolder §3 did not stage returns `Mode subfolder not found` or `<path> contains no YAML files`: a staging fault, fixed in §3, never worked around by changing the call.
 
-```powershell
-# Pass 1 — Replace (?mode=replace is REQUIRED on 0.6.9; a bare POST hits the legacy deploy
-# folder and 400s "deploy contains no YAML files"). Lands framework + content, source-wins.
-$replace = Invoke-RestMethod `
-  -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=replace" `
-  -Method POST `
-  -Headers @{ Authorization = "Bearer $token" } `
-  -SkipCertificateCheck
+With base + surface-swift staged (§3), the **replace** pass lands the base's framework `_sql/` plus the surface's areas/pages/UrlPath (source-wins); the **merge** pass applies the surface's `merge/_content/` rows. Neither layer carries a catalog — the storefront comes up with an **empty catalog by design**; that is expected, not a missing-products failure. Run the `sample-data` layer's `merge/_sql` (activated via the `swift-demo` edition's `sampleData: true`) or author the catalog per-demo via [`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md). (The two-pass mechanic matters beyond the base build: feature-pack fragments deserialize in `merge` mode — see [`pack-activation.md`](pack-activation.md).)
 
-# Pass 2 — Merge (catalog / field-level). ?mode=merge is REQUIRED — omitting it never runs Merge.
-$merge = Invoke-RestMethod `
-  -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=merge" `
-  -Method POST `
-  -Headers @{ Authorization = "Bearer $token" } `
-  -SkipCertificateCheck
-# Strict mode is on by default for API callers (per Serializer README).
-# Each pass returns HTTP 200 with 0 failed predicates on success.
-# On failure: HTTP 4xx with CumulativeStrictModeException details (read the body — it's the diagnostic).
-```
-
-(A content-only legacy `Swift2.2` baseline ships no `merge/` tree, so the second POST is a no-op there. Neither `base` nor `surface-swift` ships a sample catalog, so the merge pass lands no products — the catalog comes from `sample-data` or is authored per-demo, never deserialized from base/surface.)
+Each pass returns HTTP 200 with `0 failed` on success; on failure it returns 4xx whose body carries the `CumulativeStrictModeException` detail. (A content-only legacy `Swift2.2` baseline ships no `merge/` tree, so the merge pass is a no-op there. Neither `base` nor `surface-swift` ships a sample catalog, so the merge pass lands no products — the catalog comes from `sample-data` or is authored per-demo, never deserialized from base/surface.)
 
 **Keep strict mode on; never disable it** by passing a `strictMode` query parameter or body field set to a falsy value. Strict mode is the first line of defence (FK orphans, missing templates, cache failures, schema drift). Disabling it produces a deserialized DB that *looks* succeeded but is silently inconsistent — the deserialize-blind failure mode in its purest form.
 

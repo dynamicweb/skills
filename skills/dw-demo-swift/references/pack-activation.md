@@ -210,8 +210,8 @@ Track exactly what you copy — removing the pack later deletes exactly these fi
 The fragment is serializer YAML that lands the pack's data. Stage each mode tree named in
 `fragmentModes` into the host's `SerializeRoot`, then POST the deserialize — one POST per mode.
 
-> **STAGE THE FRAGMENT ISOLATED — say it loudly.** A `POST /Admin/Api/SerializerDeserialize?mode=<m>`
-> deserializes **everything in `SerializeRoot/<m>/`**, not just the files you copied in. If the base
+> **STAGE THE FRAGMENT ISOLATED — say it loudly.** A `SerializerDeserialize` POST carrying
+> `{"Mode":"<m>"}` deserializes **everything in `SerializeRoot/<m>/`**, not just the files you copied in. If the base
 > layer's trees are still sitting in `SerializeRoot/replace/` and `SerializeRoot/merge/` from the
 > §"deserialize-flow.md" run, dropping the fragment alongside them **re-deserializes the base too** —
 > and the base `replace` pass is **source-wins**, so it re-applies the base layer's framework rows and
@@ -244,9 +244,13 @@ foreach ($mode in $pack.fragmentModes) {          # e.g. 'merge', or 'replace','
   if (Test-Path $modeSrc) {
     New-Item -ItemType Directory -Path "$serializeRoot\$mode" -Force | Out-Null
     Copy-Item -Recurse "$modeSrc\*" "$serializeRoot\$mode\" -Force
+    # Mode travels in the JSON body — the one call shape, owned by
+    # ../../dw-demo-base/references/serializer-reference.md "Invocation — one shape".
+    $body = @{ Mode = $mode; IsDryRun = $false } | ConvertTo-Json
     $resp = Invoke-RestMethod `
-      -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=$mode" `
-      -Method POST -Headers @{ Authorization = "Bearer $token" } -SkipCertificateCheck
+      -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize" `
+      -Method POST -Headers @{ Authorization = "Bearer $token" } `
+      -ContentType "application/json" -Body $body -SkipCertificateCheck
     Remove-Item -Recurse -Force "$serializeRoot\$mode"   # clear the staged fragment before the next mode
   }
 }
