@@ -322,14 +322,15 @@ wiring, sibling links) that raw SQL skips. When MCP doesn't expose an operation,
 through `POST /Admin/Api/ParagraphSave` — see
 [dw-content-modelling](../../dw-content-modelling/SKILL.md) (`modelling-discipline.md`) §2.
 
-**`save_pages` accepts `urlName` / `navigationTag` / `hidden` as documented members of its input
-schema and persists none of them (verified 10.27.x-10.28.x on MCP 0.4.4).** Even the
-MCP-first path needs a **targeted** SQL touch-up for these three: a page created via `save_pages` lands
-with a derived URL slug, no navigation tag, and default visibility **regardless of what you pass** for
-those fields. This is the sanctioned "confirmed silent no-op → local SQL fallback" case (round-trip-verify
-it): after the MCP create, set `Page.PageUrlName`, the navigation-tag column, and `Page.PageHidden` via SQL
-(then restart per the cache rules below). Keep the page's *creation* on MCP/the API — do not fall back to
-authoring the whole row in SQL.
+**`save_pages` accepts `navigationTag` / `hidden` as documented members of its input schema and
+persists neither (verified 10.27.x-10.28.x on MCP 0.4.4); `urlName` it does persist.** On DW 10.28.x
+the slug passed in `urlName` reaches `Page.PageUrlName` and wins over the `menuText`-derived one, so
+keep slug pinning on MCP and confirm it by fetching the composed URL — no page read projects the
+column. The remaining two need a **targeted** touch-up: a page created via `save_pages` lands with no
+navigation tag and default visibility **regardless of what you pass**. `PageNavigationTag` is reachable
+through the Management API `PageSave`; `Page.PageHidden` is the sanctioned "confirmed silent no-op →
+local SQL fallback" case (round-trip-verify it, then restart per the cache rules below). Keep the
+page's *creation* on MCP/the API — do not fall back to authoring the whole row in SQL.
 
 **Read side — the ADO.NET single-row indexing footgun silently returns a COLUMN where you expected a
 ROW.** This bites the sanctioned use of SQL (verification reads), not the retired one, so it survives the

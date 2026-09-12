@@ -24,7 +24,7 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Load translated strings without mojibake — the sqlcmd codepage](#load-translated-strings-without-mojibake--the-sqlcmd-codepage)
 - [Culture-coded area URL prefixes](#culture-coded-area-url-prefixes)
 - [Clear PageShortCut baseline cruft](#clear-pageshortcut-baseline-cruft)
-- [Pin a page slug and set PageNavigationTag](#pin-a-page-slug-and-set-pagenavigationtag)
+- [Set `PageNavigationTag`](#set-pagenavigationtag)
 
 ## Writing `PageNavigationTag` directly
 
@@ -240,19 +240,22 @@ UPDATE Page SET PageShortCut = N'' WHERE PageId IN (<aboutPageId>, <clonePageIds
 
 Add content to the now-empty page or it renders as header plus footer.
 
-## Pin a page slug and set PageNavigationTag
+## Set `PageNavigationTag`
 
 In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
 (`page-paragraph-writes.md`, "Saves that report success but silently drop a field" and
-"`save_pages` accepts `navigationTag` and `urlName` and persists neither").
+"`save_pages` persists `urlName`, and no page read projects it").
 
-`save_pages` accepts `urlName` and `navigationTag` as documented members and persists neither — the
-slug is derived from `menuText` instead — so both columns need a second surface. The Management API `PageSave` reaches
-`PageNavigationTag`; nothing below `SQL` pins `PageUrlName`. The SQL form is **local installs only**
-and owes a host restart, so batch both before the restart the job already owes, and assert the
-column rather than the call's status.
+**The slug does not belong here.** On DW 10.28.x with MCP 0.4.4 `save_pages` persists `urlName` to
+`Page.PageUrlName` and it wins over the `menuText`-derived slug, so pinning a slug is an in-product
+write — pass `urlName` and confirm with a 200 on the composed URL.
+
+`navigationTag` is the member `save_pages` accepts and drops, so that column needs a second surface.
+The Management API `PageSave` reaches `PageNavigationTag`. The `SQL` form below is the last resort
+when neither is available: no MCP tool reaches the column and no read projects it, it is **local
+installs only**, and it owes a host restart, so batch it before the restart the job already owes and
+assert the rendered link rather than the call's status.
 
 ```sql
-UPDATE Page SET PageUrlName = N'<slug>' WHERE PageId = <pageId>;
 UPDATE Page SET PageNavigationTag = N'<tag>' WHERE PageId = <pageId>;
 ```

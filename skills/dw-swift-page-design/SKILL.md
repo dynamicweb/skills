@@ -36,15 +36,13 @@ design concern needs nothing beyond the ordinary page/paragraph tools.
 
 ## Before you write — snap to THIS solution (skipping this is what produces broken pages)
 
-**Plan the URL map from `menuText`, because `save_pages` does not persist `urlName`.** `urlName` is a
-first-class member of the `save_pages` input schema on MCP 0.4.4, with its own description — it is
-accepted, not unknown. On the create and the update path alike the call returns succeeded and
-derives the slug from `menuText`, dropping whatever `urlName` was sent, so there is no better-named
-tool to go looking for. So decide the slug first and **make each page's `menuText` the label
-that produces it**; a slug `menuText` cannot produce is out of product. Read every created page back
-with `get_pages_by_ids` and write cross-links from the slugs it actually returns — never from the
-planned map. A map authored before this constraint is known ships copy whose every internal link
-points at a URL that does not exist.
+**Pin every slug with `urlName`, and confirm it on the served URL.** On DW 10.28.x with MCP 0.4.4
+`save_pages` persists `urlName` to `Page.PageUrlName` and it **wins over** the `menuText`-derived
+slug, so decide the URL map first and pass each slug as `urlName` while `menuText` carries the human
+label. What no page getter does is *project* `urlName`: `get_pages_by_ids` returns `menuText` and no
+slug member, so a read-back cannot confirm the URL. **Fetch the composed URL and assert 200** before
+writing any cross-link to it. Writing cross-links from `menuText` — or from a page read — ships copy
+whose every internal link points at a URL that does not exist.
 
 Template paths, component names, color schemes, and field names differ per solution and are
 stored **verbatim** by `save_paragraphs`/`set_paragraph_item_fields` (no auto-correction). So,
