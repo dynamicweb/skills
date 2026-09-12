@@ -5,6 +5,7 @@
 - [1. Quick verification ritual](#1-quick-verification-ritual)
 - [2. Per-check sections](#2-per-check-sections)
 - [2a. Post-clone check: `/Files` must resolve to the DW file archive](#2a-post-clone-check-files-must-resolve-to-the-dw-file-archive)
+- [2b. Post-restore check: orphaned shop/group relation rows](#2b-post-restore-check-orphaned-shopgroup-relation-rows)
 - [3. Discovery table — read these from project files (the discover-from-project-files rule)](#3-discovery-table--read-these-from-project-files-the-discover-from-project-files-rule)
 - [4. Dual-set env-var propagation pattern — User-scope env-var doesn't propagate](#4-dual-set-env-var-propagation-pattern--user-scope-env-var-doesnt-propagate)
 
@@ -151,6 +152,37 @@ To discriminate the two folders directly, write a probe file into `<site>\Files\
 and the archive answers 404. The remedy that shipped was junctioning `Templates`, `Images`, `Icons`
 and `System\Styles` from the sibling into the real archive, after which the five asset URLs returned
 200 and the home page rendered styled.
+
+## 2b. Post-restore check: orphaned shop/group relation rows
+
+**Run this after any restore or `CopyDemoSite`, before the first group-tree audit.** A restored
+database routinely carries relation rows pointing at group ids that no longer exist in any language —
+one measured host held 186 orphans out of 219 `EcomShopGroupRelation` rows, residue from the source
+demo's own group tree. They are **inert** (every consumer joins to `EcomGroups`, so nothing errors and
+no admin warning appears) and they make any shop/group audit unreadable: most of the channels in the
+listing turn out to have no real groups at all.
+
+`SQL` is the surface here, and it is the only one: no MCP tool and no Management API verb reports a
+dangling relation row, because the relation is only ever read through a join that hides it. Local
+installs only; a read owes nothing, the delete below owes a host restart to flush the group caches.
+
+```sql
+-- Audit: expect 0
+SELECT COUNT(*) FROM EcomShopGroupRelation sgr
+WHERE NOT EXISTS (SELECT 1 FROM EcomGroups g WHERE g.GroupId = sgr.ShopGroupGroupId);
+
+-- Cleanup, once the count is understood
+DELETE FROM EcomShopGroupRelation
+WHERE NOT EXISTS (SELECT 1 FROM EcomGroups g WHERE g.GroupId = EcomShopGroupRelation.ShopGroupGroupId);
+```
+
+Run the same shape against the sibling relation tables. Confirm before deleting that the ids really
+are dangling rather than live configuration: a DB-wide scan for one known-deleted group id found it
+only in the relation tables and the command-log audit rows, which is what made the delete safe. Keep
+the audit query as a standing post-restore step, so orphan volume is caught before it is mistaken for
+a real tree — and read `EcomGroups.GroupType` before deleting any *group*
+([`dw-pim-modelling`](../../dw-pim-modelling/references/structural-model.md#22-group-types--data-models-vs-catalog-groups)),
+since the data-model tree looks exactly like a duplicate catalogue tree from the outside.
 
 ## 3. Discovery table — read these from project files (the discover-from-project-files rule)
 

@@ -93,7 +93,48 @@ parents, so every child whose parent would not yet exist is deferred rather than
 composition: the real run created all 77 pages and 104 paragraphs (dry Replace 724 created / 8 updated
 / 64 skipped / 0 failed over 19 entries, real Replace 984 / 10 / 33 / 0). Content counts in a dry run
 are a lower bound, not a prediction. Gate the dry run on `failed == 0` and the absence of escalated
-strict-mode warnings, nothing else.
+strict-mode warnings.
+
+**Read the ENTRY COUNT as well — it is not a count, it is the blast radius.** `failed == 0` is
+necessary and not sufficient: a dry run reporting `94 created, 252 updated, 680 skipped, 0 failed
+across 19 entries` is a perfectly healthy-looking line describing a run that is about to rewrite
+nineteen entries of somebody else's baseline. Match the entry count, and the entry ids, against what
+you intended to run, every time, before the real run. The mechanism that makes this the load-bearing
+readout is next.
+
+**Deserialize is driven by the MANIFEST under `SerializeRoot`, not by the config predicates.**
+`SerializerDeserialize` resolves what to run from `SerializeRoot/<mode>/<mode>-manifest.json` and
+walks the entries it finds there. `predicates` and `outputDirectory` in `Serializer.config.json`
+govern **serialize** (and validation) only — on the deserialize path `outputDirectory` is not
+consulted at all, so the engine reads the default `Files/System/Serializer/SerializeRoot` regardless
+of where the config points, and it does so across an app-pool restart. A config narrowed to one
+predicate, with the layer tree correctly staged under a private root, therefore dry-ran all nineteen
+entries of an unrelated baseline — including a `content/area-<id>` entry with 188 updates that a real
+run would have written over six phases of content edits. It reported `0 failed` while being
+completely wrong about what it would write. (Same family as the `Mode` default above: an input the
+caller believes is authoritative is ignored, and the silent default is the widest possible blast
+radius.)
+
+**To deserialize ONE entry, swap the manifest — narrowing the config does nothing.** The proven
+staging recipe, which a composer script should own end to end:
+
+1. Build the rewritten layer tree in the **workspace**, never in place under `SerializeRoot`.
+2. Assert the staged set both ways: every file the manifest names exists on disk, **and** no staged
+   file is missing from the manifest.
+3. Back up the three live files — `SerializeRoot/<mode>/<mode>-manifest.json`, the mode tree's own
+   `_content/templates.manifest.yml`, and `Serializer.config.json`. **Guard the manifest backup with
+   `entries.length > 1`**, so a re-stage cannot overwrite the baseline backup with the already-staged
+   one-entry manifest.
+4. Copy the tree in and swap both manifests and the config.
+5. Dry-run and **read the entry count**: exactly one entry, named, with zero mentions of any other
+   area. That is the gate; `0 failed` is not.
+6. Run, then unstage: delete the staged tree, restore the three files, and **assert
+   `SerializeRoot` is byte-for-byte back** (file count, manifest entry count, config predicate
+   count), throwing if it is not.
+
+Between stage and unstage the manifest carries exactly one entry, so a Replace run can only reach
+that entry. Prove the containment with a before/after measurement on an area the run must not touch
+(pages, paragraphs and grid rows identical on both sides).
 
 **Always pass `?mode=` explicitly on 0.6.9 — both passes.** A mode-less `POST /Admin/Api/SerializerDeserialize` on engine 0.6.9-beta targets the **legacy `deploy` folder** rather than `SerializeRoot/replace/`, and returns **HTTP 400 `deploy contains no YAML files`** against a layer that stages `replace/`+`merge/`. Run `?mode=replace` first, then `?mode=merge` — never a bare POST. The two-pass sequence + snippet is owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §4.
 

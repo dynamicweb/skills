@@ -68,6 +68,42 @@ Per the official doc page `dynamicweb10/products/concepts/localization.html`:
 **Variant rule:** Each language version of a product can have its own variant text per
 `EcomVariantOptionsTranslation`. But variant **groups** themselves fall back.
 
+### "Falls back" means to the DEFAULT language row, and only to that one
+
+The fallback reads one layer: the language marked `LanguageIsDefault=1`. It is not a search across
+the other layers, so **rows authored under a non-default layer are invisible, not "fallen back"** —
+`StockLocation.GetName(languageId)` and its siblings look for the requested language, then the
+default, and stop. A restored or cloned database is where this bites: a translation set can exist
+only under a dead layer (`EcomUnitTranslations`, `EcomStockLocationTranslations` and
+`EcomDetailsGroupTranslation` all under one legacy `LanguageId`) while the live site's default is a
+different one, and the result is empty unit names on the PDP and MCP `get_stock_locations` returning
+`name: ""` for every location. Marking a different language default does not rescue them either —
+measured before and after exactly that fix, with the same empty result both times.
+
+**So author or migrate those rows under the site's live default language rather than relying on
+cross-language fallback.** Establish which layer that is (`SELECT LanguageId FROM EcomLanguages WHERE
+LanguageIsDefault = 1`) before writing anything, then write through the verb that owns the object
+where one exists — MCP `save_unit_translation`, `save_group_translations`, `set_option_translations`,
+`save_country_translation` and the rest of the chrome table below. `EcomDetailsGroupTranslation` has
+no verb on 10.28.x, so asset-category names are a SQL insert (local install only; restart the host
+afterwards to flush the ecommerce caches). Re-run the empty-string probe on the rendered surface to
+confirm.
+
+### A missing translation is never an error — and each view model hides it differently
+
+Nothing reports a missing translation row, and the delivery API's fallbacks differ **within one
+response**, so a name that looks right can mean the row is absent:
+
+| Surface | What a missing row returns | Consequence |
+|---|---|---|
+| `assetCategories[].name` (`/dwapi/ecommerce/products/{id}`) | the **SystemName** — the view model is SystemName-derived on this build and never consults `EcomDetailsGroupTranslation` | asking for a language with zero translation rows in any layer still returns a plausible English name, so this endpoint **cannot verify an asset-category translation** |
+| `relatedGroups[].name` | the **raw id** (`{"id":"<RELGROUPID>","name":"<RELGROUPID>"}`) | a name equal to the id is a missing-row signal, not a label |
+
+Verify an asset-category translation by reading `EcomDetailsGroupTranslation` directly, or by
+rendering one of the templates that actually call `DetailsGroup.GetName()`. Make the two checks
+standing assertions: every group referenced by a live product has `name != id`, and every
+`EcomDetailsGroup` has a row in the default language before any surface trusts `assetCategories[].name`.
+
 ## The admin-UI flow (what a human does)
 
 1. Settings → Ecommerce → Languages → add a new language row (give it `LanguageId` like `LANG2`, ISO `Culture` like `nl-NL`, native name "Nederlands").

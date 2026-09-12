@@ -135,7 +135,7 @@ Three dispositions, in preference order: **rewire** at the customer's own data (
 
 **Design verification is a property of every gate run, not of the design brief** — an unconfigured design leg stamps `SKIP` and reports `PASS` over overflow, skeleton bands and shipped copy. Three legs arm from the first run against a raw deserialize, with no custom design configuration:
 
-1. **Overflow** — `document.body.scrollWidth === window.innerWidth` at desktop and mobile widths.
+1. **Overflow** — `document.body.scrollWidth === window.innerWidth` AND `window.innerWidth === the requested width`, at desktop and mobile widths. Both readouts: unshrinkable content widens the layout viewport, after which the first comparison holds on a page that renders zoomed out (`dw-demo-base/references/visual-qa.md` "Breakpoints").
 2. **Skeleton / empty-band scan** — the Step 0.4 detector, over the storyline page set.
 3. **Stock-copy tripwire** — the Step 0.1 regex, over the served HTML.
 

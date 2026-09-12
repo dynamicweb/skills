@@ -128,7 +128,7 @@ Dynamicweb 10 supports auto-translation of product fields. Configuration is at t
 
 ## Deep reference
 
-[references/translation-mechanics.md](references/translation-mechanics.md) — the field-validated internals: the two-table mental model (`EcomLanguages` vs `Area` language layers), what must be translated vs what falls back, the MCP/SQL surface matrix (`update_products` `languageId`, the `create_products` master-language trap, the group-translation null gotcha), the standard-field `AllowChangesAcrossLanguages` seed SQL, the `EcomProductField` flag gates that make `ProductSave` silently discard writes, the category-field language-column decoy, facet-option label translation (and the `ProductFieldOptionSave` wipe hazard), `OrderStateTranslationSave`, and the add-a-new-language step list.
+[references/translation-mechanics.md](references/translation-mechanics.md) — the field-validated internals: the two-table mental model (`EcomLanguages` vs `Area` language layers), what must be translated vs what falls back (and why a row stranded under a non-default layer is invisible rather than fallen back), what each view model returns when a translation row is missing, the MCP/SQL surface matrix (`update_products` `languageId`, the `create_products` master-language trap, the group-translation null gotcha), the standard-field `AllowChangesAcrossLanguages` seed SQL, the `EcomProductField` flag gates that make `ProductSave` silently discard writes, the category-field language-column decoy, facet-option label translation (and the `ProductFieldOptionSave` wipe hazard), `OrderStateTranslationSave`, and the add-a-new-language step list.
 
 ## Pitfalls
 

@@ -12,13 +12,15 @@ and repository side.
 ## Contents
 
 - [Repositories, Indexes, and Queries — file-based](#repositories-indexes-and-queries--file-based)
+- [Authoring a `.index` file — the rules no API surface reports](#authoring-a-index-file--the-rules-no-api-surface-reports)
+- [The user index publishes a password hash and the whole impersonation graph](#the-user-index-publishes-a-password-hash-and-the-whole-impersonation-graph)
 - [MCP product query payload contract](#mcp-product-query-payload-contract)
 - [Dashboard query location — Shared ONLY](#dashboard-query-location--shared-only-never-duplicate-to-repositories)
 - [Channel isolation is a QUERY-time filter](#channel-isolation-is-a-query-time-filter-not-an-index-time-one)
 - [Currency integrity is an index-build precondition](#currency-integrity-is-an-index-build-precondition--dividebyzeroexception-names-neither-the-currency-nor-the-country)
 - [A NULL-price variant row drops every variant document from the build](#a-null-price-variant-row-drops-every-variant-document-from-the-build)
 - [An `Analyzed="false"` field facets as ONE term](#an-analyzedfalse-field-facets-as-one-term)
-- [The Files index needs `Files\Digital assets` to exist](#the-files-index-needs-filesdigital-assets-to-exist)
+- [The Files index: `StartFolder` is the library, and keywords live in the file](#the-files-index-startfolder-is-the-library-and-keywords-live-in-the-file)
 - [Recovery recipe: Rebuild Products index](#recovery-recipe-rebuild-products-index)
 
 ## Repositories, Indexes, and Queries — file-based
@@ -47,6 +49,85 @@ and repository side.
   Then rebuild: `POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`. **Symptom check:** if PLP/PDP render `numHits must be > 0` and the index built `state=success`, this is the cause — not a missing query file, not a missing `Products.query`, not a paragraph misconfiguration. The data on disk is the diagnostic: a healthy Products index segment is ~270 KB at 30 docs; 53 bytes means the schema accepted zero documents.
 - MCP `create_or_update_product_queries` saves `.query` XML but leaves `<Source Repository="" Item="" />` empty — fix via `sed` or patch the file before index build.
 - Rebuild the index after ANY product/group/channel mutation.
+
+## Authoring a `.index` file — the rules no API surface reports
+
+The `.index` is XML on disk under `Files/System/Repositories/<Repo>/`, and **the filesystem is the
+only surface that authors it** — no Management API verb and no MCP tool writes an index schema. Edit
+the file directly on a local install; on a hosted install reach it through the admin file manager or
+a multipart `POST /Admin/Api/Upload`. Every rule in this table is invisible from the read surfaces:
+`BuildIndex` answers `{"status":"ok"}`, `IndexStatusesByRepository` answers "All instances are fine",
+and `FieldDefinitionBasesByRepositoryAndIndexName` lists the field exactly as declared — while the
+field is not in the index at all.
+
+| Rule | What it means in the file |
+|---|---|
+| **`Field/@Source` takes the raw database COLUMN name; `Copy/@Sources` takes index field SYSTEM names.** Two different namespaces on two neighbouring elements | The builder fills each `IndexDocument` straight off its own `SELECT *` using `IDataRecord.GetName()`, so a document key is the column name (`AccessUserCustomerNumber`), while a copy field composes already-named index fields (`CustomerNumber`). A wrong `Source` drops the field silently: no exception, nothing in `Files/System/Log`, nothing in the build status. The shipped `Products.index` teaches the wrong rule by accident, because its `Source` values (`ProductName`, `ProductNumber`, `ManufacturerName`) are valid as *both* a column name and a system name |
+| **A `Copy` field may declare `Analyzer` and `Boost`, exactly like a direct `Field`** | `IndexHelper.FillIndexWithSchema` reads `Type`, `Name`, `SystemName`, `Analyzer`, `Boost`, `Indexed`, `Stored`, `Analyzed` and `Facetable` off the XML, and `CopyFieldDefinition` derives from `FieldDefinitionBase`. This is the shape a boosted exact-match search field relies on: an **analysed** copy field over the identifier columns, carrying its own high boost |
+| **`Skip*` settings are read at BUILD time and live on the `<Build>` nodes** | `SkipOrderhistory`, `SkipPrices`, `SkipStock` and their siblings sit on the `<Build>` nodes inside one `<Builds>` element — **not** on the two `<Instance>` nodes, which is where people look first and which carry no settings at all. Because the builder consumes them, flipping one and running a single Full build republishes the field into every instance of a live index **with no app-pool restart**: on 10.28.x the worker process was untouched across the change. Budget a Full build, not a deploy window |
+| **An `<Extension>`-declared field cannot be overridden from the file** | The platform schema extenders (`ProductIndexSchemaExtender`, `UserIndexSchemaExtender`) declare their fields with their own `stored`/`indexed` flags, and field configuration in the `.index` does not override them — the builder writes what the extender declares. Design around the extender's field list rather than trying to reshape it |
+| **A custom product field reaches the index as stored payload, not as a predicate** | Declaring it as a `Field` or a `Copy` does not make it filterable — see ["Fields that are declared but never populated"](query-expressions.md#fields-that-are-declared-but-never-populated) for the full rule and the check that catches it before a paragraph is built on one |
+| **`<Index Name>` includes the `.index` extension** | Covered above under the Name-attribute gotcha; the same value is what every build surface wants |
+
+**`BoughtWithProducts` is a query field, not a ViewModel member.** Turning `SkipOrderhistory` off and
+running a Full build genuinely publishes it into every instance — but no `ProductViewModel` member
+exposes it, and the shipped consumers all emit a hidden `BoughtWithProductIds` form input, i.e. they
+feed a repository **query parameter** and need a Product Catalog surface to run that query. The field
+is designed to be searched, not read, so the flag is necessary and not sufficient: plan the second
+catalog surface in the same breath, or compute the co-occurrence over the order lines directly, which
+is the same source data the field is derived from.
+
+**Assert an index schema against the Lucene DIRECTORY, never against the API.** Open the instance
+directory read-only with the site's own Lucene.Net and enumerate `MultiFields.GetFields`; that is the
+only probe that sees what the index really holds. Through the API the two states are
+indistinguishable: `IndexDocumentsByInstance` never shows a `stored="false"` field either, so "the
+field is missing" and "the field is not stored" read identically, and an audit through that verb
+under-reports the schema in both directions. A field-count assertion off the directory (`51` indexed
+fields where the schema declares 51) is the cheap standing form.
+
+**There is no backend free-text or wildcard search setting to configure on 10.28.x.**
+`GlobalSettings.config` carries no free-text or wildcard key, and the shipped assemblies expose no
+search-behaviour key under `/Globalsettings/Ecom/...` — the only indexing keys are
+`Ecom/Indexing/DoNotStoreDefaultFields` and `Ecom/Indexing/DoNotAnalyzeDefaultFields`, which are
+index-build flags. An acceptance criterion written against "Areas > Products > Advanced configuration
+> General free-text search options" cannot be met; record it as not-applicable and tune relevance
+through analyzers and field boosts in the `.index` instead.
+
+## The user index publishes a password hash and the whole impersonation graph
+
+`UserIndexSchemaExtender` is the shipped schema every user index is built on, and two facts about
+its field list decide how a user repository may be used.
+
+**Every user document carries `UserPassword` — the complete hash from `AccessUserPassword`, stored
+and indexed — and there is no switch.** The field comes from the extender, not from the `.index`, so
+file-level field configuration does not remove it. A built user index therefore places one
+offline-crackable hash per account in `Files/System/Indexes/<Repo>/...` — under the web root, on the
+same volume as the file area, and readable through Admin API `IndexDocumentsByInstance`. Consequences
+to apply whenever a user index is stood up:
+
+- **Treat `Files/System/Indexes` as sensitive** on any solution that has one: it is routinely backed
+  up, synced to a staging environment, and shipped alongside a database copy. Mitigation today is
+  environmental (directory ACLs, excluding the index folder from copies), not configurable.
+- **Verify the index files are not web-reachable** — on a stock install every `/Files/System/...`
+  path answers 404 anonymously; assert that rather than assume it, and re-assert after any change to
+  static-file handling.
+- **A template over user documents names the fields it renders.** Never loop a document and emit
+  what it holds: the hash is in the same document as the display fields.
+
+**The extender also publishes the impersonation graph, both directions, group-expanded — and it is
+queryable.** The impersonator's document carries `CanImpersonate`, the target's carries
+`CanBeImpersonatedBy`, each already expanded through group inheritance by the builder. Both are
+**numeric** fields, so a permission-scoped user picker is one query arm (`In` against
+`CanBeImpersonatedBy` with the acting user's id plus the granting group ids) rather than an unscoped
+read post-filtered in Razor. Two things to know before building on it:
+
+- **Numeric fields need a typed right-hand side** — `System.Int32` / `System.Int32[]` — or the arm
+  matches nothing and fails closed. The rule and the diagnostics are in
+  [`query-expressions.md`](query-expressions.md#a-numeric-predicate-needs-a-typed-constant).
+- **A group-held grant reaches only the members of the granted groups.** An impersonator who also
+  holds direct user rows sees strictly more than another member of the same group does. The admin UI
+  cannot show that asymmetry; the index can, so measure the scope per acting identity rather than
+  reasoning from the group grant.
 
 ## MCP product query payload contract
 
@@ -79,7 +160,10 @@ Canonical shape (dashboard-backing queries go in the Shared tree — see locatio
 
 Hard constraints:
 - `sourceIndex` is `RepositoryName|IndexName` — a pipe, no spaces (discover valid values via `get_product_queries`). **It also names the index a rebuild must target**: a convenience "build the product index" surface builds its own default pair, not this one ([`query-expressions.md`](query-expressions.md) "Build verbs")
-- every `value` is a string; `IsEmpty` uses `value: ""`
+- every `value` is a string; `IsEmpty` uses `value: ""` — and **assert the row count of any `IsEmpty`
+  arm**, because the operator can parse and match nothing on the Lucene provider
+  ([`query-expressions.md`](query-expressions.md#operators-what-the-enum-implies-vs-what-matches)); a
+  backlog query that reads zero is as likely to be inert as it is to be satisfied
 - **exactly one item in `groupExpressions` — a second group is not preserved.** Later groups' conditions are merged into the root `And` and their own `operator`/`negate` are dropped, so an intended OR-list or NOT-group is written as a flat `And` and returns 0 rows with `success: true`. Anything with alternation or negation goes through the expression-replacement surface that takes a real tree ([`query-expressions.md`](query-expressions.md) "Authoring expressions")
 - `folderPath` — the virtual path above is the shape that has been validated on a local install. **On at least one cloud host the same verb requires the server-side ABSOLUTE filesystem path and silently no-ops on anything else** (answering `ok`, persisting nothing). Whichever form you pass, read the query back by name before treating the create as done; that assert is what makes the difference invisible
 - the MCP model supports only **constant** test values — for Parameter, Macro, Term, or Code test values, say so explicitly and recommend the Dynamicweb admin UI
@@ -224,13 +308,34 @@ facet with exactly one enormous checkbox, which a presence assert passes. Assert
 count per facet and the product count behind at least one filtered URL. Not corruption, by the way:
 Swift wraps a facet value containing a comma in brackets, `value="[Controls, Steering &amp; Seat]"`.
 
-## The Files index needs `Files\Digital assets` to exist
+## The Files index: `StartFolder` is the library, and keywords live in the file
+
+**The index's `StartFolder` IS the asset library.** A Files index rooted at
+`Files/<StartFolder>` indexes that folder recursively, and the shipped asset-library page is a Query
+Publisher paragraph over the repository's `.query` + `.facets` with two axes: `DirectoryRelativePath`
+and `IPTCKeywords`. So the **folder names are the primary facet** — name the folders the way a reader
+should see them (`Brand logos`, `Equipment photography`, `Sell sheets`), because that list is the
+facet list.
+
+**Keyword metadata has no row in the database — the index reads it out of the file.** `Files.index`
+maps `IPTCKeywords` from the source `IPTC|Keywords`, and on 10.28.x `INFORMATION_SCHEMA` carries no
+file-metadata table at all. The durable home for a DAM keyword is therefore the binary: write a
+Photoshop 3.0 IRB into an APP13 JPEG segment — identifier `Photoshop 3.0\0`, 8BIM resource type
+`0x0404` (IPTC-IIM), IIM record `2:25` (Keywords) written **once per keyword**, each value
+even-padded — then rebuild the Files index. That one write satisfies both surfaces: the Lucene facet
+renders live options, and the asset-detail offcanvas IPTC panel populates, because it reads back
+through `Dynamicweb.Imaging.Image.GetMetadataFromFile`. Take a negative control first (before the
+write the keyword facet has zero options while the folder facet is fully populated), so a rebuild
+that addressed nothing cannot be mistaken for a metadata failure.
+
+**PNG carries no IPTC**, so a PNG-only folder can never have keyword options — which is the second
+reason the folder facet has to be the primary axis and keywords the secondary one.
 
 On a fresh clone the Files index build fails outright with `Directory 'Files\Digital assets' does not
 exist`, and the whole index goes to error / "no healthy instance", which then reads as a broken
-repository. The builder requires the directory; a fresh clone does not ship it. Precreate it before
-the first build (`mkdir "Files/Digital assets"`), or scope the build to the repositories the demo
-actually serves. Two rebuilds are needed afterwards, because index instances build one at a time: each
+repository. The builder requires the `StartFolder` directory; a fresh clone does not ship it.
+Precreate it before the first build (`mkdir "Files/Digital assets"`), or scope the build to the
+repositories the demo actually serves. Two rebuilds are needed afterwards, because index instances build one at a time: each
 `BuildIndex` call rebuilds only the currently-offline instance and then swaps, so a two-instance index
 reports a partial state until the second call. Gate on `GET /Admin/Api/IndexStatusesAll` reporting
 success / "All instances are fine" per repository, never on the `BuildIndex` response.

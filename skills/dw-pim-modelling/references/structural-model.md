@@ -12,6 +12,7 @@ Deep field-validated knowledge for Dynamicweb 10 PIM structural modelling. Getti
 - [2.8 Product Categories + Fields (data model internals)](#28-product-categories--fields-data-model-internals)
 - [Range category fields are half-implemented: do not model a demo attribute as one](#range-category-fields-ecomfieldtype-25-are-half-implemented-do-not-model-a-demo-attribute-as-one)
 - [2.10 Assets](#210-assets)
+- [2.11 Stock units — a per-location attribute needs a per-location home](#211-stock-units--a-per-location-attribute-needs-a-per-location-home)
 - [2.12 Dynamic Workspaces — projections, not storage](#212-dynamic-workspaces--projections-not-storage)
 - [Standard ProductField inventory — audit before creating customs](#standard-productfield-inventory--audit-before-creating-customs)
 - [Recovery recipe: collapse a custom field back into its standard](#recovery-recipe-collapse-a-custom-field-back-into-its-standard)
@@ -56,6 +57,18 @@ So in the admin tree, a `ShopType=1` Shop and a `ShopType=3` Channel sit side-by
 - Admin distinguishes the product's "Groups/Channels" tab vs "Data Models" tab by filtering on parent shop's `UsageType`: Shop/Channel → Groups tab; DataStructure → Data Models tab. Cite `Dynamicweb.Products.UI/Queries/ProductGroupRelationsByProductIdQuery.cs:38` — `return usageType is ShopType.Shop or ShopType.Channel;` — and the mirror `Dynamicweb.Products.UI/Queries/ProductRelationsByProductIdQuery.cs:40` — `return usageType is ShopType.DataStructure;`. A "PIM-only" product (relations only to ShopType=4 groups) therefore renders an empty Groups/Channels tab — that's the visible signal that nothing is published.
 - **Every group needs an `EcomShopGroupRelation` row, SUBGROUPS INCLUDED. DW resolves a group to its shop through that table and does NOT walk the parent chain.** A subgroup created with MCP `save_groups {name, parentGroupId}` and no `shopId` gets its `EcomGroupRelations` parent row and no shop relation, and the result is a branch that renders but resolves zero products: navigation walks `EcomGroupRelations` so the tree still shows the group, the PLP page returns 200 with the right `h1`, `ProductCatalogGroupById` on it returns `shopId: null`, `ProductsByGroupId` returns `totalCount 0` for a product whose `EcomGroupProductRelation` row demonstrably exists, and the product index writes no `ParentGroupIDs` for it. It is not a cache: measured surviving an `app_offline` recycle plus a Full index rebuild. **Pass `shopId` AND `parentGroupId` in the same `save_groups` call**, then assert the relation: a healthy tree carries one `EcomShopGroupRelation` row for every group (18/18 child groups on a reference install). A missing row on a group whose products all render is the separate "channel with no name" display fault.
 - **Every group needs `GroupType` set explicitly.** NULL defaults to 0 (Common) — data models not set to 2 will appear as catalog groups.
+- **`GroupType` is the ONLY discriminator, and the MCP group reads do not return it.** A
+  `GroupType=2` DataModel group is indistinguishable from a `GroupType=0` catalog group by every
+  surface an inventory would use: it is attached to a shop, it comes back from MCP `get_groups` /
+  `get_subgroups` exactly like a Common group, it holds `EcomGroupProductRelation` rows exactly like
+  a Common group, and it may carry the same display name as a real category (one solution had the
+  same category name on both trees). MCP `get_group_by_id` omits `GroupType` entirely, so a
+  "duplicate legacy tree" label derived from those tools can point straight at the data-model tree,
+  and deleting it un-assigns the data model from every product that carries it. **Read `GroupType`
+  before any group-tree audit, cleanup or deletion** — from `EcomGroups` by `SQL` where no higher
+  surface reports it (a read, local install only, no cache debt), or by reconstructing the tree from
+  the MCP `create_data_models` contract, which states the folder/model/dataset shape. Refuse to
+  proceed on any group whose `GroupType` is 1, 2 or 3 without explicit PIM sign-off.
 - **Every DataModel group needs `ProductCategoryId`** pointing at a CategoryFields category — that's how field values get plumbed to the product.
 - **A data set (`GroupType=3`) stores only its DELTAS from the parent data model's defaults.** The data model above it carries Details-tab default values in `EcomProductCategoryFieldGroupValue`; the data set inherits those, and `DataSetGroupSave` persists only the fields whose value DIFFERS from the inherited default. Measured: 8 values posted to a data set under a data model carrying 5 defaults stored 4 rows, and a second identical save produced the same 4. This is correct behaviour that reads exactly like a failed save, so **an assertion counting stored data-set values must expect (values posted MINUS values equal to the parent default)**. The create is also two-step: `DataSetGroupSave` with `CategoryId` set returns the id, and only a re-read through `DataSetGroupById` exposes the category fields to fill. `DataSetGroupNew` returns an EMPTY `categoryFields` collection because `CategoryId` is not set yet.
 
@@ -137,6 +150,12 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
 
 ### 2.8 Product Categories + Fields (data model internals)
 
+- **`EcomProducts.ProductId` is `NVARCHAR(30)`; `ProductNumber` is `NVARCHAR(255)`.** A
+  business-key-as-product-id plan therefore has a hard 30-character ceiling that the product number
+  does not share, and **no layer validates it before the write** — the failure surfaces as a
+  truncation error inside a bulk import run, not as a validation message. Enforce the length in
+  whatever mints the id (the generator, the XSL, the mapping) before the payload reaches the import,
+  and keep the long business key on `ProductNumber`.
 - **Category** = row in `EcomProductCategory` + translation row in `EcomProductCategoryTranslation`. Categories are SOLUTION-GLOBAL — not scoped to shops.
 - **Fields on a category** = rows in `EcomProductCategoryField` + translations in `EcomProductCategoryFieldTranslation`.
 - **`reference_category` is load-bearing and easy to miss** — the hidden template category that powers every admin completeness/rule lookup, plus its blank-panel gotcha and seed SQL, lives in [dw-pim-completeness](../../dw-pim-completeness/references/rules-and-dashboards.md).
@@ -239,11 +258,37 @@ otherwise), and gate on the post-build repair after every index build.
 - Files live in `wwwroot/Files/Images/...` (or any `/Files/` subfolder).
 - Product asset record = `EcomDetails` row:
   - `DetailProductId`, `DetailVariantId`, `DetailLanguageId`, `DetailType=0` (image), `DetailValue=<file path>`, `DetailIsDefault` (primary), `DetailsGroupId` (asset category numeric id — check `EcomDetailsGroup`)
-- Asset categories = `EcomDetailsGroup` table. Default installs ship with at least `Images` (id=1). New categories (e.g. `Manuals` for PDFs) are SQL-only — no MCP tool exists for `EcomDetailsGroup` mutations. Insert into both `EcomDetailsGroup` (set `DetailsGroupExtensions` to filter file types, e.g. `'pdf'`, and `DetailsGroupDefaultUploadFolder` to the target path) AND `EcomDetailsGroupTranslation` (one row per language).
+- Asset categories = `EcomDetailsGroup` table — **not `EcomAssetCategory`, which does not exist on this
+  platform.** A stock solution ships exactly two groups, `Images` and `Documentation`, and **there is
+  no per-document-type category**: the difference between a spec sheet, a safety data sheet, a
+  warranty and an installation guide lives only in the free-text `EcomDetails.DetailsName` on each row
+  inside the single `Documentation` group. So a documents tab that promises a **type** column derives
+  it from the asset's own name and says so; a tab built by iterating asset categories renders at most
+  two sections whatever the specification asked for. Either mint the extra categories deliberately, or
+  design the surface around names — do not assume the categories are there. New categories (e.g.
+  `Manuals` for PDFs) are SQL-only — no MCP tool exists for `EcomDetailsGroup` mutations. Insert into both `EcomDetailsGroup` (set `DetailsGroupExtensions` to filter file types, e.g. `'pdf'`, and `DetailsGroupDefaultUploadFolder` to the target path) AND `EcomDetailsGroupTranslation` (one row per language).
 - MCP tools `add_product_image` / `import_product_images_from_urls` / `upload_product_images` handle both download-to-disk + DB row. **Plugin-only — no Management API endpoints back these.** They live entirely in the MCP plugin code path; if the MCP session dies (token expiry, plugin restart, host restart) there is no `POST /admin/api/...` fallback for asset registration. The fallback is direct SQL INSERT on `EcomDetails`.
 - **`import_product_images_from_urls` does NOT set a default image** — it registers the `EcomDetails` rows with `DetailIsDefault=0` on all of them. A product then has images-but-no-default, and that is a **frontend-breaking** state, not a cosmetic one: the Swift card template **NREs on a product with images but no default**, and because the PLP renders cards in a loop, one such product **degrades the WHOLE product-list page** (the list throws, not just that one card). After any `import_product_images_from_urls` run, set a default: `UPDATE EcomDetails SET DetailIsDefault=1 WHERE DetailProductId=<id> AND DetailLanguageId='LANG1' AND DetailValue=<chosen path>` (exactly one default per product/variant/language), then flush/restart. Make "a DEFAULT image is set" a per-product verification gate for exactly this reason.
 - **Bulk SQL INSERT must set `DetailLanguageId` to a real language code** (e.g. `'LANG1'`), not empty string and not NULL. The admin asset query and the per-product image listings filter strict-equality on this column, so empty-string language renders the row invisible despite being on disk and registered. Symptom: SQL count says 9 details for the product, admin product page shows 0 assets, file is at the path. Recovery: `UPDATE EcomDetails SET DetailLanguageId = 'LANG1' WHERE DetailLanguageId = '' OR DetailLanguageId IS NULL;` then host restart to flush asset caches. The MCP tools always populate this column correctly — this gotcha only fires when bulk SQL inserts skip the field.
 - After bulk SQL inserts, **restart the host** to flush the `EcomDetails` cache (the same restart-after-SQL protocol that product mutations require).
+
+### 2.11 Stock units — a per-location attribute needs a per-location home
+
+`EcomStockUnit` is the per-(product, stock location) row, and it is the **only** place a per-location
+attribute can live. The two homes a specification usually proposes for one are both impossible:
+
+- `EcomStockUnit.StockUnitExpectedDelivery` is a `DATETIME` — it carries the date an inbound
+  replenishment arrives and cannot carry its quantity.
+- A product custom field is **per product**, so it cannot differ per location; a single value there
+  silently means "the same everywhere", which is the opposite of what a per-location figure claims.
+
+So an inbound quantity (or any other per-location number) needs a per-location column on
+`EcomStockUnit`, or an equivalent custom table keyed the same way — an `ALTER TABLE` on a local
+install, with the host restarted afterwards to flush the stock caches, because no MCP tool or
+Management API verb extends that table. Two follow-on facts worth deciding before the column is
+added: the delivery API projects the whole `stockUnits[]` collection per product, and the
+platform's own stock resolution defaults to the **first** stock unit, so a storefront row that
+should show the signed-in user's own location needs its own resolution step rather than the default.
 
 ### 2.12 Dynamic Workspaces — projections, not storage
 
@@ -389,6 +434,17 @@ DW10 ships ~50 standard `ProductField` system names, hardcoded in `dw10source/sr
 
 1. **Exact-name duplicate.** A custom `EcomProductField` row with `ProductFieldSystemName` matching a standard (e.g. `ProductWeight`, `ProductHeight`, `ProductWidth`, `ProductDepth`, `ProductVolume`, `ProductEAN`) causes two definitions of the same field. Edit screens and field-picker UIs may render twice; some lookups pick the first by autoid (unpredictable across solutions). Always pure duplication, never useful.
 2. **Alias duplicate.** A custom field with a *different* SystemName but storing the same semantic value (e.g. `g_ean` next to standard `ProductEAN`; `g_weight_kg` next to `ProductWeight`; `g_height_cm` next to `ProductHeight`). Splits data across two columns. Completion rules, feeds, and integrations have to pick one — usually pick the custom (since that's why it was added) — and the standard column appears empty. BC connector and most off-the-shelf integrations key off the standard, so the data silently never reaches them.
+
+**A standard field is a COLUMN on `EcomProducts`, not an `EcomProductField` row — and the MCP
+custom-field path cannot write one.** MCP `get_standard_fields` lists them all, which reads as a list
+of writable targets and is not: `patch_products_safe` with `customFields: [{ id: "ProductEAN" }]`
+fails every row with `No ProductField or ProductFieldValue based on the given system name`, because
+that path resolves through the product-field tables, and `update_products` exposes no property for it
+either. **The reachable write is a read-modify-write on the Management API**: `GET
+/Admin/Api/ProductById?id=<id>&languageId=<lang>` returns a model that does carry the scalar (`ean`),
+set it and `POST /Admin/Api/ProductSave`. It is a whole-entity save, so send the model you read, and
+verify on the row afterwards — a correct run diffs only `ProductUpdated`. Same shape for the other
+`EcomProducts` scalars the MCP model omits.
 
 **Preflight rule (do this BEFORE creating any custom field):**
 

@@ -93,12 +93,14 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 |---|---|
 | How a demo build is **driven** — GSD vs the native `/demo:*` commands, `--standalone`, the strictness gradient, acceptance criteria | references/orchestrator.md |
 | Verify a fresh machine is build-ready (incl. the MSDTC check behind AreaCopy `TransactionException`s) | references/setup-checks.md |
+| **Audit a restored or copied database for orphaned shop/group relation rows** before trusting any group-tree inventory | references/setup-checks.md §2b |
 | **Build on, or publish onto, a hosted/cloud install** (URL + Admin API key only — no scaffold, no SQL; the session-start probe, the Management API recipe pack, lying-success verification, the flush-then-restart ladder, inherited-clone remediation; and for a publish: pre-flight, transport map, id collisions, index rebuild) | **[`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)** |
 | Ask the demo's DW10 + Swift versions; clone/resolve the Distribution per-demo | references/setup-checks.md (versions prompt) + references/scaffold.md §5 |
 | Scaffold the project | references/scaffold.md |
 | **Pin the platform** for a Distribution-validating scaffold (why floating `10.*` fails sideways); the DB-wizard "Login failed" race | references/scaffold.md §2.2 + §3 |
 | **Start / stop / restart the demo host** — durable `Start-Process` recipe, ownership-verified stop, flush-first ladder, `--framework` / `$pid` / apphost-exe launch traps | references/host-lifecycle.md |
 | Get MCP working (and verify it); understand the two-layer TLS bypass | references/mcp-setup.md |
+| **Upgrade a package the host csproj already references** — and recover a site 500ing on duplicate type keys after an Add-in-manager install | references/mcp-setup.md ("Upgrade a package where it is already referenced") |
 | Install Browser MCP (`@playwright/mcp`); recover from browser-launch errors | references/browser-automation.md |
 | **Read a storefront screenshot critically** — programmatic defect detectors, the interaction pass, the eyeball checklist, symptom→fix routing, per-page definition of done | **references/visual-qa.md** |
 | **Sweep for real-person PII and vendor boilerplate** — whole-database string sweep, stock vendor legal copy, locale-shaped patterns. **Blocking pre-demo leg**, hardest on a cloned host | **references/pii-sweep.md** |
@@ -186,7 +188,7 @@ Ephemeral build evidence (QA screenshots, host logs, Playwright DOM/a11y dumps) 
 
 Three rules, owned in full by [references/pii-sweep.md](references/pii-sweep.md) — read it before any demo is shown, published, screenshared or handed over:
 
-1. **Renaming the user rows fixes nothing.** Order snapshots, address rows, token labels, log text and JSON merge-field snapshots each hold an independent copy. Enumerate by scanning **every string column**, classify by **sampling the values** (not by table name), fix, then **re-scan** — fixing one layer exposes the next.
+1. **Renaming the user rows fixes nothing.** Order snapshots, address rows, token labels, log text and JSON merge-field snapshots each hold an independent copy. Enumerate by scanning **every string column**, classify by **sampling the values** (not by table name), fix, then **re-scan** — fixing one layer exposes the next. **Crawl the rendered corpus signed in as each persona**, customer-centre order pages included: the order-time identity snapshot is invisible to a user-table check and to an anonymous crawl alike.
 2. **Sweep the stock vendor boilerplate too** — privacy / cookie / terms pages, corporate addresses, the email-recipient author list. De-brand the marketing and legal copy; keep genuinely technical vendor references accurate rather than inventing false identifiers.
 3. **A term-grep cannot find placeholder data containing none of your terms.** Add locale-*shaped* patterns (foreign dialling codes, foreign postcodes, registration-number formats) and keep the rendered-page eyeball pass as a **required** step.
 

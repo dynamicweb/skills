@@ -157,6 +157,17 @@ Once verification moves from ad-hoc `browser_evaluate` calls into a scripted pro
 
 **A viewport is not a device.** Dynamicweb selects the header server-side by **user-agent**, not by viewport, so `newContext({ viewport: { width: 390, height: 844 } })` with no descriptor is served the *desktop* document at phone width — same URL, ~5 KB smaller, the offcanvas-navigation marker absent, a 3-row 177px header whose clearance is correctly 1px. Four consecutive gate PASSes certified a mobile layout no phone user was ever served. Import `devices` from Playwright and **spread the descriptor into `newContext` before the explicit viewport**, so UA / `isMobile` / `hasTouch` / `deviceScaleFactor` come from the device while declared geometry still wins. Check the runner does not destructure only `vp.width` / `vp.height` — a `userAgent` added to the probe config is then silently dropped, so a config-only fix is impossible *and looks applied*.
 
+**Post a form the way the rendered form posts it — read its `enctype`.** A form that declares no
+`enctype` is posted by a browser as `application/x-www-form-urlencoded`, so a probe must send it that
+way (`curl --data-urlencode` per field). A multipart probe (`curl -F`) against such a form is read
+only as far as the sixth field on this platform: the request returns 200, the page renders with the
+later required fields reported missing, and nothing is written — an application that is behaving
+correctly, misdiagnosed as a validation bug, because a short-form smoke test passes and the lying
+starts at the seventh field. The reverse case is real too: Swift's cart-command flow genuinely is
+multipart and needs `-F`. So the rule is per form, from the markup, not per harness: **read the
+rendered `enctype` and match it.** Adding an `enctype` to the form to suit the probe changes correct
+application behaviour and is the wrong repair.
+
 **Assert the served artefact, not the setting requested.** Add a `ua-mode` probe: a phone-only DOM marker (Swift's offcanvas navigation) must be **present** at mobile and **absent** at desktop. A silent revert to a desktop UA then fails the leg loudly instead of quietly re-measuring the wrong document. Pair it with a positive control — a computed header-height assert that can only pass with the descriptor actually in play (84px with a real phone UA, 177px without).
 
 **Assert the relationship, never a hand-fitted token.** A clearance token carried the comment "measured against the live header" and was 94px wrong on every real phone: honestly measured, in a real browser, against the wrong document — then frozen into a number nothing could keep in sync with the thing it tracked. A geometry assert reading the *same* wrong document agrees with the wrong token perfectly. Assert `firstContent.top - header.bottom` within a band instead: a relationship is self-maintaining. Rejected alternatives — re-measuring the token more carefully (the next backend change invalidates it again silently), a file-bytes or CSSOM check (both see a perfectly healthy sheet; the rule parsed fine, it was fitted to the wrong page), and a second breakpoint (media queries cannot distinguish two documents served at the same width).
