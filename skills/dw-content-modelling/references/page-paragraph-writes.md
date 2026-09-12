@@ -198,11 +198,12 @@ to switch to. A `navigationTag` passed alongside is accepted, the call returns `
 is created — and `PageNavigationTag` stays empty. That matters more than it
 looks: Swift templates resolve service and form pages with `GetPageIdByNavigationTag("<tag>")`,
 which falls back to `0` and renders a link to `#`, so the page exists and the link goes nowhere.
-Create the page with `save_pages`, then read it back with `get_pages_by_ids` and check the navigation
-tag actually landed: an empty tag means the member was dropped, and setting it is an out-of-product
+Create the page with `save_pages`, then check the tag from the **frontend**: no page read in the
+0.4.4 tool set projects `navigationTag`, so the runnable assert is that the template link resolving
+through `GetPageIdByNavigationTag("<tag>")` points at the page instead of `#`. A link rendering as
+`#` means the member was dropped, and setting it is an out-of-product
 write ([dw-data-access](../../dw-data-access/SKILL.md) `recipes-content.md` §"Pin a page slug and
-set PageNavigationTag"). Assert the value rather than the call's status, and treat a template link
-rendering as `#` as the same finding seen from the frontend.
+set PageNavigationTag"). Assert the rendered link rather than the call's status.
 
 ## A `RichTextEditor` field drops empty lines on write
 

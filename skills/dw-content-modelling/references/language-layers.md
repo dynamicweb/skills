@@ -445,9 +445,10 @@ post-deserialize). The frontend 301-redirects to that stale id, which 404s.
 
 `PageShortCut` is on no MCP model and on no verb, so clearing it is an out-of-product operation —
 [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-content.md` §"Clear PageShortCut
-baseline cruft". From inside the product the symptom is identifiable without it: `get_page_by_id` on
-the 404ing page shows a page that exists and is active, and `fetch_frontend_page_html` on its URL
-comes back as a redirect to a page id that `get_page_by_id` cannot resolve. Page metadata is cached,
+baseline cruft". From inside the product the symptom is identifiable without it: a page read
+(`get_pages_by_parent_id` on its parent, or `get_pages_by_ids`) shows the 404ing page exists and is
+active, while `fetch_frontend_page_html` on its URL comes back as a redirect to a page id no page
+read resolves. Page metadata is cached,
 so the fix does not take until the host is recycled. Once the shortcut is gone, add content to the
 now-empty page or it renders as just header+footer.
 

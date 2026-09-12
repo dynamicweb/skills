@@ -72,7 +72,13 @@ the browser-side checks that catch a page passing every content assert are in
   `save_paragraphs`).
 
 **Read (inspect a page's structure & style):**
-- `get_page_by_id`, `get_pages_by_area_id`, `get_pages_by_parent_id` — the tree.
+- `get_pages_by_parent_id` (`parentId` + `areaId`), `get_pages_by_area_id` — the tree, and the
+  **page-metadata read** on MCP 0.4.4. `get_pages_by_ids` reads a known set of ids. There is no
+  single-page getter in the 0.4.4 tool set, so a step that needs one page's metadata reads the
+  parent's children and picks it out.
+  **Nothing in that projection carries `navigationTag`.** An assert on a navigation tag therefore
+  belongs on the frontend — render the page and assert the nav item or the resolved link — never on
+  a page read, and a step that cannot be written that way is dropped rather than left unrunnable.
 - `get_grid_rows_by_page_id` — the rows. **Returns only `DefinitionId` per row, NOT the
   columns** — join to `get_row_definitions` to learn the column layout.
 - `get_paragraphs_by_page_id` — paragraphs with their `GridRowId` + column + `ItemType` +
@@ -259,10 +265,18 @@ never by hand):
   (the service saves them into the backing group). Read before write: a submitted scheme's
   colors are fully overwritten (omitted colors nulled, custom colors cleared); other schemes
   in the group are untouched.
-- Shipped scheme ids: `light` (#FFF/#242424), `lightgrey1` (#ededed), `lightgrey2` (#f2f2f2),
-  `dark` (#242424/#fff), `darksubtle` (#575757), `primary` (#004fff/#fff — brand accent),
-  `secondary`. A given solution may rename/add these — `get_color_schemes` is the source of
-  truth; reference only ids it returns, and `save_color_schemes` a new one before using it.
+- Scheme ids are unique **only within their group**, and a solution commonly carries two groups.
+  Measured on a stock-plus-theme host: `get_color_schemes` returned both a `default` and a `swift`
+  group, each defining `light`, `lightgrey1`, `lightgrey2`, `dark`, `darksubtle`, `primary` and
+  `secondary`, with different colours behind the same ids (`primary` #004fff in one, #1F2933 in the
+  other). **`save_grid_rows` carries `colorSchemeId` and no group member**, so which palette a row
+  paints from is decided by the **area's** `colorSchemeGroupId`, not by anything the row carries.
+  So: read `get_color_schemes`, read `get_areas` for the area's `colorSchemeGroupId`, and choose
+  only from the schemes in THAT group. Copying an id out of the other group resolves, renders, and
+  paints a colour nobody chose — and a read-back of the row cannot reveal it, because the row only
+  stores the id. Changing which palette a page bands from is an **area-level** change, not a
+  row-level one. A given solution may also rename or add schemes — `get_color_schemes` is the
+  source of truth; `save_color_schemes` a new one before using it.
 - Typography (`Typography/fonts.json`, default font **Inter**, modular scale 1.333) and
   Buttons (`Buttons/buttons.json` — Shape/border/padding; button *colors* come from the
   scheme, not here) are single objects.

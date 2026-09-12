@@ -74,7 +74,10 @@ once up front:
 3. Create the page **once**. Check it doesn't already exist (`get_pages_by_parent_id`, passing `parentId` + `areaId`) before
    creating; on a multilingual site build on the master layer. Re-running blindly creates
    duplicate pages.
-4. **Read ONE existing well-built page as your format reference** — a front page or a similar
+4. **Read ONE existing well-built page as your format reference** — reached through
+   `get_pages_by_parent_id`, which is the page-metadata read on MCP 0.4.4 (there is no single-page
+   getter in that tool set, and no page read projects `navigationTag`; assert a navigation tag on
+   the render instead) — a front page or a similar
    page in this solution. `get_paragraphs_by_page_id` then `get_item_field_values` on one
    instance of each component type you plan to use, and `get_grid_rows_by_page_id` for the
    row settings a real designer used here. Copy those value shapes verbatim. This is the
@@ -149,7 +152,10 @@ you cannot invent CSS or custom layout the tools don't expose (see the ceiling i
    (→ `3Columns`/`4Columns` of `Card`/`Feature`)? image-beside-text (→ `2Columns_8-4`)? a
    quote (`Blockquote`)? an FAQ (`Accordion`)? a CTA bar (`Button`)? Map each band to a
    (layout `DefinitionId` + component + variant) from the vocabulary.
-2. **Read the palette.** Pick the per-row `ColorSchemeId` that matches each band's background
+2. **Read the palette — from the area's group.** `get_color_schemes` can return the same ids in two
+   groups with different colours, and `save_grid_rows` has no group member, so choose only ids that
+   exist in the group `get_areas` reports as the area's `colorSchemeGroupId` (details in
+   `dw-swift-page-blocks`). Pick the per-row `ColorSchemeId` that matches each band's background
    (light bands → `light`/`lightgrey1`/`lightgrey2`; dark/accent bands → `dark`/`primary`).
    If the brand colors differ from the shipped schemes, propose a `save_color_schemes` update
    to the `swift` group (read it first — saves are full overwrites) rather than forcing an

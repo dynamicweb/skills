@@ -7,7 +7,7 @@
    "mcpVersion": "0.4.4-BETA",
    "platform": "Dynamicweb 10.28.x",
    "toolCount": 604,
-   "note": "the FullAccess tool set of MCP 0.4.4 as returned by tools/list. A key with narrower permissions lists a subset, so a name missing from a running server is a permission question before it is an existence question. This is the primary truth for 0.4.4."
+   "note": "the FullAccess tool set of MCP 0.4.4 as returned by tools/list. A key with narrower permissions lists a subset, so a name missing from a running server is a permission question before it is an existence question. This is the primary truth for 0.4.4. It serves the PLURAL batch getters (get_pages_by_ids, get_products_by_ids, get_users_by_ids) and registers no singular by-id getter for pages, products or users."
   },
   "mcp-0.4.x-narrow": {
    "mcpVersion": "0.4.x",
