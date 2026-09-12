@@ -53,9 +53,11 @@ and repository side.
 ## Authoring a `.index` file — the rules no API surface reports
 
 The `.index` is XML on disk under `Files/System/Repositories/<Repo>/`, and **the filesystem is the
-only surface that authors it** — no Management API verb and no MCP tool writes an index schema. Edit
-the file directly on a local install; on a hosted install reach it through the admin file manager or
-a multipart `POST /Admin/Api/Upload`. Every rule in this table is invisible from the read surfaces:
+only surface that authors it** — no Management API verb and no MCP tool writes an index schema. That
+path is inside the file archive, so write it with `upload_file` and read it back with `read_file`;
+the admin file manager is the same edit from a screen. Outside the product, on a host whose archive
+is not mounted, see dw-data-access `recipes-search.md` §Getting an authored `.index` file onto a
+hosted install. Every rule in this table is invisible from the read surfaces:
 `BuildIndex` answers `{"status":"ok"}`, `IndexStatusesByRepository` answers "All instances are fine",
 and `FieldDefinitionBasesByRepositoryAndIndexName` lists the field exactly as declared — while the
 field is not in the index at all.

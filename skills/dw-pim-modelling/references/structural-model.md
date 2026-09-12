@@ -440,11 +440,10 @@ custom-field path cannot write one.** MCP `get_standard_fields` lists them all, 
 of writable targets and is not: `patch_products_safe` with `customFields: [{ id: "ProductEAN" }]`
 fails every row with `No ProductField or ProductFieldValue based on the given system name`, because
 that path resolves through the product-field tables, and `update_products` exposes no property for it
-either. **The reachable write is a read-modify-write on the Management API**: `GET
-/Admin/Api/ProductById?id=<id>&languageId=<lang>` returns a model that does carry the scalar (`ean`),
-set it and `POST /Admin/Api/ProductSave`. It is a whole-entity save, so send the model you read, and
-verify on the row afterwards — a correct run diffs only `ProductUpdated`. Same shape for the other
-`EcomProducts` scalars the MCP model omits.
+either. Read the current value with `get_product_by_id`, which does carry the scalar; the write is
+the product edit screen's own field, and the same holds for every other `EcomProducts` scalar the MCP
+model omits. Outside the product: see dw-data-access `recipes-pim.md` §Writing a standard
+`EcomProducts` scalar the MCP model omits.
 
 **Preflight rule (do this BEFORE creating any custom field):**
 

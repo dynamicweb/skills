@@ -147,11 +147,11 @@ reliable order:
 real repository index file is `Products.index` — so the default addresses a nonexistent index and
 **succeeds vacuously**: `wait_for_product_index` answers `{"completed":true,"message":"Full index
 build completed"}` with the index untouched, and the status comes back `{"status":"Idle"}` carrying
-no `documentCount` and no `lastBuild`. The same wrong name through Management API
-`/Admin/Api/BuildIndex` at least answers not-found, which is why a build that "worked" through MCP and
-changed nothing is worth re-running on the API before suspecting the schema. **A status with no
-`documentCount` means the tool addressed nothing** — gate on the document count, never on
-`completed:true`. With the file name passed, both Lucene instances rebuild and the status carries a
+no `documentCount` and no `lastBuild`. **A status with no `documentCount` means the tool addressed
+nothing** — gate on the document count, never on `completed:true`; that is the whole in-product
+detection, and it fires on the very first build. A build that "worked" and changed nothing can also
+be confirmed from outside the product, where a wrong index name answers not-found instead of
+succeeding: dw-data-access `recipes-search.md` §Re-running an index build on the Management API. With the file name passed, both Lucene instances rebuild and the status carries a
 document count and `indexState Success`.
 
 `build_product_index` handles the already-running case gracefully — it will not start a second

@@ -81,28 +81,34 @@ different one, and the result is empty unit names on the PDP and MCP `get_stock_
 measured before and after exactly that fix, with the same empty result both times.
 
 **So author or migrate those rows under the site's live default language rather than relying on
-cross-language fallback.** Establish which layer that is (`SELECT LanguageId FROM EcomLanguages WHERE
-LanguageIsDefault = 1`) before writing anything, then write through the verb that owns the object
-where one exists — MCP `save_unit_translation`, `save_group_translations`, `set_option_translations`,
-`save_country_translation` and the rest of the chrome table below. `EcomDetailsGroupTranslation` has
-no verb on 10.28.x, so asset-category names are a SQL insert (local install only; restart the host
-afterwards to flush the ecommerce caches). Re-run the empty-string probe on the rendered surface to
-confirm.
+cross-language fallback.** Establish which layer that is with MCP `get_languages` — the row flagged
+default is the only one the fallback reads — before writing anything, then write through the tool
+that owns the object: `save_unit_translation`, `save_group_translations`,
+`set_option_translations`, `save_country_translation` and the rest of the chrome table below. Re-run
+the empty-string probe on the rendered surface to confirm; the row is not proof, the render is.
+
+`EcomDetailsGroupTranslation` is the one exception — asset-category names have no tool and no verb on
+10.28.x, so in product they are an admin-screen edit under the product's asset categories. Outside
+the product: see dw-data-access `recipes-pim.md` §Asset-category names.
 
 ### A missing translation is never an error — and each view model hides it differently
 
-Nothing reports a missing translation row, and the delivery API's fallbacks differ **within one
-response**, so a name that looks right can mean the row is absent:
+Nothing reports a missing translation row, and a view model's fallback can hand back a plausible
+name for a row that does not exist. Two fallbacks worth knowing by heart:
 
-| Surface | What a missing row returns | Consequence |
-|---|---|---|
-| `assetCategories[].name` (`/dwapi/ecommerce/products/{id}`) | the **SystemName** — the view model is SystemName-derived on this build and never consults `EcomDetailsGroupTranslation` | asking for a language with zero translation rows in any layer still returns a plausible English name, so this endpoint **cannot verify an asset-category translation** |
-| `relatedGroups[].name` | the **raw id** (`{"id":"<RELGROUPID>","name":"<RELGROUPID>"}`) | a name equal to the id is a missing-row signal, not a label |
+- **An asset-category name falls back to its SystemName.** The view model is SystemName-derived on
+  this build and never consults `EcomDetailsGroupTranslation`, so asking for a language with zero
+  translation rows in any layer still returns a plausible English name. **No read that goes through
+  that view model can verify an asset-category translation.**
+- **A related-group name falls back to the raw id** (`{"id":"<RELGROUPID>","name":"<RELGROUPID>"}`).
+  A name equal to the id is a missing-row signal, not a label.
 
-Verify an asset-category translation by reading `EcomDetailsGroupTranslation` directly, or by
-rendering one of the templates that actually call `DetailsGroup.GetName()`. Make the two checks
-standing assertions: every group referenced by a live product has `name != id`, and every
-`EcomDetailsGroup` has a row in the default language before any surface trusts `assetCategories[].name`.
+So verify an asset-category translation by rendering one of the templates that actually call
+`DetailsGroup.GetName()`, never by reading a name back off a product model. Make the two checks
+standing assertions: every group referenced by a live product has `name != id`, and every asset
+category has a translation row in the default language before any surface's name is trusted. The
+full per-field fallback table for the delivery API is in dw-data-access `recipes-pim.md`
+§Reading translations back off the delivery API.
 
 ## The admin-UI flow (what a human does)
 
