@@ -70,7 +70,7 @@ The config is a single flat `predicates: [...]` list with a per-entry `"mode"` f
 
 ### Verification
 
-After steps 1–2, restart the host. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
+After steps 1–2, restart the host — the restart is for the newly restored package, not for the config: on 0.9.0-beta `Serializer.config.json` is read on the request path, so later config edits need no recycle, only a `GET /Admin/Api/SerializerSettings` read-back. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
 
 ### Replace vs Merge (the predicate `mode` enum)
 
