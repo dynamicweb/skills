@@ -205,7 +205,17 @@ from the tool name is a coin flip:
 | Product-by-SKU | singular **`sku`** | `get_products_by_sku` |
 | Paragraph, module and grid tools | **`pageId`** or **`paragraphId`** | `get_paragraphs_by_page_id` and `get_grid_rows_by_page_id` take `pageId`; `get_paragraph_item_field_values` and `get_module_settings` take `paragraphId`. Passing `id` to any of them fails |
 
-**A name no server registers answers a second hintless shape** that reads like a permission problem:
+**An access denial is the FIRST symptom of a stale tool name, not of a scope problem.** That is the
+reading to reach for, because the alternative reading — the key is under-scoped — points at the one
+thing that cannot be the cause and costs a detour through credentials before anyone re-reads the name.
+Tool names get renamed between builds: one measured session found an entire step's chain of ten
+payment and shipping verbs absent because the family had been renamed to a `_method` suffix and the
+update verbs folded into bulk saves, and every one of them answered as a permission refusal on a
+FullAccess key that every other write in the same pass went through. **A tool chain copied from prose
+is stale until checked against `tools/list`**; regenerate it from the registry rather than from the
+document that carries it.
+
+A name no server registers answers this hintless shape:
 `"An error occurred invoking <tool>: Access denied. MCP configuration <name> is not allowed to call
 tool <tool>. Required permission: <p>. Allowed permission: none."` **`<p>` is whatever the tool
 DECLARES, not a statement about registration**, so the message shape settles nothing. Measured on one
