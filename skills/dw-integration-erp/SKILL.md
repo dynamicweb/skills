@@ -14,6 +14,7 @@ description: 'Configure ERP connectors and data ownership in Dynamicweb 10. Trig
 | Topic | Where |
 |---|---|
 | The field-level ERP↔PIM ownership split, customer-specific contract prices, what NOT to sync back to the ERP, sync direction as an ERP-side mapping choice, and the missing-mapping "connected but empty" stuck state | [`references/ownership-split.md`](references/ownership-split.md) |
+| Keying a feed so it updates the existing catalogue in place: which column the ERP's natural key maps to, when to decide on source-derived ids, group names as identity strings, the primary-group flag a run clears, and the casing fixes the shipped order-export template needs on 10.28.x | [`references/feed-keying.md`](references/feed-keying.md) |
 
 ## Integration Approaches
 
@@ -129,6 +130,21 @@ Standard order export flow:
 4. Activity reads the order and pushes it to the ERP via OData POST
 
 Alternatively, a scheduled task polls for orders in the target state and runs the export.
+
+Two things the order provider already does, so the subscriber above is often unnecessary:
+`ExportNotYetExportedOrders` + `ExportOnlyOrdersWithoutExtID` + `DoNotExportCarts` is the whole
+export filter, and **`OrderStateAfterExport` moves the order to a chosen state the moment the
+export succeeds** — no code. What the provider does **not** do is raise an order-state notification:
+a state written by an integration job (or by SQL) changes the state and mails nobody, because
+notifications fire on `OrderService.Save` only. If the beat is "the ERP flips the status and the
+customer is emailed", the state has to be re-applied through the order service afterwards, and that
+is code that belongs in the estimate. Both are detailed in
+[`../dw-integration-framework/references/provider-behaviour.md`](../dw-integration-framework/references/provider-behaviour.md#orderprovider).
+
+Also: **`DoNotExportCarts` does not exclude ledger entries.** A solution that imports customer
+invoices and then runs a plain not-yet-exported export posts those invoices back to the ERP as
+sales orders. Have the ledger import stamp `OrderIsExported = True` — an invoice that came from the
+ERP is already exported by definition.
 
 ## Integration Logging and Monitoring
 
