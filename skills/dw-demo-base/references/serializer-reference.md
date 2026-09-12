@@ -215,6 +215,7 @@ listed warning is one of these, the run is sound and the response code carries n
 | Escalated warning | Fires when | Why it is a false positive | Do this |
 |---|---|---|---|
 | `Warning: Area with ID <n> not found. Skipping entry 'content/area-<n>...'` | A **dry run** (`IsDryRun: true`) whose replace tree would create that area for the first time. The run reports `0 failed` and every `content/area-<n>` entry reports `C0 U0 S0 F0`. | The content provider resolves the target area by id *before* applying `area.yml`. A dry run never writes, so the area cannot come into existence mid-run and the provider takes its skip branch; the live path instead logs `Area created: ID=`. On an empty target the preview of a first-ever content import is structurally incapable of returning 200. | Confirm the escalated list contains **only** this warning, then proceed to the live run with the same body and `IsDryRun: false`. The live run returns 200 and creates the area. Assert: with `SELECT COUNT(*) FROM Area` = 0 the dry run 400s on this warning alone, and the live run answers 200 with `SELECT COUNT(*) FROM Area` = 1. |
+| `WARNING: Missing grid-row template: '<n>Column...Email'` | A merge pass over content that carries newsletter/email grid rows, on a host where the definition file does exist under `Files/Templates/Designs/Swift-v2/Grid/Email/RowDefinitions/`. The run itself reports `0 failed`, and the warning repeats once per content entry processed after the newsletter pages, so its multiplicity carries no information. | The engine's grid-row template resolver scans only `Grid/Page/RowDefinitions/`, so every definition that lives under `Grid/Email/RowDefinitions/` is unfindable to it while being perfectly resolvable to the frontend. | Verify the named `.json` exists under some `Grid/*/RowDefinitions/` folder, then accept the run. Assert: every `definitionId` used anywhere in the composed `SerializeRoot` has a matching `.json` under some `Designs/Swift-v2/Grid/*/RowDefinitions/`; when that holds and the response reports `0 failed`, a `Missing grid-row template` escalation is a PASS. Do **not** null the reference on the source and do **not** turn strict mode off to get past it. |
 
 ### "FK orphan on EcomGroupId" (or any FK warning)
 
@@ -283,7 +284,7 @@ WHERE Link LIKE '%Default.aspx?%=3421%';
 **Fix paths:**
 
 1. Deploy the missing template alongside the DLL (filesystem rsync / git pull / Azure Files sync).
-2. Null the stale reference on source. For Swift 2.2, `tools/swift22-cleanup/05-null-stale-template-refs.sql` covers three known-stale templates (`1ColumnEmail`, `2ColumnsEmail`, `Swift-v2_PageNoLayout.cshtml`).
+2. Null the stale reference on source, once you have confirmed the file really is absent. For the legacy Swift 2.2 cleanup set, `tools/swift22-cleanup/05-null-stale-template-refs.sql` nulls three references (`1ColumnEmail`, `2ColumnsEmail`, `Swift-v2_PageNoLayout.cshtml`). The two email ones are **not** stale on a current design tree — their definitions ship under `Grid/Email/RowDefinitions/` and the engine merely fails to look there (see "Strict-mode false positives" above). Running that cleanup against a current baseline deletes live references; check the disk before nulling anything.
 
 ## Versioning and baseline-format compatibility
 
