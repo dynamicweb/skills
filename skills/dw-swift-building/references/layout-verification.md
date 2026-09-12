@@ -20,7 +20,7 @@
 - [Visually hidden means `overflow: hidden` — `clip-path` does not contain overflow](#visually-hidden-means-overflow-hidden--clip-path-does-not-contain-overflow)
 - [Hit testing — a stretched row link swallows every control inside it](#hit-testing--a-stretched-row-link-swallows-every-control-inside-it)
 - [Contrast — measure the rendered pair, not the declared token](#contrast--measure-the-rendered-pair-not-the-declared-token)
-- [The gate's minimum browser leg](#the-gates-minimum-browser-leg)
+- [What the gate must measure](#what-the-gate-must-measure)
 
 ## Why these four need a browser
 
@@ -28,8 +28,13 @@ All four defects ship a page that answers 200 with `dw-error` 0, contains every 
 asserts name, and is wrong. A full-page screenshot does not adjudicate them either — it can
 manufacture a defect that does not exist (a closed off-canvas panel parked off-screen looks
 identical to a stretched canvas) and it hides the ones that matter (an unclickable control looks
-perfect). The instrument is a headless browser reading computed geometry, driven at a real device
-descriptor.
+perfect). Only computed geometry, read in a browser at a real device width, settles them.
+
+**Driving that browser is out-of-product work and is not a step this skill takes.** What this file
+owns is what to measure and how to read the numbers — which is also what an in-product reader states
+when asking for the measurement, and what an in-product reader applies to the template and CSS once
+the numbers come back. The launch mechanics (device descriptors, auth states, the evaluate call)
+belong to the QA tooling that owns the browser.
 
 ## Horizontal overflow — read THREE numbers, not one
 
@@ -190,16 +195,18 @@ colour scheme no longer matches its painted background — see
 [`grid-rows-and-binding.md`](grid-rows-and-binding.md) §"Anchor colour comes from the row's DECLARED
 scheme".
 
-## The gate's minimum browser leg
+## What the gate must measure
 
-Per configured page, per device descriptor, and **per auth state**:
+Four numbers, per configured page, per device width, and **per auth state** — the header is a
+different document signed in and signed out.
 
-1. `innerWidth === requested` **and** `body.scrollWidth === innerWidth`; on failure, report the
-   element whose right edge equals `documentElement.scrollWidth`.
+1. `innerWidth === requested` **and** `body.scrollWidth === innerWidth`; on failure, the element
+   whose right edge equals `documentElement.scrollWidth` is the offender to report.
 2. `elementFromPoint(centre)` returns the element itself for every control added inside a stretched-
    link card.
 3. Page height, or per-section height, for any page where empty bands are a known risk.
 4. Contrast ratio for every text/anchor pair on a row whose background is painted by project CSS.
 
 A single-width, single-state, markup-only pass certifies pages that are measurably broken; these
-four are what it misses.
+four are what it misses. State them as the acceptance criteria for the measurement rather than
+running it from here.

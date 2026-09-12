@@ -209,31 +209,26 @@ matching, so the stored `FieldDisplayGroupFieldSystemName` MUST be the full pipe
 
 ### Creating and assigning a field display group
 
-**Field display groups are API-only.** Settings > Products > Channels > Field display groups renders
-the empty state "No results found / There are no records to display" while
-`GET /Admin/Api/FieldDisplayGroupAll` returns the rows and the PDP accordion renders all of them with
-real values. Measured on 10.26.12 cloud: `totalCount 4` from the API, `tbody tr` count **0** on
-`/Admin/UI/Ecommerce/FieldDisplayGroupList`, in the same browser session, seconds later, for the real
-persona AND for a throwaway `systemAdministrator` created and deleted in the same run. It is not a
-permission problem, not a stale cache, and not a filter: the screen has no shop/channel/language
-control to mis-set, and translations plus a default-language Name are present. The screen simply never
-binds the `EcomFieldDisplayGroups` rows on this host class. **Do not promise an owner-visible admin
-screen for display groups**; a brief that says "check it in the UI" becomes "read it back through
-`FieldDisplayGroupAll`". Create, translate and wire them entirely through
-`FieldDisplayGroupSave` + `FieldDisplayGroupTranslationSave` + the paragraph item-field verbs.
+**Field display groups are not reachable from inside the product, and the admin screen does not
+show them either.** Settings > Products > Channels > Field display groups renders the empty state
+"No results found / There are no records to display" while the groups exist and the PDP accordion
+renders all of them with real values. Measured on 10.26.12 cloud: four groups present, `tbody tr`
+count **0** on the list screen, in the same browser session, seconds later, for the real persona AND
+for a throwaway `systemAdministrator` created and deleted in the same run. It is not a permission
+problem, not a stale cache, and not a filter: the screen has no shop/channel/language control to
+mis-set, and translations plus a default-language Name are present. The screen simply never binds
+the `EcomFieldDisplayGroups` rows on this host class.
 
-The write is Admin API `FieldDisplayGroupSave` via `/Admin/Api/FieldDisplayGroupSave`, posting
-`{"model": {Id, SystemName, Name, SortIndex, ShopIds[], FieldIds[]}}`
-(`Dynamicweb.Products.UI.Models.Settings.FieldDisplayGroupModel`). There is **no MCP tool** for
-display groups, and the admin screen does not bind — so this verb is the whole surface.
+Two consequences for anything written here. **Do not promise an owner-visible admin screen for
+display groups** — a brief that says "check it in the UI" cannot be honoured on this host class. And
+**do not audit a display-group write against the parent `EcomFieldDisplayGroups` row**: after a
+successful save `FieldDisplayGroupName`, `FieldDisplayGroupFieldIds` and `FieldDisplayGroupShopIds`
+are all still empty, because those denormalised columns are legacy and are not populated; the data
+lands in the child tables, with the translation row keyed on the **system name** and `GroupId = 0`.
+A parent-row check reports every write as a failure.
 
-**The parent `EcomFieldDisplayGroups` row is NOT the source of truth, and reading it is what makes a
-successful save look failed.** After an `ok` response, `FieldDisplayGroupName`,
-`FieldDisplayGroupFieldIds` and `FieldDisplayGroupShopIds` on the parent row are all still empty:
-those denormalised columns are legacy and are not populated. The data lands in the child tables —
-`EcomFieldDisplayGroupFields`, `EcomFieldDisplayGroupShops` and `EcomFieldDisplayGroupTranslation`,
-where the **translation row is keyed on the SYSTEM NAME with `GroupId = 0`**. Audit the child tables,
-or read back through `FieldDisplayGroupAll`; a parent-row check reports every write as a failure.
+There is no MCP tool for display groups. Creating, translating and wiring one is out-of-product
+work: see dw-data-access `recipes-swift.md` §Field display groups — create, translate and wire.
 
 One rendering consequence worth knowing before the template is written:
 `GetProductDisplayGroupFieldsByGroupSystemNames` returns only groups that **have values for the

@@ -6,6 +6,7 @@ A page that renders is not a page that is done. The recurring polish gaps on dem
 
 - [The mindset rule](#the-mindset-rule)
 - [Breakpoints — capture both, always](#breakpoints--capture-both-always)
+- [Driving the instrument — device descriptor, auth state, and the minimum leg](#driving-the-instrument--device-descriptor-auth-state-and-the-minimum-leg)
 - [Programmatic detectors — run before eyeballing](#programmatic-detectors--run-before-eyeballing)
 - [PLP list — assert rows AND per-row content](#plp-list--assert-rows-and-per-row-content)
 - [Assert design rules — what a green assert does not prove](#assert-design-rules--what-a-green-assert-does-not-prove)
@@ -33,6 +34,36 @@ Capture and check at minimum two widths via `browser_resize`: **desktop (1440 or
 - The canvas measure alone **cannot fire on the worst case**. Chrome widens the **layout viewport** to fit content that cannot shrink, and once it has, `body.scrollWidth` equals `window.innerWidth` by construction: a page measured at `body.scrollWidth 652 / innerWidth 652` against a requested 390 renders visibly zoomed out on a phone while a `scrollWidth - innerWidth` detector reports zero offenders. The number that moved is `innerWidth`, and nothing was reading it. Measured on a navigation stretching the viewport by 262px and, earlier, on a wide table stretching it by 23px — the naive check was equally blind to both, and the 23px case was caught only because the number happened to look wrong beside 390.
 - **The recurring unshrinkable offender is a navigation rendered on a horizontal template.** A footer or mobile navigation on `Navigation/Horizontal.cshtml` fits only while the site has a single root page; with several root pages it sets the layout viewport for the whole document. Repoint mobile and footer navigations to `Navigation/Vertical.cshtml` — the template the desktop footer navigations already use — rather than CSS-capping the width, which treats one surface and leaves the wrong template in place. Authored wide content is a different case and is fine scrolling inside its own `.table-responsive`.
 - Keep the positive control: with the offending template in place the probe reads the stretched width on all three numbers **and** the naive check still reads zero, which is what proves the assertion pair is doing the work. And a single 390 pass is not enough for per-row alignment: a CTA that fits inline at 430 but wraps at 390 — only on rows with long content — leaves some trailing pills left-anchored and some right. **Screenshot at 390 AND 430** (or finish on a real device); two widths catch the wrap-state divergence one width cannot. The Swift-specific canvas-stretch traps (fixed-width mega-menu, non-wrapping `NColumnsFlex` rows, `.flex-fill` beating fixed bases) and their fixes live in [`../../dw-demo-swift/references/mobile-pass.md`](../../dw-demo-swift/references/mobile-pass.md).
+
+## Driving the instrument — device descriptor, auth state, and the minimum leg
+
+The instrument for every geometry finding is a **headless browser reading computed geometry**, and
+how it is launched decides whether the numbers mean anything. Three launch facts:
+
+- **Drive it at a real device descriptor**, not at a resized desktop window. The descriptor is what
+  makes `window.innerWidth` comparable to a requested width, and the comparison is the leg that
+  catches a widened layout viewport. Carry the requested width into the evaluate call.
+- **A full-page screenshot does not adjudicate geometry.** It manufactures defects that do not exist
+  (a closed off-canvas panel parked off-screen looks identical to a stretched canvas) and hides the
+  ones that matter (an unclickable control looks perfect). Screenshots are for the eyeball pass;
+  geometry is for the evaluate call.
+- **Measure every auth state.** The header is a different document signed in and signed out, so a
+  single-state pass certifies pages that are measurably broken for the other state.
+
+Minimum leg, per configured page, per device descriptor, **per auth state**:
+
+1. `window.innerWidth === requested` **and** `document.body.scrollWidth === window.innerWidth`; on
+   failure report the element whose right edge equals `document.documentElement.scrollWidth`.
+2. `document.elementFromPoint(centre)` returns the element itself for every control added inside a
+   stretched-link card.
+3. Page height, or per-section height, for any page where empty bands are a known risk.
+4. Contrast ratio for every text/anchor pair on a row whose background is painted by project CSS,
+   computed from the rendered foreground and the effective background — walk ancestors to the first
+   non-transparent background and multiply declared alpha by every ancestor `opacity`.
+
+What each of those four is actually looking for, why a width-sorted offender list names an innocent
+element, and the recurring Swift 2 causes are foundational and live in
+[dw-swift-building](../../dw-swift-building/SKILL.md) `references/layout-verification.md`.
 
 ## Programmatic detectors — run before eyeballing
 

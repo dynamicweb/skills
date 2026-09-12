@@ -25,12 +25,15 @@ Pick the highest rung that can express the change; each row below states what th
 | Surface | Reaches | Notes |
 |---|---|---|
 | MCP `save_grid_rows`, `get_grid_rows_by_page_id`, `copy_page` | The members the build's tool model exposes — commonly `active`, `colorSchemeId`, `container`, `definitionId`, `sort`, `itemType`, `pageId` | The model is build-dependent; read it before relying on a member. Rows it creates can come back with `GridRowItemId` NULL |
-| Admin API `GridRowCreate` / `GridRowSave` / `GridRowCopy` / `GridRowSort` via `/admin/api/<Verb>` | Every row member, including `GridRowActive`, `GridRowContainerWidth`, `GridRowTopSpacing` / `GridRowBottomSpacing`, `GridRowSort`; `GridRowSave` also mints a missing row item | `GridRowSave` with `ID:0` answers 404 — it is update-only, `GridRowCreate` is the create |
-| `SQL` on `GridRow` / `Paragraph` | The two changes no verb expresses: converting a row's `GridRowDefinitionId` + `GridRowItemType` (plus a fresh item row), and `Paragraph.ParagraphGridRowColumn` | Local installs only — a hosted install has no SQL surface. Both columns are composition, so the page-composition cache holds the old value: the write owes a **host restart** before it is verified or gated |
+| Grid rows admin screen | Everything the tool model does not carry — `GridRowActive`, `GridRowContainerWidth`, the top/bottom spacing tokens, sort position — edited on the page's own layout screen | Name this screen when a member is out of the tool model; it is the in-product route |
 
-**Reach for `GridRowSave` before SQL on every row member it carries.** Row activation, container
-width and the spacing tokens are all on the verb; a SQL `UPDATE GridRow` for any of them is a rung
-too low and buys a restart it did not need.
+`save_grid_rows` plus that screen are the whole in-product surface. The row members below are named
+throughout this file by their column names because that is what the screen and the read-backs show;
+where a step says a member must be set and the tool model does not carry it, the edit is the admin
+screen. The out-of-product verb and SQL recipes for the same members — including the two changes no
+verb expresses, a row's `GridRowDefinitionId` + `GridRowItemType` conversion and
+`Paragraph.ParagraphGridRowColumn` — are in dw-data-access `recipes-swift.md` §Grid row members no
+MCP tool reaches.
 
 ## Copying a row carries five donor attributes — normalise all five
 
