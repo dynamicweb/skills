@@ -1,8 +1,16 @@
-# Order lifecycle internals — seeding, saves, invoices, subscriptions, RMA cache, CSR impersonation
+# Order lifecycle internals — seeding, saves, invoices, subscriptions, CSR impersonation
 
 Field-validated DW10 order knowledge: what `create_orders` actually writes, the platform-owns-the-id
-rule on every `*Save`, the re-save-reverts-SQL trap, invoices as `EcomOrders` rows, subscriptions,
-the RMA service cache, reorder mechanics, and CSR sales-on-behalf impersonation.
+rule on every `*Save`, the re-save-reverts-SQL trap and the flush-then-touch ordering that makes a SQL
+touch-up survive, invoices as `EcomOrders` rows, subscriptions, reorder mechanics, and CSR
+sales-on-behalf impersonation.
+
+Sibling references in this skill: [`cart-commands.md`](cart-commands.md),
+[`checkout-configuration.md`](checkout-configuration.md),
+[`order-states-and-quotes.md`](order-states-and-quotes.md),
+[`order-notifications.md`](order-notifications.md),
+[`customer-center-surfaces.md`](customer-center-surfaces.md),
+[`rma-and-claims.md`](rma-and-claims.md), [`promotions-engines.md`](promotions-engines.md).
 
 ## Contents
 
@@ -15,7 +23,7 @@ the RMA service cache, reorder mechanics, and CSR sales-on-behalf impersonation.
 - [`GetOrderList` inner-joins `EcomShops`](#getorderlist-inner-joins-ecomshops--orders-on-a-deleted-shop-vanish-from-every-commerce-grid)
 - [An invoice is an `EcomOrders` row](#an-invoice-is-an-ecomorders-row--and-invoicesave-requires-orderstateid)
 - [Subscriptions have no create verb](#subscriptions-have-no-create-verb--the-shape-is-one-flag-plus-an-ecomrecurringorder-row)
-- [The RMA read path is a persistent service cache](#the-rma-read-path-is-a-persistent-service-cache-that-raw-sql-cannot-invalidate--and-rmalist-masks-it)
+- [RMA and claims live in their own reference](#rma-and-claims-live-in-their-own-reference)
 - [SQL backfills vs runtime subscribers](#sql-backfills-vs-runtime-subscribers)
 - [The canonical order read surface](#the-canonical-order-read-surface)
 - [CSR sales-on-behalf — impersonation mechanics](#csr-sales-on-behalf--impersonation-mechanics)
@@ -139,6 +147,36 @@ WORKS:  OrderNew -> OrderSave -> OrderLineAddProductsBySKU -> SQL line qty -> Or
 Assert it: seeded order dates still match the intended backdated values **after the full build sequence
 completes**, not after the SQL step.
 
+### The SQL write is not only invisible to the cached service — the next save DESTROYS it
+
+Staging a value on an order with an `UPDATE` and then running code that should react to it fails twice
+over, and the second failure is the expensive one. The reading code loads the order through
+`OrderService.GetById`, a **read-through cache**, so it holds the pre-`UPDATE` entity — the familiar
+stale read. It then does what almost every order-touching path does, `Services.Orders.Save(order)`, and
+**that save writes the whole cached entity back over the row**, reverting the column the SQL had set. A
+`SELECT` immediately after the `UPDATE` says the write succeeded; a `SELECT` after the next unrelated API
+save says it never happened. No error, no warning, no log line on either side. That is materially worse
+than a stale read, because a stale read at least leaves the database telling the truth.
+
+**State the ordering once and follow it for every SQL touch on a DW-cached table:**
+
+```
+UPDATE …                                            -- the SQL write
+POST /Admin/Api/CacheInformationRefresh             -- flush the owning service by verb
+     {"CacheTypeName":"Dynamicweb.Ecommerce.Orders.OrderService"}
+… then run anything that touches the entity, and let nothing re-save it afterwards.
+```
+
+Both halves of that sequence are load-bearing, and they were measured on the same solution days apart.
+**Skip the flush** and the staged value is read stale and then erased by the next save. **Do the flush**
+and the write survives and is the shipped path: a bulk repoint of an order column by SQL followed by the
+`OrderService` flush read back correctly through the platform's own read (MCP `get_orders_by_ids`) on
+every changed row, with the rendered customer-center surfaces byte-identical before and after — which is
+itself the proof that nothing else moved. **Local installs only**; a hosted install has no SQL rung, so
+the operation has to be expressed through the Admin API verb that owns the column or not at all. The
+per-entity flush table is in
+[`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md).
+
 ## `OrderSave` on an existing order is a reconciliation pass against live platform state
 
 Editing one cosmetic string on a settled order through the sanctioned `/Admin/Api/OrderSave` path moved
@@ -253,28 +291,13 @@ own start/end/interval, and the rendered screen showed "Every 1 months" / "Every
 correctly. **Assert `FutureDeliveriesByRecurringOrderId` returns a non-empty schedule for every seeded
 subscription.**
 
-## The RMA read path is a persistent service cache that raw SQL cannot invalidate — and `RmaList` masks it
+## RMA and claims live in their own reference
 
-`RmaList` queries SQL directly; **`RmaById` / `RmaComments` serve a persistent
-`ReturnMerchandiseAuthorizationService` cache that no SQL write invalidates.** After a SQL backdate the list
-grid shows the new dates while the detail view keeps serving the pre-SQL object graph — including rows that
-were deleted. **The correct-looking list is what hides the stale detail**, which is why this reads as a
-rendering bug rather than a cache.
-
-```
-POST CacheInformationRefresh
-{ "CacheTypeName": "Dynamicweb.Ecommerce.Orders.ReturnMerchandiseAuthorization.ReturnMerchandiseAuthorizationService" }
-```
-
-- **Any raw-SQL write to RMA data must be followed by that flush** — no recycle needed.
-- **Match FULL type names when hunting a cache id.** Filtering the ~96-entry cache list with `-match "rma"`
-  also matches `inteRMAtional`, `infoRMAtion` and `foRMAt`; the substring hunt is what makes the right entry
-  hard to find.
-- **Consequence for scheduled work: a SQL-only task cannot call that verb**, so a nightly date shift leaves
-  the RMA detail view stale by design until the cache turns over. Say so when designing the job rather than
-  debugging it later.
-
-Assert `RmaById` returns the same `CreatedAt` as the `RmaList` row after a SQL edit **plus** the flush.
+The whole return-merchandise surface — which surface creates a claim that the customer center can
+see, the `EcomNumbers` claim-number counter, the three-write state rename, the persistent
+`ReturnMerchandiseAuthorizationService` cache that every raw-SQL write owes a flush to, the
+ViewModel-driven customer-center app, and the notification mail's own tag set — is in
+[`rma-and-claims.md`](rma-and-claims.md).
 
 ## SQL backfills vs runtime subscribers
 
@@ -349,6 +372,13 @@ uses the stock module command:
 ```
 ?NowImpersonating=true&DWExtranetSecondaryUserSelector=<targetUserId>&Redirect=<post-impersonation-url>
 ```
+
+**`Redirect` takes a RELATIVE URL and is used verbatim** — `Redirect=Default.aspx%3FId%3D<pageId>`,
+percent-encoded because it carries a querystring of its own; the shipped templates build it as
+`Uri.EscapeDataString("Default.aspx?Id=" + pageId)`. Every neighbouring parameter in that link is a
+bare id, so `Redirect=Id=<n>` is the natural guess and it redirects to `/Id=<n>`, which 404s — **after
+the identity switch has already succeeded**, leaving the session impersonating somebody on a
+not-found page with nothing in the response naming the cause. Going back does not undo it.
 
 It sets the `Dynamicweb.Ecommerce.Customers.User.ImpersonatedUser` session value; the switch-back link
 is `?DwExtranetRemoveSecondaryUser=1`. While impersonating, the customer's order list renders through
