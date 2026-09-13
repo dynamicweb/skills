@@ -21,6 +21,7 @@ and repository side.
 - [A NULL-price variant row drops every variant document from the build](#a-null-price-variant-row-drops-every-variant-document-from-the-build)
 - [An `Analyzed="false"` field facets as ONE term](#an-analyzedfalse-field-facets-as-one-term)
 - [The Files index: `StartFolder` is the library, and keywords live in the file](#the-files-index-startfolder-is-the-library-and-keywords-live-in-the-file)
+- [Restored index files are not served until a Full build runs](#restored-index-files-are-not-served-until-a-full-build-runs)
 - [Recovery recipe: Rebuild Products index](#recovery-recipe-rebuild-products-index)
 
 ## Repositories, Indexes, and Queries — file-based
@@ -417,6 +418,24 @@ repositories the demo actually serves. Two rebuilds are needed afterwards, becau
 `BuildIndex` call rebuilds only the currently-offline instance and then swaps, so a two-instance index
 reports a partial state until the second call. Gate on `GET /Admin/Api/IndexStatusesAll` reporting
 success / "All instances are fine" per repository, never on the `BuildIndex` response.
+
+## Restored index files are not served until a Full build runs
+
+Copying built Lucene instance files back into `Files/System/Indexes/<repo>/` (from a site backup, a
+transfer archive, or another host) does not make the index serve them, and an app-pool recycle does
+not either. Measured on a restored install whose repository definition files (`.index`, `.query`,
+`.facets`) were byte-identical to the backup, and whose copied instance a standalone Lucene reader
+counted at 8,966 documents: every product listing, freetext search and query-driven page rendered its
+empty template, HTTP 200 with no error, on a pre-release build [dw 10.29.1]. One Full build of `Products.index` served the products on the
+next request. The build registers the instance; files on disk alone do not.
+
+So a restore owes an explicit Full build once the database and the files are both in, and the gate
+is a listing, not the files: in-product that is `build_product_index` + `wait_for_product_index` with
+both `repositoryName` and `indexName`, gated on `documentCount` above zero (the preconditions above)
+and on a storefront listing that returns products. A scheduled build that ships disabled will not run
+it for you. The measured fix ran the build on the Management API; that form is in
+[dw-data-access](../../dw-data-access/SKILL.md) `recipes-search.md` §"Re-running an index build on the
+Management API".
 
 ## Recovery recipe: Rebuild Products index
 

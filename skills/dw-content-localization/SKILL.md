@@ -205,7 +205,8 @@ Two rules for any navigation or ordering work on a translated site:
 - **Put the translation in the page item's `Title`, not in `PageMenuText`.** Repair with
   `set_page_item_fields {pageId: <mirrorId>, fields: {Title: "<translated label>"}}`, never with
   another `set_page_menu` (it reports success and changes nothing). Once Title and MenuText agree,
-  no later save can drift them apart.
+  no later save can drift them apart. Pin the mirror's current `urlName` with `save_pages` in the
+  same pass: a Title write can move an unpinned slug.
 - **Capture every mirror's `PageMenuText` before a bulk change and diff after.** The site's own
   navigation is otherwise the first place anyone notices.
 

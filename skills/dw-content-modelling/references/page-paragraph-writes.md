@@ -2,8 +2,9 @@
 
 Vendor-generic DW10 knowledge for creating and editing page/paragraph/grid-row content
 programmatically: which surface reaches what, the saves that report success and drop part of the
-input, the labels a save silently re-derives, the caches a structural write does not invalidate,
-and the paragraph-level levers that scope one listing. Schema design is
+input, and the labels and slugs a save silently re-derives. A correct write the rendered page does
+not show (the caches a write does not cross, a paragraph that renders nothing, the per-listing query
+lever) is [`render-after-write.md`](render-after-write.md). Schema design is
 [`modelling-discipline.md`](modelling-discipline.md); the language-mirror half of every write is
 [`language-layers.md`](language-layers.md).
 
@@ -15,10 +16,6 @@ and the paragraph-level levers that scope one listing. Schema design is
 - [A page save re-derives `PageMenuText` from the item type's title field](#a-page-save-re-derives-pagemenutext-from-the-item-types-title-field)
 - [`save_pages` persists `urlName`, and no page read projects it](#save_pages-persists-urlname-and-no-page-read-projects-it)
 - [A `RichTextEditor` value round-trips byte for byte through the MCP write path](#a-richtexteditor-value-round-trips-byte-for-byte-through-the-mcp-write-path)
-- [A re-parent is invisible to the rendered navigation until the app domain restarts](#a-re-parent-is-invisible-to-the-rendered-navigation-until-the-app-domain-restarts)
-- [`place_app_paragraph` leaves `ParagraphItemType` empty, which renders nothing in a Swift 2 grid](#place_app_paragraph-leaves-paragraphitemtype-empty-which-renders-nothing-in-a-swift-2-grid)
-- [Repeatable item-list children render from a cache that no child write crosses](#repeatable-item-list-children-render-from-a-cache-that-no-child-write-crosses)
-- [`<QueryConditions>` in `ParagraphModuleSettings` scopes ONE listing](#queryconditions-in-paragraphmodulesettings-scopes-one-listing)
 - [Cross-references](#cross-references)
 
 ## Creating a page or paragraph — the domain anchor and the read-before-write list
@@ -58,8 +55,9 @@ and the paragraph-level levers that scope one listing. Schema design is
 `ParentPageId`, item type, name. Many add: `MenuText`, `NavigationTag`, `Sort`,
 `LayoutTemplate`, access permissions. Two of those need a second call: `save_pages` has no
 `navigationTag` member and drops the key silently, and on an item-typed page `MenuText` is
-re-derived from the item's title field on every save — so name a page by writing its Title.
-Both are in this reference.
+re-derived from the item's title field on every save — so name a page by writing its Title, and
+pin its `urlName` in the same pass, because on a page with no pinned slug the Title write moves the
+address too. Both are in this reference.
 
 **Publish is a separate write.** Saving a page sets `Active`/data; it does not set
 `Published`. After the create/edit, propose a follow-up publish call as its own step if the
@@ -78,7 +76,7 @@ confusing error:
   `copy_paragraph` from a working app paragraph of the same module**: a grid column renders a
   paragraph through its item type, and `place_app_paragraph` leaves `ParagraphItemType` empty,
   so the paragraph is live and correct in the database and invisible on the page. See
-  this reference.
+  [`render-after-write.md`](render-after-write.md).
 
 To pick: call `get_item_types` and check if the type exists there (→ `save_paragraphs`); if
 not, call `get_content_apps` (→ `place_app_paragraph`, with the Swift 2 caveat above); if found
@@ -148,14 +146,15 @@ worth knowing when authoring content programmatically (validated DW 10.25.x):
 
 ### Saves that report success but silently drop a field
 
-Two content saves report `status: ok`, bump `updatedDate`, and silently drop part of the input — so
+These content saves report `status: ok`, bump `updatedDate`, and silently drop part of the input — so
 **round-trip-verify any critical content edit** (read the value back through a different surface,
 or curl the rendered page) before declaring it done:
 
 | Save | Field silently dropped | Verified | Working fallback |
 |---|---|---|---|
-| MCP `save_pages` (update path) | `menuText` on an item-typed page — the save re-derives it from the item's title field, and the response echoes the derived value | DW 10.25.x-10.28.x | `set_page_item_fields {Title}` then `save_pages {id}` — see "A page save re-derives `PageMenuText`" below. A direct `PageMenuText` write survives only until the next save of that page. |
+| MCP `save_pages` (update path) | `menuText` on an item-typed page — the save re-derives it from the item's title field, and the response echoes the derived value | DW 10.25.x-10.28.x | `set_page_item_fields {Title}` then `save_pages {id, urlName}` carrying the current slug — see "A page save re-derives `PageMenuText`" below. A direct `PageMenuText` write survives only until the next save of that page. |
 | MCP `save_pages` (create + update) | `navigationTag` — a documented member of the input schema, accepted and then not persisted; `PageNavigationTag` stays empty | DW 10.27.x-10.28.x, MCP 0.4.4 | Assert the rendered link that resolves through the tag, not the call status; writing the column is out of product ([dw-data-access](../../dw-data-access/SKILL.md) `recipes-content.md` §"Set `PageNavigationTag`"). `urlName` is **not** in this class — it persists, see below. |
+| MCP `save_paragraphs` on a `Swift-v2_Logo` paragraph | `header`, observed once: the header sent was ignored, and the call returned and stored the paragraph's `LogoName` item field as the header. Only the admin tree label is affected; the rendered logo reads the item field | A single observation [dw 10.28.10 · mcp 0.4.4] | Set `LogoName` with `set_paragraph_item_fields` and treat the header as derived from it. Confirm with `get_paragraphs_by_ids`: a `header` equal to `LogoName` rather than to the header sent is this behaviour |
 | Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` is the working surface. `ParagraphSave` is still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
 
 The tool-behaviour root cause (why these MCP / Management API writes drop fields, and the surface model)
@@ -176,17 +175,32 @@ page — including calls whose stated job has nothing to do with content:
 - **`set_page_menu` cannot repair it.** It returns `succeeded` and the value does not change, for
   the same reason: the item field wins.
 
-**The durable shape for naming or renaming a page** is to write the title field and let the menu
-text follow:
+**The durable shape for naming or renaming a page** is to write the title field, let the menu text
+follow, and pin the slug in the same pass:
 
 ```
 set_page_item_fields { pageId, fields: { Title: "<label>" } }
-save_pages          { pages: [ { id: <pageId> } ] }     // triggers the re-sync
+save_pages          { pages: [ { id: <pageId>, urlName: "<current slug>" } ] }   // re-syncs the menu text, keeps the address
 ```
 
+**The `urlName` is not optional, because a Title write also moves the address.** On an item-typed
+page with no pinned `urlName`, the URL name is derived from the item Title, and a write to the Title
+re-derives it. Measured [dw 10.28.10 · mcp 0.4.4]: `set_item_field_values` writing only `Title` on
+four pages moved all four served addresses. The old addresses answered 404 while the site's own links
+followed the new slugs, `menuText` still carried the old label, and `save_pages` returned `urlName`
+as undefined, so no tool response showed the move. A `save_pages` pinning each page's original
+`urlName` brought the old addresses back to 200.
+
+Take the slug to pin from the address the page answers at **before** the write (the rendered
+navigation link, or the URL a sitemap or gate already asserts): no page read projects `urlName`, see
+the next section. After the pass, fetch the old address with `fetch_frontend_page_html` and poll it
+to 200 as that section describes; a 404 that outlasts the polling window means the slug moved. To
+move the address on purpose, send the new slug as `urlName` instead and update every hard-coded link
+to the old one, since nothing redirects it.
+
 Afterwards `PageMenuText` and `Title` agree and no later save can drift them apart. Give every page
-matching Title and MenuText at creation time and the whole class of surprise disappears. On a
-multi-language solution the same mechanism de-translates language mirrors — see
+matching Title and MenuText at creation time, and a pinned `urlName`, and the whole class of surprise
+disappears. On a multi-language solution the same mechanism de-translates language mirrors — see
 [`language-layers.md`](language-layers.md) §3 ("Every save on a mastered page …").
 
 ## `save_pages` persists `urlName`, and no page read projects it
@@ -251,87 +265,11 @@ rather than opened and saved in the editor. Nothing about the MCP write path req
 expressed as markup — that stays a rendering choice (see
 [dw-swift-page-design](../../dw-swift-page-design/SKILL.md)), not a data-loss workaround.
 
-## A re-parent is invisible to the rendered navigation until the app domain restarts
-
-Two writes on the same page tree through the same tool behave differently, and the cached one is
-not the one you expect:
-
-| Write | Live on the next request? |
-|---|---|
-| `set_page_menu {showInMenu:false}` (maps to `PageActive`) | **Yes** — every link to the page leaves the header and sidebar navigation immediately |
-| `save_pages {parentPageId}` (a re-parent) | **No** — the row, `get_navigation_structure` and ROUTING all show the new position (the page answers 200 at its new URL with the right page id) while the rendered menu never lists it |
-| `PageNavigationTag` | No — same staleness |
-| A user GROUP's `AccessUserRedirectOnLogin` (FrontendStartPage) | No — measured across a SQL write, a SQL write plus a group-relation touch, and an MCP group save; only a restart moved it |
-
-The frontend Navigation view model reads a cached page tree that a `PageActive` change invalidates
-and a `PageParentPageId` change does not, while routing and the MCP read side use a different view.
-**The one-request diagnostic**: if the page ROUTES at its new URL and is absent from the menu, it is
-the tree cache, not permissions. **Budget one app-domain restart into any job that re-parents pages
-or sets a group-level FrontendStartPage**, and say so in the plan rather than discovering it at the
-end. Decide a group FrontendStartPage's destination BEFORE the restart that makes it live: once
-live it outranks the sign-in app's own `RedirectToSpecificPage`, and the precedence is user
-`AccessUserRedirectOnLogin` > group `AccessUserRedirectOnLogin` > the app setting — so making it
-live can silently move the site's landing page.
-
-## `place_app_paragraph` leaves `ParagraphItemType` empty, which renders nothing in a Swift 2 grid
-
-In Swift 2 a paragraph inside a grid column is rendered **through its item type**. A module-only
-paragraph — `ParagraphItemType` and `ParagraphItemId` empty, which is exactly what
-`place_app_paragraph` creates — has nothing to render through, so the grid column skips it. Every
-check passes: the tool returns a paragraph, the page is 200 with no error, the row is live on the
-right page and grid row at the right column with readable module settings, and the app is simply
-not on the page. Cache flushes change nothing.
-
-**Use `copy_paragraph` from a working app paragraph of the same module instead**: it carries the
-`Swift-v2_App` item instance (and the module settings with it), which is what makes the copy
-render. Two gaps to repair afterwards, because the copy does not carry them: the copy lands with
-`GridRowId 0` / column 0, and on a mastered solution its language mirror lands on the SOURCE page's
-grid row. Rebind both — a `GridRow` binding is the narrow sanctioned SQL case here (no verb takes a
-paragraph's grid binding on a copy; local installs only), followed by `CacheInformationRefresh` on
-`ParagraphService` and `PageService`. A page carrying `ParagraphItemType` empty under a Swift 2 grid
-is also the explanation for any pre-existing "dead paragraph" on a solution that once used this
-route.
-
-## Repeatable item-list children render from a cache that no child write crosses
-
-`add_repeatable_item`, `remove_repeatable_items` and `set_item_field_values` against a repeatable
-parent's child items all return `succeeded: 1` and all land correctly in `ItemListRelation` and the
-child's own backing table — and the rendered parent keeps serving the old list, including a child
-that has already been removed from it. Re-saving the parent paragraph does not cross it;
-`ItemTypeListReload` returns `ok` and does not cross it either.
-
-**The proven invalidation is a NEW parent item.** Rebuild the parent paragraph rather than editing
-its children in place: a new parent gets a new item id and therefore a new `ItemList` with no cache
-entry, and renders correctly at once with no app-pool recycle. Iterating a slider or accordion's
-child list is therefore a create-a-fresh-parent motion; park the superseded parent in a grid column
-its row definition does not use rather than deleting it, if the old one is still wanted.
-
-## `<QueryConditions>` in `ParagraphModuleSettings` scopes ONE listing
-
-`Paragraph.ParagraphModuleSettings` carries a `<QueryConditions>` element holding the module's own
-query-parameter DEFAULTS. It is the surgical lever for scoping a single listing — a shop root, one
-campaign page — when the listing runs on a query shared by several surfaces and filtering the query
-itself would empty the others.
-
-Two properties make it safe and two gotchas make it fiddly:
-
-- **A `DefaultValue` applies only when the parameter is ABSENT from the request.** That is exactly
-  what makes it safe on a root listing whose child pages pass the parameter themselves — they are
-  unaffected.
-- The element is **doubly HTML-escaped inside the XML** (`&amp;quot;`), and
-  `ParagraphModuleSettings` is `nvarchar`, not `xml` — so an edit is a string operation, never a
-  `CONVERT(xml, …)`.
-
-Assert the scope, not the fix: the changed listing AND the unchanged counts on every other surface
-that runs the same query, in the same run. A root-listing-only assertion cannot show that the change
-was scoped.
-
-Related trap on the same symptom: `ProductShowInProductList` is not a field in the shipped
-`Products.index`, and a product list reads the index rather than the table — so setting the flag to
-`0` changes nothing on the listing and a build that sets it will believe it worked.
-
 ## Cross-references
 
+- [`render-after-write.md`](render-after-write.md): the correct writes the rendered page does not
+  show: the re-parent nav cache, `place_app_paragraph` on Swift 2, repeatable-child caching, and
+  `<QueryConditions>`.
 - [`modelling-discipline.md`](modelling-discipline.md) — item-type design, the `<Prefix>_*`
   discipline, and the activation mechanics behind `Invalid object name 'ItemType_<X>'`.
 - [`language-layers.md`](language-layers.md) — what every one of these writes does a second time in

@@ -182,6 +182,13 @@ combinations (`create_variant_combinations` — each combination's option ids mu
 (`get_variant_combinations`, confirm the expected matrix, e.g. 3 colors × 2 sizes = 6
 combinations).
 
+**Key options on the group id the platform returns.** Measured [dw 10.28.10 · mcp 0.4.4]:
+`save_variant_groups` ignores a supplied `id` on create and mints its own, and `save_variant_options`
+accepts a `groupId` that does not exist and creates the options under it, orphaned, with no error.
+Capture each group id from the `save_variant_groups` response (or `get_variant_groups`), pass that
+as `groupId`, and read the options back with `get_variant_options` before assigning the group. An
+orphan is repaired by re-saving the option with its `id` and the real `groupId`, which re-parents it.
+
 Full matrix size is the product of option counts across assigned groups. Decide with the user
 whether they want the full matrix or only specific sellable combinations — create only the
 combinations actually sold, since each is an individually sellable variant with its own

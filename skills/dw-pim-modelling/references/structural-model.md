@@ -102,13 +102,20 @@ around it rather than against it.
 | Call | What it does | What it does NOT do |
 |---|---|---|
 | `create_variant_combinations` | Creates the combination rows | Inherits nothing from the master: number empty, active and price NULL, name and descriptions and every custom field empty. The tool's own text says the combination inherits the master row; measured, it does not |
-| `combine_products_as_variants` | Re-parents standalone products as combinations, and the rows come out active | Copies no scalar column onto the combination: the per-product number is empty and the price is the **master's** on every combination. The standalone rows are deleted, so their number and price are **discarded, not moved** |
+| `combine_products_as_variants` | Re-parents standalone products as combinations, and the rows come out active | Copies no scalar column onto the combination: the per-product number is empty and the price is the **master's** on every combination. The standalone rows are deleted, so their number and price are **discarded, not moved**. It also blanks the **MASTER** row's number: measured, every master given variants lost its `ProductNumber` (47 of 52 masters kept one; the five variant parents did not) [dw 10.28.10 · mcp 0.4.4], so the family's anchor SKU leaves the catalogue while a search by any other key still finds the product |
 | `patch_products_safe` / `update_products` with `id` + `variantId` | Answers `succeeded: 1` and echoes every requested value | Writes nothing to the variant row. The echo is the request model, never a post-write read |
+
+**Snapshot master numbers before `combine_products_as_variants`, and restore them after.** Read each
+master with `get_products_by_ids` and keep a `ProductId`-to-number map. After the combine, write the
+number back on the master row with `patch_products_safe` (`id` and `number`, `variantId` left empty),
+then re-read with `get_products_by_ids` and assert the number on the master: that read is the assert,
+not the patch echo. Assert the SKU against the product read rather than a storefront search for it.
 
 **The working sequence on this build:**
 
-1. `save_variant_groups` + `save_variant_options` for the vocabulary, then
-   `assign_variant_groups_to_product`.
+1. `save_variant_groups` + `save_variant_options` for the vocabulary, keying each option on the group
+   id the group save returned, never an id you supplied (the trap is in
+   [SKILL.md](../SKILL.md) "The correct flow"), then `assign_variant_groups_to_product`.
 2. `create_variant_combinations` for the combination rows.
 3. **Per-variant PRICE with `save_prices`**, carrying `productId` **and** `variantId` (plus
    `currencyCode`, `amount`, and `quantity: 0`). This one lands, persists, and is resolved by the stock

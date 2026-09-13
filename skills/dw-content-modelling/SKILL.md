@@ -321,14 +321,16 @@ and fix the field — do not invent placeholder values to satisfy required field
 
 The write surfaces themselves — which saves drop a field, which labels the platform re-derives,
 which caches a structural write leaves stale — are in
-[references/page-paragraph-writes.md](references/page-paragraph-writes.md).
+[references/page-paragraph-writes.md](references/page-paragraph-writes.md) and
+[references/render-after-write.md](references/render-after-write.md).
 
 ## Deep reference
 
 | Read it for | Reference |
 |---|---|
 | Editor-manageable page modelling (one paragraph/field per editor concern) and the custom item-type `<Prefix>_*` discipline: why an XML drop leaves a type readable and unwritable until the definition loads, why that differs by host class, the write-ACE on the items folder, Routes A/B and their zero-restart cost, editor-choice-becomes-column-type, and repeater-child storage | [references/modelling-discipline.md](references/modelling-discipline.md) |
-| Writing pages, paragraphs and grid rows: the Management API binder's sharp edges, saves that report success and drop a field, `PageMenuText` re-derived from the item title on every save (`reorder_pages` included), the missing `navigationTag` member, `place_app_paragraph` rendering nothing on Swift 2, the nav-tree cache a re-parent does not invalidate, repeatable-child caching, and `<QueryConditions>` as the per-paragraph query-default lever | [references/page-paragraph-writes.md](references/page-paragraph-writes.md) |
+| Writing pages, paragraphs and grid rows: the Management API binder's sharp edges, saves that report success and drop a field, `PageMenuText` re-derived from the item title on every save (`reorder_pages` included), the rename recipe that pins `urlName` because a Title write moves the slug, and the missing `navigationTag` member | [references/page-paragraph-writes.md](references/page-paragraph-writes.md) |
+| A correct write the rendered page does not show: `place_app_paragraph` rendering nothing on Swift 2, the nav-tree cache a re-parent does not invalidate, repeatable-child caching and the parent item write that crosses it, and `<QueryConditions>` as the per-paragraph query-default lever | [references/render-after-write.md](references/render-after-write.md) |
 | Language layers and multi-area binding: the `Area` sibling-row model, what `AreaCopy` does not carry, what a save on a mastered page does to its mirror (structure crosses, values do not), the translation cascade, friendly-URL/root wiring, and two areas sharing one host | [references/language-layers.md](references/language-layers.md) |
 
 ## Pitfalls

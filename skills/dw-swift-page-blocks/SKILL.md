@@ -326,7 +326,9 @@ small related blocks into one multi-column row instead of a long single-column s
 2. `save_grid_rows` applies no default layout — set `DefinitionId` or the row is
    structureless.
 3. Item-typed page rename is two-step: set the title field first, then `save_pages` (it
-   rewrites MenuText from the title).
+   rewrites MenuText from the title) carrying the page's current `urlName`, because the Title write
+   also moves an unpinned slug and 404s the old address
+   ([dw-content-modelling](../dw-content-modelling/SKILL.md), `page-paragraph-writes.md`).
 4. Style writes aren't patch-safe: a saved color scheme has its own colors overwritten
    (sibling schemes survive); typography/button/font replace the whole object. Read first.
 5. Component routing: item-typed → `save_paragraphs(ItemType=…)`; app/module →
