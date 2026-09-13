@@ -3,6 +3,16 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.0.0]
+
+The 5.0 release. It closes the 4.x fold line and ships the version spine, so the corpus states what it works on in one machine-readable file and every downstream artifact can cite one tag.
+
+- **The 4.x fold line landed as one stack and is now rolled up here.** The grouped fold sprints merged in order as PRs #118 through #123 (4.41.0 orders, RMA and claims; 4.42.0 Data Integration and the ERP feed keying; 4.43.0 index-file authoring, PIM structure and localization; 4.44.0 Swift grid rows and shipped-template defects; 4.45.0 scheduler and provider contracts; 4.46.0 content modelling, localization, permissions and B2B), with #125 (4.40.0 render surfaces), #116 (4.39.0 the action ladder), #124 (4.47.0 the standing-e2e amendments) and #126 (the manifest regeneration) alongside them, tagged `v4.47.0`. Their individual entries stay below; nothing in them is restated here.
+- **The version spine (#127) is what makes this a major.** `versions.json` at the repo root, vendor axes only, is now the compatibility statement; the built manifest carries it as manifest version 2; the validator enforces the schema, the stamp-token rule and the per-app-version MCP tool registry; one CI workflow gates every pull request and every push to `main`. The detail is in the 5.0.0-alpha.1 notes below, unchanged.
+- **`worksOn` is measured, not claimed.** The measured set this release publishes was observed on a live host by the Foundry gate run of 2026-09-13: Dynamicweb 10.28.10, Swift `v2.4.0`, `Dynamicweb.MCP` 0.4.4, `Truvio.Commerce.Serializer` 1.0.0-beta. The floors stay the published claim (`dw >=10.28.1`, `swift ==2.4`, MCP `>=0.4.4`, serializer `>=1.0.0-beta`, the last two not required).
+- **The Dynamo boundary is a per-skill declaration with a shrinking ratchet, not a finished split.** The `dynamo` frontmatter field, the manifest filter and the validator rule (#111) decide what an MCP-only reader sees; `scripts/dynamo-baseline.json` still carries 120 recorded violations across 17 files and only ever shrinks. Emptying it is 5.1 work, not something this release claims.
+- **Serializer naming is stated by floor, not yet swept.** `versions.json` names the 1.0.0-beta engine as the measured and floor version; the 1.0-beta command rename (`SerializerSerialize`/`SerializerDeserialize` to `Serialize`/`Deserialize`, with deprecated aliases through the beta) is still present in `dw-demo-base/references/serializer-reference.md`, which the aliases keep correct. The rename sweep is 5.1 work.
+
 ## [5.0.0-alpha.1]
 
 The version spine. The corpus states what it works on in one file, the statement travels in the built manifest, and the validator enforces it: version awareness stops being prose and becomes a contract a reader, a validator and a host can all check.
