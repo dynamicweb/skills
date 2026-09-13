@@ -75,8 +75,9 @@ Siblings in the same assembly: `PermissionDeleteCommand {String PermissionIdenti
 IEnumerable<String> Ids}`, and the read query `PermissionsByIdentifierQuery {String Key; String Name;
 String SubName; …}`.
 
-Verify a write on the rendered surface (sign in as a member of the owner group) or with a read-only
-`SELECT` on `UnifiedPermission`; the Permissions panel is a verification surface, not the authoring
+Verify a write on the rendered surface (sign in as a member of the owner group, or read `PermissionsByIdentifier`,
+which is what a hosted install uses) or, **local installs only**, with a read-only `SELECT` on
+`UnifiedPermission`; the Permissions panel is a verification surface, not the authoring
 path for the resources these recipes touch.
 
 ## `PermissionsByIdentifier` — the read verb and its empty-SubName trap
@@ -99,7 +100,8 @@ query on any key also returns the three implicit user ROLES (`Anonymous`, `Authe
 `Administrator`) with `isUserRolePermission: true` and `isExplicitPermission: false`.
 
 Cross-check the API read against `UnifiedPermission` before treating any empty result as "no
-permissions set". Read-only, **local installs only**, no flush owed. Mind the `nvarchar`
+permissions set". Read-only, **local installs only** (a hosted install relies on the
+`PermissionsByIdentifier` read with `SubName` omitted), no flush owed. Mind the `nvarchar`
 `PermissionUserId`: a bare `int = PermissionUserId` comparison aborts the whole statement on the
 literal `'Anonymous'`, so use `TRY_CAST`.
 
@@ -138,6 +140,10 @@ SELECT COUNT(*) FROM AccessUser
 WHERE AccessUserType IN (1,3) AND AccessUserActive = 1 AND AccessUserAllowBackend = 1;
 ```
 
+**Local installs only**: on a hosted install, read the row back with `UserById` (at
+`/Admin/Api/UserById`); the administrator census has no read path there, so prove a second backend
+administrator signs in before the teardown.
+
 ## Seed the functional-view grants for a backend role
 
 In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
@@ -146,7 +152,8 @@ In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
 The area-tree and Assets rows are single grants and belong on `PermissionSave`. The Shop,
 ProductGroup and ProductField rows are one grant per row of an existing table — hundreds of them on a
 real catalog — and the verb has no set-based form, so a set-based `SQL INSERT` is the sanctioned
-shape. **Local installs only**, and it owes the three-cache flush above, because a raw INSERT does
+shape. **Local installs only** (on a hosted install, one `PermissionSave` per row over the ids
+`get_shops` and `get_groups` return), and it owes the three-cache flush above, because a raw INSERT does
 not self-invalidate.
 
 ```sql
@@ -168,7 +175,8 @@ In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
 
 A bulk level change across an existing grant set has no verb-shaped form — `PermissionSave` is
 per-row — so this is `SQL`, **local installs only**, and it owes a `PermissionService` flush;
-without the flush, logged-in users keep seeing Read-level UI until re-auth.
+without the flush, logged-in users keep seeing Read-level UI until re-auth. On a hosted install,
+re-send each grant through `PermissionSave` at `Level` 20; it is an upsert.
 
 ```sql
 UPDATE UnifiedPermission
@@ -193,7 +201,8 @@ In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
 
 `Language.GetPermissionParents()` terminates under Cap Control ON, so no upstream grant cascades and
 the row has to be inserted explicitly, one per language. Set-based over `EcomLanguages`, so `SQL`,
-**local installs only**, owing the three-cache flush. The `PermissionKey` is the language id (e.g.
+**local installs only** (on a hosted install, one `PermissionSave` per language `get_languages`
+returns), owing the three-cache flush. The `PermissionKey` is the language id (e.g.
 `LANG1`), not the ISO code.
 
 ```sql
@@ -207,8 +216,9 @@ In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
 (`grant-mechanics.md` §11), which carries the three-step method and what every role keeps.
 
 Step 3 — downgrading the fields a role does not own — is one `UPDATE` per role against a list of
-`ProductField` system names. Same surface argument as the bump above: `SQL`, **local installs only**,
-owing the `PermissionService` flush.
+`ProductField` system names. Same surface argument as the bump above: `SQL`, **local installs only**
+(on a hosted install, one `PermissionSave` per field at `Level` 4, for both blocks below), owing the
+`PermissionService` flush.
 
 ```sql
 DECLARE @readOnly TABLE (SystemName nvarchar(100));
@@ -299,7 +309,8 @@ browser user agent, then assert on a page fetched **with** that cookie.
 ### The plaintext escape hatch, where the command is unavailable
 
 Only valid while `EncryptPassword` is `False` — plaintext seeded under `False` becomes a stale
-invalid hash after the flip. **Local installs only**, no flush owed, and Dynamicweb auto-rehashes a
+invalid hash after the flip. **Local installs only** (a hosted install uses `UserSetPassword`
+above), no flush owed, and Dynamicweb auto-rehashes a
 plaintext seed on the first successful login.
 
 ```sql
@@ -316,8 +327,9 @@ In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
 rule.
 
 Measure the `AccessUser` delta immediately after every batch and have the helper return
-`deleted: (countAfter === 0)` rather than `deleted: true`. Read-only, **local installs only**, no
-flush owed:
+`deleted: (countAfter === 0)` rather than `deleted: true`. Read-only, **local installs only** (on a
+hosted install, `get_users_by_usernames` on the probe must come back empty; the type census has no
+read path there), no flush owed:
 
 ```sql
 SELECT COUNT(*) FROM AccessUser WHERE AccessUserUserName = '<probe>';   -- must be 0
@@ -332,7 +344,9 @@ In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
 `UserAddressDelete` resolves an address through its owning user, and an orphan carries
 `AccessUserAddressUserId = 0`, so the only address-delete verb cannot reach the rows the Ecommerce
 health check flags. `SQL` is the only route and is sanctioned here; no runtime cache is keyed on
-`AccessUserAddress`, so it owes no flush and no restart, and it stays **local installs only**. Scope
+`AccessUserAddress`, so it owes no flush and no restart, and it stays **local installs only** (a hosted install has no
+documented write path for these rows, so an online build asks the user; `run_health_checks` still
+reads the orphan check). Scope
 on the null owner **plus** blank address fields — orphans interleave with real address ids, so an
 id-range delete takes live personas' addresses with it.
 
@@ -378,7 +392,7 @@ Measured on two account groups: the column carried `SystemAccount` afterwards an
 the CSR Accounts page. Verify both ways, the column first:
 
 ```sql
--- read-only; local installs only; owes no flush.
+-- read-only; local installs only (a hosted install checks the CSR Accounts page below); owes no flush.
 SELECT AccessUserId, AccessUserParentId, AccessUserUserAndGroupType FROM AccessUser WHERE AccessUserId = <groupId>;
 ```
 

@@ -325,6 +325,8 @@ SELECT COUNT(*) FROM EcomCountries c                                           -
  WHERE c.CountryCurrencyCode NOT IN (SELECT CurrencyCode FROM EcomCurrencies);
 ```
 
+**Local installs only**: on a hosted install read the rates with `get_currencies` and each country's currency with `get_countries`, and compare them.
+
 One host carried a zero rate on all 16 language rows of a single currency **and** three countries pointing at
 currencies that had never been created. Clearing both took the build from 30 errors/day to a clean full
 rebuild with zero `DivideByZero` and zero `NullReference` across the whole log.

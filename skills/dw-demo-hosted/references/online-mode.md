@@ -120,12 +120,12 @@ the same type, from the OpenAPI catalogue, or from the admin UI's own captured r
 | MCP `delete_variant_combinations` | non-functional, same server-side throw. |
 | `VariantGroupRemove` | 400 Unknown command. The group deletes without detaching. |
 | `delete_products` | removes the variant rows with the family, so a family delete needs no per-variant cleanup. |
-| `UserByUserName` | **not registered on 10.28**: `400 {"successful":false,"message":"Unknown query: 'UserByUserName'"}`. Only `UserById` exists. A throwaway-admin teardown helper that resolves its id through `UserByUserName` inside a swallowing `try/catch` reports "not present" and deletes nothing, leaving a live `systemAdministrator` on a prospect-facing host while its own check passes. Resolve the id by a route that cannot silently answer zero (the MCP `get_users_by_usernames` tool, or `SELECT AccessUserId FROM AccessUser WHERE AccessUserUserName='<probe>'`), and make the delete path THROW when the lookup mechanism itself fails instead of reporting absent. |
+| `UserByUserName` | **not registered on 10.28**: `400 {"successful":false,"message":"Unknown query: 'UserByUserName'"}`. Only `UserById` exists. A throwaway-admin teardown helper that resolves its id through `UserByUserName` inside a swallowing `try/catch` reports "not present" and deletes nothing, leaving a live `systemAdministrator` on a prospect-facing host while its own check passes. Resolve the id by a route that cannot silently answer zero (the MCP `get_users_by_usernames` tool, or, on local installs only, `SELECT AccessUserId FROM AccessUser WHERE AccessUserUserName='<probe>'`), and make the delete path THROW when the lookup mechanism itself fails instead of reporting absent. |
 
 Verify cleanup by reading back, not by the response: `PriceById` on every created price id must return
 non-200 and the product-scoped price list must be empty. After a throwaway-admin teardown assert BOTH
 that `GET /Admin/Api/UserById?Id=<id>` no longer returns a `model` AND that `SELECT COUNT(*) FROM
-AccessUser WHERE AccessUserUserName='<probe>'` is 0. A cleanup step that cannot name the id it deleted is
+AccessUser WHERE AccessUserUserName='<probe>'` is 0 (**local installs only**; on a hosted install, `get_users_by_usernames` returns no user for the probe). A cleanup step that cannot name the id it deleted is
 not evidence.
 
 ### dw10source as binder disambiguator

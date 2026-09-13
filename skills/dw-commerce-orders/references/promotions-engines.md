@@ -174,6 +174,8 @@ writes first, patch `EcomDiscountTranslation` by SQL **last**, and then never to
 again. **Minting a NEW legacy row sidesteps the cache entirely** — a fresh row has no stale cache entry, so
 the grid projection reads correctly first time. Prefer that to renaming a stale one.
 
+**Local installs only** for the SQL patch: on a hosted install no MCP tool is known to write the legacy discount translation, so ask the user.
+
 ## Vouchers — code constraints, additive generation, insert-only
 
 `VoucherRewardSave` has four independent surprises, and three of them are silent:
@@ -187,7 +189,7 @@ the grid projection reads correctly first time. Prefer that to renaming a stale 
   code is an explicit `Code` with **`NumberOfVouchers = 0`**.
 - **The verb is INSERT-ONLY** — re-posting an existing id is rejected as a duplicate, and redemption state
   (`VoucherDateUsed`, `VoucherUsedOrderId`, `VoucherAccessUserId`, `VoucherStatus`) has **no write path at
-  all**. Seeding a used/available split is a SQL step by construction.
+  all**. Seeding a used/available split is a SQL step by construction. **Local installs only**: on a hosted install no MCP tool is known to write redemption state, so ask the user.
 - **`SentTo` is accepted and never stored** — `EcomVouchers` has no such column.
 
 Voucher **lists** have their own gaps: there is no `VoucherListNew`, `VoucherListById?Id=0` answers **400**
@@ -215,6 +217,8 @@ read path, with no per-row degradation. The whole Gift cards screen goes down fo
 encrypt through the platform's own `GiftCardService.EncryptCode` (reachable by reflection against the site
 assemblies) before the insert. Assert `GiftCardsAll` returns `200` after any gift-card seeding step — that
 single check is what separates "no gift cards yet" from "the screen is down".
+
+**Local installs only** for the insert: on a hosted install use the platform issuance path; no MCP tool writes a gift card.
 
 ## Cross-references
 

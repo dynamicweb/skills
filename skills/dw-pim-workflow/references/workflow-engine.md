@@ -155,6 +155,8 @@ whatever it shipped as, which is a visible demo artefact) or for a one-click adm
 claims to have created one, and `SELECT * FROM WorkflowState` / `WorkflowGoToState` after the state
 writes. The 200 is affirmatively misleading here, so it is not evidence.
 
+**Local installs only**: on a hosted install read the states back with `get_workflow_states`; no MCP tool is known to read the `Workflow` container, so ask the user for that half.
+
 ## 6. Three workaround patterns for per-state role gating
 
 In increasing fidelity. Pick one or compose — they layer.

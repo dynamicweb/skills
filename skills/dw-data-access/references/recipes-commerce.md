@@ -75,7 +75,8 @@ Until the platform discards a pointer whose owner does not match, normalise the 
 every `AccessUserCartId` is NULL or a cart the user actually owns:
 
 ```sql
--- local installs only. No verb writes AccessUserCartId (CartCmd=archive clears one pointer,
+-- local installs only; a hosted install has no bulk write path, so each affected user signs in
+-- and sends CartCmd=archive. No verb writes AccessUserCartId (CartCmd=archive clears one pointer,
 -- for the signed-in user only), and the User object is cached: this write owes ONE
 -- application-pool recycle, or a CacheInformationRefresh of the user service.
 UPDATE u SET u.AccessUserCartId = NULL
@@ -121,7 +122,9 @@ VALUES ('<methodId>', '<countryCode>', '');
 
 - **Why the higher surfaces do not cover it**: the MCP models have no relation member, and the
   Management API saves were measured accepting the keys and persisting nothing.
-- **Local installs only**: on a hosted install, set the relations on each method's admin screen.
+- **Local installs only**: on a hosted install, set the relations on each method's admin screen; no
+  MCP tool and no proven Management API write reaches the table, so an online build asks the user
+  (or re-probes `ShippingSave` / `PaymentSave` with `CountryRelationKeys` and the checkout assert below).
 - **The debt it owes**: an order-method cache flush before the storefront reflects it.
 
 Whatever the surface, two asserts close the step and both are mandatory. First, read
@@ -152,7 +155,8 @@ that tool is write-inert, so the assortment is deleted and rebuilt rather than r
 - **Why the higher surfaces do not cover it** — no tool projects the built item set, and the only access
   read answers `true` unconditionally.
 - **Local installs only** — on a hosted install, compare the storefront catalogue rendered to a holder
-  against the one rendered to a non-holder.
+  against the one rendered to a non-holder, and read shop relations with
+  `get_assortment_relations_by_shop_id`.
 - **The debt it owes** — none; these are reads.
 
 ## Removing one assortment permission: `remove_permissions_from_assortment` is write-inert
@@ -172,7 +176,8 @@ WHERE AssortmentId = '<assortmentId>' AND AssortmentPermissionEntityId = <userOr
 
 - **Why the higher surfaces do not cover it**: the only delete tool reports success and writes nothing,
   and the in-product alternative replaces the whole assortment.
-- **Local installs only**: on a hosted install, delete and rebuild the assortment.
+- **Local installs only**: on a hosted install, delete and rebuild the assortment with
+  `delete_assortments`, `save_assortments` and `build_assortments`.
 - **The debt it owes**: one application-pool recycle, because the User object caches its assortment
   ids. Then assert with `get_assortment_ids_by_user` on a member's USER id (a group id answers `[]`
   whatever the grants are) that the assortment is gone from the list.
@@ -247,8 +252,8 @@ POST /admin/api/ShippingSave
 ## Writing `EcomValidation*` rows by hand
 
 There is no admin UI for validation groups and no MCP tool or Management API verb reaches these
-three tables at all, so the rows are written directly. **Local installs only**; the cart app picks
-the rows up on the next request with no flush, but a paragraph-settings change alongside it owes
+three tables at all, so the rows are written directly. **Local installs only**: a hosted install has no write path for these
+rows, so an online build asks the user. The cart app picks the rows up on the next request with no flush, but a paragraph-settings change alongside it owes
 the usual paragraph cache turnover. `ValidationFieldType` takes the C# **enum member NAME** as a
 string (`CustomOrderField`, `StandardOrderField`, `OrderLineField`), `ValidationRuleType` the
 **fully-qualified** rule class name, and every `*AutoId` column is `IDENTITY` — never supply one.
@@ -276,7 +281,8 @@ step blocks.
 
 The definition is an `EcomOrderLineFields` row (`OrderLineFieldSystemName`, `OrderLineFieldName`,
 `OrderLineFieldLength`). `SQL`, because no MCP tool and no Management API verb creates one;
-**local installs only**; flush `Dynamicweb.Ecommerce.Orders.OrderService` and
+**local installs only** (a hosted install has no write path for either row, so an online build asks
+the user); flush `Dynamicweb.Ecommerce.Orders.OrderService` and
 `…Orders.OrderLineFieldService` with Management API `CacheInformationRefresh` afterwards. The
 second row, `EcomOrderLineFieldGroupRelation` for the shop, is written the same way. Both rows are
 load-bearing: a definition alone is inert, and the value entry is materialised when the order line
@@ -312,6 +318,7 @@ SELECT COUNT(*) FROM EcomProducts WHERE ProductHidden = 1;
 -- the only write path: no API surface exposes the column, and there is no admin control.
 -- Local installs only. Afterwards, invalidate the product cache — an MCP patch_products_safe
 -- no-op on the affected ids is enough, and no application-pool recycle is needed.
+-- A hosted install has no read or write path for the column, so an online build asks the user.
 UPDATE EcomProducts SET ProductHidden = 0 WHERE ProductHidden = 1;
 ```
 
@@ -320,7 +327,8 @@ UPDATE EcomProducts SET ProductHidden = 0 WHERE ProductHidden = 1;
 ```sql
 -- read-only invariant; snapshot it BEFORE any check that places its own order,
 -- or the check fails on its own side effect. SQL because no verb aggregates the two
--- tables against each other; local installs only; owes no flush (read-only).
+-- tables against each other; local installs only (a hosted install compares get_product_stock
+-- with get_product_stock_by_location per product); owes no flush (read-only).
 SELECT COUNT(*) FROM (
   SELECT p.ProductId
   FROM EcomProducts p
@@ -361,8 +369,9 @@ Account-wide delivery addresses resolve by string equality on `AccessUserCustome
 per-contact suffix turns the feature off with no error, warning or log entry. In-product the census
 is `get_users_by_group_id` on the account group (or `get_users_by_customer_numbers` on the account's
 own number) and a comparison of the `customerNumber` values that come back. Where the whole install
-must be swept at once, the `SQL` form answers in one query; it is read-only, owes no flush, and runs
-anywhere the database is reachable rather than on local installs only.
+must be swept at once, the `SQL` form answers in one query; it is read-only and owes no flush, but it
+needs a reachable database, so it is **local installs only**: on a hosted install, run the in-product
+census above per account group.
 
 ```sql
 SELECT AccessUserCustomerNumber, COUNT(*)

@@ -112,6 +112,8 @@ POST /Admin/Api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Ecommerce.O
 -- only now run the code that reads or re-saves that order
 ```
 
+**Local installs only**: on a hosted install, write the order through `update_orders` (or `set_order_state` for a status), so no flush step is owed.
+
 Two corollaries:
 
 - **Nothing may re-save the entity between the flush and the read that must see the value.** Any verb
@@ -175,6 +177,8 @@ Three rules follow:
   [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`user-group-operations.md` §17b).
 - **Assert the downstream surface, not just the row**: per touched user, `SELECT` and `UserById` agree, and
   the storefront profile-switch endpoint returns `200`.
+
+**Local installs only**: on a hosted install, write users through `update_users` or `UserSave` on the exact id, so no DB-vs-API diff is owed.
 
 This is **the SQL-fallback rulebook only.** MCP `save_paragraphs` / `save_pages` / `save_grid_rows` / `save_prices` and the admin-UI Visual Editor invalidate the relevant caches for you — none of these rules apply to those surfaces. Choosing SQL-direct over a domain-service surface is a separate decision; when a service surface is available, prefer it and skip this section.
 

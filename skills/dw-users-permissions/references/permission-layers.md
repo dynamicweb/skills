@@ -46,6 +46,7 @@ who can SEE a CMS page on the storefront. Both live in `UnifiedPermission`, but 
 > Permissions or CapabilityLimitation editing for Dynamic Workspaces, Dashboards, or user-group
 > Capability Sets. Direct-SQL on the three tables above is the path. See §4c for the full surface map
 > + cache-flush requirement.
+> **Local installs only**: on a hosted install no MCP tool writes `CapabilityLimitation`, `DashboardAccessUserRelation` rows come only from `create_dashboards` `userIds`, and the only MCP grant writers are `assign_permissions_to_assortment`, `set_page_permissions` and `set_area_permissions`.
 
 ## 1. The `CapabilityControlFeature` flag — DW10.21+, default OFF
 
@@ -244,6 +245,8 @@ but every subtree (Media, System, Design) is empty. Fix: one grant on the root s
 `('<gid>', '/Files', 'File', '', Read)`. The path-chain cascade walks every subfolder for free. For
 tighter scoping, grant on `/Files/Images` only and Media-other-folders disappear.
 
+**Local installs only** for these row writes: on a hosted install no MCP tool writes a `ProductField` or `File` grant, so ask the user.
+
 Each entity declares its **permission parents** via `GetPermissionParents()`. The parent graph (when
 flag is OFF) is:
 
@@ -303,6 +306,8 @@ restrictive than typical PIM expectations and requires direct table seeding (Lay
 `UnifiedPermission` + Layer B `CapabilityLimitation` + 4b `DashboardAccessUserRelation`) to make a
 non-admin role functional. There is no admin-UI route around this for the resources above; direct SQL
 ([dw-data-access](../../dw-data-access/SKILL.md)) is the path.
+
+**Local installs only**: on a hosted install no MCP tool is known to write these rows for the resources above, so ask the user.
 
 **Rule out the query string before attributing an empty product editor to permission starvation.**
 `ProductEdit` resolves its model from the `Type=` parameter, not from `Id=`. With no `Type`, the model

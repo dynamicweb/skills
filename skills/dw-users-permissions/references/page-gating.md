@@ -135,7 +135,7 @@ Same entity-store mechanics with `PermissionName='Paragraph'` and the paragraph 
 `PermissionKey` (live-verified on 10.26.x): write the deny+grant pair —
 `('AuthenticatedFrontend', '<paragraphId>', 'Paragraph', <None>)` plus
 `('<groupId>', '<paragraphId>', 'Paragraph', <Read>)` — via the paragraph's Permissions panel or
-direct SQL + security-cache flush. The frontend renderer's `Content.cs:398` returns empty content
+direct SQL + security-cache flush (local installs only; on a hosted install use the Permissions panel, since no MCP tool is known to write a paragraph grant). The frontend renderer's `Content.cs:398` returns empty content
 for users without a read grant.
 
 ### Frontend resolution takes the HIGHEST level across a user's identities

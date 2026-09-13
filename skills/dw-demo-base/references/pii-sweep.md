@@ -152,6 +152,7 @@ the old one passes.** The rule that survives this:
 - **Express every privacy claim as a predicate over the TABLE, never over an id.**
   `SELECT COUNT(*) FROM AccessUser WHERE AccessUserEmail LIKE '%@<real-domain>' AND AccessUserActive = 1`
   must be `0`.
+  **Local installs only** for the `SELECT`: on a hosted install, run the predicate through `search_users` on the domain and count the active hits.
 - **Re-run it AFTER the closeout gate, not before it.** The window between the fix and the gate is exactly
   where a re-provision lands.
 - **Deleting the new row is not the fix and re-creates the illusion** — the next provision mints the next

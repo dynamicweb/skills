@@ -96,6 +96,8 @@ that sorts higher silently becomes the table every Insights widget reads**. A ba
 Prefix backups and staging copies with anything that is **not** `Tracking` (`bak_…`, `<slug>_…`), and assert
 `sys.tables` holds exactly one name matching `TrackingSession%`.
 
+**Local installs only**: a hosted install has no read path for table names, so an online build asks the user.
+
 ## Health providers are reachable over `/Admin/Api` — and each check returns its own SQL
 
 The obvious route (`/Admin/UI/Insights/HealthProviderCheckList?ProviderName=<type>`) needs a **browser
@@ -119,6 +121,8 @@ One pass took an Ecommerce provider from 10 failing checks of 32 to 0 of 32 that
   hidden or disabled (see the next section).
 - Make "the Ecommerce health provider reports zero failing checks" a pre-handover assertion — it is cheap
   and it is a screen owners open.
+
+**Local installs only** for running `checkWhatWasRun` by hand: on a hosted install, re-run the checks with `run_health_checks` and read the failing rows through `HealthProviderCheckDetailsByProviderName`.
 
 ## `ContentDataHealthProvider` 500s on every partially-contained database
 
@@ -147,6 +151,8 @@ Non-contained databases take the catalog collation from their own database colla
 - **The durable answer is provisioning:** assert `containment = 0` for the database at provisioning time
   so a solution is never built on a partially contained DB, and raise the missing `COLLATE DATABASE_DEFAULT`
   with the vendor.
+
+**Local installs only**: a hosted install has no read path for the collation replay or the containment setting, so an online build asks the user.
 
 ## Monitoring's "Recent task runs" Status column is derived from history, not from `TaskEnabled`
 
@@ -178,6 +184,8 @@ Any host whose Monitoring dashboard is shown **from the admin UI** needs an expl
 - **Leave `CommandLog` alone** — it is the API audit trail and has FK children.
 - Gate on it: the host has the daily task, and `GeneralLog` error count in the last 24h is `0` at the start
   of business. That single assertion is what keeps the owner-visible error tile honest.
+
+**Local installs only**: a hosted install has no documented write path that trims these tables, so an online build asks the user.
 
 Note the interaction with API probing: every unresolvable Management API verb name writes an
 `[Application/AddInManager]` Error row onto this same dashboard — see the "Discovering admin screens and

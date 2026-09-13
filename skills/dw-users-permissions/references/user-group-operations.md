@@ -143,7 +143,7 @@ attached.
 `UserSaveCommand.ValidateModel` rejects `IsLogin=true` only when **another** row with the same username
 already has `IsLogin=true`, so a standalone row converts fine and a member of a multi-profile set does not
 (the escape hatch for editing a member of an existing multi-profile set is to SQL-park the other rows
-of the set on throwaway usernames, `UserSave` the target row, then restore the set).
+of the set on throwaway usernames, `UserSave` the target row, then restore the set; local installs only, and a hosted install asks the user).
 
 ### Every `UserSave` mints a blank `AccessUserAddress` carrier row
 

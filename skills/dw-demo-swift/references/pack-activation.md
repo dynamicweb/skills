@@ -280,6 +280,7 @@ orderable until the next start. Then confirm the install:
 
 - **Config rows exist.** For each `layer.json` `configRows` entry, run its `EXISTS` probe (e.g.
   `SELECT 1 FROM <table> WHERE <where>`) and confirm the row is present.
+  **Local installs only**: on a hosted install, read each row through the MCP tool or Management API query that owns its table, and ask the user for a table no read reaches.
 - **Behavior works.** Exercise the pack's frontend path (an anonymous or signed-in GET of the page it
   ships) and confirm the declared behavior — a marker file appears, a body pattern renders, or a cart
   line carries the pack's price.

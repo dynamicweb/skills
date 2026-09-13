@@ -147,6 +147,7 @@ Three rules follow, and the middle one is the one that saves a run:
 2. **Guard every language-layer write with a fingerprint of the ORIGINAL text**, read from SQL immediately
    before the write, and **skip if the fingerprint is gone**. Without it, writing a layer after an unrelated
    later master edit silently reverts that layer to English.
+   **Local installs only**: on a hosted install, read the fingerprint with MCP `get_paragraph_item_field_values`.
 3. **One save at a time, re-read every layer after every save**, and assert a content marker occurs exactly
    once per layer. Never batch a master and its layers in one loop.
 

@@ -82,7 +82,7 @@ ERP cross-reference XSLT and 7 `EndsWith` call sites across 3 templates. Order a
 This is a **local-install-only** SQL recipe: it exists because no verb reaches a bulk rewrite of a
 column across dozens of rows, it bypasses every domain service (hence step 1's no-re-save rule and
 step 5's rebuild), and a hosted install has no SQL surface at all — there the equivalent is a
-per-user `UserSave` loop through the Management API, one contact at a time, with the same ordering.
+per-user `update_users` loop carrying `customerNumber`, one contact at a time, with the same ordering.
 
 The payoff is worth stating when someone asks whether it is worth it: on the install above, the
 account-wide delivery-address setting had been on and provably inert for a year of increments, and

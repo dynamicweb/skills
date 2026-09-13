@@ -187,3 +187,4 @@ starter evolves, so treat the list above as the shape, not a pinned inventory.
 > Assert catalog/PLP/PDP at the SQL / Delivery-API level (the backend gate) and treat rendered
 > storefront output as a real-host UAT item — the same "verify behavior on a real host" posture the
 > feature-pack render-proof deferral uses.
+> **Local installs only** for the SQL assert: on a hosted install, assert through the Delivery API alone.

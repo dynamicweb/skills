@@ -71,6 +71,8 @@ UPDATE Paragraph SET ParagraphGridRowColumn = <n> WHERE ParagraphId = <id>;
 - **Why the higher surfaces do not cover it** — neither column is on the MCP grid-row model nor on
   any `GridRow*` verb.
 - **Local installs only** — a hosted install has no SQL surface.
+  There, mint a correctly shaped row with `GridRowCreate` and place the paragraphs into it with
+  `place_paragraph_in_grid` (below) instead of converting a row or moving a paragraph in place.
 - **The debt it owes** — a **host restart**. Both columns are composition, so the page-composition
   cache serves the old value until the host recycles; verify and gate only after the restart.
 

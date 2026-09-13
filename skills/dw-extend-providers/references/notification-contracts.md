@@ -48,7 +48,7 @@ Two consequences:
 - **Prove a credential claim with a before/after hash read**, never with a rendered refusal. The same
   response can carry the guard's refusal block *and* the module's own "Password changed" success
   alert.
-- **Read the stored values with raw `SQL`** (local-install only, read-only, nothing owed) rather than
+- **Read the stored values with raw `SQL`** (local-install only, read-only, nothing owed; on a hosted install no MCP tool reads the stored hash) rather than
   `UserService.GetUserById`, which hands back the very instance being mutated.
 
 Saved cards have no notification at all: a sweep of every const string in the shipped assemblies

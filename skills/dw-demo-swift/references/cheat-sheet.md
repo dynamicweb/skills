@@ -47,7 +47,7 @@ A demo coupon is **single-use per completed order by default** — and a complet
 Two ways to keep it from biting — record whichever you chose in the demo's runbook (speaker notes / `notes\`, **not** the customer-safe cheat-sheet page, which must stay free of tech-leaking context per "Customer-safety rules"):
 
 - **Seed demo vouchers unlimited-use by default** — the simplest safe posture for a demo coupon that only needs to *show* a discount, not enforce a limit.
-- **When single-use is deliberate** (the story is about redemption limits), the runbook MUST carry the **reset SQL** that re-arms the voucher after a rehearsal order, plus the "applying ≠ consuming" note so the presenter knows exactly when it was spent.
+- **When single-use is deliberate** (the story is about redemption limits), the runbook MUST carry the **reset SQL** that re-arms the voucher after a rehearsal order, plus the "applying ≠ consuming" note so the presenter knows exactly when it was spent. **Local installs only**: a hosted install has no write path for voucher redemption state, so an online build asks the user.
 
 ## Reality-check role
 

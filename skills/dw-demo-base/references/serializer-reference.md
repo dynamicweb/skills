@@ -336,6 +336,8 @@ WHERE NOT EXISTS (
 );
 ```
 
+**Local installs only**: a hosted install has no read path for orphaned relation rows, so an online build asks the user.
+
 **Fix paths:**
 
 1. Clean source: delete the orphan row from the source DB and re-serialize. For Swift 2.2 reference, `tools/swift22-cleanup/06-delete-orphan-ecomshopgrouprelation.sql` is the canonical fix.
@@ -355,6 +357,8 @@ WHERE NOT EXISTS (
 SELECT * FROM [ItemType_Swift-v2_Logo]
 WHERE Link LIKE '%Default.aspx?%=3421%';
 ```
+
+**Local installs only**: on a hosted install, read the candidate paragraphs' `Link` values with `get_paragraph_item_field_values`.
 
 **Fix paths:**
 

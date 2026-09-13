@@ -160,6 +160,8 @@ re-queries SQL on every load) but the rendered accordion is empty. Seed-flow ord
 tables, (b) `dotnet run` recycle, (c) configure the paragraph's field. See
 [dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`).
 
+**Local installs only** for the table seed: on a hosted install create the groups with `save_field_display_group`.
+
 ### `ProductGroupGrid.SelectedGroups` — SQL-direct seeds don't deserialize
 
 DW10's `ProductCatalogGroupEditor` stores `SelectedGroups` in a format only its own editor
@@ -353,7 +355,7 @@ Symptom: "I added one custom Text variant and now half the site renders with tha
   sort-last strategy without verifying — some resolvers filter `_`-prefixed files as partials.
 - **Mitigation 2 — backfill `ParagraphTemplate`.** Preferred surface MCP
   `save_paragraphs(id=<id>, template='TextLeft.cshtml')` (one at a time, auto cache-invalidation);
-  SQL-fallback bulk `UPDATE Paragraph SET ParagraphTemplate='TextLeft.cshtml' WHERE
+  SQL-fallback (local installs only) bulk `UPDATE Paragraph SET ParagraphTemplate='TextLeft.cshtml' WHERE
   ParagraphItemType='Swift-v2_Text' AND (ParagraphTemplate IS NULL OR ParagraphTemplate='')` — a
   field UPDATE on an existing row, live with no restart ([dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`)
   edit-vs-insert rule). Run this BEFORE introducing any sort-early custom variant.
@@ -488,6 +490,8 @@ restart the host — the navigation tree and friendly-URL provider cache the old
 required-column list, including the `PageActiveFrom`/`PageActiveTo` silent-404 vector, lives in
 [dw-data-access](../../dw-data-access/SKILL.md) (`management-api-and-sql.md`).)
 
+**Local installs only** for the SQL split-state write: on a hosted install no MCP tool sets it, so ask the user.
+
 ## 7. Style assets — `Files/System/Styles/`
 
 The higher-leverage re-skin lever (Tier 0): drop a `<brand>.json` + `<brand>.css` pair into each
@@ -547,6 +551,8 @@ WHERE AreaId = <area>;
 
 Restart so the resolved style URLs reload. Verify:
 `curl -ks <host>/ | grep -E 'Styles/(ColorSchemes|Buttons|Typography)/'` → three new `<link>` entries.
+
+**Local installs only**: on a hosted install no MCP tool is known to write these four `Area` columns, so ask the user.
 
 **When to use Style assets vs a project CSS file:** use Style assets (Tier 0) for the brand palette +
 button shape + typography (applies to every scheme-tagged paragraph, including deserialized baseline

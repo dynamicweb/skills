@@ -186,7 +186,7 @@ event log and nothing in `Templates/Errors`: the template is found, compiled and
 simply reading a vocabulary nobody filled. Every other candidate (retrieval mode, sort field,
 cache, customer number, order-line relations) looks equally plausible, so **replay the app's own
 list query by hand first** — two rows back from SQL against an empty page separates "no data" from
-"no tags" in one step.
+"no tags" in one step (the replay is SQL, local installs only; on a hosted install `get_rmas_by_order_id` answers the "no data" half).
 
 Write the pair against the real models:
 

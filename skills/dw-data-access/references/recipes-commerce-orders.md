@@ -84,7 +84,8 @@ the same install carries it, by comparing one.
 
 - **Why the higher surfaces do not cover it**: no MCP tool saves a re-total, and the Management API
   recalculation re-saves the cached entity.
-- **Local installs only**: on a hosted install, re-place the order.
+- **Local installs only**: on a hosted install, re-place the order through the storefront checkout
+  (above); no MCP tool or Management API verb persists a re-total.
 - **The debt it owes**: a Management API `CacheInformationRefresh` of
   `Dynamicweb.Ecommerce.Orders.OrderService`, in the order given in "Order the SQL write and the cache
   flush" (below), and nothing may re-save the order afterwards. Read the totals back with
@@ -142,7 +143,9 @@ diff shows the checkout stamped, the order id and the completion flag and date i
 
 - **Why the higher surfaces do not cover it**: no tool or verb turns an order back into a cart, and the
   only removal tool deletes the asset.
-- **Local installs only**: on a hosted install, re-seed the cart instead.
+- **Local installs only**: on a hosted install, re-seed the cart instead, by adding the lines through the
+  storefront cart as the buyer, and take the before and after reads with `get_orders_by_ids` and
+  `get_order_lines`.
 - **The debt it owes**: the measured revert of the order columns needed no flush. The `AccessUserCartId`
   write is a User-row write, which [`recipes-commerce.md`](recipes-commerce.md) "The active-cart pointer
   is adopted with no ownership check" treats as owing a recycle or a user-service flush: sign in as the
@@ -158,7 +161,8 @@ MCP `create_order_state` reaches no column beyond the ones it names: it has no p
 therefore MCP create, then a `SQL` pass over the remaining columns, then a Management API
 `CacheInformationRefresh` (at `/admin/api/CacheInformationRefresh`) of
 `Dynamicweb.Ecommerce.Orders.OrderStateService` — and `…Orders.OrderFlowService` when the flow
-moved. SQL because no verb writes those columns; **local installs only**; it owes the flush named
+moved. SQL because no verb writes those columns; **local installs only** (a hosted install has no
+write path for them, so an online build asks the user); it owes the flush named
 above.
 
 Verify by re-reading `EcomOrderStates` for the flow and asserting both the new ids and a gapless
@@ -172,7 +176,8 @@ transitions. Nothing surfaces this. A two-ended `LEFT JOIN` is the only check th
 
 ```sql
 -- read-only integrity gate; run it in the same transaction as the state writes.
--- SQL because no verb reads the rule table; local installs only; owes no flush (read-only).
+-- SQL because no verb reads the rule table; local installs only (a hosted install reads both ends
+-- with get_order_states and get_order_flows); owes no flush (read-only).
 SELECT COUNT(*) FROM EcomOrderStateRules r
 LEFT JOIN EcomOrderStates f ON f.OrderStateId = r.OrderStateRuleFromState
 LEFT JOIN EcomOrderStates t ON t.OrderStateId = r.OrderStateRuleToState

@@ -27,7 +27,8 @@ Each Channel (ShopType=3) has its OWN group tree. Products are published to a ch
 
 Do:
 - Each channel has its own groups (e.g. `G-CHANNELA-X` under `CH-CHANNELA`, `G-CHANNELB-Y` under `CH-CHANNELB`)
-- Use `INSERT...SELECT` to bulk-populate channel groups from catalog groups
+- Use `INSERT...SELECT` to bulk-populate channel groups from catalog groups.
+  **Local installs only**: on a hosted install, create the channel groups with `save_groups` and publish products into them with `assign_products_to_group`.
 - Products live in 1+ catalog group (under the ShopType=1 shop) AND 1+ channel group per channel they're published to
 
 **Primary-shop trap — a group in two shops resolves ONE primary shop, and the wrong one silently
@@ -81,6 +82,8 @@ PermissionLevelRequired = PermissionLevel.Edit
 | MCP `save_groups` / admin-UI group save | Yes | Flushes | When seeding groups; relation INSERTs go through the same path. |
 | Raw SQL `INSERT INTO EcomGroupProductRelation` | No | Stays stale until host restart | Bulk seeding scripts only — and remember to restart the host or re-fire a `save_groups` notification before verifying URLs. |
 
+**Local installs only** for the raw SQL row: on a hosted install use the native action or `save_groups` above.
+
 The `PermissionLevel.Edit` gate is a Layer C entity check
 ([`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md)).
 
@@ -115,6 +118,7 @@ The `PermissionLevel.Edit` gate is a Layer C entity check
   (measured). No app recycle is needed. Verify that `GET /Admin/Api/FeedsByParentId?ParentId=0` matches
   `SELECT FeedId,FeedName FROM EcomFeed WHERE FeedParentId=0` exactly, and that the `GetServiceCaches`
   count for `FeedService` drops after the refresh.
+  **Local installs only**: on a hosted install, delete with `delete_feeds` and read back with `get_feeds`; if the feed survives, no MCP tool removes it, so ask the user.
 
 ## 2.9 Assortments (customer access) ≠ Channels (publishing)
 
@@ -357,7 +361,7 @@ read-only row on its own, so run the master control before you decide which one 
   when the relation carries `twoWayRelation=true`** (measured: 108 rows to 107, forward row gone, mirror
   `<target>|<group>|<source>` still present). Clearing a two-way set therefore means enumerating rows in
   BOTH directions from `EcomProductsRelated`, grouping by `ProductRelatedProductId`, and issuing one
-  `ProductRelatedDelete` per source. Verify by SQL count after every batch, never by the `ok`.
+  `ProductRelatedDelete` per source. Verify by SQL count after every batch, never by the `ok` (local installs only; on a hosted install read the rows back with `get_product_relations`).
   `ProductRelatedRemoveTwoWayRelation` changes the two-way FLAG and is not a delete;
   `ProductRelatedGroupDelete {ProductId, RelatedGroupId}` needs the same per-source fan-out.
 
@@ -453,7 +457,7 @@ the group filter points at the side you do not expect.**
   `500 {"title":"TotalSum calculation method is not yet implemented."}`. The admin lets you configure and
   activate it regardless, so the dead panel ships. **Do not ship an active TotalSum configuration**: set
   `IsActive=false` so the empty panel stops rendering (`SELECT IsActive FROM
-  EcomDynamicRelationCalculationConfigurations WHERE Method=1` must be 0).
+  EcomDynamicRelationCalculationConfigurations WHERE Method=1` must be 0). **Local installs only**: on a hosted install no MCP tool is known to read this, so confirm on a product in that category that the empty panel no longer renders.
 - **`SumByProduct` can report success at every step and generate zero calculations.** Measured with the
   group filter correctly scoped: `Calculate` answered
   `{"status":"ok","message":"Calculations completed successfully"}`, the trace log recorded
@@ -504,7 +508,7 @@ entity.
 - **A rejected literal is NOT a rollback.** The unmatched enum throws during model binding AFTER the
   earlier members have been applied, so `ProductSave` is not transactional across the model: a probe that
   sent `discontinued` + date + replacement + a bad action returned 500 while
-  `ProductDiscontinuedDate` landed in `EcomProducts`. **Assert the expected int in SQL.** A 200 alone is
+  `ProductDiscontinuedDate` landed in `EcomProducts`. **Assert the expected int in SQL** (local installs only; no MCP read of this column is verified, so a hosted install asks the user). A 200 alone is
   not enough, because a 500 on the same call can still have committed neighbouring fields, and a 200 on a
   no-op model looks identical to a 200 on a real change.
 - `replacementProductAndVariantIds` is WRITTEN as a bare product id (`"PROD417"`) and READS BACK as the

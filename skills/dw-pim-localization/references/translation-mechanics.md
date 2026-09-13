@@ -139,7 +139,7 @@ Group translation row:
 
 - `EcomGroupTranslation` (similarly stores per-language name, navigation name, description for each `EcomGroup.GroupId`)
 
-**Schema discovery rule:** When in doubt, `SELECT name FROM sys.tables WHERE name LIKE 'Ecom%Translation%' OR name LIKE 'Ecom%Language%'` first, then `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('<table>')` to confirm column shape on the specific DW version. Schemas drift between minor DW versions.
+**Schema discovery rule:** When in doubt, `SELECT name FROM sys.tables WHERE name LIKE 'Ecom%Translation%' OR name LIKE 'Ecom%Language%'` first, then `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('<table>')` to confirm column shape on the specific DW version. Schemas drift between minor DW versions. **Local installs only**: on a hosted install the MCP column below is the reachable surface.
 
 ## Surfaces — which MCP tools do what
 
@@ -151,6 +151,8 @@ Group translation row:
 | Create a language version of a product | (none — admin-only "Add languages" action) | Cloning rows in `EcomProductTranslation` (and any per-field tables) |
 | Set/update translated field values | `update_products` with `languageId` param OR `patch_products_safe` | Update column on `EcomProductTranslation` (and per-field translation tables) |
 | Translate a group | (none) | Insert + update `EcomGroupTranslation` |
+
+**Local installs only**: the SQL fallback column. On a hosted install, a product language version is `add_products_to_language`, a group name is `save_group_translations`, and the per-product language list has no MCP read.
 
 **Important MCP gotcha:** `update_products` accepts a `languageId` parameter. Pass the language string
 ID (e.g. `LANG2`) to write to that language version. Omitting it writes to the default (master)
@@ -167,9 +169,9 @@ recoveries, depending on intent:
 
 - The product should exist in the served language *in addition* to the default → after `create_products`,
   add the language version and write name/description via `update_products` with `languageId=<served>`
-  (or SQL on `EcomProductTranslation`), then rebuild the Products index.
+  (or, on local installs only, SQL on `EcomProductTranslation`), then rebuild the Products index.
 - The served language should itself be the default the products land on → set that `EcomLanguages` row
-  `LanguageIsDefault=1` **before** `create_products`, or SQL-repoint the created rows' language column,
+  `LanguageIsDefault=1` **before** `create_products`, or (local installs only) SQL-repoint the created rows' language column,
   then rebuild the index.
 
 **Validate:** after the index rebuild, the product is visible on the served-language PLP (not just in
@@ -259,6 +261,8 @@ Insert/UPDATE the DB rows directly per the recipe above.
 
 **Cache:** the EcomProductField list is loaded at startup. Restart the host after seeding before
 reopening a product translation page.
+
+**Local installs only**: on a hosted install no MCP tool is known to write a standard-field `EcomProductField` row, so ask the user.
 
 ## Read `EcomProductField` BEFORE planning any per-language or per-variant product write
 
@@ -357,6 +361,7 @@ A translation write needs a row to write into, and the two creates work differen
   or every subsequent read is stale. After that `ProductCatalogGroupSave` works normally on the new row.
   `ProductCatalogGroupTranslationsSave` is the auto-translate action and needs a configured translation
   provider; `ProductCatalogGroupNew` requires a `ParentId` and mints a new group, not a language row.
+  **Local installs only** for the runner clone: on a hosted install `save_group_translations` writes the language row (see the table below).
 - **A `400 {"successful":false,"message":"Unable to load query parameters for query type: '<Verb>ById'"}`
   from any `*ById` query means the requested ROW does not exist, not that the parameters are wrong.**
   Measured on both `ProductById?Id=<new product>&LanguageId=ESU` and
@@ -413,6 +418,7 @@ changes such as `OrderStateColor` are a different surface — those are cached a
    INSERT INTO EcomLanguages (LanguageId, LanguageCulture, LanguageCode2, LanguageName, LanguageNativeName, LanguageIsDefault)
    VALUES (N'<langId>', N'<culture>', N'<iso2>', N'<englishName>', N'<nativeName>', 0);
    ```
+   **Local installs only**: on a hosted install use `save_languages`.
 3. **Translate group names** first (groups must be translated so the navigation tree localizes) — see the group-translation null gotcha above. Use `save_groups` plus `save_group_translations` with the target `languageId`.
 4. **Translate product name + short description** via `update_products`/`patch_products_safe` with `languageId=<new>`. Custom-field translation can be deferred; the fallback handles it.
 5. **Rebuild the index** + run `build_assortments` if assortments are in play.

@@ -29,8 +29,8 @@ it is **local installs only**, and the cache flush or host restart it owes.
 ## Writing `PageNavigationTag` directly
 
 **Surface: `SQL`.** `navigationTag` IS a member of the MCP `save_pages` input schema on MCP 0.4.4 —
-it is accepted and then not persisted — and no Management API command at `/admin/api/...` exposes
-`PageNavigationTag` either, so the column is only reachable from the database.
+it is accepted and then not persisted. The Management API `PageSave` at `/admin/api/PageSave` reaches
+`PageNavigationTag` ("Set `PageNavigationTag`", below), so this SQL form is the last resort.
 
 ```sql
 UPDATE Page SET PageNavigationTag = 'MyTag' WHERE PageId = <pageId>;
@@ -39,8 +39,9 @@ UPDATE Page SET PageNavigationTag = 'MyTag' WHERE PageId = <pageId>;
 Three things this recipe owes:
 
 - **Why the higher surfaces do not cover it** — the MCP page model carries the member and drops the
-  value on 10.28.x, and the Management API page command has no equivalent.
-- **Local installs only** — a hosted install has no SQL surface at all.
+  value on 10.28.x; use SQL only where `PageSave` is not available.
+- **Local installs only** — a hosted install has no SQL surface at all. On a hosted install, write
+  the tag with Management API `PageSave`.
 - **The debt it owes** — a host restart. The page cache is not touched by a direct column write, so
   `GetPageIdByNavigationTag()` keeps returning `0` until the application pool recycles.
 
@@ -60,7 +61,9 @@ After the layer exists its `Area.AreaEcomLanguageId` still points at the master'
 the layer renders localized chrome around master-language product values. Inside the product the
 write is MCP `save_areas`, or Settings → Content → Websites → the layer → regional settings. `SQL`
 is the fallback for the columns `save_areas` does not model on a given build (currency, country
-code) and is **local installs only**; it owes a host restart, because the area row is read from the
+code) and is **local installs only** (on a hosted install, `save_areas`, and for the rest a full-model
+`GetAreaById` then `AreaSave` round trip at `/admin/api/AreaSave`, never a partial model); it owes a
+host restart, because the area row is read from the
 startup cache.
 
 ```sql
@@ -148,6 +151,9 @@ WHERE pg.PageAreaId = <layerAreaId>
 Every row is a dropped item. Per stub: clone the `ItemList` row, its child rows, the
 `ItemListRelation` rows and the parent item, then re-point the stub paragraph at the clone.
 
+On a hosted install, detect the stubs with `get_pages_by_area_id` and `get_paragraphs_by_page_id` (an
+empty item type); the repair has no documented write path there, so an online build asks the user.
+
 ## Repair a master grid row with a NULL GridRowItemId
 
 In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
@@ -156,7 +162,9 @@ In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
 On a mastered page `save_grid_rows` gives the MIRROR a real `GridRowItemId` and leaves the MASTER's
 row NULL, and a Swift row renders from the item INSTANCE — so the master language renders no columns
 while the translation renders correctly. No verb sets `GridRowItemId` on a master row on 10.28.x,
-which is why this one is `SQL`, **local installs only**, and owes a `CacheInformationRefresh` on
+which is why this one is `SQL`, **local installs only** (a hosted install has no documented write path
+for a master row; an online build tries Management API `GridRowSave`, which mints a missing row item,
+then asks the user), and owes a `CacheInformationRefresh` on
 `ParagraphService` and `PageService`.
 
 Allocate the id through the platform's own per-type allocator, the `ItemTypeId(ItemType, Current,
@@ -204,6 +212,10 @@ the two, since a BOM is easy to lose on re-save. To measure damage already store
 the read-only census script `Invoke-DwMojibakeCensus.ps1`. Restart the host after editing
 `Translations.xml` (cached at startup) and after touching header item rows (composition cache).
 
+**Local installs only**: on a hosted install, write translated strings through `apply_translation` (or
+`set_item_field_values`), which takes JSON and has no codepage step; the census script needs the
+database too, so stored damage there is checked on the rendered page.
+
 ## Culture-coded area URL prefixes
 
 In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
@@ -228,7 +240,8 @@ In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
 
 Some baselines ship pages whose `Page.PageShortCut` points at a hardcoded old page id that does not
 exist after a deserialize; the frontend 301-redirects to it and the visitor gets a 404. No MCP tool
-and no Management API verb exposes `PageShortCut`, so this is `SQL`, **local installs only**, and it
+and no Management API verb exposes `PageShortCut`, so this is `SQL`, **local installs only** (a hosted install has no documented read or write
+path for the column, so an online build asks the user), and it
 owes a host restart (page metadata is cached). Clear only shortcuts whose target id is dead — a
 shortcut to an id that exists (a sign-in folder pointing at its form page) is intentional.
 

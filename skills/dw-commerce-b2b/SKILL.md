@@ -134,7 +134,7 @@ right location or reseed the line with an in-range SKU rather than fighting the 
 assortments are disabled.** `UseAssortments = False` means a broken assortment-group relation
 produces no error and no symptom until the feature is switched on, so a group that inventory work
 has labelled a duplicate legacy tree can be load-bearing for several assortments. Run
-`get_assortment_relations_by_group_id` (or the equivalent `SELECT`) for every group being removed
+`get_assortment_relations_by_group_id` (or the equivalent `SELECT`, **local installs only**) for every group being removed
 and require zero rows, unconditionally.
 
 **Anonymous access.** If the catalog should be visible to not-signed-in visitors, the

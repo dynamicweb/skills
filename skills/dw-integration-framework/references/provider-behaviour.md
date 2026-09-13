@@ -68,7 +68,7 @@ group id**. Worse, a run actively **clears** an existing primary flag on any pro
 more than one group — including products that also sit in a PIM data-model group — so the flag is
 not merely unset, it is lost. Where breadcrumbs or a canonical group matter, snapshot
 `GroupProductRelationIsPrimary` before the run and replay it afterwards (`SQL`: no job-surface
-setting preserves it; local installs only; the replay is a plain `UPDATE` on a relation table the
+setting preserves it; local installs only, so a hosted install asks the user; the replay is a plain `UPDATE` on a relation table the
 product read path does not cache, but flush `Dynamicweb.Ecommerce.Products.ProductService` if a
 storefront read follows).
 
@@ -145,6 +145,7 @@ already know they are there: `AccessUser`, `AccessUserGroup`, `AccessUserAddress
   rows-affected count and writes nothing. **Always assert the destination row count in `SQL` after
   an address or impersonation import** (a read, not a write; the job surface reports no removal
   count of its own).
+  **Local installs only**: on a hosted install, count with `get_user_addresses_by_user_id` and `get_impersonatable_users` per imported user.
 - **Group names are the matching key for a customer import** (`AccessGroupGroupName`). Keep the
   exact characters the source system emits, punctuation included: normalising a name to plainer
   ASCII forks a duplicate account tree on the next run rather than matching the existing group.
