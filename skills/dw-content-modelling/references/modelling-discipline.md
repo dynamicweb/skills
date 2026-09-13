@@ -174,16 +174,9 @@ delete-and-recreate opening of Route A/B above (`ItemTypeDelete` then `ItemTypeN
 like "the way to change an item type" and it is not: `ItemTypeDelete` DROPS the `ItemType_<X>` table and
 every row of content in it. The field-level verbs are independent of it — `ItemFieldNew` returns a field
 shell for an existing type and `ItemFieldSave` ALTERs the table to add the column, leaving every existing
-row intact:
-
-```
-GET  /Admin/Api/ItemFieldNew?ItemTypeSystemName=<Type>&ItemFieldGroupSystemName=General
-POST /Admin/Api/ItemFieldSave { Model: { …, systemName:"<Field>", isNew:true,
-       editorType:"Dynamicweb.Content.Items.Editors.TextEditor, Dynamicweb",
-       underlyingType:"System.String, System.Private.CoreLib" } }   -> status ok
-
-ItemType_<Type>: 15 -> 16 columns, rows 12 -> 12, new column <Field> nvarchar(255)
-```
+row intact. Measured on a type holding 12 rows: the table went from 15 to 16 columns, kept all 12
+rows, and the new `TextEditor` column was `nvarchar(255)`. Neither verb is an MCP tool.
+Out of product: [`recipes-content.md`](../../dw-data-access/references/recipes-content.md) "Add a field to an item type that holds content".
 
 **Guard it with a before/after content fingerprint plus a row count**, so "I added a column" cannot quietly
 mean "I lost the content": snapshot the column list, the row count and a per-row digest of the existing
@@ -225,14 +218,17 @@ A repeater's children (e.g. `Swift-v2_Slider` slides, accordion items) live in
 `ItemType_<Prefix>_<Concept>_<Child>` rows, joined to the parent through an `ItemList` +
 `ItemListRelation`. `GetParagraphById` returns the parent's `contentItem` with the repeater **collapsed**
 to a single scalar — the `Items` field holds the `ItemList` id, not the expanded children. That collapse
-is a read-shape detail, **not** a dead end: the children are edited through the Management API like any
-other paragraph item content. The admin Visual Editor's slide editor is a SPA client of `/Admin/Api`, and
-its save is a plain HTTP call you can capture and replay (no operation exists only
-in the UI — the admin SPA is a client of `/Admin/Api`). **This was proven end-to-end against a
-Swift 2.4 `Swift-v2_Slider` on DW 10.28.1: a headless `POST /Admin/Api/ParagraphSave` created a slide and
-then edited it in place — no SQL, no recycle — and the storefront rendered the change on the next GET.**
+is a read-shape detail, **not** a dead end: the children are edited like any other paragraph item
+content. In product, read the list with `get_repeatable_item_field`, create children with
+`add_repeatable_item`, remove them with `remove_repeatable_items`, and edit an existing child's fields
+with `set_item_field_values` on its `(itemType, itemId)`. Out of product the Management API
+`ParagraphSave` carries the whole child set; the admin Visual Editor's slide editor is a client of the
+Management API, so no operation on children exists only in the UI. A headless `ParagraphSave` created
+a slide on a `Swift-v2_Slider` and then edited it in place, with no SQL and no recycle, and the
+storefront rendered the change on the next GET. [dw 10.28.1 · swift 2.4]
+Out of product: [`recipes-content.md`](../../dw-data-access/references/recipes-content.md) "Edit repeater children through `ParagraphSave`".
 
-The edit path — `POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById` (Bearer token):
+What the `ParagraphSave` child payload does:
 
 - The parent paragraph's list field is `ContentItem|<ParentItemType>|<Group>|<ListField>` — an **array of
   child entries** (for the slider: `ContentItem|Swift-v2_Slider|General|Items`). You send the full desired
@@ -253,29 +249,6 @@ The edit path — `POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById` (B
 - **No recycle.** `ParagraphSave` runs DW's domain service, which invalidates the render cache; the slide
   renders on the next storefront GET. (MCP `set_item_field_values` on the child's `(itemType, itemId)` is
   the equivalent surface-1 path once the child exists.)
-
-Minimal payload (edit the existing child `1`; use `"ItemId": ""` to create):
-
-```jsonc
-POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
-{
-  "QueryData": { "Id": <paragraphId> },
-  "model": {
-    "ItemType": "Swift-v2_Slider",
-    "Layout": "CardCoverNavInline.cshtml",
-    "ContentItem|Swift-v2_Slider|General|Items": [
-      {
-        "ItemId": "1",                       // "" creates; an existing id edits in place
-        "ItemType": "Swift-v2_Slider_Item",
-        "Label": "<slide label>",
-        "ContentInfo": { "AreaId": 3, "PageId": 153, "GridRowId": 185, "ParagraphId": <paragraphId> },
-        "RelationItem": { "Groups": [] },
-        "ModelRawData": "{\"RelationItem|Swift-v2_Slider_Item|General|Title\":\"<p>…</p>\", \"RelationItem|Swift-v2_Slider_Item|General|Text\":\"<p>…</p>\", \"RelationItem|Swift-v2_Slider_Item|General|Button\":null}"
-      }
-    ]
-  }
-}
-```
 
 - **Round-trip-verify — `ParagraphSave` is a lying-success surface for this shape.** A malformed child
   entry (e.g. field values missing from `ModelRawData`) still returns `status: ok` while creating nothing —
@@ -307,21 +280,14 @@ fresh parent and never as the verification a helper gates on:
 - **(a) On a FRESH parent only, the list-pointer transition `0` → non-zero is observable** through
   `GetParagraphById`. DW mints the `ItemList` and wires the relation on the first successful child write.
 - **(b) In every case — and the only check that generalises — assert the child's field values in a live GET
-  of the rendered page.**
+  of the rendered page** (`fetch_frontend_page_html` in product).
 
 The asymmetry is what makes (a) a trap, and the far more common editorial case is the one it cannot serve:
 **editing a child of a list that ALREADY EXISTS.** There the pointer is a constant, measured unchanged
 across four separate `ParagraphSave` calls on one slider card, and unchanged across create *and* delete of a
-child on another parent:
-
-```
-GET  /Admin/Api/GetParagraphById?Id=<paragraphId>
-  -> contentItem.groups[0].fields[0] {name: "Items", value: 323}    # before all four saves
-  -> …                               {name: "Items", value: 323}    # after all four saves
-POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
-  -> {status: "ok", exception: null}   with model…Items.value echoing the posted ModelRawData VERBATIM —
-                                       including field values that provably did NOT persist
-```
+child on another parent. `GetParagraphById` read the list field as `Items = 323` before and after all
+four saves, and every `ParagraphSave` answered `status: ok` with the model's `Items` value echoing the
+posted `ModelRawData` verbatim, including field values that provably did NOT persist.
 
 That last clause is the sharp edge: the echo is not merely uninformative, it is **actively wrong** — it
 reports values back to you that the row never took (observed with `SelectedImage` on a child: `Title`/`Subtitle`/`Text` persist and `Image` does not, out of one payload that echoes all four). A
@@ -340,8 +306,8 @@ which table `ItemListRelation` points at before reasoning about the shape.
 > Historical note: earlier revisions of this section claimed the child rows were "unreachable through the
 > Management API — editable only by guarded SQL plus a recycle." That was wrong; the SQL-plus-recycle
 > motion is retired. The storage shape above is correct and useful for understanding, but the **edit path is
-> the API** — capture the UI's `/Admin/Api` call and replay it; if a payload seems impossible, file a
-> learning rather than escaping to SQL.
+> the API** (the repeatable-item MCP tools in product, `ParagraphSave` out of product); if a payload
+> seems impossible, file a learning rather than escaping to SQL.
 
 ### What to put where
 
@@ -365,15 +331,11 @@ which table `ItemListRelation` points at before reasoning about the shape.
 
 ### Audit query
 
-To list all paragraph templates that don't match `Swift-v2_*` and aren't in a project-prefixed
-folder (a "shim" smell — refactor to a custom item type):
-
-```powershell
-Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\*" -Filter '*.cshtml' `
-    | Where-Object { $_.Name -notlike 'Swift-v2_*' }
-```
-
-This is also grep #6 of the discipline audit grep-pack in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md).
+A paragraph template inside a stock `Swift-v2_*` item folder under `Templates/Designs/Swift-v2/Paragraph/`
+whose file name does not start with `Swift-v2_` is a shim smell: refactor it to a custom item type. In
+product, walk those folders with `list_files` and flag every such `.cshtml`. This is also check 6 of the
+discipline audit in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md).
+Out of product: [`recipes-content.md`](../../dw-data-access/references/recipes-content.md) "Audit generic item folders for shim templates".
 
 ## Cross-references
 

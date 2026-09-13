@@ -311,12 +311,9 @@ fallback, not CSS specificity. Workarounds:
 3. **`<i class="bi bi-...">` Bootstrap Icons** — already loaded by Swift's vendor pipeline, monochrome,
    honors `color:`.
 
-Verification — search the rendered HTML for emoji in branded chrome:
-
-```powershell
-$page = (Invoke-WebRequest -SkipCertificateCheck https://localhost:<port>/).Content
-[regex]::Matches($page, '[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}]') | Select-Object -ExpandProperty Value -Unique
-```
+Verification: fetch the rendered page with `fetch_frontend_page_html` and search the HTML for
+codepoints in the ranges U+1F300 to U+1F9FF and U+2600 to U+27BF inside branded chrome.
+Out of product: [`recipes-content.md`](../../dw-data-access/references/recipes-content.md) "Find emoji codepoints in rendered chrome".
 
 Any hits in `<header>`/`<footer>`/`<nav>`/value-props bands render in color (e.g. on a developer machine) even
 if they look fine on a Mac (which renders some codepoints monochrome by default).
