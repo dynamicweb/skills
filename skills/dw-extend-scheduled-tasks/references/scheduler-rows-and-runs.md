@@ -10,6 +10,8 @@ Measured on DW 10.28.x with the platform scheduler in-process (no OS task, no ex
 - [Choosing the add-in: what actually runs your work](#choosing-the-add-in-what-actually-runs-your-work)
 - [Clearing an indexed PIM field from a task](#clearing-an-indexed-pim-field-from-a-task)
 - [The ScheduledTask row contract](#the-scheduledtask-row-contract)
+- [Writing TaskAddInSettings from T-SQL](#writing-taskaddinsettings-from-t-sql)
+- [Rows the platform seeds on start](#rows-the-platform-seeds-on-start)
 - [The slot lives in TaskBegin, not TaskNextRun](#the-slot-lives-in-taskbegin-not-tasknextrun)
 - [Running a task on demand](#running-a-task-on-demand)
 - [TaskCheckPrevious is a co-queued failure gate](#taskcheckprevious-is-a-co-queued-failure-gate)
@@ -143,6 +145,53 @@ Dynamicweb.Ecommerce` — the **`Cart`** namespace, not `Orders.ScheduledTaskAdd
 (there is no `eCom` folder at the `Templates` root at all — the Swift templates live under
 `Templates/Designs/Swift-v2/eCom`), so the whole folder chain has to be created first. The template
 is a ViewModel template over `Dynamicweb.Ecommerce.Frontend.PaymentCardExpirationEmailViewModel`.
+
+## Writing TaskAddInSettings from T-SQL
+
+Same surface as the row contract: `SQL`, local-install only, owing the `TaskService` flush. Two
+traps, in opposite directions.
+
+**Escape a parameter value with an explicit `REPLACE` chain, ampersand first.** The idiomatic
+`(SELECT @sql FOR XML PATH(''), TYPE).value('.', 'nvarchar(max)')` escapes and then decodes again, so
+the attribute stores raw `<` and `&` and the task fails with `System.Xml.XmlException: '<',
+hexadecimal value 0x3C, is an invalid attribute character` from
+`ConfigurableAddIn.LoadParametersFromXml`. Escape only the value:
+
+```sql
+REPLACE(REPLACE(REPLACE(REPLACE(@sql, '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), '"', '&quot;')
+```
+
+**Strip the prolog before casting the blob to `xml`.** Every blob the platform writes starts with
+`<?xml version="1.0" encoding="utf-8"?>`, and SQL Server refuses to cast an `nvarchar` whose prolog
+declares an encoding, so `TRY_CAST(TaskAddInSettings AS xml) IS NULL` fires on **every correct
+row**. Strip it, then assert on content:
+
+```sql
+DECLARE @prolog nvarchar(100) = N'<?xml version="1.0" encoding="utf-8"?>';
+IF EXISTS (SELECT 1 FROM ScheduledTask
+            WHERE TaskName = N'<your task name>'
+              AND ISNULL(TRY_CAST(REPLACE(TaskAddInSettings, @prolog, N'') AS xml)
+                   .value('(/Parameters/Parameter[@name="SqlQuery"]/@value)[1]', 'nvarchar(max)'), N'') = N'')
+    THROW 50002, 'ASSERT FAIL: settings unreadable or parameter empty', 1;
+```
+
+Reading the parameter back catches both the bad escape and a blob truncated in a too-small variable,
+which can still parse; see
+[`dw-data-access` sql-direct-gotchas.md](../../dw-data-access/references/sql-direct-gotchas.md#two-silent-truncations).
+
+## Rows the platform seeds on start
+
+**An application start creates a disabled `Place recurring orders` task if that row is absent**
+(`Dynamicweb.Ecommerce.Orders.ScheduledTaskAddIns.RecurringOrdersScheduledTaskAddIn`,
+`TaskFolderId NULL`, `TaskLastRun` at the `2000-01-01` sentinel). So `COUNT(*)` on `ScheduledTask`
+moves by one across an app-pool recycle with no attributable action.
+
+- **Assert on the set of task names or ids you own, never on `COUNT(*)`**, which is stable only
+  inside one worker lifetime.
+- **Deleting the row does not settle it**: the seed is idempotent by absence, so the next start
+  recreates it. Leave it and name its cause in any census.
+- A row of that name proves nothing about who wrote it, so a deployment that ships its own copy
+  cannot use "the task exists" as its install check.
 
 ## The slot lives in TaskBegin, not TaskNextRun
 

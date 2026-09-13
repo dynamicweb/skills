@@ -14,7 +14,7 @@ description: 'Understand Dynamicweb 10 Integration Framework architecture and pa
 | If you need to... | Read this reference |
 |---|---|
 | Author, copy or patch a job file on disk — the doubled `Files\Files` path, the UTF-16LE encoding, the `<Schema>` snapshot, the two column element shapes, SqlProvider connection nodes, file-destination paths, and what a job file publishes over HTTP | [references/job-file-format.md](references/job-file-format.md) |
-| Know what a shipped provider actually does when it writes — Ecom key matching and minted ids, the `EcomPrices` identity, the five user tables, the update-only OrderProvider destination and the missing ledger filter, SqlProvider staging clones and datetime precision, the XSLT seam, and restore/reset ordering | [references/provider-behaviour.md](references/provider-behaviour.md) |
+| Know what a shipped provider actually does when it writes — Ecom key matching and minted ids, the `EcomPrices` identity, `IgnoreEmptyCategoryFieldValues` for a multi-category enrichment feed, the five user tables, the update-only OrderProvider destination and the missing ledger filter, SqlProvider staging clones and datetime precision, the XSLT seam, and restore/reset ordering | [references/provider-behaviour.md](references/provider-behaviour.md) |
 | Write a provider in C# because no shipped provider fits | [references/custom-provider-authoring.md](references/custom-provider-authoring.md) |
 
 ## Without MCP

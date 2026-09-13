@@ -315,8 +315,11 @@ Pack-specific behaviors and known limitations to expect after install:
 
 - **feature-subscription-orders** ships its own **disabled** `Place recurring orders` scheduled task in its
   fragment. It arrives disabled deliberately — enable it only when the demo actually exercises
-  recurring-order generation, so an idle demo host never fires it. Confirm the task exists (a
-  `configRows` probe) and leave it disabled unless the storyline needs it.
+  recurring-order generation, so an idle demo host never fires it. Leave it disabled unless the
+  storyline needs it. The platform also **seeds a disabled row of the same name on application
+  start whenever it is absent**, so "the task exists" is not evidence the fragment applied: probe a
+  column only the fragment writes, and never assert the scheduled-task `COUNT(*)` across a restart:
+  assert on the task names the pack owns.
 - **feature-pricing** ships a **compile-optional `IPriceProvider`** (see §5 "The `customCode`
   declaration"): **contract pricing works zero-code** (native default provider) and **quantity-tier
   enforcement requires the §6 opt-in compile**. Install data-only unless the demo needs qty-tier

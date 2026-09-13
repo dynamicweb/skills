@@ -13,7 +13,7 @@ description: 'Create and manage scheduled tasks in Dynamicweb 10 including RunSq
 
 | Topic | Where |
 |---|---|
-| The scheduler itself — which add-in to use for which work (and why `RunSqlScheduledTaskAddIn` is inert on 10.28.x), the `ScheduledTask` row contract for a SQL registration (`TaskParentId` NULL, `TaskMinute` as an interval, the settings XML shape), why `TaskBegin` and not `TaskNextRun` is the slot, running a task on demand with `TaskRun`, what `TaskCheckPrevious` really gates, and where the run history lives on disk | [`references/scheduler-rows-and-runs.md`](references/scheduler-rows-and-runs.md) |
+| The scheduler itself — which add-in to use for which work (and why `RunSqlScheduledTaskAddIn` is inert on 10.28.x), the `ScheduledTask` row contract for a SQL registration (`TaskParentId` NULL, `TaskMinute` as an interval, the settings XML shape), escaping a settings value from T-SQL and asserting on a blob that carries a utf-8 prolog, the `Place recurring orders` row an app start seeds (assert on owned task ids, not `COUNT(*)`), why `TaskBegin` and not `TaskNextRun` is the slot, running a task on demand with `TaskRun`, what `TaskCheckPrevious` really gates, and where the run history lives on disk | [`references/scheduler-rows-and-runs.md`](references/scheduler-rows-and-runs.md) |
 
 ## How Scheduled Tasks Work
 

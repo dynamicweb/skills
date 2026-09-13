@@ -41,7 +41,7 @@ question is **what the beat's evidence is**:
 | Option | What runs | Use when the evidence is | Cost |
 |---|---|---|---|
 | 1 — narrate the staged state | nothing; the data is already post-sync | an **admin screen** (product detail, action rule, mail template) | none |
-| **3 — a real Integration Framework activity** | a `SqlProvider` source over a staged table into an `EcomProvider` (or `SqlProvider`) destination, bound to a task through `JobScheduledTaskAddIn` | the **STOREFRONT** — a PDP, a PLP, a cart line — **and any RESET** | none (configuration; no provider class to write) |
+| **3 — a real Integration Framework activity** | a `SqlProvider` source over a staged table into the destination provider that owns the entity (products and groups `EcomProvider`; orders, carts and quotes `OrderProvider`; users and addresses `UserProvider`; stock and prices were measured riding `DynamicwebProvider`; custom tables `SqlProvider`), bound to a task through `JobScheduledTaskAddIn`. The source carries a literal connection string: the empty-node fallback is destination-only | the **STOREFRONT** — a PDP, a PLP, a cart line — **and any RESET** | none (configuration; no provider class to write) |
 | 2 — `RunSqlScheduledTaskAddIn` | one SQL statement, *if* it executes | an admin screen, when the effect is asserted independently after every run | none (built-in add-in), plus the verification below |
 
 **Option 3 is the default, including for the RESET.** It is not custom code: DW10 ships both

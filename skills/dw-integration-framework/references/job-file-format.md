@@ -31,7 +31,10 @@ Those two are the whole surface. When neither the tools nor the file reaches the
 Data Integration admin screen that does it rather than reaching for another transport.
 
 A job file is **build output** whenever it can be: generate it from a script and edit the
-generator, so a schema change is a regeneration rather than a hand-patch.
+generator, so a schema change is a regeneration rather than a hand-patch. **The generator reads its
+template from a pristine copy that nothing ever writes, never from the live job file it produces.**
+A generator that patches the file it wrote last time re-applies its own patch on every run, so the
+output drifts further from the template each time and a regeneration never diffs clean.
 
 ## Where an activity lives, and what names it
 
