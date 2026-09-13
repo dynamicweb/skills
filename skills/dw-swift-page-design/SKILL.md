@@ -232,8 +232,8 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
   `HeaderDesktop`/`HeaderMobile`/`FooterDesktop`/`FooterMobile` Master link fields. It is
   idempotent and `sourceHost` is **optional**, so it works for an original site with no
   migration involved. It requires the area's Swift v2 master `ItemType` (provisioned by
-  `save_areas`). **It is not in the standard MCP tool set** — it ships in an optional migration
-  add-in, so on most builds `tools/list` does not carry it and no permission grant can add it.
+  `save_areas`). **It is not on the MCP endpoint**: `tools/list` on `/admin/mcp` does not carry it
+  [mcp 0.6.0-beta], and no permission grant adds it.
   When it is absent, read the chrome the area already has: `get_areas` for the master's
   `HeaderDesktop` / `HeaderMobile` / `FooterDesktop` / `FooterMobile` link fields, then
   `get_pages_by_area_id` and `get_paragraphs_by_page_id` on the pages those fields point at.

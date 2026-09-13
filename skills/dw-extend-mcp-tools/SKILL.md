@@ -63,7 +63,7 @@ Location: `{Domain}/Models/`
 ```csharp
 using System.ComponentModel;
 
-namespace Dynamicweb.MCP.Products.Models;
+namespace Truvio.Commerce.MCP.Products.Models;
 
 [Description("Represents a widget configuration.")]
 public sealed class WidgetModel
@@ -160,13 +160,13 @@ Location: `{Domain}/Tools/`
 
 **Example:**
 ```csharp
-using Dynamicweb.MCP.Configuration;
-using Dynamicweb.MCP.Core.Responses;
-using Dynamicweb.MCP.Products.Models;
+using Truvio.Commerce.MCP.Configuration;
+using Truvio.Commerce.MCP.Core.Responses;
+using Truvio.Commerce.MCP.Products.Models;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 
-namespace Dynamicweb.MCP.Products.Tools;
+namespace Truvio.Commerce.MCP.Products.Tools;
 
 [McpServerToolType]
 public static class WidgetTools

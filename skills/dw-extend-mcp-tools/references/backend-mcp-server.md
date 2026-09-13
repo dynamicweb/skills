@@ -225,8 +225,8 @@ add-in answered `Required permission: Create. Allowed permission: none.` Reading
 capability gate produces a request for a grant that can never be granted.
 
 **The only reliable test is the registry**: check the name against this build's `tools/list` (the
-repo's `scripts/mcp-tools.json` is the captured 0.4.4 FullAccess set, with the retired names under
-`notRegisteredOn044`). If the name is absent, it is a wrong name — plan the work without it. If it is
+repo's `scripts/mcp-tools/<version>.json`, named by `scripts/mcp-tools/index.json`, is the captured
+FullAccess set of the current add-in version, with the retired names under its `notRegisteredOn*` key). If the name is absent, it is a wrong name — plan the work without it. If it is
 present and the call is still denied, it is a capability gate worth asking about. Together with the
 bare `"An error occurred invoking '<tool>'."` — the argument-validation error — neither message is
 ever evidence about registration in either direction.

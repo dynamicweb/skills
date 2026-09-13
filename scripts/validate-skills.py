@@ -941,6 +941,10 @@ def load_versions() -> dict | None:
         return None
 
 
+# The MCP add-in id since the Truvio Commerce rebrand, and the pre-rename id.
+MCP_APP_IDS = ("Truvio.Commerce.MCP", "Dynamicweb.MCP")
+
+
 def works_on_mcp_version() -> str | None:
     """The MCP app version `versions.json` was measured on, if it parses."""
     if not VERSIONS_FILE.is_file():
@@ -955,9 +959,11 @@ def works_on_mcp_version() -> str | None:
     if not isinstance(apps, list):
         return None
     for app in apps:
-        if isinstance(app, dict) and app.get("id") == "Dynamicweb.MCP":
+        if isinstance(app, dict) and app.get("id") in MCP_APP_IDS:
             v = app.get("measured")
-            return v if isinstance(v, str) else None
+            # The registry file is named by the version core: a measured
+            # `0.6.0-beta` resolves to `scripts/mcp-tools/0.6.0.json`.
+            return v.split("-", 1)[0] if isinstance(v, str) else None
     return None
 
 
