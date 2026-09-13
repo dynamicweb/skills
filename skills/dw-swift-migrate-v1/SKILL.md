@@ -4,10 +4,42 @@ type: flow
 group: swift
 mcp: required
 dynamo: true
+compatibility: 'Dynamo only. Runs inside Dynamo, the in-product assistant, where the site extraction and page-build tools it drives run in-process. External MCP clients do not have them on the /admin/mcp endpoint of Truvio.Commerce.MCP 0.6.'
 description: 'Migrate pages from a Swift 1 (Swift v1) solution to Swift 2 and KEEP THE LAYOUT — a faithful, structure-preserving port (Swift 1 and Swift 2 share the same grid model, so the layout carries over 1:1). Reuses site extraction + page-build tools in faithful mode with an explicit Swift 1 -> Swift 2 component/layout mapping. Triggers: migrate a Swift 1 site to Swift 2 keeping the layout, port Swift v1 pages 1:1, faithful Swift 1 -> Swift 2 conversion. Non-triggers: a free content re-design or a non-Swift-1 source -> dw-swift-migrate-content; a plain new page with no migration source -> dw-swift-page-design.'
 ---
 
 # Swift 1 → Swift 2 Migration
+
+## Dynamo only
+
+This skill runs **inside Dynamo**, the in-product assistant, where `extract_site_content`,
+`get_extracted_site`, `get_extracted_page`, `build_pages`, `import_site_media`,
+`apply_brand_color_scheme` and `setup_website_chrome` are available in-process. An external MCP
+client (Claude Code or any other agent) does not have them: the add-in declares the family in its
+migration tool class for in-process use, and `tools/list` on `/admin/mcp` carries none of them,
+even with a FullAccess key [mcp 0.6.0-beta]. No permission grant adds them to the endpoint. Inside
+Dynamo, confirm the seven tools are in the session's tool list before planning; if they are not,
+stop and say so.
+
+**An external client stops here and tells the user to run the migration from Dynamo.** Nothing
+registered replaces the extraction: no registered tool reads another site's pages
+(`fetch_frontend_page_html` summarises a page of this solution only), so an external client has no
+source to build from. Only when the user declines Dynamo and supplies the source content (the page
+list, the copy and the media) can an external client do one part of the work, the construction,
+with registered tools, slower and per page:
+
+- For `build_pages`: `save_pages`, `save_grid_rows`, `save_paragraphs` and
+  `set_paragraph_item_fields`, reading back with `get_pages_by_area_id` and
+  `get_paragraphs_by_page_id`.
+- For `apply_brand_color_scheme`: `save_color_schemes`, then `save_areas` with
+  `colorSchemeGroupId` and `colorSchemeId`.
+- For `setup_website_chrome`: the chrome the area already has (`get_areas`), and a missing header
+  or footer built with `save_pages` and `save_paragraphs` and wired through `save_areas`.
+- For `import_site_media`: `upload_file`.
+
+That path replaces the construction only, never a decision, and it carries none of the
+`build_pages` guarantees (plan validation, content filled from the extraction, precondition
+checks), so read every page back.
 
 ## MCP preflight
 
@@ -17,28 +49,6 @@ starting. If a step's tool is missing, **stop at that step** and tell the user w
 which admin screen performs it; do not substitute a guessed HTTP call, a file edit outside
 `Files/`, or SQL. The Management API, the serializer and direct SQL are out-of-product surfaces,
 owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a step here.
-
-## Tool availability — check `tools/list` before planning around these
-
-`extract_site_content`, `get_extracted_site`, `get_extracted_page`, `build_pages`,
-`import_site_media`, `apply_brand_color_scheme` and `setup_website_chrome` are **not on the MCP
-endpoint**. Measured with a FullAccess key, `tools/list` on `/admin/mcp` carries none of them
-[mcp 0.6.0-beta]. The add-in assembly still declares the family in a migration tool class, one of
-whose tool descriptions says it is invoked in-process by the in-product assistant, so only the
-session's own tool list says whether it can call them, and no permission grant adds them to the
-endpoint. Call `tools/list` first. When the family is absent, say so, and split the work:
-
-- **Nothing registered replaces the extraction** (`extract_site_content`, `get_extracted_site`,
-  `get_extracted_page`). No registered tool reads another site's pages: `fetch_frontend_page_html`
-  summarises a page of this solution only. Ask the user for the source content (the page list, the
-  copy and the media) before planning, and never invent it.
-- **The construction has registered replacements**, slower and per page. For `build_pages`:
-  `save_pages`, `save_grid_rows`, `save_paragraphs` and `set_paragraph_item_fields`, reading back
-  with `get_pages_by_area_id` and `get_paragraphs_by_page_id`. For `apply_brand_color_scheme`:
-  `save_color_schemes`, then `save_areas` with `colorSchemeGroupId` and `colorSchemeId`. For
-  `setup_website_chrome`: the chrome the area already has (`get_areas`), and a missing header or
-  footer built with `save_pages` and `save_paragraphs` and wired through `save_areas`. For
-  `import_site_media`: `upload_file`. That path replaces the construction only, never a decision.
 
 Use this skill when the user wants to migrate pages from a **Swift 1** (Swift v1) solution to
 **Swift 2** and **keep the layout** — as faithful and structure-preserving as the pipeline

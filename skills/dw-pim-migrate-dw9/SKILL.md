@@ -4,10 +4,27 @@ type: flow
 group: pim
 mcp: required
 dynamo: true
+compatibility: 'Dynamo only. Runs inside Dynamo, the in-product assistant, where the DW9 import tools it drives run in-process. External MCP clients do not have them on the /admin/mcp endpoint of Truvio.Commerce.MCP 0.6.'
 description: 'Migrate a Dynamicweb 9 (DW9) solution''s product structure and catalog data into a Dynamicweb 10 PIM with the migrate_dw9_export, run_dw9_product_import, and assign_dw9_products_to_data_models tools. Triggers: upgrade or migrate a DW9 warehouse/catalog to DW10, import a DW9 product export, map DW9 groups onto DW10 Data Models, "0 warehouse shops"/"0 memberships" after a DW9 import. Non-triggers: migrating DW9 CMS content/pages (a separate, unrelated effort); single-product creation or Data Model design -> dw-pim-modelling; an in-place DW9->DW10 platform version upgrade -> dw-setup-upgrade.'
 ---
 
 # Migrate DW9 Products into DW10 PIM
+
+## Dynamo only
+
+This skill runs **inside Dynamo**, the in-product assistant, where `migrate_dw9_export`,
+`run_dw9_product_import`, `get_dw9_product_import_status` and `assign_dw9_products_to_data_models`
+are available in-process. An external MCP client (Claude Code or any other agent) does not have
+them: the add-in declares the family in its migration tool class for in-process use, and
+`tools/list` on `/admin/mcp` carries none of them, even with a FullAccess key [mcp 0.6.0-beta]. No
+permission grant adds them to the endpoint. Inside Dynamo, confirm the four tools are in the
+session's tool list before Phase 1; if they are not, stop and say so.
+
+**An external client stops here and tells the user to run the migration from Dynamo.** No
+registered tool replaces the family: the DW9 structure mapping (Phase 1) and the product to data
+model memberships (Phase 3) exist only in these tools, and the registered Data Integration tools
+(`create_integration_activity`, `run_integration_activity`, `get_integration_activity_status`)
+build neither, so they are not a partial substitute. Never an invented HTTP call.
 
 ## MCP preflight
 
@@ -17,24 +34,6 @@ starting. If a step's tool is missing, **stop at that step** and tell the user w
 which admin screen performs it; do not substitute a guessed HTTP call, a file edit outside
 `Files/`, or SQL. The Management API, the serializer and direct SQL are out-of-product surfaces,
 owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a step here.
-
-## Tool availability — check `tools/list` before planning around these
-
-`migrate_dw9_export`, `run_dw9_product_import`, `get_dw9_product_import_status` and
-`assign_dw9_products_to_data_models` are **not on the MCP endpoint**. Measured with a FullAccess
-key, `tools/list` on `/admin/mcp` carries none of them [mcp 0.6.0-beta]. The add-in assembly still
-declares the family in a migration tool class, one of whose tool descriptions says it is invoked
-in-process by the in-product assistant, so only the session's own tool list says whether it can
-call them, and no permission grant adds them to the endpoint. Call `tools/list` first.
-
-When the family is absent, say so plainly: **no registered tool replaces it.** The DW9 structure
-mapping (Phase 1) and the product to data model memberships (Phase 3) exist only in these tools.
-Stop and ask the user how to proceed. The honest options are the admin screen that performs the
-import (**Settings > Integration > Data integration**, with the DW9 export as the source) plus the
-Data Model mapping this skill prescribes; the registered Data Integration tools
-(`create_integration_activity`, `run_integration_activity`, `get_integration_activity_status`) can
-run an import activity the user has approved, but they build neither the structure nor the
-memberships. Never an invented HTTP call.
 
 The migration runs in a fixed order — **structure → product data → assignment → verify** — and
 each phase depends on the one before it: never start the product import before the structure
