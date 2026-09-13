@@ -22,6 +22,7 @@ reaches the session cart itself. The out-of-product recipes for this area are in
 - [A NULL pointer means "no ACTIVE cart", not "no cart"](#a-null-pointer-means-no-active-cart-not-no-cart)
 - [Rendering the cart page is a WRITE](#rendering-the-cart-page-is-a-write)
 - [A cart created through MCP never becomes a login-restored context cart](#a-cart-created-through-mcp-never-becomes-a-login-restored-context-cart)
+- [Checkout converts the context cart row in place](#checkout-converts-the-context-cart-row-in-place)
 
 ## Two gates every scripted cart command must pass
 
@@ -241,3 +242,19 @@ keys off session/visitor linkage that only live site activity establishes.
 **Produce a restorable cart with real storefront session activity** — a browser-driven add-to-cart
 (browser User-Agent and redirects followed, per the two gates above) — and treat an MCP-created
 cart as saved-cart data only.
+
+## Checkout converts the context cart row in place
+
+**Completing checkout does not copy the cart into a new order: the cart's own `EcomOrders` row becomes
+the order.** `OrderCart` flips and the row takes an order id, and no row is inserted. Measured once, on an
+earlier Swift 2 release: a buyer whose seeded cart was the context cart placed a test order, the seeded
+cart became that order, and the order table's row count did not rise.
+
+So a test order placed from a seeded cart has consumed the seeded cart. **Clean it up without MCP
+`delete_order`**, which would remove the seeded cart for good: run test checkouts as a buyer whose context
+cart is disposable, or revert the order to its cart shape, which is out of product
+([`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Reverting a
+test order placed from a seeded cart").
+
+Prove it on the current build before relying on it: note the cart's identity before one checkout and
+compare it with the placed order's.

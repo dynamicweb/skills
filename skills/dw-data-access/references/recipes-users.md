@@ -25,6 +25,7 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Assert a user delete on the row count, not the status](#assert-a-user-delete-on-the-row-count-not-the-status)
 - [Delete orphaned user addresses](#delete-orphaned-user-addresses)
 - [Rebuild the Users index after an impersonation write](#rebuild-the-users-index-after-an-impersonation-write)
+- [Set a user group's type: `GroupSave` full-model round trip](#set-a-user-groups-type-groupsave-full-model-round-trip)
 
 Every grant recipe below carries the same two standing rules. **Flush after every write**: the three
 permission caches are `DefaultCapabilityService`, `DefaultCapabilitySetService` and
@@ -359,3 +360,27 @@ POST /Admin/Api/BuildIndex {"repository":"Users","indexName":"Users.index","buil
 ```
 
 Flush `UserService` as well, and re-read the index document of the identity whose grant was REMOVED.
+
+## Set a user group's type: `GroupSave` full-model round trip
+
+MCP `save_user_groups` has no type member, so a group it creates lands with `AccessUserUserAndGroupType`
+NULL. That is right for a DC scoping group and wrong for a B2B account group: the storefront CSR Accounts
+page lists a group only when it sits at root with the type `SystemAccount`.
+
+**Surface: Management API `GroupSave`** (at `/admin/api/GroupSave`), the USER-group save despite the name.
+It is a whole-entity save, and no group read verb exists (`UserGroupById` answers `Unknown query`), so
+assemble the full model from MCP `get_user_groups` and the row itself: the group's `AccessUser` id, name,
+customer number, parent `0` for root, every other value the group already carries, and the type
+`SystemAccount`. A fragment blanks what it omits. The response model carries `userAndGroupTypeSystemName`,
+but it echoes the request and proves nothing.
+
+Measured on two account groups: the column carried `SystemAccount` afterwards and both groups listed on
+the CSR Accounts page. Verify both ways, the column first:
+
+```sql
+-- read-only; local installs only; owes no flush.
+SELECT AccessUserId, AccessUserParentId, AccessUserUserAndGroupType FROM AccessUser WHERE AccessUserId = <groupId>;
+```
+
+Then sign in as the CSR and confirm the group lists on the Accounts page. Where it does not, refresh the
+security cache; a host restart is the reliable way.

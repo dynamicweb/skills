@@ -28,7 +28,7 @@ of the ten `EcomOrderStates` mail columns, so in-product a state ladder is MCP c
 backend order-states screen for the rest — name that screen rather than promising the tool covers
 it. The mail columns themselves are documented in
 [`order-notifications.md`](order-notifications.md); the out-of-product completion pass is in
-[`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Building an order-state ladder".
+[`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Building an order-state ladder".
 
 Verify by re-reading `EcomOrderStates` for the flow and asserting both the new ids and a gapless
 sort order, then asserting the state name as the storefront order list renders it.
@@ -50,7 +50,7 @@ MCP `get_order_states` and MCP `get_order_flows` give both ends: read every stat
 then check that each transition the backend order-flow screen renders names a state that still
 exists **and** that both ends sit in the same flow. A transition whose target is missing from
 `get_order_states` is a dangling rule. The two-ended integrity query that sees the whole table at
-once is out of product: see [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "A deleted state's id is re-issued".
+once is out of product: see [`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "A deleted state's id is re-issued".
 
 When a flow is inherited in this state, rebuilding its rule set from scratch behind that assertion
 is cheaper than repairing it row by row.
@@ -77,7 +77,7 @@ that silently did nothing looks identical to one that worked.
 country before it looks at anything, and it re-prices every line from the live catalogue (see
 [`order-lifecycle.md`](order-lifecycle.md) "`OrderSave` on an existing order is a reconciliation
 pass"). The out-of-product verb pair, and the key-name trap that makes one payload fail as the
-other, are in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Removing an order: `OrderCancel` then `OrderDelete`".
+other, are in [`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Removing an order: `OrderCancel` then `OrderDelete`".
 
 ## `UpdateCartToQuote` and `DowngradeToCart` — what each leaves to the caller
 
@@ -123,7 +123,7 @@ modal — and **that endpoint validates that the order is a CART**, answering 40
 neither a cart nor complete and 500 once the template header is added.
 
 A quote is by definition not a cart and not complete, so the endpoint refuses **every** order the
-button is ever rendered for. The measured request/response pair is in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Swift 2's
+button is ever rendered for. The measured request/response pair is in [`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Swift 2's
 Accept-quote button cannot work on a quote". htmx has nothing to swap, the modal that carries the actual command
 never exists, and the command is never posted: the click does nothing at all — no modal, no toast,
 no navigation, nothing a user would see. The failure **is** recorded, in the event log, which is

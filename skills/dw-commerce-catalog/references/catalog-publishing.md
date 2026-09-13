@@ -178,6 +178,12 @@ make a correct setup look broken:
   control.
 - **Lowest matching price wins** — not priority. A lower contract amount beats the all-customers list
   price automatically once it matches; no need to set `PricePriority`.
+- **A row with an empty variant id matches EVERY variant of its master, and lowest wins across all of
+  them.** On a variant master whose variants carry their own list prices, a group-scoped or quantity row
+  written on the master undercuts every variant priced above it: measured, a variant listed at 575 was
+  charged 412, and dealer orders came in below the dealer's own rows. Write group and quantity rows **per
+  variant id** (`save_prices` with `productId` and `variantId`), never on the master with an empty variant
+  id; the tool has no master-only scope. Assert per variant, signed in, in the cart.
 
 **Where it renders:** *not* on PLP/PDP (those show the index / default price context regardless of who
 is signed in). The customer price resolves **live in the cart and checkout** (and on any order whose

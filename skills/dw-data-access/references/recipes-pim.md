@@ -18,6 +18,7 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Reading translations back off the delivery API](#reading-translations-back-off-the-delivery-api)
 - [Verifying a data model's per-category fields and option sets](#verifying-a-data-models-per-category-fields-and-option-sets)
 - [Writing the per-variant `EcomProducts` row on 10.28.x](#writing-the-per-variant-ecomproducts-row-on-1028x)
+- [Asset categories and BOM lines: `AssetCategorySave` and `ProductItemAdd`](#asset-categories-and-bom-lines-assetcategorysave-and-productitemadd)
 
 ## Writing a standard `EcomProducts` scalar the MCP model omits
 
@@ -125,6 +126,53 @@ WHERE ProductId = '<masterId>' AND ProductVariantId = '<dot-joined option ids>';
 
 `ProductNumber` must be unique across the master and every variant in the family; a collision is silently
 dropped by downstream consumers that flatten the family.
+
+## Asset categories and BOM lines: `AssetCategorySave` and `ProductItemAdd`
+
+No MCP tool creates an asset category (`get_product_asset_categories` only reads them) or a BOM line. A
+Swift 2 product page whose media paragraphs bind named categories (`Images`, `Manuals`) and whose BOM
+paragraph reads the product's items renders those rows empty until both exist, and nothing but the
+paragraph settings names the dependency.
+
+**Surface: Management API.**
+
+- **`AssetCategorySave`** (at `/admin/api/AssetCategorySave`) creates an `EcomDetailsGroup` row. Only
+  `Name` is required, so a minimal body creates a live category: never send one to learn the shape. Read
+  an existing category's model through `AssetCategoryAll`, send the full model with the name, the file-type
+  filter and the default upload folder set, and assert that `AssetCategoryAll` `totalCount` rose by exactly
+  one. `AssetCategoryDelete` with `{"GroupId":<id>}` removes a category. Names in further languages are the
+  `EcomDetailsGroupTranslation` recipe above.
+- **`ProductItemAdd`** (at `/admin/api/ProductItemAdd`) adds one BOM line through the domain service and
+  needs no restart. It accepts exactly one payload shape, and both plausible variations throw rather than
+  degrade:
+
+```
+{ "ProductId": "<parentProductId>", "Model": { … the BOM line … } }   -> ok
+… with ProductOrGroupIds in the payload   -> 500  "Index was outside the bounds of the array"
+… with Model omitted                      -> 400  "Command.Model cannot be null"
+```
+
+The 500 is the misleading one: an index-out-of-bounds reads as a platform defect, when it is the binder
+rejecting an extra key. Set the parent's product type to BOM in the same pass, and verify the lines on the
+rendered product page, where a kit's lines are visible, not on the add response.
+
+**Surface: `SQL`, where the Management API is not in play.**
+
+```sql
+UPDATE EcomProducts SET ProductType = 2 WHERE ProductId = '<parentProductId>';   -- 2 = bom
+-- then one EcomProductItems row per line, in the fixed-component or configurator-slot shape
+-- (dw-pim-modelling, structural-model.md section 2.6); ProductItemBomProductId and
+-- ProductItemBomVariantId take '' and never NULL.
+-- An asset category is one EcomDetailsGroup row (DetailsGroupExtensions, DetailsGroupDefaultUploadFolder)
+-- plus one EcomDetailsGroupTranslation row per language.
+```
+
+- **Why the higher surfaces do not cover it**: no MCP tool writes either table; use SQL only where the
+  Management API verbs above cannot be called.
+- **Local installs only**: a hosted install has no SQL surface, and the verbs above are its route.
+- **The debt it owes**: a **host restart**. `ProductItem` holds its rows in a lazy in-process dictionary,
+  so the BOM tab and the product page show no lines until the bounce, and a new asset category sits
+  behind the ecommerce caches the same way.
 
 ## Reading translations back off the delivery API
 

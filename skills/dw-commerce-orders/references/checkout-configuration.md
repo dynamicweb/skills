@@ -34,11 +34,13 @@ This bites hardest on a storefront moved off the baseline's country, because **p
 the baseline payment methods often already carry the target country while none of the shipping
 methods do, so the payment step looks healthy and only delivery is dead.
 
-- **Re-point `countryRelationKeys` on the shipping methods AND the payment methods as a
+- **Re-point the country relations on the shipping methods AND the payment methods as a
   first-class setup step** whenever the storefront serves a country the shipped methods do not
   relate to. Relating the countries explicitly is the honest shape; a method with no relations at
   all behaves inconsistently.
-- **Gate it: assert a non-zero delivery-option count for the target country, per persona.** A
+- **Gate it on the served checkout, per persona**: signed in as a buyer in the target country, count
+  the named method radios on the delivery and payment steps and find at least one with a non-empty value
+  on each. A
   checkout that cannot complete is otherwise invisible until somebody walks the whole flow by hand.
 
 **The MCP method tools do not carry countries or fees.** Measured on MCP 0.4.4, the complete property
@@ -51,12 +53,12 @@ just as narrow — `get_shipping_methods_by_ids` projects no relation set, so th
 from MCP either.
 
 So the split is: **use the MCP tools for name, description, activation and sorting**, which is most of a
-debrand, and **write country relations and fees out of product**, where the method save models do carry
-them ([`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Method country
-binding" and "`ShippingSave` takes two fee sources"). In product, the reader who cannot reach that
-surface sets the relations on the method's own admin screen; there is no tool path. Writing
-`EcomMethodCountryRelation` rows directly is a third rung with a schema trap of its own, in the same
-recipes file.
+debrand, and **bind countries on each method's own admin screen**, because no tool binds them. Then verify
+on the served checkout as above, never on a method read, which passes whatever the relations are. The
+out-of-product routes are in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md)
+"Method country binding", with what each was measured doing: the method saves there accepted the country
+keys and persisted nothing on one run, and the relation rows have a schema trap of their own. Fees follow
+"`ShippingSave` takes two fee sources" in the same file.
 
 ## A shipping method takes two fee sources, and the flat-rate shape
 
@@ -240,6 +242,14 @@ The service also carries `Delete`, `GetById`, `GetByToken`, `GetByUserId`, `GetB
 `RenamePaymentCard` and `SetDefaultPaymentCard`; cards written this way render in the shipped
 saved-card list with working rename, set-default and delete modals and are selectable at checkout.
 `AccessUserCardLanguageID` has no CLR property and is always written as an empty string.
+
+**No MCP tool and no admin command deletes a saved card.** The service's `Delete` is reachable from code
+only, which is what the shipped saved-card list runs for the signed-in cardholder. The MCP payment delete
+tool (`delete_payment_methods`, and a differently named variant on other server builds) deletes payment
+METHODS, not stored cards: called with a card id it failed with the bare invocation error, which does not
+say it is the wrong noun. A scripted checkout that ticks "save this card" therefore creates state no
+administrative path can undo: untick it in the driver, or have the cardholder remove the card on the
+storefront.
 
 **There is no notification for a card create or delete anywhere in the platform** — no card-related
 notification name in any shipped assembly, and no `Notify` call on the repository path. Any policy

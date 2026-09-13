@@ -17,7 +17,7 @@ Sibling references in this skill: [`cart-commands.md`](cart-commands.md),
 - [Order completion: created orders default to carts](#order-completion-created-orders-default-to-carts-not-completed-orders)
 - [OrderCustomerNumber is not set by create_orders](#ordercustomernumber-is-not-set-by-create_orders)
 - [Area-currency filters order history](#area-currency-filters-order-history)
-- [Order-line prices: seed after the currency restart](#order-line-prices-seed-after-the-currency-restart-then-backfill-totals)
+- [Orders built over MCP persist no totals](#orders-built-over-mcp-persist-no-totals-place-priced-orders-through-the-storefront)
 - [The platform OWNS ids and timestamps](#the-platform-owns-ids-and-timestamps--a-save-discards-the-ones-you-send)
 - [A re-saving verb reverts raw-SQL edits](#a-re-saving-verb-reverts-raw-sql-edits--orderrecalculate-writes-the-cached-order-back)
 - [`GetOrderList` inner-joins `EcomShops`](#getorderlist-inner-joins-ecomshops--orders-on-a-deleted-shop-vanish-from-every-commerce-grid)
@@ -73,27 +73,33 @@ currency. If the `Area` row defaults to one currency/country and orders are seed
 order list renders empty silently. Align the area's default currency to the seeded
 `OrderCurrencyCode` (or seed orders in the area's default) **before** backfilling completion.
 
-## Order-line prices: seed after the currency restart, then backfill totals
+## Orders built over MCP persist no totals: place priced orders through the storefront
 
-`add_products` (the order-line seeding tool) writes **only the unit-price columns**
-(`OrderLineUnitPriceWithoutVAT`/`WithVAT`) — it computes neither the line totals
-(`OrderLinePriceWithoutVAT`/`WithVAT`) nor the order totals. And the unit price you pass is not
-always the one that lands:
+**An order built with MCP tools carries no trustworthy stored totals** [mcp 0.4.4]. Measured on the cart
+path, `create_orders` (`orderType: "Cart"`), then `add_products`, then `convert_cart_to_order` stored an
+order whose order total and every line price were 0. An earlier measurement had `add_products` write only
+the unit-price columns (`OrderLineUnitPriceWithoutVAT`/`WithVAT`) and neither the line totals nor the order
+totals. The tools that look like the repair are not one:
 
-- **Change the default currency → restart → THEN seed.** A changed default currency only
-  materializes on restart; order lines seeded before that restart can land with unit prices
-  **×100** (a two-decimal exponent artifact — e.g. an explicit `12.50` stored as `1250`).
-- **Qty-tier `EcomPrices` rows silently reprice seeded lines.** A line whose product/quantity
-  matches a tier row is repriced to the tier price, ignoring the explicit `unitPriceWithoutVat`
-  passed to the tool.
-- **After seeding, run a sanity sweep + backfill in SQL:** flag any
-  `OrderLineUnitPriceWithoutVAT` above a plausible maximum and ÷100-normalize it; then backfill
-  the line totals (unit × quantity into `OrderLinePriceWithoutVAT`/`WithVAT`) and the order
-  totals (`OrderPriceWithVAT`, `OrderPriceWithoutVAT`, `OrderPriceBeforeFees*`).
+- **`force_price_recalculation` computes without saving.** It returned the recomputed total, and the row
+  kept 0.
+- **`validate_order_prices` reads the stored values back instead of recomputing them**, so it reported the
+  0 order as valid.
+- **`update_order_line` writes the unit price only.** The line total and every order total stay as they
+  were, so an order repriced over MCP shows unit prices that multiply to neither its lines nor its total.
+- **The unit price passed is not always the one that lands.** A line seeded before a changed default
+  currency has taken effect can land at ×100 (an explicit `12.50` stored as `1250`), and a quantity-tier
+  `EcomPrices` row reprices a matching line to the tier price.
 
-**Verify:** seed one order post-restart with an explicit price; assert
-`OrderLineUnitPriceWithoutVAT` equals the requested value and the account-side order list shows a
-non-zero total after an `OrderService` cache flush.
+So **place priced demo orders through the storefront checkout**, as a signed-in buyer, and do not reprice
+seeded orders over MCP. In product, that means asking the user to place them on the storefront. Assert on
+the order, never on a line: `get_orders_by_ids` must show a non-zero order total equal to the sum of the
+line totals plus fees. The scripted checkout, and the re-total for an order that has to be kept, are out of
+product: [`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md).
+
+The tools become usable only through an MCP project change: price lines through the price provider, save
+after a recalculation, re-total the line and the order after `update_order_line`, and make
+`validate_order_prices` recompute.
 
 ## The platform OWNS ids and timestamps — a `*Save` discards the ones you send
 
@@ -112,9 +118,11 @@ by looking at the rendered screen.
 - **After any `*Save`, read the id back from the response or a list query** — never assume the id you sent is
   the id that exists. Where the two keys must be reconciled, join through the list query that carries both
   (`InvoiceList` returns `id` = the minted ledger id **and** `invoiceNumber` = yours).
-- **No verb anywhere in the order / invoice / RMA families can set a creation timestamp.** Backdating
-  seeded data is therefore raw SQL **keyed on the minted id** — a sanctioned exception, and the only shape
-  that works.
+- **No MCP tool and no verb in the order / invoice / RMA families sets a creation timestamp**;
+  `update_orders` carries no order date. In product, a seeded order cannot be backdated: say so and ask
+  the user. Out of product it is SQL keyed on the minted id, written last and followed by an
+  application-pool recycle ([`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md)
+  "Backdating an order").
 - Neighbouring shapes measured on the same pass: `OrderSave` validates the billing address, so a model without
   `customerCountryCode` answers `400 {"CustomerCountryCode":["Billing country should be set."]}`; and
   `OrderRecalculate` takes **`OrderId`, singular** — passing `Ids` answers
@@ -139,10 +147,11 @@ WORKS:  OrderNew -> OrderSave -> OrderLineAddProductsBySKU -> SQL line qty -> Or
 - **The rule generalises past orders:** *any* API verb that re-saves an entity reverts raw-SQL edits made
   behind it. **API writes first, SQL last, never re-save afterwards.** The discount family's instance of
   the same mechanism is in [`promotions-engines.md`](promotions-engines.md).
-- **The related read-side behaviour needs no intervention.** Immediately after a write the grids serve the
+- **The admin read side needs no intervention.** Immediately after a write the grids serve the
   cached order model, but it turns over on its own within a couple of minutes and `GetOrderById` reads
-  through to current values — **no recycle and no cache-bust verb is needed**, so do not add one to the
-  recipe and do not read the brief staleness as a failed write.
+  through to current values, so do not read that brief staleness as a failed write. **The storefront
+  customer center is the exception for a SQL-written order date**: its order list kept the placement
+  times until an application-pool recycle, which is why the backdating recipe owes one.
 
 Assert it: seeded order dates still match the intended backdated values **after the full build sequence
 completes**, not after the SQL step.
@@ -160,7 +169,7 @@ than a stale read, because a stale read at least leaves the database telling the
 
 **Every SQL touch on a DW-cached table is a write, then a flush of the owning service, then the code
 that reads it — and nothing may re-save the entity afterwards.** The ordered sequence is in
-[`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Order the SQL write and the cache flush".
+[`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Order the SQL write and the cache flush".
 
 Both halves of that sequence are load-bearing, and they were measured on the same solution days apart.
 **Skip the flush** and the staged value is read stale and then erased by the next save. **Do the flush**
@@ -390,8 +399,12 @@ though its members show under Users. **State the group's role before setting thi
 scoping group** wants the opposite value — NULL, so it stays visible in the default Users tree — and
 a non-NULL type hides it (see
 [`dw-commerce-b2b/references/dc-scoping.md`](../../dw-commerce-b2b/references/dc-scoping.md)
-"For a DC scoping group, leave `AccessUserUserAndGroupType` NULL"). Fix: set the flag on the account group, then refresh the security cache
-(restart is the reliable way). Do **not** switch the module to `ListGroupType=''` to list everything —
+"For a DC scoping group, leave `AccessUserUserAndGroupType` NULL"). **No MCP tool sets the type**:
+`save_user_groups` has no type member. In product, set it on the group's admin screen (a root group,
+type `SystemAccount`); out of product it is a Management API `GroupSave` full-model round trip
+([`recipes-users.md`](../../dw-data-access/references/recipes-users.md) "Set a user group's type").
+Verify on the storefront CSR Accounts page, not on the column; if the group still does not list, refresh
+the security cache (restart is the reliable way). Do **not** switch the module to `ListGroupType=''` to list everything —
 that surfaces internal staff groups as if they were customer accounts.
 
 ### `AccessUserSecondaryRelation` — the impersonation grant
@@ -479,6 +492,8 @@ before checkout. A Reorder button is one line of Razor in an Order-detail conten
 When you seed customer-experience data yourself (MCP `create_orders` + `add_products`, or SQL) instead
 of relying on pre-provisioned baseline content, stock filters silently hide otherwise-correct data:
 
+- **Priced orders come from the storefront checkout**, not from the MCP order tools, which persist no
+  totals; see "Orders built over MCP persist no totals" above.
 - **Placed orders only show in "My orders" when `EcomOrders.OrderComplete = 1`** (and
   `OrderCompletedDate`). See "Order completion" above. Quotes/carts list by their own discriminators
   (`OrderIsQuote`, `OrderCart`) and don't need this.
