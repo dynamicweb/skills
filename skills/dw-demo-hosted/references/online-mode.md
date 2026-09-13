@@ -150,7 +150,9 @@ DirectoryCreate | FolderCreate | DirectoryNew | CreateDirectory | FileManagerCre
   -> Unknown command  (all five)
 ```
 
-**So land assets in a folder that already exists**, and prefer the folder the referencing file already lives in — self-hosted webfonts belong next to the sheet that `@font-face`s them (`Templates/Designs/<design>/Custom/`), not in a new `System/Styles/Fonts/` tree that has to be conjured first. If a new fol### Serialized trees: `Upload`, then `PackageUnzip`, then `Deserialize`
+**So land assets in a folder that already exists**, and prefer the folder the referencing file already lives in — self-hosted webfonts belong next to the sheet that `@font-face`s them (`Templates/Designs/<design>/Custom/`), not in a new `System/Styles/Fonts/` tree that has to be conjured first. If a new folder is genuinely required, use the `DirectoryCopy` + `DirectoryEmpty` trick above and verify the path lists before uploading into it.
+
+### Serialized trees: `Upload`, then `PackageUnzip`, then `Deserialize`
 
 There is no filesystem to copy a layer into `SerializeRoot`, so a serialized tree travels as a zip
 [serializer 1.0.1-beta]:
@@ -168,8 +170,6 @@ There is no filesystem to copy a layer into `SerializeRoot`, so a serialized tre
 A `PackageDownload` zip taken from another install unzips the same way with `AreaId` added.
 `PackageUnzip` needs the package upload grant. The parameters and zip shapes are in
 [serializer-reference.md](../../dw-demo-base/references/serializer-reference.md) "Invocation: the routes".
-
-der is genuinely required, use the `DirectoryCopy` + `DirectoryEmpty` trick above and verify the path lists before uploading into it.
 
 ### `FileDelete` can be ACL-denied for pre-existing files — know the per-host answer before you plan a cleanup
 
