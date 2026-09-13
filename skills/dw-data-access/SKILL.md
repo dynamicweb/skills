@@ -31,7 +31,7 @@ that reaches the operation, and name that rung in the recipe.
 |---|---|---|---|
 | 1 | **MCP tools** (Dynamicweb MCP server; 600+ on MCP 0.4.4 with a FullAccess key, fewer on a scoped one — read `tools/list`, never a printed count) | `snake_case` — `save_pages`, `patch_products_safe` | The default for anything that creates or mutates a structural row. Calls DW's domain services, so relation wiring, cache invalidation, index refresh and validation all fire. |
 | 2 | **Management/Admin API** (`/admin/api/...`, bearer) | `PascalCase` — `ParagraphSave`, `BuildIndex` | The same domain services over a different transport. Use it when MCP does not expose the operation, and for admin-grade actions MCP never wraps (`CacheInformationRefresh`, `FeatureManagementToggle`). The `dw command` CLI is this rung over a different transport, not a surface of its own. |
-| 3 | **Serializer** (`SerializerDeserialize`, layer `replace`/`merge` trees) | `PascalCase` verb, layer paths | Bulk, id-preserving loads and cross-install moves. **A layer beats a rung-1 or rung-2 loop** as soon as the write is bulk (hundreds of rows, a whole content tree) or ids and relations must survive. Dry-run (`IsDryRun`) first. |
+| 3 | **Serializer** (`Deserialize`, layer `replace`/`merge` trees) | `PascalCase` verb, layer paths | Bulk, id-preserving loads and cross-install moves. **A layer beats a rung-1 or rung-2 loop** as soon as the write is bulk (hundreds of rows, a whole content tree) or ids and relations must survive. Dry-run (`IsDryRun`) first. |
 | 4 | **Direct SQL** | `sqlcmd` / `Invoke-Sqlcmd` / T-SQL | **Last resort, local installs only.** Sanctioned cases: cleanup/teardown, bulk schema-drift fixes, reads, and operations proven absent from rungs 1-3. Bypasses every service. |
 
 **Which surfaces exist, per instance type:**
@@ -78,6 +78,42 @@ in-product skill keeps a one-line pointer to it.
 - **Never SQL-clone a structural tree** (Area / Page / Paragraph / GridRow / Item). The create path
   carries sibling-link bookkeeping, item-instance cloning, localization overlays, ItemList relations
   and hidden-flag rules a raw `INSERT ... SELECT` gets partly right and then breaks ten screens later.
+
+## Reading the host's versions
+
+Do this once per session, before any recipe whose facts are version-specific, and keep the result as
+the session's `hostVersions` note. Four vendor axes: the Dynamicweb release, the MCP add-in, the
+serializer add-in, and the Swift tag.
+
+**Full host** (any rung 1-4 surface available):
+
+1. **Dynamicweb release** — `GET /admin/api/api.json` (rung 2, bearer) and read `info.version`. That
+   is the running platform build, not the NuGet package version and not the hosting ring.
+2. **App versions** — list the folder names under `Files/System/AddIns/Installed/`. Each is
+   `<id>.<version>`, so the installed MCP build is the folder starting `Dynamicweb.MCP.` and the
+   serializer the one starting `Truvio.Commerce.Serializer.`. A missing folder means the add-in is
+   not installed, which is an answer, not an error.
+3. **Swift tag** — read `Files/System/Truvio/swift.stamp.json` and take its `tag`/`version`. When the
+   file is absent the site carries no Swift marker at all: ask the user which Swift release the
+   solution tracks and record the answer. Never infer it from a template folder name.
+
+**MCP-only** (the in-product agent, and any session with rung 1 alone): `list_files` on
+`Files/System/AddIns/Installed` gives the app versions the same way, and `read_file` on the Swift
+stamp gives the Swift tag. The platform release is not readable this way — record that axis as
+`unknown`. Record `unknown` for any axis you cannot read, and never guess one.
+
+**Then compare.** The skills' own compatibility statement ships in `manifest.json` as `worksOn`: a
+`floor` per axis (what the corpus claims to work on) and `measured` (the host its facts were last
+observed on). For each axis that read as a concrete version, compare the host against the floor:
+
+- host below the floor → **warn the user before acting**: name the axis, the host version and the
+  floor, and say that recipes may reference behavior the host does not have.
+- host at or above the floor, but not equal to `measured` → proceed; treat any step that fails in a
+  version-shaped way as a re-measure candidate, and file it rather than working around it silently.
+- axis `unknown` → proceed, and suppress floor warnings for that axis only.
+
+An add-in whose `required` flag is false is not a blocker: its floor applies only to the skills that
+cover it, and the scope is stated in `worksOn` beside the app.
 
 ## In-process C#: Service API vs the Database class
 
@@ -263,6 +299,7 @@ serializer by command or by layer and mode, `SQL` in a fenced block).
 
 | Area | Reference | Reach for it when |
 |---|---|---|
+| Versions | [Reading the host's versions](#reading-the-hosts-versions) (above) | Before any version-specific recipe: read the four vendor axes off the host and compare them with the manifest's `worksOn` |
 | Commerce | [references/recipes-commerce.md](references/recipes-commerce.md) | Orders, carts, checkout, discounts, catalog publishing — below rung 1 |
 | Commerce — RMA | [references/recipes-commerce-rma.md](references/recipes-commerce-rma.md) | Claims, RMA states, the RMA service flush — below rung 1 |
 | Content | [references/recipes-content.md](references/recipes-content.md) | Pages, paragraphs, grid rows, item types, language layers — below rung 1 |
