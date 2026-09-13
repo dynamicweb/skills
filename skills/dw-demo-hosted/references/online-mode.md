@@ -16,6 +16,7 @@
   - [Cleanup verbs](#cleanup-verbs)
   - [dw10source as binder disambiguator](#dw10source-as-binder-disambiguator)
   - [File upload — and why an "ok" upload can change nothing](#file-upload--and-why-an-ok-upload-can-change-nothing)
+  - [Serialized trees: `Upload`, then `PackageUnzip`, then `Deserialize`](#serialized-trees-upload-then-packageunzip-then-deserialize)
   - [`FileDelete` can be ACL-denied for pre-existing files](#filedelete-can-be-acl-denied-for-pre-existing-files--know-the-per-host-answer-before-you-plan-a-cleanup)
   - [Flush first; a cloud install can usually be restarted](#flush-first-a-cloud-install-can-usually-be-restarted)
 - [Inheriting a CLONED demo host — the remediation playbook](#inheriting-a-cloned-demo-host--the-remediation-playbook)
@@ -149,7 +150,26 @@ DirectoryCreate | FolderCreate | DirectoryNew | CreateDirectory | FileManagerCre
   -> Unknown command  (all five)
 ```
 
-**So land assets in a folder that already exists**, and prefer the folder the referencing file already lives in — self-hosted webfonts belong next to the sheet that `@font-face`s them (`Templates/Designs/<design>/Custom/`), not in a new `System/Styles/Fonts/` tree that has to be conjured first. If a new folder is genuinely required, use the `DirectoryCopy` + `DirectoryEmpty` trick above and verify the path lists before uploading into it.
+**So land assets in a folder that already exists**, and prefer the folder the referencing file already lives in — self-hosted webfonts belong next to the sheet that `@font-face`s them (`Templates/Designs/<design>/Custom/`), not in a new `System/Styles/Fonts/` tree that has to be conjured first. If a new fol### Serialized trees: `Upload`, then `PackageUnzip`, then `Deserialize`
+
+There is no filesystem to copy a layer into `SerializeRoot`, so a serialized tree travels as a zip
+[serializer 1.0.1-beta]:
+
+1. Zip each mode tree with `<mode>-manifest.json` at the zip root, not inside a folder: one zip per mode.
+2. `POST /Admin/Api/Upload` with `path=System/Serializer/Upload` and `allowOverwrite=true`, and assert the
+   `model` list as above.
+3. `POST /Admin/Api/PackageUnzip {"FilePath":"/Files/System/Serializer/Upload/<x>.zip","Mode":"replace"}`.
+   It **replaces the whole `SerializeRoot/replace/` folder**. An `Invalid` answer (a zip over 256 MB, over
+   1 GB unzipped or over 100,000 files, a wrapped tree, the other mode's manifest) leaves the folder
+   untouched.
+4. `POST /Admin/Api/Deserialize {"Mode":"replace","IsDryRun":true}`, read the counts, then the real pass.
+   Repeat steps 3 and 4 for `merge`.
+
+A `PackageDownload` zip taken from another install unzips the same way with `AreaId` added.
+`PackageUnzip` needs the package upload grant. The parameters and zip shapes are in
+[serializer-reference.md](../../dw-demo-base/references/serializer-reference.md) "Invocation: the routes".
+
+der is genuinely required, use the `DirectoryCopy` + `DirectoryEmpty` trick above and verify the path lists before uploading into it.
 
 ### `FileDelete` can be ACL-denied for pre-existing files — know the per-host answer before you plan a cleanup
 
