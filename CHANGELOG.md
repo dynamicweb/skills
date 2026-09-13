@@ -3,6 +3,17 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.0.1]
+
+A patch release that folds the learning backlog the 5.0 end-to-end rounds refilled. It adds and corrects rules; it changes no contract and no `worksOn` axis.
+
+- **Five fold-backs, one skill family each (#129 to #133).** SQL gotchas, scheduled tasks and integration jobs; Swift branding and master item writes; host setup, key handling and release testing; content and PIM write traps; orders, groups and assortments where the MCP tools cannot write. Each PR body names the rules it lands and the files they live in.
+- **Five statements the corpus carried were wrong and are rewritten, not appended to.** The page rename recipe (a Title write re-derives the URL slug; the recipe now pins `urlName`, fixed in all four places it was copied), the area cache row that a measured no-op area save contradicts, a user-group table that said no group write exists, "no recycle after an SQL order write", and empty-variant price rows needing no per-variant copies.
+- **The MCP write gaps are stated as gaps.** Orders built over MCP keep no totals, `update_order_line` writes the unit price only, no MCP write takes a group type or an order date, and an assortment permission delete is inert. Each carries the out-of-product workaround in the `dw-data-access` recipes home, and `dw-extend-mcp-tools/references/tool-surface-gaps.md` lists what the MCP project lacks.
+- **The host MCP preflight accepts the renamed add-in id.** `Truvio.Commerce.MCP` is matched beside `Dynamicweb.MCP`, and a pre-release suffix no longer fails the floor comparison. `versions.json` still records the measured 0.4.4 set; moving it to the renamed add-in waits for a measurement on a live host.
+- **The Dynamo baseline is re-measured, not relaxed.** `scripts/dynamo-baseline.json` records 100 violations across 16 files, down from the 120 across 17 it carried; no fold in this release raised any file. Emptying it remains 5.1 work.
+- **Split for placement.** `recipes-commerce.md` hands its orders section to `recipes-commerce-orders.md`, and `page-paragraph-writes.md` hands what the rendered page shows after a write to `render-after-write.md`.
+
 ## [5.0.0]
 
 The 5.0 release. It closes the 4.x fold line and ships the version spine, so the corpus states what it works on in one machine-readable file and every downstream artifact can cite one tag.
