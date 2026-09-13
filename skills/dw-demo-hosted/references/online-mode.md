@@ -41,6 +41,8 @@ Tool availability on hosted installs is **version-dependent and a moving target*
 
 1. **Management API**: `GET https://<host>/Admin/Api/api.json` with `Authorization: Bearer CLAUDE.<hex>`. Returns the full OpenAPI catalogue (~1,900 operations on 10.25.x) including the platform version in `info.version`. Save it locally — it is the working map for everything below.
 
+   **`api.json` proves nothing about the key.** The descriptor is served without the bearer check: it answers 200 with no `Authorization` header, a junk bearer, or another site's key [dw 10.28.10]. Prove the key on a command endpoint instead: `GET /Admin/Api/McpConfigurationAll` must answer 200 with this host's key and 401 with no key or a junk bearer. On a cloned host, also assert that the source host's key answers 401 here, because a clone inherits the source's key and `api.json` cannot tell the two states apart.
+
    **Pin the build from `info.version` first.** It carries the version AND the commit, e.g.
    `10.28.1-PreRelease+<commit sha>` — a stronger pin than a bare version string, and the thing to fill
    every learning's env line from. Where a host answers `api.json` without a version (measured on one

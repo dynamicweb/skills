@@ -66,6 +66,22 @@ worked case): you cannot call it from inside the persona's own session. Two hone
 Route 1 is preferred wherever the control exists, because route 2 forges an artefact and proves
 nothing about the user's own view.
 
+**The exception is the descriptor.** `GET /Admin/Api/api.json` is served without the bearer check: 200
+with no `Authorization` header, with a junk bearer and with another site's key alike, so a probe that
+asserts a key through it passes whether the key is right, wrong or absent [dw 10.28.10]. Assert a key
+on a command endpoint (`McpConfigurationAll` answers 401 to any key but the host's own), and keep
+`api.json` for the catalogue read and liveness polls.
+
+### Keep payload strings ASCII: a curly apostrophe turns a correct write into a 500
+
+A JSON payload carrying U+2019 (a curly apostrophe), passed to `curl` as a bash single-quoted
+argument, reached `/Admin/Api` as invalid UTF-8 and answered HTTP 500 `Cannot transcode invalid UTF-8
+JSON text to UTF-16 string`; the same payload with an ASCII apostrophe answered 200 [dw 10.28.8]. The
+model was correct in every respect, so the 500 reads as a defect in the payload. Keep every generated
+string ASCII on the way to `/Admin/Api`, or send the body as UTF-8 bytes (`Invoke-DwApi` in
+[`../scripts/Dw.Api.psm1`](../scripts/Dw.Api.psm1) does), and when a write 500s with a transcode
+error, look for a smart quote before looking at the model.
+
 ### Short command names are not unique — an installed add-in can SHADOW a platform verb
 
 Commands register under a short name, and short-name resolution prefers the add-in. So a solution

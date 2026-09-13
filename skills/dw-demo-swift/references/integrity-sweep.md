@@ -160,7 +160,7 @@ if (-not $buildName) { throw "No <Build Name> in $idxPath — cannot resolve Bui
 - `GET /admin/api/IndexStatusByRepositoryAndIndexName?Repository=<repo>&IndexName=<name>.index` → model `{ State: Success|Warning|Error, StateDescription, LastRun, ... }`
 - `GET /admin/api/InstanceStatusByName?Repository=<repo>&IndexName=<name>.index&InstanceName=<instance>` → model `{ State: Completed|Failed|Running, LifecycleState: NeverBuilt|Starting|Running|Completed|Failed|Interrupted, LastSuccessfulBuild, CurrentCount, TotalCount }`
 
-Confirm the exact paths against the host's own catalog (`GET /admin/api/api.json`, bearer-authed) when in doubt. Live JSON responses come back **camelCase** even though the catalog declares PascalCase — PowerShell property access is case-insensitive so the probe below is unaffected; case-sensitive consumers must expect camelCase.
+Confirm the exact paths against the host's own catalog (`GET /admin/api/api.json`, which is served without a key check) when in doubt. Live JSON responses come back **camelCase** even though the catalog declares PascalCase — PowerShell property access is case-insensitive so the probe below is unaffected; case-sensitive consumers must expect camelCase.
 
 **Probe** — run the enforced form,
 [`../../dw-data-access/scripts/Build-DwProductIndex.ps1`](../../dw-data-access/scripts/Build-DwProductIndex.ps1),

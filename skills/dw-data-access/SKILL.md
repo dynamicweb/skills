@@ -87,8 +87,11 @@ serializer add-in, and the Swift tag.
 
 **Full host** (any rung 1-4 surface available):
 
-1. **Dynamicweb release** — `GET /admin/api/api.json` (rung 2, bearer) and read `info.version`. That
-   is the running platform build, not the NuGet package version and not the hosting ring.
+1. **Dynamicweb release** — `GET /admin/api/api.json` (rung 2) and read `info.version`. The descriptor
+   is served without the bearer check, so this read proves nothing about the key: prove a key on a
+   command endpoint such as `McpConfigurationAll`, which answers 401 to any key but the host's own
+   [dw 10.28.10]. `info.version` is the running platform build, not the NuGet package version and not
+   the hosting ring.
 2. **App versions** — list the folder names under `Files/System/AddIns/Installed/`. Each is
    `<id>.<version>`, so the serializer is the folder starting `Truvio.Commerce.Serializer.`. The MCP
    add-in carries one of two ids: `Truvio.Commerce.MCP.` since the rebrand, or the pre-rename

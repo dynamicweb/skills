@@ -16,7 +16,7 @@ Use PowerShell `Start-Process` so the host survives the spawning subshell, **and
 powershell -Command "Start-Process -FilePath 'dotnet' -ArgumentList 'run','--launch-profile','Dynamicweb.Host.Suite' -WorkingDirectory '<absolute-path-to-Suite>' -WindowStyle Hidden -PassThru -RedirectStandardOutput '<demo>\notes\logs\host-out.log' -RedirectStandardError '<demo>\notes\logs\host-err.log' | Select-Object -ExpandProperty Id"
 ```
 
-Returns PID. After kickoff, poll `/Admin` (or `/admin/api/api.json` with bearer) until 200, then proceed.
+Returns PID. After kickoff, poll `/Admin` (or `/admin/api/api.json`) until 200, then proceed. This is a liveness poll only: `api.json` answers 200 with no key or a wrong one, so it proves the host is up, not that the key works.
 
 **Do NOT** use plain `dotnet run` via Bash `run_in_background:true` — when the bash subshell ends, dotnet receives SIGHUP and the host dies after the next idle window. We've seen this fail with exit 127 mid-session.
 
