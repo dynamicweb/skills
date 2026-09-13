@@ -48,7 +48,7 @@ Two traps live in that call:
 
 | Layer | Transport |
 |---|---|
-| Content — pages, paragraphs, grid rows, item XMLs | Serializer `Replace` + `Merge` passes. Push the serialized tree to the target's `Files/System/Serializer/SerializeRoot`, then `POST /Admin/Api/Deserialize`. |
+| Content — pages, paragraphs, grid rows, item XMLs | Serializer `Replace` + `Merge` passes. Zip each mode tree (`<mode>-manifest.json` at the zip root), `/Admin/Api/Upload` it into `System/Serializer/Upload`, `POST /Admin/Api/PackageUnzip` per mode (it replaces that mode folder), then `POST /Admin/Api/Deserialize` ([online-mode.md](online-mode.md) "Serialized trees"). |
 | Files — brand CSS, fonts, imagery, templates, index/repository definitions | `/Admin/Api/Upload` with `allowOverwrite=true` ([online-mode.md](online-mode.md) "File upload") |
 | Commerce — catalog, pricing, stock, variants, discounts, **orders**, logins | Serializer `SqlTable` predicates. Add the tables to the config rather than re-authoring rows through the API — it preserves ids and relations that hand-authoring drifts on. |
 

@@ -16,6 +16,7 @@
   - [Cleanup verbs](#cleanup-verbs)
   - [dw10source as binder disambiguator](#dw10source-as-binder-disambiguator)
   - [File upload — and why an "ok" upload can change nothing](#file-upload--and-why-an-ok-upload-can-change-nothing)
+  - [Serialized trees: `Upload`, then `PackageUnzip`, then `Deserialize`](#serialized-trees-upload-then-packageunzip-then-deserialize)
   - [`FileDelete` can be ACL-denied for pre-existing files](#filedelete-can-be-acl-denied-for-pre-existing-files--know-the-per-host-answer-before-you-plan-a-cleanup)
   - [Flush first; a cloud install can usually be restarted](#flush-first-a-cloud-install-can-usually-be-restarted)
 - [Inheriting a CLONED demo host — the remediation playbook](#inheriting-a-cloned-demo-host--the-remediation-playbook)
@@ -40,6 +41,8 @@ You are in online mode when the engagement hands you a site URL (`https://<host>
 Tool availability on hosted installs is **version-dependent and a moving target** — hosted sites track the DW10 release train, and the MCP surface in particular varies by version. Never assume; probe:
 
 1. **Management API**: `GET https://<host>/Admin/Api/api.json` with `Authorization: Bearer CLAUDE.<hex>`. Returns the full OpenAPI catalogue (~1,900 operations on 10.25.x) including the platform version in `info.version`. Save it locally — it is the working map for everything below.
+
+   **`api.json` proves nothing about the key.** The descriptor is served without the bearer check: it answers 200 with no `Authorization` header, a junk bearer, or another site's key [dw 10.28.10]. Prove the key on a command endpoint instead: `GET /Admin/Api/McpConfigurationAll` must answer 200 with this host's key and 401 with no key or a junk bearer. On a cloned host, also assert that the source host's key answers 401 here, because a clone inherits the source's key and `api.json` cannot tell the two states apart.
 
    **Pin the build from `info.version` first.** It carries the version AND the commit, e.g.
    `10.28.1-PreRelease+<commit sha>` — a stronger pin than a bare version string, and the thing to fill
@@ -146,6 +149,25 @@ DirectoryCreate | FolderCreate | DirectoryNew | CreateDirectory | FileManagerCre
 ```
 
 **So land assets in a folder that already exists**, and prefer the folder the referencing file already lives in — self-hosted webfonts belong next to the sheet that `@font-face`s them (`Templates/Designs/<design>/Custom/`), not in a new `System/Styles/Fonts/` tree that has to be conjured first. If a new folder is genuinely required, use the `DirectoryCopy` + `DirectoryEmpty` trick above and verify the path lists before uploading into it.
+
+### Serialized trees: `Upload`, then `PackageUnzip`, then `Deserialize`
+
+There is no filesystem to copy a layer into `SerializeRoot`, so a serialized tree travels as a zip
+[serializer 1.0.1-beta]:
+
+1. Zip each mode tree with `<mode>-manifest.json` at the zip root, not inside a folder: one zip per mode.
+2. `POST /Admin/Api/Upload` with `path=System/Serializer/Upload` and `allowOverwrite=true`, and assert the
+   `model` list as above.
+3. `POST /Admin/Api/PackageUnzip {"FilePath":"/Files/System/Serializer/Upload/<x>.zip","Mode":"replace"}`.
+   It **replaces the whole `SerializeRoot/replace/` folder**. An `Invalid` answer (a zip over 256 MB, over
+   1 GB unzipped or over 100,000 files, a wrapped tree, the other mode's manifest) leaves the folder
+   untouched.
+4. `POST /Admin/Api/Deserialize {"Mode":"replace","IsDryRun":true}`, read the counts, then the real pass.
+   Repeat steps 3 and 4 for `merge`.
+
+A `PackageDownload` zip taken from another install unzips the same way with `AreaId` added.
+`PackageUnzip` needs the package upload grant. The parameters and zip shapes are in
+[serializer-reference.md](../../dw-demo-base/references/serializer-reference.md) "Invocation: the routes".
 
 ### `FileDelete` can be ACL-denied for pre-existing files — know the per-host answer before you plan a cleanup
 

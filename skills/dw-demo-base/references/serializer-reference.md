@@ -3,7 +3,7 @@
 ## Contents
 
 - [Installation](#installation)
-- [Invocation — the three routes](#invocation--the-three-routes)
+- [Invocation: the routes](#invocation-the-routes)
 - [Inline scope](#inline-scope--narrowing-one-run)
 - [The YAML ownership header](#the-yaml-ownership-header)
 - [Migration note — the deprecated aliases](#migration-note--the-deprecated-aliases)
@@ -84,22 +84,51 @@ Two **conflict strategies** for the same deserialize pipeline, set per predicate
 
 When a layer ships a config, check its `mode` spelling before staging it — a config the loader rejects is indistinguishable from a broken install until that `SerializerSettings` probe is made. (The legacy `deploy: { predicates: [...] }` / `seed: { ... }` *shape* is rejected by `ConfigLoader` too.)
 
-### Invocation — the three routes
+### Invocation: the routes
 
 The Management API route is the command class name without `Command`, so the Serializer's entire
-callable surface is three POSTs [serializer 1.0.0-beta]:
+callable surface is four POSTs [serializer 1.0.1-beta]:
 
 | Route | Command | Body |
 |---|---|---|
 | `POST /Admin/Api/Serialize` | `SerializeCommand` | `{"Mode":"replace"\|"merge"}`, optional `"Scope":{...}` |
 | `POST /Admin/Api/Deserialize` | `DeserializeCommand` | the same, plus `StrictMode`, `QuarantineUnresolvableLinks`, `IsDryRun` |
 | `POST /Admin/Api/PackageDownload` | `PackageDownloadCommand` | flat `PageId`, `AreaId`, `Scope`, `IncludeAssets`; returns the zip |
+| `POST /Admin/Api/PackageUnzip` | `PackageUnzipCommand` | flat `FilePath`, `Mode`, `AreaId` (a `PackageDownload` zip only); unzips a zip already on the host into `SerializeRoot/<mode>/` |
 
 `PackageDownload` is the **page-package zip** route, and its `Scope` is an enum —
 `PageAndSubpages`, `PageOnly` or `SubpagesOnly` — plus a boolean `IncludeAssets`. It hands back a
 file and writes nothing into the baseline. A **subtree serialize that folds into the mode
 manifest** is a different thing entirely: that is `Serialize` with an inline `Scope` object
 ("Inline scope" below). Reach for `PackageDownload` only when the deliverable is the zip.
+
+**`PackageUnzip` is how a serialized tree reaches a host you cannot copy files onto.** It does no
+upload: send the zip with the standard `POST /Admin/Api/Upload` into `/Files/System/Serializer/Upload/`,
+then unzip and deserialize [serializer 1.0.1-beta]:
+
+```
+POST /Admin/Api/PackageUnzip {"FilePath":"/Files/System/Serializer/Upload/layer.zip","Mode":"replace"}
+POST /Admin/Api/Deserialize  {"Mode":"replace"}
+```
+
+- **It replaces the whole `SerializeRoot/<mode>/` folder.** Whatever was staged in that mode is gone, so
+  the next `Deserialize` of the mode applies exactly the zip.
+- **Two zip shapes.** A mode tree: the contents of `SerializeRoot/<mode>/`, with `<mode>-manifest.json`
+  at the zip root (not wrapped in a folder) and a manifest name that matches `Mode`. Or a
+  `PackageDownload` zip: pass `AreaId`; it lands under `_content/` with a whole-area manifest entry, and
+  its bundled `_assets/` files are not restored into the Files archive (the response says how many).
+- **`FilePath`** is a `/Files` path; a bare file name resolves to `/Files/System/Serializer/Upload/`.
+- **A rejected zip changes nothing.** Over 256 MB, over 1 GB unzipped, over 100,000 files, an absolute
+  or `..` entry, a wrapped tree or the other mode's manifest answers `Invalid` before anything is
+  written; the unzip goes to a staging folder and is swapped in only when complete.
+- **Grants.** `PackageUnzip` needs the package upload grant; `PackageDownload` needs the package
+  download grant and Read on the page. Both grants are open until an admin manages them.
+
+1.0.1-beta removed, with no alias, the `SerializerUploadRoot` command and the single-package admin UI:
+the Download Package and Upload Package actions, Import to database on zip files, the Deserialize
+from zip screens and their routes, and the Permissions group on the Serialize settings screen. On an
+older host you may still meet them; on a current one the transfer is `PackageDownload` out, and
+`Upload` plus `PackageUnzip` in.
 
 **There is one deserialize invocation shape: a flat JSON body carrying `Mode`.** `Deserialize` is a
 flat (non-`Model`-wrapped) POST command whose `Mode` property defaults to `Replace` rather than being
@@ -418,9 +447,10 @@ Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release,
 |---|---|
 | Install the Serializer in the demo host (build DLL, copy to bin, stage config) | "Installation" section above |
 | Run a baseline content deserialize (Swift demos only) | [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) |
-| Call `Deserialize` (the one body shape, both passes) | "Invocation — the three routes" above |
+| Call `Deserialize` (the one body shape, both passes) | "Invocation: the routes" above |
 | Narrow a run to one area or one table without re-staging a manifest | "Inline scope — narrowing one run" above |
-| Download a page-package zip (`PackageDownload`) | "Invocation — the three routes" above |
+| Download a page-package zip (`PackageDownload`) | "Invocation: the routes" above |
+| Put a serialized tree onto a host (`Upload`, then `PackageUnzip`) | "Invocation: the routes" above |
 | Recognise a deprecated alias in an existing script | "Migration note — the deprecated aliases" above |
 | Post-deserialize integrity checks | [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md) |
 | Recover from DW10 update-queue bugs (independent of Serializer) | `../../dw-setup-upgrade/references/db-update-recovery.md` |

@@ -227,7 +227,8 @@ on from the name alone:
   Management API commands are generated from the same C# methods and are near-homonyms
   (`get_products` / `GetProducts`), so casing alone does not carry first use — and the two
   behaviours do diverge.
-- **Serializer** operations as "serializer `SerializerDeserialize`" or by layer and mode, never as a
+- **Serializer** operations as "serializer `Deserialize`" (never the deprecated `SerializerDeserialize`
+  alias) or by layer and mode, never as a
   bare Management API command. **SQL** labelled `SQL` in a fenced `sql` block, never inline as though
   it were a command.
 
