@@ -170,6 +170,7 @@ SELECT Id, Button FROM [ItemType_Swift-v2_Slider_Item] WHERE Button <> '' AND Bu
 
 Prefer the `ParagraphSave` repair to a direct `UPDATE` of the column: the item table is cache-coupled, so
 the SQL write needs a recycle, which is disruptive on a host someone is editing in the admin UI.
+**Local installs only**: on a hosted install, fetch each page with MCP `fetch_frontend_page_html` and assert zero `dw-error` blocks.
 
 **The family rule, stated once: for EVERY complex editor field the read shape is a quoted JSON STRING and the
 write shape is a real nested OBJECT.** `SelectedImage`, `SelectedMedia` and `ButtonData` are three instances
@@ -229,6 +230,7 @@ The usual trigger is translation: translated copy is routinely longer than its E
 translated string against its target column width (`INFORMATION_SCHEMA.COLUMNS`) before posting a translation
 batch**, and remember alt attributes are plain text — HTML entities only spend bytes against the limit
 without rendering as anything.
+**Local installs only**: a hosted install has no read path for column widths, so an online build asks the user.
 
 **Module page-picker settings round-trip ASYMMETRICALLY: read-as-link, write-as-int, so posting back the
 value you were just given CLEARS it.** `GetParagraphById` renders a page-picker
@@ -260,6 +262,7 @@ after repointing its order list and detail templates; the net-new templates rend
 after a recycle. **Sequence the restart explicitly in any rebuild runbook, and gate the change only
 after it**, or the gate certifies the stock behaviour. (`ParagraphModuleSettings` is `nvarchar`, not
 `xml` — read it with `CAST(… AS nvarchar(max))`, edit it as a string and write the string back.)
+**Local installs only**: on a hosted install, edit module settings with MCP `set_module_settings` (read back with `get_module_settings`) and restart through the CloudHosting `recycle.txt` control file.
 
 Two shapes worth recording for that module, because both are easy to get wrong: the templates live under
 `Files/Templates/Designs/<design>/eCom/CustomerExperienceCenter/Orders/List/` and `…/Orders/Detail/`, and
@@ -322,6 +325,7 @@ when a later phase needs the band back. Regression probe worth keeping: POST `Pa
 `{"setActive":false,"ids":["<id>"]}`, assert `{"status":"ok"}` AND assert
 `SELECT ParagraphShowParagraph FROM Paragraph WHERE ParagraphId = <id>` is still 1, so the day the
 command starts working the harness notices.
+**Local installs only**: on a hosted install, deactivate the row with MCP `save_grid_rows` `active: false` (Management API `GridRowSave` `Active`), and read `showParagraph` back with `GetParagraphById`.
 
 **`save_paragraphs` DOES write `itemType`, and the write re-mints the item instance.** Swapping the
 attached content model through `save_paragraphs [{id, pageId, itemType:'<Other>'}]` returns ok, and the
@@ -392,6 +396,7 @@ LOSES: Swift renders one paragraph per grid column and the lowest `sort` wins, s
 renders and yours does not. Measured on seven pages built from one donor row: 14 paragraphs on the page,
 the 7 donor copies rendering the Swift baseline copy and the 7 real captions invisible, with every save
 reporting success. Never assume a copied row is empty.
+**Local installs only**: on a hosted install, read the row occupancy with MCP `get_paragraphs_by_page_id`, filtered to the new row and `id > 0`.
 
 **`ParagraphDelete` is a SOFT delete AND it cascades to master-linked language copies, and
 `GetParagraphsByPageId` hides both facts while SQL does not.** The verb sets
@@ -468,6 +473,7 @@ against SQL (`SELECT COUNT(*) FROM Paragraph WHERE ParagraphPageId=<id> AND Para
 claiming coverage, and note that the fallback path — SQL plus a content-cache flush — is available here,
 because content caches, unlike the user cache, are reachable. (Empty grid columns also come back as synthetic
 `id=0` placeholders; filter to `id > 0` before counting anything.)
+**Local installs only**: on a hosted install, cross-check the listing with MCP `search_paragraphs` and the rendered page from `fetch_frontend_page_html`.
 
 ## Creating a paragraph — the two-step, the 1-based column, and the writable template twin
 
@@ -513,7 +519,7 @@ UPDATE Paragraph SET ParagraphTemplate = '<File>.cshtml' WHERE ParagraphId = <id
 ```
 
 State the three things that recipe owes: the higher rungs were tried (`layout` through `ParagraphSave`,
-read back empty), it is **local installs only**, and it needs a **host restart** before the alternate
+read back empty), it is **local installs only** (a hosted install has no write path once the `layout` mirror fails, so an online build asks the user), and it needs a **host restart** before the alternate
 template renders. And then the consequence that outlives the write: **a SQL-written `ParagraphTemplate`
 puts that paragraph on the never-whole-model-save list.** A later full-model round trip re-sends an
 empty `template`, the cache drops the alternate template, and the page silently reverts. Keep the
@@ -536,7 +542,7 @@ row driven off `INFORMATION_SCHEMA` with an explicit column list minus the ident
 a cloned item-table row, overriding page, grid row, column, sort, item id, template and unique id. Two
 guards are load-bearing: the override map must **throw on a column it cannot find** (a silently dropped
 `PageId` override clones the paragraph onto the donor's own page), and the insert owes a host restart
-before the paragraph renders. Local installs only.
+before the paragraph renders. Local installs only; on a hosted install, clone with MCP `copy_paragraph`, which returns the real id.
 
 **A field you never set is not a field that renders nothing — `Swift-v2_Text` ships a lorem default on
 `Subtitle`.** The item type declares a placeholder default value, so a paragraph created and populated

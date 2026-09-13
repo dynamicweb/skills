@@ -52,6 +52,8 @@ pricing has unresolved currency / country gaps. Direct `UPDATE` is the right too
 completion; reserve `complete_order` for flows where the side-effects (workflow, email, inventory)
 are intended.
 
+**Local installs only**: on a hosted install, run `complete_order` per order.
+
 ## OrderCustomerNumber is not set by create_orders
 
 The account-side Orders paragraph resolves order history via a `UseCustomerNumber` lookup against the
@@ -65,6 +67,8 @@ FROM EcomOrders o
 JOIN AccessUser u ON u.AccessUserID = o.OrderCustomerAccessUserId
 WHERE o.OrderCustomerNumber IS NULL OR o.OrderCustomerNumber = '';
 ```
+
+**Local installs only**: on a hosted install no MCP tool is known to write `OrderCustomerNumber`, so ask the user.
 
 ## Area-currency filters order history
 
@@ -177,7 +181,7 @@ and the write survives and is the shipped path: a bulk repoint of an order colum
 `OrderService` flush read back correctly through the platform's own read (MCP `get_orders_by_ids`) on
 every changed row, with the rendered customer-center surfaces byte-identical before and after — which is
 itself the proof that nothing else moved. **Local installs only**; a hosted install has no SQL rung, so
-the operation has to be expressed through the Admin API verb that owns the column or not at all. The
+the operation has to be expressed through the MCP tool that owns the column (`update_orders` where it models the column) or not at all. The
 per-entity flush table is in
 [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md).
 
@@ -202,7 +206,7 @@ compose, and none of them warns:
   just to reach the save at all.
 
 **Do not use `OrderSave` to edit a cosmetic field on a historical order.** Where a company or name string
-on a settled order must change, the honest options are (a) a targeted SQL `UPDATE` on that string column
+on a settled order must change, the honest options are (a) a targeted SQL `UPDATE` on that string column (local installs only; a hosted install asks the user)
 with **no** subsequent `OrderSave` or `OrderRecalculate` (either one re-zeroes it), or (b) saving only
 orders whose every line SKU still resolves in `EcomProducts` AND whose delivery country is set. Restoring
 afterwards through `OrderSave` is not available: the same recalculation re-zeroes it, and a shipping
@@ -223,7 +227,7 @@ model has no null or omit semantics, and an empty string is itself a write.
 
 **The safe idiom is a measured pre-flight plus a full-column post-diff:**
 
-1. Before the save, pull the row with SQL and the model with the `*ById` verb, and **fail on any column
+1. Before the save, pull the row with SQL (local installs only; a hosted install has no raw-row read) and the model with the `*ById` verb, and **fail on any column
    where they disagree outside the intended set.** Every disagreement is a field the save will silently
    rewrite.
 2. Pre-flight the recalculation hazards: every `EcomOrderLines.OrderLineProductId` resolves in
@@ -254,6 +258,8 @@ The arithmetic across three grids proves the join exactly: on one host the compl
 SELECT COUNT(*) FROM EcomOrders
  WHERE OrderShopId <> '' AND OrderShopId NOT IN (SELECT ShopId FROM EcomShops);   -- must be 0
 ```
+
+**Local installs only**: on a hosted install no MCP tool is known to read orders on a deleted shop, so ask the user.
 
 This is a good candidate for the Ecommerce health provider to surface — worth raising with the vendor.
 
@@ -434,6 +440,8 @@ VALUES (<csr_user_id>, <customer_user_id>);
 the CSR under "Users that can impersonate this user". Swap the two ids. Don't trust the column name;
 trust the screen label.
 
+**Local installs only**: on a hosted install, grant with `add_impersonatable_users` and read the direction back with `get_impersonatable_users`.
+
 **Required follow-up, not picked up live.** After the SQL change: (1) **rebuild the Secondary user
 index** (the lookup is index-backed); (2) **clear the user/system cache** (DW caches `AccessUser`
 objects in process).
@@ -501,6 +509,7 @@ of relying on pre-provisioned baseline content, stock filters silently hide othe
   `ProductReferenceUrl`, `UnitId` — pass empty strings, never NULL. The list header is one
   `EcomCustomerFavoriteLists` row per user (`IsDefault = 1` for the default). The storefront reads it
   via `Pageview.User.GetFavoriteLists()`. There is no MCP tool for favorites — SQL-only.
+  **Local installs only**: a hosted install has no favorites write, so ask the user.
 - **Stock checkout reads the billing address from the user-*profile* fields, not from `UserAddress`
   records.** A buyer seeded with `save_user_addresses` (a Billing + Shipping `UserAddress`) but a blank
   profile address (`AccessUser.Address/Zip/City`) cannot complete checkout — stock

@@ -59,7 +59,8 @@ the `RmaSave` payload. Send `Model.Id` empty on every create: the platform owns 
 
 ```sql
 -- the shape of the app's own list query (read-only; use it to diagnose an invisible RMA).
--- SQL because no verb exposes the list query; local installs only; owes no flush (read-only).
+-- SQL because no verb exposes the list query; local installs only (a hosted install reads the claim
+-- with get_rmas_by_order_id); owes no flush (read-only).
 SELECT r.RmaId, o.OrderID, r.RmaStateId, MAX(c.RmaCommentCreated) AS DateCreated
 FROM EcomRmas r
 INNER JOIN EcomRmaComments   c  ON r.RmaId = c.RmaCommentRmaId
@@ -73,7 +74,9 @@ GROUP BY r.RmaID, o.OrderID, r.RmaStateID;
 Repairing a stub means inserting the missing `EcomRmaOrderLines` and `EcomRmaComments` rows and
 setting `RmaCustomerNumber` — SQL is legitimate here because no MCP tool or Management API verb
 writes an RMA comment row on an existing claim other than `RmaCommentSave` (which needs the
-platform-minted id); it is **local installs only**, and it owes the service flush below.
+platform-minted id); it is **local installs only** (on a hosted install, re-file the claim with
+`RmaSave`, which writes all three, and write a comment on an existing claim with `RmaCommentSave`),
+and it owes the service flush below.
 
 ## Let the platform mint the claim number — never rename an RMA in SQL
 
@@ -92,12 +95,14 @@ through the storefront gets the right number with no SQL in the loop at all:
 ```sql
 -- local installs only; no verb exposes the EcomNumbers counters. Owes no cache flush:
 -- the counter is read at mint time. Prefer this to renaming a minted RMA.
+-- A hosted install has no write path for the counter, so an online build asks the user.
 UPDATE EcomNumbers SET NumberPrefix = '<prefix>', NumberCounter = <n> WHERE NumberType = 'RMA';
 ```
 
 If a rename is genuinely unavoidable, make it the last write of the build and restart the
-application pool after it, so no later command is keyed on an id the cache does not hold. MCP
-`save_comment` is rung 1 for the comment write itself.
+application pool after it, so no later command is keyed on an id the cache does not hold.
+**Local installs only**: a hosted install has no write path for a rename, so an online build keeps the
+minted number. MCP `save_comment` is rung 1 for the comment write itself.
 
 ## Renaming an RMA state is three writes
 
@@ -108,7 +113,8 @@ application pool after it, so no later command is keyed on an id the cache does 
 | 3 | `SQL` — `UPDATE EcomRmaStates SET RmaStateDefaultName = ... WHERE RmaStateId = ...` | What the backend state list renders |
 
 Step 3 is SQL because no verb writes that column: `RmaStateSave` with `Translated: true` skips it
-and there is no untranslated variant that reaches it. **Local installs only**, and it owes the RMA
+and there is no untranslated variant that reaches it. **Local installs only** (a hosted install has no
+write path for the column, so an online build asks the user), and it owes the RMA
 service flush below. Verify all three by reading the storefront badge, the claim-list column and
 the backend state list and asserting they carry the same vocabulary.
 
@@ -121,7 +127,8 @@ and silently never fires on a storefront-filed one:
 ```sql
 -- guard every "is this RMA field unset" test this way; still idempotent on re-render.
 -- SQL because no verb writes the serial number on an existing relation row;
--- local installs only; owes the RMA service flush below.
+-- local installs only (a hosted install has no write path, so an online build asks the user);
+-- owes the RMA service flush below.
 UPDATE EcomRmaOrderLines SET RmaOrderLineSerialNumber = @s
  WHERE RmaOrderLineId = @id AND ISNULL(RmaOrderLineSerialNumber, '') = '';
 ```
@@ -130,7 +137,8 @@ UPDATE EcomRmaOrderLines SET RmaOrderLineSerialNumber = @s
 
 To delete the rows after a scripted `RmaSave` pass:
 `DELETE FROM EcomRmaComments WHERE RmaCommentEvent = 'UserInfoChanged'`. SQL because no verb
-deletes an RMA comment; **local installs only**; owes the service flush below, because the RMA
+deletes an RMA comment; **local installs only** (a hosted install has no write path, so an online build
+asks the user or filters the event in the template, below); owes the service flush below, because the RMA
 detail view serves the cached object graph and keeps rendering deleted rows without it. Filtering
 the event in the details template is the option with no cleanup pass and no restart, and it is the
 right one for a live site.
@@ -151,4 +159,5 @@ POST /admin/api/CacheInformationRefresh
   detail view stale by design until the cache turns over.
 
 `EcomRmaEmailConfigurations` is configured the same way: no MCP tool and no Management API verb
-reaches that table; **local installs only**; flush the RMA service afterwards.
+reaches that table; **local installs only** (a hosted install has no write path, so an online build
+asks the user to use the backend RMA e-mail screen); flush the RMA service afterwards.

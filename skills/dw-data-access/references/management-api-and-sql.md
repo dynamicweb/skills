@@ -147,6 +147,8 @@ row:
   WHERE ISNUMERIC(p.PermissionUserId) = 1 AND TRY_CAST(p.PermissionUserId AS int) = g.AccessUserId)
 ```
 
+**Local installs only**: a hosted install has no documented read path that counts the grants per user or group, so an online build asks the user before deleting groups.
+
 `WHERE ISNUMERIC(...) = 1` in the same predicate does **not** save the bare comparison: there is no
 guaranteed evaluation order. **Compare on the string side (`p.PermissionUserId = CAST(g.AccessUserId AS
 nvarchar(20))`) or use `TRY_CAST`. Never a bare `int = column` comparison against this table.** The
@@ -345,6 +347,8 @@ $rows[0].PageId        # WRONG — $rows unrolled to the DataRow; [0] is column 
 @($rows)[0].PageId     # correct — force the array, then index the row
 ```
 
+**Local installs only**: on a hosted install there is no SQL read to index; read the row back through `GetPageById` or `get_pages_by_area_id` instead.
+
 **Fix it INSIDE the shared read helper — forcing `@()` at the call site is not a rule that holds.** Four
 independent workstreams hit this on the same day against one shared `_sql.ps1`, and each produced a confident
 page of wrong output rather than an error: a run of bogus "Invalid column name" errors, a payload posted full
@@ -425,6 +429,8 @@ UPDATE GeneralLog SET LogDescription = REPLACE(LogDescription, …)
   -> Argument data type ntext is invalid for argument 1 of replace function
 ```
 
+**Local installs only**: a hosted install has no write path for a bulk string sweep over log or content columns, so an online build asks the user.
+
 **`CAST(… AS nvarchar(max))` inside the `REPLACE`** is the fix. Any bulk-content or anonymisation sweep must
 name the legacy column types explicitly, or it silently skips the tables it cannot update — and then reports a
 clean pass. Assert zero remaining hits in the `ntext` columns as well as the `nvarchar` ones.
@@ -464,6 +470,8 @@ INSERT INTO Page (
     1, 0, 0, 1, 1, '2026-01-01 00:00:00', '2999-12-31 23:59:59', NEWID(), 1);
 ```
 
+**Local installs only**: on a hosted install, create the page with `save_pages` and set what it drops through `PageSave`.
+
 `PageActiveFrom` / `PageActiveTo` are the silent killers — without them page-resolution treats the row
 as scheduled-out and returns 404 even though the slug resolves. The other NOT-NULL columns surface a
 more useful `Cannot insert NULL` on first attempt. (`PageActive` vs `PageHidden` semantics — "Hidden in
@@ -479,6 +487,8 @@ INSERT INTO GridRow (
     GridRowSort, GridRowUniqueId        -- NEWID()
 ) VALUES (<pageId>, 'Grid', '1Column', 'Swift-v2_Row', 1, NEWID());
 ```
+
+**Local installs only**: on a hosted install, create the row with `save_grid_rows` or `GridRowCreate`.
 
 `GridRowDefinitionId` must name a RowDefinition JSON that actually exists under
 `Designs/<design>/Grid/Page/RowDefinitions/` — an unknown id renders **nothing, silently** (the row and
@@ -567,6 +577,8 @@ INSERT INTO Paragraph (
     '2026-01-01', '2999-12-31 23:59:59', GETDATE(), GETDATE(), 1, 1, 0);
 ```
 
+**Local installs only**: on a hosted install, create the paragraph with `save_paragraphs` and set paragraph scalars with `ParagraphSave`.
+
 - **`ParagraphGlobalId` is INT-typed despite the name.** Setting it via `NEWID()` (which works for
   `ParagraphUniqueId`) fails with a type-conversion error. Use `0`.
 - **`ParagraphTemplate` is the optional-looking column you do NOT want to omit** — leaving it `NULL`/`''`
@@ -583,6 +595,8 @@ renders as empty wrapper markup.
 INSERT INTO [ItemType_Swift-v2_Text] (Id, Title, Subtitle, Text, ItemInstanceType)
 VALUES ('<newId>', '', '', '<your html or text>', '');   -- ItemInstanceType: '' not NULL
 ```
+
+**Local installs only**: on a hosted install, `save_paragraphs` mints the item instance and `set_item_field_values` writes its fields, so no item id is allocated by hand.
 
 - **`ItemInstanceType` is `nvarchar NOT NULL` — use empty string, not NULL.** Several
   `ItemType_Swift-v2_*` tables ship this column; `NULL` fails with `Cannot insert the value NULL into
@@ -607,6 +621,8 @@ INSERT at an intermediate value:
 UPDATE GridRow SET GridRowSort = GridRowSort * 10 WHERE GridRowPageId = <pageId>;  -- now 10,20,30
 INSERT INTO GridRow (..., GridRowSort, ...) VALUES (..., 25, ...);                  -- insert at 25
 ```
+
+**Local installs only**: on a hosted install, set `sort` through `save_grid_rows`, and paragraph sort through `ParagraphSave`.
 
 This sidesteps duplicate-sort ties (DW10 renders ties non-deterministically → inconsistent layout).
 Same pattern for `ParagraphSort` within a GridRow.

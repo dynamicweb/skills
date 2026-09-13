@@ -81,6 +81,8 @@ WHERE ParagraphModuleSettings LIKE '%ProductsFrontend%' OR ParagraphModuleSettin
 
 Restart the host so the paragraph-settings cache reloads. Touched paragraphs are typically the Shop module on Page "Shop", an Express-Buy module, and the Search field's QueryPublisher.
 
+**Local installs only**: on a hosted install, repoint each paragraph with MCP `set_module_settings` (read back with `get_module_settings`), then restart through the CloudHosting `recycle.txt` control file.
+
 **Card-template path mismatch in `Swift-v2_ProductComponentSlider`.** Swift v2.3.0 ships card templates (`Card.cshtml`, `CardCover.cshtml`, `CardCoverFull.cshtml`, `CardCoverNavInline.cshtml`) at `Files/Templates/Designs/Swift-v2/Paragraph/Swift-v2_Slider/`, but the slider's `RenderRazorTemplate` resolver looks for them at the legacy path `Files/Templates/Paragraph/<filename>`. Symptom: slider div renders the inline error `Template file not found (in RenderRazorTemplate()): ...\Files\Templates\\Paragraph\CardCoverNavInline.cshtml` (note the literal `\\`). Fix: copy the four card files to `Files/Templates/Paragraph/` so the legacy resolver path resolves: `Copy-Item "<host>/wwwroot/Files/Templates/Designs/Swift-v2/Paragraph/Swift-v2_Slider/*.cshtml" "<host>/wwwroot/Files/Templates/Paragraph/" -Force`. No host restart needed — Razor template resolution is per-request.
 
 ## 2. Step 0 — Discover project context
@@ -279,6 +281,8 @@ UPDATE Area SET AreaEcomShopId = 'SHOP1', AreaEcomCurrencyId = 'EUR', AreaEcomLa
 WHERE AreaId = <area>;  -- then restart the host (Area rows materialise at startup)
 ```
 
+**Local installs only**: on a hosted install, bind them with MCP `save_areas` and confirm each value echoes in `get_area_by_id`, or round-trip the full `GetAreaById` model through `AreaSave`, then restart through the CloudHosting `recycle.txt` control file.
+
 **Bind these columns by SQL, not by `AreaSave`.** `AreaSave` treats the posted `Model` as authoritative
 and full-replace, so a **partial** model wipes what it omits. A save that omitted `websiteItem`
 returned HTTP 200 / `ok` and blanked
@@ -312,6 +316,8 @@ UPDATE EcomCurrencies SET CurrencyIsDefault = 1     WHERE CurrencyCode = 'USD';
 UPDATE Area SET AreaEcomCurrencyId = 'USD' WHERE AreaId = <area>;
 ```
 
+**Local installs only**: on a hosted install, set the rate and the default with MCP `save_currencies` (Management API `CurrencySave`) and the area currency with `save_areas`.
+
 Assert the rendered price **equals** `ProductPrice`, not merely that a currency symbol is present: a
 1:100 scale error still renders a well-formatted, plausible number. Use a known-value control row (a
 100.00 product must render as 100.00) plus `itemprop="price" content="..."` on a hero PDP, and assert
@@ -325,6 +331,8 @@ A clean deserialize can still leave the **site root (`/`) returning 404** even t
 - **`Area.AreaFrontpage`** — the numeric page id that `/` renders.
 
 **There is no `AreaDns` table on 10.27.x** — do not look for one; the older DNS-binding table is gone and the binding lives on the `Area` row itself. **`AreaSave` cannot set `AreaDomain`.** It accepts both `domain` and `hostNames` and maps neither onto the column, so the write is a silent no-op that answers 200, and a full model carrying `hostNames` additionally returns HTTP **500**. A green `AreaSave` response is not evidence the domain is set: read `SELECT AreaDomain FROM Area WHERE AreaId = <id>` back. Set both columns by SQL (`UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>`), then **restart the host** — `Area` rows are materialised at startup, so the new root binding is not live until the bounce (see [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md), the `Area`-row row). These binding columns are per-environment and excluded from serialization, so they arrive unset on a fresh host — set them at provisioning, don't expect them from the baseline.
+
+**Local installs only**: a hosted install has no write path for `AreaDomain`, so an online build asks the user and verifies with a GET of `/`. `save_areas` has no frontpage member; the frontpage resolves from page sort order ([`dw-swift-building`](../../dw-swift-building/SKILL.md) "Update the Area").
 
 ### `AreaSave` writes `AreaDomainLock` WRONG — repair it in the same step
 
@@ -349,7 +357,7 @@ written WRONG):
 UPDATE Area SET AreaDomainLock = N'' WHERE AreaId = <newAreaId>;
 ```
 
-Local installs only; pair it with the same host restart the other `Area` columns owe. Gate it by
+Local installs only (a hosted install has no write path that sets this column correctly, so an online build asks the user); pair it with the same host restart the other `Area` columns owe. Gate it by
 asserting that no served body or `Location` header anywhere in the new area contains `false:443`.
 Setting the column to the real host also works and buys nothing — it locks the area to that host for
 no benefit, and the working reference area carries an empty one.
@@ -361,6 +369,8 @@ After this flow returns 2xx, **immediately run [`integrity-sweep.md`](integrity-
 **Also bind the area's commerce columns** (§7 "Mandatory consumer obligation") — `AreaEcomShopId` / `AreaEcomCurrencyId` / `AreaEcomLanguageId` explicitly per area + host restart; on DW 10.28+ an unbound area derives its currency from the area culture (en-US → USD), not `CurrencyIsDefault`.
 
 **Also bind the site root** (§7 "Site root `/` 404s after deserialize") as an explicit post-deserialize step: `AreaDomain` / `AreaFrontpage` are per-environment and excluded from serialization, so `/` 404s until you set them — `UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>` (SQL is the working path: `AreaSave` accepts `domain` / `hostNames` and no-ops on `AreaDomain`), **then restart the host** (Area rows materialise at startup). The integrity sweep's done-condition includes `/` returning 200.
+
+**Local installs only**: a hosted install has no write path for `AreaDomain`, so an online build asks the user (see section 7).
 
 The sweep is the second line of defence for the failures strict mode does not catch:
 
@@ -385,6 +395,8 @@ For a content-only baseline against a PIM-set-up host (SHOP1 + DE + EUR + LANG1 
 - `SELECT COUNT(*) FROM Areas` → +1 (the new "Swift 2" area)
 - `SELECT COUNT(*) FROM Page` → ~+50
 - Existing PIM data (products, manufacturers, catalog groups, data models, custom field values, EcomDetails image/asset rows) → **untouched**
+
+**Local installs only**: on a hosted install, count with MCP `get_areas` and `get_pages_by_area_id`.
 
 Note (Swift 2.4 split): unlike the content-only `Swift2.2` baseline described in this §9.2, the framework-only `base` layer legitimately touches framework rows (`EcomShops`, `EcomCurrencies`, `EcomCountries`, …) via its `replace/_sql/` pass — that is expected, not a reversion. Neither base nor surface ships catalog rows (zero EcomProducts/Groups/Prices), so the deserialize leaves the catalog empty by design; the catalog comes from `sample-data` or is authored per-demo via `dw-demo-pim`. Capture the base+surface replace counts from a host run and record them here once verified.
 

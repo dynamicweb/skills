@@ -57,6 +57,8 @@ Seed the signed-in buyer so every tile lands. Exact SQL/API mechanics are founda
 | My profile | complete profile fields | populate name / company / email / phone + the address fields the checkout "Continue" gate reads | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) |
 | My returns | ≥1 RMA request against a completed order | raise a return from a completed order (stock RMA add flow) so `RMAList.cshtml` has a row; depends on the My-orders seed landing first | stock `eCom_CustomerExperienceCenterRma`; base `EcomOrderFlow`/`EcomOrderStates`/`EcomOrderStateRules` supply the return-eligible states |
 
+**Local installs only** (the My favorites SQL): on a hosted install, seed favorites through the storefront `FavoriteCmd` requests `createfavoritelist` and `addproducttofavoritelist`, signed in as the buyer.
+
 "Mixed states" matters for the Orders tile specifically — a list where every row says the same status looks synthetic. Spread the seeded orders across the states the base's `EcomOrderStates` ships so the status column tells a story (placed → in progress → shipped/completed).
 
 ## 5. CSR view seed
@@ -87,6 +89,8 @@ A campaign email that shows 0 sent / 0 clicked reads exactly like an unfinished 
 4. Bounces: a non-empty `RecipientErrorMessage` on the recipient rows you want to show as failed.
 5. Clicks + link performance: `OMCLink` rows for the tracked links (`LinkReferenceKey` = the message id as varchar) plus `OMCLinkClick` rows (`LinkClickClickerKey` = the recipient id as varchar).
 
+**Local installs only**: a hosted install has no write path for send history, so an online build asks the user.
+
 Verify by calling `RecipientStatisticsByEmail?EmailId=<n>` and `LinkClicksByEmail` for each seeded email and checking the numbers match the seed — a green insert proves nothing, the grid query is the test.
 
 ## 7. Email flow bootstrap — folders and the fully-prefixed schema
@@ -95,6 +99,8 @@ Two failure modes that both present as "the flow isn't there":
 
 - **`EmailMarketingFlow` columns are fully table-prefixed.** The real schema is `EmailMarketingFlowId`, `EmailMarketingFlowFolderId`, `EmailMarketingFlowName`, `EmailMarketingFlowRecipientsIds`, … — there are no bare `FolderId` / `Name` / `RecipientsIds` columns. Bare-name SQL is a compile error, and the `RunSql` add-in surfaces it as a **contentless Exception** with no message to diagnose from. Dump `sys.columns` for `OBJECT_ID('EmailMarketingFlow')` before writing anything, and never trust an abbreviated column list in a hand-written schema note.
 - **A flow must carry its folder id or the folder node renders empty.** `FlowListScreen` queries `FlowsByFolderId?FolderId=<n>`, so a flow left at folder `0` (top level) shows "No results found" under the folder you created for it — even though the flow exists, is active, and has steps and recipients. Create the `FlowFolder` row **first**, then set `EmailMarketingFlowFolderId` to that folder's id on the flow.
+
+**Local installs only**: a hosted install has no documented write path for these rows, so an online build asks the user.
 
 Validate after a recycle: `FlowsByFolderId?FolderId=<folder>` returns `totalCount >= 1` and the admin flow list for that folder shows the row.
 
@@ -131,6 +137,8 @@ UPDATE [EcomGiftCard]
  WHERE [GiftCardExpiryDate] IS NOT NULL
    AND [GiftCardExpiryDate] > GETDATE();
 ```
+
+**Local installs only**: a hosted install has no documented path for this SQL date shifter, so an online build asks the user.
 
 Measured across a rewind-and-run cycle: the live cards moved +1 day while the cancelled one stayed frozen and still read `active=False` through the gift-card list query. **Assert it** — a cancelled gift card still reads inactive after the nightly refresher runs. Gift-card storage semantics (encrypted codes, one bad row 500ing the whole family) are owned by [`promotions-engines.md`](../../dw-commerce-orders/references/promotions-engines.md).
 

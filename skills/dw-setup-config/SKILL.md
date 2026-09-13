@@ -109,6 +109,8 @@ Two remedies, in order:
    DW10 login page instead of Setup.
 2. Re-enter the password on the target host so it is encrypted with that host's own keys.
 
+**Local installs only**: a hosted install's database login is managed by the host, so neither the `sqlcmd` test nor the login grant applies there.
+
 ## Programmatic Access to GlobalSettings
 
 ```csharp
@@ -149,6 +151,7 @@ no duplicate appended.
 - Never treat `GlobalSettingByKey` as proof a setting is applied. It echoes back a key you invented.
   Assert the **effect** instead, for auditing that is `SELECT COUNT(*) FROM Audit` increasing across a
   `ProductSave`.
+  **Local installs only** for the `SELECT`: on a hosted install, assert it with `get_audits_by_query`.
 
 ## Setting the Environment
 

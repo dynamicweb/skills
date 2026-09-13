@@ -170,6 +170,7 @@ free → `UserSave` the target row (which updates the database **and** the cache
 doing rather than SQL-editing the row) → SQL-restore the whole set. Repeat per row. Verify afterwards that
 `/dwapi/users/info/profiles/switch` still returns `200` for every profile — the parking step is exactly the
 kind of edit that leaves a set half-restored.
+**Local installs only**: a hosted install has no write path for the parking step, so an online build asks the user.
 
 ### Zero-custom-code picker recipe (SQL + one restart)
 
@@ -184,6 +185,8 @@ kind of edit that leaves a set half-restored.
    `<ListUserProfiles>True</ListUserProfiles>` +
    `<UserProfilesTemplate>SelectableUsers.cshtml</UserProfilesTemplate>`.
 4. **Restart once** (user + paragraph caches).
+
+**Local installs only**: on a hosted install, create the profile rows with `UserSave` on DW 10.29+ (it rejects the duplicate username before 10.29) and restart through the CloudHosting `recycle.txt` control file; below 10.29 a hosted install has no write path for this, so an online build asks the user.
 
 Per-profile data isolation comes free: contract prices key on `PriceUserCustomerNumber` and the
 My-orders list filters on `RetrieveListBasedOn=UseUserID` — both differ per profile row.
@@ -346,6 +349,7 @@ ALTER TABLE EcomOrders ADD [<SystemName>] <type> NULL;
 
 Flush the `OrderFieldService`/`OrderService` caches (or restart the host) before reading any
 order.
+**Local installs only**: a hosted install has no documented write path for this (MCP `create_order_field` fails, below), so an online build asks the user.
 
 ### MCP `create_order_field` fails on a foreign-key violation (version-pinned)
 
@@ -559,6 +563,8 @@ DELETE FROM EcomOrderLines WHERE OrderId = <cart>;
 DELETE FROM EcomOrders     WHERE OrderCart = 1;     -- the cart ROW too
 -- then restart the app pool, which drops the cached Order
 ```
+
+**Local installs only**: on a hosted install, remove the cart with MCP `delete_order`, then restart through the CloudHosting `recycle.txt` control file.
 
 Regression test for the trap: run the identical cart sequence twice with the full reset between runs
 and assert identical line counts and quantities both times. Without the reset, run two doubles.

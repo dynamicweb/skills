@@ -99,6 +99,8 @@ pwsh -NoProfile -File "scripts/install-swift2.ps1" `
 7. Writes a one-time bootstrap manifest to `Files/System/mcp-bootstrap.json`
 8. Writes `GlobalSettings.Database.config` with the database connection
 
+**Local installs only**: a hosted install is handed over already installed, so the script has no target there.
+
 ---
 
 ## Degraded Path - Manual Installation
@@ -121,6 +123,7 @@ If the automated script fails (no sqlpackage, download blocked, wrong SQL Server
    ```
    sqlpackage /Action:Import /TargetServerName:localhost /TargetDatabaseName:swift2 /SourceFile:swift2.bacpac
    ```
+   **Local installs only**: a hosted install is handed over already installed, so there is no database to import.
 
 4. **Copy Custom.Mcp add-ins** into `Files/System/AddIns/Installed/Custom.Mcp.10.0.0`
 
@@ -220,6 +223,7 @@ Drop it first:
 ```powershell
 sqlcmd -S localhost -Q "DROP DATABASE [swift2]"
 ```
+**Local installs only**: a hosted install has no database to drop, so an online build asks the user to reset it.
 Or use a different database name.
 
 ### Download fails

@@ -50,7 +50,7 @@ not on the page. Cache flushes change nothing.
 render. Two gaps to repair afterwards, because the copy does not carry them: the copy lands with
 `GridRowId 0` / column 0, and on a mastered solution its language mirror lands on the SOURCE page's
 grid row. Rebind both — a `GridRow` binding is the narrow sanctioned SQL case here (no verb takes a
-paragraph's grid binding on a copy; local installs only), followed by `CacheInformationRefresh` on
+paragraph's grid binding on a copy; local installs only, and on a hosted install no MCP tool is verified to rebind it, so ask the user), followed by `CacheInformationRefresh` on
 `ParagraphService` and `PageService`. A page carrying `ParagraphItemType` empty under a Swift 2 grid
 is also the explanation for any pre-existing "dead paragraph" on a solution that once used this
 route.

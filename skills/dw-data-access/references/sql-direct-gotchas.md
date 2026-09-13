@@ -27,6 +27,8 @@ SELECT CAST(ParagraphModuleSettings AS nvarchar(max)) FROM Paragraph WHERE Parag
 UPDATE Paragraph SET ParagraphModuleSettings = @s WHERE ParagraphId = @p;
 ```
 
+**Local installs only**: on a hosted install, read and write module settings with `get_module_settings` and `set_module_settings`.
+
 The instinct to use the `xml` type on a column whose contents are unmistakably XML is exactly what
 breaks it: `SET ParagraphModuleSettings = CONVERT(xml, @s)` makes the right-hand side `xml`-typed,
 which SQL Server then refuses to assign back to `nvarchar`, with an error that reads backwards —
@@ -90,6 +92,8 @@ EXEC('IF EXISTS (SELECT 1 FROM dbo.MyTable WHERE TransitDays NOT BETWEEN 1 AND 5
 ROLLBACK TRANSACTION;  -- COMMIT once the dry run holds
 ```
 
+**Local installs only**: a hosted install has no write path for schema DDL, so an online build asks the user.
+
 The step that catches people twice: **the assertions go inside `EXEC()` too.** An assertion naming
 the new column is exactly as unresolvable as the `UPDATE`, so a file fixed by wrapping only the
 writes still fails to compile.
@@ -114,6 +118,8 @@ UPDATE ItemType_MyText
             + N'... last chunk</div>'
  WHERE Id = @id;
 ```
+
+**Local installs only**: on a hosted install, write long item field values with `set_item_field_values` or `set_paragraph_item_fields`.
 
 **A `DECLARE` or `SET` into a too-small `nvarchar` variable truncates silently.** The same value
 into a too-small column raises the error; into a variable it loses its tail. When the tail is the

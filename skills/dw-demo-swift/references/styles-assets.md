@@ -93,7 +93,7 @@ sheets themselves loading normally, so three of the four sheets link and the fou
 Swift-v2_Master.CustomHeadInclude = /Files/Templates/Designs/Swift-v2/Custom/DefaultHeadInclude.cshtml
 ```
 
-Set it once per environment, by SQL or by a full `websiteItem` round-trip through `AreaSave`. That round trip persists String fields such as this one but drops the `SelectedImage` master fields (`Favicon`, `AppleTouchIcon`, `MetaImage`), and an MCP write to the master item stays invisible behind the cached area until an `AreaSave` round trip: both in [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) §"Area master item fields". **The
+Set it once per environment, by SQL or by a full `websiteItem` round-trip through `AreaSave`. **Local installs only** applies to the SQL write: on a hosted install, use the `AreaSave` round trip. That round trip persists String fields such as this one but drops the `SelectedImage` master fields (`Favicon`, `AppleTouchIcon`, `MetaImage`), and an MCP write to the master item stays invisible behind the cached area until an `AreaSave` round trip: both in [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) §"Area master item fields". **The
 field is environment-owned** — it sits in the serializer config's `excludeFieldsByItemType`, so the
 deserializer will neither write it nor overwrite it: it must be set on the host rather than shipped
 in content, and it survives a re-deserialize afterwards.

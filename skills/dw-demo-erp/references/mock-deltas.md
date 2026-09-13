@@ -103,6 +103,8 @@ Build one PowerShell + SQL script at `<demo>/.planning/stage-and-reset.ps1` that
 
 Reference implementation: `<demo>/.planning/stage-and-reset.ps1` (build-time tooling — adapt per demo).
 
+**Local installs only**: on a hosted install, stage the post-sync values through `patch_products_safe` or `update_products`.
+
 ### Step 3 — Register the RESET scheduled task
 
 **Bind the task to an Integration Framework activity** (`JobScheduledTaskAddIn`, option 3) wherever
@@ -154,6 +156,8 @@ IF NOT EXISTS (SELECT 1 FROM ScheduledTask WHERE TaskName=N'<Demo> RESET to clea
      0, 0, 0, NULL);
 "@ | sqlcmd -S "<server>" -d <db> -E
 ```
+
+**Local installs only**: on a hosted install, register the task through `create_scheduled_task` or `TaskSave` and prove it from `GET /Admin/Api/Tasks`.
 
 **A presenter-triggered task sets EVERY schedule column to `-1`** — `TaskMinute`, `TaskHour`,
 `TaskDay`, `TaskWday` — as well as `TaskNextRun = '9999-12-31'`. That is the shape the platform's own
@@ -249,6 +253,8 @@ stays in the database; the only additions are two staging tables and configurati
 
 Both live in the solution's own database, so the `SqlProvider` source needs no external connection.
 Key them on the product number the catalogue actually uses.
+
+**Local installs only**: a hosted install has no write path for custom staging tables, so an online build asks the user.
 
 ### 2. Build two activities
 

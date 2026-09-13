@@ -133,9 +133,9 @@ restarts, whatever `TaskNextRun` says — and `TaskNextRun` is derived anyway (s
 task, disable it; to park it and still keep it out of the scheduler's arithmetic entirely, set every
 schedule column to `-1` as well.
 
-Surface note: `ScheduledTask` and `ScheduledTaskFolder` carry no MCP tool and no Management API save
-verb, so a programmatic registration is `SQL` and is **local-install only**; it owes the
-`TaskService` flush above. On a hosted install, register the task through the admin UI instead.
+Surface note: a `SQL` registration of `ScheduledTask` and `ScheduledTaskFolder` rows is
+**local-install only**; it owes the `TaskService` flush above. On a hosted install, register the
+task through `create_scheduled_task` or `TaskSave` (step 1 above), or through the admin UI.
 
 One shipped add-in worth correcting while you are here: the saved-card expiration task is
 `Dynamicweb.Ecommerce.Cart.ScheduledTaskAddIns.PaymentCardExpirationNotificationScheduledTaskAddIn,
@@ -148,7 +148,8 @@ is a ViewModel template over `Dynamicweb.Ecommerce.Frontend.PaymentCardExpiratio
 
 ## Writing TaskAddInSettings from T-SQL
 
-Same surface as the row contract: `SQL`, local-install only, owing the `TaskService` flush. Two
+Same surface as the row contract: `SQL`, local-install only, owing the `TaskService` flush; on a hosted install, write the task through `TaskSave` or
+`update_scheduled_task` and read it back with `get_scheduled_tasks`. Two
 traps, in opposite directions.
 
 **Escape a parameter value with an explicit `REPLACE` chain, ampersand first.** The idiomatic

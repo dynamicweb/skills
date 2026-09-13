@@ -36,6 +36,7 @@ Before starting:
 1. Upgrade DW9 to 9.18 if on 9.x–16 (9.18 shares much of the DW10 codebase, minimizing the diff).
 2. Upgrade Swift to 1.26+ before the DW10 upgrade.
 3. Disable all scheduled tasks in source DB: `UPDATE dbo.ScheduledTask SET TaskEnabled = 0`.
+   **Local installs only**: a cloud-hosted solution is upgraded through its release ring (see Cloud Release Rings below), so there is no source database to edit.
 4. Audit custom code for `[Obsolete]` attributes — DW9.15+ already flags what gets removed in DW10.
 
 ## Phase A: Database Setup
@@ -47,6 +48,8 @@ Export the DW9.18 database as `.bacpac` from SSMS. For speed, you can omit these
 Import to a local SQL Express instance. **Work with a copy — never the live database.**
 
 The SQL user needs: `db_datareader`, `db_datawriter`, `db_ddladmin`.
+
+**Local installs only**: a cloud-hosted solution is upgraded through its release ring, so Phase A does not apply there.
 
 ## Phase B: Create the DW10 Project
 
@@ -223,6 +226,8 @@ For database export, grant the DB user `db_backupoperator`:
 ```sql
 ALTER ROLE [db_backupoperator] ADD MEMBER [yourDwDbUserName]
 ```
+
+**Local installs only**: a hosted install grants no database roles, so an online build asks the user for the export.
 
 ## Cloud Release Rings
 

@@ -73,6 +73,7 @@ broken row and a container check catches it. The 500 is not a rollback: assert
 `SELECT GridRowContainer FROM GridRow WHERE GridRowId = <new>` is non-empty after every create, and delete
 the row if it is not. `GridRowCopy` avoids the whole question (the copy carries the source's container and
 renders), at the cost of arriving occupied ([paragraphs.md](paragraphs.md) §`GridRowCopy`).
+**Local installs only**: on a hosted install, assert the new row renders with MCP `fetch_frontend_page_html`.
 
 So inserting a row *between* two existing rows is always **copy-then-sort**:
 

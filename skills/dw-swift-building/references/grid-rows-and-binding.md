@@ -63,7 +63,7 @@ template-not-found block. Blank `ParagraphTemplate` to fall back to
 **Write `ParagraphTemplate` through `ParagraphSave`'s `layout` property, and read `template` back to
 confirm the mirror landed** — `template` itself is a read surface, and a save carrying it answers `ok`
 while the read-back stays empty and the stock template keeps rendering. Where the mirror does not land
-on the build in front of you, the column is SQL-only: local installs only, and it owes a **host
+on the build in front of you, the column is SQL-only: local installs only (a hosted install asks the user), and it owes a **host
 restart** before the alternate template renders. A SQL-written `ParagraphTemplate` then puts that
 paragraph on the **never-whole-model-save** list, because a later full-model `ParagraphSave` re-sends an
 empty template and the cache drops the alternate one — keep the affected ids in the build's save helper
@@ -101,7 +101,7 @@ every API-level check reports the write succeeded.
 **Stack two blocks visually by giving each its own row, not by stacking them in a cell.** Where a
 row must change shape instead, converting it is a `SQL` change (`GridRowDefinitionId` +
 `GridRowItemType` + a fresh item row, then each paragraph's `ParagraphGridRowColumn`): no verb
-converts a row definition in place, it is local-install only, and it owes a host restart because
+converts a row definition in place, it is local-install only (on a hosted install, build a new row with `save_grid_rows` instead), and it owes a host restart because
 both columns are composition.
 
 **Corollary — parking is a reversible retire.** Setting a paragraph's `ParagraphGridRowColumn` to an

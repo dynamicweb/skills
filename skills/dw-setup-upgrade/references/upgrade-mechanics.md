@@ -66,6 +66,8 @@ $cmd.CommandText = "SELECT COUNT(*) FROM Updates WHERE UpdateId = '<create-table
 $c.Close()
 ```
 
+**Local installs only**: a hosted install has no read path for the `Updates` table, so an online build asks the user to raise the failing UpdateIds with Dynamicweb Service Desk.
+
 | Failing ALTER recorded? | CREATE TABLE recorded? | Failure mode | Fix |
 |:---:|:---:|:---|:---|
 | No | No | **Queue-stuck.** Updates re-run but never get past the failing one. The failing GUID retries forever, never gets recorded, blocks AppStore install. | **Mode A** (clear `Updates`, restart) |
@@ -87,6 +89,7 @@ are not disturbed; only missing ones get created.
    running update manager.
 2. **Clear `Updates`** — either admin UI **Settings → Database → SQL Firehose** running
    `DELETE FROM Updates;`, or direct SQL `DELETE FROM Updates` over the `$cs` connection above.
+   **Local installs only**: a hosted install has no write path for `Updates`, so an online build asks the user.
 3. **Restart the host.** `UpdateManager.ExecuteUpdates()` re-runs every queued update on first request —
    CREATE TABLE statements create only missing tables; ALTER TABLE statements that previously failed now
    find their target and succeed.
@@ -127,6 +130,8 @@ the table with a corrected schema, then let `IF NOT EXISTS` skip the broken CREA
    $cmd.ExecuteNonQuery() | Out-Null
    ```
 
+   **Local installs only**: a hosted install has no write path for schema patches or `Updates`, so an online build asks the user.
+
 5. **Restart the host.** On startup `UpdateManager` retries the queue, skips the now-recorded broken
    CREATE, and subsequent ADD COLUMN updates find their target (the manually-created table) and succeed.
    AddIn install registration completes cleanly.
@@ -164,6 +169,8 @@ deserializes against the live DB), take two snapshots:
 SELECT COUNT(*) FROM ItemList;          -- and ItemListRelation
 BACKUP DATABASE [<db>] TO DISK = '<path>\<db>-pre-update.bak';
 ```
+
+**Local installs only**: a hosted install has no read path for these counts and no SQL backup, so an online build asks the user for a pre-update backup.
 
 After the update, **the counts must match the snapshot**. `ItemList` / `ItemListRelation` rows
 back every repeatable-item component (slider slides, accordion items, named lists) and their loss

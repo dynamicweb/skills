@@ -70,6 +70,8 @@ if ([int]$result.Trim() -lt 1) {
 }
 ```
 
+**Local installs only**: a hosted install has no verified read path for this hidden row, so an online build checks that the product completeness panel renders in the admin UI.
+
 **Scope note:** Check 2 only **detects** the missing row. The seed-rule context (the four-rows-per-field SQL pattern) lives in the PIM skill — see [`../../dw-demo-pim/references/governance.md`](../../dw-demo-pim/references/governance.md) "Completeness rules — why they sometimes don't show" for the seed pattern.
 
 ## Check 3: Query GUID dedup across `Repositories/` and `SmartSearches/Shared/`
@@ -136,6 +138,8 @@ if ($missing) {
   throw "Stage missing templates before declaring deserialize complete."
 }
 ```
+
+**Local installs only**: on a hosted install, read each feed with MCP `get_feed_by_id` and check each template path with MCP `list_files`.
 
 **Note:** If strict-mode Serializer already raised these, Check 4 is a no-op. If Check 4 fires and strict mode did NOT, strict mode missed a category — document it in the per-demo `CUSTOMISATIONS.md` as an environmental drift note so the next deserialize on this machine inherits the warning.
 
@@ -302,6 +306,8 @@ if ($html -notmatch 'Custom/default_custom\.css') {
     throw "Home <head> emits no default_custom.css — set Swift-v2_Master.CustomHeadInclude on the area (styles-assets.md)."
 }
 ```
+
+**Local installs only**: on a hosted install, read the area's style ids with MCP `get_area_by_id` and check the files with MCP `list_files`; steps 2 and 3 run unchanged against the site URL.
 
 **Beyond the mechanical probe:** a full-page screenshot of the home page must read as a
 *designed* page — brand or neutral-theme typography, styled buttons, coherent color schemes.

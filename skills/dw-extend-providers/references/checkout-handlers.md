@@ -134,7 +134,7 @@ an empty `OrderTransactionToken` is the exact signature of a swallowed save.
 Where a longer code is already deployed and cannot be changed, `ALTER TABLE EcomOrders ALTER COLUMN
 OrderTransactionPayGatewayCode nvarchar(50) NULL` is a working fallback (the column carries no index
 and no constraint) — but it is a platform-schema change, is `SQL` and therefore **local-install
-only**, and should be reverted once the code fits.
+only**, and should be reverted once the code fits. On a hosted install no MCP tool changes the schema, so shorten the code.
 
 ## An inline card form posts the PAN into the order row
 

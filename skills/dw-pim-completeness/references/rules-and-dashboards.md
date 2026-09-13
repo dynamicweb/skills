@@ -80,6 +80,7 @@ Rules surface in admin UI in three places: on each product (Data Completeness pa
 1. **`reference_category` must exist as a full parent + child set.** This is where admin UI resolves every rule field. Required order when seeding from scratch: 1a parent category row (`CategoryType=2`) → 1b parent translation → 1c mirror every concrete-category field row into `reference_category` (with `FieldCategoryId='reference_category'`) → 1d mirror every concrete-category field TRANSLATION row. For the SQL, run the idempotent ["Recovery recipe: Seed `reference_category` parent row"](#recovery-recipe-seed-reference_category-parent-row) below — it covers 1a + 1b with `IF NOT EXISTS` guards and explains the 1c/1d mirrors.
    Missing the 1a parent row is the #1 cause of "rule is defined and assigned but no panel renders on the product." `Settings → Completeness Rules` list still works and the `ProductCompletenessRulesByProductId` API still returns correct data — that's what makes this so misleading.
 2. **Rule exists** — row in `EcomCompletionRules` with field system names pipe-separated in `EcomCompletionRuleProductFields`. Use the full format `ProductCategory|<CategoryId>|<FieldId>`, not the bare field id. Verify via `get_completion_rules` or direct SQL.
+   Direct SQL here is local installs only; on a hosted install `get_completion_rules` is the read.
 3. **Rule assigned to a catalog group** — comma-separated rule IDs in `EcomGroups.GroupCompletionRules` **plus** matching languages in `GroupCompletionLanguageIds`. Assignments to data-model groups (GroupType=2) do nothing; they must be on the catalog groups (GroupType=0) that products actually live in.
 4. **Query field names match the side you are on — authoring vs index.** The pipe form `ProductCategory|<CategoryId>|<FieldId>` is the **authoring/value** system name: it is what a rule definition and a value write name. The **index** field name for the same category field is `CustomField_<SystemName>`, and that is what an index predicate or a facet names. Using the bare field id matches nothing on either side; using the pipe form in an index predicate matches nothing in Lucene even though SQL sees values. The rule rows in this file are authoring-side, so they carry the pipe form; a `.query` `FieldExpression Field="..."` attribute is index-side and carries `CustomField_<SystemName>` (see [`dw-search-indexing/references/index-management.md`](../../dw-search-indexing/references/index-management.md) "Custom product fields index as `CustomField_<SystemName>`").
 5. **Index flushed *and* rebuilt after any of the above changed** — `POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}`. Without a rebuild, dashboard counts stay stale and queries return 0. **And if you populated the completeness FIELD VALUES on products via MCP `patch_products_safe` (or SQL), you MUST flush `ProductService` + `ProductCategoryFieldValueService` + `ProductCategoryService` via `CacheInformationRefresh` BEFORE the rebuild** — the builder reads those values through the cache and will otherwise index the empty pre-patch state, so the governance widget shows 0 failing even when products genuinely fail. This is the read-through-cache ordering trap: flush the services first, then rebuild, and treat a "0 failing" widget after a bulk patch as this ordering bug, not an index quirk.
@@ -133,7 +134,7 @@ persisted column disagree.
 - **Never round-trip that read model back through `DataModelGroupSave`** without stripping the `0`: the
   save would persist a rule id that matches no row and no `CompletionRule|<id>` index field.
 - Set the bit by a whole-model `DataModelGroupSave` (a 30-property round-trip changing that one property
-  leaves the other 28 byte-identical), then verify by SQL on `GroupCompletenessOnAllCategoryFields`, not
+  leaves the other 28 byte-identical), then verify by SQL (local installs only; a hosted install asks the user) on `GroupCompletenessOnAllCategoryFields`, not
   by the echoed `completionRules`.
 - `ProductCatalogGroupSave` is the WRONG verb here: its model has no `completenessOnAllCategoryFields` at
   all, so the save silently drops the setting.
@@ -163,6 +164,8 @@ For language-only orphan group rows the API offers no reachable channel, so the 
 are cleared through the sanctioned scheduled-task SQL runner
 (`UPDATE EcomGroups SET GroupCompletionRules='' WHERE GroupCompletionRules='<deletedRuleId>'`), then a
 host restart or a rule save from admin to reload `CompletionRuleService`.
+
+**Local installs only** for the census and the runner: on a hosted install no MCP tool is known to reach language-only group rows, so ask the user.
 
 ## Dashboards — only 7 real areas, don't invent
 
@@ -292,6 +295,7 @@ Consequences for a dashboard design:
 A dashboard built with `create_dashboards` + `add_widgets_to_dashboards` can be fully correct in the `Dashboard` / `DashboardWidget` tables (and returned by `get_dashboards`) yet show **nothing useful** in admin. Three independent causes, each with a clean fix:
 
 1. **A dashboard created without `userIds` is invisible.** `create_dashboards` leaves `DashboardUserId` NULL and creates **no `DashboardAccessUserRelation` row**, so the admin Settings → Dashboards list shows "No results" and the area renders the **built-in default** dashboard, not yours. Fix: pass `userIds` on create, **or** insert the access relation for the target admin user with one row flagged default (`DashboardAccessUserRelation(DashboardRelationDashboardId, DashboardRelationUserId, DashboardRelationDefault)` — set `Default=1` on the one that should be the landing view). This table is read per-request (no cache), so the change is live on the next dashboard-tree fetch; no restart. Multiple dashboards of the same area are valid — they become switchable under the area's *Dashboard* node once each has an access relation.
+   **Local installs only** for the relation insert: on a hosted install pass `userIds` to `create_dashboards`.
 
 2. **`RepositoryGridWidget` / `RepositoryListWidget` render blank rows until you set the column Sources.** `RepositoryGridWidget` takes `Column1..Column5` (+ `Width1..Width5`); `RepositoryListWidget` takes `TitleField` / `HintField` / `RightField`. With none set, the grid draws the right number of rows but every **cell is empty** — the "blank lines" symptom. The `Source` value is the **index field system name, and the product index uses SHORT names** — `Name`, `Number`, `DefaultPrice`, `VariantID`, `LanguageID`, `ShopIDs` — NOT `ProductName` / `ProductNumber` (those silently resolve to nothing, same as any unknown field). Discover an unknown field name empirically: an `Equal` filter on the wrong name returns the whole base set (filter dropped), the right name filters — e.g. `Number Equal "<sku>"` returns one product, `ProductNumber Equal "<sku>"` returns everything.
 
@@ -330,3 +334,5 @@ Remove-Item $tmp.FullName
 After seeding, you also need to mirror every concrete-category field row into `reference_category` (with `FieldCategoryId='reference_category'`) plus their translations — see "Completeness rules" above for the 4-rows-per-field pattern. Then rebuild the Products index (`POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}` — see [dw-search-indexing](../../dw-search-indexing/SKILL.md)) so completeness widgets pick up the new parent.
 
 If you mutated rules via raw SQL rather than MCP, also restart the host — `CompletionRuleService` and `ProductCategoryService` ServiceCache rows don't reload on raw SQL.
+
+**Local installs only**: on a hosted install no MCP tool is known to write the `reference_category` parent row, so ask the user.

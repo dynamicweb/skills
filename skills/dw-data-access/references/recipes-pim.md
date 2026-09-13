@@ -62,6 +62,7 @@ VALUES ('<detailsGroupId>', '<defaultLanguageId>', '<name>');
 
 - **Why the higher surfaces do not cover it** — the table has no verb and no tool on 10.28.x.
 - **Local installs only** — a hosted install has no SQL surface.
+  No verb or tool writes the table either, so an online build asks the user (the admin-screen edit below).
 - **The debt it owes** — a **host restart**, to flush the ecommerce caches before the name renders.
 
 Afterwards re-run the empty-string probe on the rendered surface: the row is not proof, the render

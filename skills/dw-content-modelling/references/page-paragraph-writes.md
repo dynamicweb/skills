@@ -134,7 +134,7 @@ worth knowing when authoring content programmatically (validated DW 10.25.x):
      UPDATE to reverse.
   2. **`hideForDesktops` + `hideForTablets` + `hideForPhones` all `true`** for a paragraph that shares
      a row. Server-side suppression, fully reversible.
-  3. `Paragraph.ParagraphShowParagraph = 0` by SQL as a last resort (local install only).
+  3. `Paragraph.ParagraphShowParagraph = 0` by SQL as a last resort (local install only; on a hosted install use step 2, which `save_paragraphs` writes).
 
   `ParagraphDelete` is not on that list: it is irreversible and it orphans the grid row.
 - **`PageCopy` inherits the source's `shortCut`.** A page that carries a shortcut redirect produces a

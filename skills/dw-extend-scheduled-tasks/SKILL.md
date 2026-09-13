@@ -142,6 +142,8 @@ Before upgrading or during a deployment, disable all tasks in SQL:
 UPDATE dbo.ScheduledTask SET TaskEnabled = 0
 ```
 
+**Local installs only**: on a hosted install, disable each task with `update_scheduled_task` or `TaskSave`; `TaskToggleActive` toggles rather than sets.
+
 Flush `Dynamicweb.Scheduling.TaskService` afterwards (`POST /Admin/Api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Scheduling.TaskService"}`) so the scheduler picks the change up without a restart — the running scheduler does not otherwise re-read the table — and re-enable individually via admin after verifying each task is still valid.
 
 `TaskEnabled = 0` is the switch that matters: it stops the scheduler polling the task, including the pass at application start that fires every overdue task. It does **not** stop a `TaskRun` call or the admin's Run now, which is what makes a disabled row the safe home for a destructive job.

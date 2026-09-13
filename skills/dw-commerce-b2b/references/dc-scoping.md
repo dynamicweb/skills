@@ -229,6 +229,8 @@ surface. Cache invalidation is automatic; no host restart.
 When seeding tens of users across many DCs, bulk SQL is appropriate. Try MCP first, escalate to SQL
 only for bulk cases where MCP-tool round-trips become prohibitive.
 
+**Local installs only**: on a hosted install, seed through `save_user_groups`, `create_users` and `assign_users_to_group` above, however many round-trips it takes.
+
 Schema notes for SQL fallback:
 
 - **`AccessUser`** rows for groups: `AccessUserType = 1` (group), `AccessUserUserName` =
