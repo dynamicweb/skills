@@ -105,7 +105,7 @@ An empty or minimal body reaching a real command runs it. `AssetCategorySave` de
 `[Required]`, so `POST AssetCategorySave {"Model":{"Name":"ZZZ"}}`, sent purely to learn the payload
 shape, created a live asset category (id 7) on the host; it had to be cleaned up with
 `AssetCategoryDelete {"GroupId":7}` and `AssetCategoryAll` re-read back to `totalCount` 0. Same hazard
-class as the `SerializerDeserialize {}` incident, where an omitted `Mode` defaults to Replace.
+class as the `Deserialize {}` incident, where an omitted `Mode` defaults to Replace.
 
 The ban is on **minimal-body** probes, not only empty ones. Read the schema from an existing entity of
 the same type, from the OpenAPI catalogue, or from the admin UI's own captured request. Assert

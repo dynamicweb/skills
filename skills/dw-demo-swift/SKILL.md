@@ -43,7 +43,7 @@ Before any frontend work (templates, paragraphs, re-skin), load the Swift conten
 1. **Framework prerequisites in target DB** — the `base` layer's `replace/_sql/` ships the framework (currencies, countries, languages, shops, payments, shippings, VAT), so a fresh DB no longer needs it pre-seeded. When you WANT a PIM-curated framework instead, set up `SHOP1` (or whichever ShopId the area's YAML references), `DE` country (or whichever AreaEcomCountryCode), `LANG1` with shop language relation, and EUR currency first (PIM-skill `canonical-setup-order.md` Steps 1-4) — and then TRIM the matching rows from the base layer's `replace/_sql/` before deserializing: `replace` is source-wins, so untrimmed base framework rows would overwrite your curated ones.
 2. **Verify Serializer is installed** in the host per [`../dw-demo-base/references/serializer-reference.md`](../dw-demo-base/references/serializer-reference.md) "Installation".
 3. **Deploy the Swift design package** — npm build, Designs + Styles + icons copy (item-type XMLs now ship with `surface-swift`), the ProductsBackend/ProductsFrontend skip rule, catalog-paragraph path rewrite, and the slider card-template fix all live in [`references/deserialize-flow.md`](references/deserialize-flow.md) §"Design-package deploy (before any deserialize)".
-4. **Run the deserialize flow** -> [`references/deserialize-flow.md`](references/deserialize-flow.md). HTTP POST `/Admin/Api/SerializerDeserialize` with strict mode on. Surfaces FK orphans / missing templates / schema drift as `CumulativeStrictModeException` HTTP 4xx.
+4. **Run the deserialize flow** -> [`references/deserialize-flow.md`](references/deserialize-flow.md). HTTP POST `/Admin/Api/Deserialize` with strict mode on. Surfaces FK orphans / missing templates / schema drift as `CumulativeStrictModeException` HTTP 4xx.
 5. **Run the post-deserialize integrity sweep** -> [`references/integrity-sweep.md`](references/integrity-sweep.md). The skill refuses to declare baseline restored until all of its checks pass.
 
 PIM-only demos can skip this step entirely — see `dw-demo-pim` for the blank-DB modelling flow that does NOT need a Swift frontend.
@@ -73,7 +73,7 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 
 | If you need to... | Read this reference |
 |---|---|
-| **Load the Swift layers into the host** (framework-only `base` + `surface-swift` content surface; POST `/Admin/Api/SerializerDeserialize`; includes the design-package deploy step and the mandatory area binding) | **references/deserialize-flow.md** |
+| **Load the Swift layers into the host** (framework-only `base` + `surface-swift` content surface; POST `/Admin/Api/Deserialize`; includes the design-package deploy step and the mandatory area binding) | **references/deserialize-flow.md** |
 | **Verify post-deserialize integrity** (mandatory) | **references/integrity-sweep.md** |
 | **Install a feature pack into a demo host** (check out the feature layer from the Distribution, source-drop the `.cs`, copy disk overlays, deserialize the fragment AFTER the base layer) | **references/pack-activation.md** |
 | **Start a new demo's frontend** (configuration-only Day-1 workflow) or use the Visual Editor effectively | **references/admin-ui-authoring.md** |
