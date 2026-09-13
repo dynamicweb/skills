@@ -200,7 +200,7 @@ for **every** layer the edition composes (feature layers included), before the f
    Missing templates do **not** fail the deserialize; they surface afterwards as a blank or erroring
    storefront region, so this assert is the only thing that catches them.
 
-**Pre-import: re-serialize before merging baseline YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/SerializerSerialize` FIRST so the replace folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
+**Pre-import: re-serialize before merging baseline YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/Serialize` FIRST so the replace folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
 
 **Renaming an Area re-slugs its frontend URLs.** The area name drives the URL segment, so renaming an Area changes the public URL of every page under it — any bookmark / link / cheat-sheet URL built against the old slug then 404s. Settle the area name **before** publishing links or building the demo's URL list, not after; if a rename is unavoidable late, re-capture the affected URLs.
 
@@ -231,9 +231,9 @@ for **every** layer the edition composes (feature layers included), before the f
 
 ## 4. Step 2 — POST against running host
 
-> **The call shape lives in one place.** `SerializerDeserialize` is invoked with `Mode` in a flat JSON body, and the canonical snippet, the dry-run gate, the response shape and the engine/platform floors are owned by [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Invocation — one shape". Read it before the first POST and call it from there; this section owns only the *sequence* and what each pass lands in a Swift build.
+> **The call shape lives in one place.** `Deserialize` is invoked with `Mode` in a flat JSON body, and the canonical snippet, the dry-run gate, the response shape and the engine/platform floors are owned by [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Invocation — one shape". Read it before the first POST and call it from there; this section owns only the *sequence* and what each pass lands in a Swift build.
 
-**Two passes, replace first then merge**, each a separate `SerializerDeserialize` call carrying `Mode` in its body (`Replace`, then `Merge`) — run each as a dry run first and gate on the entry count, per the reference. A run reads only its own mode subfolder, so a `Mode` that names a subfolder §3 did not stage returns `Mode subfolder not found` or `<path> contains no YAML files`: a staging fault, fixed in §3, never worked around by changing the call.
+**Two passes, replace first then merge**, each a separate `Deserialize` call carrying `Mode` in its body (`Replace`, then `Merge`) — run each as a dry run first and gate on the entry count, per the reference. A run reads only its own mode subfolder, so a `Mode` that names a subfolder §3 did not stage returns `Mode subfolder not found` or `<path> contains no YAML files`: a staging fault, fixed in §3, never worked around by changing the call.
 
 With base + surface-swift staged (§3), the **replace** pass lands the base's framework `_sql/` plus the surface's areas/pages/UrlPath (source-wins); the **merge** pass applies the surface's `merge/_content/` rows. Neither layer carries a catalog — the storefront comes up with an **empty catalog by design**; that is expected, not a missing-products failure. Run the `sample-data` layer's `merge/_sql` (activated via the `swift-demo` edition's `sampleData: true`) or author the catalog per-demo via [`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md). (The two-pass mechanic matters beyond the base build: feature-pack fragments deserialize in `merge` mode — see [`pack-activation.md`](pack-activation.md).)
 
@@ -285,7 +285,7 @@ returned HTTP 200 / `ok` and blanked
 `Swift-v2_Master.{HeaderDesktop, HeaderMobile, FooterDesktop, FooterMobile, AnonymousUsers}` that the
 deserializer had just installed: the storefront then rendered with **no `<header>` and no `<footer>`
 while still returning 200**, and nothing in the response signalled the loss. If a partial save has
-already happened, the repair is a re-run of `SerializerDeserialize` Replace, which is idempotent
+already happened, the repair is a re-run of `Deserialize` Replace, which is idempotent
 (0 created / 281 updated / 746 skipped / 0 failed on the measured host). Two rules follow:
 
 - Either bind the area's ecommerce columns with SQL, or round-trip the **FULL** `GetAreaById` model

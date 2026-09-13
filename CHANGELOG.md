@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.0.0-alpha.1]
+
+The version spine. The corpus states what it works on in one file, the statement travels in the built manifest, and the validator enforces it: version awareness stops being prose and becomes a contract a reader, a validator and a host can all check.
+
+- **`versions.json` at the repo root is the compatibility statement, vendor axes only.** The Dynamicweb release, the Swift tag and the AppStore apps (the MCP add-in, the serializer), each with a `floor` the library publishes and the concrete version its facts were last `measured` on. Nothing downstream is named anywhere in it: the dependency points up, so a distribution cites the skills tag it was proven with and the skills never cite a distribution. The validator parses the file against exactly that schema, rejects a `measured` that is a range and a `floor` that is not one.
+- **A skill deviates only through an optional `versions:` frontmatter block**, same axes, same rules; a skill without one inherits the repo statement.
+- **A version-specific fact ends with a stamp token, never a bare number in prose.** One bracketed token in the fixed axis order dw, mcp, serializer, swift, only the axes that were varied, found by one regex. A bare version number outside a token, a fenced block, a URL or the frontmatter is an error, ratcheted per file against `scripts/version-stamp-allowlist.json` the way the Dynamo baseline works: the allowlist is the migration backlog and only ever shrinks.
+- **The MCP tool registry is per app version.** `scripts/mcp-tools.json` becomes `scripts/mcp-tools/<version>.json` plus an `index.json` naming the current and supported set; the validator resolves through the index and falls back to current, so a tool that a later server stops registering becomes a locatable diff instead of an edit to one shared list. The flat path errors for one release with the move instruction.
+- **Manifest version 2 carries `worksOn` verbatim**, so a consumer that already fetches `manifest.json` can compare it with the host it is running on. `build-manifest.mjs --check` now fails on a stale version marker or `worksOn` as well as a stale skill list.
+- **One CI workflow gates every pull request and every push to main**: the skills validator, the PowerShell parse pass and the manifest freshness check.
+- **`dw-data-access` owns the preflight recipe.** How a session reads the four axes off the host it is pointed at (the platform release from the Management API's own `api.json`, the add-in versions from the installed folder names, the Swift tag from the stamp file, otherwise the user), an MCP-only variant for in-product readers, `unknown` for any axis that cannot be read, and the floor comparison that warns before acting.
+
 ## [4.47.0]
 
 Fold-back sprint: amendments found by the end-to-end test session building the standing test solution from the top of the fold stack. First amendment: the serializer pin reads the Distribution floor from base.contract.json instead of a literal version, the platform floor the engine needs is stated, one invocation shape (Mode in the JSON body) replaces the two contradicting ones, and the deserialize flow points at the reference instead of copying it.

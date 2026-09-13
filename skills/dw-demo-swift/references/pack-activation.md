@@ -218,7 +218,7 @@ Track exactly what you copy — removing the pack later deletes exactly these fi
 The fragment is serializer YAML that lands the pack's data. Stage each mode tree named in
 `fragmentModes` into the host's `SerializeRoot`, then POST the deserialize — one POST per mode.
 
-> **STAGE THE FRAGMENT ISOLATED — say it loudly.** A `SerializerDeserialize` POST carrying
+> **STAGE THE FRAGMENT ISOLATED — say it loudly.** A `Deserialize` POST carrying
 > `{"Mode":"<m>"}` deserializes **everything in `SerializeRoot/<m>/`**, not just the files you copied in. If the base
 > layer's trees are still sitting in `SerializeRoot/replace/` and `SerializeRoot/merge/` from the
 > §"deserialize-flow.md" run, dropping the fragment alongside them **re-deserializes the base too** —
@@ -257,7 +257,7 @@ foreach ($mode in $pack.fragmentModes) {          # e.g. 'merge', or 'replace','
     # ../../dw-demo-base/references/serializer-reference.md "Invocation — one shape".
     $body = @{ Mode = $mode; IsDryRun = $false } | ConvertTo-Json
     $resp = Invoke-RestMethod `
-      -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize" `
+      -Uri "https://localhost:$port/Admin/Api/Deserialize" `
       -Method POST -Headers @{ Authorization = "Bearer $token" } `
       -ContentType "application/json" -Body $body -SkipCertificateCheck
     Remove-Item -Recurse -Force "$serializeRoot\$mode"   # clear the staged fragment before the next mode
