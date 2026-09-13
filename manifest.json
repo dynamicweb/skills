@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-09-13T19:54:04.797Z",
+  "generatedAt": "2026-09-13T21:25:54.682Z",
   "worksOn": {
     "dw": {
       "floor": ">=10.28.1",
@@ -12,9 +12,9 @@
     },
     "apps": [
       {
-        "id": "Dynamicweb.MCP",
-        "floor": ">=0.4.4",
-        "measured": "0.4.4",
+        "id": "Truvio.Commerce.MCP",
+        "floor": ">=0.6.0-beta",
+        "measured": "0.6.0-beta",
         "required": false
       },
       {

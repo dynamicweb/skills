@@ -21,15 +21,24 @@ owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a step he
 ## Tool availability — check `tools/list` before planning around these
 
 `extract_site_content`, `get_extracted_site`, `get_extracted_page`, `build_pages`,
-`import_site_media`, `apply_brand_color_scheme` and `setup_website_chrome` are **not in the
-standard Dynamicweb MCP tool set**. They ship in an optional migration add-in, so on a build
-without it `tools/list` does not carry them and no permission grant can add them — absence is a
-build fact, not a gate. Call `tools/list` first. When the family is absent, say so, and do the
-work with the registered content tools instead: `get_pages_by_area_id` /
-`get_paragraphs_by_page_id` to read, `save_pages` / `save_grid_rows` / `save_paragraphs` /
-`set_paragraph_item_fields` to write, `save_color_schemes` for the palette, `upload_file` for
-media. That path is slower and per-page; it is not a substitute for a decision, only for the
-construction.
+`import_site_media`, `apply_brand_color_scheme` and `setup_website_chrome` are **not on the MCP
+endpoint**. Measured with a FullAccess key, `tools/list` on `/admin/mcp` carries none of them
+[mcp 0.6.0-beta]. The add-in assembly still declares the family in a migration tool class, one of
+whose tool descriptions says it is invoked in-process by the in-product assistant, so only the
+session's own tool list says whether it can call them, and no permission grant adds them to the
+endpoint. Call `tools/list` first. When the family is absent, say so, and split the work:
+
+- **Nothing registered replaces the extraction** (`extract_site_content`, `get_extracted_site`,
+  `get_extracted_page`). No registered tool reads another site's pages: `fetch_frontend_page_html`
+  summarises a page of this solution only. Ask the user for the source content (the page list, the
+  copy and the media) before planning, and never invent it.
+- **The construction has registered replacements**, slower and per page. For `build_pages`:
+  `save_pages`, `save_grid_rows`, `save_paragraphs` and `set_paragraph_item_fields`, reading back
+  with `get_pages_by_area_id` and `get_paragraphs_by_page_id`. For `apply_brand_color_scheme`:
+  `save_color_schemes`, then `save_areas` with `colorSchemeGroupId` and `colorSchemeId`. For
+  `setup_website_chrome`: the chrome the area already has (`get_areas`), and a missing header or
+  footer built with `save_pages` and `save_paragraphs` and wired through `save_areas`. For
+  `import_site_media`: `upload_file`. That path replaces the construction only, never a decision.
 
 Use this skill when the user wants to migrate pages from a **Swift 1** (Swift v1) solution to
 **Swift 2** and **keep the layout** — as faithful and structure-preserving as the pipeline

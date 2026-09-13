@@ -21,12 +21,20 @@ owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a step he
 ## Tool availability — check `tools/list` before planning around these
 
 `migrate_dw9_export`, `run_dw9_product_import`, `get_dw9_product_import_status` and
-`assign_dw9_products_to_data_models` are **not in the standard Dynamicweb MCP tool set**. They
-ship in an optional migration add-in, so on a build without it `tools/list` does not carry them
-and no permission grant can add them — absence is a build fact, not a gate. Call `tools/list`
-first. When the family is absent, the honest output is the admin screen that performs the import
-(**Settings > Integration > Data integration**, with the DW9 export as the source) plus the
-Data Model mapping this skill prescribes, not an invented HTTP call.
+`assign_dw9_products_to_data_models` are **not on the MCP endpoint**. Measured with a FullAccess
+key, `tools/list` on `/admin/mcp` carries none of them [mcp 0.6.0-beta]. The add-in assembly still
+declares the family in a migration tool class, one of whose tool descriptions says it is invoked
+in-process by the in-product assistant, so only the session's own tool list says whether it can
+call them, and no permission grant adds them to the endpoint. Call `tools/list` first.
+
+When the family is absent, say so plainly: **no registered tool replaces it.** The DW9 structure
+mapping (Phase 1) and the product to data model memberships (Phase 3) exist only in these tools.
+Stop and ask the user how to proceed. The honest options are the admin screen that performs the
+import (**Settings > Integration > Data integration**, with the DW9 export as the source) plus the
+Data Model mapping this skill prescribes; the registered Data Integration tools
+(`create_integration_activity`, `run_integration_activity`, `get_integration_activity_status`) can
+run an import activity the user has approved, but they build neither the structure nor the
+memberships. Never an invented HTTP call.
 
 The migration runs in a fixed order — **structure → product data → assignment → verify** — and
 each phase depends on the one before it: never start the product import before the structure

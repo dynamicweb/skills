@@ -5,9 +5,9 @@
     "swift": { "floor": "==2.4", "measured": "2.4.0" },
     "apps": [
       {
-        "id": "Dynamicweb.MCP",
-        "floor": ">=0.4.4",
-        "measured": "0.4.4",
+        "id": "Truvio.Commerce.MCP",
+        "floor": ">=0.6.0-beta",
+        "measured": "0.6.0-beta",
         "required": false
       },
       {
