@@ -253,7 +253,9 @@ set_page_item_fields { pageId: <mirrorId>, fields: { Title: "<translated label>"
 ```
 
 after which `PageMenuText` and the mirror's `Title` agree and no later save can drift them apart.
-The discriminator for which mirrors survive a bulk navigation change is exactly this: the ones whose
+A Title write can also re-derive the slug of a page with no pinned `urlName`, so pin the mirror's
+current slug in the same pass ([`page-paragraph-writes.md`](page-paragraph-writes.md), the rename
+recipe). The discriminator for which mirrors survive a bulk navigation change is exactly this: the ones whose
 translated string was already in the item Title keep it; the ones carrying the translation only in
 `PageMenuText` lose it. So **capture every mirror's `PageMenuText` before a bulk navigation change
 and diff afterwards**, do bulk navigation work on the master, and re-assert the mirrors' titles as a

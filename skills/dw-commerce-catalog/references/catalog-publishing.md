@@ -198,7 +198,9 @@ combination rows and inherits nothing from the master (number empty, active and 
 custom field empty, contrary to the tool's own text), and `combine_products_as_variants` produces active
 rows but copies no scalar column onto them — it substitutes the **master's** price on every combination,
 leaves the number empty, and deletes the standalone products that held the real values, so those are
-discarded rather than moved. What lands is `save_prices` carrying `productId` **and** `variantId`, asserted
+discarded rather than moved. It blanks the master row's number too, so snapshot master numbers before
+combining and restore them on the master
+([`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.5). What lands is `save_prices` carrying `productId` **and** `variantId`, asserted
 with `get_prices_by_product_id`. Per-variant number, name and stock have no working write surface on this
 build; where they are required the repair is out of product
 ([`dw-data-access/references/recipes-pim.md`](../../dw-data-access/references/recipes-pim.md)) and therefore

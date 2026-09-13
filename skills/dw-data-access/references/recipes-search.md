@@ -56,7 +56,9 @@ POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index"
 
 A wrong `IndexName` answers not-found, which makes this the confirming re-run for a build that
 "worked" through MCP and changed nothing — worth doing before suspecting the schema. Gate on
-`GET /Admin/Api/IndexStatusesAll`.
+`GET /Admin/Api/IndexStatusesAll`. It is also the build a restore owes: restored instance files are
+not served until a Full build runs ([dw-search-indexing](../../dw-search-indexing/SKILL.md)
+`index-management.md` §"Restored index files are not served until a Full build runs").
 
 The in-product gate needs neither: pass the full file name including the `.index` extension on every
 MCP call, and gate on a **non-zero `documentCount`** rather than on `completed:true`.
