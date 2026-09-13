@@ -8,16 +8,19 @@
     verifies that /admin is no longer redirected to /admin/license.
     Owning reference: dw-setup-install/SKILL.md (Degraded Path step 7).
     Traps encoded: the trial ids are scraped from the live license page (they are
-    not stable), and success is proven by the redirect disappearing plus the
-    *.license file, not by the POST's response.
+    not stable), and success is proven by the redirect disappearing plus a *.license
+    file that is new or rewritten by this run, not by the POST's response. A cloned
+    Files tree already carries its source site's licence files, so "some *.license
+    exists" passes before activation and names the wrong file.
 
 .PARAMETER DynamicwebUrl
     Base URL of the Dynamicweb site, e.g. https://localhost:<port> — read the
     port from Dynamicweb.Host.Suite/Properties/launchSettings.json.
 
 .PARAMETER FilesPath
-    Optional path to the Dynamicweb Files folder. When supplied, the script also
-    verifies that a *.license file exists after activation.
+    Optional path to the Dynamicweb Files folder. When supplied, the script records
+    the *.license names and LastWriteTime before the POST, then requires a licence
+    file that is new or rewritten after it and prints that file.
 
 .PARAMETER TrialName
     Optional case-insensitive substring used to choose a specific trial by name.
@@ -103,10 +106,24 @@ function Get-TrialsFromHtml {
     return $trials
 }
 
+function Get-LicenseSnapshot {
+    param(
+        [string]$RootFilesPath
+    )
+
+    $snapshot = @{}
+    if ($RootFilesPath) {
+        Get-ChildItem -Path $RootFilesPath -Filter "*.license" -File -ErrorAction SilentlyContinue |
+            ForEach-Object { $snapshot[$_.Name] = $_.LastWriteTimeUtc }
+    }
+    return $snapshot
+}
+
 function Test-LicenseReady {
     param(
         [string]$BaseUrl,
-        [string]$RootFilesPath
+        [string]$RootFilesPath,
+        [hashtable]$Before
     )
 
     $response = Invoke-DwWebRequest -Uri "$BaseUrl/admin"
@@ -117,12 +134,20 @@ function Test-LicenseReady {
     }
 
     if ($RootFilesPath) {
-        $licenseFile = Get-ChildItem -Path $RootFilesPath -Filter "*.license" -ErrorAction SilentlyContinue | Select-Object -First 1
-        if (-not $licenseFile) {
-            throw "Dynamicweb admin is reachable, but no *.license file was found in $RootFilesPath."
+        # Only a licence file this run created or rewrote proves activation: a clone
+        # carries the source site's licence files, which were there before the POST.
+        $changed = @(Get-ChildItem -Path $RootFilesPath -Filter "*.license" -File -ErrorAction SilentlyContinue |
+            Where-Object { -not $Before.ContainsKey($_.Name) -or $_.LastWriteTimeUtc -gt $Before[$_.Name] } |
+            Sort-Object LastWriteTimeUtc -Descending)
+        if ($changed.Count -eq 0) {
+            $existing = if ($Before.Count) { $Before.Keys -join ', ' } else { 'none' }
+            throw "Dynamicweb admin is reachable, but no *.license file in $RootFilesPath was created or rewritten by this activation (files before the POST: $existing). Check that -FilesPath is this site's own Files folder."
         }
 
-        Write-Success "License file created: $($licenseFile.FullName)"
+        foreach ($file in $changed) {
+            $state = if ($Before.ContainsKey($file.Name)) { 'rewritten' } else { 'created' }
+            Write-Success "License file ${state}: $($file.FullName) (LastWriteTime $($file.LastWriteTime))"
+        }
     }
 
     Write-Success "Dynamicweb admin is licensed and reachable: $finalUrl"
@@ -148,6 +173,11 @@ else {
     $selectedTrial = $trials | Select-Object -First 1
 }
 
+$licensesBefore = Get-LicenseSnapshot -RootFilesPath $FilesPath
+if ($FilesPath) {
+    Write-Status "Licence files before activation: $(if ($licensesBefore.Count) { $licensesBefore.Keys -join ', ' } else { 'none' })"
+}
+
 Write-Status "Requesting free trial '$($selectedTrial.Name)' ($($selectedTrial.Id))"
 $body = "trialId=$([uri]::EscapeDataString($selectedTrial.Id))"
 $response = Invoke-DwWebRequest -Uri $trialUrl -Method Post -Body $body -ContentType "application/x-www-form-urlencoded"
@@ -159,7 +189,7 @@ if ($finalUrl -notmatch '/admin/license/TrialReadyStep($|[/?#])' -and
     Write-Status "Trial request returned: $finalUrl"
 }
 
-Test-LicenseReady -BaseUrl $DynamicwebUrl -RootFilesPath $FilesPath
+Test-LicenseReady -BaseUrl $DynamicwebUrl -RootFilesPath $FilesPath -Before $licensesBefore
 
 Write-Host ""
 Write-Host "Free trial activation complete" -ForegroundColor Green

@@ -9,6 +9,7 @@
 - [Step 3 — Create the MCP configuration in DW10 admin UI (API Key)](#step-3--create-the-mcp-configuration-in-dw10-admin-ui-api-key)
 - [Step 3b — Paste the bearer into `.mcp.json` and per-demo memory](#step-3b--paste-the-bearer-into-mcpjson-and-per-demo-memory)
 - [Step 3 (headless alternative) — create the token + MCP config without the admin UI](#step-3-headless-alternative--create-the-token--mcp-config-without-the-admin-ui)
+- [Step 3 (Management API alternative): mint a key in one process; rotation stops at mint-and-store](#step-3-management-api-alternative-mint-a-key-in-one-process-rotation-stops-at-mint-and-store)
 - [Autonomous/headless fallback — call `/admin/mcp` directly as JSON-RPC 2.0](#autonomousheadless-fallback--call-adminmcp-directly-as-json-rpc-20)
 - [Step 4 — The MCP verification gate](#step-4--the-mcp-verification-gate)
 - [Step 5 — Install Browser MCP (machine-level, do once per Windows account)](#step-5--install-browser-mcp-machine-level-do-once-per-windows-account)
@@ -173,6 +174,58 @@ After saving, do **not** rerun `/mcp` in Claude Code yet — there's no bearer i
 Steps 3 and 3b assume the admin UI is reachable and browser tools are available. When they aren't (a fully headless build / automated provisioning / Browser MCP tools not yet surfaced in this session), create both the API token and the MCP configuration **in code** — issue the token via `TokenService.TryCreateToken`, insert the `McpConfiguration` row, and bind them through `McpConfigurationService.LinkToken` (a raw `McpConfigurationCredential` insert returns `401` — the bind must go through the service, invoked by reflection since the type is internal), then restart the host. The full recipe, the reflection snippet, and the brittleness warning are owned by [`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §4. Prefer the Playwright-driven admin-UI route (Step 3) whenever the UI is reachable.
 
 Any such bootstrap branch added to `Program.cs` during standup (a password-set, token-mint, or MCP-link maintenance path) is **one-shot scaffolding, not a permanent feature**: once the credentials/tokens persist in the DB, re-running it is redundant at best and duplicating at worst. Before final delivery, remove these branches, rebuild, and restart the host — shipping them hands the customer live credential-minting code.
+
+---
+
+## Step 3 (Management API alternative): mint a key in one process; rotation stops at mint-and-store
+
+When a Management API bearer is already in hand, the MCP configuration and its key can be minted over
+the Management API instead of the admin UI. Two behaviours of that route decide how the procedure is
+written:
+
+- Management API `McpConfigurationCreateSave` (`POST /admin/api/McpConfigurationCreateSave`) creates the
+  configuration and returns its id in `modelIdentifier`, **without the key**.
+- Management API `McpConfigurationOverview` (`GET /admin/api/McpConfigurationOverview?Id=<id>`) returns
+  the plaintext in `model.plaintextApiKey` on the **first read after creation only**. Every later read
+  returns an empty string while `model.hasApiKey` stays `true`. A procedure that reads the overview once
+  to test the key and again to store it stores the empty string, and nothing fails: the memory write and
+  the `.mcp.json` write both succeed and leave `Authorization: Bearer ` with no key.
+
+**Create, capture, length-assert, store and verify in one process**, from the single captured value.
+Never re-read the overview expecting the key; a configuration whose key was not captured is abandoned
+and a new one is created.
+
+```powershell
+$base = $env:DW_BASE_URL
+$mgmt = @{ Authorization = "Bearer $env:DW_API_TOKEN" }
+$body = @{ Model = @{ name = '<configuration-name>'; allowEverything = $true } } | ConvertTo-Json
+$id = (Invoke-RestMethod -Method Post -Uri "$base/admin/api/McpConfigurationCreateSave" -Headers $mgmt `
+        -ContentType 'application/json' -Body $body -SkipCertificateCheck).modelIdentifier
+$ov  = Invoke-RestMethod -Uri "$base/admin/api/McpConfigurationOverview?Id=$id" -Headers $mgmt -SkipCertificateCheck
+$key = $ov.model.plaintextApiKey          # the one read that carries it
+if ([string]::IsNullOrEmpty($key)) { throw "Configuration $id revealed no key (already read once). Create a new configuration." }
+"captured key length: $($key.Length)"     # log the length, never the key
+# Read back every flag you set: a create or save can answer ok and keep the old value.
+if (-not $ov.model.allowEverything) { Write-Warning "allowEverything did not take on configuration $id; set access in the admin UI (Step 3)." }
+# Prove the captured key authenticates BEFORE writing it anywhere.
+(Invoke-WebRequest -Uri "$base/admin/api/AddinAvailable" -Headers @{ Authorization = "Bearer $key" } -SkipCertificateCheck).StatusCode
+# Now write .mcp.json and the per-demo memory (Step 3b, Step 6) from $key, read each back,
+# and assert the stored bearer length equals $key.Length.
+```
+
+### Rotation stops at mint-and-store
+
+An agent can mint and store a replacement key; it cannot revoke the old one. Management API
+`McpConfigurationDelete` on the configuration that issued the old key does not revoke it (a configuration
+can report `hasApiKey: false` while its key still authenticates), an app-pool recycle does not revoke it,
+and no Management API query lists or deletes API keys: every `ApiKey*` spelling answers
+`Unknown query`. Deleting a configuration is therefore never reported as revocation.
+
+1. Mint and store the replacement (above) and move every consumer onto it.
+2. Probe the old key: `GET /admin/api/AddinAvailable` with it as the bearer. A `200` means the old key is
+   live: report the rotation as **incomplete** and raise an owner action to delete the old key by hand in
+   the admin UI, in the list of issued API keys (**Settings → System → Developer → API keys**).
+3. The rotation is complete only when the old key answers `401` or `403` on that same probe.
 
 ---
 

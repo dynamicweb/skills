@@ -90,9 +90,11 @@ serializer add-in, and the Swift tag.
 1. **Dynamicweb release** — `GET /admin/api/api.json` (rung 2, bearer) and read `info.version`. That
    is the running platform build, not the NuGet package version and not the hosting ring.
 2. **App versions** — list the folder names under `Files/System/AddIns/Installed/`. Each is
-   `<id>.<version>`, so the installed MCP build is the folder starting `Dynamicweb.MCP.` and the
-   serializer the one starting `Truvio.Commerce.Serializer.`. A missing folder means the add-in is
-   not installed, which is an answer, not an error.
+   `<id>.<version>`, so the serializer is the folder starting `Truvio.Commerce.Serializer.`. The MCP
+   add-in carries one of two ids: `Truvio.Commerce.MCP.` since the rebrand, or the pre-rename
+   `Dynamicweb.MCP.` that many hosts still report. Match both, and record **which id** you found: a
+   pre-rename folder is a stale install worth naming, not a silent equivalent. A missing folder under
+   every known id means the add-in is not installed, which is an answer, not an error.
 3. **Swift tag** — read `Files/System/Truvio/swift.stamp.json` and take its `tag`/`version`. When the
    file is absent the site carries no Swift marker at all: ask the user which Swift release the
    solution tracks and record the answer. Never infer it from a template folder name.
@@ -104,7 +106,11 @@ stamp gives the Swift tag. The platform release is not readable this way — rec
 
 **Then compare.** The skills' own compatibility statement ships in `manifest.json` as `worksOn`: a
 `floor` per axis (what the corpus claims to work on) and `measured` (the host its facts were last
-observed on). For each axis that read as a concrete version, compare the host against the floor:
+observed on). An app in `worksOn` matches the host folder under its id or under that id's known
+rename (the MCP pair above). Compare the numeric version core: an add-in folder can carry a
+pre-release suffix (`-BETA`, `-beta`) that neither the floor nor `measured` shows, so strip it for the
+comparison and keep it in the `hostVersions` note. For each axis that read as a concrete version,
+compare the host against the floor:
 
 - host below the floor → **warn the user before acting**: name the axis, the host version and the
   floor, and say that recipes may reference behavior the host does not have.

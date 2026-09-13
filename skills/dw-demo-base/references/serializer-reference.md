@@ -17,7 +17,7 @@
 >
 > **Operational baseline-deserialize steps** (POST `/Admin/Api/Deserialize`, integrity sweep, schema-drift workarounds) are owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md). Only Swift demos need that flow — PIM demos start from a blank/fresh DB.
 >
-> **The engine installs from a public NuGet package, not a repo clone.** The Serializer ships as the public NuGet package **`Truvio.Commerce.Serializer`** — add it as a `PackageReference` to the host and restore. **Never install a version copied out of a document, including this one.** The authoritative floor is `minSerializerVersion` in the Distribution's `layers/base/base.contract.json` on `main`; install the latest published engine release at or above it ("Installation" Step 1). There is **no `$env:DW_SERIALIZER_REPO` clone step** and none is required to deserialize; a partner reproduces the whole flow from the package alone. A local clone of the engine repo is **optional**, and only for internals deep-dives — see "Internals — upstream pointer block" below. When this reference disagrees with the engine's published docs, the published docs win (the baseline-drift self-diagnosis rule: skill text is the second source of truth).
+> **The engine installs from a public NuGet package, not a repo clone.** The Serializer ships as the public NuGet package **`Truvio.Commerce.Serializer`**: add it as a `PackageReference` to the host and restore. **Never install a version copied out of a document, including this one.** The authoritative floor is the engine entry in the compatibility statement that ships with the layers you deserialize (the base layer's `base.contract.json`, `compat.apps`, the entry whose `id` is `Truvio.Commerce.Serializer`, field `min`); install the latest published engine release at or above it ("Installation" Step 1). There is **no `$env:DW_SERIALIZER_REPO` clone step** and none is required to deserialize; a partner reproduces the whole flow from the package alone. A local clone of the engine repo is **optional**, and only for internals deep-dives; see "Internals — upstream pointer block" below. When this reference disagrees with the engine's published docs, the published docs win (the baseline-drift self-diagnosis rule: skill text is the second source of truth).
 
 ## Installation
 
@@ -25,12 +25,13 @@ Add the NuGet package (Step 1), then stage the config (Step 2). Both are per-hos
 
 ### Step 1 — Add the `Truvio.Commerce.Serializer` NuGet package to the host
 
-**Read the engine floor from the Distribution before installing anything.** The layers declare, machine-readably, the oldest engine that can deserialize them. An engine below that floor cannot load them at all — the failure is a rejected run, not a degraded one. Read the floor from the checked-out Distribution on `main` (see [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §3 for the checkout):
+**Read the engine floor from the layers before installing anything.** The layers declare, machine-readably, the oldest engine that can deserialize them. An engine below that floor cannot load them at all: the failure is a rejected run, not a degraded one. Read the floor from the checked-out layers (see [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §3 for the checkout):
 
 ```powershell
-# The floor is data, not a constant. Whatever main declares is the authority — not this file.
-$floor = (Get-Content "distribution\layers\base\base.contract.json" -Raw |
-          ConvertFrom-Json).minSerializerVersion
+# The floor is data, not a constant. The layers' own compatibility statement is the authority, not this file.
+$contract = Get-Content "distribution\layers\base\base.contract.json" -Raw | ConvertFrom-Json
+$floor = ($contract.compat.apps | Where-Object id -eq 'Truvio.Commerce.Serializer').min
+if (-not $floor) { throw "No Truvio.Commerce.Serializer entry under compat.apps: ask the user where this solution states its engine floor." }
 $floor   # the floor typically trails the published engine by a release or two
 ```
 
@@ -393,7 +394,7 @@ The Serializer's API surface (Management API commands, predicate shape, YAML for
 
 ### Reading the engine floor
 
-The floor is **`minSerializerVersion` in `layers/base/base.contract.json` on the Distribution's `main`**, and it is the only version statement to act on. A base that raises the floor does so because it ships something older engines drop or reject (for example the YAML-carried page/grid-row/paragraph `permissions:` blocks), so an engine below the floor produces a run that is rejected outright or, worse, silently missing what the floor was raised for. Read it, install the latest release at or above it, record the resolved version alongside the Distribution commit SHA in the demo's own notes. Both floors are gates: this one, and the platform floor in "Installation" Step 1.
+The floor is **the engine entry in the layers' own compatibility statement**: `base.contract.json` in the base layer, `compat.apps`, the entry whose `id` is `Truvio.Commerce.Serializer`, field `min`. It is the floor a gate enforces and the only version statement to act on. A contract can carry other serializer-version fields beside it, left over from an older schema; they are not the floor, and where one disagrees with the `compat.apps` entry, the entry wins. A base that raises the floor does so because it ships something older engines drop or reject (for example the YAML-carried page/grid-row/paragraph `permissions:` blocks), so an engine below the floor produces a run that is rejected outright or, worse, silently missing what the floor was raised for. Read it, install the latest release at or above it, record the resolved version alongside the commit SHA of the layers you deserialized in the demo's own notes. Both floors are gates: this one, and the platform floor in "Installation" Step 1.
 
 ### How to tell if a baseline is too old
 
@@ -419,7 +420,7 @@ Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release,
 | Recognise a deprecated alias in an existing script | "Migration note — the deprecated aliases" above |
 | Post-deserialize integrity checks | [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md) |
 | Recover from DW10 update-queue bugs (independent of Serializer) | `../../dw-setup-upgrade/references/db-update-recovery.md` |
-| Install the engine into the host | NuGet `Truvio.Commerce.Serializer`, latest release at or above the Distribution's `minSerializerVersion` floor — "Installation" Step 1 above (no repo clone) |
+| Install the engine into the host | NuGet `Truvio.Commerce.Serializer`, latest release at or above the `compat.apps` engine floor in the layers' `base.contract.json`; see "Installation" Step 1 above (no repo clone) |
 | Serializer internals — architecture, YAML schema, strict mode, link resolution, tools (canonical) | the `Truvio.Commerce.Serializer` engine repo `docs\` + source — an **optional** clone ("Internals — upstream pointer block" above) |
 
 
