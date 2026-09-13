@@ -130,6 +130,8 @@ Ratio, FocalX, FocalY}`, `Id` carrying the path — see
 [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §"Product images".
 Do not carry that shape back to a paragraph item field on the strength of the shared type name.)
 
+**The same editor-type split holds for `AreaSave` on the area's `Swift-v2_Master` item**, where a cached area adds a second trap after the MCP write: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) §"Area master item fields".
+
 **Every item-field editor has its OWN write shape, and the four in play are mutually incompatible.**
 The editors share one projected `field.value` slot, so a payload built for the wrong one is accepted by
 the binder and fails downstream — at render, or not at all. Name-matching ("it's a media field, use the

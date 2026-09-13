@@ -23,7 +23,7 @@ The detection signature is `git status customer-context/` showing changes after 
 
 ## 2. Customer-context contents (read by skill, never written)
 
-Skills are allowed to **READ** customer-context (e.g., to understand the customer's terminology, their data shape, their stated pains). For terminology specifically, the "Speak the customer's words" tactic in `references/demo-tactics.md` turns that read into a `<demo>\notes\wording.md` glossary applied across all demo copy. A typical `<demo>\customer-context\` folder contains a mix of these document types -- the exact filenames are project-specific:
+Skills are allowed to **READ** customer-context (e.g., to understand the customer's terminology, their data shape, their stated pains). For terminology specifically, the "Speak the customer's words" tactic in `references/demo-tactics.md` turns that read into a brand-scoped glossary (`<demo>\notes\wording.md` for the first brand, `<demo>\notes\wording-<brand-slug>.md` for a later brand on the same solution) applied across all demo copy. A typical `<demo>\customer-context\` folder contains a mix of these document types -- the exact filenames are project-specific:
 
 - Intro-call notes / transcript exports (e.g., as a `.md` or transcript export from a meeting tool)
 - Project-alignment decks (e.g., `.pptx` summarising the prospect's stated pains and stack)

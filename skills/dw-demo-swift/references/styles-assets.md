@@ -93,7 +93,7 @@ sheets themselves loading normally, so three of the four sheets link and the fou
 Swift-v2_Master.CustomHeadInclude = /Files/Templates/Designs/Swift-v2/Custom/DefaultHeadInclude.cshtml
 ```
 
-Set it once per environment, by SQL or by a full `websiteItem` round-trip through `AreaSave`. **The
+Set it once per environment, by SQL or by a full `websiteItem` round-trip through `AreaSave`. That round trip persists String fields such as this one but drops the `SelectedImage` master fields (`Favicon`, `AppleTouchIcon`, `MetaImage`), and an MCP write to the master item stays invisible behind the cached area until an `AreaSave` round trip: both in [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) §"Area master item fields". **The
 field is environment-owned** — it sits in the serializer config's `excludeFieldsByItemType`, so the
 deserializer will neither write it nor overwrite it: it must be set on the host rather than shipped
 in content, and it survives a re-deserialize afterwards.
@@ -202,7 +202,7 @@ pre-pass mtimes.
 
 The `<design>.css` under `System/Styles/ColorSchemes/` is **generated output**, not the source of truth: the sibling `<design>.json` holds the same values as a model (`Schemes[].{Id, BackgroundColor, ForegroundColor, PrimaryButtonColor, SecondaryButtonColor, CustomColors}`) and the admin Styles editor writes both in a single operation — the two files carry the same `Last-Modified` to the second. Edit only the emitted `.css` and the model still carries the old value, so any regeneration (the next time anyone opens and saves the design) silently reverts the site, days later, with no deploy to blame.
 
-So: when a demo must hand-edit a Style asset, **edit the `.json` in the same pass and upload both**; pre-flight should parse the `.json` and assert every scheme carries the new value, and the post-upload check should re-fetch both files and confirm zero literals of the retired value.
+So: when a demo must hand-edit a Style asset, **edit the `.json` in the same pass and upload both**; pre-flight should parse the `.json` and assert every scheme carries the new value, and the post-upload check should re-fetch both files and confirm zero literals of the retired value. A scripted palette needs no hand-edit at all: `ColorSchemeSave` takes a `Schemes[]` entry as its model and regenerates the pair ([`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) §"Style assets: replay a palette from a stored file").
 
 This is not an edge case for a palette change: primary buttons paint from `--dw-color-button-primary`, which is declared **only** in the generated colour-scheme CSS (as a hex *and* an `rgb` triplet, once per scheme). A `<customer>_custom.css` loaded afterwards cannot override a variable it never mentions, and declaring the variable there instead is the wrong fix — it leaves the model lying and the admin swatch stale. Full sweep: [`re-skin.md`](re-skin.md) §"A palette swap is a multi-file, multi-notation sweep".
 
