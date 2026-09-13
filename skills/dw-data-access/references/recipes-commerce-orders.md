@@ -21,6 +21,10 @@ it, that it is **local installs only**, and the cache flush or host restart it o
 - [Removing an order: `OrderCancel` then `OrderDelete`](#removing-an-order-ordercancel-then-orderdelete)
 - [Order the SQL write and the cache flush](#order-the-sql-write-and-the-cache-flush)
 - [Swift 2's Accept-quote button cannot work on a quote](#swift-2s-accept-quote-button-cannot-work-on-a-quote)
+- [Bulk-completing seeded orders](#bulk-completing-seeded-orders)
+- [Backfilling `OrderCustomerNumber` from the buyer](#backfilling-ordercustomernumber-from-the-buyer)
+- [Gating an order backfill on live shop ids](#gating-an-order-backfill-on-live-shop-ids)
+- [Granting impersonation by SQL, then the Secondary users index build](#granting-impersonation-by-sql-then-the-secondary-users-index-build)
 
 ## Priced demo orders: place them through the storefront checkout
 
@@ -244,3 +248,94 @@ GET /dwapi/ecommerce/carts/<secret>  + the template header
 
 A quote is by definition not a cart and not complete, so the endpoint refuses every order the
 button is ever rendered for.
+
+## Bulk-completing seeded orders
+
+In-product home: [dw-commerce-orders](../../dw-commerce-orders/SKILL.md) (`order-lifecycle.md`, "Order
+completion: created orders default to carts, not completed orders").
+
+`create_orders` seeds `OrderComplete = 0` rows, which every order-history surface skips. MCP
+`complete_order` completes one order per call through the price-recalc and workflow chain.
+
+**Surface: `SQL`.**
+
+```sql
+-- scope the WHERE tightly enough to skip rows that are intentionally carts
+UPDATE EcomOrders SET OrderComplete = 1
+WHERE OrderComplete = 0 AND OrderCart = 0 AND OrderID LIKE 'ORDER%';
+```
+
+- **Why the higher surfaces do not cover it**: `complete_order` runs the full recalculation and workflow
+  per call, is slow in bulk, fails on unresolved currency or country gaps, and fires side effects (workflow,
+  email, inventory) that a seed does not want.
+- **Local installs only**: on a hosted install, run `complete_order` per order.
+- **The debt it owes**: the `OrderService` flush in "Order the SQL write and the cache flush" (above), and
+  nothing re-saves the orders afterwards.
+
+## Backfilling `OrderCustomerNumber` from the buyer
+
+In-product home: [dw-commerce-orders](../../dw-commerce-orders/SKILL.md) (`order-lifecycle.md`,
+"OrderCustomerNumber is not set by create_orders").
+
+**Surface: `SQL`.**
+
+```sql
+UPDATE o
+SET OrderCustomerNumber = u.AccessUserCustomerNumber
+FROM EcomOrders o
+JOIN AccessUser u ON u.AccessUserID = o.OrderCustomerAccessUserId
+WHERE o.OrderCustomerNumber IS NULL OR o.OrderCustomerNumber = '';
+```
+
+- **Why the higher surfaces do not cover it**: `update_orders` has no customer-number member, and an
+  `OrderSave` on an existing order is a reconciliation pass that moves columns it was not asked to.
+- **Local installs only**: a hosted install has no known write path for the column, so an online build asks
+  the user.
+- **The debt it owes**: the `OrderService` flush in "Order the SQL write and the cache flush" (above), and
+  nothing re-saves the orders afterwards.
+
+## Gating an order backfill on live shop ids
+
+In-product home: [dw-commerce-orders](../../dw-commerce-orders/SKILL.md) (`order-lifecycle.md`,
+"`GetOrderList` inner-joins `EcomShops`").
+
+`GetOrderList` returns only orders whose `OrderShopId` resolves in `EcomShops`, so a backfill that writes a
+dead shop id makes the order invisible in every Commerce grid. **Surface: `SQL`.**
+
+```sql
+-- read-only gate; SQL because no tool or verb reads the orders the grid join drops; owes no flush.
+-- local installs only: a hosted install has no read of these orders, so an online build asks the user.
+SELECT COUNT(*) FROM EcomOrders
+ WHERE OrderShopId <> '' AND OrderShopId NOT IN (SELECT ShopId FROM EcomShops);   -- must be 0
+```
+
+## Granting impersonation by SQL, then the Secondary users index build
+
+In-product home: [dw-commerce-orders](../../dw-commerce-orders/SKILL.md) (`order-lifecycle.md`, the
+`AccessUserSecondaryRelation` impersonation grant).
+
+**Surface: `SQL`**, then two Management API calls. In product the grant is `add_impersonatable_users`, read
+back with `get_impersonatable_users`; the SQL form is the bulk seeding path.
+
+```sql
+INSERT INTO AccessUserSecondaryRelation
+    (AccessUserSecondaryRelationUserId,            -- CSR id
+     AccessUserSecondaryRelationSecondaryUserId)   -- customer id
+VALUES (<csr_user_id>, <customer_user_id>);
+```
+
+The lookup is index-backed, so rebuild the Secondary users index. `BuildIndex` hard-requires a `BuildName`
+the index model does not expose, so resolve the builder first, then build:
+
+```
+GET  /Admin/Api/IndexBuildersByRepositoryAndIndexName?Repository=Secondary%20users&IndexName=Users.index
+     -> name "Users", assemblyQualifiedName Dynamicweb.Security.UserManagement.Indexing.UserIndexBuilder
+POST /Admin/Api/BuildIndex {"Repository":"Secondary users","IndexName":"Users.index","BuildName":"Users"}
+     -> ok;  IndexStatusesAll then reports "Secondary users|Users.index" state=success
+```
+
+- **Why the higher surfaces do not cover it**: they cover the grant itself (`add_impersonatable_users`);
+  this form is for a bulk seed, and no registered MCP tool builds the Secondary users index it then owes.
+- **Local installs only**: on a hosted install, grant with `add_impersonatable_users`.
+- **The debt it owes**: the index build above, then a clear of the user/system cache (Settings > System info
+  > Cache, or a host restart), because `AccessUser` objects are cached in process.

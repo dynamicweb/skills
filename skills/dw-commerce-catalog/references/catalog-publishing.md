@@ -43,7 +43,7 @@ save replaces the shop relations, leaving the storefront as the group's home —
 tree and URL provider cache the old homing; see the slug gotcha below). If a seeding flow parks
 catalog groups in a data shop first, the publish step owes every storefront group this re-home.
 
-**Group URL slug gotcha — `ShopUrlDataProvider` lazy cache.** When a Swift frontend uses path-based group URLs (e.g. `/swift-2/shop/headsets`), the resolver is `Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider`'s static `Lazy<>` indexes (`InitializeProductUrlDataIndex`, `InitializeGroupProductRelationIndex`). Those indexes are populated at first request and only reset when `Notifications.Ecommerce.Group.AfterSave` fires — which fires from MCP `save_groups` and admin-UI saves but NOT from raw `UPDATE EcomGroups SET GroupMetaUrl = ...` SQL. Symptom: SQL-set slugs work in the DB, but `/shop/<slug>` 404s indefinitely until the host restarts OR a group is re-saved through MCP. Index rebuild via `/admin/api/BuildIndex` does NOT flush this — it's separate from Lucene. Recovery after raw-SQL changes to GroupMetaUrl / GroupNumber / any field used by URL resolution: re-save one group through `save_groups` (idempotent — same payload pattern, same id), or restart the host.
+**Group URL slug gotcha: `ShopUrlDataProvider` lazy cache.** When a Swift frontend uses path-based group URLs (e.g. `/swift-2/shop/headsets`), the resolver is `Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider`'s static `Lazy<>` indexes (`InitializeProductUrlDataIndex`, `InitializeGroupProductRelationIndex`). Those indexes are populated at first request and only reset when `Notifications.Ecommerce.Group.AfterSave` fires, which fires from MCP `save_groups` and admin-UI saves but NOT from raw `UPDATE EcomGroups SET GroupMetaUrl = ...` SQL. Symptom: SQL-set slugs work in the DB, but `/shop/<slug>` 404s indefinitely until the host restarts OR a group is re-saved through MCP. A search index rebuild does NOT flush this: it is separate from Lucene. Recovery after raw-SQL changes to GroupMetaUrl / GroupNumber / any field used by URL resolution: re-save one group through `save_groups` (idempotent: same payload pattern, same id), or restart the host.
 
 **Same cache-flush rule applies to `EcomGroupProductRelation` mutations** — fired via the native "Publish to channel" action (§2.3a below): `Notifications.Ecommerce.Group.AfterSave` fires, cache flushes, channel URLs resolve immediately. Fired via raw SQL `INSERT INTO EcomGroupProductRelation`: notification doesn't fire, cache stays stale until host restart. See §2.3a.
 
@@ -110,15 +110,13 @@ The `PermissionLevel.Edit` gate is a Layer C entity check
   `IEnumerable<string>` (so `{"Ids":[8]}` answers `500 "The JSON value could not be converted to
   System.String"`) and its handler never removes the row, so `{"Ids":["8"]}` reports success with the row
   intact. Proven not to be id resolution: a freshly minted scratch folder (`FeedNew` + `FeedSave`)
-  survived its own `FeedDelete` the same way. Delete feeds and feed folders through the sanctioned
-  scheduled-task SQL runner (guard on `FeedIsFolder` and a `NOT EXISTS` child check), then clear the cache
-  before any list read: `POST /Admin/Api/CacheInformationRefresh
-  {"CacheTypeName":"Dynamicweb.Ecommerce.Feeds.FeedService"}`. **The fully qualified type name is
-  required** (the short `FeedService` 404s), and re-saving a sibling feed does NOT invalidate it
-  (measured). No app recycle is needed. Verify that `GET /Admin/Api/FeedsByParentId?ParentId=0` matches
-  `SELECT FeedId,FeedName FROM EcomFeed WHERE FeedParentId=0` exactly, and that the `GetServiceCaches`
-  count for `FeedService` drops after the refresh.
-  **Local installs only**: on a hosted install, delete with `delete_feeds` and read back with `get_feeds`; if the feed survives, no MCP tool removes it, so ask the user.
+  survived its own `FeedDelete` the same way. **The feed list cache is
+  `Dynamicweb.Ecommerce.Feeds.FeedService`, and it is flushed only by that fully qualified type name** (the
+  short `FeedService` is not found); re-saving a sibling feed does NOT invalidate it (measured), and no app
+  recycle is needed after the flush. In product, delete with `delete_feeds` and read back with `get_feeds`
+  (feeds) and `get_child_feeds` (a folder's children); if the feed survives, no MCP tool removes it, so ask
+  the user. Out of product (the guarded SQL delete, the flush and the list-versus-table assert):
+  [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Deleting a feed or feed folder that `FeedDelete` leaves in place".
 
 ## 2.9 Assortments (customer access) ≠ Channels (publishing)
 
@@ -169,14 +167,15 @@ make a correct setup look broken:
   `save_prices {customerGroupId:"1342"}` answers `succeeded:1`, the row appears in `EcomPrices` with
   `PriceCustomerGroupId=1342` and `PriceUserGroupId=NULL`, and a member of group 1342 still sees the list
   price on the PDP.
-- **Write a GROUP-scoped contract price through `/Admin/Api/PriceSave` with `userGroupId` set.** Read the
-  full model from `PriceById`, set `userGroupId` to the `AccessUser` group id and leave
-  `groupCustomerNumber` empty, and post the whole model. Measured: the same buyer's PDP moved from the
-  list 312.00 to the contract 274.56 on that one change. MCP `save_prices` does not expose
-  `PriceUserGroupId` at all, so keep it for unscoped rows and for customer-number-scoped rows.
+- **A GROUP-scoped contract price is `PriceUserGroupId`, and no MCP tool writes it.** `save_prices` does
+  not expose the column at all, so keep that tool for unscoped rows and for customer-number-scoped rows.
+  Measured: setting `PriceUserGroupId` to the `AccessUser` group id, with the customer-number scope left
+  empty, moved the same buyer's PDP from the list 312.00 to the contract 274.56 on that one change. In
+  product, ask the user to set the group scope on the price.
 - **A CUSTOMER-scoped contract price is `PriceUserCustomerNumber`**, matching every user whose
-  `AccessUserCustomerNumber` equals it, i.e. the whole account. `save_prices` cannot set it either; use
-  `PriceSave` with `userCustomerNumber`.
+  `AccessUserCustomerNumber` equals it, i.e. the whole account. `save_prices` cannot set it either. Both
+  scoped writes are out of product:
+  [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Writing a group- or customer-scoped contract price with `PriceSave`".
 - **Assert the rendered price, not the row.** A row-exists assertion passes while the storefront is still
   on list price. Sign in as a member of the group and read the price block; an anonymous visitor is the
   control.
@@ -216,53 +215,41 @@ build; where they are required the repair is out of product
 ([`dw-data-access/references/recipes-pim.md`](../../dw-data-access/references/recipes-pim.md)) and therefore
 local-install only.
 
-Building per-variant product rows through the Management API alone, the chain that replaces any
-per-variant `EcomProducts` SQL insert. **The chain is version-forked between DW 10.25.x and DW 10.28.x**,
-and on 10.28.x the wrong shape answers `status: ok` and writes nothing. Establish the build first
-(`/Admin/Api` responses do not carry it; read it from the host's version surface), then run the matching
-fork and read every step back.
+Building per-variant product rows through the Management API alone replaces any per-variant
+`EcomProducts` SQL insert, and **that chain is version-forked between DW 10.25.x and DW 10.28.x**: on
+10.28.x the wrong shape answers `status: ok` and writes nothing. Management API responses do not carry the
+build, so the build has to be established from the host's version surface before a fork is chosen. The
+chain, its payloads and its read-backs are out of product:
+[`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Variant combinations and per-variant rows through the Management API".
+In product the combination write is `create_variant_combinations` (one option id per assigned variant
+group), read back with `get_variant_combinations`, with the inheritance gap stated above.
 
-1. `VariantGroupSave` (post with empty `Id` to create) + `VariantOptionSave` per option. Set `Color`
-   (hex) on each option and a Swift PDP renders live swatches.
-2. `VariantGroupAdd {ProductId, Ids: [groupId]}` attaches the group to the product.
-3. **`VariantCombinationSave {ProductId, Ids: [<variantIds>]}`** persists the combinations AND runs
-   `ExtendAllVariants` (creates the per-variant product rows), clears the variant caches, and rebuilds
-   the product's index entry. The id shape and the cache key are both version-forked (next section).
-4. Per-variant PRICE: `PriceSave` carrying `VariantId`, verified by `PriceById` ("Per-variant price"
-   below).
-5. Per-variant number / stock / active: writable on 10.25.x, **not writable at all on 10.28.x**
-   ("Per-variant row fields" below).
+What the chain does, as platform facts:
+
+- **`VariantCombinationSave` persists the combinations AND runs `ExtendAllVariants`** (it creates the
+  per-variant product rows), clears the variant caches, and rebuilds the product's index entry. A Swift PDP
+  renders live swatches from the `Color` (hex) set on each variant option.
+- **Per-variant PRICE is an `EcomPrices` row on every build** ("Per-variant price" below).
+- **Per-variant number / stock / active are writable on 10.25.x and not writable at all on 10.28.x**
+  ("Per-variant row fields" below).
 
 ### The combination id shape is INVERTED between 10.25.x and 10.28.x
 
-| Build | Working `Ids` shape | What the other shape does |
-|---|---|---|
-| DW 10.25.x | `["<VariantGroupId>.<VariantOptionId>"]`, group-qualified | A bare option id answers **500**, naming a group that is not the one you meant |
-| DW 10.28.5 | `["<VariantOptionId>"]`, bare option ids | The group-qualified id answers **`{"status":"ok"}`** and creates **zero** combination rows |
-
-```
-# DW 10.28.5
-POST /Admin/Api/VariantCombinationSave {"ProductId":"<P>","Ids":["<VARGRP>.<VO>"]}
-  -> 200 {"status":"ok"}      GET VariantCombinationsByProductId -> totalCount 0     # silent no-op
-POST /Admin/Api/VariantCombinationSave {"ProductId":"<P>","Ids":["<VO>"]}
-  -> 200 {"status":"ok"}      GET VariantCombinationsByProductId -> totalCount 3     # rows created
-```
-
-- **Read the count back after every `VariantCombinationSave`.** `GET VariantCombinationsByProductId?ProductId=<P>`
-  must return a `totalCount` equal to the number of combinations posted. On 10.28.x the response body is
-  identical whether the call wrote three rows or none, so the read-back is the only signal, and a session
-  that trusts the `ok` concludes "combination creation is broken on this build" when only the id shape was
-  wrong.
+- **DW 10.25.x takes group-qualified ids** (`<VariantGroupId>.<VariantOptionId>`); a bare option id answers
+  **500**, naming a group that is not the one you meant.
+- **The 10.28 line takes bare option ids** [dw 10.28.5]; the group-qualified id answers
+  **`{"status":"ok"}`** and creates **zero** combination rows.
+- **The response body is identical whether the call wrote three rows or none**, so a read-back of the
+  combination count is the only signal, and a session that trusts the `ok` concludes "combination creation
+  is broken on this build" when only the id shape was wrong.
 - **One option per group per call.** A combination is a point in the matrix, not a set; two options of the
   same group answer `400 specify options in each variant group` on both builds.
-- **`VariantCombinationCreationSetup` exists only on 10.25.x.** There it is called ONCE and its cache key
-  threaded through the whole batch (re-calling it RESETS the matrix, so a helper fetching a fresh key per
-  combination silently discards the work in progress). On **10.28.5 the verb is gone**:
-  `POST /Admin/Api/VariantCombinationCreationSetup` answers `400 {"successful":false,"message":"Unknown
-  command: 'VariantCombinationCreationSetup'"}`, and `VariantCombinationSave` needs no cache key there.
-  The read model still exposes the field it fed (`VariantCombinationsByProductId` returns
-  `variantCombinationSelectionCacheKey: ""`), so the field's presence is not evidence the verb exists.
-  `VariantCombinationCreate` is likewise unreachable on 10.28.5.
+- **`VariantCombinationCreationSetup` exists only on 10.25.x.** There its cache key is threaded through the
+  whole batch, and re-calling it RESETS the matrix, so a helper fetching a fresh key per combination
+  silently discards the work in progress. On the 10.28 line the verb is gone (`Unknown command`) and
+  `VariantCombinationSave` needs no cache key. The read model still exposes the field it fed
+  (`variantCombinationSelectionCacheKey: ""`), so the field's presence is not evidence the verb exists.
+  `VariantCombinationCreate` is likewise unreachable there.
 
 ### Per-variant row fields: writable on 10.25.x, unwritable on 10.28.x
 
@@ -286,30 +273,30 @@ name, stock or active-flag beat on this build, and do not spend a session huntin
 - The hosted-publish consequence, including the `VariantCombinationSave` re-derive that resets
   `ProductWeight` and `ProductPrice` on every variant it touches, lives in `dw-demo-hosted`
   (`publish-to-hosted.md`, "Publishing onto an install that already has content").
-- **Verify with both readers plus a master control.** `GET /Admin/Api/ProductById?Id&VariantId` AND
-  the MCP batch getter for the same product (`get_products_by_ids`, whose variant
-  member comes from its own `tools/list` schema); master values coming back means the write did not
-  land. Run the
-  identical call against the master row in the same pass, so a null result is proof about the variant and
-  not about the instrument.
+- **Verify with two readers plus a master control.** In product the reader is the MCP batch getter for the
+  same product (`get_products_by_ids`, whose variant member comes from its own `tools/list` schema); the
+  second reader is the Management API product read in the recipe above. Master values coming back means the
+  write did not land. Run the identical call against the master row in the same pass, so a null result is
+  proof about the variant and not about the instrument.
 
 ### Per-variant price
 
 Per-variant pricing is an `EcomPrices` row, so the write is **`PriceSave` carrying `VariantId`** on every
 build. `DefaultPrice` through `ProductSave` never reaches it.
 
-- **Verify by `PriceById`, not by the product-scoped list.** MCP `get_prices_by_product_id` is served
-  through a cache that lags the write: immediately after six successful `PriceSave` calls it returned an
-  empty list, and moments later returned all six rows. `GET /Admin/Api/PriceById?Id=<priceId>` is not
-  cached, so assert each created id there (or re-read `PricesByProductId` after the cache settles). A
-  verification written against the product-scoped list concludes the price write failed when it landed.
+- **Do not verify against the product-scoped list straight after the write.** MCP
+  `get_prices_by_product_id` is served through a cache that lags the write: immediately after six successful
+  `PriceSave` calls it returned an empty list, and moments later returned all six rows. The single-price
+  read by id is not cached. In product, re-read `get_prices_by_product_id` after the cache settles; the
+  by-id assert is in the recipe above. A verification written against the product-scoped list concludes the
+  price write failed when it landed.
 - **`defaultPrice` on the product model is a different column** (`EcomProducts.ProductPrice`) and stays
   `0` no matter how many `EcomPrices` rows exist. It is never the price read-back.
 - A NULL-price variant row also breaks the product index build; see
   [`index-management.md`](../../dw-search-indexing/references/index-management.md) "A NULL-price variant
   row drops every variant document".
 
-**Run this chain verbatim before concluding a variant row is unwritable.** The verbs *outside* the chain
+**Run the recipe chain verbatim before concluding a variant row is unwritable.** The verbs *outside* the chain
 answer `status: ok` and change nothing, so a session that probes them in sequence reads like proof that
 per-variant identity is impossible when the real route was simply never exercised. The catalogue of
 success-reporting non-writers, with the working replacement for each:
@@ -317,7 +304,7 @@ success-reporting non-writers, with the working replacement for each:
 | Lying/no-op path | What actually writes it |
 |---|---|
 | `patch_products_safe` / `update_products` against a variant id | Full-model round-trip `ProductById?Id&VariantId` → `ProductSave` on 10.25.x; nothing on 10.28.x |
-| MCP `create_variant_combinations` (leaves `ProductActive`/`ProductPrice` NULL) | `VariantCombinationSave` — runs `ExtendAllVariants` (step 3) |
+| MCP `create_variant_combinations` (leaves `ProductActive`/`ProductPrice` NULL) | `VariantCombinationSave`, which runs `ExtendAllVariants` |
 | `ProductSave` with a hand-built **partial** model | The round-trip — `*Save` commands are whole-entity saves |
 | `DefaultPrice` via `ProductSave` on a variant | `PriceSave` carrying `VariantId` |
 | `VariantCombinationCreate`, `VariantCombinationToggleActive`, `VariantCombinationUpdate` | Not part of the chain — `VariantCombinationSave` covers create + persist |
@@ -341,15 +328,10 @@ read-only row on its own, so run the master control before you decide which one 
   the relation data — decide that up front rather than after a batch has been written twice.
 - **`ProductRelatedMakeTwoWayRelation` and `ProductRelatedDelete` take `Ids[]` of PIPE-DELIMITED COMPOSITE
   KEYS**, not a structured payload. A `{ProductId, RelatedProductId, RelatedGroupId}` object — the obvious
-  shape, and the one the create verbs use — fails on both:
-
-  ```
-  POST /Admin/Api/ProductRelatedMakeTwoWayRelation
-  { "Ids": ["<sourceProductId>|<relationGroupId>|<targetProductId>|<variantId>", …] }
-  POST /Admin/Api/ProductRelatedDelete          # same Ids[] shape
-  ```
-
-  The trailing variant segment is present even when empty. This is the same "list-command ids are full
+  shape, and the one the create verbs use, fails on both. Each key is
+  `<sourceProductId>|<relationGroupId>|<targetProductId>|<variantId>`, and the trailing variant segment is
+  present even when empty. The request shapes are out of product:
+  [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Product relation maintenance verbs take composite ids". This is the same "list-command ids are full
   paths, not names" rule the `*Delete` family follows — read one row from the matching list query and
   copy its identifier shape before scripting a batch.
 
@@ -373,15 +355,21 @@ subsystem: a relation carries a source product, a target product, an amount and 
 by `DynamicRelationGroup` inside a `DynamicRelationGroupCategory`. **The surface splits unevenly and the
 split is not visible from the OpenAPI schema.**
 
-| Operation | Surface | Notes |
-|---|---|---|
-| Category create/update | `/Admin/Api/DynamicRelationGroupCategorySave` `{Model:{Id:"", Name, TabName, SortOrder}}` | Works. `Id: ""` is the create signal |
-| Group create/update | `/Admin/Api/DynamicRelationGroupSave` `{Model:{Id:"", Name, CategoryId, SortOrder}}` | Works |
-| Relation CREATE | **Not achievable through `/Admin/Api` on 10.28.x** | See below. Use the service layer |
-| Relation READ by source | `DynamicProductRelationsByProductAndGroup?ProductId=&DynamicRelationGroupId=` | Source-only, see below |
-| All three DELETEs | `DynamicProductRelationDelete` / `DynamicRelationGroupDelete` / `DynamicRelationGroupCategoryDelete` with `Ids[]` | Work normally, so cleanup is available even though create is not |
+- **Category and group create/update work** through the Management API saves
+  `DynamicRelationGroupCategorySave` and `DynamicRelationGroupSave`, with an empty `Id` as the create signal.
+- **Relation CREATE is not achievable through the Management API on 10.28.x** (below); the service layer
+  can.
+- **Relation READ is by source only** (`DynamicProductRelationsByProductAndGroup`, below).
+- **All three DELETEs work** (`DynamicProductRelationDelete`, `DynamicRelationGroupDelete`,
+  `DynamicRelationGroupCategoryDelete` with `Ids[]`), so cleanup is available even though create is not.
 
-**`SourceProductId` cannot be bound through `/Admin/Api`, so the verb persists ORPHAN relations.**
+The payload shapes are out of product:
+[`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Dynamic relation categories and groups through the Management API".
+The 0.6.0 tool set registers `save_dynamic_relation_group`, `get_dynamic_relation_groups`,
+`get_dynamic_product_relations` and `trigger_dynamic_relation_calculation`, and no tool that creates a
+dynamic relation; none of them is measured against the traps below.
+
+**`SourceProductId` cannot be bound through the Management API, so the verb persists ORPHAN relations.**
 `DynamicProductRelationSave` answers 200 with a model, and a row DOES appear in
 `EcomDynamicProductRelations` carrying the correct `DynamicRelationGroupId`, `TargetProductId`, `Amount`
 and `Description`, with `SourceProductId` **empty**. The relation is then invisible to
@@ -422,9 +410,9 @@ relSvc.Save(rel);          // rel.Id is assigned, e.g. DYNPRODREL17
 - **`Dynamicweb.Ecommerce.Services` has NO `DynamicProductRelations` property** and the service class is
   abstract with a non-public constructor, so it must come from
   `ServiceLocator.Current.GetInstance<DynamicProductRelationService>()`.
-- Verify from BOTH sides: `relSvc.GetById(newId).SourceProductId` equals the intended source, AND
-  `GET /Admin/Api/DynamicProductRelationsByProductAndGroup?ProductId=<source>&DynamicRelationGroupId=<group>`
-  returns `totalCount 1`. Both passed on 10.28.3 for the service write and failed for the API write.
+- Verify from BOTH sides: `relSvc.GetById(newId).SourceProductId` equals the intended source, AND the
+  source-scoped relation read for that source and group returns `totalCount 1` (the Management API read is
+  in the recipe above). Both passed [dw 10.28.3] for the service write and failed for the API write.
 - **Doctrine:** the build stays API-first and raw SQL writes to content tables stay banned (SQL-inserted
   relation rows do not reach the view model). The Razor service-layer runner is the sanctioned escape for
   **this subsystem specifically**, because the documented API is incomplete rather than merely awkward.
@@ -452,9 +440,9 @@ needed for the reverse direction.
 the group filter points at the side you do not expect.**
 
 - **`TotalSum` is still unimplemented on 10.28.4.** A configured, active TotalSum calculation renders an
-  empty "Calculation result(s)" panel on every product in its category, and
-  `POST /Admin/Api/DynamicRelationCalculationConfigurationCalculate {Ids:["DYNRELCALCCFG1"]}` answers
-  `500 {"title":"TotalSum calculation method is not yet implemented."}`. The admin lets you configure and
+  empty "Calculation result(s)" panel on every product in its category, and the Management API
+  `DynamicRelationCalculationConfigurationCalculate` command answers
+  `500 {"title":"TotalSum calculation method is not yet implemented."}` for it. The admin lets you configure and
   activate it regardless, so the dead panel ships. **Do not ship an active TotalSum configuration**: set
   `IsActive=false` so the empty panel stops rendering (`SELECT IsActive FROM
   EcomDynamicRelationCalculationConfigurations WHERE Method=1` must be 0). **Local installs only**: on a hosted install no MCP tool is known to read this, so confirm on a product in that category that the empty panel no longer renders.
@@ -558,7 +546,7 @@ Learn them as a set:
 | Make an attached asset the primary | `ProductAssetSetAsDefault {DetailId, ProductId, VariantId, LanguageId}` (inverse: `ProductAssetRemoveDefault`) | `Dynamicweb.Products.UI.Commands` — product link |
 | Delete FILES from the archive | `AssetDelete {DirectoryPath, Ids}` | `Dynamicweb.Files.UI.Commands.Files` — **the file archive** |
 
-- **`AssetAddToMultipleProducts.IsDefault` is inert on the raw `/Admin/Api` verb, and MCP
+- **`AssetAddToMultipleProducts.IsDefault` is inert on the raw Management API verb, and MCP
   `add_product_image {setAsPrimary:true}` DOES write the flag.** The inert flag is a property of the
   Management API verb, not of the platform: `AssetAddToMultipleProducts` silently accepts `IsDefault`
   (`status: ok`, row created) and the `EcomDetails` row lands with `isDefault=false`, every time, across
@@ -610,20 +598,21 @@ Asked to "create a channel", the obvious verbs do not exist: `ChannelAll`, `Chan
 All four usage types are `EcomShops` rows discriminated by the `ShopType` int and created through the one
 `ShopSave` verb.
 
-- **The create shell comes from `GET /Admin/Api/ShopNew?UsageType=<Shop|Channel|Warehouse|DataStructure>`**
-  (`0..4` numerically; `5` answers `400 {"UsageType":["The value 5 is invalid."]}`). It returns a model
-  whose `usageType` is preset; post it with `Id:""` to create. Measured mapping: `1`=shop, `3`=channel,
-  `4`=dataStructure (full enum in
+- **In product, create any usage type with `save_shops`**, an empty `id` and an explicit `usageType`
+  (`Shop`, `Channel`, `Warehouse`, `DataStructure`); `create_shops` creates only PIM data-model shops.
+  Measured `ShopType` mapping: `1`=shop, `3`=channel, `4`=dataStructure (full enum in
   [`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.1).
-- **The `ShopNew` shell defaults `autoBuildIndex` to `true`**, which is wrong for a channel. Set it
-  explicitly on the save.
+- **The Management API create shell (`ShopNew`) presets `usageType` and defaults `autoBuildIndex` to
+  `true`**, which is wrong for a channel; its usage-type parameter takes `0..4` and rejects `5`. Set
+  `autoBuildIndex` explicitly on any save. The shell request is out of product:
+  [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Creating a shop, channel or warehouse from the `ShopNew` shell".
 - **`ShopAll` is usage-type-filtered, so it is not the shop inventory.** On one host it returned the two
   shops and the one channel and silently omitted the `dataStructure` shop; `ShopsAsDataStructure` and
   `ShopsAsWarehouse` are what surface the other types. A "list the shops" probe that reads only `ShopAll`
   will report a shop as missing when it is merely a different usage type. Assert the `EcomShops` row count
   against what the enumerations return in aggregate.
 
-### `/Admin/Api/GroupSave` is the USER-group verb, not the product-group one
+### `GroupSave` is the USER-group verb, not the product-group one
 
 `GroupSave` belongs to the user/permission domain. Posting an `EcomGroups` id to it answers **200 with a
 plausible model on every call**, changes nothing in `EcomGroups`, and **creates a junk `AccessUser`

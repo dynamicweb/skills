@@ -37,38 +37,20 @@ i.e. **carts**, not completed orders. Surfaces that list order history (the acco
 paragraph, CSR order-impersonation views) filter on `OrderComplete=1` and silently skip the cart
 rows. The symptom is "I created N orders but the My Orders tab is empty," not an error.
 
-When the rows are meant to be order *history* (not in-progress carts), backfill the flag in one SQL
-after `create_orders` returns:
-
-```powershell
-sqlcmd -S "<dwserver>" -d <dwdb> -E -Q `
-  "UPDATE EcomOrders SET OrderComplete = 1 WHERE OrderComplete = 0 AND OrderCart = 0 AND OrderID LIKE 'ORDER%'"
-```
-
-Scope the `WHERE` precisely enough to skip rows that are intentionally carts. The
-`complete_order` tool exists and works on individual orders, but it
-runs the full price-recalc + workflow chain per call — slow for bulk seeding and able to fail when
-pricing has unresolved currency / country gaps. Direct `UPDATE` is the right tool for bulk
-completion; reserve `complete_order` for flows where the side-effects (workflow, email, inventory)
-are intended.
-
-**Local installs only**: on a hosted install, run `complete_order` per order.
+When the rows are meant to be order *history* (not in-progress carts), the flag has to be set after
+`create_orders` returns. In product, run `complete_order` per order. It works on individual orders, but it
+runs the full price-recalc + workflow chain per call: slow for bulk seeding, able to fail when pricing has
+unresolved currency / country gaps, and it fires the workflow, email and inventory side effects. A bulk flag
+write that skips those side effects, and skips the rows that are intentionally carts, is out of product:
+[`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Bulk-completing seeded orders".
 
 ## OrderCustomerNumber is not set by create_orders
 
 The account-side Orders paragraph resolves order history via a `UseCustomerNumber` lookup against the
 user's `AccessUserCustomerNumber`. `create_orders` populates `OrderCustomerAccessUserId` but **not**
-`OrderCustomerNumber`, so B2B account-side displays render empty until it is backfilled:
-
-```sql
-UPDATE o
-SET OrderCustomerNumber = u.AccessUserCustomerNumber
-FROM EcomOrders o
-JOIN AccessUser u ON u.AccessUserID = o.OrderCustomerAccessUserId
-WHERE o.OrderCustomerNumber IS NULL OR o.OrderCustomerNumber = '';
-```
-
-**Local installs only**: on a hosted install no MCP tool is known to write `OrderCustomerNumber`, so ask the user.
+`OrderCustomerNumber`, so B2B account-side displays render empty until it is backfilled from each buyer's
+`AccessUserCustomerNumber`. `update_orders` has no customer-number member, so in product ask the user. Out
+of product: [`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Backfilling `OrderCustomerNumber` from the buyer".
 
 ## Area-currency filters order history
 
@@ -187,7 +169,7 @@ per-entity flush table is in
 
 ## `OrderSave` on an existing order is a reconciliation pass against live platform state
 
-Editing one cosmetic string on a settled order through the sanctioned `/Admin/Api/OrderSave` path moved
+Editing one cosmetic string on a settled order through the sanctioned Management API `OrderSave` path moved
 **11 columns when exactly 1 was requested**, with HTTP 200 and `successful: true`. Three mechanisms
 compose, and none of them warns:
 
@@ -239,7 +221,7 @@ model has no null or omit semantics, and an empty string is itself a write.
 Comparing only the fields you changed is exactly the check that misses this class of defect. Where a
 shell cart carries only resolved defaults worth painting on, `OrderDelete` beats a graft.
 
-(Note the read parameter: `GET /Admin/Api/GetOrderById?OrderId=<id>`, because `Id` answers 400.)
+(The Management API `GetOrderById` read binds `OrderId`; a request naming `Id` answers 400.)
 
 ## `GetOrderList` inner-joins `EcomShops` — orders on a deleted shop vanish from every Commerce grid
 
@@ -252,14 +234,9 @@ The arithmetic across three grids proves the join exactly: on one host the compl
 `live-shop + blank + dead-shop`, and the grid rendered exactly `live-shop + blank`. Blank `OrderShopId` rows
 **do** render; only rows naming a shop that is absent from `EcomShops` disappear.
 
-**Any order backfill must write an `OrderShopId` that exists in `EcomShops`, or leave it blank.** Gate it:
-
-```sql
-SELECT COUNT(*) FROM EcomOrders
- WHERE OrderShopId <> '' AND OrderShopId NOT IN (SELECT ShopId FROM EcomShops);   -- must be 0
-```
-
-**Local installs only**: on a hosted install no MCP tool is known to read orders on a deleted shop, so ask the user.
+**Any order backfill must write an `OrderShopId` that exists in `EcomShops`, or leave it blank.** No MCP tool is known to read
+orders on a deleted shop, so in product ask the user. The gate query is out of product:
+[`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Gating an order backfill on live shop ids".
 
 This is a good candidate for the Ecommerce health provider to surface — worth raising with the vendor.
 
@@ -427,34 +404,23 @@ one table:
 The naming is counter-intuitive ("Secondary user" reads as a sub-user, the opposite of DW's
 interpretation). Verified direction (DW10 admin labels): the CSR's profile "Users this user can
 impersonate" lists rows where the CSR's id is in `UserId`; the customer's profile "Users that can
-impersonate this user" lists rows where the customer's id is in `SecondaryUserId`. A single grant:
-
-```sql
-INSERT INTO AccessUserSecondaryRelation
-    (AccessUserSecondaryRelationUserId,            -- CSR id
-     AccessUserSecondaryRelationSecondaryUserId)   -- customer id
-VALUES (<csr_user_id>, <customer_user_id>);
-```
+impersonate this user" lists rows where the customer's id is in `SecondaryUserId`. One grant is one row: the CSR in `UserId`, the customer in `SecondaryUserId`.
 
 **Symptom of wrong direction:** the impersonation bar is empty and the customer's admin profile shows
 the CSR under "Users that can impersonate this user". Swap the two ids. Don't trust the column name;
 trust the screen label.
 
-**Local installs only**: on a hosted install, grant with `add_impersonatable_users` and read the direction back with `get_impersonatable_users`.
+**In product, grant with `add_impersonatable_users` and read the direction back with
+`get_impersonatable_users`.** The SQL grant is out of product:
+[`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Granting impersonation by SQL, then the Secondary users index build".
 
-**Required follow-up, not picked up live.** After the SQL change: (1) **rebuild the Secondary user
-index** (the lookup is index-backed); (2) **clear the user/system cache** (DW caches `AccessUser`
-objects in process).
+**A grant written behind the platform is not picked up live.** It owes two follow-ups: (1) a **rebuild of
+the Secondary users index** (the lookup is index-backed); (2) a **clear of the user/system cache** (DW caches
+`AccessUser` objects in process).
 
 The rebuild is a **two-call** sequence, because `BuildIndex` hard-requires a `BuildName` that the index
-model does not expose. Resolve the builder first, then build:
-
-```
-GET  /Admin/Api/IndexBuildersByRepositoryAndIndexName?Repository=Secondary%20users&IndexName=Users.index
-     -> name "Users", assemblyQualifiedName Dynamicweb.Security.UserManagement.Indexing.UserIndexBuilder
-POST /Admin/Api/BuildIndex {"Repository":"Secondary users","IndexName":"Users.index","BuildName":"Users"}
-     -> ok;  IndexStatusesAll then reports "Secondary users|Users.index" state=success
-```
+model does not expose: the builder (name `Users`, type
+`Dynamicweb.Security.UserManagement.Indexing.UserIndexBuilder`) is resolved first, then built.
 
 `IndexByRepositoryAndName` returns only counts (`balancerTypeName`, `schemaExtenderFieldsCount`,
 `indexFieldsCount`) and **no builds collection**, so the build name is not discoverable from it, and

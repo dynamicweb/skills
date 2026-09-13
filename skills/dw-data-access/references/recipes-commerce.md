@@ -18,6 +18,7 @@ states, order totals, order dates and a test order placed from a seeded cart:
 - [Two gates every scripted cart command must pass](#two-gates-every-scripted-cart-command-must-pass)
 - [`archive` does not archive — it clears the active-cart pointer](#archive-does-not-archive--it-clears-the-active-cart-pointer)
 - [The active-cart pointer is adopted with no ownership check](#the-active-cart-pointer-is-adopted-with-no-ownership-check)
+- [Proving a scoped cart in a driven browser](#proving-a-scoped-cart-in-a-driven-browser)
 
 **Checkout configuration**
 
@@ -35,6 +36,12 @@ states, order totals, order dates and a test order placed from a seeded cart:
 
 - [`ProductHidden` is enforced in SQL and unwritable by every API](#producthidden-is-enforced-in-sql-and-unwritable-by-every-api)
 - [The two stock tables: asserting the aggregate matches the locations](#the-two-stock-tables-asserting-the-aggregate-matches-the-locations)
+- [Deleting a feed or feed folder that `FeedDelete` leaves in place](#deleting-a-feed-or-feed-folder-that-feeddelete-leaves-in-place)
+- [Writing a group- or customer-scoped contract price with `PriceSave`](#writing-a-group--or-customer-scoped-contract-price-with-pricesave)
+- [Variant combinations and per-variant rows through the Management API](#variant-combinations-and-per-variant-rows-through-the-management-api)
+- [Product relation maintenance verbs take composite ids](#product-relation-maintenance-verbs-take-composite-ids)
+- [Dynamic relation categories and groups through the Management API](#dynamic-relation-categories-and-groups-through-the-management-api)
+- [Creating a shop, channel or warehouse from the `ShopNew` shell](#creating-a-shop-channel-or-warehouse-from-the-shopnew-shell)
 
 **Order capture**
 
@@ -89,6 +96,22 @@ WHERE u.AccessUserCartId IS NOT NULL AND o.OrderId IS NULL;
 Assert it per persona: the `DynamicwebEcomCart<userId>` cookie is absent for a user who owns no
 cart, and a rendered cart total matches only carts whose `OrderCustomerAccessUserId` equals that
 user.
+
+## Proving a scoped cart in a driven browser
+
+In-product home: [dw-commerce-b2b](../../dw-commerce-b2b/SKILL.md) (`dc-scoping.md`, "Verification flow").
+
+**Surface: browser automation** (Playwright), signed in as the buyer. Swift's add-to-cart and cart update run
+as client-side htmx / AJAX, so a `curl` or `Invoke-RestMethod` GET or POST never exercises them and returns
+the empty pre-cart page, which reads as a false "cart is broken". Drive the add-to-cart, then the cart, then
+the price check, as each buyer in turn, and repeat as a buyer in a different scope to see the difference. The
+cart command itself can be scripted without a browser ("Two gates every scripted cart command must pass",
+above); what raw HTTP cannot prove is the rendered cart the buyer sees after the client update.
+
+- **Why the higher surfaces do not cover it**: no MCP tool signs in as a buyer or runs the storefront's
+  client script; `fetch_frontend_page_html` summarises one server-rendered page.
+- **Hosted installs included**: this drives the storefront, not the database.
+- **The debt it owes**: none; the cart writes through the domain services.
 
 ---
 
@@ -337,6 +360,187 @@ SELECT COUNT(*) FROM (
   HAVING ISNULL(SUM(su.StockUnitQuantity), 0) <> p.ProductStock
 ) d;   -- must be 0
 ```
+
+## Deleting a feed or feed folder that `FeedDelete` leaves in place
+
+In-product home: [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`, "2.7
+Channels + Feeds").
+
+`FeedDelete` answers `{"status":"ok"}` and removes no row, and the feed list is served from a cache that no
+row write invalidates. **Surface: `SQL`**, through the scheduled-task SQL runner, guarded so that a folder
+with children is never removed:
+
+```sql
+DELETE FROM EcomFeed
+WHERE FeedId = <feedId>
+  AND (FeedIsFolder = 0
+       OR NOT EXISTS (SELECT 1 FROM EcomFeed c WHERE c.FeedParentId = <feedId>));
+```
+
+Then clear the cache before any list read, with the fully qualified type name (the short `FeedService`
+404s):
+
+```
+POST /Admin/Api/CacheInformationRefresh
+{"CacheTypeName":"Dynamicweb.Ecommerce.Feeds.FeedService"}
+```
+
+Assert that `GET /Admin/Api/FeedsByParentId?ParentId=0` matches
+`SELECT FeedId, FeedName FROM EcomFeed WHERE FeedParentId = 0` exactly, and that the `GetServiceCaches`
+count for `FeedService` drops after the refresh.
+
+- **Why the higher surfaces do not cover it**: the Management API delete reports success and writes
+  nothing, and re-saving a sibling feed does not invalidate the list cache.
+- **Local installs only**: on a hosted install, delete with `delete_feeds` and read back with `get_feeds`;
+  if the feed survives, no MCP tool removes it, so an online build asks the user.
+- **The debt it owes**: the `FeedService` flush above. No application-pool recycle.
+
+## Writing a group- or customer-scoped contract price with `PriceSave`
+
+In-product home: [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`, "2.13
+Customer-specific (contract) pricing").
+
+MCP `save_prices` reaches `PriceCustomerGroupId` (its `customerGroupId`, which matches a customer NUMBER)
+and no other scope column. **Surface: Management API `PriceSave`**, as a full-model round trip:
+
+1. Read the whole model: `GET /Admin/Api/PriceById?Id=<priceId>`.
+2. For a group scope, set `userGroupId` to the `AccessUser` group id and leave `groupCustomerNumber` empty.
+   For a customer (whole-account) scope, set `userCustomerNumber` to the account's customer number.
+3. Post the whole model to `POST /Admin/Api/PriceSave`.
+
+- **Why the higher surfaces do not cover it**: `save_prices` has no member for `PriceUserGroupId` or
+  `PriceUserCustomerNumber`.
+- **Hosted installs included**: this is an API call, not SQL.
+- **The debt it owes**: none for the write. Assert the rendered price signed in as a member of the scope,
+  with an anonymous visitor as the control, never the row.
+
+## Variant combinations and per-variant rows through the Management API
+
+In-product home: [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`, "2.14
+Variants via the Management API (no SQL)").
+
+**Surface: Management API**, the chain that replaces any per-variant `EcomProducts` SQL insert. It is
+version-forked between DW 10.25.x and DW 10.28.x, and `/Admin/Api` responses do not carry the build: read it
+from the host's version surface first, run the matching fork, and read every step back.
+
+1. `VariantGroupSave` (post with an empty `Id` to create), then `VariantOptionSave` per option. Set `Color`
+   (hex) on each option and a Swift PDP renders live swatches.
+2. `VariantGroupAdd {ProductId, Ids: [groupId]}` attaches the group to the product.
+3. `VariantCombinationSave {ProductId, Ids: [<variantIds>]}` persists the combinations and runs
+   `ExtendAllVariants`. The id shape is the fork, and one option per group per call:
+
+   ```
+   # DW 10.25.x: group-qualified ids; a bare option id answers 500
+   POST /Admin/Api/VariantCombinationSave {"ProductId":"<P>","Ids":["<VARGRP>.<VO>"]}
+
+   # DW 10.28.5: bare option ids; the group-qualified id is a silent no-op
+   POST /Admin/Api/VariantCombinationSave {"ProductId":"<P>","Ids":["<VARGRP>.<VO>"]}
+     -> 200 {"status":"ok"}      GET VariantCombinationsByProductId -> totalCount 0     # silent no-op
+   POST /Admin/Api/VariantCombinationSave {"ProductId":"<P>","Ids":["<VO>"]}
+     -> 200 {"status":"ok"}      GET VariantCombinationsByProductId -> totalCount 3     # rows created
+   ```
+
+   After every save, `GET /Admin/Api/VariantCombinationsByProductId?ProductId=<P>` must return a
+   `totalCount` equal to the number of combinations posted.
+4. On 10.25.x only, `POST /Admin/Api/VariantCombinationCreationSetup` is called ONCE and its cache key is
+   threaded through the whole batch. On the 10.28 line [dw 10.28.5] it answers
+   `400 {"successful":false,"message":"Unknown command: 'VariantCombinationCreationSetup'"}`, and the save
+   takes no key.
+5. Per-variant row fields, 10.25.x only: read the full model with
+   `GET /Admin/Api/ProductById?Id=<id>&VariantId=<vid>`, set `stock`, `active` and `number`, and post it to
+   `ProductSave`. On 10.28.x nothing lands at row level. Verify with that read AND MCP `get_products_by_ids`
+   for the same product, and run the identical call against the master row in the same pass.
+6. Per-variant price, every build: `PriceSave` carrying `VariantId`. Assert each created id with
+   `GET /Admin/Api/PriceById?Id=<priceId>`, which is not cached; the product-scoped list lags the write.
+
+- **Why the higher surfaces do not cover it**: MCP `create_variant_combinations` creates combination rows
+  that inherit nothing from the master, no MCP tool writes per-variant row fields, and the MCP price read by
+  product lags the write.
+- **Hosted installs included**: these are API calls, not SQL.
+- **The debt it owes**: none; `VariantCombinationSave` clears the variant caches and rebuilds the product's
+  index entry itself.
+
+## Product relation maintenance verbs take composite ids
+
+In-product home: [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`,
+"Product relations via the Management API").
+
+**Surface: Management API.** `ProductRelatedMakeTwoWayRelation` and `ProductRelatedDelete` take `Ids[]` of
+pipe-delimited composite keys, not a structured `{ProductId, RelatedProductId, RelatedGroupId}` object, and
+the delete also needs the source product as `ProductId`:
+
+```
+POST /Admin/Api/ProductRelatedMakeTwoWayRelation
+{ "Ids": ["<sourceProductId>|<relationGroupId>|<targetProductId>|<variantId>", …] }
+POST /Admin/Api/ProductRelatedDelete
+{ "ProductId": "<sourceProductId>", "Ids": ["<sourceProductId>|<relationGroupId>|<targetProductId>|<variantId>"] }
+```
+
+Read one row from the matching list query and copy its identifier shape before scripting a batch.
+`ProductRelatedDelete` removes exactly the rows named and never the two-way mirror, so clearing a two-way
+set enumerates `EcomProductsRelated` in both directions, groups by `ProductRelatedProductId`, and sends one
+delete per source; `ProductRelatedGroupDelete {ProductId, RelatedGroupId}` needs the same fan-out.
+
+- **Why the higher surfaces do not cover it**: the 0.6.0 tool set registers no product-relation delete and
+  no two-way toggle.
+- **Hosted installs included** for the API calls. The row count after every batch is SQL on
+  `EcomProductsRelated` and so local installs only; a hosted install reads back with `get_product_relations`.
+- **The debt it owes**: none measured; never trust the `ok`, assert the rows.
+
+## Dynamic relation categories and groups through the Management API
+
+In-product home: [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`,
+"Dynamic product relations: a Management API that cannot create, and the sanctioned Razor escape").
+
+**Surface: Management API.**
+
+| Operation | Request | Notes |
+|---|---|---|
+| Category create/update | `POST /Admin/Api/DynamicRelationGroupCategorySave` `{Model:{Id:"", Name, TabName, SortOrder}}` | `Id: ""` is the create signal |
+| Group create/update | `POST /Admin/Api/DynamicRelationGroupSave` `{Model:{Id:"", Name, CategoryId, SortOrder}}` | Works |
+| Relation read by source | `GET /Admin/Api/DynamicProductRelationsByProductAndGroup?ProductId=<source>&DynamicRelationGroupId=<group>` | Source-only; `totalCount 1` is the assert after a service-layer create |
+| Deletes | `DynamicProductRelationDelete` / `DynamicRelationGroupDelete` / `DynamicRelationGroupCategoryDelete` with `Ids[]` | Work normally |
+| Calculate | `POST /Admin/Api/DynamicRelationCalculationConfigurationCalculate {Ids:["<configId>"]}` | Never trust the response; assert the rows |
+
+Relation CREATE is not in the table: `DynamicProductRelationSave` persists an empty `SourceProductId`, and
+the working create is the service-layer Razor runner in the in-product reference. After every Calculate,
+assert what it generated:
+
+```sql
+-- read-only; SQL because no verb or tool counts the generated calculations; owes no flush.
+-- local installs only: a hosted install checks the rendered "Calculation result(s)" panel on a product
+-- in the configured category.
+SELECT COUNT(*) FROM EcomDynamicRelationCalculations;
+SELECT IsActive FROM EcomDynamicRelationCalculationConfigurations WHERE Method = 1;   -- TotalSum: must be 0
+```
+
+- **Why the higher surfaces do not cover it**: no registered MCP tool creates a dynamic relation, and the
+  calculation response reports success on runs that generate nothing.
+- **Hosted installs included** for the API calls; the SQL asserts are local installs only.
+- **The debt it owes**: none for the API writes.
+
+## Creating a shop, channel or warehouse from the `ShopNew` shell
+
+In-product home: [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`, "There
+is no Channel entity and no `ShopById`").
+
+**Surface: Management API.** In product, `save_shops` with an empty `id` and an explicit `usageType` covers
+the create; this is the equivalent when MCP is absent.
+
+```
+GET  /Admin/Api/ShopNew?UsageType=<Shop|Channel|Warehouse|DataStructure>
+     (0..4 numerically; 5 answers 400 {"UsageType":["The value 5 is invalid."]})
+POST /Admin/Api/ShopSave   the returned model with Id:"", usageType as preset, autoBuildIndex set explicitly
+```
+
+The shell defaults `autoBuildIndex` to `true`; set it `false` for a channel. Read a full model with
+`GetShopByIdQuery` (not the `GetShopById` stub) before any round-trip save, and count the result against
+`ShopAll`, `ShopsAsDataStructure` and `ShopsAsWarehouse` together, because `ShopAll` is usage-type-filtered.
+
+- **Why the higher surfaces do not cover it**: they do; `save_shops` is rung 1.
+- **Hosted installs included**: this is an API call, not SQL.
+- **The debt it owes**: none. `ShopSave` does not persist `Model.Languages`, so the language relation is
+  ticked in the admin afterwards.
 
 ## Driving an order capture from outside the product
 
