@@ -70,7 +70,7 @@ PARENT item's cached view model, and a child write never touches the parent.
 | Write on the parent after the child writes | Measured result |
 |---|---|
 | Re-saving the parent paragraph | Did not cross the cache: the old list kept rendering |
-| One of the parent's own item fields written with its current value, `set_paragraph_item_fields` | Crossed it: six parents, each page moved from its seven original entries to all twelve on the next request, with no restart, on a solution pinning the Suite package below its platform bin [dw 10.27.9] |
+| One of the parent's own item fields written with its current value, `set_paragraph_item_fields` | Crossed it: six parents, each page moved from its seven original entries to all twelve on the next request, with no restart, on a host running the platform bin with an older Suite package pinned in the project [dw 10.28] |
 
 The likely reason is that a paragraph save need not save the parent item, while an item field write
 does; that is an inference from the two results, not a third measurement. So the item field write is
