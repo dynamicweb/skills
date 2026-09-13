@@ -25,6 +25,7 @@ rule that governs every edit — the one-way foundational/demo boundary — live
 - [Demo skills dependency order](#demo-skills-dependency-order)
 - [Validation](#validation)
 - [The PR workflow](#the-pr-workflow)
+- [Testing a PR stack locally](#testing-a-pr-stack-locally)
 
 ## Decide the category first
 
@@ -416,3 +417,35 @@ For folding a demo-build learning back into a skill, the routing, sanitization, 
 are owned by
 [`dw-demo-foldback`](../../../skills/dw-demo-foldback/SKILL.md) — use that skill, not this
 section.
+
+## Testing a PR stack locally
+
+To exercise unmerged branches as installed skills, install them as a **second, differently named**
+marketplace. The CLI keys a marketplace by the `name` in `.claude-plugin/marketplace.json`, and a PR
+branch inherits `dynamicweb-skills` from `main`: `claude plugin marketplace add <dir>` on an unrenamed
+clone reports success and **replaces** the machine-wide git-sourced marketplace of that name, its
+`autoUpdate` flag and its clone, so every other session on the machine loads the PR stack as if it were
+`main`.
+
+```powershell
+git clone https://github.com/dynamicweb/skills.git <dir>
+git -C <dir> fetch origin <top-of-stack-branch>
+git -C <dir> checkout -b local/pr-stack-test FETCH_HEAD
+# Rename the marketplace on the local branch only. This commit is never pushed.
+$mp = "<dir>/.claude-plugin/marketplace.json"
+(Get-Content $mp -Raw) -replace '"name": "dynamicweb-skills"', '"name": "dynamicweb-skills-prstack"' |
+  Set-Content $mp -NoNewline
+git -C <dir> commit -am "local: rename marketplace for PR-stack testing"
+claude plugin marketplace add <dir>
+claude plugin install <bundle>@dynamicweb-skills-prstack --scope local   # once per bundle under test
+```
+
+Then mute the user-scope twins for the test project, so a skill does not load twice: in its
+`.claude/settings.local.json`, set `"enabledPlugins": { "<bundle>@dynamicweb-skills": false }` for each
+bundle installed from the renamed marketplace.
+
+**Check before testing:** `claude plugin marketplace list` shows both `dynamicweb-skills` (Git) and
+`dynamicweb-skills-prstack` (Directory), and `~/.claude/settings.json`
+`extraKnownMarketplaces.dynamicweb-skills.source.source` still reads `git`. If the git entry is gone,
+the rename was skipped: restore it with `claude plugin marketplace add dynamicweb/skills` before any other
+session starts.

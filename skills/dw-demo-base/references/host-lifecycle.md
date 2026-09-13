@@ -44,6 +44,36 @@ if ($p) {
 
 **Never force-kill during an index build.** A `Stop-Process -Force` mid-`BuildIndex` corrupts the index instance being written — leaving a "blocking repair candidate" / "must be recovered" state that a single rebuild does not clear (the recovery recipe is `dw-demo-swift/references/integrity-sweep.md` Check 5). Before stopping the host, confirm no Lucene build is in flight (`GET /admin/api/IndexStatusByRepositoryAndIndexName` — not `Running`); if one is, let it finish or use a graceful stop, and only force-kill a host that is genuinely wedged.
 
+## Proving zero restarts by attribution, not by process id
+
+A worker pid that is unchanged across the work is a fact to record, not the proof. It holds only while
+nothing else can restart the process, and on a shared IIS host something else can: a recycle schedule
+set once under `applicationPoolDefaults` restarts every pool at the same time of day, while each pool's
+own `recycling/periodicRestart` reads all zeros with an empty schedule, because it inherits the default.
+A pid proof on such a host only shows that the work finished before the schedule fired.
+
+A zero-restart claim asserts two things over the work window:
+
+1. **No agent-attributable restart.** No `appcmd` recycle, stop or set, no build or `dotnet run`
+   restart, no DLL copy into `bin/`, no `web.config` or `applicationHost.config` edit, no NuGet restore,
+   no `GlobalSettings.config` hand-edit. Each is separately assertable from the session's own command log.
+2. **Every recycle event in the window carries a reason that is not yours.** The WAS event message
+   names the reason (a scheduled recycle time, an elapsed-time limit, an on-demand request):
+
+```powershell
+# READ-ONLY. $from / $to bound the work window.
+Get-WinEvent -FilterHashtable @{ LogName = 'System'; ProviderName = 'Microsoft-Windows-WAS'
+                                 Id = 5074, 5076, 5079; StartTime = $from; EndTime = $to } -ErrorAction SilentlyContinue |
+  Select-Object TimeCreated, Id, Message
+# Where a machine-wide schedule lives (read the applicationPoolDefaults recycling block, not the pool's own):
+& "$env:windir\system32\inetsrv\appcmd.exe" list config /section:applicationPools
+```
+
+Every pool recycling within the same second for "reached its scheduled recycle time" is the machine
+schedule. An on-demand recycle in the window needs a named owner before the claim stands. Record the
+current worker pid beside the claim as a fact. A run that will span a known scheduled recycle says so up
+front and places any step that must not be interrupted around it.
+
 ## Visibility ≠ permission
 
 Still announce in one line ("starting host…", "host up at :31873", "restarting to clear plugin cache"). Authorization removes the *ask*, not the *narration*.
