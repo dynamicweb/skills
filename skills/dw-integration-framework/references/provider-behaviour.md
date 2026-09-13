@@ -97,6 +97,16 @@ columns that make group-scoped audience pricing work.
 + `UseStrictPrimaryKeyMatching = True`, with every `RemoveMissing*` / `DeactivateMissingProducts` =
 `False`, gives an inbound activity that cannot create, delete or deactivate a product.
 
+**A multi-category enrichment feed needs `IgnoreEmptyCategoryFieldValues = True`.** The category
+field value write path reads an empty mapped source value as an instruction to blank the
+destination, and the job template defaults the flag to `False`. A single feed that spans several
+categories carries every category's field columns on every row and leaves the inapplicable ones
+empty, so with the default each run erases real category field values on products it was not meant
+to touch, and the job still reports success. Set the flag `True` on any enrichment or update job
+whose rows do not all belong to one category, pair it with `UpdateOnlyExistingProducts = True` so the
+same feed cannot mint a bare product, and prove it with a before/after diff of
+`EcomProductCategoryFieldValue` for values the feed does not carry: that diff must be empty.
+
 **The domain product cache is not flushed for product-field writes.** `DisableCacheClearingAndIndexUpdates=False`
 buys the provider's own clearing, which does **not** reach the read-through cache in front of
 `ProductService` for extended or global product fields. The measured shape: the job reports rows
@@ -208,6 +218,11 @@ save. That is code, and it belongs in the estimate.
 A SqlProvider destination writes a **plain custom table** with no Dynamicweb ownership of any kind,
 and upserts on the mapping's `isKey` columns — a second identical run leaves row count, checksum
 and max identity unchanged. Two traps sit behind that.
+
+As a **source** it has no default connection: an empty `<SqlConnectionString />` works only on a
+destination, and a source with one fails with `The ConnectionString property has not been
+initialized`. The connection nodes, and what a literal connection string in a served job file
+exposes, are in [`job-file-format.md`](job-file-format.md#sqlprovider-connection-nodes).
 
 **Staging clones drop index filters.** The writer bulk-copies the whole source into a clone of the
 destination table (`<YourTable>TempTableForSqlProviderImport<n>`) before merging, and the clone is
