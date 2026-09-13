@@ -33,9 +33,7 @@ State transitions are **graph-defined, not linear**: `WorkflowGoToState` rows sa
 A workflow can be attached two ways:
 
 1. **Via a group** — `EcomGroups.GroupWorkflowId`. The column is on `EcomGroups` and applies **regardless of `GroupType`**. So it works on catalog groups (GroupType=0), DataModelFolder (GroupType=1), AND DataModel (GroupType=2) groups equally. Products inherit via their group relations. The enumerator query is in `WorkflowServiceExtensions.cs` line 24 (in method `GetWorkflowsInUseByGroups`, body lines 15-34):
-   ```sql
-   SELECT g.GroupWorkflowId AS id FROM EcomGroups g WHERE g.GroupWorkflowId > 0
-   ```
+   It selects `GroupWorkflowId` from `EcomGroups` wherever `GroupWorkflowId > 0`.
    **No GroupType filter in the query** — every group type is eligible. Cite by symbol: `WorkflowServiceExtensions.GetWorkflowsInUseByGroups`.
 2. **Direct on a product** — `EcomProducts.ProductWorkflowStateId` set to a `WorkflowStateId` whose parent workflow you want active. Enumerator: `WorkflowServiceExtensions.GetWorkflowsInUseByProducts` (line 40, body 40-59).
 
