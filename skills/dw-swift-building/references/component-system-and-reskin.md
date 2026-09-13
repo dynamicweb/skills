@@ -126,6 +126,20 @@ comes from the item-type's `Title` field.
 For `IEnumerable<string>` fields (checkbox-list editors — `FieldDisplayGroups`, `ImageAssets`), pass a
 **comma-separated string**. Bracketed-array / JSON encodings are NOT recognised by the stock editors.
 
+**Every item field a template reads must be declared by every item type routed through that template,
+shared partials included.** A getter on a field the item type does not declare returns its default with
+no error (`Model.Item.GetBoolean("HideProductNumber")` is `false`), so a gate on an undeclared field
+takes one branch forever: a registered, active paragraph renders nothing, or a component slider never
+autoplays. A shared partial hides the miss. When the read sits in one component file rendered by two
+item types, and only one of them declares the field, an audit that walks item type by item type finds
+the field present. Audit by call site instead: collect every field name read through
+`GetBoolean` / `GetString` and the other item getters under `Files/Templates/Designs/<design>/`, resolve
+each template (and each partial it is included from) to every item type that routes through it, and
+check each name against those `Files/System/Items/ItemType_<systemName>.xml` files. Fix a miss by
+declaring the field on the item type, copied from a sibling item type that already carries it. Done when
+the undeclared count is zero and the gated markup is present in the served page (one sweep found 4
+undeclared reads across 222 `GetBoolean` call sites).
+
 ### Facet sidebar — the `Layout` field styles, the grid row positions
 
 A left-sidebar PLP filter panel is two independent settings; the common mistake is hunting for a single "sidebar" toggle that doesn't exist. `Swift-v2_ProductListFacets` has a `Layout` item field (`horizontal` → pill bar above the list, `vertical` → accordion) but that field only styles the panel — it never moves it. **Position is grid:** the facets paragraph and the product-list (repeater) paragraph must share a **2-column row**, one paragraph per column. Recipe:
@@ -540,6 +554,13 @@ content — highest leverage per line). Use the project CSS file (Tier 1) for ev
 effects, nav polish, footer tweaks, empty-`data-dw-colorscheme` hacks); it loads after the Style
 assets so its rules win cascade ties. (Color-scheme architecture/cascade + the CSS pitfalls live in
 [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §4-5.)
+
+**A master item field write is not live until the cached area turns over.** A `set_item_field_values`
+write to the area's `Swift-v2_Master` item (`CustomHeadInclude`, `MetaSiteName`, `Favicon`) succeeds and
+`get_item_field_values` reads the new value back, but the storefront keeps serving the cached area until
+the area is re-saved in admin or the host recycles. Verify with `fetch_frontend_page_html` on the served
+head, never on the item readback. The out-of-product flush is in
+[`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md).
 
 ## 8. Asset organisation under `wwwroot/Files/`
 

@@ -88,6 +88,10 @@ a template compiles and which template a request reaches.
 Serving a non-page payload from a paragraph (JSON, CSV, an upload parse, a file) lives in
 [`paragraph-endpoints.md`](paragraph-endpoints.md).
 
+An item field that a template reads and the item type does not declare returns the getter's default
+with no error; the audit by call site, shared partials included, is in
+[`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §3.
+
 The remaining pitfall of this kind is Swift-specific rather than Razor-level:
 
 ### `ToggleFavorite.cshtml` silently no-ops when `FavoriteListId=0`
