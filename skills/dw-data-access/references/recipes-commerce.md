@@ -7,17 +7,11 @@ here instead of the recipe.
 
 Every recipe names its surface in the repo convention, and every SQL recipe states inline why the
 higher surfaces do not cover it, that it is **local installs only**, and the cache flush or host
-restart it owes. RMA and claims: [`recipes-commerce-rma.md`](recipes-commerce-rma.md).
+restart it owes. RMA and claims: [`recipes-commerce-rma.md`](recipes-commerce-rma.md). Orders and order
+states, order totals, order dates and a test order placed from a seeded cart:
+[`recipes-commerce-orders.md`](recipes-commerce-orders.md).
 
 ## Contents
-
-**Orders and order states**
-
-- [Building an order-state ladder](#building-an-order-state-ladder)
-- [A deleted state's id is re-issued, and its transition rows survive](#a-deleted-states-id-is-re-issued-and-its-transition-rows-survive)
-- [Removing an order: `OrderCancel` then `OrderDelete`](#removing-an-order-ordercancel-then-orderdelete)
-- [Order the SQL write and the cache flush](#order-the-sql-write-and-the-cache-flush)
-- [Swift 2's Accept-quote button cannot work on a quote](#swift-2s-accept-quote-button-cannot-work-on-a-quote)
 
 **Carts**
 
@@ -29,8 +23,9 @@ restart it owes. RMA and claims: [`recipes-commerce-rma.md`](recipes-commerce-rm
 
 - [Method country binding is what decides whether checkout can complete](#method-country-binding-is-what-decides-whether-checkout-can-complete)
 - [Counting an assortment's built item set](#counting-an-assortments-built-item-set)
+- [Removing one assortment permission: `remove_permissions_from_assortment` is write-inert](#removing-one-assortment-permission-remove_permissions_from_assortment-is-write-inert)
 - [The v2 discount engine needs a global-settings activation](#the-v2-discount-engine-needs-a-global-settings-activation)
-- [The method save models carry the countries and the fees the MCP tools do not](#the-method-save-models-carry-the-countries-and-the-fees-the-mcp-tools-do-not)
+- [The method save models carry the fees the MCP tools do not](#the-method-save-models-carry-the-fees-the-mcp-tools-do-not)
 - [`ShippingSave` takes two fee sources, and the flat-rate recipe](#shippingsave-takes-two-fee-sources-and-the-flat-rate-recipe)
 - [Writing `EcomValidation*` rows by hand](#writing-ecomvalidation-rows-by-hand)
 - [Order-LINE fields need no storage column — but they need a relation row](#order-line-fields-need-no-storage-column--but-they-need-a-relation-row)
@@ -48,99 +43,6 @@ restart it owes. RMA and claims: [`recipes-commerce-rma.md`](recipes-commerce-rm
 ---
 
 - [Census the customer numbers of one account's contacts](#census-the-customer-numbers-of-one-accounts-contacts)
-
-# Orders and order states
-
-## Building an order-state ladder
-
-MCP `create_order_state` reaches no column beyond the ones it names: it has no parameter for
-`AllowEdit`, `AllowOrder` or any of the ten `EcomOrderStates` mail columns. A full state ladder is
-therefore MCP create, then a `SQL` pass over the remaining columns, then a Management API
-`CacheInformationRefresh` (at `/admin/api/CacheInformationRefresh`) of
-`Dynamicweb.Ecommerce.Orders.OrderStateService` — and `…Orders.OrderFlowService` when the flow
-moved. SQL because no verb writes those columns; **local installs only**; it owes the flush named
-above.
-
-Verify by re-reading `EcomOrderStates` for the flow and asserting both the new ids and a gapless
-sort order, then asserting the state name as the storefront order list renders it.
-
-## A deleted state's id is re-issued, and its transition rows survive
-
-`delete_order_state` leaves dangling `EcomOrderStateRules` rows, and the id generator re-issues a
-deleted state's id into any flow, so the dangling rules become valid-looking cross-flow
-transitions. Nothing surfaces this. A two-ended `LEFT JOIN` is the only check that sees it:
-
-```sql
--- read-only integrity gate; run it in the same transaction as the state writes.
--- SQL because no verb reads the rule table; local installs only; owes no flush (read-only).
-SELECT COUNT(*) FROM EcomOrderStateRules r
-LEFT JOIN EcomOrderStates f ON f.OrderStateId = r.OrderStateRuleFromState
-LEFT JOIN EcomOrderStates t ON t.OrderStateId = r.OrderStateRuleToState
-WHERE f.OrderStateId IS NULL OR t.OrderStateId IS NULL OR f.OrderFlowId <> t.OrderFlowId;
--- must be 0
-```
-
-When a flow is inherited in this state, rebuilding its rule set from scratch behind that assertion
-is cheaper than repairing it row by row.
-
-## Removing an order: `OrderCancel` then `OrderDelete`
-
-MCP `delete_order`, and MCP `update_orders` + `set_order_state`, are rung 1 for this and reach the
-same domain service. The Management API pair below is the equivalent when MCP is absent. The two
-verbs bind different key names, and neither error names the offending field:
-
-```
-POST /admin/api/OrderDelete {"OrderId":"…"}   -> {"status":"invalid","message":"No items selected"}
-POST /admin/api/OrderDelete {"OrderIds":[…]}  -> {"status":"invalid","message":"No items selected"}
-POST /admin/api/OrderDelete {"Ids":["…"]}     -> bound
-
--- the working pair for a completed order
-POST /admin/api/OrderCancel {"Id":"<orderId>"}    -> ok
-POST /admin/api/OrderDelete {"Ids":["<orderId>"]} -> ok   (OrderDeleted = 1, state moved)
-```
-
-`OrderCancel` binds the singular `Id`; `OrderDelete` binds the plural `Ids`. Reusing one payload
-for the other fails with `"Selected order is not found. The order id: ."`, whose empty id is the
-only clue that the key name was wrong. Carts and incomplete orders take `OrderDelete` on their own.
-
-A raw `UPDATE` of `OrderDeleted` is not the way round the completed-order refusal: the write is
-invisible to the cached `OrderService` and the next save of that cached entity destroys it.
-
-## Order the SQL write and the cache flush
-
-Every SQL touch on a DW-cached table follows this sequence, and both halves are load-bearing:
-
-```
-UPDATE …                                            -- the SQL write
-POST /admin/api/CacheInformationRefresh             -- flush the owning service by verb
-     {"CacheTypeName":"Dynamicweb.Ecommerce.Orders.OrderService"}
-… then run anything that touches the entity, and let nothing re-save it afterwards.
-```
-
-Skip the flush and the staged value is read stale and then erased by the next save. Do the flush
-and the write survives: a bulk repoint of an order column by SQL followed by the `OrderService`
-flush read back correctly through MCP `get_orders_by_ids` on every changed row. **Local installs
-only**; a hosted install has no SQL rung, so the operation has to be expressed through the verb
-that owns the column or not at all. The per-entity flush table is in
-[`cache-invalidation.md`](cache-invalidation.md).
-
-## Swift 2's Accept-quote button cannot work on a quote
-
-The shipped quotes-list template's Accept action is an htmx `hx-get` against the delivery API route
-`/dwapi/ecommerce/carts/<order secret>` with a template header naming the accept modal, and that
-endpoint validates that the order is a cart:
-
-```
-GET /dwapi/ecommerce/carts/<secret>
-  -> 400  "The cart is not a cart but not completed. IsCart: False Complete: False IsProcessingCheckout: False."
-GET /dwapi/ecommerce/carts/<secret>  + the template header
-  -> 500  "Model is required for view model templates."   (and one event-log entry per attempt)
-```
-
-A quote is by definition not a cart and not complete, so the endpoint refuses every order the
-button is ever rendered for.
-
----
 
 # Carts
 
@@ -193,16 +95,40 @@ user.
 
 ## Method country binding is what decides whether checkout can complete
 
-Prefer MCP `save_shipping_methods` / `save_payment_methods` with `countryRelationKeys`, which write
-the relation rows through the domain service; Management API `ShippingSave` / `PaymentSave` are the
-same operation one rung down.
+No MCP tool binds a method to a country. The `save_shipping_methods` and `save_payment_methods`
+models carry no `countryRelationKeys` (the property lists are in "The method save models carry the fees
+the MCP tools do not", below), so a relation set is written out of product or on the method's admin
+screen.
 
-Writing the relation rows directly (`EcomMethodCountryRelation`) is legitimate only when neither
-surface is in play, and carries one schema trap: **`MethodCountryRelRegionCode` is `NOT NULL`**,
-unlike every other optional column on that table. A country-only relation with no region
-restriction must supply `''`, not `NULL`; `NULL` terminates the whole `INSERT` and nothing in the
-shape of the table hints at it. That write is **local installs only** and owes an order-method
-cache flush before the storefront reflects it.
+**Management API `ShippingSave` / `PaymentSave` are not a proven route for the relation set.** On one
+measured run [dw 10.28.10 · mcp 0.4.4] both accepted `countryRelationKeys` for six methods, answered
+success and wrote nothing: `EcomMethodCountryRelation` held only the relations the methods already had,
+the four shipping methods had none, and the signed-in checkout rendered one payment radio with an empty
+value and no shipping-method group at all, while every MCP method read passed. The request body of that
+run was not recorded, so it is one measurement and not proof that no API route exists: re-probe with a
+full-model round trip and the row read-back below before relying on either answer.
+
+The route known to land is `SQL` on `EcomMethodCountryRelation`, with one schema trap:
+**`MethodCountryRelRegionCode` is `NOT NULL`**, unlike every other optional column on that table. A
+country-only relation with no region restriction supplies `''`, not `NULL`; `NULL` terminates the whole
+`INSERT`, and nothing in the shape of the table hints at it.
+
+```sql
+INSERT INTO EcomMethodCountryRelation
+  (MethodCountryRelMethodId, MethodCountryRelCountryId, MethodCountryRelRegionCode)
+VALUES ('<methodId>', '<countryCode>', '');
+```
+
+- **Why the higher surfaces do not cover it**: the MCP models have no relation member, and the
+  Management API saves were measured accepting the keys and persisting nothing.
+- **Local installs only**: on a hosted install, set the relations on each method's admin screen.
+- **The debt it owes**: an order-method cache flush before the storefront reflects it.
+
+Whatever the surface, two asserts close the step and both are mandatory. First, read
+`EcomMethodCountryRelation` back and find one row per method per target country. Second, drive a
+signed-in checkout for a buyer in that country to the payment step and count the named method radios
+(`EcomCartShippingmethodID`, `EcomCartPaymethodID`): each step needs at least one with a non-empty
+value. `get_shipping_methods` and `get_payment_methods` project no relation set and pass either way.
 
 ## Counting an assortment's built item set
 
@@ -229,6 +155,28 @@ that tool is write-inert, so the assortment is deleted and rebuilt rather than r
   against the one rendered to a non-holder.
 - **The debt it owes** — none; these are reads.
 
+## Removing one assortment permission: `remove_permissions_from_assortment` is write-inert
+
+MCP `remove_permissions_from_assortment` answers `{"succeeded":<n>,"failed":0,"errors":[]}` and deletes
+nothing: `EcomAssortmentPermissions` is byte-identical afterwards, `get_assortment_permissions` still
+returns the grant, and the user keeps resolving to the assortment. Its counterpart
+`assign_permissions_to_assortment` writes correctly. In product, the repair is to delete the assortment
+and rebuild it without the grant; removing the one row is out of product.
+
+**Surface: `SQL`.**
+
+```sql
+DELETE FROM EcomAssortmentPermissions
+WHERE AssortmentId = '<assortmentId>' AND AssortmentPermissionEntityId = <userOrGroupId>;
+```
+
+- **Why the higher surfaces do not cover it**: the only delete tool reports success and writes nothing,
+  and the in-product alternative replaces the whole assortment.
+- **Local installs only**: on a hosted install, delete and rebuild the assortment.
+- **The debt it owes**: one application-pool recycle, because the User object caches its assortment
+  ids. Then assert with `get_assortment_ids_by_user` on a member's USER id (a group id answers `[]`
+  whatever the grants are) that the assortment is gone from the list.
+
 ## The v2 discount engine needs a global-settings activation
 
 Rows written by the v2 (Adjustments) discount tools land in `EcomDiscounts` and are **read by nothing at
@@ -249,35 +197,37 @@ for the discount term returns only the order-line organisation setting.
 - **The debt it owes** — a host restart, then the only valid proof: sign in as a member of the
   conditioned group, add a product with a known list price, and read the **cart line amount**.
 
-## The method save models carry the countries and the fees the MCP tools do not
+## The method save models carry the fees the MCP tools do not
 
 MCP `save_shipping_methods` carries only `id`, `name`, `description`, `active`, `allowAnonymousUsers`,
 `eligibleForFreeShipping`, `serviceSystemName`, `code`, `agentCode`, `agentServiceCode`, `minWeight`,
 `maxWeight`, `freeFeeAmount` and `sorting`; `save_payment_methods` carries only `id`, `name`,
 `description`, `active`, `code`, `termsCode`, `gatewayId`, `checkoutSystemName`, `allowAnonymousUsers`
 and `sorting`. Neither has `countryRelationKeys`, `feeRulesSource` or `defaultFee`, and the reads are
-just as narrow. The Management API save models do carry them, so country binding and fees are an
-out-of-product step on this MCP line (or an admin-screen edit in product).
+just as narrow. The Management API save models carry `DefaultFee` and `FeeRulesSource`, so fees are an
+out-of-product step on this MCP line (or an admin-screen edit in product). The same models accept
+`CountryRelationKeys`, but that write was measured persisting nothing: see "Method country binding"
+above.
 
 ```
 POST /admin/api/ShippingSave
 { "model": { "Id": "<id>", "Name": "<name>", "Description": "…", "Active": true, "Sorting": 1,
              "DefaultFee": 9.50, "FreeFeeAmount": 0, "EligibleForFreeShipping": false,
-             "CountryRelationKeys": ["<code>", "<code>"], "FeeRulesSource": "matrix",
-             "MaxWeight": 0, "AllowAnonymousUsers": true } }
+             "FeeRulesSource": "matrix", "MaxWeight": 0, "AllowAnonymousUsers": true } }
 ```
 
 Two shape rules, both measured: **the `model` wrapper is mandatory** (omitting it answers
 `400 Command.Model cannot be null`), and **`Name` is mandatory on every save**, including one that
 only means to add country relations (a model of `Id` plus `CountryRelationKeys` answers
 `400 Name: The value is required`). `PaymentSave` takes the same wrapper and the same mandatory name.
-Read the echo back: it carries the relation keys, the fee source and the default fee.
+The echo is the request model, not a post-write read: assert the fee columns on `EcomShippings` and
+any relation on `EcomMethodCountryRelation`.
 
 - **Why the higher surfaces do not cover it** — the MCP models are a narrower projection, on both the
   write and the read side.
 - **Hosted installs included** — this is an API call, not SQL.
-- **The debt it owes** — none; both go through the domain service. Gate on the rendered delivery step
-  showing a non-zero option count for the target country.
+- **The debt it owes**: none for the fee fields; both go through the domain service. Gate on the
+  rendered delivery step showing a non-zero option count for the target country.
 
 ## `ShippingSave` takes two fee sources, and the flat-rate recipe
 
@@ -286,8 +236,7 @@ the fee fields. The Management API equivalent:
 
 ```
 POST /admin/api/ShippingSave
-{ …, "feeRulesSource": "matrix", "maxWeight": 0, "defaultFee": 18.50,
-     "countryRelationKeys": [ … ] }
+{ …, "feeRulesSource": "matrix", "maxWeight": 0, "defaultFee": 18.50 }
 -> ok.  EcomShippings.ShippingFeeRulesSource = 2, ShippingPriceOverMaxWeight = 18.50, no EcomFees rows
 ```
 

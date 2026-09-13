@@ -70,6 +70,13 @@ and removes nothing: the relation survives the call, survives a re-flag and rebu
 returned by `get_assortment_relations_by_shop_id`. An assortment built wide by a shop relation is
 **deleted and rebuilt**, not repaired.
 
+**A permission cannot be removed in place either.** `remove_permissions_from_assortment` answers
+`succeeded` with no errors and deletes nothing: `get_assortment_permissions` still returns the grant, and
+the user keeps resolving to the assortment. `assign_permissions_to_assortment` is sound. In product,
+delete the assortment and rebuild it without the grant; removing the single row is out of product
+([`dw-data-access/references/recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md)
+"Removing one assortment permission").
+
 **`check_assortment_product_access` answers `true` unconditionally, so it is not the gate.** Measured
 against a correctly built, active, permissioned assortment: `true` for an in-scope product, `true` for
 an out-of-scope product, `true` for a user holding no assortment at all, and `true` for anonymous —
@@ -117,7 +124,9 @@ error. Where a price write has to become visible, the follow-up is the product-i
 **Validate on the rendered storefront, never on the row.** Sign in as a member of the group: the PDP and
 cart must show the contract price. Sign in as a non-member or stay anonymous: they see the list price. A
 row-exists assertion passes while the storefront is still on list price, which is exactly the failure
-this section describes. (Quantity-tier enforcement, `PriceQuantity > 0` rows, is a separate matter the
+this section describes. On a variant master, write every group row **per variant id**: a row with an empty
+variant id matches every variant and the lowest row wins
+([`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.13). (Quantity-tier enforcement, `PriceQuantity > 0` rows, is a separate matter the
 **stock cart ignores**; see
 [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.11, and the
 same three-column table lives at §2.13 there.)

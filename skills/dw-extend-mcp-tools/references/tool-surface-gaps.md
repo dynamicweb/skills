@@ -16,6 +16,7 @@ of the action ladder: an MCP tool, then the Management API verb, then `SQL` — 
 - [Read-only fields: what a read returns and no save reaches](#read-only-fields-what-a-read-returns-and-no-save-reaches)
 - [Entities with no tool at all](#entities-with-no-tool-at-all)
 - [Deletes that are not referentially complete](#deletes-that-are-not-referentially-complete)
+- [Write gaps with a documented workaround](#write-gaps-with-a-documented-workaround)
 - [Known-broken tools, version-pinned](#known-broken-tools-version-pinned)
 
 ## Write-only fields: what a save accepts and no read returns
@@ -51,6 +52,26 @@ and no warning.
 onto dangling relation rows produces products that appear in groups they were never assigned to.
 Assert the sweep on counts: products, group relations, category field values and related-product rows
 back at their pre-delete baseline.
+
+## Write gaps with a documented workaround
+
+Each row is a tool that answers success, or a missing tool, where the skills carry a workaround until the
+MCP project changes. The workaround column names its surface; the recipes are in the `dw-data-access`
+skill's commerce, PIM and users recipe references.
+
+| Tool | The gap | Workaround | Surface | MCP project change |
+|---|---|---|---|---|
+| `create_orders`, `add_products`, `convert_cart_to_order` | An order built this way stores no priced totals (0 on the cart path [mcp 0.4.4]) | Place priced orders through the storefront checkout as the buyer | storefront | Price lines through the price provider and save the totals |
+| `force_price_recalculation` | Computes the order's prices and saves nothing | None; read the stored totals | none | Save after recalculating |
+| `validate_order_prices` | Compares the stored values with themselves, so a 0 order reads valid | Assert the order total against the sum of its lines | MCP read | Recompute, then compare |
+| `update_order_line` | Writes the unit price only; line total and order totals stay stale | Re-place the order, or re-total by SQL and flush the order service | storefront or `SQL` | Re-total the line and the order, or warn that totals are stale |
+| `update_orders` | No order date member | SQL on `OrderDate`, written last, then an application-pool recycle | `SQL` | Accept `OrderDate`, and have the customer center see it without a recycle |
+| `save_user_groups` | No user-and-group type member, so an account group never lists on the CSR Accounts page | `GroupSave` full-model round trip, or the group's admin screen | Management API | Expose the type |
+| `save_prices` | No master-only scope: a row with an empty variant id applies to every variant and the lowest row wins | Write group and quantity rows per variant id | MCP | An explicit variant scope, and a warning on a variant-less row for a master with variants |
+| `remove_permissions_from_assortment` | Reports success and deletes nothing | Delete and rebuild the assortment, or SQL delete plus a recycle | MCP or `SQL` | Repair the delete path |
+| `get_assortment_ids_by_user` | Takes a user id; a group id answers `[]` | Pass a member's user id | MCP | Accept a group id and expand membership, or say "user id" in the description |
+| `delete_payment_methods` | Deletes payment methods; no tool or admin command deletes a saved card, and a card id fails with the bare invocation error | The cardholder deletes the card on the storefront | storefront | A saved-card delete tool, and a method delete whose name says method |
+| (none) | No tool creates asset categories or BOM lines | `AssetCategorySave`, `ProductItemAdd` | Management API | Save, read and delete tools for both |
 
 ## Known-broken tools, version-pinned
 

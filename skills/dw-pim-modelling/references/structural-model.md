@@ -138,12 +138,12 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
 - Per-variant `EcomProducts` gotchas beyond the §2.5 override list:
   - Copy **`ProductDefaultUnitId`** onto every variant row. Variants without it silently drop the per-unit price column from the quantity-break table — the master shows Qty / per-unit / per-piece, the variants show a narrower table, and it reads like a pricing bug even though prices never differed.
   - Seed **per-variant `ProductStock`**, and do it for **every language row** — variants default to 0 even when the master has stock.
-  - Quantity-break `EcomPrices` rows with an empty `PriceProductVariantId` apply to **all** variants — no per-variant duplication needed.
+  - Quantity-break and group `EcomPrices` rows with an empty `PriceProductVariantId` apply to **all** variants, and the lowest matching row wins across them, so a master-level row undercuts every variant priced above it. Where variants carry different prices, write the rows per variant id (dw-commerce-catalog, `catalog-publishing.md` §2.13).
 - Restart the host before verifying — the PDP selector reads the product cache, so the variants don't show until the bounce. (No restart on a hosted install: bulk-flush the product/stock/price service caches instead.)
 
 ### 2.6 Bundles (BOM) — two concerns
 
-1. **Product is BOM** — `UPDATE EcomProducts SET ProductType = 2` (enum: 0=stock, 1=service, 2=bom, 3=giftcard).
+1. **Product is BOM**: `ProductType` 2 (enum: 0=stock, 1=service, 2=bom, 3=giftcard), set in product as Product type BOM on the product edit screen.
 2. **Components** — rows in `EcomProductItems`. Two row shapes, split by `ProductItemBomGroupId`:
    - **Fixed component** (predefined bundle line): `ProductItemBomProductId` = the component product
      (append the concatenated variant id for a specific variant, e.g. `PRODx` + `VOn` — and set
@@ -158,18 +158,7 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
    - Both shapes: `ProductItemProductId` = parent bundle, plus `ProductItemQuantity`,
      `ProductItemName`, `ProductItemRequired`, `ProductItemSortOrder`. `ProductItemBomProductId` and
      `ProductItemBomVariantId` are NOT NULL — use `''`, never SQL `NULL`.
-3. **RESTART THE HOST AFTER INSERTING PRODUCTITEMS** — `ProductItem` uses a `Lazy<Dictionary<...>>` cache (see `ProductItem.cs:145`). Raw SQL inserts bypass it. Until restart, the Bundles tab shows empty.
-   **The API alternative — `ProductItemAdd` — accepts exactly one payload shape, `{ProductId, Model}`**, and
-   both plausible variations throw rather than degrade. It runs the domain service, so it needs no restart
-   and is the correct route on any host where SQL is not sanctioned:
-   ```
-   { "ProductId": "<parentProductId>", "Model": { … the BOM line … } }   -> ok
-   … with ProductOrGroupIds in the payload   -> 500  "Index was outside the bounds of the array"
-   … with Model omitted                      -> 400  "Command.Model cannot be null"
-   ```
-   The 500 is the misleading one: an index-out-of-bounds reads as a platform defect worth reporting, when it
-   is the binder rejecting an extra key. Verify BOM lines on the rendered PDP (a kit's lines are visible
-   there), not on the add response.
+3. **No MCP tool creates or reads a BOM line.** In product, add components on the product's BOM tab and verify them on the rendered PDP, where a kit's lines are visible. The out-of-product routes, Management API `ProductItemAdd` with the one payload shape it accepts and the `SQL` fallback with the host restart it owes, are in [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Asset categories and BOM lines".
 4. Bundles should get their OWN data model (e.g. a `BundleAttributes` category with bundle-specific fields: UnitsPerCase, RetailerSegment, PlanoReady, etc.). Different products → different data models.
 
 ### 2.8 Product Categories + Fields (data model internals)
@@ -291,7 +280,7 @@ otherwise), and gate on the post-build repair after every index build.
   it from the asset's own name and says so; a tab built by iterating asset categories renders at most
   two sections whatever the specification asked for. Either mint the extra categories deliberately, or
   design the surface around names — do not assume the categories are there. New categories (e.g.
-  `Manuals` for PDFs) are SQL-only — no MCP tool exists for `EcomDetailsGroup` mutations. Insert into both `EcomDetailsGroup` (set `DetailsGroupExtensions` to filter file types, e.g. `'pdf'`, and `DetailsGroupDefaultUploadFolder` to the target path) AND `EcomDetailsGroupTranslation` (one row per language).
+  `Manuals` for PDFs) have no MCP tool; `get_product_asset_categories` only reads them. A category carries a file-type filter (`DetailsGroupExtensions`, e.g. `pdf`), a default upload folder and one name row per language. In product, create it on the asset-category settings screen; the out-of-product routes (Management API `AssetCategorySave`, else `SQL`) are in [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Asset categories and BOM lines".
 - MCP tools `add_product_image` / `import_product_images_from_urls` / `upload_product_images` handle both download-to-disk + DB row. **Plugin-only — no Management API endpoints back these.** They live entirely in the MCP plugin code path; if the MCP session dies (token expiry, plugin restart, host restart) there is no `POST /admin/api/...` fallback for asset registration. The fallback is direct SQL INSERT on `EcomDetails`.
 - **`import_product_images_from_urls` does NOT set a default image** — it registers the `EcomDetails` rows with `DetailIsDefault=0` on all of them. A product then has images-but-no-default, and that is a **frontend-breaking** state, not a cosmetic one: the Swift card template **NREs on a product with images but no default**, and because the PLP renders cards in a loop, one such product **degrades the WHOLE product-list page** (the list throws, not just that one card). After any `import_product_images_from_urls` run, set a default: `UPDATE EcomDetails SET DetailIsDefault=1 WHERE DetailProductId=<id> AND DetailLanguageId='LANG1' AND DetailValue=<chosen path>` (exactly one default per product/variant/language), then flush/restart. Make "a DEFAULT image is set" a per-product verification gate for exactly this reason.
 - **Bulk SQL INSERT must set `DetailLanguageId` to a real language code** (e.g. `'LANG1'`), not empty string and not NULL. The admin asset query and the per-product image listings filter strict-equality on this column, so empty-string language renders the row invisible despite being on disk and registered. Symptom: SQL count says 9 details for the product, admin product page shows 0 assets, file is at the path. Recovery: `UPDATE EcomDetails SET DetailLanguageId = 'LANG1' WHERE DetailLanguageId = '' OR DetailLanguageId IS NULL;` then host restart to flush asset caches. The MCP tools always populate this column correctly — this gotcha only fires when bulk SQL inserts skip the field.
