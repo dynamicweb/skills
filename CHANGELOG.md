@@ -3,7 +3,14 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
-## [Unreleased]
+## [5.1.3]
+
+A patch release that folds the measured learnings of the 5.1 experiment into the corpus. One
+validator rule now refuses client-exclusivity wording in a `dynamo: true` skill, so the rule
+5.1.1 stated in prose holds at every model tier. The rest is measurement written down where the
+work that hits it reads it: the data-access verb and tool traps a live DW 10.28 host produced,
+and the Swift 2 storefront traps a measured rebrand hit, both as table rows. It adds and
+sharpens rules; it changes no skill contract and no `worksOn` axis.
 
 - **The validator refuses client-exclusivity wording in a `dynamo: true` skill.** "Dynamo only",
   "stops here", "external client stops", "cannot run this skill", or a `compatibility:` value
