@@ -172,7 +172,18 @@ The prescribed motion:
    condition** rather than in the generated sheet, so the model never lies.
 6. Head load order is load-bearing: `default_custom.css` **then** `<customer>_custom.css`.
 
-**Two brand tokens the model cannot reach — both are Tier-1 declarations, so plan for them.**
+**Three brand tokens the model cannot reach, all Tier-1 declarations, so plan for them.**
+
+- **The per-edge fills of the theme's edge motif.** `theme-default` paints a section-edge motif
+  (`--td-edge-mask`) on the home page's section boundaries and on the footer crest, and each edge takes
+  its fill from a neighbour: the footer crest reads `--dw-color-background` off the `<footer>` element
+  while the dark colour scheme sits on the footer's inner grid rows, and a section edge reads the row
+  below it. On a stock light delivery every edge therefore computes white over white and nothing is
+  visible, with no error and with the motif's rules present in the CSSOM. The sheet's own notes say a
+  brand sets the fills when both sides match: declare `--td-edge-fill-hero`, `--td-edge-fill-alt` and
+  `--td-edge-fill-footer` in `:root` in `<customer>_custom.css` (a tint on a light ground, the ink on a
+  dark one). Assert the computed `background-color` of each edge pseudo-element differs from the ground on
+  both of its sides; an edge whose fill equals its ground on either side is a red row, not a skipped one.
 
 - **The contrast half of the accent pair.** A custom colour id is letters, digits and underscore only and
   emits `--dw-color-{id}`, so `accent` is writable and a hyphenated `accent-contrast` is not — and the

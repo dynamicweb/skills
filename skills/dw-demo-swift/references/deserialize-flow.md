@@ -274,12 +274,14 @@ If a host restart turns out to be necessary in practice (for a category not cove
 
 ### Mandatory consumer obligation — bind the area's commerce columns (DW 10.28+)
 
-After the deserialize (and before declaring the storefront correct), **bind `AreaEcomShopId`, `AreaEcomCurrencyId`, and `AreaEcomLanguageId` explicitly on every content area, then restart the host**. This was always documented as a consumer obligation; on **DW 10.28+ it is mandatory in practice**: the platform resolves an **unbound** area's currency from the area **CULTURE**, not from `CurrencyIsDefault` — an `en-US`-culture area silently prices in **USD** (currency-conversion surprises in cart/checkout on a EUR demo), even though EUR is the default currency. Bind the area currency explicitly; never rely on the fallback:
+After the deserialize (and before declaring the storefront correct), **bind `AreaEcomCurrencyId` and `AreaEcomLanguageId` explicitly on every content area, then restart the host**. This was always documented as a consumer obligation; on **DW 10.28+ it is mandatory in practice**: the platform resolves an **unbound** area's currency from the area **CULTURE**, not from `CurrencyIsDefault` — an `en-US`-culture area silently prices in **USD** (currency-conversion surprises in cart/checkout on a EUR demo), even though EUR is the default currency. Bind the area currency explicitly; never rely on the fallback:
 
 ```sql
-UPDATE Area SET AreaEcomShopId = 'SHOP1', AreaEcomCurrencyId = 'EUR', AreaEcomLanguageId = 'LANG1'
+UPDATE Area SET AreaEcomCurrencyId = 'EUR', AreaEcomLanguageId = 'LANG1'
 WHERE AreaId = <area>;  -- then restart the host (Area rows materialise at startup)
 ```
+
+**`AreaEcomShopId` is the third column, and it has a precondition the other two do not: bind it only after every browsable group carries a shop relation.** A bound shop makes the platform enforce group-in-shop on every product page, and a subgroup with no `EcomShopGroupRelation` row of its own answers HTTP 200 with a `dw-error` block where the catalogue app should be (`NullReferenceException` in `IsGroupInCorrectShop`, from `RenderProduct`); the PDP addressed through a top group renders, the same product through its subgroup does not, and every PDP probe on that path goes red at once. An unbound area skips the check entirely, which is why the shape ships unnoticed, and price resolution does not need the shop binding (a price row with an empty `PriceShopId` matches any shop). So: relate every browsable group, subgroups included, to the shop first (MCP `save_groups` with `shopId` on the subgroups too, per [`canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md) step 8; count the shop relation rows against the browsable group count before binding), then bind the shop; or leave the shop unbound and say so in the ledger. Verify by fetching one PDP through a subgroup and asserting zero `dw-error` blocks.
 
 **Local installs only**: on a hosted install, bind them with MCP `save_areas` and confirm each value echoes in `get_area_by_id`, or round-trip the full `GetAreaById` model through `AreaSave`, then restart through the CloudHosting `recycle.txt` control file.
 
@@ -366,7 +368,7 @@ no benefit, and the working reference area carries an empty one.
 
 After this flow returns 2xx, **immediately run [`integrity-sweep.md`](integrity-sweep.md)**. The skill refuses to declare deserialize complete until the sweep passes.
 
-**Also bind the area's commerce columns** (§7 "Mandatory consumer obligation") — `AreaEcomShopId` / `AreaEcomCurrencyId` / `AreaEcomLanguageId` explicitly per area + host restart; on DW 10.28+ an unbound area derives its currency from the area culture (en-US → USD), not `CurrencyIsDefault`.
+**Also bind the area's commerce columns** (§7 "Mandatory consumer obligation") — `AreaEcomCurrencyId` / `AreaEcomLanguageId` explicitly per area + host restart; on DW 10.28+ an unbound area derives its currency from the area culture (en-US → USD), not `CurrencyIsDefault`. `AreaEcomShopId` only after every browsable group is related to the shop (§7), or subgroup product pages render a `dw-error`.
 
 **Also bind the site root** (§7 "Site root `/` 404s after deserialize") as an explicit post-deserialize step: `AreaDomain` / `AreaFrontpage` are per-environment and excluded from serialization, so `/` 404s until you set them — `UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>` (SQL is the working path: `AreaSave` accepts `domain` / `hostNames` and no-ops on `AreaDomain`), **then restart the host** (Area rows materialise at startup). The integrity sweep's done-condition includes `/` returning 200.
 

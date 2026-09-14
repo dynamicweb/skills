@@ -402,6 +402,15 @@ small related blocks into one multi-column row instead of a long single-column s
     the stock ids there sets ids that resolve to nothing — applying this fix by literal reproduces
     the symptom it describes. Set whatever those two tools return, in the same `save_areas` call
     that creates the area, then read the area back and confirm the ids match.
+17. **A button with `LinkType: "page"` drops the query string, so a group link is stored as a URL.**
+    The button view model resolves a page link to the page's friendly URL and discards everything
+    after the page id: `{LinkType:"page", Link:"Default.aspx?ID=<shop page>&GroupID=<group>"}` renders
+    `href="/<culture>/shop"` and every "Browse <group>" button opens the whole shop unfiltered, with
+    the stored value reading back exactly as written. Store a link that carries a query as
+    `LinkType: "url"` with the culture-segment address (`/<culture>/shop?GroupID=<group>`, the
+    prefix measured from a page that answers 200, never derived from a name). Verify on the served
+    page (`fetch_frontend_page_html`): the anchor's `href` carries `GroupID=`; a field read-back
+    proves storage, never the rendered link.
 
 ## Row layout — settable, and what the row look depends on
 
