@@ -13,7 +13,7 @@ Field-validated DW10 knowledge: the `reference_category` mechanic, the 7-conditi
 - [The widget envelope: what each widget honours and discards](#the-widget-envelope-what-each-widget-honours-and-discards)
 - [MCP payload contracts — dashboards + widgets](#mcp-payload-contracts--dashboards--widgets)
 - [Building dashboards + widgets via MCP — three blockers](#building-dashboards--widgets-via-mcp--three-blockers-that-look-like-nothing-rendered)
-- [Recovery recipe: Seed `reference_category` parent row](#recovery-recipe-seed-reference_category-parent-row)
+- [Recovery: the `reference_category` parent row](#recovery-the-reference_category-parent-row)
 
 ## `reference_category` — the load-bearing template category
 
@@ -77,13 +77,13 @@ query the translated fields per language instead.
 
 Rules surface in admin UI in three places: on each product (Data Completeness panel), on each catalog group ("Completion rules" tab), and implicitly through governance widgets. For all three to work:
 
-1. **`reference_category` must exist as a full parent + child set.** This is where admin UI resolves every rule field. Required order when seeding from scratch: 1a parent category row (`CategoryType=2`) → 1b parent translation → 1c mirror every concrete-category field row into `reference_category` (with `FieldCategoryId='reference_category'`) → 1d mirror every concrete-category field TRANSLATION row. For the SQL, run the idempotent ["Recovery recipe: Seed `reference_category` parent row"](#recovery-recipe-seed-reference_category-parent-row) below — it covers 1a + 1b with `IF NOT EXISTS` guards and explains the 1c/1d mirrors.
+1. **`reference_category` must exist as a full parent + child set.** This is where admin UI resolves every rule field. Required order when seeding from scratch: 1a parent category row (`CategoryType=2`) → 1b parent translation → 1c mirror every concrete-category field row into `reference_category` (with `FieldCategoryId='reference_category'`) → 1d mirror every concrete-category field TRANSLATION row. Fields created through `create_category_fields` already carry the 1c mirror; 1a and 1b have no tool, see ["Recovery: the `reference_category` parent row"](#recovery-the-reference_category-parent-row) below.
    Missing the 1a parent row is the #1 cause of "rule is defined and assigned but no panel renders on the product." `Settings → Completeness Rules` list still works and the `ProductCompletenessRulesByProductId` API still returns correct data — that's what makes this so misleading.
 2. **Rule exists** — row in `EcomCompletionRules` with field system names pipe-separated in `EcomCompletionRuleProductFields`. Use the full format `ProductCategory|<CategoryId>|<FieldId>`, not the bare field id. Verify via `get_completion_rules` or direct SQL.
    Direct SQL here is local installs only; on a hosted install `get_completion_rules` is the read.
 3. **Rule assigned to a catalog group** — comma-separated rule IDs in `EcomGroups.GroupCompletionRules` **plus** matching languages in `GroupCompletionLanguageIds`. Assignments to data-model groups (GroupType=2) do nothing; they must be on the catalog groups (GroupType=0) that products actually live in.
 4. **Query field names match the side you are on — authoring vs index.** The pipe form `ProductCategory|<CategoryId>|<FieldId>` is the **authoring/value** system name: it is what a rule definition and a value write name. The **index** field name for the same category field is `CustomField_<SystemName>`, and that is what an index predicate or a facet names. Using the bare field id matches nothing on either side; using the pipe form in an index predicate matches nothing in Lucene even though SQL sees values. The rule rows in this file are authoring-side, so they carry the pipe form; a `.query` `FieldExpression Field="..."` attribute is index-side and carries `CustomField_<SystemName>` (see [`dw-search-indexing/references/index-management.md`](../../dw-search-indexing/references/index-management.md) "Custom product fields index as `CustomField_<SystemName>`").
-5. **Index flushed *and* rebuilt after any of the above changed** — `POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}`. Without a rebuild, dashboard counts stay stale and queries return 0. **And if you populated the completeness FIELD VALUES on products via MCP `patch_products_safe` (or SQL), you MUST flush `ProductService` + `ProductCategoryFieldValueService` + `ProductCategoryService` via `CacheInformationRefresh` BEFORE the rebuild** — the builder reads those values through the cache and will otherwise index the empty pre-patch state, so the governance widget shows 0 failing even when products genuinely fail. This is the read-through-cache ordering trap: flush the services first, then rebuild, and treat a "0 failing" widget after a bulk patch as this ordering bug, not an index quirk.
+5. **Index flushed *and* rebuilt after any of the above changed**: `wait_for_product_index` with `repositoryName: "Products"` and `indexName: "Products.index"` (the tool default `Products` addresses no index and answers `completed:true` without building), gated on a non-zero `documentCount` from `get_product_index_status`. Without a rebuild, dashboard counts stay stale and queries return 0. **And if you populated the completeness FIELD VALUES on products via MCP `patch_products_safe` (or SQL), you MUST flush `ProductService` + `ProductCategoryFieldValueService` + `ProductCategoryService` via `CacheInformationRefresh` BEFORE the rebuild**: the builder reads those values through the cache and will otherwise index the empty pre-patch state, so the governance widget shows 0 failing even when products genuinely fail. This is the read-through-cache ordering trap: flush the services first, then rebuild, and treat a "0 failing" widget after a bulk patch as this ordering bug, not an index quirk.
 6. **Host restart after rule changes via raw SQL** — `CompletionRuleService` and `ProductCategoryService` cache in `ServiceCache`. MCP `create_or_update_completeness_rules` / `assign_completion_rules_to_groups` invalidate their slice. Direct SQL INSERT does NOT. Restart the host, or save any rule once from admin UI to force a cache reload.
 7. **`Completeness feature` flag** (under Settings → Feature management) is scoped by which path you are on, and it is **never** the fix for "rules don't show" (that is almost always the `reference_category` parent row in step 1). For the **admin calculation path** keep it OFF: the stable legacy path runs with the flag off and supports rules, group assignments, API evaluation and the admin UI panels, while the flag activates a buggy beta calculation path. For **completeness as an index query term** it must be ON, because `CompletionRule|<id>` index fields populate only with the flag on. Both scopes and the rest of the chain are in ["Nothing scores until a four-gate chain is satisfied"](#nothing-scores-until-a-four-gate-chain-is-satisfied). Do not auto-call `FeatureManagementToggle` either way: it cascades across both the Ecommerce and deprecated Products.UI variants and does not reliably land in the intended state. Ask the user to set it in the admin UI and read it back.
 
@@ -96,32 +96,15 @@ Quick diagnosis when rules "don't show":
 
 ## Completion rule API traps: probing, the auto rule, and deleting
 
-**A missing required parameter on `ProductCompletenessRulesByProductId` answers 500, not 400.** The
-binder leaves `languageId` an empty string and the handler dereferences it, so the `ArgumentException`
-escapes as an unhandled 500 instead of reaching the model-validation layer that produces the normal 400.
-A 500 right after a feature-flag flip reads as "the host is broken" and sends the reader at the
-infrastructure, when the verb works and a parameter was simply omitted:
+**A missing required parameter on the Management API `ProductCompletenessRulesByProductId` answers
+500, not 400.** The binder leaves `languageId` an empty string and the handler dereferences it, so the
+`ArgumentException` escapes as an unhandled 500 naming the parameter. A 500 right after a feature-flag
+flip therefore reads as "the host is broken" when a parameter was simply omitted: only
+`ProductLanguageId` binds, and parameter spelling is not shared across the verb family (`ProductById`
+binds `Id`). A 500 that names a parameter means the verb exists and that parameter bound empty. In product
+the rule read is `get_completion_rules`, which has no such trap.
 
-```
-GET /Admin/Api/ProductCompletenessRulesByProductId?ProductId=<id>
-  -> 500 {"title":"The value cannot be an empty string. (Parameter 'languageId')","status":500}
-Same 500 for &LanguageId=ENU, &languageId=ENU, &ProductLanguage=ENU, &LangId=ENU.
-Only &ProductLanguageId=ENU works -> 200.
-```
-
-Parameter spelling is not shared across the family: `ProductById` binds `Id`,
-`ProductCompletenessRulesByProductId` binds `ProductId` + `ProductLanguageId`, and neither accepts the
-other's spelling. **Triage any verb probe by its failure mode:**
-
-| Response | Meaning |
-|---|---|
-| `"Unknown query: 'X'"` | The verb does not exist |
-| `"Unable to load query parameters for query type"` | The verb EXISTS, the parameter names are wrong |
-| HTTP 500 `ArgumentException` naming a parameter | The verb exists and that named parameter bound empty: supply it |
-
-Re-probe with the named parameter before reporting a host problem. (The dispatcher strips a trailing
-`Query`/`Command` from the class name but NOT a leading `Get`, so `GetLanguagesQuery` is the verb
-`GetLanguages`.)
+Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Probing completion-rule verbs on the Management API".
 
 **`CompletenessOnAllCategoryFields` injects a phantom rule id `0` and creates no rule row.** Enabling
 "Completeness on all Datamodel attributes" on a data-model group makes the group's `completionRules` read
@@ -139,33 +122,19 @@ persisted column disagree.
 - `ProductCatalogGroupSave` is the WRONG verb here: its model has no `completenessOnAllCategoryFields` at
   all, so the save silently drops the setting.
 
-**`CompletionRuleDelete` leaves dangling rule ids behind, and the detach verb cannot reach language-only
-group rows.** `CompletionRuleDelete` never nulls `EcomGroups.GroupCompletionRules`, so deleting a rule
-always leaves dangling ids; normally the detach verb hides that. But a catalogue group with **no row in
-the default language** (only DAN/DEU/FRA/NLD rows, say) is invisible to every group-scoped verb, because
-they all resolve a group through its default-language row:
+**`CompletionRuleDelete` leaves dangling rule ids behind, and language-only group rows cannot be
+detached.** Deleting a rule never clears `EcomGroups.GroupCompletionRules`, so a rule deleted while still
+assigned leaves its id dangling there. Every group-scoped verb resolves a group through its
+**default-language row**, so a catalogue group with no row in the default language (only DAN/DEU/FRA/NLD
+rows, say) answers "The group with the id <G> does not exist" while its rows are in the table.
 
-```
-POST /Admin/Api/CompletionRuleRemoveFromGroup {"GroupId":"<G>","Id":<ruleId>}
-  -> 404 {"status":"notFound","message":"The group with the id <G> does not exist"}
-     ... while SELECT GroupId, GroupLanguageId FROM EcomGroups WHERE GroupId='<G>' returns four rows
-```
+**Detach bindings BEFORE deleting a rule.** Send each affected group its remaining rule set with
+`assign_completion_rules_to_groups` (it replaces the whole assignment), read the assignment back with
+`get_completion_rule_assignments_for_groups`, then call `delete_completion_rules`. A detach is proven by
+the stored assignment, never by the call's answer. No MCP tool is known to reach language-only group
+rows; on a hosted install ask the user.
 
-**Detach bindings BEFORE deleting a rule, and verify the detach against SQL rather than trusting the
-verb.** After any completeness-rule deletion this must return 0:
-
-```sql
-SELECT COUNT(*) FROM EcomGroups
- WHERE ISNULL(GroupCompletionRules,'') <> ''
-   AND GroupCompletionRules NOT IN (SELECT CAST(EcomCompletionRuleId AS varchar) FROM EcomCompletionRules);
-```
-
-For language-only orphan group rows the API offers no reachable channel, so the remaining dangling ids
-are cleared through the sanctioned scheduled-task SQL runner
-(`UPDATE EcomGroups SET GroupCompletionRules='' WHERE GroupCompletionRules='<deletedRuleId>'`), then a
-host restart or a rule save from admin to reload `CompletionRuleService`.
-
-**Local installs only** for the census and the runner: on a hosted install no MCP tool is known to reach language-only group rows, so ask the user.
+Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Detaching a deleted completion rule from its groups".
 
 ## Dashboards — only 7 real areas, don't invent
 
@@ -303,36 +272,12 @@ A dashboard built with `create_dashboards` + `add_widgets_to_dashboards` can be 
 
 **Ordering note:** `add_widgets_to_dashboards` re-normalises the `order` field by appending after the widgets already on the dashboard — your `order` values are not honoured against pre-existing widgets. To land a drill-down grid **below** the KPI counts, add the counts first and the grid last (or remove + re-add the grid after the counts so it appends to the end).
 
-## Recovery recipe: Seed `reference_category` parent row
+## Recovery: the `reference_category` parent row
 
-When the symptom is "completeness rule defined and assigned but no panel renders on the product", the cause is almost always the missing `reference_category` parent row in `EcomProductCategory` (`CategoryType=2`).
+When the symptom is "completeness rule defined and assigned but no panel renders on the product", the cause is almost always the missing `reference_category` parent row in `EcomProductCategory` (`CategoryId='reference_category'`, `CategoryType=2`) together with its `EcomProductCategoryTranslation` row. No MCP tool writes the parent row; on a hosted install ask the user.
 
-> Run in PowerShell, not Bash — Bash interpolation eats `$env:` and `$_` before they reach the script.
+After the parent exists, every concrete-category field row needs its mirror in `reference_category` (`FieldCategoryId='reference_category'`) plus the translation rows, the four-rows-per-field pattern in "Completeness rules" above. `create_category_fields` creates or reuses the reference field before copying it into the target category, so fields created through it already carry the mirror. Then rebuild the Products index with `wait_for_product_index` with `repositoryName: "Products"` and `indexName: "Products.index"` (see [dw-search-indexing](../../dw-search-indexing/SKILL.md)) so completeness widgets pick up the new parent.
 
-```powershell
-# Seed reference_category parent + translation, idempotent (WHERE NOT EXISTS guards).
-# $db is the database name discovered from project files (GlobalSettings.Database.config).
-$seedSql = @"
-IF NOT EXISTS (SELECT 1 FROM EcomProductCategory WHERE CategoryId = 'reference_category' AND CategoryType = 2)
-  INSERT INTO EcomProductCategory (CategoryId, CategoryProductProperties, CategoryType)
-  VALUES ('reference_category', 0, 2);
+Rules and categories written by raw SQL do not reload: `CompletionRuleService` and `ProductCategoryService` keep their `ServiceCache` rows until a host restart.
 
-IF NOT EXISTS (SELECT 1 FROM EcomProductCategoryTranslation
-               WHERE CategoryTranslationCategoryId = 'reference_category'
-                 AND CategoryTranslationLanguageId = 'LANG1')
-  INSERT INTO EcomProductCategoryTranslation
-    (CategoryTranslationCategoryId, CategoryTranslationLanguageId, CategoryTranslationCategoryName)
-  VALUES ('reference_category', 'LANG1', 'Reference category');
-"@
-
-$tmp = New-TemporaryFile
-$seedSql | Set-Content -Path $tmp.FullName -Encoding UTF8
-sqlcmd -S "localhost\SQLEXPRESS" -E -d $db -i $tmp.FullName
-Remove-Item $tmp.FullName
-```
-
-After seeding, you also need to mirror every concrete-category field row into `reference_category` (with `FieldCategoryId='reference_category'`) plus their translations — see "Completeness rules" above for the 4-rows-per-field pattern. Then rebuild the Products index (`POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}` — see [dw-search-indexing](../../dw-search-indexing/SKILL.md)) so completeness widgets pick up the new parent.
-
-If you mutated rules via raw SQL rather than MCP, also restart the host — `CompletionRuleService` and `ProductCategoryService` ServiceCache rows don't reload on raw SQL.
-
-**Local installs only**: on a hosted install no MCP tool is known to write the `reference_category` parent row, so ask the user.
+Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Seeding the `reference_category` parent row".
