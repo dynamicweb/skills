@@ -22,7 +22,10 @@ client runs. It is scanned for instructions on any other surface (`/admin/api`,
 driver) and the per-file count is compared with `scripts/dynamo-baseline.json`. A file above its
 baseline fails; below its baseline is fine, so the pre-existing backlog drains without a flag day.
 Shipping a `scripts/` directory or declaring `compatibility: Requires PowerShell` in a
-`dynamo: true` skill is always an error. `python scripts/validate-skills.py
+`dynamo: true` skill is always an error. So is client-exclusivity wording ("Dynamo only", "stops
+here", a `compatibility:` value naming a client): a skill states a precondition and how to test it
+(`tools/list`); it never tells a client to stop because of who it is, and an unmeasured claim never
+lands as instruction. `python scripts/validate-skills.py
 --update-dynamo-baseline` rewrites the baseline — only after the violations it records are
 genuinely pre-existing.
 

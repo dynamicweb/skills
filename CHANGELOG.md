@@ -3,6 +3,26 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [Unreleased]
+
+- **The validator refuses client-exclusivity wording in a `dynamo: true` skill.** "Dynamo only",
+  "stops here", "external client stops", "cannot run this skill", or a `compatibility:` value
+  naming a client is an error, never baselined. The rule 5.1.1 stated in prose now holds at every
+  model tier: a skill states a precondition and how to test it (`tools/list`); it never tells a
+  client to stop because of who it is, and an unmeasured claim never lands as instruction.
+- **Row-file order is stated as what it is.** The deserializer ignores the manifest's `files[]`
+  list, reads a table directory in culture-sensitive file-name order (a convention, not a
+  contract), and merges two documents of one identity with the later file winning; on a blank
+  host a partial row with no full row beside it inserts a row holding only its columns.
+- **The theme-after-layer upload is stated with its workaround.** Every edition theme's `files/`
+  lands after every composed layer's `files/`, last writer wins per path; a brand layer that must
+  win a theme path is listed as a theme after the default, with a `theme.json` binding equal to
+  the default's so the binding writes nothing.
+- **A listed tool can still be refused.** `mcp-setup.md`'s triage table gains the
+  `Required permission: none. Allowed permission: none.` row: the grant is the MCP configuration's
+  permission preset, not the client; check the preset, fall back to the Management API read, and
+  read a name missing from `tools/list` as a grant to check rather than a tool that does not exist.
+
 ## [5.1.2]
 
 A patch release that names the paths to a branded demo and gives the corpus a default. A measured

@@ -230,11 +230,18 @@ of each other, with B's simpler surface as the tie-breaker.
 - **One zip per mode.** Unzipping a second archive into the same mode folder replaces the whole
   folder. Compose everything the delivery needs into one tree per mode.
 - **Row files are read in file-name order.** Within a table directory, the deserializer reads
-  every document in file-name order, so a partial override row wins only because its file name
-  sorts after the row it overrides. Name brand row files so they sort last, deliberately, and
-  say so in the layer README.
-- **Theme files land after layer files.** A brand layer cannot override a path a theme also
-  ships; put the brand theme in its own theme entry, listed after the default theme.
+  every document and ignores the manifest's `files[]` list; the order is culture-sensitive
+  string order of the file name, a convention, not a contract. Two documents carrying one
+  identity in one directory both merge, and the later file wins, so a partial override row wins
+  only because its file name sorts after the full row it overrides. On a blank host a partial
+  row at the same path as a full row would INSERT a row holding only those columns, so a partial
+  override row is never the only document for its identity. Name brand row files so they sort
+  last, deliberately, keep the full row beside them, and say so in the layer README.
+- **Theme files land after layer files.** Every edition theme's `files/` uploads after every
+  composed layer's `files/`, last writer wins per destination path, so a brand layer cannot
+  override a path a theme also ships. The workaround is a theme entry for the brand layer,
+  listed after the default theme, with a `theme.json` whose binding matches the default so the
+  theme binding writes nothing and only the files land.
 - **Five master fields never travel.** The fields under `excludeFieldsByItemType` are protected
   from deserialize by design. They are a tool step on every path, and they survive a later merge
   redeploy.

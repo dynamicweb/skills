@@ -51,6 +51,13 @@ Checks (errors fail the build, warnings are printed but do not):
     three matching lines; below is fine, so the baseline shrinks as the backlog
     drains. A `scripts/` directory or a `compatibility:` key naming PowerShell in
     a `dynamo: true` skill is always an error, never baselined.
+  - Client exclusivity: a `dynamo: true` skill's SKILL.md and references/*.md
+    may not carry client-exclusivity wording ("Dynamo only", "Dynamo-only",
+    "stops here", "external client stops", "cannot run this skill"), and its
+    `compatibility:` frontmatter may not name a client. A skill states a
+    precondition and how to test it (`tools/list`); it never tells a client
+    to stop because of who it is, and an unmeasured claim never lands as
+    instruction. Always an error, never baselined.
     `--update-dynamo-baseline` rewrites the baseline from the current tree.
   - MCP tool names: every backticked snake_case token shaped like a tool name
     must appear in the registry for the MCP version in play or in that file's
@@ -201,6 +208,22 @@ DYNAMO_PATTERNS = (
     ("Playwright", re.compile(r"(?i)\bPlaywright\b")),
     ("browser_ tool", re.compile(r"\bbrowser_")),
 )
+# Client exclusivity. `dynamo:` is a visibility flag, never an exclusivity
+# flag: a `dynamo: true` skill runs anywhere an MCP client runs. A skill
+# states a precondition and how to test it (`tools/list`); it never tells a
+# client to stop because of who it is, and an unmeasured claim never lands as
+# instruction. Each phrase below is such a stop instruction. Never baselined.
+EXCLUSIVITY_PATTERNS = (
+    ("Dynamo only", re.compile(r"(?i)\bDynamo[ -]only\b")),
+    ("stops here", re.compile(r"(?i)\bstops here\b")),
+    ("external client stops", re.compile(r"(?i)\bexternal client stops\b")),
+    ("cannot run this skill", re.compile(r"(?i)\bcannot run this skill\b")),
+)
+# A `compatibility:` value that names a client asserts who may run the skill
+# rather than what runtime it needs.
+CLIENT_NAME_RE = re.compile(
+    r"(?i)\b(?:Dynamo|Claude(?: Code)?|Codex|Cursor|Copilot|Windsurf|Cline|"
+    r"Gemini|MCP client|external client|in-product)\b")
 
 
 def dynamo_skills() -> list[Path]:
@@ -287,6 +310,39 @@ def check_dynamo_surface() -> None:
                 err(f"{key}: {len(hits)} non-MCP instruction(s) in a `dynamo: true` "
                     f"skill, baseline {allowed} — Dynamo's surface is the MCP tools "
                     f"plus read/write under `Files/`. First: {first}")
+
+
+def exclusivity_hits(f: Path) -> list[tuple[int, str, str]]:
+    """(line number, pattern label, line text) for every stop-by-client phrase."""
+    text = read_text_checked(f)
+    if text is None:
+        return []
+    hits: list[tuple[int, str, str]] = []
+    for i, line in enumerate(text.splitlines(), 1):
+        for label, rx in EXCLUSIVITY_PATTERNS:
+            if rx.search(line):
+                hits.append((i, label, line.strip()))
+                break
+    return hits
+
+
+def check_dynamo_exclusivity() -> None:
+    """A `dynamo: true` skill never tells a client to stop because of who it is."""
+    for skill_dir in dynamo_skills():
+        skill = skill_dir.name
+        compat = parse_frontmatter(
+            read_text_checked(skill_dir / "SKILL.md") or "").get("compatibility", "")
+        m = CLIENT_NAME_RE.search(compat)
+        if m:
+            err(f"{skill}: `dynamo: true` with `compatibility: {compat.strip()}` names "
+                f"a client ({m.group(0)}): `dynamo:` is a visibility flag, never an "
+                "exclusivity flag; `compatibility:` declares a runtime, not who may run "
+                "the skill")
+        for f in dynamo_scan_files(skill_dir):
+            for n, label, line in exclusivity_hits(f):
+                err(f"{dynamo_key(f)}:L{n}: client-exclusivity wording [{label}] in a "
+                    f"`dynamo: true` skill: state the precondition and how to test it "
+                    f"(`tools/list`), never who may run it: {line[:80]}")
 
 
 # ---------------------------------------------------------------- MCP tools
@@ -1246,6 +1302,7 @@ def main() -> int:
     check_script_imports()
     check_orphan_scripts()
     check_dynamo_surface()
+    check_dynamo_exclusivity()
     check_mcp_tool_names()
     check_versions_file()
     check_skill_versions_blocks()
