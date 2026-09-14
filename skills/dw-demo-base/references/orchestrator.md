@@ -2,6 +2,7 @@
 
 ## Contents
 
+- [The build path an orchestrator sequences](#the-build-path-an-orchestrator-sequences)
 - [Running modes](#running-modes)
 - [Standalone — the lightweight in-skill harness (no orchestrator)](#standalone--the-lightweight-in-skill-harness-no-orchestrator)
 - [Detection and deference (the native command set steps aside for GSD)](#detection-and-deference-the-native-command-set-steps-aside-for-gsd)
@@ -44,6 +45,24 @@ Two orchestrators are supported, plus the no-orchestrator floor:
 Both orchestrators read the **same** SKILL.md files; no skill is rewritten for either path. The
 native command set detects GSD and steps aside when it is present, so the two never drive the
 same build.
+
+## The build path an orchestrator sequences
+
+An orchestrator sequences phases; it does not get to invent the build path. **The default path a
+demo build takes is the YAML brand layer**: compose the edition that ships the demo content,
+author a demo-local brand layer over it, deliver and deserialize, and use the tools only for the
+few subjects Deserialize cannot carry. Measured against the alternative on the same brief, the
+same starting layer and the same pins, it finished in 60.5 min against 79.3, spent 1.43 M tokens
+against 2.03 M, landed 88.02 % of brand values by deserialize against none, rebuilt itself in
+176 s, and produced 4 findings against 24.
+
+"Drive the demo build" therefore means: **path A** in
+[branded-demo-paths.md](branded-demo-paths.md), with **path B (deserialize first, then tools)**
+as the explicit alternative an orchestrator selects, and says it is selecting, when one of that
+file's four conditions holds (a small change set, no local compose, a brand that lives in
+subjects with no serialized route, or a throwaway nobody will rebuild). Both paths are supported;
+the choice is made once, before the first brand write, and recorded in the plan doc. Whichever
+path is chosen, the phase order, the gates and the human pause below are unchanged.
 
 ## Running modes
 

@@ -3,6 +3,46 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.1.2]
+
+A patch release that names the paths to a branded demo and gives the corpus a default. A measured
+comparison of the two write channels, run on one brief, one starting layer and one set of pins,
+decided it: branding the YAML first and deserializing it beats rebranding the delivered site
+through the tools. Both paths stay documented and supported; what changes is which one a skill
+teaches first.
+
+- **`dw-demo-base` owns a new reference, `references/branded-demo-paths.md`.** Three paths, each
+  with its ordered steps, a runnable check per step, the artefacts it leaves and what stays
+  repeatable: (A) YAML first, author a demo-local layer of kind `sample-data` over the
+  Distribution's own demo layer and deserialize it, tools only for the master fields
+  `excludeFieldsByItemType` protects; (B) deserialize the edition as shipped, then rebrand through
+  the MCP tools and the Management API; (C) tools only from a blank host. A is the default, B is
+  the explicit alternative, C is the floor.
+- **The default is stated with the numbers behind it.** Path A against path B on the same brief:
+  60.5 min against 79.3, 1.43 M tokens against 2.03 M, 19 hand-made write calls against 1,833,
+  88.02 % of brand values landed by deserialize against none, a full rebuild in 176 s with no
+  tools and no restart against not repeatable as a unit, and 4 findings against 24 of which 9 were
+  tool-path write gaps. The four conditions under which the tool path is still the right one are
+  stated with the same weight: a small change set, no local compose, a brand living in subjects
+  with no serialized route, and a throwaway nobody will rebuild.
+- **The traps both arms hit are written down where the path names them.** Master-only product
+  fields resetting every variant on a master save, orders landing with zero totals, verbs that
+  answer 200 and persist nothing, an account group with no type staying invisible to the CSR, the
+  image handler dropping alpha and answering JPEG for a `webp` request, one zip per serializer
+  mode, row documents read in file-name order, theme files uploaded after layer files, the five
+  master fields Deserialize never carries, and the self-hosted install with no online restart
+  route.
+- **The routing is the point, so it lands in every place that chooses a write surface.** The
+  orchestrator reference now answers "drive the demo build" with path A by default and path B as
+  a deliberate, recorded selection; the native `/demo:build` command routes brand work through the
+  path choice before it routes to a skill; `dw-demo-swift`'s re-skin ladder opens by saying the
+  YAML comes first when the demo starts from the shipped demo layer.
+- **Two statements the merged demo layer had outdated are corrected, not appended to.** The
+  `sample-data` layer is no longer two SQL files (`catalog.sql` plus `identities.sql`): it is the
+  one demo dataset, carrying the browsable catalogue, the three personas on one B2B account, the
+  twelve orders, the storefront copy and the brand assets as row documents, content YAML and
+  `files/`, and a demo rebrands it in place rather than assembling one.
+
 ## [5.1.1]
 
 A patch release that corrects one statement 5.1 shipped as binding text: that the eleven migration tools are Dynamo-only and that an external client must stop. Measured against a live 0.6.0-beta endpoint, the tools are real MCP tools behind a solution-side grant, so the skills now state the condition and tell the client to check `tools/list` instead of stopping.

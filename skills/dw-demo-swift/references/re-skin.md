@@ -2,6 +2,8 @@
 
 > Customer-themed re-skin recipe for a Swift 2 baseline. Defaults to the configuration-only path (admin UI Visual Editor + theme tokens -- see [admin-ui-authoring.md](admin-ui-authoring.md)). Escalation ladder when configuration falls short: (1) project-scoped CSS overrides at `Files/Templates/Designs/Swift-v2/Custom/<customer>_custom.css` consuming the `--dw-*` variables Dynamicweb generates from admin; (2) layout-only `.cshtml` content-layouts for tailored screens; (3) controller/provider `.cs` triggers base's customisations-ledger preflight ([dw-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md)).
 >
+> **Before this file: choose the branding path.** The recipe below is the tool-and-CSS path, which is the right one for a re-skin on top of content that is already on the host and for anything the layer route cannot carry. When the demo starts from the Distribution's `sample-data` layer and the brand touches more than roughly a hundred subjects, the **default is to brand the YAML first** and deserialize it, then come back here for the theme tier and the fixes. The three paths and the measured comparison are owned by [`../../dw-demo-base/references/branded-demo-paths.md`](../../dw-demo-base/references/branded-demo-paths.md).
+>
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
 ## Contents
