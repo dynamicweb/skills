@@ -22,6 +22,18 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   `Required permission: none. Allowed permission: none.` row: the grant is the MCP configuration's
   permission preset, not the client; check the preset, fall back to the Management API read, and
   read a name missing from `tools/list` as a grant to check rather than a tool that does not exist.
+- **Verb and tool traps measured on a live 10.28 host land as table rows in the `dw-data-access`
+  recipes.** Six product fields are master-only by default, so a master save through `ProductSave`,
+  `patch_products_safe` or `update_products` overwrites every variant while echoing success, and the
+  unlock (`ProductAttributeSettingsSave` with `VariantEditing`) comes first (`recipes-pim.md`, beside
+  `ProductAssetByProductKey` ignoring the variant id, the category-field lists answering 0 and the
+  group sort list 500ing); `save_pages` `metaTitle` persisting nothing and `PageSave` taking
+  `Unpublished`, not `Hidden` (`recipes-content.md`); `OrderLineSave` 500ing on its own round-tripped
+  `OrderType` and `GetOrderLineById` needing `OrderId` (`recipes-commerce-orders.md`); `CountryByCode`
+  binding `CountryCode` (`recipes-commerce.md`); `get_product_index_status` reporting a default index
+  the host need not have (`recipes-search.md`); and the round-trip rule by what the call answers
+  (`management-api-and-sql.md`). `dw-pim-modelling`'s structural model says, in MCP terms, that a
+  variant value needs the field to allow changes across variants first.
 
 ## [5.1.2]
 

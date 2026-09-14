@@ -120,6 +120,18 @@ any round-trip save**, and when a `Save` 500s on a verbatim round-trip, bisect t
 hunting the data. `Remove-DwDisplayOnlyMember` in [`../scripts/Dw.Api.psm1`](../scripts/Dw.Api.psm1)
 is the canned strip.
 
+**The round-trip rule, by what the call answers** [dw 10.28.10 · mcp 0.6.0-beta]. Every row was measured on a
+`Get<Entity>ById` model posted back to its `<Entity>Save`, or on the read that precedes one; the
+recipe in the last column carries the verb-level row.
+
+| The call answers | What is true | Do instead | Row |
+|---|---|---|---|
+| 500 naming a `$.<Member>` path that "could not be converted" | The read model carries a member of the parent's type that the save binds as its own enum (`OrderType` on an order line). | Drop that member and post the rest unchanged. | [`recipes-commerce-orders.md`](recipes-commerce-orders.md) "Order-line verb traps" |
+| 500 `Exception has been thrown by the target of an invocation.` on an enum value you set | The value is not a member name in the save enum's casing: the read model returns another casing (`publicationState` reads `published` and saves `Unpublished`), and a natural value such as `Hidden` is no member at all. | Send the member name in the save enum's casing; this 500 is a value error, never a host fault. | [`recipes-content.md`](recipes-content.md) "Page verb and tool traps" |
+| 200 `ok`, echoing the model | A member the entity does not allow at that scope is dropped and the stored value wins (a master-only product field written on a variant). | Read the row back through a reader other than the save's echo. | [`recipes-pim.md`](recipes-pim.md) "Product verb and tool traps" |
+| 400 `Unable to load query parameters` on the read | The verb exists and a required parameter is missing or misnamed (`GetOrderLineById` needs `OrderId` beside `OrderLineId`; `CountryByCode` binds `CountryCode`). | Re-probe with the named parameter before reporting a missing verb. | the two commerce recipes |
+| 500 `Serialization of System.Type is not supported` on the read | The read verb itself is broken on the build while its paired save works (`ProductCatalogGroupsSortList`). | Write, then read back on the rendered surface. | [`recipes-pim.md`](recipes-pim.md) "Product verb and tool traps" |
+
 ### Enum properties on a save model bind by NAME — an integer silently coerces to `default(TEnum)` = 0
 
 **The JSON binder deserialises enum members by name only. A numeric token matches no member, falls through

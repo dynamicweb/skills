@@ -31,6 +31,7 @@ states, order totals, order dates and a test order placed from a seeded cart:
 - [Writing `EcomValidation*` rows by hand](#writing-ecomvalidation-rows-by-hand)
 - [Order-LINE fields need no storage column — but they need a relation row](#order-line-fields-need-no-storage-column--but-they-need-a-relation-row)
 - [The zero-value "add a card" journey needs one global setting](#the-zero-value-add-a-card-journey-needs-one-global-setting)
+- [Country verb parameter names](#country-verb-parameter-names)
 
 **Catalog**
 
@@ -328,6 +329,15 @@ The setting is absent from a stock `GlobalSettings.config`, and therefore `False
 ---
 
 # Catalog
+
+## Country verb parameter names
+
+**Surface: Management API.** The country read binds one parameter name, and the wrong one answers
+as if the verb were missing [dw 10.28.10 · mcp 0.6.0-beta].
+
+| Verb | What it answers | What is true | Do instead |
+|---|---|---|---|
+| `CountryByCode` with `Code` or `Id` | 400 `Unable to load query parameters` | The verb exists and binds `CountryCode`. | `GET /admin/api/CountryByCode?CountryCode=<code>`, then `CountrySave` for the country defaults (the default shipping method among them). |
 
 ## `ProductHidden` is enforced in SQL and unwritable by every API
 

@@ -70,6 +70,14 @@ not served until a Full build runs ([dw-search-indexing](../../dw-search-indexin
 The in-product gate needs neither: pass the full file name including the `.index` extension on every
 MCP call, and gate on a **non-zero `documentCount`** rather than on `completed:true`.
 
+The default is worse than a wrong file name when the repository is not `Products` either, which a
+composed host's repositories need not be [mcp 0.6.0-beta]:
+
+| Tool | What it answers | What is true | Do instead |
+|---|---|---|---|
+| `get_product_index_status` with no arguments | a status for repository `Products`, index `Products` | That pair need not exist on the host, so the status describes nothing. | Always pass the repository and the index name, read from `get_index_repositories`, with the `.index` extension. |
+| `wait_for_product_index` with the default index name | `completed: true`, `Full index build completed` | The default addresses no index, so the wait returns at once with the index untouched. | The same two arguments, then gate on a non-zero `documentCount`. |
+
 The enforced flush-build-poll form is the [`Build-DwProductIndex.ps1`](../scripts/Build-DwProductIndex.ps1)
 script: the cache flush, the non-blocking POST, the freshness-guarded poll, the Error-vs-first-build
 distinction and the 10.28.x status-verb fallback. The contract it implements is stated in the
