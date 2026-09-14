@@ -79,9 +79,14 @@ three stacked traps:
   discarding everything after the page id. `{LinkType:"page", SelectedValue:"8604",
   Link:"Default.aspx?ID=8604&ShowProfiles=True"}` stores and reads back exactly as written and renders
   `<a href="/en-us/sign-in/sign-in">`, so the tile opens a plain sign-in page instead of the profile
-  picker. `LinkType: "external"` (and `url`) pass `Link` through verbatim. Any content button that must
-  carry a querystring uses `LinkType: "external"` with the fully resolved friendly URL and
-  `SelectedValue: ""`, resolved **per language** by the `GET /Default.aspx?ID=<n>` redirect
+  picker. The same shape takes every "Browse <group>" button: `{LinkType:"page",
+  Link:"Default.aspx?ID=<shop page>&GroupID=<group>"}` renders `href="/<culture>/shop"` and opens the
+  whole shop unfiltered, on the hero and on every catalogue pitch button alike, and a shipped demo layer
+  can carry exactly that shape, so read the served `href` of every group button and assert it carries
+  `GroupID=`. `LinkType: "external"` (and `url`) pass `Link` through verbatim. Any content button that must
+  carry a querystring uses `LinkType: "url"` (or `"external"`) with the fully resolved culture-segment
+  address (`/<culture>/shop?GroupID=<group>`) and `SelectedValue: ""`, resolved **per language** by the
+  `GET /Default.aspx?ID=<n>` redirect
   ([admin-ui-authoring.md](admin-ui-authoring.md) §"Resolving a page URL"), never by deriving a slug from
   the page name. The stored `ButtonData` JSON escapes the ampersand as the six-character sequence
   backslash-u-0-0-2-6, so a read-back regex must unescape before comparing.

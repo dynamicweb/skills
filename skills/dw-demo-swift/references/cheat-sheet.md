@@ -5,7 +5,7 @@
 ## What the page contains
 
 - The demo logins — one row per user with username, display name, role. **Neutral phrasing only.**
-- Key URLs — homepage, shop landing, per-category shop URLs, sign-in, customer center, `/Admin`. **Measure the prefix before writing any of them**: it is the area culture as a path segment (`en-US` → `/en-us/`), not the area's url name, which is commonly decorative — fetch a known page under each candidate and keep the one that answers 200 (`dw-swift-building` Core Rules). A cheat-sheet full of 404s is worse than none.
+- Key URLs — homepage, shop landing, per-category shop URLs, sign-in, customer center, `/Admin`. **Measure the prefix before writing any of them**: it is the area culture as a path segment (`en-US` → `/en-us/`), not the area's url name, which is commonly decorative — fetch a known page under each candidate and keep the one that answers 200 (`dw-swift-building` Core Rules). A cheat-sheet full of 404s is worse than none. **For a variant beat, list the combination's own URL** (`...&ProductID=<master>&VariantID=<combination id>`), not the master PDP: on some hosts the variant selector's click updates the URL and the active option but the displayed SKU and price stay on the master, while the direct `VariantID` address renders the right combination; on the same hosts the Management API `VariantCombinationsByProductId` answers 500 and MCP `get_variant_combinations` lists single options instead of combinations, so the combination records are the likely cause. Verify a variant by its URL (read `[itemprop=sku]` and the price), never by the click, and rehearse the beat from the listed address.
 - A small "catalogue at a glance" facts panel — counts, not pitch angles.
 
 ## Customer-safety rules

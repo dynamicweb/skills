@@ -211,19 +211,29 @@ of each other, with B's simpler surface as the tie-breaker.
   customer centre on demo day.
 - **A 200 is not a write.** Several page and product verbs answer success and persist nothing.
   Verify by reading the rendered page or re-reading the row, never by the response body.
-- **An account group needs a type.** A group with an empty type does not list in the CSR's
-  accounts screen even though every relation is correct.
-- **A country needs a default shipping method** or the checkout preselects whichever method
-  sorts first, not the one the demo wants.
+- **An account group needs a type, and the CSR group needs a relation over it.** The CSR accounts
+  screen lists only groups of type `SystemAccount`, so a group with an empty type does not list even
+  though every relation is correct, and the CSR users screen stays empty until the CSR group holds an
+  impersonation relation over the account group. A shipped demo layer can arrive with both missing;
+  sign in as the CSR on a fresh delivery and read the accounts page before trusting the persona note.
+- **A country needs a default shipping method.** With the country's default empty the checkout
+  preselects a method by its own rule, not by sort order (a method sorting later was preselected over
+  the one sorting first), and when only one method is valid for the country it preselects nothing at
+  all, with the hidden empty radio checked. Set the country's default shipping method rather than
+  narrowing the method list or relying on sort.
 
 **Assets.**
 
-- **The image handler drops alpha.** A transparent logo requested through the handler comes back
-  opaque, and a `format=webp` request can answer JPEG. Bind opaque sources for brand marks, or
-  check the served bytes rather than the source file.
+- **The image handler drops alpha.** The handler answers JPEG for a `format=webp` request and for a
+  request with no format; only `format=png` keeps a PNG's alpha. A transparent logo routed the default
+  way paints on a solid box (a white inverse mark on a dark footer is where it shows), and a probe that
+  counts `naturalWidth` passes it. Request transparent marks with `format=png` or bind them as inline
+  SVG, and check the served content type or the first bytes rather than the source file.
 - **An asset id can render as alt text.** The product gallery uses the asset row id for `alt`, so
-  the shipped keys leak into the markup of a branded PDP. Renaming rows does not reach it; it is
-  a template-level defect, worth knowing before the crawl finds it.
+  the shipped keys leak into the markup of a branded PDP. No verb renames an asset row id, and a
+  delete plus re-add loses the default flag, the sort and the variant inheritance, so the online
+  path does not reach it: ship a `DetailsName` on every image row in the layer, or override the
+  gallery template to use the asset name; a probe asserts no `alt` matches the layer's key prefixes.
 
 **Serialize and deliver.**
 

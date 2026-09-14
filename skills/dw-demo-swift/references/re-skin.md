@@ -106,6 +106,9 @@ Fetch the served HTML of the storyline page set and grep it for the shipped base
 | `Whether it's in our homes` | the USP / features band rendering an unwritten field's `defaultValue` |
 | `High Quality Products and Parts` | the shipped hero headline |
 | `Swift` inside `header`/`footer` brand slots | the platform wordmark still standing in for the customer mark |
+| `NO ICON` (inline SVG in the footer navigation) | `Swift-v2_PageProperties` items shipped with `Icon` set to the placeholder sentinel `/Files/Icons/1_none.svg`, which the navigation template inlines as an SVG that draws those words; clear the `Icon` field on every page-properties item that carries it (`set_item_field_values`, value `""`), never treat the sentinel as "no icon" |
+| `alt="<the layer's asset row id prefix>"` on PDP gallery images (the shipped demo layer's rows read `TC-DETAIL-`, `TC-HOVER-`, `TC-GAL-`) | the stock PDP gallery uses the asset row's id as `alt`, so serialized row ids leak onto every PDP; no verb renames an asset row id (delete and re-add loses `IsDefault`, sort and variant inheritance), so ship a `DetailsName` on every `Images` row in the layer, or override the gallery template to use the asset name or the product name |
+| `alt="/Files/` on the header and footer logo | `Swift-v2_Logo` renders the image path as the `alt`; `LogoName` feeds the `title`, not the `alt`, and no item field sets it, so a brand pass cannot fix it online; accept it as a shipped template defect recorded in the ledger, or repoint the paragraph at a net-new Custom-lane copy that uses `LogoName` as `alt`; an accessibility probe asserts no `img` `alt` begins with `/Files/` |
 
 ```powershell
 $pages   = @('/', '/shop', '/customer-center')      # plus every storyline page and language prefix
@@ -211,6 +214,7 @@ Operates on a deserialized Swift 2.4 composition (framework-only `base` + `surfa
 
 - Drop the customer's logo file into `<demo>\Dynamicweb.Host.Suite\wwwroot\Files\Images\<customer>-logo.svg` (or `.png`).
 - Admin UI: Pages → `Header _ Footer` → Header paragraph → Logo property → set to `Files/Images/<customer>-logo.svg`.
+- **A transparent PNG mark goes through the image handler as `format=png`, or as inline SVG.** `GetImage.ashx` answers `image/jpeg` for `format=webp` and for a request with no format at all; only `format=png` returns a PNG. A transparent logo routed the default way therefore loses its alpha and paints on a solid box, most visibly a white inverse wordmark on a dark footer, and a probe counting `naturalWidth` passes a boxed logo. Read the served bytes (a JPEG starts `FF D8 FF`) or the `Content-Type`, not the source file; the same handler's resolution rule is in [`asset-organisation.md`](asset-organisation.md) §6. The logo's `alt` is a separate shipped defect, in the Step 0.1 tripwire table.
 
 ### 2. Theme tokens (color palette + typography)
 
