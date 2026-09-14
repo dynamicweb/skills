@@ -13,7 +13,7 @@
    "mcpVersion": "not in the endpoint tool set",
    "platform": "any",
    "toolCount": 11,
-   "note": "tools no captured tools/list registers: neither the 0.4.4 nor the 0.6.0 FullAccess capture carries them. The 0.6.0 add-in assembly still declares them in a migration tool class, one of whose descriptions says it is invoked in-process by the in-product assistant, so an external MCP client cannot call them and no permission grant adds them. A skill citing one states that, and names the registered replacement for the construction or says plainly that nothing replaces it."
+   "note": "tools no captured tools/list carries: neither the 0.4.4 nor the 0.6.0 capture lists them. They are real MCP tools: the 0.6.0 add-in declares all eleven with the ordinary tool attribute on its migration tool class, and that class alone carries a class-level restriction marker, so a configuration without the grant neither lists them nor may call them. A call answers 'Access denied. MCP configuration <name> is not allowed to call tool <tool>. Required permission: Read. Allowed permission: none.' (measured 2026-09-14 on a 604-tool configuration). The condition is the solution-side grant, not the client: a skill citing one says so, tells the client to check tools/list, and names the registered replacement for the construction or says plainly that nothing replaces it."
   }
  },
  "notTools": [

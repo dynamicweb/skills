@@ -3,6 +3,14 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.1.1]
+
+A patch release that corrects one statement 5.1 shipped as binding text: that the eleven migration tools are Dynamo-only and that an external client must stop. Measured against a live 0.6.0-beta endpoint, the tools are real MCP tools behind a solution-side grant, so the skills now state the condition and tell the client to check `tools/list` instead of stopping.
+
+- **`dynamo:` is a visibility flag, never an exclusivity flag.** The README, `CLAUDE.md` and the validator docstring now say it in those words: `dynamo: true` publishes the skill to the in-product assistant and constrains its content to what an MCP client can execute, and the skill runs anywhere an MCP client runs. The ratchet is unchanged.
+- **The "Dynamo only" gating is removed from `dw-pim-migrate-dw9`, `dw-swift-migrate-content` and `dw-swift-migrate-v1`.** The `compatibility:` key, the "Dynamo only" section, the "an external client stops here" instruction and the "no permission grant adds them to the endpoint" claim are gone. Each skill now opens with a tool-availability section that says the family is declared on the add-in's migration tool class, that the class is marked restricted so an MCP configuration sees it only once granted, and that the client calls `tools/list` and runs the skill when the names are there.
+- **The tool registry records the measured denial.** `scripts/mcp-tools/0.6.0.json` keeps the eleven under `not-on-endpoint` as unlisted names, and now records what a call actually answers, `Access denied ... Required permission: Read. Allowed permission: none`, rather than asserting no grant can reach them.
+
 ## [5.1.0]
 
 The 5.1 release. It empties the Dynamo baseline, moves the MCP axis to the measured `Truvio.Commerce.MCP` 0.6.0-beta, sweeps the serializer rename and marks every SQL block local-install only. It changes one `worksOn` axis (the MCP add-in) and no skill contract.

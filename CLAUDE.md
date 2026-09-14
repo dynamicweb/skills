@@ -15,7 +15,9 @@ session cannot have run them.
 
 The linter also **ratchets the Dynamo surface**: a `dynamo: true` skill is served to the agent
 running inside the product, whose whole surface is the MCP tool set plus read/write under `Files/`,
-so its SKILL.md and references are scanned for instructions on any other surface (`/admin/api`,
+so its SKILL.md and references are scanned. The ratchet constrains the skill's *content*, never
+where it may run: `dynamo: true` means usable in Dynamo, MCP-only content, runs anywhere an MCP
+client runs. It is scanned for instructions on any other surface (`/admin/api`,
 `sqlcmd`, `Invoke-RestMethod`, fenced shell or SQL blocks, `git`, `dotnet`, `.csproj`, a browser
 driver) and the per-file count is compared with `scripts/dynamo-baseline.json`. A file above its
 baseline fails; below its baseline is fine, so the pre-existing backlog drains without a flag day.

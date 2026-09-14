@@ -226,7 +226,10 @@ auto-discover skills; Claude Code does not use it (it loads skills via `marketpl
 still sees every skill).
 
 Every skill declares its **Dynamo visibility** in frontmatter — `dynamo: true` puts it in the
-manifest, `dynamo: false` leaves it out entirely. Dynamo runs inside a Dynamicweb install with
+manifest, `dynamo: false` leaves it out entirely. The flag is visibility, never exclusivity: a
+`dynamo: true` skill is *usable in Dynamo*, its content is held to what an MCP client can
+execute, and it runs anywhere an MCP client runs: Claude Code, Dynamo, any other agent. No skill
+is Dynamo-only, and no skill tells a client to stop because it is not Dynamo. Dynamo runs inside a Dynamicweb install with
 MCP tools and read/write access under `Files/`; it has no shell, SQL, git, browser, or csproj.
 A skill whose steps need one of those (the demo chain, local install/upgrade, ngrok, MCP tool
 authoring, source browsing) is `dynamo: false`, because offering it to an in-product admin is

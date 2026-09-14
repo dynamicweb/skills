@@ -10,6 +10,10 @@ Checks (errors fail the build, warnings are printed but do not):
     ": " that fail the real loader with "mapping values are not allowed here".
   - Each skill `description` is within the 1024-char frontmatter cap.
   - Each SKILL.md declares `dynamo: true | false` (manifest visibility).
+    `dynamo: true` means usable in Dynamo: the skill is published to the
+    in-product assistant and its content is held to what an MCP client can
+    execute. It is a visibility flag, never an exclusivity flag: the skill
+    runs anywhere an MCP client runs.
   - Each SKILL.md declares `mcp: required | optional | none`, and the body
     carries the matching marker section (`## MCP preflight` for required,
     `## Without MCP` for optional, neither for none).
