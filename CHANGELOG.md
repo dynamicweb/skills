@@ -3,6 +3,16 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.1.0]
+
+The 5.1 release. It empties the Dynamo baseline, moves the MCP axis to the measured `Truvio.Commerce.MCP` 0.6.0-beta, sweeps the serializer rename and marks every SQL block local-install only. It changes one `worksOn` axis (the MCP add-in) and no skill contract.
+
+- **The Dynamo baseline is empty and the ratchet is a hard error (#138 to #141).** Four stacked PRs split the out-of-product steps of every `dynamo: true` skill into the `dw-data-access` recipes: content and Swift (100 to 81), commerce (81 to 49), PIM (49 to 27), then search, permissions, audit trail and providers (27 to 0). The source skills keep the platform facts, cite the MCP tools, and point to the recipes. `recipes-extend.md` is new. `scripts/dynamo-baseline.json` is now `{}` and stays in place, so every file reads as 0 and one non-MCP instruction in any `dynamo: true` file fails validation.
+- **The MCP add-in moves to the measured `Truvio.Commerce.MCP` 0.6.0-beta (#137).** `scripts/mcp-tools/0.6.0.json` replaces `0.4.4.json` as the only supported registry (604 tools, the same name set as 0.4.4). `versions.json` records floor `>=0.6.0-beta`, measured `0.6.0-beta`, and the validator resolves a pre-release measured version by its core. The 11 migration tools the endpoint does not serve are stated as a measured fact, and `dw-pim-migrate-dw9`, `dw-swift-migrate-content` and `dw-swift-migrate-v1` are marked Dynamo-only through `compatibility:`.
+- **Every SQL block is marked local-install only and names its online equivalent (#136).** 324 SQL locations audited: 123 fixed, 13 already compliant, 95 findings where a hosted install has no verifiable path and the build asks the user. The online-mode probe 4 no longer reads the hosted database: it uses MCP read tools, then Management API queries, and records a read neither answers as unverified.
+- **The serializer rename is swept and `api.json` no longer passes as a key proof (#135).** The corpus teaches `Serialize`, `Deserialize` and `PackageDownload`, with the old names only in the deprecated-alias table. `serializer-reference.md` documents `PackageUnzip` (Serializer 1.0.1-beta), and the online route for a serialized tree is `Upload`, then `PackageUnzip`, then `Deserialize`. `api.json` answers without a key check, so a key is proven on `McpConfigurationAll`. Admin API payloads stay ASCII, since a curly apostrophe through a bash argument answers a transcode 500. The serializer floor is read from `compat.apps`, not the deprecated `minSerializerVersion`.
+- **The serializer axis is unchanged.** `versions.json` still records Serializer floor `>=1.0.0-beta`, measured `1.0.0-beta`; the 1.0.1-beta surface is documented from the Serializer's own release, and the measured value moves only with a release that re-measures it.
+
 ## [5.0.1]
 
 A patch release that folds the learning backlog the 5.0 end-to-end rounds refilled. It adds and corrects rules; it changes no contract and no `worksOn` axis.
