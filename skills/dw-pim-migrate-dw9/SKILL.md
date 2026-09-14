@@ -4,27 +4,36 @@ type: flow
 group: pim
 mcp: required
 dynamo: true
-compatibility: 'Dynamo only. Runs inside Dynamo, the in-product assistant, where the DW9 import tools it drives run in-process. External MCP clients do not have them on the /admin/mcp endpoint of Truvio.Commerce.MCP 0.6.'
 description: 'Migrate a Dynamicweb 9 (DW9) solution''s product structure and catalog data into a Dynamicweb 10 PIM with the migrate_dw9_export, run_dw9_product_import, and assign_dw9_products_to_data_models tools. Triggers: upgrade or migrate a DW9 warehouse/catalog to DW10, import a DW9 product export, map DW9 groups onto DW10 Data Models, "0 warehouse shops"/"0 memberships" after a DW9 import. Non-triggers: migrating DW9 CMS content/pages (a separate, unrelated effort); single-product creation or Data Model design -> dw-pim-modelling; an in-place DW9->DW10 platform version upgrade -> dw-setup-upgrade.'
 ---
 
 # Migrate DW9 Products into DW10 PIM
 
-## Dynamo only
+## Tool availability: call `tools/list` before planning
 
-This skill runs **inside Dynamo**, the in-product assistant, where `migrate_dw9_export`,
-`run_dw9_product_import`, `get_dw9_product_import_status` and `assign_dw9_products_to_data_models`
-are available in-process. An external MCP client (Claude Code or any other agent) does not have
-them: the add-in declares the family in its migration tool class for in-process use, and
-`tools/list` on `/admin/mcp` carries none of them, even with a FullAccess key [mcp 0.6.0-beta]. No
-permission grant adds them to the endpoint. Inside Dynamo, confirm the four tools are in the
-session's tool list before Phase 1; if they are not, stop and say so.
+`migrate_dw9_export`, `run_dw9_product_import`, `get_dw9_product_import_status` and
+`assign_dw9_products_to_data_models` are ordinary MCP tools: the add-in declares them on its
+migration tool class, and that class is marked restricted, so they reach an MCP configuration
+only once that configuration has been granted them. Without the grant the names are absent from
+`tools/list` and a call answers `Access denied ... Required permission: Read. Allowed permission:
+none` [mcp 0.6.0-beta]. That is a grant on the solution, not a property of the client: Dynamo and
+an external client alike get the family when the configuration they connect with carries it.
 
-**An external client stops here and tells the user to run the migration from Dynamo.** No
-registered tool replaces the family: the DW9 structure mapping (Phase 1) and the product to data
-model memberships (Phase 3) exist only in these tools, and the registered Data Integration tools
-(`create_integration_activity`, `run_integration_activity`, `get_integration_activity_status`)
-build neither, so they are not a partial substitute. Never an invented HTTP call.
+So **call `tools/list` first and read the answer**, in Dynamo and outside it:
+
+- The four names are present: run the skill as written. Nothing below applies.
+- They are absent: name the missing tools and say the fix is to grant the migration tools to the
+  MCP configuration this session connects with (the denial text names that configuration), then
+  call `tools/list` again. Never tell the user the skill cannot run on this client.
+
+While the grant is missing, **no registered tool replaces the family.** The DW9 structure mapping
+(Phase 1) and the product to data model memberships (Phase 3) exist only in these tools. Stop and
+ask the user how to proceed. The honest options are the grant above, or the admin screen that
+performs the import (**Settings > Integration > Data integration**, with the DW9 export as the
+source) plus the Data Model mapping this skill prescribes; the registered Data Integration tools
+(`create_integration_activity`, `run_integration_activity`, `get_integration_activity_status`) can
+run an import activity the user has approved, but they build neither the structure nor the
+memberships. Never an invented HTTP call.
 
 ## MCP preflight
 
