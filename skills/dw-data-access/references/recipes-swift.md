@@ -17,6 +17,9 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Grid row members no MCP tool reaches](#grid-row-members-no-mcp-tool-reaches)
 - [Style assets: replay a palette from a stored file](#style-assets-replay-a-palette-from-a-stored-file)
 - [Area master item fields: which save writes which editor, and the cached area](#area-master-item-fields-which-save-writes-which-editor-and-the-cached-area)
+- [Restart the host to drop cached composition](#restart-the-host-to-drop-cached-composition)
+- [Wire an Area to a brand's Style assets](#wire-an-area-to-a-brands-style-assets)
+- [Discipline audit grep pack](#discipline-audit-grep-pack)
 
 ## Field display groups — create, translate and wire
 
@@ -50,8 +53,11 @@ populated. The data lands in `EcomFieldDisplayGroupFields`, `EcomFieldDisplayGro
 **Surface: Management API.** `GridRowCreate` / `GridRowSave` / `GridRowCopy` / `GridRowSort` at
 `/admin/api/<Verb>` reach every row member, including `GridRowActive`, `GridRowContainerWidth`, the
 `GridRowTopSpacing` / `GridRowBottomSpacing` tokens and `GridRowSort`; `GridRowSave` also mints a
-missing row item. `GridRowSave` with `ID:0` answers 404 — it is update-only, and `GridRowCreate` is
-the create.
+missing row item. The update posts to `POST /Admin/Api/GridRowSave?Query.Type=GridRowById`.
+`GridRowSave` with `ID:0` answers 404: it is update-only, and `GridRowCreate` is the create. Where a
+build's `save_grid_rows` model lacks a member (one host's model carried only `active`,
+`backgroundImage`, `colorSchemeId`, `container`, `definitionId`, `id`, `itemType`, `pageId` and `sort`,
+and rows it created came back with `GridRowItemId` NULL), these verbs are the route for that member.
 
 Use these before SQL for every member they carry. Row activation, container width and the spacing
 tokens are all on the verb, so a SQL `UPDATE GridRow` for any of them is a rung too low and buys a
@@ -126,3 +132,87 @@ no-op round trip, `GetAreaById` via `/Admin/Api/GetAreaById` then `AreaSave` pos
 unchanged (a partial model wipes what it omits), or a host recycle. Verify on the served head, never on
 the item readback. Measured: the next request after the round trip served the new head, and the
 `SelectedImage` values written over MCP survived the round trip. [dw 10.28.10 · mcp 0.4.4]
+
+## Restart the host to drop cached composition
+
+In-product home: [dw-swift-building](../../dw-swift-building/SKILL.md)
+(`component-system-and-reskin.md`, "5. Grid composition cache: restart required", and
+"`EcomFieldDisplayGroups` cache invalidation").
+
+**Surface: local process control (PowerShell).** The grid composition cache (which paragraphs sit in
+which grid rows), the `EcomFieldDisplayGroups` cache and the resolved Area style URLs survive admin
+"Cache > Clear all" and every save; only a host process restart repopulates them. On Windows with a host
+started by `dotnet run`:
+
+```powershell
+Get-Process dotnet -ErrorAction SilentlyContinue | Where-Object { $_.StartTime -gt (Get-Date).AddDays(-2) } | Stop-Process -Force
+Start-Process dotnet -ArgumentList "run","--no-build" -WorkingDirectory "<host>\Dynamicweb.Host.Suite" -RedirectStandardOutput "<host>.log" -NoNewWindow
+```
+
+After the restart, wait for the port to listen, then request the page once to warm JIT before any
+verification. **Local installs only**: a hosted install exposes no restart surface to MCP or the
+Management API, so an online build asks the user (or the hosting operator) to recycle the application.
+Batch the writes that owe a restart so one recycle pays for all of them.
+
+## Wire an Area to a brand's Style assets
+
+In-product home: [dw-swift-building](../../dw-swift-building/SKILL.md)
+(`component-system-and-reskin.md`, "Wiring the Area to a brand").
+
+**Surface: `SQL`.**
+
+```sql
+UPDATE Area SET
+  AreaColorSchemeGroupId = '<brand>',   -- root Id from ColorSchemes/<brand>.json
+  AreaColorSchemeId      = 'light',     -- which scheme is the area default
+  AreaButtonStyleId      = '<brand>',
+  AreaTypographyId       = '<brand>'
+WHERE AreaId = <area>;
+```
+
+- **Why the higher surfaces do not cover it**: no MCP tool is known to write these four `Area` columns.
+- **Local installs only**: a hosted install has no SQL surface and no known write path for the
+  columns, so an online build asks the user.
+- **The debt it owes**: a host restart ("Restart the host to drop cached composition", above), so the
+  resolved style URLs reload.
+
+Verify on the served page: the head carries three new `<link>` entries under
+`Styles/ColorSchemes/`, `Styles/Buttons/` and `Styles/Typography/`
+(`curl -ks <host>/ | grep -E 'Styles/(ColorSchemes|Buttons|Typography)/'`, or `fetch_frontend_page_html`).
+
+## Discipline audit grep pack
+
+In-product home: [dw-swift-building](../../dw-swift-building/SKILL.md)
+(`component-system-and-reskin.md`, "10. Discipline audit: grep pack").
+
+**Surface: local filesystem and git (PowerShell).** Scans a Swift build's templates against the
+canonical surfaces before the build is declared ready; each hit is a candidate finding and a clean run
+is the green light. `$Root` is the folder that holds `Templates\`. **Local installs only**: in product,
+or on a hosted install, read the templates under `Templates/Designs/Swift-v2/` with the MCP tools
+`list_files` and `read_file` and apply the same patterns; check 9 needs the git history and has no
+in-product equivalent. Read-only, nothing owed.
+
+```powershell
+$Root = "<solution>\Dynamicweb.Host.Suite\wwwroot\Files"
+$Slug = "<area-url-slug>"   # a hardcoded area prefix to scan for
+
+# 1. Raw DB access in Razor (use Services.* per render-razor.md)
+gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'Database\.(CreateDataReader|ExecuteScalar|ExecuteReader|ExecuteNonQuery)'
+# 2. Substring scans on URL/query (use page-id helpers + Pageview.User)
+gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'PathAndQuery\.IndexOf|QueryString\.ToString|Url\.AbsoluteUri\.Contains'
+# 3. Hard-coded area prefixes
+gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String "/$Slug/"
+# 4. Default.aspx?ID= synthesized links
+gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'Default\.aspx\?(ID|GroupID|ProductID)='
+# 5. Category-name substring branching (use ProductGroup field)
+gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String '\.PrimaryOrDefaultGroup.*\.(Name|Title).*\.(Contains|StartsWith)'
+# 6. Generic-item-type shim smell (project files under generic item folders)
+gci "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\" -Recurse -Filter '*.cshtml' | ? { $_.Name -notlike 'Swift-v2_*' }
+# 7. Inline AddStylesheet / AddScript in master (use Area.Item.CustomHeadInclude)
+gci "$Root\Templates\Designs\Swift-v2\Swift-v2_Master.cshtml" | Select-String 'AddStylesheet|AddScript'
+# 8. Regex on LongDescription / ProductName (use ProductField list types)
+gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'Regex\.(Match|Matches|Replace).*LongDescription|Regex\..*ProductName'
+# 9. Stock custom.css written to (brand CSS belongs in <name>_custom.css)
+git diff --name-only -- '*custom.css' | Select-String '(^|[\\/])custom\.css$'
+git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])custom\.css$' | Select-Object -Unique
+```

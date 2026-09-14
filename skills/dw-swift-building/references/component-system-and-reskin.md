@@ -12,12 +12,12 @@ doctrine, and the discipline grep-pack.
 - [2. Paragraph categories](#2-paragraph-categories)
 - [3. Configuring paragraph item-type fields](#3-configuring-paragraph-item-type-fields)
 - [4. Empty `ParagraphTemplate` resolves alphabetically (silent footgun)](#4-empty-paragraphtemplate-resolves-alphabetically-silent-footgun)
-- [5. Grid composition cache — restart required](#5-grid-composition-cache--restart-required)
+- [5. Grid composition cache: restart required](#5-grid-composition-cache-restart-required)
 - [6. Template categories, page presets, page-state flags](#6-template-categories-page-presets-page-state-flags)
 - [7. Style assets — `Files/System/Styles/`](#7-style-assets--filessystemstyles)
 - [8. Asset organisation under `wwwroot/Files/`](#8-asset-organisation-under-wwwrootfiles)
 - [9. Re-skin doctrine — never edit standard templates](#9-re-skin-doctrine--never-edit-standard-templates)
-- [10. Discipline audit — grep pack](#10-discipline-audit--grep-pack)
+- [10. Discipline audit: grep pack](#10-discipline-audit-grep-pack)
 
 ## 1. Component-first gate
 
@@ -155,9 +155,10 @@ A left-sidebar PLP filter panel is two independent settings; the common mistake 
 `EcomFieldDisplayGroups` populated at host startup. **Inserts/updates to the four backing tables
 (`EcomFieldDisplayGroups`, `EcomFieldDisplayGroupFields`, `EcomFieldDisplayGroupShops`,
 `EcomFieldDisplayGroupTranslation`) are NOT picked up live** — even on admin "Cache → Clear all".
-Reliable refresh is a host restart. Symptom: the editor's checkbox list shows the new groups (it
-re-queries SQL on every load) but the rendered accordion is empty. Seed-flow order: (a) seed the four
-tables, (b) `dotnet run` recycle, (c) configure the paragraph's field. See
+Reliable refresh is a host restart, which Dynamo cannot perform. Symptom: the editor's checkbox list
+shows the new groups (it re-queries SQL on every load) but the rendered accordion is empty. Seed-flow
+order: (a) seed the four tables, (b) restart the host, (c) configure the paragraph's field. Out of
+product: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) "Restart the host to drop cached composition". See
 [dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`).
 
 **Local installs only** for the table seed: on a hosted install create the groups with `save_field_display_group`.
@@ -360,20 +361,15 @@ Symptom: "I added one custom Text variant and now half the site renders with tha
   field UPDATE on an existing row, live with no restart ([dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`)
   edit-vs-insert rule). Run this BEFORE introducing any sort-early custom variant.
 
-## 5. Grid composition cache — restart required
+## 5. Grid composition cache: restart required
 
 DW10 caches a page's **grid composition** (which paragraphs are in which grid rows) in-memory after
 the first request. **Deleting a paragraph or grid row via SQL, MCP, or admin UI does NOT immediately
 stop the frontend rendering it.** The composition cache survives admin "Cache → Clear all", DELETE on
 `Paragraph`/`GridRow`, MCP `delete_paragraphs`/`delete_grid_rows`, and browser hard-refresh. It does
-NOT survive a host process restart. On Windows + `dotnet run`:
-
-```powershell
-Get-Process dotnet -ErrorAction SilentlyContinue | Where-Object { $_.StartTime -gt (Get-Date).AddDays(-2) } | Stop-Process -Force
-Start-Process dotnet -ArgumentList "run","--no-build" -WorkingDirectory "<host>\Dynamicweb.Host.Suite" -RedirectStandardOutput "<host>.log" -NoNewWindow
-```
-
-After restart, wait for the port to listen then hit the page once to warm JIT. **Practical rule:**
+NOT survive a host process restart, and Dynamo cannot restart the host: a deleted paragraph keeps
+rendering until the host is recycled. Out of product: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) "Restart the host to drop cached
+composition". **Practical rule:**
 schedule paragraph deletion just BEFORE a restart you were already planning. The general DW10 rule:
 **any table whose rows are joined into a render-time composition tree (paragraphs, users, groups,
 navigation) is cached in-memory and needs a process restart to repopulate.**
@@ -524,8 +520,8 @@ exists** — and returns `false` (adding nothing to `<head>`) if absent.
 but ships NO `Files/System/Styles/{…}/swift.{json,css}` on disk, so `TryGetColorSchemeStyle` returns
 `false`, no scheme stylesheet is added, and every `data-dw-colorscheme="..."` paragraph renders
 against default body styles — the page LOOKS styled (swift.css ships baseline rules) but the BRAND
-palette never lands. Diagnostic: `curl -ks <host>/ | grep -c 'Styles/ColorSchemes'` returns 0 →
-empty-state. Fix: the Area-wiring SQL below + on-disk `<brand>.{json,css}` files.
+palette never lands. Diagnostic: the served page (`fetch_frontend_page_html`) carries no `Styles/ColorSchemes` link, which
+is the empty state. Fix: wire the Area to the brand (below) and ship the on-disk `<brand>.{json,css}` files.
 
 ### JSON schemas (abbreviated)
 
@@ -540,19 +536,13 @@ uses `ParagraphCustomFontId` resolving against `Fonts/<id>.json`'s `Family`.
 
 ### Wiring the Area to a brand
 
-```sql
-UPDATE Area SET
-  AreaColorSchemeGroupId = '<brand>',   -- root Id from ColorSchemes/<brand>.json
-  AreaColorSchemeId      = 'light',     -- which scheme is the area default
-  AreaButtonStyleId      = '<brand>',
-  AreaTypographyId       = '<brand>'
-WHERE AreaId = <area>;
-```
-
-Restart so the resolved style URLs reload. Verify:
-`curl -ks <host>/ | grep -E 'Styles/(ColorSchemes|Buttons|Typography)/'` → three new `<link>` entries.
-
-**Local installs only**: on a hosted install no MCP tool is known to write these four `Area` columns, so ask the user.
+Four `Area` columns bind an area to its Style assets: `AreaColorSchemeGroupId` (the root `Id` of
+`ColorSchemes/<brand>.json`), `AreaColorSchemeId` (the area's default scheme, e.g. `light`),
+`AreaButtonStyleId` and `AreaTypographyId`. No MCP tool is known to write these four columns, so in
+product ask the user, and the change needs a host restart before the resolved style URLs reload. Verify
+with `fetch_frontend_page_html`: the served head carries three new `<link>` entries under
+`Styles/ColorSchemes/`, `Styles/Buttons/` and `Styles/Typography/`.
+Out of product: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) "Wire an Area to a brand's Style assets".
 
 **When to use Style assets vs a project CSS file:** use Style assets (Tier 0) for the brand palette +
 button shape + typography (applies to every scheme-tagged paragraph, including deserialized baseline
@@ -670,8 +660,8 @@ directly; extend or create new ones to remain upgradable." **You MAY** create a 
 `.cshtml` for an existing item type, or a new item type + its belonging content layout. **You may
 NOT** modify existing standard `.cshtml`, add business logic to a content layout (data-shape
 transforms / conditional rendering / external calls are controller/provider territory and trigger the
-preflight), or override the customer-center CSR section's stock paragraphs. **Verification:** after the
-change, `git status` should show ONLY new `.cshtml` files (not modifications to standard templates) and
+preflight), or override the customer-center CSR section's stock paragraphs. **Verification:** the change set
+should show ONLY new `.cshtml` files (not modifications to standard templates) and
 no `.cs`. If `.cs` appears, you've crossed into controller/provider territory.
 
 ### Pre-escalation check — search the DW10 source first
@@ -684,34 +674,28 @@ project-wide stylesheet → `CustomHeadInclude` ([`razor-surfaces-and-pitfalls.m
 point-balance / customer-number / groups → `Pageview.User.*` ([dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md)),
 not SQL.
 
-## 10. Discipline audit — grep pack
+## 10. Discipline audit: grep pack
 
-Verify a Swift build's templates against the canonical surfaces before declaring the build "ready". Each hit is a candidate finding; a clean run = green light.
+Verify a Swift build's templates against the canonical surfaces before declaring the build "ready".
+In product, read the templates under `Templates/Designs/Swift-v2/` with `list_files` and `read_file`.
+Each hit is a candidate finding; a clean run = green light.
 
-```powershell
-$Root = "Dynamicweb.Host.Suite\wwwroot"
-$Slug = "<area-url-slug>"   # a hardcoded area prefix to scan for
+1. Raw DB access in Razor (`Database.CreateDataReader`, `ExecuteScalar`, `ExecuteReader`,
+   `ExecuteNonQuery`): use `Services.*`.
+2. Substring scans on the URL or query (`PathAndQuery.IndexOf`, `QueryString.ToString`,
+   `Url.AbsoluteUri.Contains`): use page-id helpers and `Pageview.User`.
+3. Hard-coded area URL prefixes (`/<area-url-slug>/`).
+4. Synthesized `Default.aspx?ID=`, `GroupID=` or `ProductID=` links.
+5. Category-name substring branching (`PrimaryOrDefaultGroup` name or title with `Contains` or
+   `StartsWith`): use a `ProductGroup` field.
+6. Generic-item-type shim smell: a project `.cshtml` under a stock `Swift-v2_*` paragraph folder whose
+   name does not start with `Swift-v2_`.
+7. Inline `AddStylesheet` or `AddScript` in `Swift-v2_Master.cshtml`: use `Area.Item.CustomHeadInclude`.
+8. `Regex` on `LongDescription` or `ProductName`: use `ProductField` list types.
+9. The stock `custom.css` written to: brand CSS belongs in `<name>_custom.css`. This check reads the
+   change history, so it has no in-product form.
 
-# 1. Raw DB access in Razor (use Services.* per render-razor.md)
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'Database\.(CreateDataReader|ExecuteScalar|ExecuteReader|ExecuteNonQuery)'
-# 2. Substring scans on URL/query (use page-id helpers + Pageview.User)
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'PathAndQuery\.IndexOf|QueryString\.ToString|Url\.AbsoluteUri\.Contains'
-# 3. Hard-coded area prefixes
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String "/$Slug/"
-# 4. Default.aspx?ID= synthesized links
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'Default\.aspx\?(ID|GroupID|ProductID)='
-# 5. Category-name substring branching (use ProductGroup field)
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String '\.PrimaryOrDefaultGroup.*\.(Name|Title).*\.(Contains|StartsWith)'
-# 6. Generic-item-type shim smell (project files under generic item folders)
-gci "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\" -Recurse -Filter '*.cshtml' | ? { $_.Name -notlike 'Swift-v2_*' }
-# 7. Inline AddStylesheet / AddScript in master (use Area.Item.CustomHeadInclude)
-gci "$Root\Templates\Designs\Swift-v2\Swift-v2_Master.cshtml" | Select-String 'AddStylesheet|AddScript'
-# 8. Regex on LongDescription / ProductName (use ProductField list types)
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'Regex\.(Match|Matches|Replace).*LongDescription|Regex\..*ProductName'
-# 9. Stock custom.css written to (brand CSS belongs in <name>_custom.css)
-git diff --name-only -- '*custom.css' | Select-String '(^|[\\/])custom\.css$'
-git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])custom\.css$' | Select-Object -Unique
-```
+Out of product: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) "Discipline audit grep pack".
 
 | Grep | Hit means | Remediation |
 |------|-----------|-------------|

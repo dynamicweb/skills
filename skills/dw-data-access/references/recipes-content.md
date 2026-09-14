@@ -25,6 +25,10 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Culture-coded area URL prefixes](#culture-coded-area-url-prefixes)
 - [Clear PageShortCut baseline cruft](#clear-pageshortcut-baseline-cruft)
 - [Set `PageNavigationTag`](#set-pagenavigationtag)
+- [Add a field to an item type that holds content](#add-a-field-to-an-item-type-that-holds-content)
+- [Edit repeater children through `ParagraphSave`](#edit-repeater-children-through-paragraphsave)
+- [Audit generic item folders for shim templates](#audit-generic-item-folders-for-shim-templates)
+- [Find emoji codepoints in rendered chrome](#find-emoji-codepoints-in-rendered-chrome)
 
 ## Writing `PageNavigationTag` directly
 
@@ -272,3 +276,112 @@ assert the rendered link rather than the call's status.
 ```sql
 UPDATE Page SET PageNavigationTag = N'<tag>' WHERE PageId = <pageId>;
 ```
+
+## Add a field to an item type that holds content
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`modelling-discipline.md`, "To ADD a field to a type that already holds live content").
+
+**Surface: Management API.** `ItemFieldNew` returns a field shell for an existing type and
+`ItemFieldSave` ALTERs the `ItemType_<Type>` table to add the column, leaving every existing row
+intact. The Management API is reachable on a hosted install too, so the same two calls are the online
+route; no MCP tool is documented in these skills as the add-one-field verb.
+
+```
+GET  /Admin/Api/ItemFieldNew?ItemTypeSystemName=<Type>&ItemFieldGroupSystemName=General
+POST /Admin/Api/ItemFieldSave { Model: { ..., systemName:"<Field>", isNew:true,
+       editorType:"Dynamicweb.Content.Items.Editors.TextEditor, Dynamicweb",
+       underlyingType:"System.String, System.Private.CoreLib" } }   -> status ok
+
+ItemType_<Type>: 15 -> 16 columns, rows 12 -> 12, new column <Field> nvarchar(255)
+```
+
+Guard the call with a before/after content fingerprint plus a row count (column list, row count and a
+per-row digest of existing values), then assert exactly one new column with the expected name and type
+and an unchanged fingerprint. No cache flush or restart is owed: the field is usable on the next request.
+
+## Edit repeater children through `ParagraphSave`
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`modelling-discipline.md`, "How repeater children are stored").
+
+**Surface: Management API.** The edit path is `ParagraphSave` posted to
+`POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById` with a Bearer token. The admin Visual
+Editor's slide editor is a client of the same route, so its save can be captured and replayed. The
+in-product equivalents are the MCP tools `get_repeatable_item_field`, `add_repeatable_item`,
+`remove_repeatable_items` and, once a child exists, `set_item_field_values` on the child's item type and
+id. No cache flush or restart is owed: `ParagraphSave` runs the domain service, which invalidates the
+render cache. Proven end-to-end on a `Swift-v2_Slider`: a headless save created a slide and then edited
+it in place, and the storefront rendered the change on the next GET. [dw 10.28.1 · swift 2.4]
+
+Minimal payload (edit the existing child `1`; use `"ItemId": ""` to create):
+
+```jsonc
+POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
+{
+  "QueryData": { "Id": <paragraphId> },
+  "model": {
+    "ItemType": "Swift-v2_Slider",
+    "Layout": "CardCoverNavInline.cshtml",
+    "ContentItem|Swift-v2_Slider|General|Items": [
+      {
+        "ItemId": "1",                       // "" creates; an existing id edits in place
+        "ItemType": "Swift-v2_Slider_Item",
+        "Label": "<slide label>",
+        "ContentInfo": { "AreaId": 3, "PageId": 153, "GridRowId": 185, "ParagraphId": <paragraphId> },
+        "RelationItem": { "Groups": [] },
+        "ModelRawData": "{\"RelationItem|Swift-v2_Slider_Item|General|Title\":\"<p>...</p>\", \"RelationItem|Swift-v2_Slider_Item|General|Text\":\"<p>...</p>\", \"RelationItem|Swift-v2_Slider_Item|General|Button\":null}"
+      }
+    ]
+  }
+}
+```
+
+The payload rules (the full desired child set, `ItemId` create or edit, string-only `ModelRawData`, the
+link binder shape) and the lying-success traps stay with the in-product home. Neither the save response
+nor `GetParagraphById` can verify the write; this is the measured readback that shows why:
+
+```
+GET  /Admin/Api/GetParagraphById?Id=<paragraphId>
+  -> contentItem.groups[0].fields[0] {name: "Items", value: 323}    # before all four saves
+  -> ...                             {name: "Items", value: 323}    # after all four saves
+POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
+  -> {status: "ok", exception: null}   with model...Items.value echoing the posted ModelRawData VERBATIM,
+                                       including field values that provably did NOT persist
+```
+
+Verify every child write on the rendered page (a live GET, or `fetch_frontend_page_html` in product).
+
+## Audit generic item folders for shim templates
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`modelling-discipline.md`, "Audit query").
+
+**Surface: local filesystem (PowerShell).** Lists paragraph templates inside a stock `Swift-v2_*` item
+folder whose file name is not a stock `Swift-v2_*` name, the shim smell. `$Root` is the folder that holds
+`Templates\`. **Local installs only**: on a hosted install, or in product, walk
+`Templates/Designs/Swift-v2/Paragraph/` with the MCP tool `list_files`. Read-only, nothing owed.
+
+```powershell
+Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\*" -Filter '*.cshtml' `
+    | Where-Object { $_.Name -notlike 'Swift-v2_*' }
+```
+
+This is also grep #6 of the discipline audit grep pack in [`recipes-swift.md`](recipes-swift.md)
+"Discipline audit grep pack".
+
+## Find emoji codepoints in rendered chrome
+
+In-product home: [dw-render-razor](../../dw-render-razor/SKILL.md)
+(`razor-surfaces-and-pitfalls.md`, "Emoji codepoints render in color regardless of CSS `color:`").
+
+**Surface: HTTP fetch (PowerShell).** Fetches the rendered storefront page and lists every emoji
+codepoint in it. Works against any reachable host; in product, fetch the page with
+`fetch_frontend_page_html` and search the returned HTML for the same ranges. Read-only, nothing owed.
+
+```powershell
+$page = (Invoke-WebRequest -SkipCertificateCheck https://localhost:<port>/).Content
+[regex]::Matches($page, '[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}]') | Select-Object -ExpandProperty Value -Unique
+```
+
+Any hit inside `<header>`, `<footer>`, `<nav>` or a value-props band renders in color on Windows.

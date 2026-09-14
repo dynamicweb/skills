@@ -416,8 +416,8 @@ its JSON sets the matching `EnableContainerWidth` / `EnableGapSettings` / `Enabl
 10.28.5 host `save_grid_rows` carried only
 `active`/`backgroundImage`/`colorSchemeId`/`container`/`definitionId`/`id`/`itemType`/`pageId`/`sort`,
 and rows it created came back with `GridRowItemId` NULL. Where a member is missing, the native UPDATE is
-`POST /Admin/Api/GridRowSave?Query.Type=GridRowById`, which also mints a missing row item; the native
-CREATE is `GridRowCreate` (gotcha 13). The exact
+the Management API `GridRowSave`, which also mints a missing row item; the native CREATE is
+`GridRowCreate` (gotcha 13). Neither is an MCP tool. Out of product: [`recipes-swift.md`](../dw-data-access/references/recipes-swift.md) "Grid row members no MCP tool reaches". The exact
 payload shape, the preserved-members caveat and the per-template spacing defaults live in
 `dw-data-access` (`management-api-and-sql.md`, the `GridRow` NOT-NULL-columns section). Never coalesce a null `TopSpacing`/`BottomSpacing` to a default on a whole-entity
 save: the two Swift row templates have different defaults (`Swift-v2_Row` 6, `Swift-v2_RowFlex` 1).
