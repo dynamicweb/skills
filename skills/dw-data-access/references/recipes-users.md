@@ -26,6 +26,8 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Delete orphaned user addresses](#delete-orphaned-user-addresses)
 - [Rebuild the Users index after an impersonation write](#rebuild-the-users-index-after-an-impersonation-write)
 - [Set a user group's type: `GroupSave` full-model round trip](#set-a-user-groups-type-groupsave-full-model-round-trip)
+- [Flush the three permission caches after a direct table write](#flush-the-three-permission-caches-after-a-direct-table-write)
+- [Grant a backend area: a `Section` row through `PermissionSave`](#grant-a-backend-area-a-section-row-through-permissionsave)
 
 Every grant recipe below carries the same two standing rules. **Flush after every write**: the three
 permission caches are `DefaultCapabilityService`, `DefaultCapabilitySetService` and
@@ -398,3 +400,57 @@ SELECT AccessUserId, AccessUserParentId, AccessUserUserAndGroupType FROM AccessU
 
 Then sign in as the CSR and confirm the group lists on the Accounts page. Where it does not, refresh the
 security cache; a host restart is the reliable way.
+
+## Flush the three permission caches after a direct table write
+
+In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
+(`permission-layers.md` §4c), which carries which tables need it.
+
+A direct insert or update on `UnifiedPermission` or `CapabilityLimitation` is not visible to
+logged-in users until the three permission caches are refreshed. `DashboardAccessUserRelation` is read
+per request and needs no flush.
+
+**Surface: Management API** `CacheInformationRefresh`, once per cache type:
+
+```powershell
+foreach ($cn in @(
+  'Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilityService',
+  'Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilitySetService',
+  'Dynamicweb.Security.Permissions.PermissionService')) {
+  Invoke-RestMethod -SkipCertificateCheck `
+    -Uri "https://localhost:<PORT>/admin/api/CacheInformationRefresh" `
+    -Headers @{Authorization = "Bearer <api-key>"; 'Content-Type' = 'application/json'} `
+    -Method POST -Body (@{CacheTypeName = $cn} | ConvertTo-Json) | Out-Null
+}
+```
+
+- **Why the higher surfaces do not cover it**: no MCP tool refreshes these caches; the MCP cache
+  tools are country caches only.
+- **Hosted installs included**: this is an API call (against `https://<host>`), though the table write
+  it follows is local only.
+- **The debt it owes**: none; it is the flush. New logins see fresh state regardless.
+
+## Grant a backend area: a `Section` row through `PermissionSave`
+
+In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
+(`permission-layers.md` §4d), which carries the implicit roles, the level cascade and the area key
+names.
+
+**Surface: Management API** `PermissionSave`, one row per area the role needs, on the role's user
+group. `Level` `20` (Edit) for a role that must save; `4` (Read) renders a browsable, unsaveable area:
+
+```
+POST /Admin/Api/PermissionSave
+{"Model":{"Key":"Content","Name":"Section","SubName":"","OwnerId":"<groupId>","Level":20,
+          "IsUserRolePermission":false,"IsExplicitPermission":true}}
+```
+
+`Key` is the `AreaBase` subclass name without the `Area` suffix (`Content`, `Ecommerce`, `Products`,
+`Users`, `Settings`, ...). A read of the permission back proves nothing, because
+`PermissionsByIdentifier` answers the same three implicit rows for any string; prove the key by
+signing in as a member of the group and checking that the area renders.
+
+- **Why the higher surfaces do not cover it**: MCP writes assortment permissions only
+  (`assign_permissions_to_assortment`, see the first recipe in this file).
+- **Hosted installs included**: this is an API call, not SQL.
+- **The debt it owes**: none; `PermissionSave` self-invalidates the permission cache.

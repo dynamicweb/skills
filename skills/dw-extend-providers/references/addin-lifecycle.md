@@ -31,8 +31,8 @@ two of them:
 The seeded defaults are **best-guess, not host-aware** — the provider can't read the actual
 repository names, index build names, or existing workflow ids of the host it lands in, so it writes
 plausible placeholders. Treat any AddIn's first-startup settings row as a draft to verify against
-the host's real state (list `wwwroot/Files/System/Repositories/`, grep the index for `<Build Name>`,
-list workflow states), then correct it through the AddIn's own save endpoint. The save is typically
+the host's real state (the repository and index build names live in files under
+`/Files/System/Repositories`, which no MCP read tool reaches; `get_workflow_states` lists the workflow states), then correct it through the AddIn's own save endpoint. The save is typically
 upsert/idempotent, so re-running the correction is safe.
 
 UpdateProviders run **once**, keyed by their permanent GUID update ids (tracked in `dbo.Updates`).
@@ -54,17 +54,19 @@ The canonical stuck-state signature:
 
 This `TypeInitializationException` is the **single most common stuck state** after an AppStore
 install: install succeeded, but the pipeline that registers the service hasn't run because the
-host process is still the pre-install one. **Restart the host** (`dotnet run` cycle). On startup the
-host log shows a `Running pipeline: '<Package>.<Pipeline>'.` line — its presence confirms the DI
-registration ran.
+host process is still the pre-install one. **A host restart clears it**, and no MCP tool restarts the
+host. On startup the host log shows a `Running pipeline: '<Package>.<Pipeline>'.` line; its presence
+confirms the DI registration ran.
 
-Three-way probe to classify the state (probe any of the AddIn's POST endpoints with bearer auth):
+The response any of the AddIn's commands gives classifies the state:
 
 | Response | Meaning | Fix |
 |---|---|---|
 | `400 {"successful":false,"message":"Unknown command: '<Name>'"}` | AddIn not installed | Install from admin → Settings → AppStore |
 | `500 ... TypeInitializationException ... No service for type ...` | Installed but **host not restarted** | Restart the host |
 | `200 {"status":"ok", ...}` | Installed, services registered, working | None |
+
+Out of product: [`recipes-extend.md`](../../dw-data-access/references/recipes-extend.md) "Restart the host and probe an AddIn's install state".
 
 ## 3. The admin-deeplink ("static link") mechanism
 
@@ -77,17 +79,20 @@ installed by default by the `dw10-suite` template; it needs the install + host-r
 
 ### Endpoint surface
 
-Once installed and the host has restarted:
+Once installed and the host has restarted, the package adds seven Management API verbs, and no MCP
+tool reaches any of them:
 
-```
-GET  /admin/api/StaticLinkAll                                      -- paginated list of all links
-GET  /admin/api/StaticLinkById?id=<int>                            -- single link by integer id
-GET  /admin/api/StaticLinkByArgumentAndType?Type=<T>&Argument=<A>  -- lookup by (type,argument); idempotency checks
-POST /admin/api/StaticLinkSave    body { Model: { Type, Argument, ... } }  -- create or update a link
-POST /admin/api/StaticLinkDelete  body { Model: { Id: <int> } }            -- revoke a link
-GET  /admin/api/StaticLinkSettings                                 -- AddIn-level config (template, expiration)
-POST /admin/api/StaticLinkSettingsSave                             -- update AddIn-level config
-```
+| Verb | Kind | Does |
+|---|---|---|
+| `StaticLinkAll` | query | paginated list of all links |
+| `StaticLinkById` | query | single link by integer id |
+| `StaticLinkByArgumentAndType` | query | lookup by type and argument; the idempotency check |
+| `StaticLinkSave` | command | create or update a link (`Type`, `Argument`, nested under `Model`) |
+| `StaticLinkDelete` | command | revoke a link by integer `Id`, nested under `Model` |
+| `StaticLinkSettings` | query | AddIn-level config (template, expiration) |
+| `StaticLinkSettingsSave` | command | update AddIn-level config |
+
+Out of product: [`recipes-extend.md`](../../dw-data-access/references/recipes-extend.md) "StaticLinkManager requests".
 
 **Casing matters on query parameters.** DW Management API parameter binding is case-sensitive:
 `Type=Product` works, `type=Product` returns 500 with an `Enum.Parse` failure. PascalCase the names.

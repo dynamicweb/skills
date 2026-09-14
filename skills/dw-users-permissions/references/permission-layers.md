@@ -110,15 +110,15 @@ toggling mid-build strands every grant already made.
 
 Source: `dw10source/src/Core/Dynamicweb.Core/Security/Permissions/PermissionRepository.cs`.
 
-```sql
-TABLE UnifiedPermission (
-  PermissionUserId   nvarchar  -- user OR user-group id
-  PermissionKey      nvarchar  -- the resource path (e.g. '/Products/Feeds' or 'SHOP1')
-  PermissionName     nvarchar  -- secondary qualifier
-  PermissionSubName  nvarchar  -- tertiary qualifier
-  PermissionLevel    smallint  -- enum: NotSet / None / Read / Edit / Create / Delete / All
-)
-```
+Table `UnifiedPermission`:
+
+| Column | Type | Holds |
+|---|---|---|
+| `PermissionUserId` | `nvarchar` | user OR user-group id |
+| `PermissionKey` | `nvarchar` | the resource path (e.g. `/Products/Feeds` or `SHOP1`) |
+| `PermissionName` | `nvarchar` | secondary qualifier |
+| `PermissionSubName` | `nvarchar` | tertiary qualifier |
+| `PermissionLevel` | `smallint` | enum: NotSet / None / Read / Edit / Create / Delete / All |
 
 Verified mechanics:
 - `MERGE [UnifiedPermission] WITH (SERIALIZABLE)` insert (line 53) — atomic upsert, no race on concurrent grants.
@@ -144,13 +144,11 @@ access. Each capability key is a slash-delimited path like `/Products/Channels`.
 
 ### Storage — separate `CapabilityLimitation` table (NOT `UnifiedPermission`)
 
-```sql
-TABLE CapabilityLimitation (
-  CapabilityLimitationId          bigint IDENTITY,
-  CapabilityLimitationKey         nvarchar,   -- the capability key (starts with '/')
-  CapabilityLimitationUserGroupId int         -- user group id (NOT user id)
-)
-```
+| Column | Type | Holds |
+|---|---|---|
+| `CapabilityLimitationId` | `bigint IDENTITY` | row id |
+| `CapabilityLimitationKey` | `nvarchar` | the capability key (starts with `/`) |
+| `CapabilityLimitationUserGroupId` | `int` | user group id (NOT user id) |
 
 Semantics are **inverted from Layer A's "permit" model**: presence of a row = users in this group are
 *limited out of* (hidden from) this capability. Absence = no limit = capability visible (subject to
@@ -274,13 +272,11 @@ new chain on next read.
 Source: `dw10source/src/Core/Dynamicweb.Core/Dashboard/DashboardConfigurationRepository.cs:42`
 (verified DW 10.25.8).
 
-```sql
-TABLE DashboardAccessUserRelation (
-  DashboardRelationDashboardId  int,
-  DashboardRelationUserId       int,   -- user id, NOT group id
-  DashboardRelationDefault      bit    -- 1 = auto-landing dashboard for this user
-)
-```
+| Column | Type | Holds |
+|---|---|---|
+| `DashboardRelationDashboardId` | `int` | dashboard id |
+| `DashboardRelationUserId` | `int` | user id, NOT group id |
+| `DashboardRelationDefault` | `bit` | `1` = auto-landing dashboard for this user |
 
 Gates which dashboards a non-admin user sees in the area's dashboard tree. The repository's
 `GetDashboardsConfigurations` does a LEFT JOIN with `WHERE DashboardRelationUserId IN (<userIds>)` —
@@ -331,20 +327,11 @@ navigation node path from tree state and a cold URL has no `DynamicStructureNavi
 builds carries a per-screen GUID segment plus a five-segment node path. Screenshot and assertion
 harnesses for the Products area must click the left nav, not construct routes.
 
-After any direct insert/update on these three tables, flush three caches via Management API before the
-change is visible to logged-in users:
-
-```powershell
-foreach ($cn in @(
-  'Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilityService',
-  'Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilitySetService',
-  'Dynamicweb.Security.Permissions.PermissionService')) {
-  Invoke-RestMethod -SkipCertificateCheck `
-    -Uri "https://localhost:<PORT>/admin/api/CacheInformationRefresh" `
-    -Headers @{Authorization = "Bearer CLAUDE.xxx"; 'Content-Type' = 'application/json'} `
-    -Method POST -Body (@{CacheTypeName = $cn} | ConvertTo-Json) | Out-Null
-}
-```
+A direct insert or update on these three tables is not visible to logged-in users until three caches
+are flushed: `Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilityService`,
+`Dynamicweb.CoreUI.CapabilityControl.DefaultCapabilitySetService` and
+`Dynamicweb.Security.Permissions.PermissionService`. No MCP tool flushes them. Out of product:
+[`recipes-users.md`](../../dw-data-access/references/recipes-users.md) "Flush the three permission caches after a direct table write".
 
 `DashboardAccessUserRelation` reads bypass the cache (queried per request) — no flush needed for
 dashboard relation changes. New logins always see fresh state regardless.
@@ -383,13 +370,9 @@ browsable, unsaveable area, with nothing on screen to say why. (Capability Contr
 separate mechanism that hides UI sections without changing what an action may do; the two are
 often confused because both are described as "area permissions".)
 
-Grant shape, on the user group that carries the role:
-
-```
-POST /Admin/Api/PermissionSave
-{"Model":{"Key":"Content","Name":"Section","SubName":"","OwnerId":"<groupId>","Level":20,
-          "IsUserRolePermission":false,"IsExplicitPermission":true}}
-```
+The grant is one `PermissionSave` row on the user group that carries the role: `Name` `Section`, `Key`
+the area name, `SubName` empty, `Level` `20` for a role that must save. Out of product:
+[`recipes-users.md`](../../dw-data-access/references/recipes-users.md) "Grant a backend area: a `Section` row through `PermissionSave`".
 
 **The area keys are the `AreaBase` subclass names in the shipped assemblies** — `SettingsArea`,
 `AppsArea`, `ContentArea`, `EcommerceArea`, `FilesArea`, `InsightsArea`, `IntegrationArea`,

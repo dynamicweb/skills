@@ -27,7 +27,7 @@ and repository side.
 ## Repositories, Indexes, and Queries — file-based
 
 - **Repository** = folder under `wwwroot/Files/System/Repositories/<RepoName>/`
-- **Index** = `.index` XML file inside the repo folder (build via management API `POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}`). **`IndexName` is the index FILE name (`Products.index`, extension included) and `BuildName` names a BUILDER registered inside that XML — not a free label.** Resolve it from `IndexBuildersByRepositoryAndIndexName` rather than posting a guess: an unresolvable `BuildName` has been observed to answer `404`, to answer `500 "Unable to load build '<name>'"`, **and** to answer `200 {"status":"ok"}` and build nothing, on different hosts and verbs. The first two read as "the verb is unavailable" rather than "the argument is wrong"; the third reads as success. Because the failure mode is not predictable, resolving the builder **and** asserting build freshness afterwards is mandatory either way — see [`query-expressions.md`](query-expressions.md) "Build verbs: 200 is not 'built'" for the two sibling traps (building an index the queries do not read, and an instance that never recovers). The `Name`-attribute gotcha below is the same one-value-two-meanings hazard on the file side. A full build also outruns a 120s client timeout, so fire it and verify out of band (see "Recovery recipe" below). **The query-parameter NAMES are not uniform across the sibling index queries, and the wrong one answers `400 "Unable to load query parameters"`, which reads as a missing verb:** `IndexByRepositoryAndName` and `IndexBuildersByRepositoryAndIndexName` take **`Repository` + `IndexName`**, while `IndexInstancesByRepositoryAndIndex` takes **`RepositoryName` + `IndexName`**. Copy the parameter names per verb rather than generalising from the one that worked last.
+- **Index** = `.index` XML file inside the repo folder (built in-product by `build_product_index` with both `repositoryName` and `indexName` passed; the Management API verb is `BuildIndex`). **`IndexName` is the index FILE name (`Products.index`, extension included) and `BuildName` names a BUILDER registered inside that XML, not a free label.** Resolve it from `IndexBuildersByRepositoryAndIndexName` rather than posting a guess: an unresolvable `BuildName` has been observed to answer `404`, to answer `500 "Unable to load build '<name>'"`, **and** to answer `200 {"status":"ok"}` and build nothing, on different hosts and verbs. The first two read as "the verb is unavailable" rather than "the argument is wrong"; the third reads as success. Because the failure mode is not predictable, resolving the builder **and** asserting build freshness afterwards is mandatory either way; see [`query-expressions.md`](query-expressions.md) "Build verbs: 200 is not 'built'" for the two sibling traps (building an index the queries do not read, and an instance that never recovers). The `Name`-attribute gotcha below is the same one-value-two-meanings hazard on the file side. A full build also outruns a 120s client timeout, so fire it and verify out of band (see "Recovery recipe" below). **The query-parameter NAMES are not uniform across the sibling index queries, and the wrong one answers `400 "Unable to load query parameters"`, which reads as a missing verb:** `IndexByRepositoryAndName` and `IndexBuildersByRepositoryAndIndexName` take **`Repository` + `IndexName`**, while `IndexInstancesByRepositoryAndIndex` takes **`RepositoryName` + `IndexName`**. Copy the parameter names per verb rather than generalising from the one that worked last. Out of product: [`recipes-search.md`](../../dw-data-access/references/recipes-search.md) "Resolving the builder before posting `BuildIndex`".
 - **Queries** = `.query` XML files with `<Query ID="guid">` and `<Source Repository="..." Item="..." />`. Query placement rules are SUBTLE:
   - Queries used by **feeds** (`EcomFeed.FeedIndexQueryId`) must live DIRECTLY in the repository root folder: `wwwroot/Files/System/Repositories/<RepoName>/*.query`. **Subfolders are NOT scanned for feed resolution** — admin will show "query does not exist" on the feed if the .query file is in a subfolder.
   - Queries used by **dashboards/widgets** (referenced by GUID) must live in `wwwroot/Files/System/SmartSearches/Ecommerce/Shared/` (or a subfolder of it) — **never GUID-duplicated to `Repositories/<RepoName>/<subfolder>/`**. GUID-collision mechanism + recovery: "Dashboard query location — Shared ONLY" below.
@@ -47,8 +47,8 @@ and repository side.
   </Schema>
   ```
 
-  Then rebuild: `POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`. **Symptom check:** `numHits must be > 0` on the PLP/PDP always means the index holds **zero documents**, whatever the build reported. A schema the extender never populated is one way to get there; a build that ran before the content landed is the other, and the preconditions below separate them. Check the document count first, then the schema. The data on disk is the diagnostic: a healthy Products index segment is ~270 KB at 30 docs; 53 bytes means the schema accepted zero documents.
-- MCP `create_or_update_product_queries` saves `.query` XML but leaves `<Source Repository="" Item="" />` empty — fix via `sed` or patch the file before index build.
+  Then run a full rebuild: `build_product_index` followed by `wait_for_product_index`, with `indexName` `Products.index`. **Symptom check:** `numHits must be > 0` on the PLP/PDP always means the index holds **zero documents**, whatever the build reported. A schema the extender never populated is one way to get there; a build that ran before the content landed is the other, and the preconditions below separate them. Check the document count first, then the schema. The data on disk is the diagnostic: a healthy Products index segment is ~270 KB at 30 docs; 53 bytes means the schema accepted zero documents.
+- MCP `create_or_update_product_queries` saves `.query` XML but leaves `<Source Repository="" Item="" />` empty, and no MCP tool writes a `.query` file (`list_files` and `read_file` reach only `/Files/System/Styles`, `/Files/Templates` and `/Files/Images`), so the element stays empty until it is filled out of product before the index build: [`recipes-search.md`](../../dw-data-access/references/recipes-search.md) "Filling an empty query `Source` element".
 - **Name the repository, then prove the build drained and the index holds documents.** Five
   preconditions sit behind an empty product listing, all silent when absent, and the build call
   reports success through every one of them. In order, alongside the primary-instance rule:
@@ -277,14 +277,9 @@ So if the same query GUID exists in both locations, `QueryHelper.GetQueryById(gu
 **Diagnosis tell — read the frame ABOVE `GetQueryFolderPath` and the `Type=` in the URL first.** A 500 with `System.NotSupportedException` at `ProductListNodePathProvider.GetQueryFolderPath` has two distinct causes and they need different answers:
 
 - **`Type=FavoriteQueries` in the URL, with `QueryFolderNavigationNodePathProvider` in the frame above** — a stock platform bug, not your query tree. `FavoriteQueriesQuery.MakeListModel()` returns a **compile-time-constant** `FolderPath` of `…/SmartSearches/Ecommerce/Favorites`, which matches neither the shared nor the personal path `GetQueryFolderPath` accepts, so the throw is unconditional and no `.query` file placement can cause or cure it. It reproduces on an untouched tree and only when the screen renders as an area-container load (deep link / full area refresh) — reaching "My favorites" by the in-app anchor renders fine. Grepping for duplicate GUIDs here finds nothing and burns the window.
-- **Any other `Type=`, reached from the Shared queries tree** — this is the GUID-duplication case below. Grep the two folders:
-```bash
-grep -h 'Query ID=' wwwroot/Files/System/Repositories/Products/**/*.query | sort > /tmp/repo.txt
-grep -h 'Query ID=' wwwroot/Files/System/SmartSearches/Ecommerce/Shared/**/*.query | sort > /tmp/shared.txt
-diff /tmp/repo.txt /tmp/shared.txt  # identical lines = duplicates
-```
+- **Any other `Type=`, reached from the Shared queries tree**: this is the GUID-duplication case below: one `Query ID` present both under `Repositories/Products/` and under `SmartSearches/Ecommerce/Shared/`. Out of product: [`recipes-search.md`](../../dw-data-access/references/recipes-search.md) "Finding query GUIDs present in both query trees".
 
-**Fix**: relocate with `QueryMove` (which carries the `.configuration` sibling and updates the cache) or delete the Repositories-side dashboard duplicates — NOT feed queries at repo root. Then **flush the query cache; a restart is not required.** The `Searching:Queries` cache is genuinely not reachable through `CacheInformationRefresh` (no `ICacheStorage` implementor owns that key) and `InitQueriesCache` never removes entries — but `QueryHelper.GetQueryById` re-runs `InitQueriesCache` on a cache **miss**, so `GET /Admin/Api/QueryById?Id=<a GUID that does not exist>` re-initialises it as a side effect. The `400` it answers is expected. Full recipe, and the ordering trap that makes it necessary (the file verbs do not update the cache, so the next `QuerySave` writes back to the old path), in [`query-authoring.md`](query-authoring.md) "Flush the query cache without a restart".
+**Fix**: relocate with `QueryMove` (which carries the `.configuration` sibling and updates the cache) or delete the Repositories-side dashboard duplicates, NOT feed queries at repo root. Then **flush the query cache; a restart is not required.** The `Searching:Queries` cache is genuinely not reachable through `CacheInformationRefresh` (no `ICacheStorage` implementor owns that key) and `InitQueriesCache` never removes entries, but `QueryHelper.GetQueryById` re-runs `InitQueriesCache` on a cache **miss**, so a `QueryById` read of a GUID that does not exist re-initialises it as a side effect. The `400` it answers is expected. Full recipe, and the ordering trap that makes it necessary (the file verbs do not update the cache, so the next `QuerySave` writes back to the old path), in [`query-authoring.md`](query-authoring.md) "Flush the query cache without a restart".
 
 **Does widget drill-through need the query in `Repositories`?** No. Widgets look up queries by GUID through the global cache, which is populated from SmartSearches. Drill-through navigation uses `ProductListNodePathProvider.GetPath` which requires the query's `FolderPath` to start with `SharedQueriesPath` — so Shared is actually the REQUIRED location for drill-through to work at all. Repositories is wrong on both fronts.
 
@@ -319,13 +314,9 @@ product and it lands on the Monitoring dashboard as a steady daily error count.
 Two independent causes produce the identical exception, which is why fixing only the one the error *seems* to
 point at leaves it firing:
 
-```sql
-SELECT COUNT(*) FROM EcomCurrencies WHERE CurrencyRate = 0;                    -- must be 0
-SELECT COUNT(*) FROM EcomCountries c                                           -- must be 0
- WHERE c.CountryCurrencyCode NOT IN (SELECT CurrencyCode FROM EcomCurrencies);
-```
-
-**Local installs only**: on a hosted install read the rates with `get_currencies` and each country's currency with `get_countries`, and compare them.
+a currency with rate `0`, and an `EcomCountries` currency code with no matching currency. Both must be
+absent before a build. In-product, read the rates with `get_currencies` and each country's currency with
+`get_countries`, and compare them. Out of product: [`recipes-search.md`](../../dw-data-access/references/recipes-search.md) "Currency integrity check before an index build".
 
 One host carried a zero rate on all 16 language rows of a single currency **and** three countries pointing at
 currencies that had never been created. Clearing both took the build from 30 errors/day to a clean full
@@ -418,8 +409,10 @@ repository. The builder requires the `StartFolder` directory; a fresh clone does
 Precreate it before the first build (`mkdir "Files/Digital assets"`), or scope the build to the
 repositories the demo actually serves. Two rebuilds are needed afterwards, because index instances build one at a time: each
 `BuildIndex` call rebuilds only the currently-offline instance and then swaps, so a two-instance index
-reports a partial state until the second call. Gate on `GET /Admin/Api/IndexStatusesAll` reporting
-success / "All instances are fine" per repository, never on the `BuildIndex` response.
+reports a partial state until the second call. The gate is the status read reporting success / "All
+instances are fine" per repository (`IndexStatusesAll`), never the `BuildIndex` response.
+`build_product_index` and `get_product_index_status` are documented for the product index only. Out of
+product: [`recipes-search.md`](../../dw-data-access/references/recipes-search.md) "Building a two-instance index such as Files".
 
 ## Restored index files are not served until a Full build runs
 
@@ -450,16 +443,13 @@ After any mutation that touches products, groups, categories, fields, completene
 > value** — those caches are stale and a rebuild **bakes the old (often empty) value into the index**.
 > Symptom: `get_products_by_query` / a dashboard widget returns 0 or stale while `get_products_by_ids`
 > and the DB are correct. That is an un-flushed read-through cache, **not** an "index quirk", and a
-> host restart is NOT a reliable fix (the `dotnet run` parent/child trap means the bounce may not
+> host restart is NOT a reliable fix (the parent/child host-process trap means the bounce may not
 > cold-start). Run the flush step below first, then build, then re-verify.
 
-Run the enforced form — [`Build-DwProductIndex.ps1`](../../dw-data-access/scripts/Build-DwProductIndex.ps1),
-an out-of-product script owned by [`dw-data-access`](../../dw-data-access/SKILL.md) — which carries
-the flush-build-poll mechanics (the cache flush, the non-blocking POST, the freshness-guarded poll,
-the Error-vs-first-build distinction, and the 10.28.x status-verb fallback). In-product the rebuild
-is MCP `build_product_index` followed by `wait_for_product_index`.
+In product the rebuild is MCP `build_product_index` followed by `wait_for_product_index`.
+Out of product: [`recipes-search.md`](../../dw-data-access/references/recipes-search.md) "Re-running an index build on the Management API".
 
-The contract the script implements, kept here because extensions must honor it:
+The contract every build implementation honors, kept here because extensions must honor it too:
 
 - `synchronous: true` in the BuildIndex body does NOT actually block — the POST returns before the
   build finishes, so treating a 2xx as "built" indexes against a stale/empty segment. Always poll.
