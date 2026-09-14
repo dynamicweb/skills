@@ -29,6 +29,7 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Edit repeater children through `ParagraphSave`](#edit-repeater-children-through-paragraphsave)
 - [Audit generic item folders for shim templates](#audit-generic-item-folders-for-shim-templates)
 - [Find emoji codepoints in rendered chrome](#find-emoji-codepoints-in-rendered-chrome)
+- [Page verb and tool traps measured on a live host](#page-verb-and-tool-traps-measured-on-a-live-host)
 
 ## Writing `PageNavigationTag` directly
 
@@ -385,3 +386,13 @@ $page = (Invoke-WebRequest -SkipCertificateCheck https://localhost:<port>/).Cont
 ```
 
 Any hit inside `<header>`, `<footer>`, `<nav>` or a value-props band renders in color on Windows.
+
+## Page verb and tool traps measured on a live host
+
+Each row is a call that answers as if it had done what was asked [dw 10.28.10 · mcp 0.6.0-beta]. The rows mix surfaces, so
+each names its own, and every "do instead" ends with a read that is not the call's own echo.
+
+| Surface | Call | What it answers | What is true | Do instead |
+|---|---|---|---|---|
+| MCP | `save_pages` with `metaTitle` | `succeeded` per page | Nothing persists: `get_pages_by_ids` reads the old value and the rendered `<title>` is unchanged; no `save_pages` member carries the meta description at all. | Page SEO goes through Management API `PageSave` with the full `GetPageById` model, the meta title and description members changed; then read the rendered `<title>` (a live GET, or `fetch_frontend_page_html` in product). |
+| Management API | `PageSave` with `publicationState: "Hidden"` (or `"hidden"`) | 500 `Exception has been thrown by the target of an invocation.`, nothing written | The accepted values are `published` and `Unpublished`; the read model returns lower case, so its casing is not the save enum's casing. | Send `Unpublished` to take a page off the site (it then answers 404 anonymously) and confirm with an anonymous GET. |

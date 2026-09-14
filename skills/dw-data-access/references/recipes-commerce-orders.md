@@ -25,6 +25,7 @@ it, that it is **local installs only**, and the cache flush or host restart it o
 - [Backfilling `OrderCustomerNumber` from the buyer](#backfilling-ordercustomernumber-from-the-buyer)
 - [Gating an order backfill on live shop ids](#gating-an-order-backfill-on-live-shop-ids)
 - [Granting impersonation by SQL, then the Secondary users index build](#granting-impersonation-by-sql-then-the-secondary-users-index-build)
+- [Order-line verb traps on the Management API](#order-line-verb-traps-on-the-management-api)
 
 ## Priced demo orders: place them through the storefront checkout
 
@@ -339,3 +340,14 @@ POST /Admin/Api/BuildIndex {"Repository":"Secondary users","IndexName":"Users.in
 - **Local installs only**: on a hosted install, grant with `add_impersonatable_users`.
 - **The debt it owes**: the index build above, then a clear of the user/system cache (Settings > System info
   > Cache, or a host restart), because `AccessUser` objects are cached in process.
+
+## Order-line verb traps on the Management API
+
+**Surface: Management API.** A rename of stored order-line product names and numbers is a
+`GetOrderLineById` read, then `OrderLineSave`, and both verbs bind differently from what their
+models suggest [dw 10.28.10 · mcp 0.6.0-beta].
+
+| Verb | What it answers | What is true | Do instead |
+|---|---|---|---|
+| `OrderLineSave` with the model read from `GetOrderLineById` | 500 `could not be converted to Nullable OrderLineType, Path $.OrderType` | The read model's top-level `OrderType` (`"Order"`) is the order's type, and the save binds it as the line type. | Drop `OrderType` from the body and post the rest unchanged; read the line back with `GetOrderLineById`. |
+| `GetOrderLineById` with `OrderLineId` alone | 400 `Unable to load query parameters` | The verb exists and binds `OrderId` beside `OrderLineId`. | Pass both ids. |

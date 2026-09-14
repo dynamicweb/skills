@@ -29,6 +29,7 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Reading a Range field value back: `ProductById`](#reading-a-range-field-value-back-productbyid)
 - [Creating a Dynamic Workspace: `DynamicStructureSave` then `DynamicStructureLevelSave`](#creating-a-dynamic-workspace-dynamicstructuresave-then-dynamicstructurelevelsave)
 - [Collapsing a custom field back into its standard](#collapsing-a-custom-field-back-into-its-standard)
+- [Product verb and tool traps measured on a live host](#product-verb-and-tool-traps-measured-on-a-live-host)
 
 ## Writing a standard `EcomProducts` scalar the MCP model omits
 
@@ -117,6 +118,9 @@ held the real values; and `patch_products_safe`, `update_products` and `ProductS
 `VariantId`) each answer success and leave the row untouched. Per-variant **price** has a working
 in-product surface (`save_prices` with `productId` and `variantId`); per-variant number, name, unit,
 active and stock do not.
+
+The measured cause is the master-only default on six product fields, and the unlock that makes a
+variant write persist is the first row of "Product verb and tool traps measured on a live host" below.
 
 **Surface: `SQL`,** on the rows a combination create has already made:
 
@@ -523,3 +527,15 @@ DELETE FROM UnifiedPermission
   the duplicate fields with `delete_product_fields`; the backfill and the column drop go to the user.
 - **The debt it owes**: flush `ProductFieldService`, `ProductService`, `CompletionRuleService` and
   `PermissionService` (or restart the host), then a Full Products index build.
+
+## Product verb and tool traps measured on a live host
+
+Each row is a call that answers as if it had done what was asked [dw 10.28.10 · mcp 0.6.0-beta]. The rows mix surfaces, so
+each names its own, and every "do instead" ends with a read that is not the call's own echo.
+
+| Surface | Call | What it answers | What is true | Do instead |
+|---|---|---|---|---|
+| Management API, MCP | `ProductSave` with `VariantId`; `patch_products_safe` or `update_products` with `variantId` | success, echoing the requested values | Six product fields are master-only by default (`ProductNumber`, `ProductPrice`, `ProductStock`, `ProductShortDescription`, `ProductMetaTitle`, `ProductMetaDescription`: per-field variant editing off, stored as `EcomProductField.ProductFieldAllowChangesAcrossVariants`, an empty table on a stock host). A master save through any route copies the master value onto every variant row, and a later variant save is put back to the master value. | Unlock first: `POST /Admin/Api/ProductAttributeSettingsSave {"FieldIds":[<the six>],"VariantEditing":true}` (`ProductFieldById` then reads `variantEditing: true`); the variant writes persist after it. Verify on the variant row, MCP `get_products_by_sku` with the new variant number or `ProductById` with `VariantId`, never on the response echo. |
+| Management API | `ProductAssetByProductKey` with `ProductVariantId` | the master's asset rows | The parameter is ignored; the variant's own asset rows exist and are not listed. | List variant asset rows through `ProductAssetByAssetValueAndProductId`; `ProductAssetMetadataSave` with `VariantId` in the model writes them. |
+| MCP, Management API | `get_product_category_fields` with no arguments; `ProductCategoriesAll` with the default `categoryType` | `count: 0` / `totalCount: 0` | The host carries category fields and values; neither list reaches them. | Inventory category fields through `ProductById`, where they render per product. `patch_products_safe` writes `ProductCategory\|<category>\|<field>` values and echoes only global fields: confirm by re-reading the product. |
+| Management API | `GET ProductCatalogGroupsSortList` | 500 `Serialization of System.Type is not supported` (`$.Model.SaveCommandType`) | The read verb is broken; `ProductCatalogGroupsSaveSort` works. | Write the order with `ProductCatalogGroupsSaveSort` and read it back on the rendered menu, which is the only reader of the order. |
