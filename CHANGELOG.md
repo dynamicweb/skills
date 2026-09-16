@@ -3,6 +3,40 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [4.38.0]
+
+New `dw-commerce-poc-storefront` skill: building a proof-of-concept storefront from a public
+source website, catalogue first.
+
+- **No skill covered the catalogue half of "rebuild their site here".** `dw-swift-migrate-content`
+  is content-only and explicitly side-lists product list and detail pages; `dw-pim-migrate-dw9`
+  starts from an export that a prospect's public website does not give you. This skill is the
+  missing path: crawl a live shop, derive a Data Model from the attributes the crawl actually
+  found, import products and media, assemble the Swift 2 storefront, and review it in rounds.
+- **A readiness gate is Phase 0, not an assumption.** `references/preflight.md` makes the four
+  preconditions explicit and checkable — a solution able to *host* a storefront rather than
+  merely answer, proof that the connected MCP server is that same solution, a confirmed source
+  origin, and an agreed scope including the VAT display decision. Proving server identity before
+  the first write is the cheapest check in the flow and the most expensive one to skip.
+- **`references/catalogue.md` records why a facet turns to word salad.** A text-typed category
+  field is analysed by the index, so `Made to order` facets as `made` + `order`; a list-typed
+  field indexes the stored value verbatim. The comma corollary (a faceted value written `17,5`
+  splits into two options) and the label-collision corollary (two fields sharing a label render
+  two identically named dropdowns, and labels cannot be renamed in place) travel with it.
+- **`references/storefront.md` collects the writes that report success and change nothing** —
+  a grid column rendering only its first paragraph, `Active: false` being a no-op inside a grid
+  row, rows without an item instance not rendering on component pages, and, the costliest one,
+  repeatable item-list children whose field edits never reach the frontend while the read-back
+  shows the new value. That family needs a structural edit: remove the child and add a
+  replacement.
+- **`references/visual-qa.md` makes the critic loop reproducible** — parallel single-dimension
+  critics, a brief that re-asks last round's findings and carries a known-issues list so rounds
+  do not re-report the same non-defects, HTML-level checks that catch what eyes miss, and the
+  grouped limitations document that ships with the URL.
+- **`scripts/capture-pages.mjs`** is the fallback for harnesses with no browser tool: full-page
+  capture at desktop and phone widths with the four traps encoded (banner dismissal, lazy-load
+  pass, image-decode wait, explicit proxy), sliced into review-sized JPEGs with a manifest.
+
 ## [4.37.0]
 
 New `dw-extend-admin-ui` skill: extending the administration interface from your own assembly.

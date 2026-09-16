@@ -25,6 +25,7 @@ skills/
   dw-pim-*/                 # PIM modelling, completeness, workflow, localization
   dw-pim-migrate-dw9/       # migrate a DW9 product catalog into DW10 PIM
   dw-commerce-*/            # catalog, orders, B2B
+  dw-commerce-poc-storefront/ # POC storefront built from a source website
   dw-search-indexing/       # search indexes on Lucene
   dw-users-permissions/     # users, groups, permissions
   dw-extend-*/              # C# API, providers, scheduled tasks, MCP tools, admin UI
@@ -120,6 +121,9 @@ Migrate a Dynamicweb 9 solution's product structure and catalog data into a Dyna
 
 **[dw-commerce-catalog](skills/dw-commerce-catalog/SKILL.md)**
 Render product catalogs and assortments in Dynamicweb 10.
+
+**[dw-commerce-poc-storefront](skills/dw-commerce-poc-storefront/SKILL.md)**
+Build a proof-of-concept storefront from a public source website — readiness preflight, catalogue crawl, PIM data model, product import, Swift 2 assembly, and a critic-driven visual QA loop.
 
 **[dw-commerce-orders](skills/dw-commerce-orders/SKILL.md)**
 Handle orders, checkout, and cart functionality.
