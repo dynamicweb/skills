@@ -5,17 +5,22 @@ group: commerce
 mcp: required
 dynamo: false
 compatibility: Needs a way to render pages and capture screenshots - a browser tool where the harness provides one, otherwise Node 18+ with Playwright and Chromium for the bundled capture script
-description: 'Build a complete Dynamicweb 10 proof-of-concept storefront from a public source website — readiness preflight, catalogue crawl, PIM data model, product and media import, Swift 2 site assembly, and a critic-driven visual QA loop. Triggers: scrape a prospect or customer site and build it as a shop in Dynamicweb, build a POC/demo storefront from their website, "put all their products in a good data model in a new shop", turn a live webshop into a DW10 catalogue plus a Swift 2 site, rebuild their site improved rather than copied. Non-triggers: content pages with no catalogue -> dw-swift-migrate-content; a DW9 product export already in hand -> dw-pim-migrate-dw9; a faithful Swift 1 layout port -> dw-swift-migrate-v1; one page from a mockup -> dw-swift-page-design; Data Model design with no source site -> dw-pim-modelling.'
+description: 'Build a complete Dynamicweb 10 proof-of-concept storefront from a public source website — catalogue crawl, PIM data model, product and media import, Swift 2 site assembly, and a critic-driven visual QA loop, run autonomously from one brief. Triggers: scrape a prospect or customer site and build it as a shop in Dynamicweb, build a POC/demo storefront from their website, "put all their products in a good data model in a new shop", turn a live webshop into a DW10 catalogue plus a Swift 2 site, rebuild their site improved rather than copied. Non-triggers: content pages with no catalogue -> dw-swift-migrate-content; a DW9 product export already in hand -> dw-pim-migrate-dw9; a faithful Swift 1 layout port -> dw-swift-migrate-v1; one page from a mockup -> dw-swift-page-design; Data Model design with no source site -> dw-pim-modelling.'
 ---
 
 # POC storefront from a source website
 
 ## MCP preflight
 
-This skill drives the Dynamicweb MCP server — every write in it is a tool call. Before
-starting, verify the Dynamicweb MCP tools are available and answer against the solution you
-intend to build in. When they are not, stop and tell the user the MCP connection is missing;
-keep the direct SQL, file edits and guessed HTTP calls out of it, and let them reconnect.
+This skill builds through the Dynamicweb MCP server: the data model, the catalogue and the
+site are all tool calls. Verify the tools are available **at the step that first needs them —
+the first write** — rather than before the first step. The crawl runs entirely against the
+source site and needs nothing from the solution, so when the connection is not up yet, crawl
+first and bring the server up before modelling.
+
+When the tools are missing at that point, say so and wait for the connection rather than
+substituting direct SQL, file edits or guessed HTTP calls. Nothing is lost by pausing there —
+the crawl output is on disk and the import resumes from it.
 
 Tool families vary per installation. This skill uses only the base catalogue, content and
 index tools. When a server also ships the site-extraction add-in (`extract_site_content`,
@@ -31,30 +36,54 @@ model with filterable attributes, products with images and prices, and a Swift 2
 that demos end to end. It is an argument for the platform, so it is judged the way a shopper
 judges a shop: can I find, compare, understand and buy.
 
-The work splits into a readiness gate and five phases. Run the gate first, every time.
+## Run it autonomously
 
-## Phase 0 — the readiness gate
+The shape of this job is one brief in, a finished storefront out. Two facts have to come from
+the user because nothing else can supply them — **which site to build from** and **which
+solution to build into**. Everything else you determine yourself, state in a line as you go,
+and proceed on.
 
-Four things must be true before any crawling or modelling. Establish each one explicitly and
-report what you found; when one fails, stop at that line and ask, rather than building on a
-guess.
+That includes the decisions it is tempting to ask about: catalogue breadth, locale and
+currency, whether prices show with or without VAT, new area and shop versus an existing one,
+naming, which attributes become facets, how the pages are arranged, and what the copy says.
+Each is answerable from the source site and the solution, each is visible in the result, and
+each is cheap to change afterwards. A POC stalls on questions.
 
-1. **A Dynamicweb 10 solution that is ready to be used.** Not merely reachable — able to host
-   a storefront: a frontend that answers, a design with Swift 2 installed, a language and
-   currency, and an index repository. `get_frontend_health`, `get_areas`, `get_layouts`,
-   `get_languages`, `get_shops`, `get_index_repositories`.
-2. **The MCP connection points at that same solution.** A connected server against a
-   *different* install is the most expensive failure in this flow, because it surfaces
-   hundreds of writes later. Prove the identity before writing.
-3. **A source URL, reachable and in scope.** One canonical origin, confirmed by fetching it.
-   Establish that the user is entitled to crawl it — a prospect's own public site for a POC
-   they commissioned is the normal case, and worth stating out loud once.
-4. **An agreed build scope.** Which product families, roughly how many products, which
-   locale, whether prices are shown with or without VAT, and whether this is a new area and
-   shop or an addition to an existing one.
+Stop and ask only where continuing would be unsafe or wasted:
 
-[`references/preflight.md`](references/preflight.md) carries the checks, the exact calls, and
-what "ready" means for each one.
+- no solution you can reach, or none with a Swift 2 design to build on,
+- the connected MCP server cannot be shown to be the solution the user means,
+- the source origin does not resolve, or its catalogue sits behind a login you were not given,
+- the request is to crawl a site the user has no relationship with.
+
+Report determinations as you make them — a line each, in passing — so the user can correct one
+without being asked to approve all of them.
+
+## Ground truth, and when each piece is due
+
+Establish these in two groups, at the point each is actually needed.
+
+**Before crawling** — nothing here touches the solution:
+
+1. **The source origin.** One canonical host, confirmed by fetching it: `example.com`,
+   `www.example.com` and a regional subdomain often serve different catalogues and prices.
+   Probe `/dwapi/` while you are there — a delivery API turns the crawl from parsing into
+   paging.
+2. **Scope, read off the source.** Which families exist, roughly how many products, which
+   locale the demo should show, and whether the source quotes prices with or without VAT.
+
+**Before the first write** — now the solution matters:
+
+3. **A solution able to host a storefront.** Not merely reachable: a frontend that answers, a
+   Swift 2 design that is actually the area's design, a language and a currency, a shop, and an
+   index repository whose real name you record. `get_frontend_health`, `get_areas`,
+   `get_layouts`, `get_languages`, `get_shops`, `get_index_repositories`.
+4. **Proof the MCP server is that solution.** A server connected to a *different* install
+   answers every call happily, and the mistake surfaces hundreds of writes later. Match the
+   public site against `get_areas` before writing.
+
+[`references/preflight.md`](references/preflight.md) carries the checks, what "ready" means for
+each, and how to derive the scope decisions instead of asking for them.
 
 ## The five phases
 
@@ -81,7 +110,7 @@ costs a paragraph and at round 3 costs a rebuild.
 
 | Reference | Read it when |
 |---|---|
-| [preflight.md](references/preflight.md) | Before anything else — the four preconditions and their checks |
+| [preflight.md](references/preflight.md) | Establishing ground truth — before the crawl, and again before the first write |
 | [crawl.md](references/crawl.md) | Extracting the source: delivery API first, HTML crawl as fallback |
 | [catalogue.md](references/catalogue.md) | Data model, field types, product/price/image import, the index |
 | [storefront.md](references/storefront.md) | Swift 2 assembly, and the traps that silently do nothing |
@@ -95,12 +124,11 @@ and [dw-search-indexing](../dw-search-indexing) for indexes and queries.
 
 ## How this flow reaches a browser
 
-Two capabilities carry the crawl and the QA, and each has a preference order. Establish which
-one you have at the gate rather than discovering it mid-round.
+Two capabilities carry the crawl and the QA, and each has a preference order.
 
 - **Rendered HTML** — for facet options, leftover demo strings, link targets and counts. Use the
   MCP server's `fetch_frontend_page_html` for the target solution; it needs no browser and it is
-  the fastest check in the flow. Reach for a browser only when the page builds its content
+  the fastest check in the flow. Reach for a browser only when a page builds its content
   client-side.
 - **Screenshots** — for anything judged by eye. Use the harness's own browser tool when it has
   one. When it has none, `scripts/capture-pages.mjs` drives a headless Chromium instead.
@@ -116,7 +144,7 @@ node scripts/capture-pages.mjs --base-url https://<solution-host> --out shots/ro
   --paths /en-gb/home /en-gb/shop /en-gb/shop/<category> /en-gb/shop/<category>/<product>
 ```
 
-Skip the script entirely when a browser tool is available - capture the same page set with it,
+Skip the script entirely when a browser tool is available — capture the same page set with it,
 at the same two widths, and feed those images to the critics.
 
 ## Where the quality is won

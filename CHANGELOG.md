@@ -13,11 +13,14 @@ source website, catalogue first.
   starts from an export that a prospect's public website does not give you. This skill is the
   missing path: crawl a live shop, derive a Data Model from the attributes the crawl actually
   found, import products and media, assemble the Swift 2 storefront, and review it in rounds.
-- **A readiness gate is Phase 0, not an assumption.** `references/preflight.md` makes the four
-  preconditions explicit and checkable — a solution able to *host* a storefront rather than
-  merely answer, proof that the connected MCP server is that same solution, a confirmed source
-  origin, and an agreed scope including the VAT display decision. Proving server identity before
-  the first write is the cheapest check in the flow and the most expensive one to skip.
+- **The flow runs autonomously, and MCP is due at the first write rather than the first step.**
+  Only two facts have to come from the user — which site to build from, which solution to build
+  into. `references/preflight.md` derives the rest (breadth, locale, currency, VAT display, where
+  it lands, which attributes become facets) from the source and the solution, with the default
+  for each, so a POC does not stall on a checklist; four genuine blockers are named separately.
+  The crawl needs nothing from the solution, so the MCP check belongs at the step it gates, and
+  proving the connected server *is* the intended solution is the cheapest check in the flow and
+  the most expensive one to skip.
 - **`references/catalogue.md` records why a facet turns to word salad.** A text-typed category
   field is analysed by the index, so `Made to order` facets as `made` + `order`; a list-typed
   field indexes the stored value verbatim. The comma corollary (a faceted value written `17,5`

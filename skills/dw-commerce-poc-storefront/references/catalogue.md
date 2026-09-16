@@ -116,8 +116,8 @@ per pass is what lets you prove an enrichment changed only what it meant to.
 
 ## Prices, images and relations
 
-- **Prices** — `save_prices`, in the agreed currency. Set the area's `pricesWithVat` to match
-  the decision from the gate.
+- **Prices** — `save_prices`, in the currency the source quotes. Set the area's
+  `pricesWithVat` to match the source's own convention, and say which way you set it.
 - **Images** — `import_product_images_from_urls` fetches server-side from the crawl's URL list.
   Then check the primary image of every product as a contact sheet and repoint the ones showing
   a detail crop with `set_product_primary_image`.
