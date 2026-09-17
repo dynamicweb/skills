@@ -25,7 +25,11 @@ surface these steps may use. When no tool covers the operation, **stop and tell 
 the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
 outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
 product, are never a step in this skill, and are owned by
-[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance". The out-of-product
+form of the recipes in this area — copying an activity between installs, validating a job file
+before running it, binding one to a scheduled task — is
+[`dw-data-access/references/recipes-integration.md`](../dw-data-access/references/recipes-integration.md),
+which links the scripts that carry them.
 
 ## Architecture Overview
 

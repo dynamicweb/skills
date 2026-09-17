@@ -123,6 +123,12 @@ that demonstrably exists. Two ways to refresh it, in order:
    on the very next tick after this flush, with no host restart. Where the flush does not take, an
    app-pool recycle does. Only the per-task run bookkeeping behaves as though it were snapshotted.
 
+**The script:** out of product, the whole contract above is enforced by
+[`dw-data-access/scripts/Register-DwScheduledTask.ps1`](../../dw-data-access/scripts/Register-DwScheduledTask.ps1)
+— it writes the row, flushes `Dynamicweb.Scheduling.TaskService`, and verifies from the paged task
+list, dry run by default. The rule and the why stay here; the script is the how. The recipe entry is
+[`dw-data-access/references/recipes-extend.md`](../../dw-data-access/references/recipes-extend.md).
+
 Either way, **prove the registration from the task list rather than from the INSERT** —
 `GET /Admin/Api/Tasks` must return the task by name; mind the ten-row default page size, which is
 how a freshly added task reads as absent on a solution that already has ten.

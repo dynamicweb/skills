@@ -4,6 +4,7 @@ type: knowledge
 group: setup
 mcp: none
 dynamo: false
+compatibility: Requires PowerShell 7.x
 description: 'Configure Dynamicweb 10 environment and connection settings. Triggers: configuration surfaces, environment setup, connection strings, GlobalSettings, appsettings.json, environment variables, SMTP, log retention, go-live checklist. Non-triggers: upgrading versions -> dw-setup-upgrade; installing new solutions -> dw-setup-install.'
 ---
 
@@ -330,6 +331,20 @@ Templates/Designs/**/_parsed
 **Backslash escaping** — `FilesPath` in `appsettings.json` on Windows requires double-backslash: `"C:\\DwSolutions\\Files"`.
 
 **Azure scale-out** — Dynamicweb does not support horizontal scale-out (multiple instances). Only scale-up is supported.
+
+## Scripts (scripts/)
+
+| Script | Reads / writes | What it does |
+|---|---|---|
+| [Test-DwFileArchiveExposure.ps1](scripts/Test-DwFileArchiveExposure.ps1) | Read-only | Performs go-live checklist item 8: one anonymous, cookie-free, bearer-free request per archive path, reporting SERVED / EXPECTED / BLOCKED. The default path set is the one measured on a stock 10.28.x install (the job folder, the item XML, the serializer config, a blocked-extension control, and the legacy Data Integration job runner). An undeclared 200 fails the run; `-ExpectServed` turns an exposure that cannot be closed into a declared caveat. Self-contained — it imports nothing, because a bundle shipping this skill does not ship `dw-data-access` |
+
+```powershell
+pwsh -NoProfile -File scripts/Test-DwFileArchiveExposure.ps1 -BaseUrl "https://<host>"
+```
+
+The rule it enforces, and the two rules it cannot check (the UTF-16LE false-clean grep, the doubled
+`Files\Files` root), are in
+[`references/host-exposure-and-paths.md`](references/host-exposure-and-paths.md).
 
 ## Next Steps
 

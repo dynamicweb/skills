@@ -47,6 +47,19 @@ Three things follow:
 Where the exposure cannot be closed, assert it deliberately — a gate check that **expects** the 200,
 named as a known caveat — so nobody discovers it in front of a customer.
 
+**The script:** [`../scripts/Test-DwFileArchiveExposure.ps1`](../scripts/Test-DwFileArchiveExposure.ps1)
+is that enumeration — one anonymous request per path, the measured default set above, an undeclared
+200 failing the run, and `-ExpectServed` for the caveat you accept deliberately. It sends no cookie,
+no bearer and no API key, because the question is what an anonymous internet client sees. Read-only.
+
+```powershell
+pwsh -NoProfile -File scripts/Test-DwFileArchiveExposure.ps1 -BaseUrl "https://<host>" -ExpectServed /Files/System/Items/
+```
+
+The script cannot decode a job file for you: the UTF-16LE false-clean above stays a manual assert,
+and the archive path doubles `Files\Files` (a single-`Files` URL 404s, which is how a reachable
+folder gets written off as unreachable).
+
 ## A web.config `<location>` can silently unhook the app from a sub-path
 
 DW's stock `web.config` declares the ASP.NET Core Module handler (the entry that hosts the whole
