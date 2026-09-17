@@ -196,6 +196,8 @@ standing defect stays visible rather than being rediscovered.
 
 ## Driving the DW 10.28 admin shell
 
+**The five guards below ship as a script.** [`../scripts/admin-shell-driver.mjs`](../scripts/admin-shell-driver.mjs) exports each one as a function that THROWS on a violated guard (`evaluateClick`, `clickByText`, `closeAi`, `assertTreeNav`, `openProductEdit`, `gridEditCell`, `readChangedCount`), plus a small CLI: `node admin-shell-driver.mjs tree-nav --base $env:DW_BASE_URL`. Import it rather than re-deriving a recipe; the rules, and the defect each one encodes, stay here, so an in-product reader with no shell still learns them. Credentials come from `DW_ADMIN_USER` / `DW_ADMIN_PASSWORD` in the environment (or, better, a `--storage-state` session saved by a signed-in run), never from a flag or a default, and TLS validation is skipped only for a localhost base URL or an explicit `--allow-self-signed`.
+
 Verification-only still applies: these are the mechanics for reaching a screen and reading it back,
 not a licence to author through the UI (`references/surface-priority.md`). The one sanctioned
 authoring exception, PIM grid edit, carries its own read-back/abort guard in
