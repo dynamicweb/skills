@@ -20,6 +20,7 @@ rule that governs every edit — the one-way foundational/demo boundary — live
 - [Writing the instruction body](#writing-the-instruction-body)
 - [Length budgets and references](#length-budgets-and-references)
 - [Shipping scripts](#shipping-scripts)
+  - [AV-safe scripts](#av-safe-scripts)
 - [Adding a new skill](#adding-a-new-skill)
 - [Updating marketplace.json](#updating-marketplacejson)
 - [Demo skills dependency order](#demo-skills-dependency-order)
@@ -339,6 +340,58 @@ declared runtime, import resolution, secrets, environment literals, encoding, un
 the validator's job; review enforces the rest. Lifting a script out of a demo build has its own
 gates in [`fold-back-workflow.md`](../../../skills/dw-demo-foldback/references/fold-back-workflow.md)
 ("Step 1c").
+
+### AV-safe scripts
+
+Endpoint protection scores a script on the **verbs it co-locates**, not on syntax. Two tracked
+harness scripts were quarantined and deleted from their working trees by a behavioural engine
+while a larger file in the same directory, with more calls to the web cmdlets and more TLS
+bypasses, was never touched. What the flagged pair carried and the survivor did not was one file
+that uploaded arbitrary files into a live web server's file archive, created and deleted an
+administrator, ran arbitrary SQL through a scheduled task, and sent a browser User-Agent so the
+target treated it as a human. Neither file contained a single obfuscation construct.
+
+These rules lower the score. They are hygiene, not a guarantee, and the operational half at the
+end is the only durable fix.
+
+**Structure.** One capability per file, with the destructive verbs split out: read and assert in
+one script, each write family in its own. Keep a file under roughly 400 lines. Shared plumbing
+lives in one module, [`Dw.Api.psm1`](../../../skills/dw-data-access/scripts/Dw.Api.psm1), imported
+`$PSScriptRoot`-relative with `-ErrorAction Stop` and followed by `Assert-DwConnection`; a blocked
+import must fail loudly rather than let the caller compare against empty output.
+
+**HTTP.** `Invoke-RestMethod` or `Invoke-WebRequest` with explicit named parameters. No
+`System.Net.WebClient`, no `DownloadString`, no `Add-Type`, no reflection, no `Invoke-Expression`,
+no string-built commands, no base64 payloads. Gate the TLS bypass: `-SkipCertificateCheck` only
+for a loopback base URL or an explicit `-AllowSelfSignedCertificate` opt-in, never unconditionally
+on every call. Where a browser-shaped `User-Agent` or `Accept` header is functionally required,
+set it through one named helper with an inline `# why:` comment stating the protocol reason, so it
+reads as a requirement rather than as evasion.
+
+**Secrets.** Environment only, in the discovery order the file contract above already fixes, then
+fail with the one-liner that fixes it. No literal password, no inline connection string carrying
+credentials (a measured AMSI trigger), no token as a parameter default, no
+`ConvertTo-SecureString -AsPlainText`, no credential blob on disk. Mask every token in every log
+line.
+
+**Destructive verbs.** `[CmdletBinding(SupportsShouldProcess)]`, dry run by default, `-Apply` to
+write - which is also the lower-scoring default behaviour. Admin-account creation and deletion,
+backend-access revocation, and arbitrary-SQL execution do not belong in a shipped script at all,
+whatever the caller's convenience; a skill that needs one states the admin screen instead.
+
+**Owner actions, outside the repo.** Content hygiene never lifts an existing verdict, so the
+durable answers are all console-side and none of them is a code change: **path exclusions** in the
+endpoint-protection policy for the repo trees and the agent scratchpad root; **Authenticode
+signing** of every shipped `.ps1`/`.psm1` with an internal certificate plus an `AllSigned` or
+`RemoteSigned` execution policy; and a **false-positive submission** to the vendor so the cloud
+verdict is corrected for the whole tenant rather than worked around on one machine. Either way,
+**never re-use a burned path**: a flagged filename stays dead on that machine, so a restored
+capability ships under a new name and the retired one is recorded, not recreated.
+
+The machine-checkable half (`Invoke-Expression`, `Add-Type`, `FromBase64String`, the legacy web
+client, a literal credential, an ungated TLS bypass, an undocumented `User-Agent`, the 400-line
+budget) is enforced by `scripts/validate-skills.py`. The operational half is not checkable and is
+listed above as owner actions.
 
 ## Adding a new skill
 
