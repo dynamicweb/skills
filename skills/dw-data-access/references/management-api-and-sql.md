@@ -447,6 +447,84 @@ Same failure shape as the two traps above: a comparison that returns a plausible
 is worse than no comparison, because it makes "the write did not land" and "my reader is broken" the same
 observation.
 
+### The shared module's verbs, and the two it refuses
+
+One line per rule, so a reader who never opens a script still learns it. The read half is
+[`Dw.Api.psm1`](../scripts/Dw.Api.psm1); the write half is
+[`Dw.Api.Write.psm1`](../scripts/Dw.Api.Write.psm1), a separate file because a script that reads,
+uploads, deletes users and rewrites settings is the co-located verb cluster endpoint protection
+scores.
+
+**Read half.**
+
+- `Invoke-DwQuery` - a list verb applies a default page size while still reporting the full
+  `totalCount`, so page 1 of 4 makes a present item read as ABSENT. Always send the page size,
+  walk every page, and reconcile the collected count against `totalCount` before any membership
+  test. A host that ignores the page parameter answers page 2 with page 1's rows, so a repeated
+  page is refused rather than concatenated.
+- Retry, inside `Invoke-DwApi` - a 429 is the server refusing before it acts, so it is safe to
+  retry whatever the method. A 5xx may have applied a write before failing, so only a read is
+  retried. Backoff doubles; a `Retry-After` header wins.
+- `Invoke-DwTaskRun` / `Get-DwTaskLastRun` - a task run is ASYNCHRONOUS. A freshness window of
+  the form "last run is within the last two minutes" is satisfied by the PREVIOUS run, so capture
+  the task's own last-run value before the trigger and poll for it to CHANGE. Never a wall clock.
+- `Test-DwPageProbe` - a Razor compile error still answers HTTP 200, so a status-only probe passes
+  a page that renders an error: read the body. A suppressed redirect does not throw in PowerShell
+  7, so inspect the returned response before the caught one, and never combine a zero redirect
+  limit with the HTTP-error-check switch (together they throw with no response). A response header
+  is a string array, so index it before casting or a healthy request lands in the failure handler
+  with a blank status.
+- `Get-DwServedFileHash` - the file archive is reached through junctions and file-change
+  notification does not propagate through one, so the host can keep serving the old bytes. The
+  stale copy carries every sentinel marker the new one does, so only a hash of the SERVED bytes
+  separates them.
+- `Get-DwSqlCount` - a blank is NOT a zero. A count helper that returns empty for a failed read
+  makes "nothing matched" and "the read never ran" the same observation, and a delete gated on
+  "count is 0" then passes on a read that never happened.
+- `ConvertTo-DwApiValue` - a DataRow field, a DBNull or any non-primitive handed to the JSON
+  serializer reaches the API as a JSON OBJECT. The binder cannot bind it, the property lands as an
+  empty string, and the call still answers ok, so the write silently blanks the column it meant to
+  preserve. Booleans and numbers stay typed; the binder wants those.
+- `Get-DwCategoryFieldSort` - there is no API read of the category field sort: the list GET answers
+  500 because the shared sort-screen query model exposes a save-command member of type
+  `System.Type`. Only the save command is usable, so the read before that write comes from SQL.
+- `Get-DwBrowserUserAgent` - the one place a browser-shaped User-Agent is set, with the reason
+  inline. The platform silently drops cart commands for a non-browser UA: the command answers 200,
+  creates the cart row and adds ZERO order lines. That is a protocol requirement of the target,
+  not evasion, and it belongs in one named helper rather than pasted into each probe.
+
+**Write half.** Every verb is a reported dry run until `-Apply`, and every one proves the write by
+READING BACK; an HTTP 200 is never the evidence.
+
+- `Remove-DwUser`, `Remove-DwGroup` - the ids go as an array of STRINGS. A singular numeric id
+  answers 400 and leaves the row alive; a numeric array element answers 500 and leaves the row
+  alive. Both read as success to a wrapper that only checks that the call returned.
+- `Remove-DwDynamicStructure` - the verb ignores the integer structure id entirely and binds the
+  unique-id GUID; an integer answers 500 with a GUID conversion error.
+- `Set-DwGlobalSetting` + `Assert-DwGlobalSettingNode` - the save does not validate the key against
+  a schema. Naming a path that does not exist CREATES it, the save answers ok, and the by-key read
+  echoes the invented key back while the application keeps reading the real one. So re-parse the
+  config file, require the key to resolve to exactly one node ANYWHERE in the tree (a stray sibling
+  under a different parent is what makes a setting dead), and assert a caller-supplied effect.
+- `Send-DwFile` - the upload verb derives the destination name from the LOCAL filename, so an
+  upload can genuinely succeed at creating a second file beside the one it meant to replace. The
+  destination name is mandatory; the archive's reported size lags the write, so poll for it; and
+  hash the served bytes afterwards.
+- `Clear-DwRecycleBin` - clearing one id legitimately removes more than one row, because a master
+  cascades to its language copies. Assert the removed id SET is a subset of your own expected set;
+  a count delta fires on correct behaviour.
+
+**Refused, and not for a caller's convenience.** Neither has a shipped script, here or anywhere:
+
+- **Arbitrary SQL executed through a scheduled task.** Already a banned path, and the one verb that
+  turns the module into a remote code-execution tool.
+- **Admin-account creation and deletion, and backend-access revocation.** Admin-account lifecycle
+  does not belong in a shipped script: it is half of the verb cluster that gets a file quarantined.
+  Note also that denying backend access by the flag alone is a NO-OP on an admin row, because the
+  property is computed and short-circuits on the admin check - the levers that actually work are
+  demoting the user type and deactivating the account. Do that on the admin Users screen, by hand,
+  where a human can see what else the account owns.
+
 ### AV-safe scripts: endpoint protection scores the verb cluster, not the syntax
 
 The AMSI false positive above is the mild form. The severe form is a behavioural engine that

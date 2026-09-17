@@ -25,6 +25,30 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   reason. Past 400 lines is a warning. Comments and help blocks are exempt, because the rules score
   code and not prose. `python scripts/validate-skills.py --self-test` proves each rule fires
   against `scripts/tests/fixtures/av-nonconforming` and that a conforming module stays clean.
+- **The shared module gains the paged read half, and a separate write half.** The capabilities of
+  a quarantined harness helper are re-authored rather than copied, split so no one file carries
+  the verb cluster that got the original flagged. `Dw.Api.psm1` gains `Invoke-DwQuery` (walks every
+  page, reconciles the collected count against the server's own total, and refuses a repeated page
+  rather than doubling the rows), a 429 and read-5xx retry with exponential backoff inside
+  `Invoke-DwApi` (a write 5xx is never retried: it may have applied before it failed),
+  `Get-DwTaskLastRun`/`Invoke-DwTaskRun` (poll the task's own last-run for a CHANGE, because a
+  wall-clock freshness window is satisfied by the previous run), `Test-DwPageProbe` (reads the
+  body: a Razor compile error still answers 200), `Get-DwServedFileHash` (the static-file cache
+  does not invalidate through a junction), `Get-DwSqlCount` (a blank is not a zero),
+  `ConvertTo-DwApiValue`, `Get-DwCategoryFieldSort`, `Get-DwConnection` and
+  `Get-DwBrowserUserAgent` (one documented place for the UA the platform's cart commands require).
+- **New `Dw.Api.Write.psm1`** carries the write and cleanup verbs - `Remove-DwUser`,
+  `Remove-DwGroup`, `Remove-DwDynamicStructure`, `Set-DwGlobalSetting` +
+  `Assert-DwGlobalSettingNode`, `Send-DwFile`, `Clear-DwRecycleBin` - each
+  `SupportsShouldProcess`, each a reported dry run that issues no request until `-Apply`, each
+  proving the write by reading back. It **refuses** arbitrary SQL through a scheduled task and the
+  whole admin-account lifecycle (creation, deletion, backend-access revocation): those are half of
+  the flagged verb cluster and belong on the admin Users screen, not in a shipped script. The
+  owning reference states every rule in prose, so nothing is learnable only by reading a script.
+- **First Pester suite in the repo**: `skills/dw-data-access/scripts/tests/Dw.Api.Tests.ps1`, 27
+  hermetic tests with no host, database or network - paging concatenation and the repeated-page
+  refusal, retry and backoff including the write-5xx exclusion, the DataRow payload fence, the
+  count contract, and that every write verb is a no-op issuing zero requests without `-Apply`.
 
 ## [5.1.5]
 
