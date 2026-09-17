@@ -3,6 +3,27 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.1.4]
+
+The Distribution repo is named verbatim, so a build can no longer talk itself out of it.
+
+- **`justdynamics/Truvio.Commerce.Distribution` replaces the `<owner>/<distribution-repo>`
+  placeholder** in every clone snippet (`dw-demo-base/references/scaffold.md` §5,
+  `dw-demo-swift` deserialize-flow, pack-activation and styles-assets) and in the prose that
+  pointed at `$env:DW_DISTRIBUTION_REPO`. The variable survives as an optional mirror override,
+  never a prerequisite: the repo is public, so an unset variable is not a missing repo. A presales
+  build read the unset variable plus a repo search under the wrong org as "no Distribution
+  access", fell through to path C, and shipped without the product index, the personas and the
+  sign-in that the `sample-data` layer carries working. `scaffold.md` §5 now says what to do
+  instead: clone the default, and on failure report the git error and ask for the mirror.
+- **`branded-demo-paths.md` "Path C by accident"**: a missing checkout is a discovery failure until
+  proven otherwise; "YAML first without the Distribution" is not path A but path C with extra files;
+  and a "minimum foundation, no sample content" brief still takes path A, because the brand layer
+  replaces the shipped copy rather than adding to it.
+- **`dw-swift-migrate-content` tool-availability rule** gains the missing half: the seven migration
+  tools ship inside the Backend MCP add-in and are gated by the configuration grant, so an
+  AppStore search for a separate migration app finds nothing by design and proves nothing.
+
 ## [5.1.3]
 
 A patch release that folds the measured learnings of the 5.1 experiment into the corpus. One

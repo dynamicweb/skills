@@ -178,6 +178,17 @@ Take it when: there is no Distribution content that fits the demo, or the demo i
 story where the shipped catalogue would be noise. Otherwise prefer A, or B under a condition
 below.
 
+**Path C by accident.** A missing Distribution checkout is a discovery failure until proven
+otherwise: the repo is public and named in every clone snippet (`scaffold.md` §5), so "no
+Distribution access" is never a build fact an agent establishes on its own. A branded storefront
+built on path C because the checkout was skipped pays the whole of path B's tool traps on top of
+the modelling, and lands without the three things the `sample-data` layer ships working: the
+product index behind the PLP, the personas, and the sign-in. Nor is "YAML first without the
+Distribution" a shortcut back to path A: without the `sample-data` layer there is nothing to
+override, without the composer there is no override review, and a hand-authored full layer is
+path C with extra files. A brief that says "minimum Swift foundation, no sample content" still
+takes path A: the brand layer replaces the shipped copy, it does not add to it.
+
 ## When path B wins
 
 Taken from the measured comparison; each one removes path A's advantage rather than reversing the

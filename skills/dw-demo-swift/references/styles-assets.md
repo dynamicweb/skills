@@ -47,7 +47,7 @@ $theme    = "$dist\layers\theme-default"
 if (Test-Path "$dist\.git") {
   git -C $dist pull --ff-only origin main             # main IS the version — fast-forward to the gate-proven tip
 } else {
-  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
   git clone "https://github.com/$repo" $dist
 }
 $index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json

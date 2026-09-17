@@ -84,7 +84,7 @@ The demo-specific checks owned here are the TLS env var, `git` + the `gh` CLI, t
 
 ### Check: `git` + `gh` CLI present and authenticated
 
-**Why this matters:** Demo artifacts (base, catalog, theme, feature layers) are consumed per-demo with `git clone` + `git pull --ff-only origin main` from the single Distribution repo (URL from `$env:DW_DISTRIBUTION_REPO`) — **main IS the version**; there are **no releases** to download and no tag checkout (see the base SKILL "Versions prompt + Distribution clone/checkout"). `git` does the clone; `gh`, authenticated, supplies the credential helper that lets a **private** Distribution repo clone over HTTPS. If either is missing or unauthenticated, the Swift deserialize and pack-activation flows cannot fetch their sources.
+**Why this matters:** Demo artifacts (base, catalog, theme, feature layers) are consumed per-demo with `git clone` + `git pull --ff-only origin main` from the single Distribution repo (`justdynamics/Truvio.Commerce.Distribution`, public; `$env:DW_DISTRIBUTION_REPO` only overrides it for a mirror) — **main IS the version**; there are **no releases** to download and no tag checkout (see the base SKILL "Versions prompt + Distribution clone/checkout"). `git` does the clone; `gh`, authenticated, supplies the credential helper that lets a **private** Distribution repo clone over HTTPS. If either is missing or unauthenticated, the Swift deserialize and pack-activation flows cannot fetch their sources.
 
 **Probe:**
 
