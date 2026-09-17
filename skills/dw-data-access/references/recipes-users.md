@@ -24,6 +24,7 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Set a password on an existing login](#set-a-password-on-an-existing-login)
 - [Assert a user delete on the row count, not the status](#assert-a-user-delete-on-the-row-count-not-the-status)
 - [Delete orphaned user addresses](#delete-orphaned-user-addresses)
+- [Prove a page gate with two personas](#prove-a-page-gate-with-two-personas)
 - [Rebuild the Users index after an impersonation write](#rebuild-the-users-index-after-an-impersonation-write)
 - [Set a user group's type: `GroupSave` full-model round trip](#set-a-user-groups-type-groupsave-full-model-round-trip)
 - [Flush the three permission caches after a direct table write](#flush-the-three-permission-caches-after-a-direct-table-write)
@@ -81,6 +82,16 @@ Verify a write on the rendered surface (sign in as a member of the owner group, 
 which is what a hosted install uses) or, **local installs only**, with a read-only `SELECT` on
 `UnifiedPermission`; the Permissions panel is a verification surface, not the authoring
 path for the resources these recipes touch.
+
+**The script:** [`../scripts/Set-DwPermission.ps1`](../scripts/Set-DwPermission.ps1) carries the
+nested `Model` body, the string `Key`, the four-part `|$|` identifier and the SubName-omitted
+read-back. It takes the level by NAME and prints the number beside it, because `1` is `None`, a
+denial. The sparse level table stays here in prose on purpose, so an in-product reader can still
+recognise a denial at level 1. Dry run by default.
+
+```powershell
+pwsh -NoProfile -File scripts/Set-DwPermission.ps1 -Key 97 -Name Page -OwnerId 9 -Level Read -Apply
+```
 
 ## `PermissionsByIdentifier` — the read verb and its empty-SubName trap
 
@@ -362,6 +373,42 @@ WHERE AccessUserAddressUserId = 0
 Verify afterwards that the health provider's orphaned-address check returns 0 **and** that live
 personas still have their addresses.
 
+## Prove a page gate with two personas
+
+In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`page-gating.md`),
+which carries the row shape, the `AuthenticatedFrontend` -> `None` plus `<group>` -> `Read` pattern,
+and the enforcement points in the platform source.
+
+**Surface: the rendered page, as two signed-in identities.** Three things make this check pass while
+the gate is broken:
+
+- **"Anonymous is redirected" proves nothing.** Anonymous is the one identity a positive-only grant
+  *does* deny, which is exactly why the broken shape reads as working: a group with no row inherits
+  its PARENT's permission, and the parent of a root-level page is the permissive area default, so a
+  grant written only for the entitled groups admits every other signed-in persona. **PASS needs both
+  halves** — a full page for a granted persona AND a near-empty one for a denied persona, in the same
+  pass. A run where both personas receive the same response is a broken check, not a pass.
+- **A denied signed-in user gets no redirect and no 403.** The page answers **HTTP 200 with a
+  near-empty body** (a shell of a few hundred bytes), so the observation is the **rendered body
+  size**, not the status code.
+- **Address the page by id** (`/Default.aspx?ID=<pageId>`), never by a composed friendly path: a
+  subtree whose friendly url does not resolve answers 404 for every identity, granted and denied
+  alike, so the check passes without ever reaching the gate.
+
+Two things the check cannot cover: assets under `/Files` bypass the gate entirely, because the
+static handler never reaches the page pipeline; and gates resolve against the **effective**
+(impersonated) user, so an impersonation session inherits the impersonated identity's gate.
+
+**The script:** [`../scripts/Test-DwPageGating.ps1`](../scripts/Test-DwPageGating.ps1) signs both
+personas in on their own cookie sessions, fetches the page by id, and compares the bodies — refusing
+to run with one persona, and reporting equal bodies as a broken check rather than a pass. Read-only;
+credentials come from `DW_GRANTED_USER` / `DW_GRANTED_PASSWORD` / `DW_DENIED_USER` /
+`DW_DENIED_PASSWORD` and are never echoed.
+
+```powershell
+pwsh -NoProfile -File scripts/Test-DwPageGating.ps1 -PageId <pageId> -SignInPath /customer-center
+```
+
 ## Rebuild the Users index after an impersonation write
 
 In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
@@ -376,6 +423,25 @@ POST /Admin/Api/BuildIndex {"repository":"Users","indexName":"Users.index","buil
 ```
 
 Flush `UserService` as well, and re-read the index document of the identity whose grant was REMOVED.
+
+**One grant is one row, and the two ids are not interchangeable:**
+`AccessUserSecondaryRelationUserId` is the **impersonator** (the CSR),
+`AccessUserSecondaryRelationSecondaryUserId` is the **customer** being impersonated. The wrong
+direction is quiet — the impersonation bar is empty and the customer's admin profile shows the CSR
+under "Users that can impersonate this user", with nothing erroring.
+
+**The script:** [`../scripts/Test-DwImpersonationGrant.ps1`](../scripts/Test-DwImpersonationGrant.ps1)
+reads the row in BOTH directions, names which one it found, and reports the `Users.index` state so a
+grant is not called live while the index still answers from the pre-write documents. Read-only; it
+never builds. Mind the two repository names (`Users` and `Secondary users`, each with `Users.index`)
+and the parameter split: `IndexStatusByRepositoryAndIndexName` and
+`IndexBuildersByRepositoryAndIndexName` take `Repository` + `IndexName`, while
+`IndexInstancesByRepositoryAndIndex` takes `RepositoryName` + `IndexName`, and the wrong one answers
+`400 "Unable to load query parameters"`.
+
+```powershell
+pwsh -NoProfile -File scripts/Test-DwImpersonationGrant.ps1 -ImpersonatorUserId <csrId> -CustomerUserId <customerId>
+```
 
 ## Set a user group's type: `GroupSave` full-model round trip
 

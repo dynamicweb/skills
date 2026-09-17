@@ -17,7 +17,9 @@ surface these steps may use. When no tool covers the operation, **stop and tell 
 the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
 outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
 product, are never a step in this skill, and are owned by
-[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance". Out of product, the grant write and the
+two-persona gate proof are enforced by scripts linked from
+[`dw-data-access/references/recipes-users.md`](../dw-data-access/references/recipes-users.md).
 
 ## User Entity Structure
 

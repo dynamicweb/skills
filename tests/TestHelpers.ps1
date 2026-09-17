@@ -140,3 +140,101 @@ function Get-StubLog {
     if (-not (Test-Path -LiteralPath $LogPath)) { return @() }
     @(Get-Content -LiteralPath $LogPath)
 }
+
+function New-StubbedApiScript {
+    <#
+        The config-driven sibling of New-StubbedScript, for the scripts that
+        call Invoke-DwMcp / Invoke-DwApi / Get-DwSqlScalar. The stub reads a
+        JSON config beside itself at run time, so no response shape has to be
+        escaped into the generated module source. Every call is logged in
+        order; MCP and API calls also log their arguments as compact JSON.
+
+        Config keys, all optional:
+          mcp        map of tool name -> response object
+          api        map of command PREFIX -> response object
+          sqlScalar  array of @{ match = '<substring>'; value = <scalar> }
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$ScriptPath,
+        [Parameter(Mandatory = $true)][string]$Destination,
+        [Parameter(Mandatory = $true)][string]$LogPath,
+        [hashtable]$Config = @{}
+    )
+    New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+    $copied = Join-Path $Destination (Split-Path -Leaf $ScriptPath)
+    Copy-Item -LiteralPath $ScriptPath -Destination $copied -Force
+    $configPath = Join-Path $Destination 'stub-config.json'
+    ($Config | ConvertTo-Json -Depth 20) | Set-Content -LiteralPath $configPath -Encoding utf8NoBOM
+
+    $module = @'
+$script:StubLog = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'stub-log-path.txt') -Raw).Trim()
+$script:StubConfig = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'stub-config.json') -Raw | ConvertFrom-Json
+function Write-StubLine([string]$Line) { Add-Content -LiteralPath $script:StubLog -Value $Line }
+function Connect-Dw { param($BaseUrl, $ApiToken, $McpToken, $SqlConnection, $SolutionPath, [switch]$AllowSelfSignedCertificate) Write-StubLine 'Connect-Dw'; [pscustomobject]@{ BaseUrl = 'https://stub' } }
+function Assert-DwConnection { Write-StubLine 'Assert-DwConnection'; $true }
+function Remove-DwDisplayOnlyMember { param([Parameter(Mandatory = $true)]$Model) $Model }
+function Get-StubSection([string]$Name) {
+    if ($script:StubConfig.PSObject.Properties[$Name]) { return $script:StubConfig.$Name }
+    $null
+}
+function Invoke-DwMcp {
+    param([Parameter(Mandatory = $true)][string]$Tool, [hashtable]$Arguments = @{}, [switch]$Raw, [int]$TimeoutSec = 120)
+    Write-StubLine "Invoke-DwMcp $Tool"
+    Write-StubLine ("  args " + ($Arguments | ConvertTo-Json -Depth 20 -Compress))
+    $mcp = Get-StubSection 'mcp'
+    if ($mcp -and $mcp.PSObject.Properties[$Tool]) { return $mcp.$Tool }
+    [pscustomobject]@{ status = 'ok' }
+}
+function Invoke-DwApi {
+    param([Parameter(Mandatory = $true)][string]$Command, $Body, [string]$Method, [int]$TimeoutSec = 120)
+    Write-StubLine "Invoke-DwApi $Command"
+    if ($null -ne $Body) { Write-StubLine ("  body " + ($Body | ConvertTo-Json -Depth 20 -Compress)) }
+    $api = Get-StubSection 'api'
+    if ($api) {
+        foreach ($p in $api.PSObject.Properties) {
+            if ($Command -like "$($p.Name)*") {
+                if ($p.Value -is [string] -and $p.Value -eq 'throw') { throw "stub: $($p.Name) unavailable" }
+                return $p.Value
+            }
+        }
+    }
+    [pscustomobject]@{ status = 'ok' }
+}
+function Get-DwSqlScalar {
+    param([Parameter(Mandatory = $true)][string]$Sql, [string]$ConnectionString)
+    Write-StubLine ("Get-DwSqlScalar " + ($Sql -replace '\s+', ' '))
+    foreach ($rule in @(Get-StubSection 'sqlScalar')) {
+        if ($rule -and $Sql -like "*$($rule.match)*") { return $rule.value }
+    }
+    0
+}
+function Clear-DwServiceCache { param([string[]]$CacheTypeName, [switch]$All) foreach ($n in $CacheTypeName) { Write-StubLine "Clear-DwServiceCache $n" } }
+Export-ModuleMember -Function Connect-Dw, Assert-DwConnection, Invoke-DwMcp, Invoke-DwApi, Get-DwSqlScalar, Clear-DwServiceCache, Remove-DwDisplayOnlyMember
+'@
+    Set-Content -LiteralPath (Join-Path $Destination 'stub-log-path.txt') -Value $LogPath -Encoding utf8NoBOM
+    Set-Content -LiteralPath (Join-Path $Destination 'Dw.Api.psm1') -Value $module -Encoding utf8NoBOM
+    $copied
+}
+
+function New-StubbedMcpScript {
+    # Thin wrapper for the assortment suite: the build-queue drain, the item
+    # count and the shop-relation count are the three values it varies.
+    param(
+        [Parameter(Mandatory = $true)][string]$ScriptPath,
+        [Parameter(Mandatory = $true)][string]$Destination,
+        [Parameter(Mandatory = $true)][string]$LogPath,
+        [string[]]$PendingIds = @(),
+        [int]$ItemCount = 0,
+        [int]$ShopRelationCount = 0
+    )
+    New-StubbedApiScript -ScriptPath $ScriptPath -Destination $Destination -LogPath $LogPath -Config @{
+        mcp       = @{
+            get_assortments_for_build = @{ assortments = @($PendingIds | ForEach-Object { @{ assortmentId = $_ } }) }
+            get_assortment            = @{ assortment = @{ assortmentId = 'ASRT1'; active = $false } }
+        }
+        sqlScalar = @(
+            @{ match = 'EcomAssortmentItems'; value = $ItemCount },
+            @{ match = 'EcomAssortmentShopRelations'; value = $ShopRelationCount }
+        )
+    }
+}

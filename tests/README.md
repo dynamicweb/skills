@@ -16,4 +16,14 @@ them out of the shipped plugin, which is what a consumer wants.
 Invoke-Pester -Path tests -Output Detailed
 ```
 
+Run one suite with `Invoke-Pester -Path tests/<Name>.Tests.ps1`.
+
+Two mechanics worth knowing before adding a suite:
+
+- **A Pester mock body runs in its own session state.** A `$script:` variable written inside a
+  `Mock Invoke-WebRequest` block never reaches the test that reads it, so the recorder and the
+  response plan are `$global:` and are removed in `AfterAll`.
+- **A function defined in a `Describe` body exists only during discovery.** Helpers used by tests
+  go in the file-level `BeforeAll`.
+
 Requires Pester 5 or later on PowerShell 7.
