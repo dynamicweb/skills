@@ -3,6 +3,25 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.1.5]
+
+Hover is a re-skin deliverable, not a side effect.
+
+- **`dw-demo-swift/references/re-skin.md` gains an §Interactive states checklist.** A skin that is
+  clean at rest can be unreadable on hover, and the design gate measures resting state only, so three
+  hover defects reached an owner sign-off green (Foundry #1274, #1275, #1277). The section names the two
+  `theme-default` rules to guard — the filled-button hover whose `:not()` chain misses variants Swift
+  actually emits, and the header anchor hover that repaints button text — and lists the full variant set,
+  including the **empty** `data-dw-button` on customer-center row action toggles that no anonymous page
+  carries.
+- **A hover measurement recipe**: remove the cookie modal first or every `page.hover` lands on the
+  overlay; read computed background and colour on the control and its icon; resolve alpha before
+  computing contrast; run one anonymous pass and one signed-in pass through the persona.
+- **Two adjacent traps recorded**: the Swift Logo template inlines SVG marks, so a filename grep can
+  never prove the logo and the responsive cap must target `figure.icon-auto` (Foundry #1278); and the
+  icon-top Feature tile aligns by full-height column flexbox with `align-self: flex-start` on the icon
+  box (Foundry #1276, shipped in theme-default 2.3.5).
+
 ## [5.1.4]
 
 The Distribution repo is named verbatim, so a build can no longer talk itself out of it.
