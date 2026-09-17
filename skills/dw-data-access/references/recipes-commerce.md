@@ -23,6 +23,7 @@ states, order totals, order dates and a test order placed from a seeded cart:
 **Checkout configuration**
 
 - [Method country binding is what decides whether checkout can complete](#method-country-binding-is-what-decides-whether-checkout-can-complete)
+- [Flag, build and gate an assortment](#flag-build-and-gate-an-assortment)
 - [Counting an assortment's built item set](#counting-an-assortments-built-item-set)
 - [Removing one assortment permission: `remove_permissions_from_assortment` is write-inert](#removing-one-assortment-permission-remove_permissions_from_assortment-is-write-inert)
 - [The v2 discount engine needs a global-settings activation](#the-v2-discount-engine-needs-a-global-settings-activation)
@@ -156,6 +157,54 @@ Whatever the surface, two asserts close the step and both are mandatory. First, 
 signed-in checkout for a buyer in that country to the payment step and count the named method radios
 (`EcomCartShippingmethodID`, `EcomCartPaymethodID`): each step needs at least one with a non-empty
 value. `get_shipping_methods` and `get_payment_methods` project no relation set and pass either way.
+
+## Flag, build and gate an assortment
+
+In-product home: [dw-commerce-b2b](../../dw-commerce-b2b/SKILL.md), which carries the tool table,
+the shop-relation trap and the cart-pruning trap.
+
+**Surface: MCP, then `SQL` for the count.** The rebuild step is the number one footgun on this
+surface, in three separate ways:
+
+- **A membership write does not flag anything.** `assign_products_to_assortment` /
+  `remove_products_from_assortment` write the relation rows and leave `AssortmentRebuildRequired`
+  false and `AssortmentLastBuildDate` unchanged — relation writes and the rebuild flag are
+  independent operations in the underlying service, and the assign call gives no signal either way.
+  Follow every membership batch with an explicit `flag_assortments_for_rebuild` **plus**
+  `build_assortments`, or the nightly builder never picks the change up.
+- **Flag is not build.** `flag_assortments_for_rebuild` only marks the assortment dirty;
+  `build_assortments` does the work and may run asynchronously. Never report an assortment as ready
+  right after an assign call. No assortment-specific wait tool is registered: the only wait primitive is polling
+  `get_assortments_for_build` until the assortment is no longer in it.
+- **Both tools take an ARRAY OF REQUEST OBJECTS**, each carrying one `assortmentId` —
+  `{"requests":[{"assortmentId":"<id>"}, ...]}`, not the flat `{"assortmentIds":[...]}` that reads
+  naturally from the tool name. The flat shape fails with the bare
+  `An error occurred invoking '<tool>'.`, which names no argument and does not distinguish a wrong
+  shape from a wrong id.
+
+**Setting `EcomAssortment.AssortmentRebuildRequired` in `SQL` does not reach the builder.**
+`AssortmentService.GetAssortmentsForBuild()` reads an in-process cache and no public flush exists
+for it, so a correct `UPDATE` leaves `get_assortments_for_build` returning `[]` while the rows on
+disk are flagged — a scheduled SQL flagger would report success nightly and rebuild nothing. `SQL`
+stays a read path here.
+
+**The pre-activation count gate.** An assortment bound to a PIM data-model group (a data-model or
+data-model-folder group, not a catalogue group) carries no `EcomGroupProductRelation` rows and
+builds to ZERO items — and activating a zero-item assortment does not "add nothing", it **takes the
+whole catalogue away from everyone who holds it**, because a holder's visible set becomes the empty
+intersection. Build, then check the item count is non-zero, and only then switch `Active` on. The
+count query is the next section; it is **local installs only**, because
+`check_assortment_product_access` answers `true` for every product, every user and anonymous alike,
+and no tool projects the materialised item set. On a hosted install, compare the storefront
+catalogue rendered to a holder against the one rendered to a non-holder instead.
+
+**The script:** [`../scripts/Invoke-DwAssortmentBuild.ps1`](../scripts/Invoke-DwAssortmentBuild.ps1)
+is flag, build, poll-until-drained, count, then activate — with `-ActivateWhenNonEmpty` refused
+alongside `-SkipCountGate`, because the count IS the gate. Dry run by default.
+
+```powershell
+pwsh -NoProfile -File scripts/Invoke-DwAssortmentBuild.ps1 -AssortmentId <id> -ActivateWhenNonEmpty -Apply
+```
 
 ## Counting an assortment's built item set
 
