@@ -25,7 +25,9 @@ So **call `tools/list` first and read the answer**, in Dynamo and outside it:
 - The seven names are present: run the skill as written. Nothing below applies.
 - They are absent: name the missing tools and say the fix is to grant the migration tools to the
   MCP configuration this session connects with (the denial text names that configuration), then
-  call `tools/list` again. Never tell the user the skill cannot run on this client.
+  call `tools/list` again. Never tell the user the skill cannot run on this client, and never
+  read the absence as a missing add-in: the family ships inside the Backend MCP add-in itself, so
+  an AppStore search for a separate "migration" app finds nothing by design and proves nothing.
 
 While the grant is missing, nothing registered replaces the extraction: no registered tool reads
 another site's pages (`fetch_frontend_page_html` summarises a page of this solution only), so

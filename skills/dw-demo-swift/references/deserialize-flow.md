@@ -22,7 +22,7 @@
 `dw-demo-base` setup is complete:
 
 - [`../../dw-demo-base/references/setup-checks.md`](../../dw-demo-base/references/setup-checks.md) is green (NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express all probed and resolved).
-- The Distribution has been **cloned** (repo URL from `$env:DW_DISTRIBUTION_REPO`, default below) and pulled `--ff-only` up to `origin/main` into the demo's own `distribution\` folder (see §3 — the staging snippet clones + fast-forwards on first run). **Main IS the version**: consume the latest gate-proven `main` (assert `layers/INDEX.json` `gateProven` is present) and compose the edition's layers from the live `INDEX.json` `layers` entries. The reproducibility pin is the resolved commit SHA, recorded in `CUSTOMISATIONS.md`.
+- The Distribution has been **cloned** (`justdynamics/Truvio.Commerce.Distribution`, or the `$env:DW_DISTRIBUTION_REPO` mirror override when set) and pulled `--ff-only` up to `origin/main` into the demo's own `distribution\` folder (see §3 — the staging snippet clones + fast-forwards on first run). **Main IS the version**: consume the latest gate-proven `main` (assert `layers/INDEX.json` `gateProven` is present) and compose the edition's layers from the live `INDEX.json` `layers` entries. The reproducibility pin is the resolved commit SHA, recorded in `CUSTOMISATIONS.md`.
 - [`../../dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) produced a running `Dynamicweb.Host.Suite` (port reachable, host responds at `/admin`).
 - [`../../dw-demo-base/references/mcp-setup.md`](../../dw-demo-base/references/mcp-setup.md) verification gate passed (`claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND in-conversation `ToolSearch +dynamicweb` returns >200 tools).
 - **The DW Serializer is installed in the host** per [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Installation" section (the `Truvio.Commerce.Serializer` NuGet package added as a `PackageReference` + restored, `Files/System/Serializer/Serializer.config.json` staged, host restarted). This is a one-time-per-host step.
@@ -141,9 +141,9 @@ $dist     = "$demoRoot\distribution"               # the demo's own Distribution
 if (Test-Path "$dist\.git") {
   git -C $dist pull --ff-only origin main             # main IS the version — fast-forward to the gate-proven tip
 } else {
-  # Clone the single Distribution repo (URL from $env:DW_DISTRIBUTION_REPO, owner/name form).
+  # Clone the single Distribution repo ($env:DW_DISTRIBUTION_REPO, owner/name form, only overrides the public default).
   # See base SKILL "Layer resolution" — pin origin/main + read layers/INDEX.json, never a tag.
-  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
   git clone "https://github.com/$repo" $dist          # base + surface-swift + sample-data + ... + INDEX.json all present
 }
 $index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json

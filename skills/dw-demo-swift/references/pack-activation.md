@@ -55,7 +55,7 @@ is a base-layer improvement, not a pack.
 - A Management API bearer token captured in the current conversation (format `CLAUDE.<hex>`; keep it
   in conversation state, never write it to a file).
 - The feature layer present in the demo's Distribution clone
-  (repo URL from `$env:DW_DISTRIBUTION_REPO`) at `<demo-root>\distribution\layers\<name>\`,
+  (`justdynamics/Truvio.Commerce.Distribution`, or the `$env:DW_DISTRIBUTION_REPO` mirror override) at `<demo-root>\distribution\layers\<name>\`,
   `layer.json` at the folder root — deserialize-flow §3 already cloned the Distribution; §4 below
   fast-forwards to `origin/main` and resolves the layer from `INDEX.json`. The reproducibility pin
   is the resolved commit SHA.
@@ -115,7 +115,7 @@ $packDir  = "$dist\layers\$packName"
 if (Test-Path "$dist\.git") {
   git -C $dist pull --ff-only origin main
 } else {
-  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
   git clone "https://github.com/$repo" $dist
 }
 $index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
