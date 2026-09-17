@@ -4,7 +4,7 @@ type: flow
 group: demo
 mcp: required
 dynamo: false
-compatibility: Requires PowerShell 7.x
+compatibility: Requires PowerShell 7.x; the admin-shell driver also needs Node.js 20+ with Playwright + Chromium
 description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, when "pinning the platform" for a Distribution-validating scaffold, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (routes to dw-demo-hosted). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md. Branded-demo path choice (YAML first vs tools) in references/branded-demo-paths.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-hosted, dw-demo-erp, dw-integration-bc, dw-demo-foldback) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
 ---
 
@@ -146,6 +146,31 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 | [Restart-DwHost.ps1](scripts/Restart-DwHost.ps1) | Writes: starts/stops THIS solution's host process, a lock file, log files | Guarded host lifecycle: port-scoped ownership-verified stop, index-build-in-flight guard, lock with stale takeover, durable redirected start, /Admin readiness poll. `-Port` and `-SolutionPath` are mandatory — no defaults |
 | [Invoke-DwPiiScan.ps1](scripts/Invoke-DwPiiScan.ps1) | Read-only (optionally writes a report file) | The mechanical half of the PII/vendor sweep: string-column census, person-PII counts, whole-DB term sweep (SQL local-only), rendered-page and download probes by URL. Classes and counts only — never values |
 | [Remove-SwiftVendorBoilerplate.ps1](scripts/Remove-SwiftVendorBoilerplate.ps1) | Dry-run by default; `-Apply` rewrites stock vendor boilerplate in Swift items + module settings, backing originals up | Content-matched debrand of the stock phrases (pii-sweep Rule 2); cookie names untouched by construction; lists the manual-pass remainder. Local installs only |
+| [Test-DwDemoStoryline.ps1](scripts/Test-DwDemoStoryline.ps1) | Read-only (optionally writes a JSON result file) | The consumer self-check, not a gate: every storyline page answers 200 and carries no placeholder copy in its VISIBLE TEXT, and every persona signs in with the session proved to BE that persona. Zero probes is FAIL. Secrets from the environment or a secrets file, masked in every line. Its hermetic Pester suite is [scripts/tests/Test-DwDemoStoryline.Tests.ps1](scripts/tests/Test-DwDemoStoryline.Tests.ps1) |
+| [admin-shell-driver.mjs](scripts/admin-shell-driver.mjs) | Read-only by default; `gridEditCell` writes one cell behind a read-back/abort guard | The five DW 10.28 admin-shell Playwright guards as an importable module plus a small CLI. The rules stay in [references/browser-automation.md](references/browser-automation.md) — this is the how. Node.js 20+ with Playwright |
+
+
+### `Test-DwDemoStoryline.ps1` config shape
+
+One JSON file, `-ConfigPath`. Everything is optional except what you actually check; a
+config that declares neither `pages[]` nor `personas.accounts[]` is **FAIL**, because
+nothing measured is not a pass.
+
+| Key | Meaning |
+|---|---|
+| `baseUrl` | Host base URL. Else `-BaseUrl`, else `$env:DW_BASE_URL`. No default host |
+| `placeholderRegex` | Matched against the page's VISIBLE TEXT. Default: lorem / TODO / placeholder / sample text / xxxx+ |
+| `pages[]` | A path string, or `{ path, minBytes, maxBytes, contains[], notContains[] }`. Fetched anonymously |
+| `personas.login` | `{ path, method, usernameField, passwordField, contentType: form\|json, successCodes[], extraFields{} }` |
+| `personas.identityPath` | Default identity page for every account |
+| `personas.accounts[]` | `{ role, username, secretEnv \| secretKey, identityPath, identityContains }` |
+
+A secret is read from the environment variable named in `secretEnv`, or from the JSON file
+at `-SecretsPath` under `secretKey`. It is never in the config, never a parameter and never
+printed — the output masks it to `<set, N chars>`. Without `identityPath` +
+`identityContains` the result says the check was **status only**, because a 200 from a login
+endpoint that mints no storefront cookie leaves the session anonymous, and an anonymous
+session satisfies every denial check for the wrong reason.
 
 ## Surface priority for CREATES (always-on rule)
 

@@ -4,6 +4,7 @@ type: flow
 group: demo
 mcp: required
 dynamo: false
+compatibility: Requires PowerShell 7.x; the probes also need Node.js 20+ with Playwright + Chromium
 description: 'Dynamicweb 10 Swift 2 frontend demos — baseline content deserialize, templates, paragraph types, Visual Editor, asset organisation, the customer-center playbook, the customer re-skin ladder, and the mobile pass. Triggers: starting a Swift demo (load the baseline), re-skinning to a customer brand, "where do I edit the header/footer", "mobile view" / "mobile pass" / "canvas stretch" / "overflow at 390" / mega-menu won''t collapse, customer-center / impersonation flows, sign-in profiles / switch user, checkout delivery date or custom order fields, paragraph renders empty or stale, Razor pitfalls in custom layouts, language layers, gating pages or paragraphs by group, editing repeater/slider children via the Admin API. Non-triggers: demo setup/MCP/TLS -> dw-demo-base; PIM data modelling -> dw-demo-pim; ERP integration -> dw-demo-erp. Swift 2 only -- never follow `doc.dynamicweb.dev/swift/swift-1/` URLs. Use AFTER dw-demo-base (host running, Serializer installed).'
 ---
 
@@ -119,6 +120,26 @@ Every "fake pattern" in a Swift demo (raw SQL probes on `AccessUserGroupRelation
 | Custom item types — the `<Prefix>_*` discipline | [`modelling-discipline.md`](../dw-content-modelling/references/modelling-discipline.md) §2 |
 
 **Legacy dotted-path redirects (`.htm` / `.asp`) are IIS-only — don't fail the polish gate on localhost.** Seeded 301 redirects from legacy URLs behave differently per host: extensionless stems 301 correctly on the Kestrel dev host, but literal `.htm` / `.asp` rows 404 there (ASP.NET Core drops dotted paths before DW's redirect provider sees them) while on production IIS the same rows reach the provider and 301 as intended. Store the literal dotted rows for production, demo the extensionless stems on localhost; the polish gate asserts the stems 301 on the dev host and flags dotted-path 404s as IIS-only rows, not defects.
+
+## Scripts (scripts/)
+
+The mechanical half of the mobile pass. The rules, the why and the Swift 2 trap
+catalogue stay in [references/mobile-pass.md](references/mobile-pass.md); these files are the
+how. They drive a real headless Chromium, so they need Node.js 20+ with `playwright`
+resolvable from the `scripts/` folder (`npm install playwright && npx playwright install
+chromium` there). A lookup that finds no runner makes the leg **UNRUNNABLE**, reported with
+the failed lookup named — never a silent pass.
+
+| Script | Reads / writes | What it does |
+|---|---|---|
+| [Test-DwViewportOverflow.ps1](scripts/Test-DwViewportOverflow.ps1) | Read-only (optionally writes a JSON result file) | Runs the probe below over a set of pages at a set of viewports and prints one merged JSON result. Every threshold is a parameter; the defaults are the Swift 2 values (992px desktop breakpoint, 4.5/3.0 contrast, 0.25 overlap, iPhone 12 at 390 + 430 + a 1440 desktop control). A sub-breakpoint viewport with no device descriptor is REFUSED, not measured |
+| [overflow-probe.js](scripts/overflow-probe.js) | Read-only | The generic canvas-fit / legibility / overlap core: `innerWidth === requested` **and** `body.scrollWidth === innerWidth`, the offender named by RIGHT EDGE with out-of-flow elements (a closed off-canvas drawer) reported as set aside, WCAG contrast per text leaf, and line-box text overlap |
+| [nav-affordance-probes.mjs](scripts/nav-affordance-probes.mjs) | Read-only (optionally writes a JSON result + a screenshot) | The four nav-affordance probes (caret DOM, vertical Popper-gap reach, open-state caret, horizontal reach). SKIPs with a reason on a flat nav rather than faking a PASS; dismisses the DW cookie modal first. One home per repo: the Foundry keeps its own harness copy for its edition gate |
+
+```powershell
+pwsh -NoProfile -File scripts/Test-DwViewportOverflow.ps1 -BaseUrl $env:DW_BASE_URL -Path /,/products
+node scripts/nav-affordance-probes.mjs --url $env:DW_BASE_URL --path /swift-2/home --out nav.json
+```
 
 ## Inherited from dw-demo-base
 

@@ -50,6 +50,32 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   refusal, retry and backoff including the write-5xx exclusion, the DataRow payload fence, the
   count contract, and that every write verb is a no-op issuing zero requests without `-Apply`.
 
+Scripts roadmap Phase 3: the generic probes get a home in the skills, and the 5.0.1 consumer
+self-check ships. No version bump here — the release that picks this up stamps it.
+
+- **`dw-demo-base/scripts/admin-shell-driver.mjs`** — the five DW 10.28 admin-shell Playwright
+  guards, as an importable module plus a small CLI (`node admin-shell-driver.mjs tree-nav --base
+  <url>`). `references/browser-automation.md` keeps the five rules in prose and links the script for
+  the how; no rule lives only in a script. Credentials from `DW_ADMIN_USER` / `DW_ADMIN_PASSWORD` or
+  a `--storage-state` session, never a flag or a default; TLS bypass only for localhost or an
+  explicit `--allow-self-signed`.
+- **`dw-demo-base/scripts/Test-DwDemoStoryline.ps1`** — the consumer self-check deferred to 5.0.1:
+  status per storyline page, the placeholder regex on the VISIBLE TEXT, persona sign-in with the
+  session proved to BE that persona, zero probes is FAIL. Plain JSON, no verdict contract, nothing
+  else from the Foundry gate. Hermetic Pester suite in `scripts/tests/` (18 tests, mocked HTTP).
+- **`dw-demo-swift/scripts/overflow-probe.js` + `Test-DwViewportOverflow.ps1`** — the generic
+  canvas-fit / legibility / overlap core lifted from the Foundry's `design-probes.mjs`: `innerWidth
+  === requested` AND `body.scrollWidth === innerWidth`, the offender named by right edge with the
+  closed-drawer false offender set aside, WCAG contrast per text leaf, line-box text overlap. Every
+  threshold is a parameter; the Swift 2 values are the `.ps1` defaults and are documented in
+  `references/mobile-pass.md`. A sub-breakpoint viewport with no device descriptor is refused.
+- **`dw-demo-swift/scripts/nav-affordance-probes.mjs`** — the four nav-affordance probes, one home
+  for skills consumers (the Foundry keeps its own harness copy for its edition gate). Both `.mjs`
+  files lost their hardcoded host default.
+- Both skills declare their runtimes in `compatibility:`; the roadmap's proposed `dw-swift-building`
+  home was overridden by its own Dynamo rule (scripts live only in `dynamo: false` skills), so the
+  viewport and nav probes land in `dw-demo-swift`.
+
 ## [5.1.5]
 
 Hover is a re-skin deliverable, not a side effect.
