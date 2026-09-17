@@ -114,6 +114,16 @@ POST /Admin/Api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Ecommerce.O
 
 **Local installs only**: on a hosted install, write the order through `update_orders` (or `set_order_state` for a status), so no flush step is owed.
 
+**The script:** [`../scripts/Invoke-DwSqlThenFlush.ps1`](../scripts/Invoke-DwSqlThenFlush.ps1) is this
+order made unskippable — it runs the statement(s) and then the named flushes, refuses to run without
+a `-CacheTypeName` (or an explicit `-NoFlush` naming the self-invalidating row below), enumerates the
+registered names with `-ListCaches`, and fails loudly when a flush is rejected rather than leaving a
+committed write with a live stale cache. Dry run by default.
+
+```powershell
+pwsh -NoProfile -File scripts/Invoke-DwSqlThenFlush.ps1 -Query "UPDATE EcomOrders SET ... WHERE OrderId = '<id>'" -CacheTypeName 'Dynamicweb.Ecommerce.Orders.OrderService' -Apply
+```
+
 Two corollaries:
 
 - **Nothing may re-save the entity between the flush and the read that must see the value.** Any verb
