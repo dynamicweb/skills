@@ -28,6 +28,12 @@ Checks (errors fail the build, warnings are printed but do not):
     `READ-ONLY.` or `WRITES:`, .DESCRIPTION) and an explicit param() block;
     Python files carry a module docstring. A skill that ships scripts declares
     the runtime in `compatibility:` frontmatter.
+  - AV-safe scripts (skills/*/scripts/*.ps1|.psm1): no Invoke-Expression,
+    Add-Type, FromBase64String or legacy web client; no credential literal; no
+    TLS bypass the file does not gate on a loopback URL or an opt-in switch; no
+    User-Agent set without a `# why:` comment. WARN past 400 lines. Comments
+    and help blocks are exempt - the rules score code, not prose. `--self-test`
+    runs them against scripts/tests/fixtures/av-nonconforming.
   - Script imports (Import-Module / dot-source) resolve on disk; a cross-skill
     import is a hard dependency and honors bundle closure.
   - No token-shaped secret anywhere under skills/; no plaintext password
@@ -179,6 +185,43 @@ ENVIRONMENT_LITERAL_RES = (
 # string is the path relative to the importing script's folder.
 PS_IMPORT_TARGET_RE = re.compile(r"['\"]([^'\"]+\.psm?1)['\"]")
 PS_IMPORT_LINE_RE = re.compile(r"^\s*(?:Import-Module\b|\.\s+\S)")
+
+# --- AV-safe script rules ---------------------------------------------------
+# Endpoint protection scores a script on the verbs it co-locates, not on its
+# syntax: two harness scripts carrying file upload + admin-account lifecycle +
+# arbitrary SQL + a spoofed User-Agent were quarantined and deleted from their
+# working trees, while a larger file beside them, with more web-cmdlet calls
+# and more TLS bypasses, was untouched. These are the machine-checkable
+# clauses of "AV-safe scripts" in dw-skill-authoring ("Shipping scripts").
+# Each rule carries an id so the self-test can assert which one fired.
+AV_BANNED_RES = (
+    ("invoke-expression", re.compile(r"(?i)\bInvoke-Expression\b"),
+     "call the cmdlet directly; never build a command as a string"),
+    ("add-type", re.compile(r"(?i)\bAdd-Type\b"),
+     "compiling inline code is a scored construct; use a cmdlet"),
+    ("base64", re.compile(r"(?i)\bFromBase64String\b"),
+     "ship the literal, not an encoded payload"),
+    ("web-client", re.compile(r"(?i)System\.Net\.WebClient|\bDownloadString\b"),
+     "use Invoke-RestMethod / Invoke-WebRequest with named parameters"),
+)
+# A credential written into the file: a quoted password, a plaintext secure
+# string, or a connection string carrying one.
+AV_CREDENTIAL_RES = (
+    re.compile(r"""(?i)\bpasswords?\s*=\s*['"][^'"]+"""),
+    re.compile(r"(?i)ConvertTo-SecureString\b.*-AsPlainText"),
+    # A variable (Password=$SqlPassword) is the correct form, not a literal.
+    re.compile(r"""(?i)\bServer\s*=[^\n]*;[^\n]*\bPassword\s*="""
+               r"""(?!\$|<|%|\{)[^;'"\s]{3,}"""),
+)
+AV_TLS_RE = re.compile(r"(?i)SkipCertificateCheck")
+# The bypass is allowed when the file gates it: an opt-in switch, or a loopback
+# base URL. Presence of the token in the file is the machine check; review
+# reads the condition.
+AV_TLS_GATE_RE = re.compile(r"(?i)AllowSelfSignedCertificate|localhost|127\.0\.0\.1")
+AV_UA_RE = re.compile(r"""(?i)(?:['"]?User-Agent['"]?\s*[:=]|-UserAgent\b)""")
+AV_WHY_RE = re.compile(r"#\s*why:")
+# A small file gives a behavioural engine less to correlate.
+AV_LINE_BUDGET = 400
 
 
 # --- Dynamo surface ratchet -------------------------------------------------
@@ -889,6 +932,119 @@ def check_script_contract() -> None:
                     "(e.g. `compatibility: Requires PowerShell 7.x`)")
 
 
+def av_code_lines(text: str) -> list[tuple[int, str, str]]:
+    """(line number, code with comments stripped, raw line) for one file.
+
+    The rules below score code, not prose: a help block naming
+    -AllowSelfSignedCertificate, or a comment saying never to use
+    Invoke-Expression, is documentation and must not fail the file.
+    """
+    out: list[tuple[int, str, str]] = []
+    in_block = False
+    for i, raw in enumerate(text.splitlines(), 1):
+        code = raw
+        if in_block:
+            end = code.find("#>")
+            if end < 0:
+                out.append((i, "", raw))
+                continue
+            code, in_block = code[end + 2:], False
+        while "<#" in code:
+            start = code.index("<#")
+            end = code.find("#>", start + 2)
+            if end < 0:
+                code, in_block = code[:start], True
+                break
+            code = code[:start] + code[end + 2:]
+        out.append((i, code.split("#", 1)[0], raw))
+    return out
+
+
+def av_violations(text: str) -> list[tuple[int | None, str, str, str]]:
+    """(line or None, severity, rule id, message) for one PowerShell file."""
+    out: list[tuple[int | None, str, str, str]] = []
+    lines = av_code_lines(text)
+    tls_gated = bool(AV_TLS_GATE_RE.search(text))
+    for idx, (i, code, raw) in enumerate(lines):
+        if not code.strip():
+            continue
+        for rule, pattern, fix in AV_BANNED_RES:
+            if pattern.search(code):
+                out.append((i, "error", rule,
+                            f"banned construct ({rule}) - {fix}"))
+        for pattern in AV_CREDENTIAL_RES:
+            if pattern.search(code):
+                out.append((i, "error", "credential",
+                            "credential literal - read it from $env: or take it "
+                            "as a parameter, and mask it in every log line"))
+                break
+        if AV_TLS_RE.search(code) and not tls_gated:
+            out.append((i, "error", "tls-ungated",
+                        "ungated TLS bypass - gate it on a loopback base URL or "
+                        "an -AllowSelfSignedCertificate switch"))
+        if AV_UA_RE.search(code):
+            prev = lines[idx - 1][2] if idx else ""
+            if not (AV_WHY_RE.search(raw) or AV_WHY_RE.search(prev)):
+                out.append((i, "error", "user-agent",
+                            "User-Agent set without a `# why:` comment naming "
+                            "the protocol reason - an undocumented browser UA "
+                            "reads as evasion"))
+    if len(lines) > AV_LINE_BUDGET:
+        out.append((None, "warn", "size",
+                    f"{len(lines)} lines, past the {AV_LINE_BUDGET}-line budget "
+                    "- split by capability (read and assert in one file, each "
+                    "write family in its own)"))
+    return out
+
+
+def check_av_safe_scripts() -> None:
+    for _, f in script_files():
+        if f.suffix.lower() not in (".ps1", ".psm1"):
+            continue
+        text = read_text_checked(f)
+        if text is None:
+            continue
+        for line, severity, _rule, msg in av_violations(text):
+            where = f"{rel(f)}:{line}" if line else rel(f)
+            (err if severity == "error" else warn)(f"{where}: {msg}")
+
+
+def run_av_self_test() -> int:
+    """Prove the AV rules fire: every rule id must hit the fixture, and the
+    fixture must produce errors (the real tree is checked by a normal run)."""
+    fixture = REPO / "scripts" / "tests" / "fixtures" / "av-nonconforming"
+    expected = {rule for rule, _, _ in AV_BANNED_RES} | {
+        "credential", "tls-ungated", "user-agent", "size"}
+    seen: set[str] = set()
+    failures = 0
+    for f in sorted(fixture.rglob("*.ps1")) + sorted(fixture.rglob("*.psm1")):
+        found = av_violations(f.read_text(encoding=ENCODING))
+        # The size rule needs a file past the budget; assert it on generated
+        # text rather than padding the fixture with 400 filler lines.
+        found += av_violations("\n".join(["$x = 1"] * (AV_LINE_BUDGET + 1)))
+        for line, severity, rule, msg in found:
+            seen.add(rule)
+            print(f"  {severity.upper():5} {f.name}:{line or '-'} [{rule}] {msg}")
+        if not any(s == "error" for _, s, _, _ in found):
+            print(f"FAIL {rel(f)}: expected errors, got none")
+            failures += 1
+    missing = sorted(expected - seen)
+    if missing:
+        print(f"FAIL rules that never fired: {', '.join(missing)}")
+        failures += 1
+    clean = REPO / "skills" / "dw-data-access" / "scripts" / "Dw.Api.psm1"
+    if clean.is_file():
+        conforming = [v for v in av_violations(clean.read_text(encoding=ENCODING))
+                      if v[1] == "error"]
+        if conforming:
+            print(f"FAIL {rel(clean)}: a conforming script must not error: "
+                  f"{conforming}")
+            failures += 1
+    print("self-test FAILED" if failures else
+          f"self-test OK - {len(expected)} rule(s) fired on the fixture")
+    return 1 if failures else 0
+
+
 def check_script_imports() -> None:
     # Import-Module / dot-source targets must resolve on disk, and a cross-skill
     # import is a hard dependency: every bundle that ships the consumer must
@@ -1299,6 +1455,7 @@ def main() -> int:
     check_no_secrets()
     check_no_environment_literals()
     check_script_contract()
+    check_av_safe_scripts()
     check_script_imports()
     check_orphan_scripts()
     check_dynamo_surface()
@@ -1325,4 +1482,6 @@ if __name__ == "__main__":
         sys.exit(write_dynamo_baseline())
     if "--update-version-stamp-allowlist" in sys.argv[1:]:
         sys.exit(write_stamp_allowlist())
+    if "--self-test" in sys.argv[1:]:
+        sys.exit(run_av_self_test())
     sys.exit(main())

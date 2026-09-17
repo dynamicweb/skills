@@ -3,6 +3,29 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [Unreleased]
+
+- **AV-safe scripts are a stated contract and a validator rule.** Endpoint protection scores a
+  script on the verbs it co-locates, not on its syntax: two harness scripts carrying file upload
+  plus admin-account lifecycle plus arbitrary SQL plus a spoofed User-Agent were quarantined and
+  deleted from their working trees, while a larger file beside them, with more web-cmdlet calls
+  and more TLS bypasses, went untouched. Neither flagged file held a single obfuscation construct.
+  `dw-skill-authoring` ("Shipping scripts" -> "AV-safe scripts") and
+  `dw-data-access/references/management-api-and-sql.md`, next to the AMSI note that records the
+  mild form of the same failure, now carry the rules: one capability per file with the destructive
+  verbs split out, HTTP through the cmdlets with named parameters, a gated TLS bypass, no silent
+  User-Agent spoof, secrets from the environment only, dry run by default, and three verb families
+  (admin-account lifecycle, backend-access revocation, arbitrary SQL) that stay out of a shipped
+  script entirely. The three durable fixes are console-side and marked as owner actions: path
+  exclusions, Authenticode signing, and a false-positive submission. A burned path is never reused.
+- **`validate-skills.py` enforces the machine-checkable half** over every `.ps1`/`.psm1` under
+  `skills/*/scripts/`: `Invoke-Expression`, `Add-Type`, `FromBase64String` and the legacy web
+  client are errors, so is a credential literal, a TLS bypass the file does not gate on a loopback
+  URL or an opt-in switch, and a `User-Agent` set with no `# why:` comment naming the protocol
+  reason. Past 400 lines is a warning. Comments and help blocks are exempt, because the rules score
+  code and not prose. `python scripts/validate-skills.py --self-test` proves each rule fires
+  against `scripts/tests/fixtures/av-nonconforming` and that a conforming module stays clean.
+
 ## [5.1.5]
 
 Hover is a re-skin deliverable, not a side effect.
