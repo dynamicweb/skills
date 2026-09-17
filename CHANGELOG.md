@@ -3,7 +3,12 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
-## [Unreleased]
+## [5.2.0]
+
+The Foundry scripts roadmap lands in the corpus: the AV-safe script contract and the validator
+rules that enforce its checkable half, the shared module split into a read half and a write half,
+the generic probes and the consumer self-check, and the two-part script sprint that turns seven
+retype-risk recipes into shipped scripts. 100 hermetic Pester tests come with them.
 
 - **AV-safe scripts are a stated contract and a validator rule.** Endpoint protection scores a
   script on the verbs it co-locates, not on its syntax: two harness scripts carrying file upload
@@ -50,8 +55,8 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   refusal, retry and backoff including the write-5xx exclusion, the DataRow payload fence, the
   count contract, and that every write verb is a no-op issuing zero requests without `-Apply`.
 
-Scripts roadmap Phase 3: the generic probes get a home in the skills, and the 5.0.1 consumer
-self-check ships. No version bump here — the release that picks this up stamps it.
+Scripts roadmap Phase 3 (docs/SCRIPTS-ROADMAP.md §4): the generic probes get a home in the
+skills, and the consumer self-check deferred to 5.0.1 ships.
 
 - **`dw-demo-base/scripts/admin-shell-driver.mjs`** — the five DW 10.28 admin-shell Playwright
   guards, as an importable module plus a small CLI (`node admin-shell-driver.mjs tree-nav --base
@@ -75,6 +80,53 @@ self-check ships. No version bump here — the release that picks this up stamps
 - Both skills declare their runtimes in `compatibility:`; the roadmap's proposed `dw-swift-building`
   home was overridden by its own Dynamo rule (scripts live only in `dynamo: false` skills), so the
   viewport and nav probes land in `dw-demo-swift`.
+
+Scripts roadmap §5, the script sprint: the seven recipes named in the "Suggested sprint order"
+row, landed once each across two PRs (dynamicweb/skills #154, #156). Each owning reference keeps
+the rule and the why and links the script for the how, so no knowledge is exclusive to a script.
+
+- **`dw-data-access/scripts/Copy-DwIntegrationJob.ps1`** — the UTF-16LE copy, decode, round-trip
+  and GUID-remint sequence for an integration job file, the strongest retype-risk candidate in the
+  backlog. Diffs the round-trip before writing.
+- **`dw-data-access/scripts/Test-DwJobSchema.ps1`** — the five job-file faults that each fail at
+  run time pointing somewhere else. The doubled `Files\Files` archive root and the false-clean grep
+  stay in prose.
+- **`dw-setup-config/scripts/Test-DwFileArchiveExposure.ps1`** — go-live item 8 as one anonymous
+  request per path, reported SERVED / EXPECTED / BLOCKED. Self-contained, because the bundles that
+  ship this skill do not ship `dw-data-access`. Wanted by two fold PRs; landed once.
+- **`dw-data-access/scripts/Register-DwScheduledTask.ps1`** — the multi-column `ScheduledTask` row
+  contract: `TaskParentId` NULL and not 0, every schedule column -1, registered disabled, literal
+  settings XML, the `TaskService` flush, the paged verification read. Refuses a RunSql add-in.
+  `TaskBegin` / `TaskNextRun` semantics stay in prose.
+- **`dw-data-access/scripts/Invoke-DwSqlThenFlush.ps1`** — UPDATE, flush, touch, made unskippable.
+  Also wanted by two fold PRs; landed once.
+- **New `dw-data-access/scripts/Dw.Sql.Local.psm1`** — the one local-only SQL non-query path, in
+  its own small file rather than widening `Dw.Api.psm1`, refusing a remote server the same way.
+- **`dw-data-access/scripts/Invoke-DwAssortmentBuild.ps1`** — flag, build, poll
+  `get_assortments_for_build` until drained, count the built items, activate only on a non-zero
+  count. Refuses `-ActivateWhenNonEmpty` alongside `-SkipCountGate`, because the count **is** the
+  gate: activating a zero-item assortment takes the whole catalogue away from everyone holding it.
+- **`dw-data-access/scripts/Set-DwPermission.ps1`** — the nested `{Model:{...}}` body, the string
+  `Key`, the four-part `|$|` composite identifier, and the read-back with `SubName` omitted. The
+  sparse `PermissionLevel` table stays in prose, so an in-product reader can still recognise a
+  denial at level 1.
+- **`dw-data-access/scripts/Test-DwPageGating.ps1`** — both personas in one pass, by page id,
+  comparing rendered body sizes. One persona refused, or equal bodies, is a broken check and not a
+  pass.
+- **`dw-data-access/scripts/Test-DwImpersonationGrant.ps1`** — reads
+  `AccessUserSecondaryRelation` in both directions and names which one it found, then reports the
+  `Users.index` state, so a grant is not called live while the index still answers from the
+  pre-write documents.
+- **New owning reference `dw-data-access/references/recipes-integration.md`**, plus new sections in
+  `references/recipes-extend.md`, `references/recipes-commerce.md`, `references/recipes-users.md`
+  and `references/cache-invalidation.md`; `dw-commerce-b2b`, `dw-integration-framework`,
+  `dw-setup-config` and `dw-users-permissions` point at them.
+- **A repo-root `tests/` suite**: 100 hermetic Pester tests, no host, database or network. It lives
+  outside `skills/`, where the shipped-script contract does not apply to it.
+- **`Repair-DwCustomerNumber.ps1` is deliberately omitted.** The roadmap gates it on the recipe
+  being fully specified, and `account-shape.md` gives the ordering and the two guards but not the
+  UPDATE statement or the revert generation it requires. A bulk rewrite across dozens of
+  `AccessUser` and `EcomOrders` rows is not a script to infer.
 
 ## [5.1.5]
 
