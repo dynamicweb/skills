@@ -10,6 +10,11 @@
     install has no SQL surface, and this module deliberately ships no remote
     SQL path), and targeted cache flushes.
 
+    This module is the READ half plus the connection. Every write and cleanup
+    verb lives in Dw.Api.Write.psm1 beside it, which imports this one: a single
+    file that reads, uploads, deletes users and rewrites settings is the verb
+    cluster endpoint protection scores, so the two halves stay apart.
+
     Owning reference: dw-data-access/references/management-api-and-sql.md.
     Traps encoded here so callers cannot re-create them:
       - One-row SQL results are returned as an ARRAY from inside the helper
@@ -31,6 +36,20 @@
         strips modelIdentifier and *Icon members before a round-trip save.
       - The TLS bypass is gated: certificates are skipped only for a localhost
         base URL or after an explicit -AllowSelfSignedCertificate opt-in.
+      - A list read that returns page 1 of 4 while reporting the full
+        totalCount makes a present item read as ABSENT. Invoke-DwQuery walks
+        every page, reconciles the collected count against totalCount, and
+        refuses to return a partial read.
+      - A 429, or a 5xx on a read, is retried with exponential backoff. A 5xx
+        on a write is not: it may have applied before it failed.
+      - TaskRun is asynchronous. Invoke-DwTaskRun captures the task's own
+        last-run value before the trigger and polls for it to CHANGE, because a
+        wall-clock freshness window is satisfied by the previous run.
+      - A Razor compile error still answers HTTP 200, and the static-file cache
+        does not invalidate through a junction. Test-DwPageProbe reads the body
+        and Get-DwServedFileHash hashes the bytes the host actually serves.
+      - The browser User-Agent is a protocol requirement of the target, not
+        evasion, and is set in one documented place (Get-DwBrowserUserAgent).
 
     Connection discovery (Connect-Dw), in order: explicit parameter, then
     $env:DW_BASE_URL / DW_API_TOKEN / DW_MCP_TOKEN / DW_SQL_CONNECTION, then
@@ -47,6 +66,12 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+
+# The single browser-shaped User-Agent this module sends on web probes.
+# why: the target silently drops cart commands, and negotiates image content,
+# on this header - see Get-DwBrowserUserAgent for the measurement.
+$script:DwBrowserUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
+    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
 $script:DwState = @{
     BaseUrl       = $null
@@ -170,6 +195,11 @@ function Invoke-DwApi {
         HTTP method override; defaults to Get, or Post when -Body is present.
     .PARAMETER TimeoutSec
         Request timeout in seconds.
+    .PARAMETER RetryCount
+        Retries for a 429 or, on a read, a 5xx. 0 disables the retry.
+    .PARAMETER RetryDelayMs
+        First backoff delay; each further attempt doubles it. A Retry-After
+        header, when the server sends one, wins over the computed delay.
     .EXAMPLE
         Invoke-DwApi 'CacheInformationRefresh' -Body @{ CacheTypeName = 'Dynamicweb.Ecommerce.Shops.ShopService' }
     #>
@@ -178,7 +208,9 @@ function Invoke-DwApi {
         [Parameter(Mandatory = $true)][string]$Command,
         $Body,
         [string]$Method,
-        [int]$TimeoutSec = 120
+        [int]$TimeoutSec = 120,
+        [int]$RetryCount = 3,
+        [int]$RetryDelayMs = 500
     )
     Assert-DwConnection | Out-Null
     if (-not $script:DwState.ApiToken) {
@@ -199,10 +231,28 @@ function Invoke-DwApi {
         $params.Body = [System.Text.Encoding]::UTF8.GetBytes($json)
         $params.ContentType = 'application/json; charset=utf-8'
     }
-    try { Invoke-RestMethod @params }
-    catch {
-        $status = $_.Exception.Response.StatusCode.value__
-        throw "$Method $Command failed [$status]: $($_.ErrorDetails.Message)"
+    # A 429 is the server refusing the request before acting on it, so it is
+    # safe to retry whatever the method. A 5xx may have applied a write before
+    # failing, so only a read is retried - a blind POST retry double-writes.
+    $attempt = 0
+    while ($true) {
+        try { return Invoke-RestMethod @params }
+        catch {
+            $status = 0
+            try { $status = [int]$_.Exception.Response.StatusCode.value__ } catch { $status = 0 }
+            if ($attempt -lt $RetryCount -and (Test-DwRetryableStatus $status $Method)) {
+                $delay = [int]($RetryDelayMs * [math]::Pow(2, $attempt))
+                try {
+                    $after = $_.Exception.Response.Headers.RetryAfter.Delta.TotalMilliseconds
+                    if ($after) { $delay = [int]$after }
+                } catch { }
+                Write-Verbose "Invoke-DwApi $Command -> HTTP $status, retrying in ${delay}ms"
+                Start-Sleep -Milliseconds $delay
+                $attempt++
+                continue
+            }
+            throw "$Method $Command failed [$status]: $($_.ErrorDetails.Message)"
+        }
     }
 }
 
@@ -498,8 +548,507 @@ function Set-DwDbConnectionTrust {
     $result
 }
 
+function Get-DwConnection {
+    <#
+    .SYNOPSIS
+        READ-ONLY. The connection resolved for this session.
+    .DESCRIPTION
+        Runs discovery when it has not run yet, then returns the live state:
+        BaseUrl, ApiToken, McpToken, SqlConnection, SkipCert. Read it rather
+        than calling Connect-Dw again, which re-runs discovery and discards the
+        MCP handshake. The tokens in the returned object are LIVE VALUES: pass
+        them to a request, never to a log line - Write-Verbose output in this
+        module is masked for that reason.
+    .EXAMPLE
+        (Get-DwConnection).BaseUrl
+    #>
+    [CmdletBinding()]
+    param()
+    Assert-DwConnection | Out-Null
+    $script:DwState
+}
+
+function Get-DwBrowserUserAgent {
+    <#
+    .SYNOPSIS
+        READ-ONLY. The one browser User-Agent every web probe in this module sends.
+    .DESCRIPTION
+        # why: Dynamicweb 10 SILENTLY SKIPS CART COMMANDS for a non-browser
+        User-Agent. A cart command from a default tool UA answers HTTP 200,
+        creates the cart row, and adds ZERO order lines, with nothing in the
+        log - every observable except the order lines says success. The image
+        handler negotiates content on the same header. So a browser-shaped UA
+        is a protocol requirement of the target, not an attempt to look like a
+        human, and it lives in exactly one named, documented place rather than
+        being pasted into each probe.
+    .EXAMPLE
+        Get-DwBrowserUserAgent
+    #>
+    [CmdletBinding()]
+    param()
+    $script:DwBrowserUserAgent
+}
+
+function Test-DwRetryableStatus([int]$Status, [string]$Method) {
+    # Internal. 429 is the server refusing the request before acting on it, so a
+    # retry is safe for any method. A 5xx may have applied a write before
+    # failing, so only a read retries - a blind POST retry double-writes.
+    if ($Status -eq 429) { return $true }
+    if ($Status -ge 500 -and $Status -le 599) { return @('Get', 'Head') -contains $Method }
+    return $false
+}
+
+function Invoke-DwQuery {
+    <#
+    .SYNOPSIS
+        READ-ONLY. Reads a Management API list query to completion and
+        reconciles the rows against the server's own totalCount.
+    .DESCRIPTION
+        The list verbs apply a DEFAULT page size while still reporting the full
+        model.totalCount. A "does this field exist" assert run against page 1 of
+        4 reports FALSE for a field that is present, and a membership test then
+        reads absence as evidence. This function never hands a caller a partial
+        page: it walks the pages, concatenates them, and throws when the
+        collected count does not equal totalCount.
+
+        It also refuses to concatenate a repeated page. When a host ignores the
+        page parameter, page 2 answers with page 1's rows; appending them would
+        double the count instead of failing. The first row of each page is
+        compared with the previous page's and an identical page throws.
+
+        A verb that answers a bare collection with no totalCount cannot be
+        reconciled; the result then carries complete = $false rather than
+        implying it was verified.
+    .PARAMETER Query
+        Management API list command name, without a query string.
+    .PARAMETER Parameters
+        Extra query-string parameters; keys and values are URL-escaped.
+    .PARAMETER PagingSize
+        Rows per page. Always sent: a missing PagingSize is how the default
+        page size gets applied silently.
+    .PARAMETER PageParameterName
+        Name of the page-number parameter, overridable so a verb that spells it
+        differently stays a parameter rather than an edit.
+    .PARAMETER MaxPages
+        Safety stop, so a host that never advances cannot loop forever.
+    .PARAMETER TimeoutSec
+        Per-request timeout in seconds.
+    .EXAMPLE
+        $r = Invoke-DwQuery 'UserList' -PagingSize 500
+        $r.complete; $r.totalCount; $r.data.Count
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Query,
+        [hashtable]$Parameters = @{},
+        [int]$PagingSize = 500,
+        [string]$PageParameterName = 'PagingPage',
+        [int]$MaxPages = 500,
+        [int]$TimeoutSec = 120
+    )
+    Assert-DwConnection | Out-Null
+    $rows = [System.Collections.Generic.List[object]]::new()
+    $total = $null
+    $page = 1
+    $previousFingerprint = $null
+    while ($page -le $MaxPages) {
+        $qs = @("PagingSize=$PagingSize", "$PageParameterName=$page")
+        foreach ($key in @($Parameters.Keys)) {
+            $qs += ('{0}={1}' -f [uri]::EscapeDataString([string]$key),
+                                 [uri]::EscapeDataString([string]$Parameters[$key]))
+        }
+        $response = Invoke-DwApi ($Query + '?' + ($qs -join '&')) -TimeoutSec $TimeoutSec
+        $model = if ($response -and $response.PSObject.Properties['model']) { $response.model } else { $response }
+        $data = @($model.data)
+        if ($null -eq $total -and $model -and $model.PSObject.Properties['totalCount']) {
+            $total = [int]$model.totalCount
+        }
+        if ($null -eq $total) {
+            return [pscustomobject]@{
+                query = $Query; data = @($data); totalCount = $data.Count
+                pages = 1; complete = $false
+            }
+        }
+        if ($data.Count -eq 0) { break }
+        $fingerprint = ($data[0] | ConvertTo-Json -Depth 8 -Compress)
+        if ($page -gt 1 -and $fingerprint -eq $previousFingerprint) {
+            throw ("Invoke-DwQuery ${Query}: page $page repeated page $($page - 1). The host " +
+                "is ignoring '$PageParameterName', so concatenating would double the rows " +
+                "instead of failing. Pass the page parameter this verb uses, or raise " +
+                "-PagingSize above $total and read one page.")
+        }
+        $previousFingerprint = $fingerprint
+        $rows.AddRange($data)
+        if ($rows.Count -ge $total) { break }
+        $page++
+    }
+    if ($rows.Count -ne $total) {
+        throw ("Invoke-DwQuery ${Query}: collected $($rows.Count) row(s) of totalCount $total " +
+            "across $page page(s) at PagingSize=$PagingSize. A membership test on a partial " +
+            "read reports a present item as ABSENT, so this refuses to return.")
+    }
+    [pscustomobject]@{
+        query = $Query; data = $rows.ToArray(); totalCount = $total
+        pages = $page; complete = $true
+    }
+}
+
+function Get-DwTaskLastRun {
+    <#
+    .SYNOPSIS
+        READ-ONLY. The scheduled task's own last-run value, as a string.
+    .DESCRIPTION
+        The property name differs across builds, so the known spellings are
+        tried in order and the value is returned as a string for comparison.
+        An empty string means the task has no recorded run, which is a valid
+        BEFORE value for Invoke-DwTaskRun.
+    .PARAMETER TaskId
+        Scheduled task id.
+    .EXAMPLE
+        Get-DwTaskLastRun -TaskId 1519
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][int]$TaskId)
+    $response = Invoke-DwApi "TaskById?Id=$TaskId"
+    $model = if ($response -and $response.PSObject.Properties['model']) { $response.model } else { $response }
+    foreach ($name in @('lastRun', 'taskLastRun', 'lastRunDate')) {
+        if ($model -and $model.PSObject.Properties[$name]) { return "$($model.$name)" }
+    }
+    ''
+}
+
+function Invoke-DwTaskRun {
+    <#
+    .SYNOPSIS
+        WRITES: triggers one scheduled task, then waits for THAT run to finish.
+    .DESCRIPTION
+        TaskRun is ASYNCHRONOUS: it queues the task for the scheduler's next
+        poll. A freshness guard of the form "last run is within the last 120
+        seconds" is satisfied by the PREVIOUS run, so a harness returns
+        immediately and reads the pre-run state as the post-run state.
+
+        So: capture the task's own last-run value BEFORE the trigger, fire, and
+        poll for that value to CHANGE. Never a wall clock. The before and after
+        values and the wait are returned so a caller can record them as
+        evidence.
+    .PARAMETER TaskId
+        Scheduled task id.
+    .PARAMETER TimeoutSec
+        How long to wait for the last-run value to advance.
+    .PARAMETER PollIntervalMs
+        Delay between polls.
+    .EXAMPLE
+        Invoke-DwTaskRun -TaskId 1519 -TimeoutSec 300
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][int]$TaskId,
+        [int]$TimeoutSec = 300,
+        [int]$PollIntervalMs = 2000
+    )
+    $before = Get-DwTaskLastRun -TaskId $TaskId
+    Invoke-DwApi 'TaskRun' -Body @{ Ids = @("$TaskId") } | Out-Null
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    $after = $before
+    while ($watch.Elapsed.TotalSeconds -lt $TimeoutSec) {
+        Start-Sleep -Milliseconds $PollIntervalMs
+        $after = Get-DwTaskLastRun -TaskId $TaskId
+        if ("$after" -ne "$before") { break }
+    }
+    $watch.Stop()
+    if ("$after" -eq "$before") {
+        throw ("Invoke-DwTaskRun: task $TaskId last-run did not advance from '$before' within " +
+            "${TimeoutSec}s. TaskRun only QUEUES the task; a run that never fired must not be " +
+            'read as a run that completed.')
+    }
+    [pscustomobject]@{
+        taskId = $TaskId; lastRunBefore = "$before"; lastRunAfter = "$after"
+        waitedMs = [int]$watch.Elapsed.TotalMilliseconds
+    }
+}
+
+function Test-DwPageProbe {
+    <#
+    .SYNOPSIS
+        READ-ONLY. Fetches one URL and reports a verdict a status code alone
+        cannot give.
+    .DESCRIPTION
+        Three measured traps are closed here:
+
+        A Razor compile error STILL ANSWERS HTTP 200, so -RejectCompileError
+        reads the BODY; a status-only probe passes a page that renders an
+        error.
+
+        PowerShell 7 does not throw on a suppressed redirect, so a Location
+        reader written only for the catch block never runs and a healthy page
+        falls through to nothing. The RETURNED response is inspected first and
+        the caught one second. -MaximumRedirection 0 is never combined with
+        -SkipHttpErrorCheck: together they throw with no response object and
+        the redirect becomes unreadable.
+
+        A response header is a string array, so casting the array itself throws
+        INSIDE the try and a successful request lands in the failure handler
+        with a blank status. Headers are indexed before they are cast, and the
+        status is seeded to -1 so a blank can never read as a pass.
+    .PARAMETER Url
+        Absolute URL to fetch.
+    .PARAMETER Method
+        GET, HEAD or POST.
+    .PARAMETER Body
+        Request body for POST.
+    .PARAMETER NoFollowRedirect
+        Do not follow redirects; the Location header is reported instead.
+    .PARAMETER ExpectContains
+        Literal strings the body must contain.
+    .PARAMETER RejectContains
+        Literal strings the body must not contain.
+    .PARAMETER RejectCompileError
+        Fail on a Razor or compile-error marker in the body behind any status.
+    .PARAMETER TimeoutSec
+        Request timeout in seconds.
+    .EXAMPLE
+        (Test-DwPageProbe "$base/shop" -RejectCompileError).ok
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Url,
+        [ValidateSet('GET', 'HEAD', 'POST')][string]$Method = 'GET',
+        $Body,
+        [switch]$NoFollowRedirect,
+        [string[]]$ExpectContains = @(),
+        [string[]]$RejectContains = @(),
+        [switch]$RejectCompileError,
+        [int]$TimeoutSec = 60
+    )
+    Assert-DwConnection | Out-Null
+    $status = -1        # a blank must never read as a pass
+    $bodyText = ''
+    $location = $null
+    $contentLength = $null
+    $transportError = $null
+    $params = @{
+        Uri                  = $Url
+        Method               = $Method
+        # why: the target skips cart commands for a non-browser UA - see Get-DwBrowserUserAgent.
+        Headers              = @{ 'User-Agent' = Get-DwBrowserUserAgent }
+        SkipCertificateCheck = $script:DwState.SkipCert
+        TimeoutSec           = $TimeoutSec
+        ErrorAction          = 'Stop'
+    }
+    if ($NoFollowRedirect) { $params.MaximumRedirection = 0 }
+    else { $params.MaximumRedirection = 10; $params.SkipHttpErrorCheck = $true }
+    if ($null -ne $Body) { $params.Body = $Body }
+
+    $response = $null
+    try { $response = Invoke-WebRequest @params }
+    catch {
+        $caught = $_.Exception.Response
+        if ($caught) { $response = $caught } else { $transportError = "$($_.Exception.Message)" }
+    }
+    if ($response) {
+        try { $status = [int]$response.StatusCode } catch { $status = -1 }
+        if ($response -is [System.Net.Http.HttpResponseMessage]) {
+            try { $bodyText = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult() } catch { $bodyText = '' }
+            try { if ($response.Headers.Location) { $location = "$($response.Headers.Location)" } } catch { }
+            try { if ($null -ne $response.Content.Headers.ContentLength) { $contentLength = [int]$response.Content.Headers.ContentLength } } catch { }
+        }
+        else {
+            try { $bodyText = "$($response.Content)" } catch { $bodyText = '' }
+            $headers = $null
+            try { $headers = $response.Headers } catch { $headers = $null }
+            if ($headers) {
+                if ($headers['Location']) { $location = @($headers['Location'])[0] }
+                if ($headers['Content-Length']) { $contentLength = [int](@($headers['Content-Length'])[0]) }
+            }
+        }
+    }
+    $failures = @()
+    if ($status -lt 0) { $failures += "no response$(if ($transportError) { " ($transportError)" })" }
+    foreach ($needle in @($ExpectContains)) {
+        if ($bodyText -notmatch [regex]::Escape($needle)) { $failures += "body is missing '$needle'" }
+    }
+    foreach ($needle in @($RejectContains)) {
+        if ($bodyText -match [regex]::Escape($needle)) { $failures += "body carries '$needle'" }
+    }
+    if ($RejectCompileError) {
+        $marker = [regex]::Match($bodyText, '(?i)(Compilation Error|CS\d{4}:|RazorTemplateEngine|An error occurred while (compiling|processing) the template|The type or namespace name)')
+        if ($marker.Success) {
+            $failures += "body carries a compile-error marker '$($marker.Value)' behind HTTP $status"
+        }
+    }
+    [pscustomobject]@{
+        url = $Url; status = $status; location = $location; contentLength = $contentLength
+        bytes = $bodyText.Length; body = $bodyText; error = $transportError
+        ok = ($failures.Count -eq 0); failures = @($failures)
+    }
+}
+
+function Get-DwServedFileHash {
+    <#
+    .SYNOPSIS
+        READ-ONLY. SHA256 of the bytes the host actually serves at a URL.
+    .DESCRIPTION
+        The file archive is reached through directory junctions, and Windows
+        file-change notification does not propagate through a junction, so the
+        static-file cache never invalidates: a redeployed stylesheet lands on
+        disk while the host keeps serving the old bytes. Because the stale copy
+        still carries every sentinel marker the new one has, a marker-presence
+        check calls that green. Only a hash of the SERVED bytes compared with
+        the local file can tell the two apart.
+    .PARAMETER Url
+        Absolute URL of the served file.
+    .PARAMETER TimeoutSec
+        Request timeout in seconds.
+    .EXAMPLE
+        Get-DwServedFileHash "$base/Files/Templates/Designs/Swift/theme.css"
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Url,
+        [int]$TimeoutSec = 120
+    )
+    Assert-DwConnection | Out-Null
+    # why: the target negotiates served content on the UA - see Get-DwBrowserUserAgent.
+    $headers = @{ 'User-Agent' = Get-DwBrowserUserAgent }
+    $response = Invoke-WebRequest -Uri $Url -Method Get -Headers $headers `
+        -SkipCertificateCheck:$script:DwState.SkipCert -SkipHttpErrorCheck `
+        -TimeoutSec $TimeoutSec -ErrorAction Stop
+    if ([int]$response.StatusCode -ge 400) {
+        throw "Get-DwServedFileHash: GET $Url -> HTTP $([int]$response.StatusCode)"
+    }
+    $bytes = if ($response.Content -is [byte[]]) { $response.Content }
+             else { [Text.Encoding]::UTF8.GetBytes("$($response.Content)") }
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { (($sha.ComputeHash($bytes) | ForEach-Object { $_.ToString('X2') }) -join '') }
+    finally { $sha.Dispose() }
+}
+
+function Get-DwSqlCount {
+    <#
+    .SYNOPSIS
+        READ-ONLY. Runs a COUNT query and returns an [int], never a blank.
+    .DESCRIPTION
+        A blank is NOT a zero. A count helper that returns an empty value for a
+        failed read makes "nothing matched" and "the read never ran" the same
+        observation, and a delete gated on "count is 0" then passes on a read
+        that never happened. This throws on a blank and on a non-integer.
+    .PARAMETER Sql
+        The COUNT query to run.
+    .PARAMETER ConnectionString
+        Overrides the connection resolved by Connect-Dw / $env:DW_SQL_CONNECTION.
+    .EXAMPLE
+        Get-DwSqlCount 'SELECT COUNT(*) FROM AccessUser WHERE AccessUserActive = 1'
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Sql,
+        [string]$ConnectionString
+    )
+    $value = Get-DwSqlScalar -Sql $Sql -ConnectionString $ConnectionString
+    if ($null -eq $value -or "$value".Trim().Length -eq 0) {
+        throw "Get-DwSqlCount: the query returned no value, and a blank is NOT a zero. Query: $Sql"
+    }
+    $parsed = 0
+    if (-not [int]::TryParse("$value".Trim(), [ref]$parsed)) {
+        throw "Get-DwSqlCount: the query returned '$value', which is not an integer. Query: $Sql"
+    }
+    $parsed
+}
+
+function ConvertTo-DwApiValue {
+    <#
+    .SYNOPSIS
+        READ-ONLY. Fences a SQL-read value before it enters an API payload.
+    .DESCRIPTION
+        A DataRow field, a DBNull, or any non-primitive handed to ConvertTo-Json
+        arrives at the API as a JSON OBJECT. The model binder cannot bind it, the
+        property lands as an empty string, and the call still answers ok - so the
+        write silently blanks the column it meant to preserve.
+
+        Scalars come back as strings; DBNull and $null become $null. Booleans and
+        numbers are preserved as-is, because the binder wants those typed and
+        neither suffers the defect. A dictionary is walked recursively, so a whole
+        Model can be fenced in one call.
+    .PARAMETER Value
+        The value, dictionary or collection to fence.
+    .EXAMPLE
+        $model = ConvertTo-DwApiValue @{ Id = $row.Id; Name = $row.Name }
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)][AllowNull()]$Value)
+    process {
+        if ($null -eq $Value) { return $null }
+        if ($Value -is [System.DBNull]) { return $null }
+        if ($Value -is [bool] -or $Value -is [int] -or $Value -is [long] -or
+            $Value -is [double] -or $Value -is [decimal]) { return $Value }
+        if ($Value -is [string]) { return [string]$Value }
+        if ($Value -is [System.Collections.IDictionary]) {
+            $out = [ordered]@{}
+            foreach ($key in @($Value.Keys)) { $out["$key"] = ConvertTo-DwApiValue -Value $Value[$key] }
+            return $out
+        }
+        if ($Value -is [System.Collections.IEnumerable]) {
+            return @(foreach ($item in $Value) { ConvertTo-DwApiValue -Value $item })
+        }
+        [string]$Value
+    }
+}
+
+function Get-DwCategoryFieldSort {
+    <#
+    .SYNOPSIS
+        READ-ONLY. The current field sort order for one product category.
+    .DESCRIPTION
+        There is no API read of this model: the list GET answers 500 because the
+        shared sort-screen query model exposes a save-command member of type
+        System.Type, which the JSON serializer refuses. Only the save command is
+        usable, so the read before that write has to come from SQL (LOCAL installs
+        only). Repoint this helper the day the GET returns an ordered-ids model.
+
+        The table and column names are parameters so a schema difference stays a
+        parameter rather than an edit.
+    .PARAMETER CategoryId
+        Product category id.
+    .PARAMETER Table
+        Category-field table name.
+    .PARAMETER SortColumn
+        Sort-order column name.
+    .PARAMETER IdColumn
+        Field-id column name.
+    .PARAMETER CategoryColumn
+        Category-id column name.
+    .PARAMETER ConnectionString
+        Overrides the connection resolved by Connect-Dw / $env:DW_SQL_CONNECTION.
+    .EXAMPLE
+        $order = Get-DwCategoryFieldSort -CategoryId 'Specs'
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$CategoryId,
+        [string]$Table = 'EcomProductCategoryField',
+        [string]$SortColumn = 'FieldSortOrder',
+        [string]$IdColumn = 'FieldId',
+        [string]$CategoryColumn = 'FieldCategoryId',
+        [string]$ConnectionString
+    )
+    $safeCategory = $CategoryId -replace "'", "''"
+    $sql = "SELECT [$IdColumn], [$SortColumn] FROM [$Table] " +
+           "WHERE [$CategoryColumn] = '$safeCategory' ORDER BY [$SortColumn]"
+    $rows = Get-DwSqlRows -Sql $sql -ConnectionString $ConnectionString
+    $out = @(foreach ($row in $rows) {
+        [pscustomobject]@{
+            fieldId   = [string]$row.$IdColumn
+            sortOrder = if ($null -eq $row.$SortColumn) { $null } else { [int]$row.$SortColumn }
+        }
+    })
+    , $out
+}
+
 Export-ModuleMember -Function @(
     'Connect-Dw', 'Assert-DwConnection', 'Invoke-DwApi', 'Remove-DwDisplayOnlyMember',
     'Invoke-DwMcp', 'Get-DwMcpTools',
-    'Get-DwSqlRows', 'Get-DwSqlScalar', 'Clear-DwServiceCache', 'Set-DwDbConnectionTrust'
+    'Get-DwSqlRows', 'Get-DwSqlScalar', 'Clear-DwServiceCache', 'Set-DwDbConnectionTrust',
+    'Get-DwConnection', 'Get-DwBrowserUserAgent', 'Invoke-DwQuery', 'Get-DwTaskLastRun', 'Invoke-DwTaskRun',
+    'Test-DwPageProbe', 'Get-DwServedFileHash', 'Get-DwSqlCount', 'ConvertTo-DwApiValue',
+    'Get-DwCategoryFieldSort'
 )

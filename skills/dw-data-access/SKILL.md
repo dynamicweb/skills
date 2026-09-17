@@ -287,13 +287,23 @@ catch
 
 | Script | Reads / writes | What it does |
 |---|---|---|
-| [Dw.Api.psm1](scripts/Dw.Api.psm1) | Writes nothing on import; each function states its own | The shared Dynamicweb connection module: `Connect-Dw`/`Assert-DwConnection` (discovery + load sentinel), `Invoke-DwApi` (+ `Remove-DwDisplayOnlyMember` for round-trip saves), `Invoke-DwMcp`/`Get-DwMcpTools` (JSON-RPC handshake, SSE, pagination), `Get-DwSqlRows`/`Get-DwSqlScalar` (array-safe, DataRow-free reads; LOCAL installs only — no remote SQL path exists by design), `Clear-DwServiceCache`, `Set-DwDbConnectionTrust` |
+| [Dw.Api.psm1](scripts/Dw.Api.psm1) | Writes nothing on import; each function states its own | The shared Dynamicweb connection module, READ half: `Connect-Dw`/`Assert-DwConnection` (discovery + load sentinel), `Invoke-DwApi` (+ `Remove-DwDisplayOnlyMember` for round-trip saves), `Invoke-DwMcp`/`Get-DwMcpTools` (JSON-RPC handshake, SSE, pagination), `Get-DwSqlRows`/`Get-DwSqlScalar` (array-safe, DataRow-free reads; LOCAL installs only — no remote SQL path exists by design), `Clear-DwServiceCache`, `Set-DwDbConnectionTrust`, `Get-DwConnection`. Plus the paged read half: `Invoke-DwQuery` (walks every page, reconciles against `totalCount`, refuses a repeated page), the 429/read-5xx retry with backoff inside `Invoke-DwApi`, `Get-DwTaskLastRun`/`Invoke-DwTaskRun` (poll the task's own last-run for a CHANGE, never a wall clock), `Test-DwPageProbe` (reads the body: a compile error answers 200), `Get-DwServedFileHash`, `Get-DwSqlCount` (a blank is not a zero), `ConvertTo-DwApiValue`, `Get-DwCategoryFieldSort`, `Get-DwBrowserUserAgent` (the one documented UA) |
+| [Dw.Api.Write.psm1](scripts/Dw.Api.Write.psm1) | Writes; every verb is a reported dry run until `-Apply` | The WRITE half, a separate file so no one script co-locates read, upload, delete and settings-rewrite: `Remove-DwUser`, `Remove-DwGroup`, `Remove-DwDynamicStructure` (ids as STRINGS, the structure by its unique-id GUID, every delete proved by a read-back), `Set-DwGlobalSetting` + `Assert-DwGlobalSettingNode` (a by-key read is never proof; the effect probe is mandatory), `Send-DwFile` (explicit destination name, size poll, served-bytes hash), `Clear-DwRecycleBin` (subset of an expected id set, never a count delta). It refuses arbitrary SQL through a scheduled task and the whole admin-account lifecycle |
+| [tests/Dw.Api.Tests.ps1](scripts/tests/Dw.Api.Tests.ps1) | Read-only | Hermetic Pester coverage for both modules: paging concatenation, retry and backoff, the payload fence, the count contract, and that every write verb is a no-op that issues no request without `-Apply`. `pwsh -NoProfile -c "Invoke-Pester -Path skills/dw-data-access/scripts/tests/Dw.Api.Tests.ps1"` |
 | [Build-DwProductIndex.ps1](scripts/Build-DwProductIndex.ps1) | Writes: rebuilds a Lucene index (flushes product caches first) | The enforced flush-build-poll form with the freshness guard, the Error-vs-first-build distinction, the 10.28.x status-verb fallback, and `-Passes 2` for multi-instance indexes; never re-fires on a timeout. The contract it implements is owned by `dw-search-indexing` ("index-management"); in-product the same rebuild is MCP `build_product_index` |
 | [Invoke-DwMojibakeCensus.ps1](scripts/Invoke-DwMojibakeCensus.ps1) | Read-only (optionally writes a JSON census) | Double-encoded-UTF-8 census per table.column: broken markers vs healthy typography, U+FFFD contexts as escaped spans; markers built from code points. Local installs only |
 
 Scripts in other skills import it `$PSScriptRoot`-relative and assert the load (see the fenced
 form below); the traps it encodes are documented in
-[`references/management-api-and-sql.md`](references/management-api-and-sql.md).
+[`references/management-api-and-sql.md`](references/management-api-and-sql.md), which also states
+every rule the two modules enforce in prose, so nothing is learnable only by reading a script.
+
+The read half and the write half are two files on purpose: endpoint protection scores the verbs a
+script co-locates, and one file that reads, uploads, deletes users and rewrites settings is the
+shape that gets quarantined. Import the write half only where you write; it imports the read half
+itself. Two verb families are refused outright and have no shipped script: arbitrary SQL executed
+through a scheduled task, and admin-account creation, deletion or backend-access revocation. Do
+those by hand on the admin Users screen.
 
 ```powershell
 Import-Module (Join-Path $PSScriptRoot '../../dw-data-access/scripts/Dw.Api.psm1') -Force -ErrorAction Stop
