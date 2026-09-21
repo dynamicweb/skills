@@ -42,9 +42,11 @@ number somebody remembered.
 - **`install-swift2.ps1` stops baking in Swift 2.2.0.** The download URLs take the Swift release
   from `versions.json` (`worksOn.swift.measured`) through `-VersionsJsonPath`, which defaults to
   the nearest `versions.json` above the script. A missing or unparseable file is a hard failure
-  with the reason, never a silent fallback to a stale literal. The dated segment in the database
-  package name is not derivable from `versions.json`, so it is the new required
-  `-SwiftDatabaseStamp` parameter and omitting it fails with the portal folder to read it from.
+  with the reason, never a silent fallback to a stale literal. The database package name carries
+  a date stamp and the portal changed its own pattern between releases
+  (`swift2.2.0-20260129-database.zip`, `swift-2.4.0-20260702-database.zip`), so `versions.json`
+  states it in full as `worksOn.swift.databasePackage`, the validator checks it names `measured`,
+  and `-SwiftDatabasePackage` is only an override.
 
 ## [5.3.0]
 

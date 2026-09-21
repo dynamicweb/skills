@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-09-21T10:00:09.888Z",
+  "generatedAt": "2026-09-21T12:03:57.315Z",
   "worksOn": {
     "dw": {
       "ring": "R1",
@@ -10,7 +10,8 @@
     },
     "swift": {
       "floor": "==2.4",
-      "measured": "2.4.0"
+      "measured": "2.4.0",
+      "databasePackage": "swift-2.4.0-20260702-database.zip"
     },
     "apps": [
       {

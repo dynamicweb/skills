@@ -76,7 +76,8 @@ Checks (errors fail the build, warnings are printed but do not):
   - `versions.json` (repo root) parses against the one published schema: exactly
     `schema` (1), `worksOn`, `measuredAt`, `policy`; `worksOn` carrying exactly
     `dw`, `swift` and `apps`; each axis exactly `floor` + `measured`, and the
-    `dw` axis optionally `ring` (R0-R4) + `tfm` (`net10.0`); each app
+    `dw` axis optionally `ring` (R0-R4) + `tfm` (`net10.0`), the `swift` axis
+    optionally `databasePackage` (the portal's database zip name); each app
     `id`/`floor`/`measured`/`required` plus an optional `scope`. `measured` is
     one concrete version (never a range, never `x`); `floor` is a valid range
     (`>=`, `==`, `>`, `~`, `^` or a bare version). Vendor axes only — the file
@@ -1133,6 +1134,11 @@ ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 RING_RE = re.compile(r"^R[0-4]$")
 # The target framework moniker the ring served that release on.
 TFM_RE = re.compile(r"^net\d+\.\d+$")
+# The Swift database package name on the downloads portal, stated in full because the
+# portal changed its own pattern between releases (swift2.2.0-20260129-database.zip,
+# swift-2.4.0-20260702-database.zip): a date stamp alone cannot rebuild it.
+DB_PACKAGE_RE = re.compile(r"^swift-?(\d+(?:\.\d+){1,3})-\d{8}-database\.zip$")
+SWIFT_AXIS_EXTRAS = frozenset({"databasePackage"})
 
 # One regex finds every candidate stamp token; the contents are then checked
 # for axis order, duplication and version shape.
@@ -1173,6 +1179,15 @@ def check_axis(where: str, axis: str, value: object,
         if not isinstance(tfm, str) or not TFM_RE.match(tfm):
             err(f"{where}: `{axis}.tfm` must be a framework moniker such as "
                 f"'net10.0' (got {tfm!r})")
+    if "databasePackage" in value:
+        pkg = value["databasePackage"]
+        m = DB_PACKAGE_RE.match(pkg) if isinstance(pkg, str) else None
+        if not m:
+            err(f"{where}: `{axis}.databasePackage` must be the portal's database "
+                f"package name, swift[-]<version>-<yyyymmdd>-database.zip (got {pkg!r})")
+        elif m.group(1) != value.get("measured"):
+            err(f"{where}: `{axis}.databasePackage` names Swift {m.group(1)} but "
+                f"`measured` is {value.get('measured')!r}")
     measured = value.get("measured")
     if not isinstance(measured, str) or not MEASURED_RE.match(measured):
         err(f"{where}: `{axis}.measured` must be one concrete version "
@@ -1257,7 +1272,7 @@ def check_versions_file() -> None:
     for axis in ("dw", "swift"):
         if axis in works_on:
             check_axis("versions.json", f"worksOn.{axis}", works_on[axis],
-                       DW_AXIS_EXTRAS if axis == "dw" else frozenset())
+                       DW_AXIS_EXTRAS if axis == "dw" else SWIFT_AXIS_EXTRAS)
     apps = works_on.get("apps")
     if not isinstance(apps, list) or not apps:
         err("versions.json: `worksOn.apps` must be a non-empty array")

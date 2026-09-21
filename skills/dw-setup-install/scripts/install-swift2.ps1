@@ -52,22 +52,23 @@
     version is baked into this script; a missing or unparseable file is a hard
     failure, never a fallback to a stale literal.
 
-.PARAMETER SwiftDatabaseStamp
-    The date segment in the Swift database package name, as the downloads
-    portal lists it (the YYYYMMDD in swift<version>-<stamp>-database.zip).
-    versions.json carries no date, so this cannot be derived and has no
-    default: read it off the portal folder for the Swift release in
-    versions.json and pass it. Omitting it fails with the folder to look in.
+.PARAMETER SwiftDatabasePackage
+    Override for the Swift database package name on the downloads portal
+    (for example swift-2.4.0-20260702-database.zip). By default it is read
+    from versions.json worksOn.swift.databasePackage, which states the full
+    name because the portal changed its own pattern between releases and a
+    date stamp alone cannot rebuild it. Missing in both places is a hard
+    failure naming the portal folder to read it from.
 
 .EXAMPLE
-    pwsh -NoProfile -File scripts/install-swift2.ps1 -SwiftDatabaseStamp 20260129
+    pwsh -NoProfile -File scripts/install-swift2.ps1
 
     Installs the Swift release named in versions.json with the defaults:
     localhost SQL Server, database "swift2", Files folder
     C:\DwSolutions\Swift2\Files.
 
 .EXAMPLE
-    pwsh -NoProfile -File scripts/install-swift2.ps1 -TargetServer ".\SQLEXPRESS" -TargetDatabase "mybusiness" -FilesPath "C:\MyProject\wwwroot\Files" -SwiftDatabaseStamp 20260129
+    pwsh -NoProfile -File scripts/install-swift2.ps1 -TargetServer ".\SQLEXPRESS" -TargetDatabase "mybusiness" -FilesPath "C:\MyProject\wwwroot\Files"
 #>
 #Requires -Version 7.0
 
@@ -84,7 +85,7 @@ param(
     [int]$BootstrapSecretTtlMinutes = 30,
     [switch]$SkipDownload,
     [string]$VersionsJsonPath = "",
-    [string]$SwiftDatabaseStamp = ""
+    [string]$SwiftDatabasePackage = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -120,18 +121,28 @@ function Get-SwiftVersion([string]$Path) {
     return [string]$version
 }
 
+function Get-SwiftDatabasePackage([string]$Path, [string]$Version, [string]$Override) {
+    if ($Override) { return $Override }
+    $doc = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+    $pkg = $doc.worksOn.swift.databasePackage
+    if (-not $pkg) {
+        throw "versions.json at '$Path' carries no worksOn.swift.databasePackage. The portal names the database zip with a date stamp and no stable pattern; read the name off Files/Files/Releases/Swift/Swift-v$Version-demo-data/ and add it to versions.json (or pass -SwiftDatabasePackage)."
+    }
+    if ([string]$pkg -notmatch [regex]::Escape($Version)) {
+        throw "versions.json at '$Path' names database package '$pkg', which does not carry the Swift release '$Version' it states as measured."
+    }
+    return [string]$pkg
+}
+
 $VersionsFile = Resolve-VersionsJson $VersionsJsonPath
 $SwiftVersion = Get-SwiftVersion $VersionsFile
-Write-Host "Swift release from $VersionsFile : $SwiftVersion"
-
-if (-not $SwiftDatabaseStamp) {
-    throw "The Swift database package name carries a date stamp that versions.json does not state. Read it from the portal folder Files/Files/Releases/Swift/Swift-v$SwiftVersion-demo-data/ (the YYYYMMDD in swift$SwiftVersion-<stamp>-database.zip) and pass -SwiftDatabaseStamp."
-}
+$SwiftDatabasePackage = Get-SwiftDatabasePackage $VersionsFile $SwiftVersion $SwiftDatabasePackage
+Write-Host "Swift release from $VersionsFile : $SwiftVersion (database package $SwiftDatabasePackage)"
 
 $BaseUrl = "https://doc.dynamicweb.com/Admin/Public/Download.aspx?File="
 $Downloads = @{
     Database = @{
-        Url = "${BaseUrl}/Files/Files/Releases/Swift/Swift-v$SwiftVersion-demo-data/swift$SwiftVersion-$SwiftDatabaseStamp-database.zip"
+        Url = "${BaseUrl}/Files/Files/Releases/Swift/Swift-v$SwiftVersion-demo-data/$SwiftDatabasePackage"
         FileName = "swift2-database.zip"
     }
     Files = @{
