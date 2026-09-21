@@ -4,7 +4,7 @@ type: knowledge
 group: pim
 mcp: optional
 dynamo: true
-description: 'Manage product translation and localization across EcomLanguages in Dynamicweb 10. Triggers: product translation, EcomLanguage setup, AreaCopy language layers. Non-triggers: product structure -> dw-pim-modelling; product completeness -> dw-pim-completeness.'
+description: 'Manage Dynamicweb 10 product translations across EcomLanguages. Triggers: localize product data, EcomLanguage setup, AreaCopy language layers. Non-triggers: page translation -> dw-content-localization; product structure -> dw-pim-modelling.'
 ---
 
 # PIM Localization

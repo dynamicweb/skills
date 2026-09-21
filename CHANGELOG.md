@@ -3,6 +3,13 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.2.1]
+
+- Skill descriptions use compact purposes, distinctive triggers and essential routing
+  boundaries to reduce discovery context across the role bundles.
+- Authoring guidance targets concise descriptions while preserving demo prerequisites
+  and the distinctions between adjacent skills.
+
 ## [5.2.0]
 
 The Foundry scripts roadmap lands in the corpus: the AV-safe script contract and the validator

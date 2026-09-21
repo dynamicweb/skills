@@ -4,7 +4,7 @@ type: knowledge
 group: render
 mcp: none
 dynamo: true
-description: 'Build templates using TemplateTags to access content properties directly in Dynamicweb 10. Triggers: TemplateTags syntax, direct property access in templates, TemplateTag patterns. Non-triggers: ViewModel-based rendering -> dw-render-viewmodels; template structure and Razor fundamentals -> dw-render-razor.'
+description: 'Access Dynamicweb 10 content properties directly with TemplateTags. Triggers: TemplateTags syntax, tags in templates, direct property access. Non-triggers: ViewModel rendering -> dw-render-viewmodels; template structure or Razor -> dw-render-razor.'
 ---
 
 # TemplateTags: Legacy String-Based Binding

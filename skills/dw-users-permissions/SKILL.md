@@ -4,7 +4,7 @@ type: knowledge
 group: users
 mcp: optional
 dynamo: true
-description: 'Manage users, groups, and the Permission entity store in Dynamicweb 10. Triggers: Permission entity, user groups, permission modelling. Non-triggers: product access control -> dw-commerce-b2b; custom backend logic -> dw-extend-csharp-api.'
+description: 'Manage Dynamicweb 10 users, groups, and permissions. Triggers: Permission entity, user groups, permission modelling. Non-triggers: product access control -> dw-commerce-b2b; backend logic -> dw-extend-csharp-api.'
 ---
 
 # Users and Permissions

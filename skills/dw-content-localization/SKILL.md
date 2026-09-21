@@ -4,7 +4,7 @@ type: flow
 group: content
 mcp: required
 dynamo: true
-description: 'Create a language version of a Dynamicweb 10 website and translate its page content, or translate an existing page/site from one language to another. Triggers: make a French/German/... version of this website, translate the about page, translate all pages in this area, create a language version. Non-triggers: translating PIM product data -> dw-pim-localization; designing item types/paragraphs -> dw-content-modelling; a faithful site rebuild from another platform -> dw-swift-migrate-content.'
+description: 'Create language versions of Dynamicweb 10 sites and translate page content. Triggers: translate a page, site, or area; create a website language version. Non-triggers: product translation -> dw-pim-localization; item types -> dw-content-modelling.'
 ---
 
 # Content Localization

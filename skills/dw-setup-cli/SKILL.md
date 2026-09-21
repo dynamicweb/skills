@@ -4,7 +4,7 @@ type: flow
 group: setup
 mcp: none
 dynamo: false
-description: 'Operate a Dynamicweb 10 solution with the `dw` CLI — install `.dll`/`.nupkg` add-ins, upload and update Files-archive content, export the archive, trigger a recycle, and prove the change landed. Triggers: deploy or install an add-in, `dw install`, `dw files`, upload or update templates, export a solution''s files, trigger a recycle, API-key auth for the CLI, `dw install` reported success but nothing changed, an import that silently skipped, deciding whether a task belongs to the CLI or the Dynamicweb MCP server. Non-triggers: upgrading a solution''s platform version -> dw-setup-upgrade; connection strings and environment configuration -> dw-setup-config; installing a solution from scratch -> dw-setup-install; writing the add-in code itself -> dw-extend-providers; content, product or order writes that MCP already covers -> dw-content-modelling.'
+description: 'Deploy DW10 add-ins and Files content with the dw CLI. Triggers: dw install/files, DLL/NuGet upload, templates, archive export, recycle, API-key auth, silently skipped imports. Platform upgrades -> dw-setup-upgrade.'
 ---
 
 You are operating a live Dynamicweb 10 solution through the `dw` CLI. Every command here writes to a real
