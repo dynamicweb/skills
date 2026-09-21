@@ -7,13 +7,14 @@
 - [3. Build-time host-config patches](#3-build-time-host-config-patches)
 - [4. MSDTC for cross-connection TransactionScope](#4-msdtc-for-cross-connection-transactionscope)
 - [5. Release rings (regression triage only)](#5-release-rings-regression-triage-only)
-- [6. Anti-patterns](#6-anti-patterns)
-- [7. First-run license gate + headless admin-password recovery](#7-first-run-license-gate--headless-admin-password-recovery)
+- [6. Package naming after the rebrand, and the AppStore boundary](#6-package-naming-after-the-rebrand-and-the-appstore-boundary)
+- [7. Anti-patterns](#7-anti-patterns)
+- [8. First-run license gate + headless admin-password recovery](#8-first-run-license-gate--headless-admin-password-recovery)
 
 This is the platform-level "what a DW10 host needs to be installed and to run correctly" knowledge:
 machine prerequisites, the mandatory host `TargetFramework`, the build-time host-config patches, the
-release-ring version model, and the MSDTC / distributed-transaction prereq for multi-connection
-admin operations.
+release-ring version model, the package-naming/AppStore boundary, and the MSDTC /
+distributed-transaction prereq for multi-connection admin operations.
 
 ## 1. Machine prerequisites
 
@@ -73,7 +74,8 @@ because the MCP AddIn loader hard-requires the host process to run on .NET 10.
 
 The MCP package ships only `lib/net6.0/` and `lib/net8.0/` binaries (no `net10.0/`), so the *DLLs*
 load fine on net8 — but the AddIn loader's runtime check fails. Symptom: the install POST returns 200,
-files drop to `wwwroot/Files/System/AddIns/Installed/Dynamicweb.MCP.<ver>/lib/`, but the AddIn never
+files drop to `wwwroot/Files/System/AddIns/Installed/<package>.<ver>/lib/` (`Truvio.Commerce.MCP.*`,
+or `Dynamicweb.MCP.*` on a host installed before the rebrand — §6), but the AddIn never
 registers, never appears in Installed Apps, and `/admin/mcp` returns 404. This is indistinguishable
 from the queue-stuck DB-update bug (see [`dw-setup-upgrade`](../../dw-setup-upgrade/SKILL.md),
 reference `upgrade-mechanics.md`).
@@ -233,7 +235,31 @@ if ($p) { Stop-Process -Id $p -Force }
 If a fresh host PID appears within a second of the kill, a watch/auto-restart hook (Visual Studio
 debugger, `dotnet watch`, an IDE-managed reload) is respawning it — stop the upstream source too.
 
-## 6. Anti-patterns
+## 6. Package naming after the rebrand, and the AppStore boundary
+
+Dynamicweb is rebranded as **Truvio Commerce (powered by Dynamicweb)**. The rebrand renames the product,
+not the identifiers: namespaces and types (`Dynamicweb.Ecommerce.*`), the platform package
+(`Dynamicweb.Suite` and its rings, §5), admin paths (`/admin/api`, `/admin/mcp`), the `/dwapi/` surface,
+database tables and `GlobalSettings` keys all keep "Dynamicweb", and so do `doc.dynamicweb.dev` and
+`github.com/dynamicweb`. **Newly published** packages and AppStore apps ship under `Truvio.Commerce.*` —
+`Truvio.Commerce.MCP` (the Backend MCP, formerly `Dynamicweb.MCP`), `Truvio.Commerce.Serializer`.
+
+Two consequences for anything that touches a host csproj:
+
+- **Never write a package id or version from memory.** A renamed package's old id usually still resolves
+  on nuget.org, so the wrong id gives a clean restore, a clean build, and a stale assembly — a silent
+  failure with no error to react to. Take the id and version from the AppStore listing, from a live
+  resolve (`dotnet package search <id> --prerelease`), or from the user.
+- **An app the AppStore carries is installed from the AppStore** — the Backend MCP (Truvio Commerce MCP),
+  the PIM for Business Central connector, `StaticLinkManager`. A hand-written `<PackageReference>` for
+  such an app is a defect: it bypasses the AppStore's version resolution and pins whatever id the author
+  happened to know. The csproj route stays available as an escape hatch for a host where the AppStore is
+  genuinely unreachable, but it is **an explicit user choice**: report which AppStore route failed, state
+  that the AppStore version could not be resolved, name the id and version you propose and where they
+  came from, and wait for a yes. (The Backend MCP's own install + auth recipe is owned by the
+  `dw-extend-mcp-tools` skill, reference `backend-mcp-server.md` §1.)
+
+## 7. Anti-patterns
 
 - **Do not target Dynamicweb 9.x.** EOL trajectory; Dynamicweb Commerce is exclusively DW10 going
   forward. Swift 2.x explicitly drops DW9 support.
@@ -243,7 +269,7 @@ debugger, `dotnet watch`, an IDE-managed reload) is respawning it — stop the u
 - **Do not use the `dotnet new dw10-cms` template** (CMS-only) for a solution that needs Commerce + PIM.
   Use `dw10-suite` (the full Suite template).
 
-## 7. First-run license gate + headless admin-password recovery
+## 8. First-run license gate + headless admin-password recovery
 
 On a fresh DW **10.27.x** install the Setup Guide forces `/admin/license` immediately after the
 database step — **before** any admin-user setup. Complete the license step; a **Suite Trial** is fine

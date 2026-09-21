@@ -4,17 +4,20 @@ type: knowledge
 group: pim
 mcp: optional
 dynamo: true
-description: 'Manage product translation and localization across EcomLanguages in Dynamicweb 10. Triggers: product translation, EcomLanguage setup, AreaCopy language layers. Non-triggers: product structure -> dw-pim-modelling; product completeness -> dw-pim-completeness.'
+description: 'Manage Dynamicweb 10 product translations across EcomLanguages. Triggers: localize product data, EcomLanguage setup, AreaCopy language layers. Non-triggers: page translation -> dw-content-localization; product structure -> dw-pim-modelling.'
 ---
 
 # PIM Localization
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
-apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
-review, or produce payloads and configuration for the user to apply — and do not substitute
-direct SQL, file edits, or guessed HTTP calls for those tool calls.
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the way to apply it, and
+in-product they are the only way — the MCP tool set plus read/write under `Files/` is the whole
+surface these steps may use. When no tool covers the operation, **stop and tell the user**, naming
+the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
+outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
+product, are never a step in this skill, and are owned by
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 ## EcomLanguage Setup
 
@@ -113,11 +116,19 @@ When creating language versions (via "Add languages"), you can assign the new la
 
 See [dw-pim-workflow](../dw-pim-workflow) for workflow setup.
 
-## Completeness per Language
+## Completeness has no per-language dimension
 
-Product completeness is calculated per language context. A product might be 100% complete in English but 40% complete in German. Completion rules and queries can be scoped to a specific language, enabling language-specific workflows for translation progress.
+**Per-language completeness is not queryable on this platform line.** A completion rule carries a
+language list and the admin panel accepts it, but the appended query expression is built from
+`CompletionRule|<id>`, a single per-product index value that the language list never reaches: a query
+configured for several languages returns exactly the products any one of them returns. A
+translation-progress worklist ("complete in English, incomplete in the target language") therefore
+**cannot** be built from completeness. Model it as an explicit per-language field query instead —
+filter on the translated fields themselves for the target language.
 
-See [dw-pim-completeness](../dw-pim-completeness) for completeness rule setup.
+The measurement and the four-gate chain behind it live in
+[dw-pim-completeness](../dw-pim-completeness/SKILL.md) "Completeness has no per-language dimension";
+this skill keeps no second copy.
 
 ## Auto-Translation
 
@@ -125,7 +136,7 @@ Dynamicweb 10 supports auto-translation of product fields. Configuration is at t
 
 ## Deep reference
 
-[references/translation-mechanics.md](references/translation-mechanics.md) — the field-validated internals: the two-table mental model (`EcomLanguages` vs `Area` language layers), what must be translated vs what falls back, the MCP/SQL surface matrix (`update_products` `languageId`, the `create_products` master-language trap, the group-translation null gotcha), the standard-field `AllowChangesAcrossLanguages` seed SQL, the `EcomProductField` flag gates that make `ProductSave` silently discard writes, the category-field language-column decoy, facet-option label translation (and the `ProductFieldOptionSave` wipe hazard), `OrderStateTranslationSave`, and the add-a-new-language step list.
+[references/translation-mechanics.md](references/translation-mechanics.md) — the field-validated internals: the two-table mental model (`EcomLanguages` vs `Area` language layers), what must be translated vs what falls back (and why a row stranded under a non-default layer is invisible rather than fallen back), what each view model returns when a translation row is missing, the MCP/SQL surface matrix (`update_products` `languageId`, the `create_products` master-language trap, the group-translation null gotcha), the standard-field `AllowChangesAcrossLanguages` seed SQL, the `EcomProductField` flag gates that make `ProductSave` silently discard writes, the category-field language-column decoy, facet-option label translation (and the `ProductFieldOptionSave` wipe hazard), `OrderStateTranslationSave`, and the add-a-new-language step list.
 
 ## Pitfalls
 

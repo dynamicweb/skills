@@ -16,6 +16,7 @@
   - [Cleanup verbs](#cleanup-verbs)
   - [dw10source as binder disambiguator](#dw10source-as-binder-disambiguator)
   - [File upload — and why an "ok" upload can change nothing](#file-upload--and-why-an-ok-upload-can-change-nothing)
+  - [Serialized trees: `Upload`, then `PackageUnzip`, then `Deserialize`](#serialized-trees-upload-then-packageunzip-then-deserialize)
   - [`FileDelete` can be ACL-denied for pre-existing files](#filedelete-can-be-acl-denied-for-pre-existing-files--know-the-per-host-answer-before-you-plan-a-cleanup)
   - [Flush first; a cloud install can usually be restarted](#flush-first-a-cloud-install-can-usually-be-restarted)
 - [Inheriting a CLONED demo host — the remediation playbook](#inheriting-a-cloned-demo-host--the-remediation-playbook)
@@ -41,6 +42,8 @@ Tool availability on hosted installs is **version-dependent and a moving target*
 
 1. **Management API**: `GET https://<host>/Admin/Api/api.json` with `Authorization: Bearer CLAUDE.<hex>`. Returns the full OpenAPI catalogue (~1,900 operations on 10.25.x) including the platform version in `info.version`. Save it locally — it is the working map for everything below.
 
+   **`api.json` proves nothing about the key.** The descriptor is served without the bearer check: it answers 200 with no `Authorization` header, a junk bearer, or another site's key [dw 10.28.10]. Prove the key on a command endpoint instead: `GET /Admin/Api/McpConfigurationAll` must answer 200 with this host's key and 401 with no key or a junk bearer. On a cloned host, also assert that the source host's key answers 401 here, because a clone inherits the source's key and `api.json` cannot tell the two states apart.
+
    **Pin the build from `info.version` first.** It carries the version AND the commit, e.g.
    `10.28.1-PreRelease+<commit sha>` — a stronger pin than a bare version string, and the thing to fill
    every learning's env line from. Where a host answers `api.json` without a version (measured on one
@@ -53,19 +56,17 @@ Tool availability on hosted installs is **version-dependent and a moving target*
    divergence between two hosts is a version fork, not a contradiction.
 2. **MCP**: `POST https://<host>/admin/mcp` with a JSON-RPC `initialize`. A 404 plus zero MCP-related operations in the OpenAPI spec means the install doesn't expose MCP — fall through to the Management API as primary surface. If MCP responds, the normal surface priority applies and most of this file's API recipes become fallbacks.
 3. **Admin UI via Playwright**: needs interactive credentials (ask the user for them). Verification surface only — build-phase rules apply from the first request on a hosted install, since there is nothing to scaffold.
-4. **Site database reachability — probe it before assuming API-only reads.** "Cloud-hosted" does not imply "database out of reach": on a co-located host class the site DB is reachable from the VM the agent runs on, and the connection string sits in `Files/GlobalSettings.Database.config`. A plain SqlClient connection with those credentials returns **full result sets** — which retires the whole `Sql-ReadRaw` double-UPDATE / `RAISERROR`-peek family of workarounds that exist only because the API offers no `SELECT` channel. Probe once at session start (read the config, open a connection, run a trivial `SELECT`), record the answer in the demo ledger, and plan the session's verification reads from the result rather than from a remembered host.
+4. **Verification reads: MCP read tools, then Management API queries. Never a database connection.** Online mode has no `SELECT` channel, and a host where the site database happens to be reachable from the agent's VM does not change that: do not read the connection string in `Files/GlobalSettings.Database.config` and do not open a database connection. At session start, map the reads the session will verify with onto the surfaces probes 1 and 2 found: the matching MCP `get_*` tool when MCP responds (for example `get_users_by_usernames`, `get_products_by_sku`, `get_pages_by_area_id`), otherwise the matching query in the saved `api.json` catalogue (for example `UserById`, `PriceById`). Record the map in the demo ledger and plan the verification reads from it rather than from a remembered host. A read that neither surface answers **cannot be established in online mode**: record it as unverified and ask the user. A database read is a local-install verification outside online mode (rung 4 of the [`dw-data-access`](../../dw-data-access/SKILL.md) action ladder, "Surfaces into a Dynamicweb instance"), never a step here.
 
-   **Caveats, all load-bearing:** the file contains **live credentials for a shared production-class host** — never copy it into the demo folder, an extract, a transcript or a commit, and reference it by path only. A direct connection is outside DW's bookkeeping, so it stays a **read** channel by default: reads through it are the safe, high-value part, while writes re-open every cache/notification hazard the surface-priority rule exists to prevent (`surface-priority.md`, and the API-write-vs-SQL-write visibility split in [`../../dw-demo-swift/references/sql-direct-seeding.md`](../../dw-demo-swift/references/sql-direct-seeding.md)). On a shared install the connection reaches **other tenants' areas** as well as the demo's — scope every query explicitly.
-
-**Surface priority in online mode:** MCP (if the probe finds it) → Management API → **ask the user** for the rare operation neither exposes. Assume there is **no SQL surface** until probe 4 proves otherwise — the "last resort" rung of the local surface-priority table is absent on most hosted installs, which is why every SQL-based sister-skill recipe needs the API equivalent from this file. Where the DB *is* reachable it changes the **verification** picture (a real `SELECT` channel), not the write order: writes stay MCP → Management API. The admin UI stays verification-only, same as every build phase (`surface-priority.md`).
+**Surface priority in online mode:** MCP (if the probe finds it), then the Management API, then **ask the user** for the rare operation neither exposes. There is **no SQL surface**: rung 4 of the action ladder ([`dw-data-access`](../../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance") is local installs only, which is why every SQL-based sister-skill recipe needs the API equivalent from this file. Writes and verification reads both go MCP, then the Management API (probe 4). The admin UI stays verification-only, same as every build phase (`surface-priority.md`).
 
 ## Management API recipe pack (validated DW 10.25.x)
 
 The Management API hits the same DW domain services as MCP and the admin UI, so bookkeeping (ItemRelation cloning, cache invalidation, notifications) fires correctly. The binder has sharp edges. Most of these recipes are vendor-generic Management API mechanics that the online build leans on more heavily (no MCP, no SQL) — they are owned by the foundational skills, not by this online fork:
 
 - **Create-vs-update fork** (UPDATE when `Id` set, CREATE when empty; `notFound` is the fork talking), the **`SelectedImage` binder asymmetry**, **product images** (`AssetAddToMultipleProducts`, no webp, computed `image`), the **variant chain** (`VariantGroupSave` → `VariantCombinationSave`/`ExtendAllVariants`, skip `VariantCombinationCreate`), and the **`ShopSave` languages gap** → [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.14.
-- **Paragraph / page / grid-row editing** (`ParagraphSave` round-trips, the `ButtonData` object binder, `ShowParagraph` can't be set, `PageCopy` inherits `shortCut`, `GridRowCopy` over `GridRowCreate`) → [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) "Editing page / paragraph / grid-row content through the Management API".
-- **`UserSave` can't set passwords** → [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §13.
+- **Paragraph / page / grid-row editing** (`ParagraphSave` round-trips, the `ButtonData` object binder, `ShowParagraph` can't be set, `PageCopy` inherits `shortCut`, `GridRowCopy` over `GridRowCreate`) → [`page-paragraph-writes.md`](../../dw-content-modelling/references/page-paragraph-writes.md) "Editing page / paragraph / grid-row content through the Management API".
+- **`UserSave` can't set passwords** → [`grant-mechanics.md`](../../dw-users-permissions/references/grant-mechanics.md) §13.
 
 Some commands also mirror a property at BOTH the command level and inside `Model` (e.g. `VariantCombinationCreate`); when a payload bounces with "value is required" for a field you sent, mirror it into/out of `Model`.
 
@@ -105,7 +106,7 @@ An empty or minimal body reaching a real command runs it. `AssetCategorySave` de
 `[Required]`, so `POST AssetCategorySave {"Model":{"Name":"ZZZ"}}`, sent purely to learn the payload
 shape, created a live asset category (id 7) on the host; it had to be cleaned up with
 `AssetCategoryDelete {"GroupId":7}` and `AssetCategoryAll` re-read back to `totalCount` 0. Same hazard
-class as the `SerializerDeserialize {}` incident, where an omitted `Mode` defaults to Replace.
+class as the `Deserialize {}` incident, where an omitted `Mode` defaults to Replace.
 
 The ban is on **minimal-body** probes, not only empty ones. Read the schema from an existing entity of
 the same type, from the OpenAPI catalogue, or from the admin UI's own captured request. Assert
@@ -120,12 +121,12 @@ the same type, from the OpenAPI catalogue, or from the admin UI's own captured r
 | MCP `delete_variant_combinations` | non-functional, same server-side throw. |
 | `VariantGroupRemove` | 400 Unknown command. The group deletes without detaching. |
 | `delete_products` | removes the variant rows with the family, so a family delete needs no per-variant cleanup. |
-| `UserByUserName` | **not registered on 10.28**: `400 {"successful":false,"message":"Unknown query: 'UserByUserName'"}`. Only `UserById` exists. A throwaway-admin teardown helper that resolves its id through `UserByUserName` inside a swallowing `try/catch` reports "not present" and deletes nothing, leaving a live `systemAdministrator` on a prospect-facing host while its own check passes. Resolve the id by a route that cannot silently answer zero (the MCP `get_user_by_username` tool, or `SELECT AccessUserId FROM AccessUser WHERE AccessUserUserName='<probe>'`), and make the delete path THROW when the lookup mechanism itself fails instead of reporting absent. |
+| `UserByUserName` | **not registered on 10.28**: `400 {"successful":false,"message":"Unknown query: 'UserByUserName'"}`. Only `UserById` exists. A throwaway-admin teardown helper that resolves its id through `UserByUserName` inside a swallowing `try/catch` reports "not present" and deletes nothing, leaving a live `systemAdministrator` on a prospect-facing host while its own check passes. Resolve the id by a route that cannot silently answer zero (the MCP `get_users_by_usernames` tool, or, on local installs only, `SELECT AccessUserId FROM AccessUser WHERE AccessUserUserName='<probe>'`), and make the delete path THROW when the lookup mechanism itself fails instead of reporting absent. |
 
 Verify cleanup by reading back, not by the response: `PriceById` on every created price id must return
 non-200 and the product-scoped price list must be empty. After a throwaway-admin teardown assert BOTH
 that `GET /Admin/Api/UserById?Id=<id>` no longer returns a `model` AND that `SELECT COUNT(*) FROM
-AccessUser WHERE AccessUserUserName='<probe>'` is 0. A cleanup step that cannot name the id it deleted is
+AccessUser WHERE AccessUserUserName='<probe>'` is 0 (**local installs only**; on a hosted install, `get_users_by_usernames` returns no user for the probe). A cleanup step that cannot name the id it deleted is
 not evidence.
 
 ### dw10source as binder disambiguator
@@ -148,6 +149,25 @@ DirectoryCreate | FolderCreate | DirectoryNew | CreateDirectory | FileManagerCre
 ```
 
 **So land assets in a folder that already exists**, and prefer the folder the referencing file already lives in — self-hosted webfonts belong next to the sheet that `@font-face`s them (`Templates/Designs/<design>/Custom/`), not in a new `System/Styles/Fonts/` tree that has to be conjured first. If a new folder is genuinely required, use the `DirectoryCopy` + `DirectoryEmpty` trick above and verify the path lists before uploading into it.
+
+### Serialized trees: `Upload`, then `PackageUnzip`, then `Deserialize`
+
+There is no filesystem to copy a layer into `SerializeRoot`, so a serialized tree travels as a zip
+[serializer 1.0.1-beta]:
+
+1. Zip each mode tree with `<mode>-manifest.json` at the zip root, not inside a folder: one zip per mode.
+2. `POST /Admin/Api/Upload` with `path=System/Serializer/Upload` and `allowOverwrite=true`, and assert the
+   `model` list as above.
+3. `POST /Admin/Api/PackageUnzip {"FilePath":"/Files/System/Serializer/Upload/<x>.zip","Mode":"replace"}`.
+   It **replaces the whole `SerializeRoot/replace/` folder**. An `Invalid` answer (a zip over 256 MB, over
+   1 GB unzipped or over 100,000 files, a wrapped tree, the other mode's manifest) leaves the folder
+   untouched.
+4. `POST /Admin/Api/Deserialize {"Mode":"replace","IsDryRun":true}`, read the counts, then the real pass.
+   Repeat steps 3 and 4 for `merge`.
+
+A `PackageDownload` zip taken from another install unzips the same way with `AreaId` added.
+`PackageUnzip` needs the package upload grant. The parameters and zip shapes are in
+[serializer-reference.md](../../dw-demo-base/references/serializer-reference.md) "Invocation: the routes".
 
 ### `FileDelete` can be ACL-denied for pre-existing files — know the per-host answer before you plan a cleanup
 
@@ -192,7 +212,7 @@ Wherever a sister-skill recipe says "restart the host" (variant seeding, BOM ins
 A partner-hosted site process often runs under an account that cannot write `Files/System/Repositories/**`, and the Management API index commands do not surface that denial. **Read every repository-config field back through a different query immediately after the save; a matching readback is the only proof it landed — the `status: ok` is not.**
 
 - **`IndexBuilderSave` is a lying-success surface.** Setting `ShopsToIndex` (or any builder field) round-trips `status: ok` and bumps `updatedDate` while writing nothing to disk when the ACL denies the `/Files/System/Repositories/**` XML write. An `IndexBuilderByName` readback shows the field still empty, and a following Full rebuild then runs unscoped, so the whole catalogue indexes instead of the intended shop. Assert the readback, not the `ok`. Scope it correctly: **`ShopsToIndex` controls how BIG the index is, not what the storefront can see** — channel isolation is enforced at QUERY time (see [`index-management.md`](../../dw-search-indexing/references/index-management.md) "Channel isolation is a QUERY-time filter"), so an empty `ShopsToIndex` is an index-size finding, not an open leak to fix reflexively.
-- **After a raw-SQL group→product relation write, recycle first, THEN Full `BuildIndex` — the rebuild alone is a no-op.** `ProductIndexBuilder` reads `EcomGroupProductRelation` through an app-lifetime cache that only a process recycle clears. Insert a relation via SQL, run a Full build without a recycle, and the builder re-indexes the stale relation set — doc counts never move, which reads as "API index builds are dead on this host". Relations written through `ProductGroupRelationSave` need no recycle: the API write invalidates the relation cache in-process (the visibility split is owned by `dw-demo-swift/references/sql-direct-seeding.md` "API write vs SQL write"). Either way the Full build must target `Repository='Products'` — the `ProductsFrontend`/`ProductsBackend` pair only enqueues and never refreshes the `GroupID` facet. Drop a rung-3 control file first, wait for the recycle, then POST the identical `BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}` — it now swaps the online instance and the per-group counts move. (Relation-cache cousin of the value-write read-through-cache ordering trap in [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md): different cache, same fix — clear it before the rebuild.)
+- **Write group to product relations through `ProductGroupRelationSave`, then run a Full `BuildIndex` on `Repository='Products'`.** `ProductIndexBuilder` reads `EcomGroupProductRelation` through an app-lifetime cache. The API write invalidates that cache in-process, so the rebuild picks the new relation up with no recycle. A relation inserted by raw SQL does not invalidate it, and a Full build then re-indexes the stale relation set: doc counts never move, which reads as "API index builds are dead on this host". That SQL path, and its recycle-first fix, is local installs only and never a step on a hosted install (the visibility split is owned by `dw-demo-swift/references/sql-direct-seeding.md` "API write vs SQL write"). Target `Repository='Products'`: the `ProductsFrontend`/`ProductsBackend` pair only enqueues and never refreshes the `GroupID` facet. POST `BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}` and the per-group counts move. (Relation-cache cousin of the value-write read-through-cache ordering trap in [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md): different cache, same rule, invalidate it before the rebuild.)
 
 ## Inheriting a CLONED demo host — the remediation playbook
 

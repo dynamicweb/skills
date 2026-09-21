@@ -4,23 +4,33 @@ type: knowledge
 group: swift
 mcp: optional
 dynamo: true
-description: 'Reference for the Swift 2 page-building vocabulary — grid row layouts (DefinitionIds), paragraph component types with their variants and fields, color schemes, and the MCP tools that compose them. Triggers: what row layouts/paragraph types/variants exist in Swift 2, how color schemes work, which tools build or read a Swift 2 page, load before designing or migrating any Swift 2 page. Non-triggers: designing item-type schemas -> dw-content-modelling; writing Razor/cshtml templates -> dw-render-razor; performing the actual page build or migration (this is reference only, no writes) -> dw-swift-page-design, dw-swift-migrate-v1, dw-swift-migrate-content.'
+description: 'Reference Swift 2 rows, paragraph types, variants, fields, color schemes, and page tools. Triggers: Swift layout or component vocabulary before page work. Non-triggers: item schemas -> dw-content-modelling; page writes -> dw-swift-page-design.'
 ---
 
 # Swift 2 Page Blocks
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
-apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
-review, or produce payloads and configuration for the user to apply — and do not substitute
-direct SQL, file edits, or guessed HTTP calls for those tool calls.
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the way to apply it, and
+in-product they are the only way — the MCP tool set plus read/write under `Files/` is the whole
+surface these steps may use. When no tool covers the operation, **stop and tell the user**, naming
+the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
+outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
+product, are never a step in this skill, and are owned by
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 Reference for the Swift 2 page-building vocabulary — the row layouts, paragraph component
 types, color schemes, and the MCP tools that compose them. Load this whenever you are about to
 **design** or **migrate** a Swift 2 page; [dw-swift-page-design](../dw-swift-page-design) and
 [dw-swift-migrate-v1](../dw-swift-migrate-v1) both build on it. It is reference, not an
 action — those flow skills drive the actual writes.
+
+**Row mechanics live in `dw-swift-building`.** What `GridRowCopy` carries from a donor row, the
+column-binding law behind gotcha 15, the spacing an inert row still pays, and idempotent row minting
+are in
+[`dw-swift-building/references/grid-rows-and-binding.md`](../dw-swift-building/references/grid-rows-and-binding.md);
+the browser-side checks that catch a page passing every content assert are in
+[`dw-swift-building/references/layout-verification.md`](../dw-swift-building/references/layout-verification.md).
 
 > Everything below is the **shipped Swift v2** default set. Never trust this list blind on a
 > live solution — a customer may have added, removed, or renamed components. Snap to reality
@@ -31,20 +41,47 @@ action — those flow skills drive the actual writes.
 ## The MCP tools, by job
 
 **Discover (what exists on THIS solution):**
+
+> **Always pass `areaId`.** `get_row_definitions`, `get_paragraph_templates` and
+> `get_layout_containers` are area-scoped, and `areaId` is the only argument
+> `get_paragraph_templates` requires on MCP 0.4.4 — its `itemType` is optional: omit it for the
+> layout's un-scoped template list, pass it to scope to one component type. With a required
+> argument missing or misspelled the add-in answers
+> `An error occurred invoking <tool>.` and nothing else. On MCP 0.4.4 that one sentence is the
+> argument-validation error — it is **not** an unknown-tool error and **not** a permission gate.
+> Re-read `tools/list` for the required arguments and call again; never swap in
+> `get_templates` / `get_layouts` as a substitute, and never report the tool as absent.
+>
+> **Every argument name comes from that input schema, not from the surrounding prose** — the
+> obvious name is wrong often enough to plan for. Measured on 0.4.4: `get_pages_by_parent_id`
+> takes `parentId` (not `parentPageId`, which every neighbouring tool uses) and
+> `get_item_type_fields` takes `systemName` (not `itemType`). A wrong or missing argument **name**
+> fails with the one-sentence invocation error above — measured, `get_item_type_fields` called with
+> `itemType` answers exactly that. An **empty result array** is the other hintless shape and means
+> something different: the lookup ran on the right key and matched nothing, so the value is wrong
+> (a system name that does not exist on this solution). Read a key error against `tools/list` and
+> an empty array against `get_item_types`.
+
 - `get_layouts` — page/area layout (master) templates; read the real Swift design folder name
   (often `Swift-v2`, not guaranteed).
 - `get_row_definitions` — valid grid-row `DefinitionId`s + their column count/widths and which
   per-row toggles are supported.
 - `get_paragraph_templates` — for a component, the real variant template paths (e.g.
   `TextMiddleLeft.cshtml`).
-- `get_item_types` / `get_item_type_fields` — valid paragraph component names and each one's
-  real field system names.
+- `get_item_types` / `get_item_type_fields` (`systemName`) — valid paragraph component names and
+  each one's real field system names.
 - `get_layout_containers` — the default content container.
 - `get_content_apps` — module/app paragraphs (these go through `place_app_paragraph`, NOT
   `save_paragraphs`).
 
 **Read (inspect a page's structure & style):**
-- `get_page_by_id`, `get_pages_by_area_id`, `get_pages_by_parent_id` — the tree.
+- `get_pages_by_parent_id` (`parentId` + `areaId`), `get_pages_by_area_id` — the tree, and the
+  **page-metadata read** on MCP 0.4.4. `get_pages_by_ids` reads a known set of ids. There is no
+  single-page getter in the 0.4.4 tool set, so a step that needs one page's metadata reads the
+  parent's children and picks it out.
+  **Nothing in that projection carries `navigationTag`.** An assert on a navigation tag therefore
+  belongs on the frontend — render the page and assert the nav item or the resolved link — never on
+  a page read, and a step that cannot be written that way is dropped rather than left unrunnable.
 - `get_grid_rows_by_page_id` — the rows. **Returns only `DefinitionId` per row, NOT the
   columns** — join to `get_row_definitions` to learn the column layout.
 - `get_paragraphs_by_page_id` — paragraphs with their `GridRowId` + column + `ItemType` +
@@ -68,14 +105,19 @@ action — those flow skills drive the actual writes.
   `get_item_types` name, target `GridRowId` + column, and `Template` to the bare template name
   returned by `get_paragraph_templates` **verbatim** (see Field & template contracts). Inline
   grid placement is supported.
-- `place_app_paragraph` — for app/module paragraphs only (the ones in `get_content_apps`).
+- `place_app_paragraph` — for app/module paragraphs only (the ones in `get_content_apps`). It
+  leaves `ParagraphItemType` empty, and a Swift 2 grid column renders a paragraph **through its
+  item type** — so the paragraph lands live and correct in the database and nothing appears on the
+  page. Inside a grid, copy a working app paragraph of the same module instead (it carries the
+  `Swift-v2_App` item instance) and rebind the copy's grid row; details in
+  [dw-content-modelling](../dw-content-modelling/SKILL.md) (`page-paragraph-writes.md`).
 - `set_paragraph_item_fields` / `set_page_item_fields` — fill field values (copy, media,
   links).
 - `copy_page` — one-shot clone of a page incl. its grid, paragraphs, and `ColorSchemeId` refs
   (paragraphs included by default). The ONLY one-call clone; there is no style-only clone.
 - `add_repeatable_item` — build Slider/Accordion child items. Keyed by **item identity, not
   paragraph**: pass `parentItemType` (e.g. `Swift-v2_Accordion`), `parentItemId` (the
-  paragraph's `itemId`, from `get_paragraph_by_id` — NOT the paragraph id), `fieldSystemName`
+  paragraph's `itemId`, from `get_paragraphs_by_ids` — NOT the paragraph id), `fieldSystemName`
   (`Accordion_Items`, with the underscore), and `childItemType`
   (`Swift-v2_Accordion_Item`) plus the child `fields` (`Title`, `Text` — wrap as HTML like any
   rich-text field). Slider is the same shape with its own field/child types.
@@ -216,16 +258,28 @@ composed from this reference.
 
 The look is **file-backed JSON** under `Files/System/Styles` (read/write via the style tools,
 never by hand):
-- `ColorSchemes/swift.json` is a **Group** (`Id:"swift"`) holding a `Schemes[]` array; each
+- A colour-scheme file under `ColorSchemes/` is a **Group** holding a `Schemes[]` array; each
   scheme has `Id`, `Name`, `BackgroundColor`, `ForegroundColor`, `PrimaryButtonColor`,
-  `SecondaryButtonColor`. `save_color_schemes` takes scheme rows tagged with their `GroupId`
+  `SecondaryButtonColor`. **Read the group id and the scheme ids with `get_color_schemes` before
+  referencing either.** Stock Swift ships `swift.json` with group id `swift`; a solution carrying
+  its own theme layer commonly ships `default.json` with group id `default` and its own palette,
+  so a lookup by the stock id misses and the band renders unstyled. The ids and the colours below
+  are illustrative of the stock set, never literals to copy. `save_color_schemes` takes scheme rows tagged with their `GroupId`
   (the service saves them into the backing group). Read before write: a submitted scheme's
   colors are fully overwritten (omitted colors nulled, custom colors cleared); other schemes
   in the group are untouched.
-- Shipped scheme ids: `light` (#FFF/#242424), `lightgrey1` (#ededed), `lightgrey2` (#f2f2f2),
-  `dark` (#242424/#fff), `darksubtle` (#575757), `primary` (#004fff/#fff — brand accent),
-  `secondary`. A given solution may rename/add these — `get_color_schemes` is the source of
-  truth; reference only ids it returns, and `save_color_schemes` a new one before using it.
+- Scheme ids are unique **only within their group**, and a solution commonly carries two groups.
+  Measured on a stock-plus-theme host: `get_color_schemes` returned both a `default` and a `swift`
+  group, each defining `light`, `lightgrey1`, `lightgrey2`, `dark`, `darksubtle`, `primary` and
+  `secondary`, with different colours behind the same ids (`primary` #004fff in one, #1F2933 in the
+  other). **`save_grid_rows` carries `colorSchemeId` and no group member**, so which palette a row
+  paints from is decided by the **area's** `colorSchemeGroupId`, not by anything the row carries.
+  So: read `get_color_schemes`, read `get_areas` for the area's `colorSchemeGroupId`, and choose
+  only from the schemes in THAT group. Copying an id out of the other group resolves, renders, and
+  paints a colour nobody chose — and a read-back of the row cannot reveal it, because the row only
+  stores the id. Changing which palette a page bands from is an **area-level** change, not a
+  row-level one. A given solution may also rename or add schemes — `get_color_schemes` is the
+  source of truth; `save_color_schemes` a new one before using it.
 - Typography (`Typography/fonts.json`, default font **Inter**, modular scale 1.333) and
   Buttons (`Buttons/buttons.json` — Shape/border/padding; button *colors* come from the
   scheme, not here) are single objects.
@@ -239,6 +293,12 @@ Pages do not carry a theme (the `Swift-v2_Page` item type is basically just Titl
 - A paragraph can override the row's scheme with its own `ColorSchemeId` on `save_paragraphs`.
 - Mechanism: the row renders `data-dw-colorscheme="<id>"` and `swift.css` maps it to colors.
   **"Applying a scheme" = just setting the id** — no CSS, no class.
+- **The generated scheme sheet colours the row's ANCHORS from the declared scheme name, not from
+  whatever ends up painting the row.** So a row authored `dark` and later repainted a light colour
+  in a project stylesheet keeps white `tel:` / `mailto:` links against the new background —
+  measured at 1.05:1, invisible, with every markup assert green and `dw-error` 0. **Any custom
+  paint over a scheme row must change the SCHEME, not only the background**; only a contrast probe
+  catches the mismatch.
 
 So a page's appearance = (area styles as base) + per-row layout + per-row color scheme.
 **Alternating schemes between rows** (default → `light` → `lightgrey2` → `lightgrey1`) is what
@@ -266,11 +326,14 @@ small related blocks into one multi-column row instead of a long single-column s
 2. `save_grid_rows` applies no default layout — set `DefinitionId` or the row is
    structureless.
 3. Item-typed page rename is two-step: set the title field first, then `save_pages` (it
-   rewrites MenuText from the title).
+   rewrites MenuText from the title) carrying the page's current `urlName`, because the Title write
+   also moves an unpinned slug and 404s the old address
+   ([dw-content-modelling](../dw-content-modelling/SKILL.md), `page-paragraph-writes.md`).
 4. Style writes aren't patch-safe: a saved color scheme has its own colors overwritten
    (sibling schemes survive); typography/button/font replace the whole object. Read first.
 5. Component routing: item-typed → `save_paragraphs(ItemType=…)`; app/module →
-   `place_app_paragraph`. Wrong tool = broken paragraph.
+   `place_app_paragraph`, whose result renders nothing inside a Swift 2 grid column (see above) —
+   copy an existing app paragraph there. Wrong tool = broken paragraph.
 6. Unset text fields can render placeholder copy from the item's default values — blank
    fields you don't use.
 7. `Template` for an item-typed paragraph is a **bare file name** (e.g. `CardImageTop.cshtml`)
@@ -313,20 +376,41 @@ small related blocks into one multi-column row instead of a long single-column s
     `GridRowSelectorByPage`; passing `'Grid'` there throws). The row ITEM is not the tell — it
     mints on the failure path too — so assert `GridRowContainer` is non-empty after every
     create and delete the row when it is not. `GridRowSave` with `ID:0` answers 404: it is
-    update-only. `GridRowCopy` carries the source's container and the copy renders.
+    update-only. `GridRowCopy` carries the source's container and the copy renders — along with
+    four other donor attributes that need normalising after every copy (paragraphs, spacing,
+    `ParagraphTemplate`, `GridRowSort`, `GridRowContainerWidth`); it does **not** append. See
+    [`grid-rows-and-binding.md`](../dw-swift-building/references/grid-rows-and-binding.md).
 14. Batching: `set_item_field_values` takes a list spanning DIFFERENT items, so a whole page's
     field values fit in one or two calls — prefer it to one `set_paragraph_item_fields` per
     paragraph. For repeatable children (slider slides, accordion rows) pass an explicit
     `sort` to `add_repeatable_item`, or parallel calls race and scramble the order.
-15. **A grid-column CELL renders exactly ONE paragraph.** Stacking a second paragraph into the
-    same `GridRowId` + `gridRowColumn` (higher `Sort`) saves fine, reads back fine, and NEVER
-    renders — the content is silently invisible, with no error anywhere. One paragraph per
-    cell; need two blocks stacked visually → two rows.
-16. **A new area MUST get `TypographyId` and `ButtonStyleId` set (standard Swift ids: `fonts`
-    / `buttons`) or the whole site renders as unstyled 16px Times New Roman** — Swift's
-    heading/body scale is driven by the area's typography CSS variables, so with the setting
-    empty, heading classes (`h1`/`h2`/`display-*`) do nothing and every page looks broken. Set
-    them in the same `save_areas` call that creates the area.
+15. **A grid-column CELL renders exactly ONE paragraph — binding is by COLUMN, never by sort.**
+    Both shipped row templates iterate `Model.Columns` and render `column.Paragraph`, singular, so
+    a second paragraph on the same `GridRowId` + `gridRowColumn` saves fine, reads back fine, and
+    NEVER renders, with no error anywhere. In a one-column definition that is *every* paragraph
+    after the first; in a multi-column definition the doubled-up column renders its first paragraph
+    and **the other column renders empty**, which is the tell. One paragraph per cell; need two
+    blocks stacked visually → two rows. Parking a paragraph in a column the definition does not
+    define is a clean reversible retire. Full law and the row-conversion recipe:
+    [`grid-rows-and-binding.md`](../dw-swift-building/references/grid-rows-and-binding.md).
+16. **A new area MUST get `TypographyId` and `ButtonStyleId` set, to ids this solution actually
+    has, or the whole site renders as unstyled 16px Times New Roman** — Swift's heading/body
+    scale is driven by the area's typography CSS variables, so with the setting empty, heading
+    classes (`h1`/`h2`/`display-*`) do nothing and every page looks broken. **Read the ids first:
+    `get_typographies` and `get_button_styles`.** Stock Swift ships `fonts` / `buttons`; a
+    solution that layers its own theme commonly ships `default` / `default` instead, and writing
+    the stock ids there sets ids that resolve to nothing — applying this fix by literal reproduces
+    the symptom it describes. Set whatever those two tools return, in the same `save_areas` call
+    that creates the area, then read the area back and confirm the ids match.
+17. **A button with `LinkType: "page"` drops the query string, so a group link is stored as a URL.**
+    The button view model resolves a page link to the page's friendly URL and discards everything
+    after the page id: `{LinkType:"page", Link:"Default.aspx?ID=<shop page>&GroupID=<group>"}` renders
+    `href="/<culture>/shop"` and every "Browse <group>" button opens the whole shop unfiltered, with
+    the stored value reading back exactly as written. Store a link that carries a query as
+    `LinkType: "url"` with the culture-segment address (`/<culture>/shop?GroupID=<group>`, the
+    prefix measured from a page that answers 200, never derived from a name). Verify on the served
+    page (`fetch_frontend_page_html`): the anchor's `href` carries `GroupID=`; a field read-back
+    proves storage, never the rendered link.
 
 ## Row layout — settable, and what the row look depends on
 
@@ -341,8 +425,8 @@ its JSON sets the matching `EnableContainerWidth` / `EnableGapSettings` / `Enabl
 10.28.5 host `save_grid_rows` carried only
 `active`/`backgroundImage`/`colorSchemeId`/`container`/`definitionId`/`id`/`itemType`/`pageId`/`sort`,
 and rows it created came back with `GridRowItemId` NULL. Where a member is missing, the native UPDATE is
-`POST /Admin/Api/GridRowSave?Query.Type=GridRowById`, which also mints a missing row item; the native
-CREATE is `GridRowCreate` (gotcha 13). The exact
+the Management API `GridRowSave`, which also mints a missing row item; the native CREATE is
+`GridRowCreate` (gotcha 13). Neither is an MCP tool. Out of product: [`recipes-swift.md`](../dw-data-access/references/recipes-swift.md) "Grid row members no MCP tool reaches". The exact
 payload shape, the preserved-members caveat and the per-template spacing defaults live in
 `dw-data-access` (`management-api-and-sql.md`, the `GridRow` NOT-NULL-columns section). Never coalesce a null `TopSpacing`/`BottomSpacing` to a default on a whole-entity
 save: the two Swift row templates have different defaults (`Swift-v2_Row` 6, `Swift-v2_RowFlex` 1).

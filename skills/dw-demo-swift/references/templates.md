@@ -1,6 +1,6 @@
 # templates.md
 
-> Swift template / page-preset routing. Source-of-truth: `<demo-root>\distribution\layers\base\replace\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
+> Swift template / page-preset routing. Source-of-truth: `<demo-root>\distribution\layers\surface-swift\replace\_content\Swift 2\` deserialized into a running host. Reference Swift v2.3.0 templates at https://github.com/dynamicweb/Swift (requires DW 10.24.6+).
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -18,9 +18,11 @@ routed below. The sections that follow the table are owned here.
 
 | If you need… | Read |
 |---|---|
-| Template categories (baseline), page presets (the Theme primitive), and the **page-state flags** (`published` / `hidden` / `active` = "Hidden in Menu" semantics; the `publish_pages` both-flags gotcha) | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §6 |
-| `ViewModelTemplate<>` Razor pitfalls — `@Html.Raw()` absent, `product.ProductFieldValues` not on `ProductViewModel` (raw-source-renders-on-PDP), `ToggleFavorite.cshtml` no-op at `FavoriteListId=0` | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §2 |
-| Customer-number-suffix-as-role-flag (`CUST-…-BROWSE` read off `Pageview.User.CustomerNumber` to hide price / gate a storefront affordance) | [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §16 |
+| Template categories (baseline), page presets (the Theme primitive), and the **page-state flags** (`published` / `hidden` / `active` = "Hidden in Menu" semantics; the both-flags gotcha on the page-state tools) | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §6 |
+| Why a template fails to compile — warnings-as-errors on `[Obsolete]` calls, `@Html.Raw()` and `GetGlobalValue` absent from `ViewModelTemplate<T>`, `product.ProductFieldValues` on the entity not the view model, `@Include` sharing one compiled scope, relative `ParagraphTemplate` misses | [`template-compilation.md`](../../dw-render-razor/references/template-compilation.md) |
+| Serving JSON / CSV / a file from a paragraph — `PageClean` + `?ParagraphID=`, the inactive grid row, and what reaches the wire | [`paragraph-endpoints.md`](../../dw-render-razor/references/paragraph-endpoints.md) |
+| `ToggleFavorite.cshtml` no-op at `FavoriteListId=0` | [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §2 |
+| Customer-number-suffix-as-role-flag (`CUST-…-BROWSE` read off `Pageview.User.CustomerNumber` to hide price / gate a storefront affordance) | [`page-gating.md`](../../dw-users-permissions/references/page-gating.md) §16 |
 | SQL-direct Page/GridRow/Paragraph required columns (the `PageActiveFrom`/`PageActiveTo` silent-404 vector et al.) | [`sql-direct-seeding.md`](sql-direct-seeding.md) → [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) |
 | Paragraph types + the component-first gate | [`paragraphs.md`](paragraphs.md) |
 | Header nav that reads as a menu — carets/hover/reachable dropdowns, the `save_groups` nav-depth recipe, and the three Razor/Bootstrap interaction platform-truths (Popper-gap bridge, `::after` caret/underline collision, dropdown `min-width`) | [`header-menu.md`](header-menu.md) |
@@ -253,9 +255,10 @@ the listing and language pages are unchanged with no Razor compile-error banner.
 
 ## Swift v2.3.0 templates + swift/2.3 baseline
 
-Target **Swift v2.3.0 templates** at the GitHub repo alongside the **`base` layer data** at
-`<demo-root>\distribution\layers\base\` (a `config/replace/merge` tree; content lives under
-`replace\_content\` + `merge\_content\`). The 2.3.0 release headlines (language selector + improved
+Target **Swift v2.3.0 templates** at the GitHub repo alongside the layer data at
+`<demo-root>\distribution\layers\`. The `base` layer is framework-only (`config/replace/merge`
+tree, `replace\_sql\` only); the Swift content tree lives under
+`layers\surface-swift\replace\_content\` + `merge\_content\`. The 2.3.0 release headlines (language selector + improved
 off-canvas nav) match this base layer. Legacy content-only Swift2.2 baselines predate this model and
 are no longer the default.
 

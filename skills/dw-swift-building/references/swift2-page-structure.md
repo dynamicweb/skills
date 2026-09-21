@@ -88,8 +88,8 @@ The Swift 2 BACPAC includes **demo category pages** under the Shop page.
 These are generic placeholders (e.g. "Furniture", "Electronics", "Fashion").
 
 Your job:
-1. Identify the demo pages that DON'T match the business's product types → `patch_page` with `Active: false`
-2. Identify any existing pages that DO match → `patch_page` to rename and re-brand
+1. Identify the demo pages that DON'T match the business's product types → `save_pages` with `active: false`
+2. Identify any existing pages that DO match → `save_pages` to rename and re-brand
 3. Create NEW pages only for product types that have no matching existing page
 
 ### URL Name Convention for Category Pages

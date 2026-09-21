@@ -4,17 +4,45 @@ type: flow
 group: pim
 mcp: required
 dynamo: true
-description: 'Migrate a Dynamicweb 9 (DW9) solution''s product structure and catalog data into a Dynamicweb 10 PIM with the migrate_dw9_export, run_dw9_product_import, and assign_dw9_products_to_data_models tools. Triggers: upgrade or migrate a DW9 warehouse/catalog to DW10, import a DW9 product export, map DW9 groups onto DW10 Data Models, "0 warehouse shops"/"0 memberships" after a DW9 import. Non-triggers: migrating DW9 CMS content/pages (a separate, unrelated effort); single-product creation or Data Model design -> dw-pim-modelling; an in-place DW9->DW10 platform version upgrade -> dw-setup-upgrade.'
+description: 'Migrate DW9 product structure and catalog data into DW10 PIM. Triggers: DW9 product export, map groups to Data Models, 0 warehouse shops or memberships. Non-triggers: Data Model design -> dw-pim-modelling; platform upgrade -> dw-setup-upgrade.'
 ---
 
 # Migrate DW9 Products into DW10 PIM
 
+## Tool availability: call `tools/list` before planning
+
+`migrate_dw9_export`, `run_dw9_product_import`, `get_dw9_product_import_status` and
+`assign_dw9_products_to_data_models` are ordinary MCP tools: the add-in declares them on its
+migration tool class, and that class is marked restricted, so they reach an MCP configuration
+only once that configuration has been granted them. Without the grant the names are absent from
+`tools/list` and a call answers `Access denied ... Required permission: Read. Allowed permission:
+none` [mcp 0.6.0-beta]. That is a grant on the solution, not a property of the client: Dynamo and
+an external client alike get the family when the configuration they connect with carries it.
+
+So **call `tools/list` first and read the answer**, in Dynamo and outside it:
+
+- The four names are present: run the skill as written. Nothing below applies.
+- They are absent: name the missing tools and say the fix is to grant the migration tools to the
+  MCP configuration this session connects with (the denial text names that configuration), then
+  call `tools/list` again. Never tell the user the skill cannot run on this client.
+
+While the grant is missing, **no registered tool replaces the family.** The DW9 structure mapping
+(Phase 1) and the product to data model memberships (Phase 3) exist only in these tools. Stop and
+ask the user how to proceed. The honest options are the grant above, or the admin screen that
+performs the import (**Settings > Integration > Data integration**, with the DW9 export as the
+source) plus the Data Model mapping this skill prescribes; the registered Data Integration tools
+(`create_integration_activity`, `run_integration_activity`, `get_integration_activity_status`) can
+run an import activity the user has approved, but they build neither the structure nor the
+memberships. Never an invented HTTP call.
+
 ## MCP preflight
 
-This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
-verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
-MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
-for the tool calls this skill names.
+This skill drives the Dynamicweb MCP server — its steps are tool calls, and the MCP tool set plus
+read/write under `Files/` is the whole surface they may use. Verify the tools are available before
+starting. If a step's tool is missing, **stop at that step** and tell the user what is missing and
+which admin screen performs it; do not substitute a guessed HTTP call, a file edit outside
+`Files/`, or SQL. The Management API, the serializer and direct SQL are out-of-product surfaces,
+owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a step here.
 
 The migration runs in a fixed order — **structure → product data → assignment → verify** — and
 each phase depends on the one before it: never start the product import before the structure

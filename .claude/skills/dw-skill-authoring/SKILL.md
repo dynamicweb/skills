@@ -20,11 +20,13 @@ rule that governs every edit — the one-way foundational/demo boundary — live
 - [Writing the instruction body](#writing-the-instruction-body)
 - [Length budgets and references](#length-budgets-and-references)
 - [Shipping scripts](#shipping-scripts)
+  - [AV-safe scripts](#av-safe-scripts)
 - [Adding a new skill](#adding-a-new-skill)
 - [Updating marketplace.json](#updating-marketplacejson)
 - [Demo skills dependency order](#demo-skills-dependency-order)
 - [Validation](#validation)
 - [The PR workflow](#the-pr-workflow)
+- [Testing a PR stack locally](#testing-a-pr-stack-locally)
 
 ## Decide the category first
 
@@ -44,6 +46,11 @@ All skills use the `dw-<domain>-<topic>` prefix — folder name, `name:` frontma
 marketplace `skills` path basename all match exactly. (Only the role *bundles* in
 `marketplace.json` carry the `dynamicweb-` prefix.) `<domain>` is an area from the taxonomy
 below.
+
+Skill and bundle names are **not** touched by the Truvio Commerce rebrand, and neither is any other
+identifier — namespaces, admin paths, doc URLs. What the rebrand does govern is product prose and the
+`Truvio.Commerce.*` package ids, plus the rule never to write a package id or version from memory:
+[`../../../CLAUDE.md`](../../../CLAUDE.md) ("Product naming").
 
 ## Area taxonomy
 
@@ -66,7 +73,7 @@ Swift, Core, From Scratch, Headless (`/dwapi/`).
 | `users` | Implementation | Users, groups, the Permission entity store |
 | `extend` | Extending | Custom backend code, subscribers, scheduled tasks, MCP tools |
 | `integration` | Extending | Source/target providers, ERP, BC connector |
-| `data` | cross-cutting | Data-access surface priority (API > SQL), cache invalidation |
+| `data` | cross-cutting | The action ladder (MCP > Management API > serializer > SQL), data-access patterns, cache invalidation |
 | `source` | cross-cutting | Navigating the Dynamicweb platform source and documentation |
 | `demo` | Presales | The presales demo chain; flow skills with demo-only guardrails |
 
@@ -79,7 +86,7 @@ type: <knowledge | flow>
 group: <area — pim, search, render, setup, extend, integration, commerce, users, swift, headless, content, data, source, demo>
 mcp: <required | optional | none>
 dynamo: <true | false>
-description: <one to three sentences. First sentence states what the skill does. Remaining sentences list the exact trigger phrases / conditions that activate it.>
+description: <concise purpose followed by distinctive triggers and essential routing boundaries>
 ---
 ```
 
@@ -90,23 +97,26 @@ MCP dependence and `dynamo` its manifest visibility — see the next two section
 
 The `description` is the **activation signal** — it is matched against the user's request at
 runtime, and it is the only part of the skill the model sees before deciding to load it. Treat
-it as the skill's interface, not its summary. Third person, this shape:
+it as the skill's interface, not its summary. Aim for 180-260 characters, with the
+distinctive capability first so a shortened catalog entry remains useful. Use this shape:
 
 1. **First sentence** — what the skill does.
-2. **`Triggers:`** — the phrases / conditions / error symptoms that should activate it.
-3. **`Non-triggers:`** — adjacent cases that belong to a sibling skill, each routed with
-   `-> dw-<other-skill>`.
+2. **`Triggers:`**: discriminating phrases, conditions or error symptoms, without repeating
+   the purpose or listing every synonym.
+3. Include a short `-> dw-<other-skill>` boundary only for a likely selection ambiguity.
+   Keep detailed routing and operating instructions in the body or its references.
 
 Example (`dw-pim-completeness`):
 
 ```
-description: Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, and query-driven automatic workflows. Triggers: create completion rules, assign rules to data models or product groups, understand completeness scoring, set up completeness-driven query movement. Non-triggers: manual workflow states -> dw-pim-workflow; the Data Model schema -> dw-pim-modelling.
+description: 'Configure DW10 product completeness. Triggers: completion rules, scoring, automatic query movement, enrich missing fields. Manual editorial states -> dw-pim-workflow.'
 ```
 
 Demo skills additionally carry a `Use AFTER dw-demo-base` marker. Keep descriptions on a single
-line and within the **1024-character** cap — parsers truncate past it, silently dropping trigger
-coverage (the validator errors over the cap). A description crowding the cap is a signal the
-skill owns too many unrelated routes; split the skill rather than compressing the triggers.
+line and within the **1024-character** parser cap (the validator errors over the cap).
+The discovery budget covers all enabled entries, including copies in multiple bundles:
+1024 characters is a parser limit, not a writing target. Review ambiguous sibling skills
+together and preserve their distinct selection cues when shortening descriptions.
 
 ## MCP dependence (`mcp:` field)
 
@@ -117,12 +127,15 @@ can filter on it:
 
 - **`mcp: required`** — the skill's steps *are* MCP tool calls; it cannot run without the
   server (the demo chain, tool-driven flows like `dw-pim-migrate-dw9`, `dw-swift-page-design`).
-  The body must open with a **`## MCP preflight`** section: verify the tools are available,
-  and stop — never substitute direct SQL, file edits, or guessed HTTP calls — when they are not.
+  The body must open with a **`## MCP preflight`** section: verify the tools are available, and
+  when they are not, name the next rung of the action ladder deliberately (the Management API,
+  then the serializer) — never a guessed HTTP call, a file edit, or SQL, which is local-install
+  only and out of scope for MCP-driven steps.
 - **`mcp: optional`** — the knowledge stands alone; MCP tools are the preferred way to apply
   it (most `knowledge` skills that name tools, e.g. `dw-pim-modelling`, `dw-search-indexing`).
-  The body must carry a **`## Without MCP`** section stating the standalone path (advisory
-  mode, produce payloads/config for the user to apply).
+  The body must carry a **`## Without MCP`** section stating the next rung down the action ladder
+  (the Management API, then the serializer; SQL last and local-install only) and the standalone
+  path when no rung reaches it (advisory mode, produce payloads/config for the user to apply).
 - **`mcp: none`** — pure platform knowledge or an offline flow (`dw-render-*`, `dw-setup-*`,
   `dw-extend-*`, `dw-source-explorer`). No marker section; the skill must read the same
   whether or not an MCP server exists. Note `dw-extend-mcp-tools` is `none`: it teaches
@@ -138,9 +151,19 @@ and body markers, never appended to the `description` — trigger budget stays t
 ## Dynamo visibility (`dynamo:` field)
 
 Dynamo serves `manifest.json` to admins working **inside** a running Dynamicweb install. Its
-surface is the MCP tool set plus read/write under `Files/`: no shell, no SQL, no git, no
-browser, no csproj, no host restart. A skill whose steps need one of those cannot be acted on
-there, and offering it is noise.
+surface is the **MCP tool set plus read/write under `Files/`, and nothing else**: no
+Management/Admin API HTTP call, no serializer, no SQL, no shell, no git, no browser, no csproj,
+no host restart. A skill whose steps need one of those cannot be acted on there, and offering it
+is worse than noise — it is an instruction the reader will try to follow and cannot.
+
+**A `dynamo: true` skill contains no instruction outside that surface.** This is a property of the
+file, not of the paragraph at the top of it: every section, table row and reference under the skill
+has to hold. When a recipe needs a lower rung, it does not get a warning label — it **moves** to a
+`dynamo: false` skill (`dw-data-access/references/recipes-<area>.md` for the domain areas,
+`dw-setup-cli` for add-in deploy and app-pool work, `dw-setup-config` for host configuration), and
+the `dynamo: true` skill keeps a **one-line pointer** to it. `scripts/validate-skills.py` enforces
+this mechanically against `scripts/dynamo-baseline.json`, so a new violation fails the build while
+the pre-existing backlog is drained deliberately.
 
 - **`dynamo: true`** — the skill is useful to an in-product admin and goes into the manifest.
   Every pim, commerce, content, users, search, render and swift skill is here.
@@ -148,6 +171,17 @@ there, and offering it is noise.
   it out of `manifest.json` entirely: the demo chain, `dw-setup-*`, `dw-integration-bc`
   (ngrok), `dw-extend-mcp-tools` (builds the MCP project), `dw-source-explorer` (browses
   GitHub). Claude Code still loads these normally through `marketplace.json`.
+
+**The marker paragraph's text depends on the `dynamo` value, not only on `mcp:`.** A
+`dynamo: true` skill's `## Without MCP` / `## MCP preflight` paragraph states the in-product limit
+as the instruction: the MCP tool set plus `Files/` is the whole surface, and when no tool covers the
+operation the step is to stop and name the admin screen, never to substitute an HTTP call, a file
+edit outside `Files/`, or SQL — the other surfaces are named only as out-of-product things owned by
+`dw-data-access`. A `dynamo: false` foundational skill's paragraph says the opposite: the whole
+ladder is available, so with no MCP server drop **one** rung to the Management API, then the
+serializer, with SQL last and local-install only. Copy the wording from a sibling skill at the same
+`dynamo` value rather than reconstructing it; demo skills keep their own preflight plus the ladder
+pointer.
 
 The axis is **orthogonal to `mcp:`** and the two disagree often: `dw-demo-base` is
 `mcp: required` yet `dynamo: false`, and `dw-render-razor` is `mcp: none` yet `dynamo: true`.
@@ -186,6 +220,33 @@ holds at every tier; the same gate written as three more paragraphs holds only a
 **Concrete commands beat prose.** Include the exact `dotnet`, `git`, `Invoke-RestMethod`,
 `sqlcmd`, or PowerShell snippet that worked — a runnable line instructs more precisely than a
 paragraph describing it.
+
+**Name the surface, every recipe, every row.** A reader must be able to tell which rung of the
+action ladder (`skills/dw-data-access/SKILL.md` "Surfaces into a Dynamicweb instance") a call is
+on from the name alone:
+
+- **MCP tools** in `snake_case` backticks, introduced as "MCP `save_pages`".
+- **Management API commands** in `PascalCase` backticks, introduced as "Management API
+  `ParagraphSave`" with the route (`/admin/api/...`) on first use in a file. MCP tools and
+  Management API commands are generated from the same C# methods and are near-homonyms
+  (`get_products` / `GetProducts`), so casing alone does not carry first use — and the two
+  behaviours do diverge.
+- **Serializer** operations as "serializer `Deserialize`" (never the deprecated `SerializerDeserialize`
+  alias) or by layer and mode, never as a
+  bare Management API command. **SQL** labelled `SQL` in a fenced `sql` block, never inline as though
+  it were a command.
+
+**"Verb" means a Management API command; "tool" means MCP.** Never call an MCP tool a verb, and never
+head a mixed column "Verb". "Endpoint" means an HTTP route (`/admin/api/<Verb>`, `/admin/mcp`), not a
+single tool. **A table whose rows mix surfaces carries a `Surface` column.**
+
+**In a `dynamo: true` skill, naming the surface is also a filter, not only a label:** if naming it
+honestly produces "Management API", "serializer" or "SQL", the recipe does not belong in that file
+at all — move it to the `dynamo: false` owner and leave a one-line pointer.
+
+**Every SQL recipe states three things inline:** why the higher surfaces do not cover it (which rung
+was tried and what it did), that it is **local installs only**, and the **cache flush or host restart
+it owes**. A SQL recipe missing any of the three is incomplete.
 
 **Keep dates out of the body.** The date lives in `git log`. No "today", no "(verified <date>)".
 Provenance citations name roles, never individuals — "per the Dynamicweb vendor architect".
@@ -283,6 +344,58 @@ the validator's job; review enforces the rest. Lifting a script out of a demo bu
 gates in [`fold-back-workflow.md`](../../../skills/dw-demo-foldback/references/fold-back-workflow.md)
 ("Step 1c").
 
+### AV-safe scripts
+
+Endpoint protection scores a script on the **verbs it co-locates**, not on syntax. Two tracked
+harness scripts were quarantined and deleted from their working trees by a behavioural engine
+while a larger file in the same directory, with more calls to the web cmdlets and more TLS
+bypasses, was never touched. What the flagged pair carried and the survivor did not was one file
+that uploaded arbitrary files into a live web server's file archive, created and deleted an
+administrator, ran arbitrary SQL through a scheduled task, and sent a browser User-Agent so the
+target treated it as a human. Neither file contained a single obfuscation construct.
+
+These rules lower the score. They are hygiene, not a guarantee, and the operational half at the
+end is the only durable fix.
+
+**Structure.** One capability per file, with the destructive verbs split out: read and assert in
+one script, each write family in its own. Keep a file under roughly 400 lines. Shared plumbing
+lives in one module, [`Dw.Api.psm1`](../../../skills/dw-data-access/scripts/Dw.Api.psm1), imported
+`$PSScriptRoot`-relative with `-ErrorAction Stop` and followed by `Assert-DwConnection`; a blocked
+import must fail loudly rather than let the caller compare against empty output.
+
+**HTTP.** `Invoke-RestMethod` or `Invoke-WebRequest` with explicit named parameters. No
+`System.Net.WebClient`, no `DownloadString`, no `Add-Type`, no reflection, no `Invoke-Expression`,
+no string-built commands, no base64 payloads. Gate the TLS bypass: `-SkipCertificateCheck` only
+for a loopback base URL or an explicit `-AllowSelfSignedCertificate` opt-in, never unconditionally
+on every call. Where a browser-shaped `User-Agent` or `Accept` header is functionally required,
+set it through one named helper with an inline `# why:` comment stating the protocol reason, so it
+reads as a requirement rather than as evasion.
+
+**Secrets.** Environment only, in the discovery order the file contract above already fixes, then
+fail with the one-liner that fixes it. No literal password, no inline connection string carrying
+credentials (a measured AMSI trigger), no token as a parameter default, no
+`ConvertTo-SecureString -AsPlainText`, no credential blob on disk. Mask every token in every log
+line.
+
+**Destructive verbs.** `[CmdletBinding(SupportsShouldProcess)]`, dry run by default, `-Apply` to
+write - which is also the lower-scoring default behaviour. Admin-account creation and deletion,
+backend-access revocation, and arbitrary-SQL execution do not belong in a shipped script at all,
+whatever the caller's convenience; a skill that needs one states the admin screen instead.
+
+**Owner actions, outside the repo.** Content hygiene never lifts an existing verdict, so the
+durable answers are all console-side and none of them is a code change: **path exclusions** in the
+endpoint-protection policy for the repo trees and the agent scratchpad root; **Authenticode
+signing** of every shipped `.ps1`/`.psm1` with an internal certificate plus an `AllSigned` or
+`RemoteSigned` execution policy; and a **false-positive submission** to the vendor so the cloud
+verdict is corrected for the whole tenant rather than worked around on one machine. Either way,
+**never re-use a burned path**: a flagged filename stays dead on that machine, so a restored
+capability ships under a new name and the retired one is recorded, not recreated.
+
+The machine-checkable half (`Invoke-Expression`, `Add-Type`, `FromBase64String`, the legacy web
+client, a literal credential, an ungated TLS bypass, an undocumented `User-Agent`, the 400-line
+budget) is enforced by `scripts/validate-skills.py`. The operational half is not checkable and is
+listed above as owner actions.
+
 ## Adding a new skill
 
 1. Create `skills/dw-<domain>-<topic>/SKILL.md` with matching `name:` frontmatter (UTF-8, no BOM).
@@ -361,3 +474,35 @@ For folding a demo-build learning back into a skill, the routing, sanitization, 
 are owned by
 [`dw-demo-foldback`](../../../skills/dw-demo-foldback/SKILL.md) — use that skill, not this
 section.
+
+## Testing a PR stack locally
+
+To exercise unmerged branches as installed skills, install them as a **second, differently named**
+marketplace. The CLI keys a marketplace by the `name` in `.claude-plugin/marketplace.json`, and a PR
+branch inherits `dynamicweb-skills` from `main`: `claude plugin marketplace add <dir>` on an unrenamed
+clone reports success and **replaces** the machine-wide git-sourced marketplace of that name, its
+`autoUpdate` flag and its clone, so every other session on the machine loads the PR stack as if it were
+`main`.
+
+```powershell
+git clone https://github.com/dynamicweb/skills.git <dir>
+git -C <dir> fetch origin <top-of-stack-branch>
+git -C <dir> checkout -b local/pr-stack-test FETCH_HEAD
+# Rename the marketplace on the local branch only. This commit is never pushed.
+$mp = "<dir>/.claude-plugin/marketplace.json"
+(Get-Content $mp -Raw) -replace '"name": "dynamicweb-skills"', '"name": "dynamicweb-skills-prstack"' |
+  Set-Content $mp -NoNewline
+git -C <dir> commit -am "local: rename marketplace for PR-stack testing"
+claude plugin marketplace add <dir>
+claude plugin install <bundle>@dynamicweb-skills-prstack --scope local   # once per bundle under test
+```
+
+Then mute the user-scope twins for the test project, so a skill does not load twice: in its
+`.claude/settings.local.json`, set `"enabledPlugins": { "<bundle>@dynamicweb-skills": false }` for each
+bundle installed from the renamed marketplace.
+
+**Check before testing:** `claude plugin marketplace list` shows both `dynamicweb-skills` (Git) and
+`dynamicweb-skills-prstack` (Directory), and `~/.claude/settings.json`
+`extraKnownMarketplaces.dynamicweb-skills.source.source` still reads `git`. If the git entry is gone,
+the rename was skipped: restore it with `claude plugin marketplace add dynamicweb/skills` before any other
+session starts.

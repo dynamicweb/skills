@@ -12,12 +12,12 @@ doctrine, and the discipline grep-pack.
 - [2. Paragraph categories](#2-paragraph-categories)
 - [3. Configuring paragraph item-type fields](#3-configuring-paragraph-item-type-fields)
 - [4. Empty `ParagraphTemplate` resolves alphabetically (silent footgun)](#4-empty-paragraphtemplate-resolves-alphabetically-silent-footgun)
-- [5. Grid composition cache — restart required](#5-grid-composition-cache--restart-required)
+- [5. Grid composition cache: restart required](#5-grid-composition-cache-restart-required)
 - [6. Template categories, page presets, page-state flags](#6-template-categories-page-presets-page-state-flags)
 - [7. Style assets — `Files/System/Styles/`](#7-style-assets--filessystemstyles)
 - [8. Asset organisation under `wwwroot/Files/`](#8-asset-organisation-under-wwwrootfiles)
 - [9. Re-skin doctrine — never edit standard templates](#9-re-skin-doctrine--never-edit-standard-templates)
-- [10. Discipline audit — grep pack](#10-discipline-audit--grep-pack)
+- [10. Discipline audit: grep pack](#10-discipline-audit-grep-pack)
 
 ## 1. Component-first gate
 
@@ -126,6 +126,20 @@ comes from the item-type's `Title` field.
 For `IEnumerable<string>` fields (checkbox-list editors — `FieldDisplayGroups`, `ImageAssets`), pass a
 **comma-separated string**. Bracketed-array / JSON encodings are NOT recognised by the stock editors.
 
+**Every item field a template reads must be declared by every item type routed through that template,
+shared partials included.** A getter on a field the item type does not declare returns its default with
+no error (`Model.Item.GetBoolean("HideProductNumber")` is `false`), so a gate on an undeclared field
+takes one branch forever: a registered, active paragraph renders nothing, or a component slider never
+autoplays. A shared partial hides the miss. When the read sits in one component file rendered by two
+item types, and only one of them declares the field, an audit that walks item type by item type finds
+the field present. Audit by call site instead: collect every field name read through
+`GetBoolean` / `GetString` and the other item getters under `Files/Templates/Designs/<design>/`, resolve
+each template (and each partial it is included from) to every item type that routes through it, and
+check each name against those `Files/System/Items/ItemType_<systemName>.xml` files. Fix a miss by
+declaring the field on the item type, copied from a sibling item type that already carries it. Done when
+the undeclared count is zero and the gated markup is present in the served page (one sweep found 4
+undeclared reads across 222 `GetBoolean` call sites).
+
 ### Facet sidebar — the `Layout` field styles, the grid row positions
 
 A left-sidebar PLP filter panel is two independent settings; the common mistake is hunting for a single "sidebar" toggle that doesn't exist. `Swift-v2_ProductListFacets` has a `Layout` item field (`horizontal` → pill bar above the list, `vertical` → accordion) but that field only styles the panel — it never moves it. **Position is grid:** the facets paragraph and the product-list (repeater) paragraph must share a **2-column row**, one paragraph per column. Recipe:
@@ -141,10 +155,13 @@ A left-sidebar PLP filter panel is two independent settings; the common mistake 
 `EcomFieldDisplayGroups` populated at host startup. **Inserts/updates to the four backing tables
 (`EcomFieldDisplayGroups`, `EcomFieldDisplayGroupFields`, `EcomFieldDisplayGroupShops`,
 `EcomFieldDisplayGroupTranslation`) are NOT picked up live** — even on admin "Cache → Clear all".
-Reliable refresh is a host restart. Symptom: the editor's checkbox list shows the new groups (it
-re-queries SQL on every load) but the rendered accordion is empty. Seed-flow order: (a) seed the four
-tables, (b) `dotnet run` recycle, (c) configure the paragraph's field. See
+Reliable refresh is a host restart, which Dynamo cannot perform. Symptom: the editor's checkbox list
+shows the new groups (it re-queries SQL on every load) but the rendered accordion is empty. Seed-flow
+order: (a) seed the four tables, (b) restart the host, (c) configure the paragraph's field. Out of
+product: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) "Restart the host to drop cached composition". See
 [dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`).
+
+**Local installs only** for the table seed: on a hosted install create the groups with `save_field_display_group`.
 
 ### `ProductGroupGrid.SelectedGroups` — SQL-direct seeds don't deserialize
 
@@ -209,18 +226,31 @@ matching, so the stored `FieldDisplayGroupFieldSystemName` MUST be the full pipe
 
 ### Creating and assigning a field display group
 
-**Field display groups are API-only.** Settings > Products > Channels > Field display groups renders
-the empty state "No results found / There are no records to display" while
-`GET /Admin/Api/FieldDisplayGroupAll` returns the rows and the PDP accordion renders all of them with
-real values. Measured on 10.26.12 cloud: `totalCount 4` from the API, `tbody tr` count **0** on
-`/Admin/UI/Ecommerce/FieldDisplayGroupList`, in the same browser session, seconds later, for the real
-persona AND for a throwaway `systemAdministrator` created and deleted in the same run. It is not a
-permission problem, not a stale cache, and not a filter: the screen has no shop/channel/language
-control to mis-set, and translations plus a default-language Name are present. The screen simply never
-binds the `EcomFieldDisplayGroups` rows on this host class. **Do not promise an owner-visible admin
-screen for display groups**; a brief that says "check it in the UI" becomes "read it back through
-`FieldDisplayGroupAll`". Create, translate and wire them entirely through
-`FieldDisplayGroupSave` + `FieldDisplayGroupTranslationSave` + the paragraph item-field verbs.
+**Field display groups are not reachable from inside the product, and the admin screen does not
+show them either.** Settings > Products > Channels > Field display groups renders the empty state
+"No results found / There are no records to display" while the groups exist and the PDP accordion
+renders all of them with real values. Measured on 10.26.12 cloud: four groups present, `tbody tr`
+count **0** on the list screen, in the same browser session, seconds later, for the real persona AND
+for a throwaway `systemAdministrator` created and deleted in the same run. It is not a permission
+problem, not a stale cache, and not a filter: the screen has no shop/channel/language control to
+mis-set, and translations plus a default-language Name are present. The screen simply never binds
+the `EcomFieldDisplayGroups` rows on this host class.
+
+Two consequences for anything written here. **Do not promise an owner-visible admin screen for
+display groups** — a brief that says "check it in the UI" cannot be honoured on this host class. And
+**do not audit a display-group write against the parent `EcomFieldDisplayGroups` row**: after a
+successful save `FieldDisplayGroupName`, `FieldDisplayGroupFieldIds` and `FieldDisplayGroupShopIds`
+are all still empty, because those denormalised columns are legacy and are not populated; the data
+lands in the child tables, with the translation row keyed on the **system name** and `GroupId = 0`.
+A parent-row check reports every write as a failure.
+
+There is no MCP tool for display groups. Creating, translating and wiring one is out-of-product
+work: see dw-data-access `recipes-swift.md` §Field display groups — create, translate and wire.
+
+One rendering consequence worth knowing before the template is written:
+`GetProductDisplayGroupFieldsByGroupSystemNames` returns only groups that **have values for the
+product**, so a product with nothing in the group yields nothing at all rather than an empty group —
+**author the empty state in the template**, not as a fallback on a group the reader expects to exist.
 
 `FieldDisplayGroupSave` semantics, all measured:
 
@@ -326,25 +356,20 @@ Symptom: "I added one custom Text variant and now half the site renders with tha
   sort-last strategy without verifying — some resolvers filter `_`-prefixed files as partials.
 - **Mitigation 2 — backfill `ParagraphTemplate`.** Preferred surface MCP
   `save_paragraphs(id=<id>, template='TextLeft.cshtml')` (one at a time, auto cache-invalidation);
-  SQL-fallback bulk `UPDATE Paragraph SET ParagraphTemplate='TextLeft.cshtml' WHERE
+  SQL-fallback (local installs only) bulk `UPDATE Paragraph SET ParagraphTemplate='TextLeft.cshtml' WHERE
   ParagraphItemType='Swift-v2_Text' AND (ParagraphTemplate IS NULL OR ParagraphTemplate='')` — a
   field UPDATE on an existing row, live with no restart ([dw-data-access](../../dw-data-access/SKILL.md) (`cache-invalidation.md`)
   edit-vs-insert rule). Run this BEFORE introducing any sort-early custom variant.
 
-## 5. Grid composition cache — restart required
+## 5. Grid composition cache: restart required
 
 DW10 caches a page's **grid composition** (which paragraphs are in which grid rows) in-memory after
 the first request. **Deleting a paragraph or grid row via SQL, MCP, or admin UI does NOT immediately
 stop the frontend rendering it.** The composition cache survives admin "Cache → Clear all", DELETE on
 `Paragraph`/`GridRow`, MCP `delete_paragraphs`/`delete_grid_rows`, and browser hard-refresh. It does
-NOT survive a host process restart. On Windows + `dotnet run`:
-
-```powershell
-Get-Process dotnet -ErrorAction SilentlyContinue | Where-Object { $_.StartTime -gt (Get-Date).AddDays(-2) } | Stop-Process -Force
-Start-Process dotnet -ArgumentList "run","--no-build" -WorkingDirectory "<host>\Dynamicweb.Host.Suite" -RedirectStandardOutput "<host>.log" -NoNewWindow
-```
-
-After restart, wait for the port to listen then hit the page once to warm JIT. **Practical rule:**
+NOT survive a host process restart, and Dynamo cannot restart the host: a deleted paragraph keeps
+rendering until the host is recycled. Out of product: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) "Restart the host to drop cached
+composition". **Practical rule:**
 schedule paragraph deletion just BEFORE a restart you were already planning. The general DW10 rule:
 **any table whose rows are joined into a render-time composition tree (paragraphs, users, groups,
 navigation) is cached in-memory and needs a process restart to repopulate.**
@@ -372,7 +397,7 @@ fixes the invariant.
 language layer's component selectors still point at the MASTER's component pages, both areas share one
 cache entry and whichever context renders first wins. Repoint the layer's `ComponentSource` at the
 layer's own component-page clones (separate ids, separate cache entries) — see
-[`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §3.
+[`language-layers.md`](../../dw-content-modelling/references/language-layers.md) §3.
 
 ## 6. Template categories, page presets, page-state flags
 
@@ -422,10 +447,32 @@ its own with zero collateral: read the full model with `GetPageById`, set `ShowI
 COMPLETE model back. `PageSave` is a whole-entity save, so a partial model blanks area, parent, name and
 item type and 404s the page.
 
+**`PageHidden` is a navigation flag, not access control and not a publish flag — and it breaks the
+page's own URL.** The URL provider drops a hidden page from the friendly-URL map, but the **link
+builder does not know that**: it still resolves the page id to the friendly URL the page would have
+had, so the redirect target and the served map disagree. The signature is exact and worth carrying as
+a diagnostic: **a brand-new friendly URL 404s while `/Default.aspx?ID=<n>` 301s to it correctly —
+check `PageHidden` first.** Everything else the symptom points at (`PageActive`, the item type, the
+layout, the area) will be fine.
+
+Hiding also does not do the job it is usually being asked for: a hidden page stays readable by anyone
+who guesses or is handed its id. **Keep any page you intend to link to, redirect to or reach by URL
+visible to the URL layer, and keep it out of the storefront with page permissions instead** — which
+is strictly stronger (anonymous visitors get the sign-in redirect, wrong-group personas get the
+permission page, permitted personas get 200, and the navigation carries no reference to it). Reserve
+`PageHidden` for pages whose content genuinely should not be reachable at all. Assert every new page
+at its **friendly** URL, not by the existence of the `Page` row: a row-level or API-level check
+passes on a page whose URL 404s.
+
+On the tool side, measured on 10.28.x: MCP `set_page_menu(showInMenu: …)` does **not** move
+`PageHidden` (it reports `published: false` and changes nothing), while MCP `save_pages(active: true)`
+is what clears it.
+
 A page with `published=true, hidden=false, active=false` (DB: `PageActive=0, PageHidden=0`) is
 **fully reachable** by direct URL and JS-driven navigation, and correctly hidden from the top nav —
 the right state for almost every utility page. **Gotcha — the MCP page tools cannot express that
-state:** `publish_pages`, `save_pages(active:…)` and `set_page_menu(showInMenu:…)` all flip **both**
+state:** no publish tool is registered; `save_pages(active:…)` and `set_page_menu(showInMenu:…)` are
+the whole in-product page-state surface, and both flip **both**
 columns together (`active/showInMenu: false` writes `PageActive=0` AND `PageHidden=1` — the page
 leaves the nav but also 404s; `true` writes `1/0` — routable but back in the nav). On DW 10.28.4
 `set_page_menu(showInMenu:…)` was measured writing `PageActive` alone and leaving `PageShowInLegend`
@@ -438,6 +485,8 @@ restart the host — the navigation tree and friendly-URL provider cache the old
 `published=true` and `hidden=false`; do NOT flag `active=false` on its own. (Full SQL-direct INSERT
 required-column list, including the `PageActiveFrom`/`PageActiveTo` silent-404 vector, lives in
 [dw-data-access](../../dw-data-access/SKILL.md) (`management-api-and-sql.md`).)
+
+**Local installs only** for the SQL split-state write: on a hosted install no MCP tool sets it, so ask the user.
 
 ## 7. Style assets — `Files/System/Styles/`
 
@@ -471,8 +520,8 @@ exists** — and returns `false` (adding nothing to `<head>`) if absent.
 but ships NO `Files/System/Styles/{…}/swift.{json,css}` on disk, so `TryGetColorSchemeStyle` returns
 `false`, no scheme stylesheet is added, and every `data-dw-colorscheme="..."` paragraph renders
 against default body styles — the page LOOKS styled (swift.css ships baseline rules) but the BRAND
-palette never lands. Diagnostic: `curl -ks <host>/ | grep -c 'Styles/ColorSchemes'` returns 0 →
-empty-state. Fix: the Area-wiring SQL below + on-disk `<brand>.{json,css}` files.
+palette never lands. Diagnostic: the served page (`fetch_frontend_page_html`) carries no `Styles/ColorSchemes` link, which
+is the empty state. Fix: wire the Area to the brand (below) and ship the on-disk `<brand>.{json,css}` files.
 
 ### JSON schemas (abbreviated)
 
@@ -487,17 +536,13 @@ uses `ParagraphCustomFontId` resolving against `Fonts/<id>.json`'s `Family`.
 
 ### Wiring the Area to a brand
 
-```sql
-UPDATE Area SET
-  AreaColorSchemeGroupId = '<brand>',   -- root Id from ColorSchemes/<brand>.json
-  AreaColorSchemeId      = 'light',     -- which scheme is the area default
-  AreaButtonStyleId      = '<brand>',
-  AreaTypographyId       = '<brand>'
-WHERE AreaId = <area>;
-```
-
-Restart so the resolved style URLs reload. Verify:
-`curl -ks <host>/ | grep -E 'Styles/(ColorSchemes|Buttons|Typography)/'` → three new `<link>` entries.
+Four `Area` columns bind an area to its Style assets: `AreaColorSchemeGroupId` (the root `Id` of
+`ColorSchemes/<brand>.json`), `AreaColorSchemeId` (the area's default scheme, e.g. `light`),
+`AreaButtonStyleId` and `AreaTypographyId`. No MCP tool is known to write these four columns, so in
+product ask the user, and the change needs a host restart before the resolved style URLs reload. Verify
+with `fetch_frontend_page_html`: the served head carries three new `<link>` entries under
+`Styles/ColorSchemes/`, `Styles/Buttons/` and `Styles/Typography/`.
+Out of product: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) "Wire an Area to a brand's Style assets".
 
 **When to use Style assets vs a project CSS file:** use Style assets (Tier 0) for the brand palette +
 button shape + typography (applies to every scheme-tagged paragraph, including deserialized baseline
@@ -505,6 +550,13 @@ content — highest leverage per line). Use the project CSS file (Tier 1) for ev
 effects, nav polish, footer tweaks, empty-`data-dw-colorscheme` hacks); it loads after the Style
 assets so its rules win cascade ties. (Color-scheme architecture/cascade + the CSS pitfalls live in
 [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §4-5.)
+
+**A master item field write is not live until the cached area turns over.** A `set_item_field_values`
+write to the area's `Swift-v2_Master` item (`CustomHeadInclude`, `MetaSiteName`, `Favicon`) succeeds and
+`get_item_field_values` reads the new value back, but the storefront keeps serving the cached area until
+the area is re-saved in admin or the host recycles. Verify with `fetch_frontend_page_html` on the served
+head, never on the item readback. The out-of-product flush is in
+[`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md).
 
 ## 8. Asset organisation under `wwwroot/Files/`
 
@@ -608,8 +660,8 @@ directly; extend or create new ones to remain upgradable." **You MAY** create a 
 `.cshtml` for an existing item type, or a new item type + its belonging content layout. **You may
 NOT** modify existing standard `.cshtml`, add business logic to a content layout (data-shape
 transforms / conditional rendering / external calls are controller/provider territory and trigger the
-preflight), or override the customer-center CSR section's stock paragraphs. **Verification:** after the
-change, `git status` should show ONLY new `.cshtml` files (not modifications to standard templates) and
+preflight), or override the customer-center CSR section's stock paragraphs. **Verification:** the change set
+should show ONLY new `.cshtml` files (not modifications to standard templates) and
 no `.cs`. If `.cs` appears, you've crossed into controller/provider territory.
 
 ### Pre-escalation check — search the DW10 source first
@@ -622,34 +674,28 @@ project-wide stylesheet → `CustomHeadInclude` ([`razor-surfaces-and-pitfalls.m
 point-balance / customer-number / groups → `Pageview.User.*` ([dw-render-viewmodels](../../dw-render-viewmodels/SKILL.md)),
 not SQL.
 
-## 10. Discipline audit — grep pack
+## 10. Discipline audit: grep pack
 
-Verify a Swift build's templates against the canonical surfaces before declaring the build "ready". Each hit is a candidate finding; a clean run = green light.
+Verify a Swift build's templates against the canonical surfaces before declaring the build "ready".
+In product, read the templates under `Templates/Designs/Swift-v2/` with `list_files` and `read_file`.
+Each hit is a candidate finding; a clean run = green light.
 
-```powershell
-$Root = "Dynamicweb.Host.Suite\wwwroot"
-$Slug = "<area-url-slug>"   # a hardcoded area prefix to scan for
+1. Raw DB access in Razor (`Database.CreateDataReader`, `ExecuteScalar`, `ExecuteReader`,
+   `ExecuteNonQuery`): use `Services.*`.
+2. Substring scans on the URL or query (`PathAndQuery.IndexOf`, `QueryString.ToString`,
+   `Url.AbsoluteUri.Contains`): use page-id helpers and `Pageview.User`.
+3. Hard-coded area URL prefixes (`/<area-url-slug>/`).
+4. Synthesized `Default.aspx?ID=`, `GroupID=` or `ProductID=` links.
+5. Category-name substring branching (`PrimaryOrDefaultGroup` name or title with `Contains` or
+   `StartsWith`): use a `ProductGroup` field.
+6. Generic-item-type shim smell: a project `.cshtml` under a stock `Swift-v2_*` paragraph folder whose
+   name does not start with `Swift-v2_`.
+7. Inline `AddStylesheet` or `AddScript` in `Swift-v2_Master.cshtml`: use `Area.Item.CustomHeadInclude`.
+8. `Regex` on `LongDescription` or `ProductName`: use `ProductField` list types.
+9. The stock `custom.css` written to: brand CSS belongs in `<name>_custom.css`. This check reads the
+   change history, so it has no in-product form.
 
-# 1. Raw DB access in Razor (use Services.* per render-razor.md)
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'Database\.(CreateDataReader|ExecuteScalar|ExecuteReader|ExecuteNonQuery)'
-# 2. Substring scans on URL/query (use page-id helpers + Pageview.User)
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'PathAndQuery\.IndexOf|QueryString\.ToString|Url\.AbsoluteUri\.Contains'
-# 3. Hard-coded area prefixes
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String "/$Slug/"
-# 4. Default.aspx?ID= synthesized links
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'Default\.aspx\?(ID|GroupID|ProductID)='
-# 5. Category-name substring branching (use ProductGroup field)
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String '\.PrimaryOrDefaultGroup.*\.(Name|Title).*\.(Contains|StartsWith)'
-# 6. Generic-item-type shim smell (project files under generic item folders)
-gci "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\" -Recurse -Filter '*.cshtml' | ? { $_.Name -notlike 'Swift-v2_*' }
-# 7. Inline AddStylesheet / AddScript in master (use Area.Item.CustomHeadInclude)
-gci "$Root\Templates\Designs\Swift-v2\Swift-v2_Master.cshtml" | Select-String 'AddStylesheet|AddScript'
-# 8. Regex on LongDescription / ProductName (use ProductField list types)
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'Regex\.(Match|Matches|Replace).*LongDescription|Regex\..*ProductName'
-# 9. Stock custom.css written to (brand CSS belongs in <name>_custom.css)
-git diff --name-only -- '*custom.css' | Select-String '(^|[\\/])custom\.css$'
-git log --name-only --pretty=format: -- '*custom.css' | Select-String '(^|[\\/])custom\.css$' | Select-Object -Unique
-```
+Out of product: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) "Discipline audit grep pack".
 
 | Grep | Hit means | Remediation |
 |------|-----------|-------------|

@@ -4,7 +4,7 @@ type: flow
 group: extend
 mcp: none
 dynamo: false
-description: 'Step-by-step guide for adding new MCP tools to the Dynamicweb MCP project — tool classes, services, models, and route handlers. Triggers: create a new MCP tool or domain area, add services/models/route handlers to the MCP project, expose a new operation over MCP. Non-triggers: understanding existing Dynamicweb APIs before coding -> dw-source-explorer; building product queries -> dw-search-indexing.'
+description: 'Add tools to the Dynamicweb MCP project. Triggers: new MCP operation/domain, tool classes, services, models, route handlers. Existing API internals -> dw-source-explorer.'
 ---
 
 # MCP Tool Creator
@@ -13,7 +13,8 @@ description: 'Step-by-step guide for adding new MCP tools to the Dynamicweb MCP 
 
 | Topic | Where |
 |---|---|
-| The Backend MCP server (`Dynamicweb.MCP` at `/admin/mcp`) — installing the AddIn (NuGet vs AppStore), the auth model (API Key vs Claude.ai OAuth), the two `AccessUserToken` rows, headless token+config provisioning in code, and the silent no-op catalogue for MCP/Management API writes | [`references/backend-mcp-server.md`](references/backend-mcp-server.md) |
+| The Backend MCP server (**Truvio Commerce MCP**, package `Truvio.Commerce.MCP`, formerly `Dynamicweb.MCP`, at `/admin/mcp`) — installing the AddIn (AppStore first; a csproj `PackageReference` only on an explicit user choice, never a remembered package id), the auth model (API Key vs Claude.ai OAuth), the two `AccessUserToken` rows, headless token+config provisioning in code, the silent no-op catalogue for MCP/Management API writes, and the identifier-parameter convention (`id` vs `pageId`/`paragraphId`) | [`references/backend-mcp-server.md`](references/backend-mcp-server.md) |
+| Where an existing tool's model is narrower than the domain service behind it — write-only fields with no read-back, read-only fields a save cannot reach, entities with no verb at all, a delete that leaves relation rows dangling, and version-pinned broken tools. Read it before adding a tool to a domain that already has one | [`references/tool-surface-gaps.md`](references/tool-surface-gaps.md) |
 
 ## Purpose
 
@@ -62,7 +63,7 @@ Location: `{Domain}/Models/`
 ```csharp
 using System.ComponentModel;
 
-namespace Dynamicweb.MCP.Products.Models;
+namespace Truvio.Commerce.MCP.Products.Models;
 
 [Description("Represents a widget configuration.")]
 public sealed class WidgetModel
@@ -159,13 +160,13 @@ Location: `{Domain}/Tools/`
 
 **Example:**
 ```csharp
-using Dynamicweb.MCP.Configuration;
-using Dynamicweb.MCP.Core.Responses;
-using Dynamicweb.MCP.Products.Models;
+using Truvio.Commerce.MCP.Configuration;
+using Truvio.Commerce.MCP.Core.Responses;
+using Truvio.Commerce.MCP.Products.Models;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 
-namespace Dynamicweb.MCP.Products.Tools;
+namespace Truvio.Commerce.MCP.Products.Tools;
 
 [McpServerToolType]
 public static class WidgetTools
@@ -200,7 +201,7 @@ Register in the domain's `IServiceApi` implementation (e.g., `ProductsServiceApi
 
 ### 7. Document the new tools
 
-Record the new tools in the Dynamicweb.MCP project's own tool catalog/README so they are
+Record the new tools in the MCP project's own tool catalog/README so they are
 discoverable by consumers:
 - Find the matching group table (or create a new group section if none fits)
 - Add a row per tool: `| \`tool_name\` | Short "use when" phrase |`
@@ -224,5 +225,5 @@ After creating all files:
 - [ ] Permission level matches the operation type
 - [ ] Method parameters have `[Description]` attributes
 - [ ] `dotnet build` passes
-- [ ] New tools documented in the Dynamicweb.MCP project tool catalog/README
+- [ ] New tools documented in the MCP project tool catalog/README
 

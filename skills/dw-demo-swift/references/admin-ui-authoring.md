@@ -1,6 +1,6 @@
 # admin-ui-authoring.md
 
-> Swift 2 admin-UI authoring: the configuration-only Day-1 workflow (get 80% of the brand applied via admin Style tools alone, zero CSS / Razor / .cs edits) plus the Visual Editor patterns for editing paragraph properties without touching code. Operates against a deserialized swift/2.3 `base` layer (source-of-truth at `<demo-root>\distribution\layers\base\`).
+> Swift 2 admin-UI authoring: the configuration-only Day-1 workflow (get 80% of the brand applied via admin Style tools alone, zero CSS / Razor / .cs edits) plus the Visual Editor patterns for editing paragraph properties without touching code. Operates against a deserialized Swift content surface (source-of-truth at `<demo-root>\distribution\layers\surface-swift\`; the `base` layer is framework-only and carries no content).
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -73,6 +73,7 @@ broken row and a container check catches it. The 500 is not a rollback: assert
 `SELECT GridRowContainer FROM GridRow WHERE GridRowId = <new>` is non-empty after every create, and delete
 the row if it is not. `GridRowCopy` avoids the whole question (the copy carries the source's container and
 renders), at the cost of arriving occupied ([paragraphs.md](paragraphs.md) §`GridRowCopy`).
+**Local installs only**: on a hosted install, assert the new row renders with MCP `fetch_frontend_page_html`.
 
 So inserting a row *between* two existing rows is always **copy-then-sort**:
 
@@ -299,5 +300,7 @@ Some changes don't have an admin-UI authoring surface and require either preflig
 - **Customer-flavoured products / orders seeding** — project-specific data work, not a styling concern.
 - **New product fields / completeness rules** — PIM concern. See [dw-demo-pim/references/structural-model.md §2.8](../../dw-demo-pim/references/structural-model.md) and `dw-demo-pim/references/canonical-setup-order.md` step 7.
 - **MCP tool wiring** — base concern. See `dw-demo-base/references/mcp-setup.md`.
-- **Custom payment provider / shipping carrier** — out of scope for Dynamicweb demos (a known customisation trap).
+- **Custom payment provider / shipping carrier / checkout handler** — out of scope **in a presales demo**, where the customisation budget cannot service it (a known trap). **The ban is scoped, and it lifts when the build is an MVP or a delivery build whose signed scope names the mechanism** — a different budget and a different definition of done. Two obligations come with that:
+  - **A brief that sanctions a banned mechanism must cite the ban it overrides**, in the brief and in the code that implements it, so the conflict is recorded on the way in rather than argued at the customisation-budget gate, by which time the work is done.
+  - **A lifted ban still owes the surface.** A ban with no alternative is what turns a sanctioned customisation into a run of silent platform failures measured out of the assemblies one at a time. Where the corpus carries no recipe for the sanctioned mechanism, say so explicitly in the brief and treat writing one as part of the work — the provider and checkout-handler surfaces live in [`dw-extend-providers`](../../dw-extend-providers/SKILL.md).
 - **`<customer>_custom.css` / `.scss` / `.cshtml` work** — the escalation ladder in [re-skin.md](re-skin.md). (Brand CSS never goes in a file named `custom.css` — that's Swift-shipped sample code; hard rule in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9.)

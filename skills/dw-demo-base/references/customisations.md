@@ -57,7 +57,17 @@ The ledger is **append-only by convention.** The audit recipe reads it; the writ
 
 ## 2. Drop the template at scaffold time
 
-This snippet executes during a fresh scaffold flow. It is idempotent in the sense that running it twice overwrites the existing ledger -- which is fine on first scaffold and not what you want afterwards. Skip this block if `CUSTOMISATIONS.md` already exists in the working directory:
+This snippet executes during a fresh scaffold flow. It is idempotent in the sense that running it twice overwrites the existing ledger -- which is fine on first scaffold and not what you want afterwards. Skip this block if `CUSTOMISATIONS.md` already exists in the working directory.
+
+**A closing audit of a ledger that does not exist is a SKIP with a reason, not a failure.** The audit
+recipe below reads `<demo>\CUSTOMISATIONS.md` and counts the files under the host's controllers
+directory; on a solution scaffolded outside this skill, neither path exists, and a verification step
+that closes on them reads as an assert an agent has to satisfy by inventing one. Test for both first:
+when the ledger is absent, record the closing leg as **SKIPPED — no customisations ledger on this
+solution** (and offer the entry-check drop below), and when the controllers directory is absent, record
+the file count as zero rather than as a mismatch.
+
+**Check for the ledger on entry, not only at scaffold.** A solution scaffolded by anything other than `references/scaffold.md` never ran this block, so the ledger is absent and the write-time preflight has nothing to append to -- the same absent-carrier-file gap the customer-context contract closes with its own entry check ([customer-context.md](customer-context.md) §6). Test for the file on first load in a demo solution and drop the template when it is missing:
 
 ```powershell
 $skill = "$HOME\.claude\skills\dw-demo-base"

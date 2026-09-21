@@ -6,6 +6,7 @@ A page that renders is not a page that is done. The recurring polish gaps on dem
 
 - [The mindset rule](#the-mindset-rule)
 - [Breakpoints — capture both, always](#breakpoints--capture-both-always)
+- [Driving the instrument — device descriptor, auth state, and the minimum leg](#driving-the-instrument--device-descriptor-auth-state-and-the-minimum-leg)
 - [Programmatic detectors — run before eyeballing](#programmatic-detectors--run-before-eyeballing)
 - [PLP list — assert rows AND per-row content](#plp-list--assert-rows-and-per-row-content)
 - [Assert design rules — what a green assert does not prove](#assert-design-rules--what-a-green-assert-does-not-prove)
@@ -27,7 +28,63 @@ Order of operations per page: scroll-sweep (lazy-load — see `browser-automatio
 
 Capture and check at minimum two widths via `browser_resize`: **desktop (1440 or 1920)** and **mobile (390)**. Most overflow, stacking, and touch-target defects only exist at one of the two — a desktop-only pass routinely ships a broken mobile view, and demos get projected at both.
 
-**On mobile, measure the *canvas*, not the viewport.** `overflow-x: hidden` on `body` — which Swift ships — hides horizontal stretch from a viewport check: a document stretched to 1356px at 390 still reports a clipped `documentElement`. Assert **`document.body.scrollWidth <= innerWidth` at 390** (the detector below carries `bodyCanvas` for exactly this). And a single 390 pass is not enough for per-row alignment: a CTA that fits inline at 430 but wraps at 390 — only on rows with long content — leaves some trailing pills left-anchored and some right. **Screenshot at 390 AND 430** (or finish on a real device); two widths catch the wrap-state divergence one width cannot. The Swift-specific canvas-stretch traps (fixed-width mega-menu, non-wrapping `NColumnsFlex` rows, `.flex-fill` beating fixed bases) and their fixes live in [`../../dw-demo-swift/references/mobile-pass.md`](../../dw-demo-swift/references/mobile-pass.md).
+**On mobile, assert `window.innerWidth === the REQUESTED width` AND `document.body.scrollWidth <= innerWidth`.** Both readouts, every page — the first is one extra number and it is the only one of the two that catches a whole class of defect.
+
+- `overflow-x: hidden` on `body` — which Swift ships — hides horizontal stretch from a viewport check: a document stretched to 1356px at 390 still reports a clipped `documentElement`, which is why the canvas measure exists (the detector below carries `bodyCanvas` for exactly this).
+- The canvas measure alone **cannot fire on the worst case**. Chrome widens the **layout viewport** to fit content that cannot shrink, and once it has, `body.scrollWidth` equals `window.innerWidth` by construction: a page measured at `body.scrollWidth 652 / innerWidth 652` against a requested 390 renders visibly zoomed out on a phone while a `scrollWidth - innerWidth` detector reports zero offenders. The number that moved is `innerWidth`, and nothing was reading it. Measured on a navigation stretching the viewport by 262px and, earlier, on a wide table stretching it by 23px — the naive check was equally blind to both, and the 23px case was caught only because the number happened to look wrong beside 390.
+- **The recurring unshrinkable offender is a navigation rendered on a horizontal template.** A footer or mobile navigation on `Navigation/Horizontal.cshtml` fits only while the site has a single root page; with several root pages it sets the layout viewport for the whole document. Repoint mobile and footer navigations to `Navigation/Vertical.cshtml` — the template the desktop footer navigations already use — rather than CSS-capping the width, which treats one surface and leaves the wrong template in place. Authored wide content is a different case and is fine scrolling inside its own `.table-responsive`.
+- Keep the positive control: with the offending template in place the probe reads the stretched width on all three numbers **and** the naive check still reads zero, which is what proves the assertion pair is doing the work. And a single 390 pass is not enough for per-row alignment: a CTA that fits inline at 430 but wraps at 390 — only on rows with long content — leaves some trailing pills left-anchored and some right. **Screenshot at 390 AND 430** (or finish on a real device); two widths catch the wrap-state divergence one width cannot. The Swift-specific canvas-stretch traps (fixed-width mega-menu, non-wrapping `NColumnsFlex` rows, `.flex-fill` beating fixed bases) and their fixes live in [`../../dw-demo-swift/references/mobile-pass.md`](../../dw-demo-swift/references/mobile-pass.md).
+
+## Driving the instrument — device descriptor, auth state, and the minimum leg
+
+The instrument for every geometry finding is a **headless browser reading computed geometry**, and
+how it is launched decides whether the numbers mean anything.
+
+**The instrument exists on a demo build machine — find it, do not conclude it is absent.** The browser
+driver ships with the demo agent tooling rather than under the skills tree, so a search of `skills/` for
+a script finds nothing and reads as "no runner on this box", which is wrong: passes that recorded the
+viewport leg as unrunnable were measuring the wrong directory. **Resolve the driver's location from the
+demo agent's own configuration** — read the configured tools path and look for the browser-probe folder
+under it — and never hardcode a machine-specific path into a skill, a note or an assert; the path differs
+per build machine and a literal one rots on the next. Install and fallback mechanics are in
+[browser-automation.md](browser-automation.md). Only when that lookup genuinely finds nothing is a
+viewport leg reported UNRUNNABLE, and then with the lookup that failed named beside it.
+
+Three launch facts:
+
+- **Drive it at a real device descriptor**, not at a resized desktop window. The descriptor is what
+  makes `window.innerWidth` comparable to a requested width, and the comparison is the leg that
+  catches a widened layout viewport. Carry the requested width into the evaluate call.
+- **A full-page screenshot does not adjudicate geometry.** It manufactures defects that do not exist
+  (a closed off-canvas panel parked off-screen looks identical to a stretched canvas) and hides the
+  ones that matter (an unclickable control looks perfect). Screenshots are for the eyeball pass;
+  geometry is for the evaluate call.
+- **Measure every auth state.** The header is a different document signed in and signed out, so a
+  single-state pass certifies pages that are measurably broken for the other state.
+
+Minimum leg, per configured page, per device descriptor, **per auth state**:
+
+1. `window.innerWidth === requested` **and** `document.body.scrollWidth === window.innerWidth`; on
+   failure report the element whose right edge equals `document.documentElement.scrollWidth`.
+2. `document.elementFromPoint(centre)` returns the element itself for every control added inside a
+   stretched-link card.
+3. Page height, or per-section height, for any page where empty bands are a known risk.
+4. Contrast ratio for every text/anchor pair on a row whose background is painted by project CSS,
+   computed from the rendered foreground and the effective background — walk ancestors to the first
+   non-transparent background and multiply declared alpha by every ancestor `opacity`.
+
+What each of those four is actually looking for, why a width-sorted offender list names an innocent
+element, and the recurring Swift 2 causes are foundational and live in
+[dw-swift-building](../../dw-swift-building/SKILL.md) `references/layout-verification.md`.
+
+**Those four are a fixed checklist, and a per-customer verification file INHERITS them rather than
+restating them.** A restated list drifts: measured on one build, a customer verification file carried
+the overflow leg and silently dropped the other three, so a run that completed it reported a clean
+verification having never hit-tested a control, measured a contrast pair, or looked for a row that
+renders nothing while still paying its spacing. Bind the two: a verification file names this checklist
+by reference, and any leg it cannot run is reported **UNRUNNABLE with the reason** in the verification
+output — never omitted. A leg that is absent from the output is indistinguishable from a leg that
+passed, which is the whole defect.
 
 ## Programmatic detectors — run before eyeballing
 
@@ -38,7 +95,10 @@ One `browser_evaluate` call returns the mechanical findings. Adjust the section 
   const de = document.documentElement, vw = de.clientWidth;
   // overflowX reads documentElement; bodyCanvas reads body.scrollWidth — the latter is the ONLY one that
   // survives `overflow-x:hidden` on body (Swift ships it), which masks a stretched canvas from de.scrollWidth.
-  const out = { overflowX: Math.max(0, de.scrollWidth - vw), bodyCanvas: Math.max(0, document.body.scrollWidth - vw), offenders: [], broken: [], stretched: [], tall: [], gaps: [] };
+  // innerWidth is reported so the caller can assert it against the REQUESTED width: an unshrinkable
+  // element widens the layout viewport, after which scrollWidth === innerWidth and the deltas below
+  // are zero on a page that renders zoomed out.
+  const out = { innerWidth: window.innerWidth, overflowX: Math.max(0, de.scrollWidth - vw), bodyCanvas: Math.max(0, document.body.scrollWidth - vw), offenders: [], broken: [], stretched: [], tall: [], gaps: [] };
   const vh = window.innerHeight, bandCap = 0.85 * vh; // 0.85 = the demo's configured band-cap fraction
   // 1. Horizontal-overflow offenders — the element whose right edge IS the scrollbar
   for (const el of document.querySelectorAll('body *')) {
@@ -163,7 +223,7 @@ Most recurring findings have a *known* cause with a documented fix — route the
 | ~192px dead grey band inside a section | Bootstrap `.ratio` aspect-ratio token vs CSS custom-property | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §3 |
 | Blank image wells in a `fullPage` capture | Lazy-load, page not scroll-swept — measurement artifact, not a defect | [`browser-automation.md`](browser-automation.md) verify-flow step 5 |
 | Blank cells in spec/attribute components (admin shows values) | Stored list-field value is the display name, not `FieldOptionValue` | [`dw-pim-modelling/references/structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.8 |
-| Razor error block where a section should be | Plain label string seeded into a `ButtonData` field | [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) Management-API editing section |
+| Razor error block where a section should be | Plain label string seeded into a `ButtonData` field | [`page-paragraph-writes.md`](../../dw-content-modelling/references/page-paragraph-writes.md) Management-API editing section |
 | Component renders a heading over an empty shell | `DisplayGroups` given product-category ids instead of display-group system names | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §3 |
 | Second element missing from a grid section | Standard `Swift-v2_Row` columns render exactly one paragraph | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §2 |
 | A whole section renders nothing, silently | Unknown `GridRowDefinitionId` | [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md) |
@@ -174,7 +234,7 @@ A finding that matches no row is new knowledge: fix it, then fold it back ([`dw-
 
 ## The fix loop
 
-Findings are data/content defects — fix them through the build-phase action surfaces (MCP → Admin API → SQL last resort, per [`surface-priority.md`](surface-priority.md); this file changes nothing about Playwright staying verification-only). Then:
+Findings are data/content defects — fix them through the build-phase action surfaces (MCP → Management API → serializer → SQL last resort, local install only, per [`surface-priority.md`](surface-priority.md); this file changes nothing about Playwright staying verification-only). Then:
 
 1. Apply the fix, plus the cache flush / restart its recipe demands ([`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)).
 2. Re-navigate cold, re-run the detectors, re-screenshot at both breakpoints.

@@ -79,7 +79,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-Import-Module (Join-Path $PSScriptRoot '../../dw-data-access/scripts/Dw.Api.psm1') -Force -ErrorAction Stop
+Import-Module (Join-Path $PSScriptRoot 'Dw.Api.psm1') -Force -ErrorAction Stop
 $state = Connect-Dw -BaseUrl $BaseUrl -ApiToken $ApiToken -SolutionPath $SolutionPath
 Assert-DwConnection | Out-Null
 

@@ -7,6 +7,7 @@ Everything `dw install` does and does not guarantee. Reached from [SKILL.md](../
 - [Flags](#flags)
 - [Choosing between immediate and queued](#choosing-between-immediate-and-queued)
 - [Triggering a recycle](#triggering-a-recycle)
+- [Copying a host assembly onto a self-hosted IIS install](#copying-a-host-assembly-onto-a-self-hosted-iis-install)
 - [Asserting success](#asserting-success)
 - [A successful install does not prove the add-in loaded](#a-successful-install-does-not-prove-the-add-in-loaded)
 - [Wildcards (1.1.2; do not use on 1.0.16)](#wildcards-112-do-not-use-on-1016)
@@ -82,6 +83,23 @@ environment without asking.
 recycle and no cache clear. Recycles are for add-in assemblies, not for templates or other Files content.
 Do not restart a solution just because a template edit "hasn't shown up"; check `-o` and the `model` array
 first, since a silently skipped upload looks exactly like a caching problem.
+
+## Copying a host assembly onto a self-hosted IIS install
+
+Where the assembly is the **host project's own** DLL in the site's `bin` rather than an add-in
+uploaded to `System/AddIns/Local`, the deploy is a file copy — and the order is **app-pool stop →
+copy the `.dll` (and `.pdb`) → app-pool start**, never a recycle.
+
+ASP.NET Core Module keeps `bin/*.dll` locked for the **draining** worker during a recycle: a recycle
+starts the new worker and lets the old one finish in-flight requests, so a copy issued right after
+the recycle command can still hit a locked file and either fail or leave stale bytes. A stop releases
+the handles deterministically before the copy runs; start reloads the app with the new DLL. The cost
+is identical either way — one app start — so there is no reason to prefer a recycle here.
+
+Two things to check after the start, which together distinguish a clean swap from a half-deployed
+one: `Files/System/Log/AddInManager/TypeLoadErrors.log` holds only its steady-state lines, and the
+new type is discoverable (a scheduled-task add-in, a provider) by whatever surface lists it. Diff
+`deps.json` before deploying it — deploy it only when the package references actually changed.
 
 ## Asserting success
 

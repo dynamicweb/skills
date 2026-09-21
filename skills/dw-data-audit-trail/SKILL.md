@@ -4,17 +4,19 @@ type: flow
 group: data
 mcp: required
 dynamo: true
-description: 'Investigate why something changed, who changed a record, when a value was set, or inspect version/history for any Dynamicweb 10 entity, using the Dynamicweb.Auditing subsystem and its AuditQuery filter. Triggers: "why did this change", "who changed this product/order/page", "when was this field set", inspect audit log or version history. Non-triggers: reverting or fixing the change itself (a separate write, not this skill); data-access/caching patterns -> dw-data-access.'
+description: 'Investigate DW10 audit logs and version history. Triggers: who changed a product/order/page, when a field was set, why a record changed, AuditQuery. Investigation only; reverting is a separate write.'
 ---
 
 # Audit Trail Investigation
 
 ## MCP preflight
 
-This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
-verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
-MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
-for the tool calls this skill names.
+This skill drives the Dynamicweb MCP server — its steps are tool calls, and the MCP tool set plus
+read/write under `Files/` is the whole surface they may use. Verify the tools are available before
+starting. If a step's tool is missing, **stop at that step** and tell the user what is missing and
+which admin screen performs it; do not substitute a guessed HTTP call, a file edit outside
+`Files/`, or SQL. The Management API, the serializer and direct SQL are out-of-product surfaces,
+owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a step here.
 
 Use this when the question is about history — why something changed, who changed it, when a
 value was set — for any Dynamicweb entity. This skill is **read-only**: if the investigation
@@ -40,7 +42,7 @@ last-modified summary — cheaper to read first.
 
 ## MCP tools
 
-- `get_audit_by_id` / `get_audits_by_ids` — read specific audit rows.
+- `get_audits_by_ids` — read specific audit rows (a batch call; there is no single-id variant).
 - `get_audits_by_query` / `count_audits_by_query` — filter with an `AuditQuery` shape (above).
 - `get_audit_details` — the full detail of one audit event (old/new value where captured).
 - `get_unique_audit_types` / `get_unique_audit_actions` — discover what `Type`/action values
@@ -103,7 +105,7 @@ exactly **one** node. The full key-minting trap lives in
 
 **Correct enablement is still not sufficient: a Management-API write writes NO audit rows.** Measured with
 the correct key set to `True`, exactly one `Auditing` node in the config, and a confirmed fresh worker
-process: a `ProductSave` through `/Admin/Api` returns `status: ok`, the value reads back changed, and
+process: a `ProductSave` written through the Management API returns `status: ok`, the value reads back changed, and
 `Audit` / `AuditDetail` stay at **zero rows** (`AuditsBy` returns `totalCount 0` both globally and
 product-scoped). On one install `IDENT_CURRENT('Audit') = 1` with `COUNT(*) = 0`, so the identity had never
 been consumed and auditing had never written a row there at all.
@@ -118,7 +120,7 @@ Two consequences, and the first is the one that saves a build:
 The leading hypothesis is that the audit writer needs a resolved backend-user context (`Audit` has a
 non-null `AuditUserId`, and `AuditsBy` returns `permissionLevelCurrentUser: null` on the same call) which
 the bearer API-key identity does not supply. **The comparison that would settle it cannot be scripted**:
-`/Admin/Api` is bearer-only and an admin cookie session gets `401` there, so a UI-session probe needs a
+the Management API is bearer-only and an admin cookie session gets `401` there, so a UI-session comparison needs a
 real browser. Say so rather than reporting auditing as broken.
 
 ## Limits
@@ -127,7 +129,7 @@ real browser. Say so rather than reporting auditing as broken.
   ("audit log is off, only signal is the entity's own last-modified field") beats a long
   fruitless search. Check the enablement section above before reporting it as off: a flag written to
   the wrong key reads back `True` and produces zero rows, and a flag written to the RIGHT key still
-  produces zero rows for `/Admin/Api` writes.
+  produces zero rows for Management API writes.
 - **API-driven writes are not audited** on the builds measured so far, so an empty audit log after a
   scripted change is the expected state, not a fault to diagnose. Report what the entity's own
   last-modified fields and the version history carry instead.

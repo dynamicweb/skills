@@ -1,13 +1,38 @@
 {
-  "version": 1,
-  "generatedAt": "2026-09-09T09:44:13.041Z",
+  "version": 2,
+  "generatedAt": "2026-09-21T09:55:05.771Z",
+  "worksOn": {
+    "dw": {
+      "floor": ">=10.28.1",
+      "measured": "10.28.10"
+    },
+    "swift": {
+      "floor": "==2.4",
+      "measured": "2.4.0"
+    },
+    "apps": [
+      {
+        "id": "Truvio.Commerce.MCP",
+        "floor": ">=0.6.0-beta",
+        "measured": "0.6.0-beta",
+        "required": false
+      },
+      {
+        "id": "Truvio.Commerce.Serializer",
+        "floor": ">=1.0.0-beta",
+        "measured": "1.0.0-beta",
+        "required": false,
+        "scope": "only the skills that cover the serializer"
+      }
+    ]
+  },
   "skills": [
     {
       "name": "dw-content-localization",
       "type": "flow",
       "group": "content",
       "mcp": "required",
-      "description": "Create a language version of a Dynamicweb 10 website and translate its page content, or translate an existing page/site from one language to another.",
+      "description": "Create language versions of Dynamicweb 10 sites and translate page content.",
       "path": "skills/dw-content-localization/SKILL.md"
     },
     {
@@ -15,7 +40,7 @@
       "type": "flow",
       "group": "data",
       "mcp": "required",
-      "description": "Investigate why something changed, who changed a record, when a value was set, or inspect version/history for any Dynamicweb 10 entity, using the Dynamicweb.Auditing subsystem and its AuditQuery filte",
+      "description": "Investigate DW10 audit logs and version history.",
       "path": "skills/dw-data-audit-trail/SKILL.md"
     },
     {
@@ -23,7 +48,7 @@
       "type": "flow",
       "group": "pim",
       "mcp": "required",
-      "description": "Migrate a Dynamicweb 9 (DW9) solution's product structure and catalog data into a Dynamicweb 10 PIM with the migrate_dw9_export, run_dw9_product_import, and assign_dw9_products_to_data_models tools.",
+      "description": "Migrate DW9 product structure and catalog data into DW10 PIM.",
       "path": "skills/dw-pim-migrate-dw9/SKILL.md"
     },
     {
@@ -31,7 +56,7 @@
       "type": "flow",
       "group": "source",
       "mcp": "optional",
-      "description": "Consult the live Dynamicweb documentation (doc.dynamicweb.dev) as the source of truth before answering how a feature works, is configured, or fits together, using search_documentation and fetch_docume",
+      "description": "Look up live DW10 documentation for feature behavior and configuration.",
       "path": "skills/dw-source-doc-lookup/SKILL.md"
     },
     {
@@ -39,7 +64,7 @@
       "type": "flow",
       "group": "swift",
       "mcp": "required",
-      "description": "Customize an existing Swift 2 Dynamicweb site for a specific business without rebuilding it — preserve the working page shell and update area, navigation, category pages, and item values.",
+      "description": "Customize an existing Swift 2 site while preserving its page shell.",
       "path": "skills/dw-swift-building/SKILL.md"
     },
     {
@@ -47,7 +72,7 @@
       "type": "flow",
       "group": "swift",
       "mcp": "required",
-      "description": "Bring the CONTENT of an existing/old website into a Dynamicweb 10 solution as a standard, modern Swift 2 site — extract a source site's pages/media and rebuild them here.",
+      "description": "Rebuild an existing website and its content as a modern Swift 2 site.",
       "path": "skills/dw-swift-migrate-content/SKILL.md"
     },
     {
@@ -55,7 +80,7 @@
       "type": "flow",
       "group": "swift",
       "mcp": "required",
-      "description": "Migrate pages from a Swift 1 (Swift v1) solution to Swift 2 and KEEP THE LAYOUT — a faithful, structure-preserving port (Swift 1 and Swift 2 share the same grid model, so the layout carries over 1:1).",
+      "description": "Port Swift 1 pages to Swift 2 while preserving layout and structure.",
       "path": "skills/dw-swift-migrate-v1/SKILL.md"
     },
     {
@@ -63,7 +88,7 @@
       "type": "flow",
       "group": "swift",
       "mcp": "required",
-      "description": "Build a good-looking Swift 2 page — matching the style of an existing page, from a supplied image/screenshot/mockup, from a plain-language description, or by recreating a single live page from its URL",
+      "description": "Design and build one Swift 2 page from a screenshot, mockup, URL, or brief.",
       "path": "skills/dw-swift-page-design/SKILL.md"
     },
     {
@@ -71,7 +96,7 @@
       "type": "knowledge",
       "group": "commerce",
       "mcp": "optional",
-      "description": "Implement B2B patterns including customer groups, scoped assortments, and sales workflows, and set up or rebuild a customer assortment through the MCP tools.",
+      "description": "Implement Dynamicweb 10 B2B customer groups, scoped assortments, and sales workflows.",
       "path": "skills/dw-commerce-b2b/SKILL.md"
     },
     {
@@ -79,7 +104,7 @@
       "type": "knowledge",
       "group": "commerce",
       "mcp": "optional",
-      "description": "Render product catalogs and assortments in Dynamicweb 10, and convert or set a product price in a specific currency through the MCP tools.",
+      "description": "Render Dynamicweb 10 catalogs and assortments, and manage currency-specific prices.",
       "path": "skills/dw-commerce-catalog/SKILL.md"
     },
     {
@@ -87,7 +112,7 @@
       "type": "knowledge",
       "group": "commerce",
       "mcp": "optional",
-      "description": "Handle orders, checkout, and cart functionality in Dynamicweb 10, investigate an order/cart/payment/shipment, and create or audit a discount or voucher.",
+      "description": "Handle Dynamicweb 10 orders, carts, checkout, payments, shipments, discounts, and vouchers.",
       "path": "skills/dw-commerce-orders/SKILL.md"
     },
     {
@@ -95,23 +120,23 @@
       "type": "knowledge",
       "group": "content",
       "mcp": "optional",
-      "description": "Design item types, paragraphs, and content models in Dynamicweb 10, and create/publish a page or paragraph through the MCP tools.",
+      "description": "Model Dynamicweb 10 item types, paragraphs, pages, fields, and assets.",
       "path": "skills/dw-content-modelling/SKILL.md"
     },
     {
-      "name": "dw-data-access",
+      "name": "dw-data-write-effects",
       "type": "knowledge",
       "group": "data",
       "mcp": "optional",
-      "description": "Choose appropriate data-access patterns and optimize caching in Dynamicweb 10.",
-      "path": "skills/dw-data-access/SKILL.md"
+      "description": "Verify DW10 writes and refresh dependent data.",
+      "path": "skills/dw-data-write-effects/SKILL.md"
     },
     {
       "name": "dw-extend-csharp-api",
       "type": "knowledge",
       "group": "extend",
       "mcp": "none",
-      "description": "Use the Dynamicweb 10 C# API and Services layer for custom backend code.",
+      "description": "Write DW10 backend logic with the C# API.",
       "path": "skills/dw-extend-csharp-api/SKILL.md"
     },
     {
@@ -119,39 +144,15 @@
       "type": "knowledge",
       "group": "extend",
       "mcp": "none",
-      "description": "Build providers, notification subscribers, and AddIns for Dynamicweb 10.",
+      "description": "Build DW10 providers, AddIns and notification subscribers.",
       "path": "skills/dw-extend-providers/SKILL.md"
-    },
-    {
-      "name": "dw-extend-scheduled-tasks",
-      "type": "knowledge",
-      "group": "extend",
-      "mcp": "none",
-      "description": "Create and manage scheduled tasks in Dynamicweb 10 including RunSqlScheduledTaskAddIn.",
-      "path": "skills/dw-extend-scheduled-tasks/SKILL.md"
-    },
-    {
-      "name": "dw-headless-delivery",
-      "type": "knowledge",
-      "group": "headless",
-      "mcp": "none",
-      "description": "Build decoupled frontends using the Dynamicweb 10 /dwapi/ delivery API.",
-      "path": "skills/dw-headless-delivery/SKILL.md"
-    },
-    {
-      "name": "dw-integration-erp",
-      "type": "knowledge",
-      "group": "integration",
-      "mcp": "none",
-      "description": "Configure ERP connectors and data ownership in Dynamicweb 10.",
-      "path": "skills/dw-integration-erp/SKILL.md"
     },
     {
       "name": "dw-integration-framework",
       "type": "knowledge",
       "group": "integration",
       "mcp": "optional",
-      "description": "Understand Dynamicweb 10 Integration Framework architecture and patterns, and set up, run, schedule, or diagnose a Data Integration activity through the MCP tools.",
+      "description": "Configure, run and diagnose DW10 Data Integration activities.",
       "path": "skills/dw-integration-framework/SKILL.md"
     },
     {
@@ -159,7 +160,7 @@
       "type": "knowledge",
       "group": "pim",
       "mcp": "optional",
-      "description": "Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, query-driven automatic workflows — and enrich products against a query by filling their missing completion fields",
+      "description": "Configure PIM completion rules, scoring, automatic query movement, and missing-field enrichment.",
       "path": "skills/dw-pim-completeness/SKILL.md"
     },
     {
@@ -167,7 +168,7 @@
       "type": "knowledge",
       "group": "pim",
       "mcp": "optional",
-      "description": "Manage product translation and localization across EcomLanguages in Dynamicweb 10.",
+      "description": "Manage Dynamicweb 10 product translations across EcomLanguages.",
       "path": "skills/dw-pim-localization/SKILL.md"
     },
     {
@@ -175,7 +176,7 @@
       "type": "knowledge",
       "group": "pim",
       "mcp": "optional",
-      "description": "Model Dynamicweb 10 PIM data — Data Models, category fields, variant groups, and global vs category field storage — and create products, variant groups/combinations through the MCP tools.",
+      "description": "Model PIM Data Models, fields, folders, products, and variants.",
       "path": "skills/dw-pim-modelling/SKILL.md"
     },
     {
@@ -183,7 +184,7 @@
       "type": "knowledge",
       "group": "pim",
       "mcp": "optional",
-      "description": "Configure Dynamicweb 10 PIM workflows — named states, transitions, and editorial handoffs across the product enrichment lifecycle.",
+      "description": "Configure manual PIM workflows with named states, transitions, editorial handoffs, and notifications.",
       "path": "skills/dw-pim-workflow/SKILL.md"
     },
     {
@@ -191,7 +192,7 @@
       "type": "knowledge",
       "group": "render",
       "mcp": "none",
-      "description": "Build template hierarchies and Razor patterns in Dynamicweb 10 — the foundation for all rendering.",
+      "description": "Build Dynamicweb 10 template hierarchies and Razor patterns.",
       "path": "skills/dw-render-razor/SKILL.md"
     },
     {
@@ -199,7 +200,7 @@
       "type": "knowledge",
       "group": "render",
       "mcp": "none",
-      "description": "Build templates using TemplateTags to access content properties directly in Dynamicweb 10.",
+      "description": "Access Dynamicweb 10 content properties directly with TemplateTags.",
       "path": "skills/dw-render-templatetags/SKILL.md"
     },
     {
@@ -207,7 +208,7 @@
       "type": "knowledge",
       "group": "render",
       "mcp": "none",
-      "description": "Fetch and shape content using ViewModels in Dynamicweb 10 templates.",
+      "description": "Fetch and shape content with Dynamicweb 10 ViewModels.",
       "path": "skills/dw-render-viewmodels/SKILL.md"
     },
     {
@@ -215,7 +216,7 @@
       "type": "knowledge",
       "group": "search",
       "mcp": "optional",
-      "description": "Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, product index setup — and design/fix a PIM product query or repository index query through the M",
+      "description": "Build Dynamicweb 10 Lucene indexes and repository or PIM queries.",
       "path": "skills/dw-search-indexing/SKILL.md"
     },
     {
@@ -223,7 +224,7 @@
       "type": "knowledge",
       "group": "swift",
       "mcp": "optional",
-      "description": "Reference for the Swift 2 page-building vocabulary — grid row layouts (DefinitionIds), paragraph component types with their variants and fields, color schemes, and the MCP tools that compose them.",
+      "description": "Reference Swift 2 rows, paragraph types, variants, fields, color schemes, and page tools.",
       "path": "skills/dw-swift-page-blocks/SKILL.md"
     },
     {
@@ -231,7 +232,7 @@
       "type": "knowledge",
       "group": "users",
       "mcp": "optional",
-      "description": "Manage users, groups, and the Permission entity store in Dynamicweb 10.",
+      "description": "Manage Dynamicweb 10 users, groups, and permissions.",
       "path": "skills/dw-users-permissions/SKILL.md"
     }
   ]

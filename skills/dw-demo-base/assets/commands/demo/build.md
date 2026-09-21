@@ -22,11 +22,15 @@ user to run `/demo:impact` and sign off first. The build never runs on an unappr
 
 From the signed-off analysis, build the demo moments using the right skills:
 
+- **Brand work: choose the path first** → `dw-demo-base/references/branded-demo-paths.md`. Default
+  is path A (author a demo-local brand layer in YAML over the edition's demo content and
+  deserialize it); path B (deserialize as shipped, then rebrand through the tools) is selected
+  deliberately, and said out loud, when one of that file's four conditions holds.
 - Customer-center, personas, pricing, re-skin → `dw-demo-swift`.
 - Catalog scoping, assortments, completeness → `dw-demo-pim`.
 - ERP / integration beats → `dw-demo-erp` (mock) or `dw-integration-bc` (live BC).
 
-Honour the surface-priority rule (MCP → Management API → admin UI verify-only → SQL last resort)
+Honour the surface-priority rule (MCP → Management API → serializer → admin UI verify-only → SQL last resort, local install only)
 and the `CUSTOMISATIONS.md` ledger preflight from `dw-demo-base`.
 
 ## 4. Single validation pass (acceptance — customer-build phase)

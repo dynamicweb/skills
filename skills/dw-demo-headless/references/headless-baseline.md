@@ -171,7 +171,7 @@ The provider consumes this via `GET /dwapi/ecommerce/products/search?RepositoryN
 
 1. **Stage disk overlays before start** (§6) — item-type XML and the repository files.
 2. **Start the host.**
-3. **Deserialize `replace/` then `merge/`** — POST `/Admin/Api/SerializerDeserialize` per mode, strict
+3. **Deserialize `replace/` then `merge/`** — POST `/Admin/Api/Deserialize` per mode, strict
    mode on. If running shared-catalog, deserialize the base layer's replace+merge first so the
    `Ecom*` catalog exists; the headless leg then lands its `Content` entries on top.
 4. **Full index build** — after products exist in the DB, trigger a **Full** build of the `Headless`

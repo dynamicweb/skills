@@ -22,7 +22,7 @@
 `dw-demo-base` setup is complete:
 
 - [`../../dw-demo-base/references/setup-checks.md`](../../dw-demo-base/references/setup-checks.md) is green (NODE_TLS_REJECT_UNAUTHORIZED, .NET SDK, ProjectTemplates, SQL Express all probed and resolved).
-- The Distribution has been **cloned** (repo URL from `$env:DW_DISTRIBUTION_REPO`, default below) and pulled `--ff-only` up to `origin/main` into the demo's own `distribution\` folder (see §3 — the staging snippet clones + fast-forwards on first run). **Main IS the version**: consume the latest gate-proven `main` (assert `layers/INDEX.json` `gateProven` is present) and compose the edition's layers from the live `INDEX.json` `layers` entries. The reproducibility pin is the resolved commit SHA, recorded in `CUSTOMISATIONS.md`.
+- The Distribution has been **cloned** (`justdynamics/Truvio.Commerce.Distribution`, or the `$env:DW_DISTRIBUTION_REPO` mirror override when set) and pulled `--ff-only` up to `origin/main` into the demo's own `distribution\` folder (see §3 — the staging snippet clones + fast-forwards on first run). **Main IS the version**: consume the latest gate-proven `main` (assert `layers/INDEX.json` `gateProven` is present) and compose the edition's layers from the live `INDEX.json` `layers` entries. The reproducibility pin is the resolved commit SHA, recorded in `CUSTOMISATIONS.md`.
 - [`../../dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) produced a running `Dynamicweb.Host.Suite` (port reachable, host responds at `/admin`).
 - [`../../dw-demo-base/references/mcp-setup.md`](../../dw-demo-base/references/mcp-setup.md) verification gate passed (`claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND in-conversation `ToolSearch +dynamicweb` returns >200 tools).
 - **The DW Serializer is installed in the host** per [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Installation" section (the `Truvio.Commerce.Serializer` NuGet package added as a `PackageReference` + restored, `Files/System/Serializer/Serializer.config.json` staged, host restarted). This is a one-time-per-host step.
@@ -67,7 +67,9 @@ integrity-sweep Check 8 owns the gate.
 
 **Repositories skip rule.** For `Files/System/Repositories/`, copy **everything EXCEPT `ProductsBackend/` and `ProductsFrontend/`** — those two index Swift's bike-demo custom fields (`PlantHardiness`, `BikeFrameSize`, plant/bike-specific facets, etc.). Copying them into a host whose products use a different data-model causes `BuildIndex` Full to fail with "field not found in products" — the index builder validates every field reference against the live `EcomProductCategoryField` table. The other Swift-shipped indexes (`Content/`, `Files/`, `Post/`, `Secondary users/`) are demo-data-agnostic — they index Pages/Files/blog Posts/Users via standard fields plus item-type fields that DO resolve cleanly; copy those alongside. Hand-write a per-demo Products index targeting the demo's actual data-model fields instead — see [`../../dw-demo-pim/references/canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md) Step 16. (For PIM-data + Swift-frontend hybrid demos with N categories × M custom fields each, pick 5-10 demo-relevant fields per category for the index — not the full set; index size is rarely the constraint, but maintenance and admin-UI clarity are.)
 
-**Catalog-paragraph path rewrite (run AFTER the deserialize).** The `eCom_ProductCatalog` paragraphs from the Swift baseline reference `/Files/System/Repositories/ProductsFrontend/Products.query` and `Products.facets` in their `ParagraphModuleSettings` XML. Those paths point into the bike-demo repos you skipped — the Catalog module silently renders an empty product list when the paths break. After authoring your per-demo `Products.query` + `Products.facets` (sourced from `Repository="Products"`, with parameters matching your facet fields), bulk-rewrite the paragraph references via SQL:
+**Catalog-paragraph path rewrite — the fallback, not the default.** `ProductsFrontend` is the storefront repository name, and the repository question has one home: [`../../dw-demo-pim/references/canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md) Step 17 "Storefront catalog query". Check whether the host's Swift design package already shipped `Files/System/Repositories/ProductsFrontend/`, and author it there if it did not. The `eCom_ProductCatalog` paragraphs from the Swift baseline reference `/Files/System/Repositories/ProductsFrontend/Products.query` and `Products.facets` in their `ParagraphModuleSettings` XML, so keeping the name is the cheap path.
+
+Only when a host genuinely cannot carry a `ProductsFrontend/` repository, repoint the paragraphs at the repository it does carry. This rewrites shipped content across every catalog paragraph on the host, so treat it as a last resort:
 
 ```sql
 UPDATE Paragraph SET ParagraphModuleSettings =
@@ -78,6 +80,8 @@ WHERE ParagraphModuleSettings LIKE '%ProductsFrontend%' OR ParagraphModuleSettin
 ```
 
 Restart the host so the paragraph-settings cache reloads. Touched paragraphs are typically the Shop module on Page "Shop", an Express-Buy module, and the Search field's QueryPublisher.
+
+**Local installs only**: on a hosted install, repoint each paragraph with MCP `set_module_settings` (read back with `get_module_settings`), then restart through the CloudHosting `recycle.txt` control file.
 
 **Card-template path mismatch in `Swift-v2_ProductComponentSlider`.** Swift v2.3.0 ships card templates (`Card.cshtml`, `CardCover.cshtml`, `CardCoverFull.cshtml`, `CardCoverNavInline.cshtml`) at `Files/Templates/Designs/Swift-v2/Paragraph/Swift-v2_Slider/`, but the slider's `RenderRazorTemplate` resolver looks for them at the legacy path `Files/Templates/Paragraph/<filename>`. Symptom: slider div renders the inline error `Template file not found (in RenderRazorTemplate()): ...\Files\Templates\\Paragraph\CardCoverNavInline.cshtml` (note the literal `\\`). Fix: copy the four card files to `Files/Templates/Paragraph/` so the legacy resolver path resolves: `Copy-Item "<host>/wwwroot/Files/Templates/Designs/Swift-v2/Paragraph/Swift-v2_Slider/*.cshtml" "<host>/wwwroot/Files/Templates/Paragraph/" -Force`. No host restart needed — Razor template resolution is per-request.
 
@@ -116,12 +120,20 @@ Layer path resolution: every layer path resolves under the demo's own `<demo-roo
 **Layer shape — the base split (Swift 2.4).** The staging story is a **two-layer composition**, not a single base tree:
 
 - **`base` (kind base) is FRAMEWORK-ONLY.** A replace-only tree (`fragmentModes: ["replace"]`): `replace/_sql/` ships 16 framework SQL sets (EcomCountries, EcomCountryText, EcomCurrencies, EcomLanguages, EcomShops, EcomShopGroupRelation, EcomShopLanguageRelation, EcomPayments, EcomShippings, EcomMethodCountryRelation, EcomVatGroups, EcomVatCountryRelations, EcomOrderFlow, EcomOrderStates, EcomOrderStateRules, AccessUser) plus the machine-readable `base.contract.json` and SQL-predicate config. It ships **zero content, zero pages, zero item types, zero catalog** — a `base`-only deserialize lands an empty storefront skeleton by design.
-- **`surface-swift` (kind surface) carries ALL Swift content.** Both areas (`Swift 2` + `Swift 2 Nederlands`) in `replace/_content/` and `merge/_content/`, `UrlPath` in `replace/_sql/`, and its **own item-type XMLs** (`itemtypes/` — 128 `ItemType_Swift-v2_*.xml`). Content-scoped contract bits (content areas, langPrefix, navDepth obligation, page anchors, protected item types) live in its `surface.contract-notes.json`.
+- **`surface-swift` (kind surface) carries ALL Swift content.** The one `Swift 2` area in `replace/_content/` and `merge/_content/` (the second Swift area and its language were dropped from the Distribution in surface-swift 1.2.0 — assert an area count of 1 after deserialize, not 2), `UrlPath` in `replace/_sql/`, and its **own item-type XMLs** (`itemtypes/` — 128 `ItemType_Swift-v2_*.xml`). Content-scoped contract bits (content areas, langPrefix, navDepth obligation, page anchors, protected item types) live in its `surface.contract-notes.json`.
 - **`sample-data` (kind sample-data) ships ALL demo content as SQL:** `merge/_sql/catalog.sql` (products / groups / prices) + `merge/_sql/identities.sql` (buyer + CSR). Editions activate it via `sampleData: true` (e.g. `swift-demo`); otherwise author the catalog **per-demo** via the PIM modelling recipes ([`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md)) — do not expect base or surface to supply products (each demo tailors its own catalog rather than inheriting a pre-baked store).
 
 **Composition order: base → sample-data catalog → content surface(s) → feature fragments.** Features FK into surface-carried areas, so the surface must land before any feature fragment. The surface's area YAML hardcodes `"AreaEcomShopId": "SHOP1"` and `"AreaEcomCountryCode": "DE"` as **string FKs** that resolve against the framework rows the base pass lands. **Mode-semantics warning for PIM-curated hosts:** framework rows travel in `replace`, and `replace` is **source-wins** — the base layer's SHOP1/DE/EUR/LANG1 rows UPDATE matching rows already in the target. A host with hand-curated framework rows is therefore NOT automatically preserved: review (and if needed trim) `replace/_sql/` against the target's curated framework data before deserializing.
 
 **Version facts (current cycle):** Swift **2.4** on DW **10.28.1-PreRelease** — the editions (`swift-demo`, `base-only`, `headless-demo`, `dap-portal`) are attested proven on that pair; a stable-release re-prove is pending. The Distribution supports the latest Swift release only and rolls forward with it.
+
+**Do not pull here — assert the scaffold SHA.** The scaffold pass owns the Distribution checkout and
+recorded its SHA in `CUSTOMISATIONS.md` as the build's reproducibility stamp
+([`dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) "This pass owns
+the checkout"). Read `git -C $dist rev-parse HEAD`, compare it with the recorded stamp, and **stop**
+on a mismatch with "distribution checkout moved since scaffold, <recorded> -> <current>" rather than
+continuing on layer content the earlier passes never saw. The clone branch below stays only for a
+checkout that does not exist yet; record its SHA as the stamp if this is the first pass to run.
 
 ```powershell
 $demoRoot = (Get-Location).Path                    # the demo project root
@@ -129,9 +141,9 @@ $dist     = "$demoRoot\distribution"               # the demo's own Distribution
 if (Test-Path "$dist\.git") {
   git -C $dist pull --ff-only origin main             # main IS the version — fast-forward to the gate-proven tip
 } else {
-  # Clone the single Distribution repo (URL from $env:DW_DISTRIBUTION_REPO, owner/name form).
+  # Clone the single Distribution repo ($env:DW_DISTRIBUTION_REPO, owner/name form, only overrides the public default).
   # See base SKILL "Layer resolution" — pin origin/main + read layers/INDEX.json, never a tag.
-  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
   git clone "https://github.com/$repo" $dist          # base + surface-swift + sample-data + ... + INDEX.json all present
 }
 $index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
@@ -140,23 +152,57 @@ Write-Host "On main $(git -C $dist rev-parse --short HEAD) — record the commit
 $serializeRoot = "Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot"
 # Stage BOTH layers' mode trees: base (framework-only, replace/ only) + surface-swift
 # (replace/ + merge/ — all content + UrlPath). The trees are disjoint, so they overlay cleanly.
-foreach ($layer in 'base','surface-swift') {
+$layers = @('base','surface-swift')               # every layer the edition composes, in composition order
+foreach ($layer in $layers) {
   foreach ($mode in 'replace','merge') {
     if (Test-Path "$dist\layers\$layer\$mode") {
       New-Item -ItemType Directory -Path "$serializeRoot/$mode" -Force | Out-Null
       Copy-Item -Recurse "$dist\layers\$layer\$mode\*" "$serializeRoot/$mode/" -Force
     }
   }
+  # Tree 3 — item-type XMLs of EVERY composed layer, BEFORE deserializing.
+  if (Test-Path "$dist\layers\$layer\itemtypes") {
+    Copy-Item "$dist\layers\$layer\itemtypes\*.xml" `
+      "Dynamicweb.Host.Suite/wwwroot/Files/System/Items/" -Force
+  }
+  # Tree 4 — templates of EVERY composed layer, preserving their sub-paths.
+  if (Test-Path "$dist\layers\$layer\templates") {
+    Copy-Item -Recurse "$dist\layers\$layer\templates\*" `
+      "Dynamicweb.Host.Suite/wwwroot/Files/Templates/" -Force
+  }
 }
-# Also copy the surface's item-type XMLs BEFORE deserializing (the content predicates need them):
-Copy-Item "$dist\layers\surface-swift\itemtypes\*.xml" `
-  "Dynamicweb.Host.Suite/wwwroot/Files/System/Items/" -Force
 # The base+surface deserialize lands framework + all Swift content and an EMPTY catalog — run the
 # sample-data layer's merge/_sql (activated via an edition's sampleData: true), or author
 # the catalog per-demo via dw-demo-pim.
 ```
 
-**Pre-import: re-serialize before merging baseline YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/SerializerSerialize` FIRST so the replace folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
+**Stage FOUR trees per composed layer, not one.** A layer is `<mode>/` YAML *plus three sibling
+directories*, and a composer that copies only the mode trees leaves the other three unstaged with no
+error anywhere: the compose step reports `conflicts: []` and `silentNoOpLayers: []`, and the gap
+surfaces later as a deserialize failure or a blank storefront region. Run these four steps in order,
+for **every** layer the edition composes (feature layers included), before the first POST:
+
+1. **Mode YAML** — copy `<layer>/replace/` and `<layer>/merge/` into `SerializeRoot/<mode>/`
+   (the loop above). *Assert:* each staged `<mode>/<mode>-manifest.json` names only files that exist.
+2. **`config/`** — stage the layer's predicate config to
+   `Files/System/Serializer/Serializer.config.json`. When more than one composed layer ships a
+   config, the staged file is the **union** of their `predicates` lists in composition order (a name
+   collision across layers is an authoring bug, not something to resolve here), with both exclude
+   maps deep-unioned. *Assert:* `GET /Admin/Api/SerializerSettings` returns `needsSetup: false` and a
+   `predicatesSummary` whose replace + merge counts equal the union count — a composed edition that
+   still reports `{"needsSetup":true,"configFilePath":""}` has staged no config at all.
+3. **`itemtypes/`** — copy every composed layer's `itemtypes/*.xml` into `Files/System/Items/`.
+   *Assert:* for every `itemType` named in the staged YAML there is a matching
+   `Files/System/Items/ItemType_<name>.xml`. A missing one fails exactly one entry at merge time with
+   `ERROR deserializing paragraph <guid> on page <n>: Unable to resolve the item type. The item cannot
+   be saved.` — a feature layer's own item type is the usual culprit, because the paragraph that uses
+   it travels in the *content* surface while the XML ships with the *feature* layer.
+4. **`templates/`** — copy every composed layer's `templates/**` into `Files/Templates/**`, preserving
+   sub-paths. *Assert:* every path under each layer's `templates/` exists under `Files/Templates/`.
+   Missing templates do **not** fail the deserialize; they surface afterwards as a blank or erroring
+   storefront region, so this assert is the only thing that catches them.
+
+**Pre-import: re-serialize before merging baseline YAML.** If the target host has any pre-existing predicates (e.g. `"Content - <ExistingArea>"`), POST `/Admin/Api/Serialize` FIRST so the replace folder reflects current DB state. Otherwise the deserialize will revert any in-DB changes you made since the last serialize (we hit this in practice: a recent area-rename via API was reverted by re-applying stale YAML for the old area name). After serializing, also delete any folders in `_content/` whose name matches a stale area name — `Serialize` writes the current name's folder but does NOT clean the old one (e.g. `_content/<old-area-name>/` survives a rename to `_content/<new-area-name>/`).
 
 **Renaming an Area re-slugs its frontend URLs.** The area name drives the URL segment, so renaming an Area changes the public URL of every page under it — any bookmark / link / cheat-sheet URL built against the old slug then 404s. Settle the area name **before** publishing links or building the demo's URL list, not after; if a rename is unavoidable late, re-capture the affected URLs.
 
@@ -176,42 +222,26 @@ Copy-Item "$dist\layers\surface-swift\itemtypes\*.xml" `
 
 **`excludeAreaColumns` governs serialize-OUT, not deserialize-IN.** The `excludeAreaColumns` field in the predicate above controls which `Area` columns get *written to* `area.yml` when you serialize; it does NOT suppress `source column [Area].[<col>] not present on target schema` drift when *applying* an `area.yml` captured on an older platform to a newer host. Setting it has no effect on an inbound deserialize. Working recovery when an older baseline's `area.yml` carries a column the newer host's schema no longer has: strip the offending column lines from the **staged** copy (`Files/System/Serializer/SerializeRoot/replace/_content/<Area>/area.yml`), never from the checked-out original under `distribution\layers\base\`, then re-POST. Baselines captured on older DW versions can legitimately carry a few such Area columns on a newer host — see the failure-pattern entry in [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) ("source column ... not present on target schema").
 
-**Restart the host after editing `Serializer.config.json`** — config is loaded at startup, not on each request.
+**No recycle after editing `Serializer.config.json`** — on serializer 0.9.0-beta the config loader runs on the request path, not at host start-up. Confirm an edit with `GET /Admin/Api/SerializerSettings` on the same worker process: a host that answered `{"needsSetup":true,"configFilePath":""}` before the write answers `needsSetup: false` with the resolved `configFilePath` and a `predicatesSummary` immediately after it. A recycle buys nothing here and costs the whole ready-again wait on every config edit.
 
 **Strategy note (verified during a Swift2 baseline import):** Two strategies were considered —
 
 - **(a)** Copy YAML directly into `Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot/replace/` (this snippet — verified working).
-- **(b)** Configure `Files/System/Serializer/Serializer.config.json` `outputDirectory` to point at `<demo-root>\distribution\layers\base\` directly. Faster (no copy), but the running host's serialize would also write back into the checked-out layer copy — contaminating your pristine reference of what the repo shipped at that tag. Not recommended; (a) is the canonical approach.
+- **(b)** ~~Configure `Serializer.config.json` `outputDirectory` to point at the checked-out layer copy.~~ **This does not work: `outputDirectory` is not consulted on the deserialize path at all** — the engine resolves what to run from `SerializeRoot/<mode>/<mode>-manifest.json` under the default root, whatever the config says, so a run pointed elsewhere quietly deserializes whatever the default root still holds. Copy the tree in (a), and to scope a run to one entry swap the **manifest**, per [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Deserialize is driven by the MANIFEST".
 
 **Single canonical layer paths:** `layers/base` (framework-only) and `layers/surface-swift` (all Swift content) resolve under `<demo-root>\distribution\layers\`. Per-demo customer-flavoured catalogs are authored on top (via the `sample-data` layer, the `swift-demo` edition, or dw-demo-pim), never by forking the base or surface layers. Legacy content-only `Swift2.2` baselines and the pre-split "scaffolding-only base" (content inside `layers/base`) predate this model and are no longer the default.
 
 ## 4. Step 2 — POST against running host
 
-> **Engine 0.8.x callers:** the two-pass shape below is stamped to **0.6.9-beta**. From 0.8.x the predicate `mode` enum is `Replace`/`Merge` (`Deploy`/`Seed` are rejected, not aliased) and the run's mode moves into the JSON body — `POST /Admin/Api/SerializerDeserialize {"Mode":"Replace","IsDryRun":false}`. Check the engine before reusing a config or a snippet: [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Replace vs Merge".
+> **The call shape lives in one place.** `Deserialize` is invoked with `Mode` in a flat JSON body, and the canonical snippet, the dry-run gate, the response shape and the engine/platform floors are owned by [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Invocation — one shape". Read it before the first POST and call it from there; this section owns only the *sequence* and what each pass lands in a Swift build.
 
-**Two POSTs — both with an explicit `?mode=`, replace first then merge.** On engine **0.6.9-beta** each pass must name its mode: `?mode=replace` then `?mode=merge`. **Do NOT rely on a bare `POST /Admin/Api/SerializerDeserialize`** — on 0.6.9 a mode-less POST targets the **legacy `deploy` folder** (not `SerializeRoot/replace/`), and against a layer that stages `replace/`+`merge/` it returns **HTTP 400 `deploy contains no YAML files`**. Pass `?mode=replace` explicitly for the first pass so the engine reads `SerializeRoot/replace/`. (The engine also accepts the legacy `Deploy`/`Seed` names as aliases for `replace`/`merge`.) With base + surface-swift staged (§3), the replace pass lands the base's framework `_sql/` plus the surface's areas/pages/UrlPath (source-wins); the merge pass applies the surface's `merge/_content/` rows. Neither layer carries a catalog — the storefront comes up with an **empty catalog by design**; that is expected, not a missing-products failure. Run the `sample-data` layer's `merge/_sql` (activated via the `swift-demo` edition's `sampleData: true`) or author the catalog per-demo via [`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md). (The two-POST mechanic still matters generally: feature-pack fragments deserialize in `merge` mode — see [`pack-activation.md`](pack-activation.md).)
+**Two passes, replace first then merge**, each a separate `Deserialize` call carrying `Mode` in its body (`Replace`, then `Merge`) — run each as a dry run first and gate on the entry count, per the reference. A run reads only its own mode subfolder, so a `Mode` that names a subfolder §3 did not stage returns `Mode subfolder not found` or `<path> contains no YAML files`: a staging fault, fixed in §3, never worked around by changing the call.
 
-```powershell
-# Pass 1 — Replace (?mode=replace is REQUIRED on 0.6.9; a bare POST hits the legacy deploy
-# folder and 400s "deploy contains no YAML files"). Lands framework + content, source-wins.
-$replace = Invoke-RestMethod `
-  -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=replace" `
-  -Method POST `
-  -Headers @{ Authorization = "Bearer $token" } `
-  -SkipCertificateCheck
+With base + surface-swift staged (§3), the **replace** pass lands the base's framework `_sql/` plus the surface's areas/pages/UrlPath (source-wins); the **merge** pass applies the surface's `merge/_content/` rows. Neither layer carries a catalog — the storefront comes up with an **empty catalog by design**; that is expected, not a missing-products failure. Run the `sample-data` layer's `merge/_sql` (activated via the `swift-demo` edition's `sampleData: true`) or author the catalog per-demo via [`../../dw-demo-pim/SKILL.md`](../../dw-demo-pim/SKILL.md). (The two-pass mechanic matters beyond the base build: feature-pack fragments deserialize in `merge` mode — see [`pack-activation.md`](pack-activation.md).)
 
-# Pass 2 — Merge (catalog / field-level). ?mode=merge is REQUIRED — omitting it never runs Merge.
-$merge = Invoke-RestMethod `
-  -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=merge" `
-  -Method POST `
-  -Headers @{ Authorization = "Bearer $token" } `
-  -SkipCertificateCheck
-# Strict mode is on by default for API callers (per Serializer README).
-# Each pass returns HTTP 200 with 0 failed predicates on success.
-# On failure: HTTP 4xx with CumulativeStrictModeException details (read the body — it's the diagnostic).
-```
+**On a host whose `Area` table is still empty, the dry run of the replace pass answers 400 and that 400 is expected.** The escalated warnings read `Warning: Area with ID <n> not found. Skipping entry 'content/area-<n>...'`, and the content entries report `C0 U0 S0 F0`, because a dry run never writes and the content provider resolves the area by id before applying `area.yml`. Read the escalated list: when it contains only that warning, proceed to the live run with the same body and `IsDryRun: false` — it creates the area and returns 200. The pattern and its assert are in [`../../dw-demo-base/references/serializer-reference.md`](../../dw-demo-base/references/serializer-reference.md) "Strict-mode false positives".
 
-(A content-only legacy `Swift2.2` baseline ships no `merge/` tree, so the second POST is a no-op there. Neither `base` nor `surface-swift` ships a sample catalog, so the merge pass lands no products — the catalog comes from `sample-data` or is authored per-demo, never deserialized from base/surface.)
+Each pass returns HTTP 200 with `0 failed` on success; on failure it returns 4xx whose body carries the `CumulativeStrictModeException` detail. (A content-only legacy `Swift2.2` baseline ships no `merge/` tree, so the merge pass is a no-op there. Neither `base` nor `surface-swift` ships a sample catalog, so the merge pass lands no products — the catalog comes from `sample-data` or is authored per-demo, never deserialized from base/surface.)
 
 **Keep strict mode on; never disable it** by passing a `strictMode` query parameter or body field set to a falsy value. Strict mode is the first line of defence (FK orphans, missing templates, cache failures, schema drift). Disabling it produces a deserialized DB that *looks* succeeded but is silently inconsistent — the deserialize-blind failure mode in its purest form.
 
@@ -244,12 +274,16 @@ If a host restart turns out to be necessary in practice (for a category not cove
 
 ### Mandatory consumer obligation — bind the area's commerce columns (DW 10.28+)
 
-After the deserialize (and before declaring the storefront correct), **bind `AreaEcomShopId`, `AreaEcomCurrencyId`, and `AreaEcomLanguageId` explicitly on every content area, then restart the host**. This was always documented as a consumer obligation; on **DW 10.28+ it is mandatory in practice**: the platform resolves an **unbound** area's currency from the area **CULTURE**, not from `CurrencyIsDefault` — an `en-US`-culture area silently prices in **USD** (currency-conversion surprises in cart/checkout on a EUR demo), even though EUR is the default currency. Bind the area currency explicitly; never rely on the fallback:
+After the deserialize (and before declaring the storefront correct), **bind `AreaEcomCurrencyId` and `AreaEcomLanguageId` explicitly on every content area, then restart the host**. This was always documented as a consumer obligation; on **DW 10.28+ it is mandatory in practice**: the platform resolves an **unbound** area's currency from the area **CULTURE**, not from `CurrencyIsDefault` — an `en-US`-culture area silently prices in **USD** (currency-conversion surprises in cart/checkout on a EUR demo), even though EUR is the default currency. Bind the area currency explicitly; never rely on the fallback:
 
 ```sql
-UPDATE Area SET AreaEcomShopId = 'SHOP1', AreaEcomCurrencyId = 'EUR', AreaEcomLanguageId = 'LANG1'
+UPDATE Area SET AreaEcomCurrencyId = 'EUR', AreaEcomLanguageId = 'LANG1'
 WHERE AreaId = <area>;  -- then restart the host (Area rows materialise at startup)
 ```
+
+**`AreaEcomShopId` is the third column, and it has a precondition the other two do not: bind it only after every browsable group carries a shop relation.** A bound shop makes the platform enforce group-in-shop on every product page, and a subgroup with no `EcomShopGroupRelation` row of its own answers HTTP 200 with a `dw-error` block where the catalogue app should be (`NullReferenceException` in `IsGroupInCorrectShop`, from `RenderProduct`); the PDP addressed through a top group renders, the same product through its subgroup does not, and every PDP probe on that path goes red at once. An unbound area skips the check entirely, which is why the shape ships unnoticed, and price resolution does not need the shop binding (a price row with an empty `PriceShopId` matches any shop). So: relate every browsable group, subgroups included, to the shop first (MCP `save_groups` with `shopId` on the subgroups too, per [`canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md) step 8; count the shop relation rows against the browsable group count before binding), then bind the shop; or leave the shop unbound and say so in the ledger. Verify by fetching one PDP through a subgroup and asserting zero `dw-error` blocks.
+
+**Local installs only**: on a hosted install, bind them with MCP `save_areas` and confirm each value echoes in `get_area_by_id`, or round-trip the full `GetAreaById` model through `AreaSave`, then restart through the CloudHosting `recycle.txt` control file.
 
 **Bind these columns by SQL, not by `AreaSave`.** `AreaSave` treats the posted `Model` as authoritative
 and full-replace, so a **partial** model wipes what it omits. A save that omitted `websiteItem`
@@ -257,7 +291,7 @@ returned HTTP 200 / `ok` and blanked
 `Swift-v2_Master.{HeaderDesktop, HeaderMobile, FooterDesktop, FooterMobile, AnonymousUsers}` that the
 deserializer had just installed: the storefront then rendered with **no `<header>` and no `<footer>`
 while still returning 200**, and nothing in the response signalled the loss. If a partial save has
-already happened, the repair is a re-run of `SerializerDeserialize` Replace, which is idempotent
+already happened, the repair is a re-run of `Deserialize` Replace, which is idempotent
 (0 created / 281 updated / 746 skipped / 0 failed on the measured host). Two rules follow:
 
 - Either bind the area's ecommerce columns with SQL, or round-trip the **FULL** `GetAreaById` model
@@ -284,6 +318,8 @@ UPDATE EcomCurrencies SET CurrencyIsDefault = 1     WHERE CurrencyCode = 'USD';
 UPDATE Area SET AreaEcomCurrencyId = 'USD' WHERE AreaId = <area>;
 ```
 
+**Local installs only**: on a hosted install, set the rate and the default with MCP `save_currencies` (Management API `CurrencySave`) and the area currency with `save_areas`.
+
 Assert the rendered price **equals** `ProductPrice`, not merely that a currency symbol is present: a
 1:100 scale error still renders a well-formatted, plausible number. Use a known-value control row (a
 100.00 product must render as 100.00) plus `itemprop="price" content="..."` on a hero PDP, and assert
@@ -298,13 +334,45 @@ A clean deserialize can still leave the **site root (`/`) returning 404** even t
 
 **There is no `AreaDns` table on 10.27.x** — do not look for one; the older DNS-binding table is gone and the binding lives on the `Area` row itself. **`AreaSave` cannot set `AreaDomain`.** It accepts both `domain` and `hostNames` and maps neither onto the column, so the write is a silent no-op that answers 200, and a full model carrying `hostNames` additionally returns HTTP **500**. A green `AreaSave` response is not evidence the domain is set: read `SELECT AreaDomain FROM Area WHERE AreaId = <id>` back. Set both columns by SQL (`UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>`), then **restart the host** — `Area` rows are materialised at startup, so the new root binding is not live until the bounce (see [`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md), the `Area`-row row). These binding columns are per-environment and excluded from serialization, so they arrive unset on a fresh host — set them at provisioning, don't expect them from the baseline.
 
+**Local installs only**: a hosted install has no write path for `AreaDomain`, so an online build asks the user and verifies with a GET of `/`. `save_areas` has no frontpage member; the frontpage resolves from page sort order ([`dw-swift-building`](../../dw-swift-building/SKILL.md) "Update the Area").
+
+### `AreaSave` writes `AreaDomainLock` WRONG — repair it in the same step
+
+**`Area.AreaDomainLock` is an `nvarchar` column holding a HOST NAME, and the area save model exposes
+`domainLock` as a BOOLEAN.** `AreaSave` stringifies `false` into the four-character string `"False"`,
+and the URL builder treats a non-empty `AreaDomainLock` as the authoritative host — so **every
+absolute URL the platform generates for that area points at a host of literally `false`**
+(`/Default.aspx?ID=<n>` answers 301 to `https://false:443/<path>`), while the area itself and all its
+pages are correct. The save answers 200 and its response never mentions the column.
+
+It is easy to hit precisely because of the rule that protects you elsewhere: the working reference
+area's own column is empty, but its **model** carries `domainLock: false`, not null — so
+"round-trip the FULL model, never a hand-built partial" (the rule that keeps `AreaSave` from wiping
+the master item bindings) is exactly what carries the defect onto every copied area.
+
+**State it as one rule: the columns `AreaSave` does not write correctly are set by SQL immediately
+after the save, in the same step — and a green `AreaSave` response is not evidence that any of them
+landed.** The list so far is `AreaDomain` (silently NOT written) and `AreaDomainLock` (silently
+written WRONG):
+
+```sql
+UPDATE Area SET AreaDomainLock = N'' WHERE AreaId = <newAreaId>;
+```
+
+Local installs only (a hosted install has no write path that sets this column correctly, so an online build asks the user); pair it with the same host restart the other `Area` columns owe. Gate it by
+asserting that no served body or `Location` header anywhere in the new area contains `false:443`.
+Setting the column to the real host also works and buys nothing — it locks the area to that host for
+no benefit, and the working reference area carries an empty one.
+
 ## 8. Mandatory next step
 
 After this flow returns 2xx, **immediately run [`integrity-sweep.md`](integrity-sweep.md)**. The skill refuses to declare deserialize complete until the sweep passes.
 
-**Also bind the area's commerce columns** (§7 "Mandatory consumer obligation") — `AreaEcomShopId` / `AreaEcomCurrencyId` / `AreaEcomLanguageId` explicitly per area + host restart; on DW 10.28+ an unbound area derives its currency from the area culture (en-US → USD), not `CurrencyIsDefault`.
+**Also bind the area's commerce columns** (§7 "Mandatory consumer obligation") — `AreaEcomCurrencyId` / `AreaEcomLanguageId` explicitly per area + host restart; on DW 10.28+ an unbound area derives its currency from the area culture (en-US → USD), not `CurrencyIsDefault`. `AreaEcomShopId` only after every browsable group is related to the shop (§7), or subgroup product pages render a `dw-error`.
 
 **Also bind the site root** (§7 "Site root `/` 404s after deserialize") as an explicit post-deserialize step: `AreaDomain` / `AreaFrontpage` are per-environment and excluded from serialization, so `/` 404s until you set them — `UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>` (SQL is the working path: `AreaSave` accepts `domain` / `hostNames` and no-ops on `AreaDomain`), **then restart the host** (Area rows materialise at startup). The integrity sweep's done-condition includes `/` returning 200.
+
+**Local installs only**: a hosted install has no write path for `AreaDomain`, so an online build asks the user (see section 7).
 
 The sweep is the second line of defence for the failures strict mode does not catch:
 
@@ -329,6 +397,8 @@ For a content-only baseline against a PIM-set-up host (SHOP1 + DE + EUR + LANG1 
 - `SELECT COUNT(*) FROM Areas` → +1 (the new "Swift 2" area)
 - `SELECT COUNT(*) FROM Page` → ~+50
 - Existing PIM data (products, manufacturers, catalog groups, data models, custom field values, EcomDetails image/asset rows) → **untouched**
+
+**Local installs only**: on a hosted install, count with MCP `get_areas` and `get_pages_by_area_id`.
 
 Note (Swift 2.4 split): unlike the content-only `Swift2.2` baseline described in this §9.2, the framework-only `base` layer legitimately touches framework rows (`EcomShops`, `EcomCurrencies`, `EcomCountries`, …) via its `replace/_sql/` pass — that is expected, not a reversion. Neither base nor surface ships catalog rows (zero EcomProducts/Groups/Prices), so the deserialize leaves the catalog empty by design; the catalog comes from `sample-data` or is authored per-demo via `dw-demo-pim`. Capture the base+surface replace counts from a host run and record them here once verified.
 

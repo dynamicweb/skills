@@ -10,7 +10,7 @@
 - [Where to find a paragraph's wiring (read-only baseline inspection)](#where-to-find-a-paragraphs-wiring-read-only-baseline-inspection)
 - ["Don't customise this paragraph" callouts](#dont-customise-this-paragraph-callouts)
 
-> Swift 2.2 paragraph guardrails for demos. Source-of-truth: paragraphs are exposed in admin UI under each page; backing definitions live in `wwwroot/Files/Templates/Paragraph/` (built-in — read-only) and the page-preset YAML at `<demo-root>\distribution\layers\base\replace\_content\Swift 2\<area>\<page>\<grid-row>\paragraph-*.yml`.
+> Swift 2.2 paragraph guardrails for demos. Source-of-truth: paragraphs are exposed in admin UI under each page; backing definitions live in `wwwroot/Files/Templates/Paragraph/` (built-in — read-only) and the page-preset YAML at `<demo-root>\distribution\layers\surface-swift\replace\_content\Swift 2\<area>\<page>\<grid-row>\paragraph-*.yml`.
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
@@ -79,9 +79,14 @@ three stacked traps:
   discarding everything after the page id. `{LinkType:"page", SelectedValue:"8604",
   Link:"Default.aspx?ID=8604&ShowProfiles=True"}` stores and reads back exactly as written and renders
   `<a href="/en-us/sign-in/sign-in">`, so the tile opens a plain sign-in page instead of the profile
-  picker. `LinkType: "external"` (and `url`) pass `Link` through verbatim. Any content button that must
-  carry a querystring uses `LinkType: "external"` with the fully resolved friendly URL and
-  `SelectedValue: ""`, resolved **per language** by the `GET /Default.aspx?ID=<n>` redirect
+  picker. The same shape takes every "Browse <group>" button: `{LinkType:"page",
+  Link:"Default.aspx?ID=<shop page>&GroupID=<group>"}` renders `href="/<culture>/shop"` and opens the
+  whole shop unfiltered, on the hero and on every catalogue pitch button alike, and a shipped demo layer
+  can carry exactly that shape, so read the served `href` of every group button and assert it carries
+  `GroupID=`. `LinkType: "external"` (and `url`) pass `Link` through verbatim. Any content button that must
+  carry a querystring uses `LinkType: "url"` (or `"external"`) with the fully resolved culture-segment
+  address (`/<culture>/shop?GroupID=<group>`) and `SelectedValue: ""`, resolved **per language** by the
+  `GET /Default.aspx?ID=<n>` redirect
   ([admin-ui-authoring.md](admin-ui-authoring.md) §"Resolving a page URL"), never by deriving a slug from
   the page name. The stored `ButtonData` JSON escapes the ampersand as the six-character sequence
   backslash-u-0-0-2-6, so a read-back regex must unescape before comparing.
@@ -130,6 +135,8 @@ Ratio, FocalX, FocalY}`, `Id` carrying the path — see
 [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §"Product images".
 Do not carry that shape back to a paragraph item field on the strength of the shared type name.)
 
+**The same editor-type split holds for `AreaSave` on the area's `Swift-v2_Master` item**, where a cached area adds a second trap after the MCP write: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) §"Area master item fields".
+
 **Every item-field editor has its OWN write shape, and the four in play are mutually incompatible.**
 The editors share one projected `field.value` slot, so a payload built for the wrong one is accepted by
 the binder and fails downstream — at render, or not at all. Name-matching ("it's a media field, use the
@@ -145,6 +152,30 @@ image shape") is what produces each row's failure column. Read the editor's `typ
 
 `Path` and `Id` are the same one-word difference as the asset verbs — the two media shapes are not
 interchangeable in either direction, so probe on a disposable paragraph, never on live content.
+
+**A `ButtonData` field's bad shape is PRODUCED for you, by the item type's own XML default.** The
+shipped `Swift-v2_Slider_Item` declares its `Button` field (`ButtonEditor` / `ButtonData`) with
+`defaultValue="Learn More"` — a bare label string, exactly the shape the table above says throws. The
+admin UI's `ButtonEditor` never writes that raw string, but **any headless create that applies XML
+defaults does**: MCP `add_repeatable_item`, an Admin API create, and the admin's own assistant actions
+all land the literal in the column. At render, `ButtonEditor.GetViewModelValue` deserializes the column
+as JSON, throws `ConverterException: … 'L' is an invalid start of a value`, and the exception aborts the
+**whole paragraph template** — one defaulted slide replaces the entire slider with a `dw-error` block,
+not just its own card.
+
+So: **give every freshly created `ButtonEditor`-backed child an object-shaped `Button` before the page is
+viewed**, in the same `ParagraphSave` that creates it (nested object inside `ModelRawData`, per the
+family rule above). Repair is the same write. A cheap pre-gate audit over the whole database, for every
+`Button`-named column on an `ItemType_*` table:
+
+```sql
+-- any non-empty value that is not JSON is a render bomb
+SELECT Id, Button FROM [ItemType_Swift-v2_Slider_Item] WHERE Button <> '' AND Button NOT LIKE '{%';
+```
+
+Prefer the `ParagraphSave` repair to a direct `UPDATE` of the column: the item table is cache-coupled, so
+the SQL write needs a recycle, which is disruptive on a host someone is editing in the admin UI.
+**Local installs only**: on a hosted install, fetch each page with MCP `fetch_frontend_page_html` and assert zero `dw-error` blocks.
 
 **The family rule, stated once: for EVERY complex editor field the read shape is a quoted JSON STRING and the
 write shape is a real nested OBJECT.** `SelectedImage`, `SelectedMedia` and `ButtonData` are three instances
@@ -204,6 +235,7 @@ The usual trigger is translation: translated copy is routinely longer than its E
 translated string against its target column width (`INFORMATION_SCHEMA.COLUMNS`) before posting a translation
 batch**, and remember alt attributes are plain text — HTML entities only spend bytes against the limit
 without rendering as anything.
+**Local installs only**: a hosted install has no read path for column widths, so an online build asks the user.
 
 **Module page-picker settings round-trip ASYMMETRICALLY: read-as-link, write-as-int, so posting back the
 value you were just given CLEARS it.** `GetParagraphById` renders a page-picker
@@ -225,6 +257,21 @@ values straight back into the discard path and wipes settings nobody was editing
 page-picker property to a bare integer before posting, snapshot the module settings before any
 `ParagraphSave` on a MODULE paragraph, and diff them after. The standard "re-read the entity" check does not
 cover it, because the re-read agrees with the model you posted.
+
+**A module paragraph caches its settings at application start, so a SQL edit of
+`ParagraphModuleSettings` is invisible until the pool restarts.** This is the third distinct way this one
+column bites, and its symptom is the most misleading: the write commits, the page answers 200 with no
+error and nothing in the log, and the module keeps serving the settings it read at startup — which reads
+exactly like "my template file is in the wrong folder". Measured on the customer-experience-centre module
+after repointing its order list and detail templates; the net-new templates rendered on the first request
+after a recycle. **Sequence the restart explicitly in any rebuild runbook, and gate the change only
+after it**, or the gate certifies the stock behaviour. (`ParagraphModuleSettings` is `nvarchar`, not
+`xml` — read it with `CAST(… AS nvarchar(max))`, edit it as a string and write the string back.)
+**Local installs only**: on a hosted install, edit module settings with MCP `set_module_settings` (read back with `get_module_settings`) and restart through the CloudHosting `recycle.txt` control file.
+
+Two shapes worth recording for that module, because both are easy to get wrong: the templates live under
+`Files/Templates/Designs/<design>/eCom/CustomerExperienceCenter/Orders/List/` and `…/Orders/Detail/`, and
+the settings hold a **bare filename**, never a path.
 
 **Re-pointing a paragraph at a DIFFERENT app: graft the target app's `contentModule` from a reference
 paragraph. There is no `ChangeApp` verb.** `Dynamicweb.Content.UI` exposes only
@@ -283,6 +330,7 @@ when a later phase needs the band back. Regression probe worth keeping: POST `Pa
 `{"setActive":false,"ids":["<id>"]}`, assert `{"status":"ok"}` AND assert
 `SELECT ParagraphShowParagraph FROM Paragraph WHERE ParagraphId = <id>` is still 1, so the day the
 command starts working the harness notices.
+**Local installs only**: on a hosted install, deactivate the row with MCP `save_grid_rows` `active: false` (Management API `GridRowSave` `Active`), and read `showParagraph` back with `GetParagraphById`.
 
 **`save_paragraphs` DOES write `itemType`, and the write re-mints the item instance.** Swapping the
 attached content model through `save_paragraphs [{id, pageId, itemType:'<Other>'}]` returns ok, and the
@@ -353,6 +401,7 @@ LOSES: Swift renders one paragraph per grid column and the lowest `sort` wins, s
 renders and yours does not. Measured on seven pages built from one donor row: 14 paragraphs on the page,
 the 7 donor copies rendering the Swift baseline copy and the 7 real captions invisible, with every save
 reporting success. Never assume a copied row is empty.
+**Local installs only**: on a hosted install, read the row occupancy with MCP `get_paragraphs_by_page_id`, filtered to the new row and `id > 0`.
 
 **`ParagraphDelete` is a SOFT delete AND it cascades to master-linked language copies, and
 `GetParagraphsByPageId` hides both facts while SQL does not.** The verb sets
@@ -429,13 +478,14 @@ against SQL (`SELECT COUNT(*) FROM Paragraph WHERE ParagraphPageId=<id> AND Para
 claiming coverage, and note that the fallback path — SQL plus a content-cache flush — is available here,
 because content caches, unlike the user cache, are reachable. (Empty grid columns also come back as synthetic
 `id=0` placeholders; filter to `id > 0` before counting anything.)
+**Local installs only**: on a hosted install, cross-check the listing with MCP `search_paragraphs` and the rendered page from `fetch_frontend_page_html`.
 
 ## Creating a paragraph — the two-step, the 1-based column, and the writable template twin
 
-`ParagraphNew` + `ParagraphSave` does not produce a finished paragraph in one pass. Three independent
-defects in the create path each end in the same place — a paragraph that saves, reads back correctly, and
-**renders nothing** — so a create helper that checks only `status` and a re-read reports success on all
-three.
+`ParagraphNew` + `ParagraphSave` does not produce a finished paragraph in one pass. Several independent
+defects in the create path end in the same place — a paragraph that saves, reads back correctly, and
+**renders nothing** — so a create helper that checks only `status` and a re-read reports success on every
+one of them.
 
 **1. `gridRowColumn` is 1-based, and `ParagraphNew` returns `0`.** The Swift grid renderer indexes columns
 from 1, so a paragraph left at the created default sits in a column the renderer never walks. It is not
@@ -459,11 +509,45 @@ the working sequence is: `ItemFieldSave` to toggle `required` off → create the
 a **second** `ParagraphSave` → `ItemFieldSave` to restore `required`. Assert the value after the second
 save, never after the create.
 
-**3. `template` is read-only; `layout` is the writable twin, and DW mirrors it into `template`.** A
-`ParagraphSave` carrying `template=<file>.cshtml` is rejected or ignored — the API exposes `template` as a
-read surface only. Write the `layout` property instead, then read `template` back to confirm the mirror
-landed. The same pair appears on the page save model. (This is why the repeater payload above sets
-`Layout`, not the `template` a reader would expect.)
+**3. `template` is read-only; `layout` is the writable twin, and `SQL` is the fallback when the mirror
+does not land.** A `ParagraphSave` carrying `template=<file>.cshtml` is rejected or ignored — the API
+exposes `template` as a read surface only, and the save still answers `ok` while the read-back is empty
+and the stock template keeps rendering. Write the `layout` property instead, then **read `template` back
+to confirm the mirror landed**; the same pair appears on the page save model. (This is why the repeater
+payload above sets `Layout`, not the `template` a reader would expect.)
+
+Where the mirror does not land on the build in front of you, `Paragraph.ParagraphTemplate` is writable
+only as a DB column:
+
+```sql
+UPDATE Paragraph SET ParagraphTemplate = '<File>.cshtml' WHERE ParagraphId = <id>;
+```
+
+State the three things that recipe owes: the higher rungs were tried (`layout` through `ParagraphSave`,
+read back empty), it is **local installs only** (a hosted install has no write path once the `layout` mirror fails, so an online build asks the user), and it needs a **host restart** before the alternate
+template renders. And then the consequence that outlives the write: **a SQL-written `ParagraphTemplate`
+puts that paragraph on the never-whole-model-save list.** A later full-model round trip re-sends an
+empty `template`, the cache drops the alternate template, and the page silently reverts. Keep the
+affected ids in the build's save helper and have it refuse them, so the protection survives the person
+who wrote it.
+
+**Anything selected by an alternate template inherits that rule**, which is why it matters beyond one
+paragraph: the alternate-template pattern is how a shipped item type is made to render something else
+without touching its standard file (see `dashboard-seeding.md` for the aggregate-dashboard case), and
+every paragraph repointed that way joins the same protected set. Pair it with the donor-inheritance rule
+— **an explicit `ParagraphTemplate` always beats the item type's own default template**, so a copied
+paragraph repointed to a new item type must have its template blanked or re-set
+([`../../dw-swift-building/references/grid-rows-and-binding.md`](../../dw-swift-building/references/grid-rows-and-binding.md)).
+
+**4. A cloned model posted with `id: 0` is not a create path.** `ParagraphNew` + `ParagraphSave` is;
+GETting a donor model, zeroing `id` / `modelIdentifier` / `itemId` and posting it answers RFC9110 500
+"Exception has been thrown by the target of an invocation" and creates nothing. Where the create verb
+itself is unavailable on the build, the fallback is a `SQL` clone — an `INSERT … SELECT` of the donor's
+row driven off `INFORMATION_SCHEMA` with an explicit column list minus the identity `ParagraphId`, plus
+a cloned item-table row, overriding page, grid row, column, sort, item id, template and unique id. Two
+guards are load-bearing: the override map must **throw on a column it cannot find** (a silently dropped
+`PageId` override clones the paragraph onto the donor's own page), and the insert owes a host restart
+before the paragraph renders. Local installs only; on a hosted install, clone with MCP `copy_paragraph`, which returns the real id.
 
 **A field you never set is not a field that renders nothing — `Swift-v2_Text` ships a lorem default on
 `Subtitle`.** The item type declares a placeholder default value, so a paragraph created and populated
@@ -527,7 +611,7 @@ registry result proves a VERB absent, never a CAPABILITY absent
 
 To trace what a specific paragraph does on a Swift 2.2 page: note the page in admin (e.g.
 `Customer center/CSR/Orders`); the corresponding YAML lives at
-`<demo-root>\distribution\layers\base\replace\_content\Swift 2\Customer center\CSR\Orders\grid-row-1\paragraph-c1-1.yml`;
+`<demo-root>\distribution\layers\surface-swift\replace\_content\Swift 2\Customer center\CSR\Orders\grid-row-1\paragraph-c1-1.yml`;
 the YAML's `Type` field names the paragraph definition and the rest carries its configured properties.
 This is read-only inspection — you don't edit the downloaded baseline YAML; you edit paragraph properties via the
 Admin UI Visual Editor on the live host (which writes to the host's project DB, not back to the baseline copy).

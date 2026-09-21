@@ -2,39 +2,56 @@
 
 ## Contents
 
-- [1. Installing the Backend MCP AddIn](#1-installing-the-backend-mcp-addin--nuget-packagereference-default-appstore-last-resort)
+- [1. Installing the Backend MCP AddIn](#1-installing-the-backend-mcp-addin--appstore-first-csproj-only-as-a-user-approved-escape-hatch)
 - [2. Auth model — prefer API Key over Claude.ai OAuth](#2-auth-model--prefer-api-key-over-claudeai-oauth)
 - [3. The two AccessUserToken rows](#3-the-two-accessusertoken-rows)
 - [4. Headless provisioning — create the token + MCP config in code](#4-headless-provisioning--create-the-token--mcp-config-in-code)
 - [5. What MCP create/update tools do to the data model](#5-what-mcp-createupdate-tools-do-to-the-data-model)
 
-This is the platform-level knowledge for the Dynamicweb Backend MCP server (`Dynamicweb.MCP`,
-exposed at `/admin/mcp`): how to install it, how its auth works, how to provision tokens and configs in
-code, and what its create/update tools actually do to the data model.
+This is the platform-level knowledge for the Backend MCP server — the AppStore app **Truvio Commerce
+MCP** (package `Truvio.Commerce.MCP`, formerly `Dynamicweb.MCP`), exposed at `/admin/mcp`: how to
+install it, how its auth works, how to provision tokens and configs in code, and what its create/update
+tools actually do to the data model.
 
-## 1. Installing the Backend MCP AddIn — NuGet PackageReference (default), AppStore (last resort)
+## 1. Installing the Backend MCP AddIn — AppStore first, csproj only as a user-approved escape hatch
 
-**Default: install the AddIn from NuGet** by adding the package to the host csproj:
+**The app was renamed.** The Backend MCP now ships as **Truvio Commerce MCP**, package id
+**`Truvio.Commerce.MCP`**. The old **`Dynamicweb.MCP`** id is frozen at its last pre-rename version. It
+still resolves on nuget.org, and that is exactly what makes it dangerous: an agent that writes the id it
+*remembers* gets a green restore, a green build, and a stale AddIn — with no error anywhere to react to.
+The endpoint is unchanged (`/admin/mcp`), so the stale install looks right until a tool is missing.
+
+**Rule: an app that is available in the AppStore is installed from the AppStore.** That covers the
+Backend MCP, the PIM for Business Central connector and `StaticLinkManager`. A hand-written
+`<PackageReference>` for such an app is a defect, not a shortcut — package id and version must come from
+the AppStore listing or a live resolve, never from recall. If you find
+`<PackageReference Include="Dynamicweb.MCP" ... />` in a host csproj, remove it and install from the
+AppStore instead.
+
+**The route:** admin → **Settings → AppStore → Available apps** → *Truvio Commerce MCP* → install, then
+restart the host; `/admin/mcp` flips from 404 to live. Under browser automation expect retries — the
+"Available apps" grid is a virtualized component. The host's net10 TFM requirement applies regardless of
+how the package arrives (see [`dw-setup-install`](../../dw-setup-install/SKILL.md), reference
+`install-anatomy.md` §2); a net8 host makes the install a silent no-op.
+
+**Escape hatch — csproj `PackageReference`, and only on an explicit user choice.** When the AppStore
+route genuinely cannot be completed (a locked, already-deployed host; the app not listed; the grid
+unreachable after retries), do **not** quietly pin a package. Stop and tell the user, in these terms:
+
+- which AppStore route failed, and how;
+- that **the AppStore version could not be resolved**, so the pin cannot be guaranteed to match what the
+  AppStore would have installed;
+- the exact id and version you propose, and where that version came from — a live resolve
+  (`dotnet package search Truvio.Commerce.MCP --prerelease`) or the user, never memory.
+
+Only on an explicit "yes" write the reference, resolved id and version, never a remembered one:
 
 ```xml
-<PackageReference Include="Dynamicweb.MCP" Version="<version>" />
+<PackageReference Include="Truvio.Commerce.MCP" Version="<resolved version>" />
 ```
 
-Rebuild and restart. The AddIn registers **at host startup**, so `/admin/mcp` flips from 404 to live
-with no AppStore click. The host's net10 TFM requirement still applies — the loader's runtime check runs
-regardless of how the package arrived (see the install anatomy in
-[`dw-setup-install`](../../dw-setup-install/SKILL.md), reference `install-anatomy.md` §2).
-
-This is the canonical route for an agent-driven build: deterministic, scriptable, and idempotent (just a
-csproj edit), and it sidesteps a flaky UI path — the AppStore "Available apps" grid is a virtualized
-component that browser automation struggles to drive reliably.
-
-Pin the version deliberately — `Dynamicweb.MCP` is a beta-track package, and the version must be
-compatible with the Suite version the host resolves.
-
-**Last resort: the admin AppStore.** Only when you genuinely cannot edit the host csproj (e.g. a locked,
-already-deployed host). Drive it via browser automation, expecting retries on the virtualized grid, and
-ask the user to click it only when automation can't land it after a few attempts.
+Rebuild and restart; the AddIn registers at host startup. Pin deliberately — this is a beta-track
+package and the version must be compatible with the Suite version the host resolves.
 
 ## 2. Auth model — prefer API Key over Claude.ai OAuth
 
@@ -93,8 +110,12 @@ the third is the non-obvious one:
    by reflection, resolving the instance from the live DI container:
 
    ```csharp
-   var asm = Assembly.Load("Dynamicweb.MCP");
-   var t   = asm.GetType("Dynamicweb.MCP.Configuration.Services.McpConfigurationService");
+   // The MCP assembly name follows the installed package -- `Truvio.Commerce.MCP` since the
+   // rebrand, `Dynamicweb.MCP` on a host installed before it. Resolve it, never hardcode it.
+   var asm = AppDomain.CurrentDomain.GetAssemblies()
+       .First(a => a.GetName().Name is "Truvio.Commerce.MCP" or "Dynamicweb.MCP");
+   var t   = asm.GetTypes()
+       .First(x => x.FullName!.EndsWith(".Configuration.Services.McpConfigurationService"));
    var svc = app.Services.GetService(t) ?? Activator.CreateInstance(t, true);
    t.GetMethod("LinkToken").Invoke(svc, new object[] { configId, tokenId, user });
    ```
@@ -105,10 +126,11 @@ password and the token — direct SQL writes don't take until restart; for MCP c
 *insufficient even after restart*, hence the `LinkToken` call.)
 
 > **Brittleness warning.** `McpConfigurationService` is an internal type invoked by reflection — its
-> namespace, method name, and signature can change between DW10 releases without notice, and the
-> `Dynamicweb.MCP` version pin matters. Prefer the admin-UI route whenever the UI is reachable; use this
-> code path only for genuinely headless installs, and re-verify the type/method names against the
-> `Dynamicweb.MCP` version in use.
+> namespace, method name, and signature can change between DW10 releases without notice, and so can the
+> assembly name itself (the rebrand moved it from `Dynamicweb.MCP` to `Truvio.Commerce.MCP`), which is
+> why the snippet resolves the assembly instead of naming it. Prefer the admin-UI route whenever the UI
+> is reachable; use this code path only for genuinely headless installs, and re-verify the type/method
+> names against the MCP version actually installed.
 
 ## 5. What MCP create/update tools do to the data model
 
@@ -116,10 +138,25 @@ MCP create-paths (`save_pages`, `save_groups`, product/order/user creates, etc.)
 services** — the same services an admin-UI click invokes. A single MCP create therefore triggers ALL the
 bookkeeping a UI click would: ItemRelation cloning, ItemList propagation, sibling-page linking, cache
 invalidation, index refresh, child-row creation, validation. This is *why* MCP is the default create
-surface and why raw SQL `INSERT` is the last resort — SQL bypasses every service, misses the bookkeeping,
+surface and why raw SQL `INSERT` is the last resort (local installs only) — SQL bypasses every service, misses the bookkeeping,
 and creates orphans / stale caches. (The admin UI is a SPA client of `/admin/api/...` — every click is an
 Admin API call underneath — so the Management API reaches the same services as a second transport, and
 "this only exists in the UI" means the endpoint hasn't been found yet, not that one is missing.)
+
+### The one cause behind "MCP and the Admin API disagree": the tool's model is a subset
+
+An MCP tool and the Management API verb behind it are generated over the **same** domain service, but
+the tool carries its own **model**, and that model is a *subset* of what the service accepts and
+returns. Neither the tool description nor its schema says which columns fall outside it. Everything
+below — the silent no-ops, the write-only fields with no read-back, the entities with no verb at all,
+the deletes that leave relation rows behind — is that one fact in different clothes.
+
+So, as a standing rule: **a column you cannot see in the tool's model is not a column the tool
+handles.** Round-trip through the Management API verb, the rendered page, or the stored row before
+concluding a value landed, and reach for the raw verb (or `SQL`, local-install only, with its owed
+flush) only after naming which rung was tried. The catalogue of measured gaps — read-only families,
+write-only families, entities with no translation verb, and referentially incomplete deletes — is in
+[`tool-surface-gaps.md`](tool-surface-gaps.md).
 
 ### Silent no-ops — a success status does not guarantee the field was applied
 
@@ -129,17 +166,17 @@ and silently drops part of the input:
 
 | Tool (surface) | What gets silently dropped | Verified | Working fallback |
 |---|---|---|---|
-| MCP `save_pages` (update path) | `menuText` — the response even echoes the OLD value | DW 10.25.x | SQL `UPDATE Page SET PageMenuText` + host restart (the nav tree caches menu text) |
-| MCP `save_pages` (create + update) | `urlName` — the slug you pass is **ignored**; DW derives the slug from `menuText` instead | DW 10.27.x | Set the intended `menuText` (the slug follows it), or SQL `UPDATE Page SET PageUrlName` + host restart. Don't expect `urlName` to pin the slug independently. |
-| Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort. `ParagraphSave` IS still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
-| MCP `delete_area`, `delete_users`, `delete_paragraphs` | The **entire delete** — `succeeded:1` returned, row still in the DB afterwards | DW 10.27.x + 10.28.1-Pre | SQL `DELETE` (children first: paragraphs → grid rows → pages → area), then restart for the page-tree cache. Always round-trip a delete with a `SELECT COUNT(*)` |
+| MCP `save_pages` (update path) | `menuText` — the response even echoes the OLD value | DW 10.25.x | SQL `UPDATE Page SET PageMenuText` + host restart (the nav tree caches menu text). **Local installs only**: on a hosted install, `PageSave` with a complete model that sets `name` and the item `Title` |
+| MCP `save_pages` (create + update) | `navigationTag` — the tag you pass is **ignored**; `PageNavigationTag` stays empty | DW 10.27.x-10.28.x | Management API `PageSave` reaches the column. (`urlName` is not in this class on 10.28.x: it persists and wins over the `menuText`-derived slug — what no page getter does is *project* it, so confirm the slug by fetching the URL.) |
+| Management API `ParagraphSave` | `contentItem.groups[].fields[].value` mutations — the `ItemType_*` column never updates | DW 10.25.x | MCP `set_item_field_values` first; SQL UPDATE last resort (local install only). `ParagraphSave` IS still correct for paragraph-level scalars (Header, Sort, GridRow, Template) |
+| MCP `delete_area`, `delete_users`, `delete_paragraphs` | The **entire delete** — `succeeded:1` returned, row still in the DB afterwards | DW 10.27.x + 10.28.1-Pre | SQL `DELETE` (children first: paragraphs → grid rows → pages → area), then restart for the page-tree cache. Always round-trip a delete with a `SELECT COUNT(*)`. **Local installs only**: on a hosted install, `ParagraphDelete` and `UserDelete` (`Ids` as strings) delete; an area row has no documented delete path, so an online build asks the user |
 | MCP `build_product_index` (+ `wait_for_product_index`) | The **target**. It builds its own default repository/index pair (`Products`/`Products` — its own success message says so) while the solution's queries commonly read a *different* instance (`ProductsBackend\|Products.index`). The index the queries read is never touched, so freshly written values stay invisible across repeated rebuilds and a recycle, and the earlier reading of this row ("no Lucene segments are written") was the same incident diagnosed from the wrong end | DW 10.26.x–10.28.x | Read `sourceIndex` off the queries, then `POST /Admin/Api/BuildIndex {Repository, IndexName, BuildName}` for **that** index, resolving `BuildName` from `IndexBuildersByRepositoryAndIndexName`. Verify with a query whose predicate depends on the freshly written field — its count must move off "matches everything" — not with the tool's status or a marker file |
-| MCP `update_users` | A `password` property — the schema has no password field, and an extra `password` property is accepted (`succeeded:1`, `updatedOn` bumped) and dropped | DW 10.28.1-Pre | There is no MCP/API password surface at all — use the plaintext escape hatch documented in [`dw-users-permissions`](../../dw-users-permissions/SKILL.md), reference `permission-layers.md` §13 |
-| MCP `patch_products_safe` against a **variant** `EcomProducts` row (`id` + `variantId`) | The **entire patch** — the success items echo the requested values (number, price, isActive) because the echo is the input model, not a post-write read; the variant row's columns stay NULL. The tool writes to the variant *combination* model, not the variant product row (same family as `create_variant_combinations` leaving `ProductActive`/`ProductPrice` NULL — see [`dw-pim-modelling`](../../dw-pim-modelling/SKILL.md), reference `structural-model.md` §2.5) | DW 10.27.x | SQL `UPDATE` on the variant `EcomProducts` row is the canonical variant-enrichment surface. Verify immediately: `SELECT ProductNumber FROM EcomProducts WHERE ProductId=@p AND ProductVariantId=@v` — NULL means the write didn't land |
+| MCP `update_users` | A `password` property — the schema has no password field, and an extra `password` property is accepted (`succeeded:1`, `updatedOn` bumped) and dropped | DW 10.28.1-Pre | There is no MCP/API password surface at all — use the plaintext escape hatch documented in [`dw-users-permissions`](../../dw-users-permissions/SKILL.md), reference `grant-mechanics.md` §13 |
+| MCP `patch_products_safe` against a **variant** `EcomProducts` row (`id` + `variantId`) | The **entire patch** — the success items echo the requested values (number, price, isActive) because the echo is the input model, not a post-write read; the variant row's columns stay NULL. The tool writes to the variant *combination* model, not the variant product row (same family as `create_variant_combinations` leaving `ProductActive`/`ProductPrice` NULL — see [`dw-pim-modelling`](../../dw-pim-modelling/SKILL.md), reference `structural-model.md` §2.5) | DW 10.27.x | SQL `UPDATE` on the variant `EcomProducts` row is the canonical variant-enrichment surface. Verify immediately: `SELECT ProductNumber FROM EcomProducts WHERE ProductId=@p AND ProductVariantId=@v` — NULL means the write didn't land. **Local installs only**: on a hosted install, re-run `Deserialize` (`Replace`) for variant rows and write variant prices with `PriceSave` carrying `VariantId` |
 | MCP `copy_page` with `destinationParentPageId=0` (top-level copy) | The **implied area** — the copy lands as a top-level page of area 1, not the source page's area, when no `areaId` is passed | DW 10.27.x | Always pass `areaId` explicitly on top-level copies; confirm the response's `areaId` equals the requested area |
 | MCP `set_paragraph_item_fields` | Any field system name that does **not exist on the item type**. The verb counts the fields it was ASKED to write, not the fields it MATCHED, so `{"succeeded":1,"failed":0,"errors":[]}` comes back for a typo or a guessed name and the paragraph renders nothing | DW 10.26.12 | Read the field list from `get_paragraph_item_field_values` (or `Files/System/Items/ItemType_<name>.xml`) BEFORE writing, then read the specific field back with its specific value |
 | MCP `save_paragraphs` | `active` (the response body itself echoes `active: true` back, with a minimal model and with a full model alike; inert, not destructive) | DW 10.28.5 | `hideForPhones` + `hideForTablets` + `hideForDesktops`, which DO write; or `GridRow.GridRowActive = 0` when the paragraph is the sole occupant of its row. `save_paragraphs` DOES write `itemType`, and that write re-mints the item instance with default field values, so every field must be re-stated afterwards |
-| MCP `save_pages` / `save_paragraphs` (create path, `id:0`) | The returned **`id`**, which is always `0`. The create path echoes the INPUT model back with `succeeded`/`failed` counts, not the persisted row, so anything built on that id silently attaches to nothing. The only key that survives is `itemId`, the id of the freshly minted item-type instance | DW 10.28.4 | Resolve the real id through the item instance: `SELECT PageId FROM Page WHERE PageAreaId=<a> AND PageItemId='<itemId>'` (`ParagraphItemId` for paragraphs). `copy_page` / `copy_paragraph` DO return real ids — only the create path lies |
+| MCP `save_pages` / `save_paragraphs` (create path, `id:0`) | The returned **`id`**, which is always `0`. The create path echoes the INPUT model back with `succeeded`/`failed` counts, not the persisted row, so anything built on that id silently attaches to nothing. The only key that survives is `itemId`, the id of the freshly minted item-type instance | DW 10.28.4 | Resolve the real id through the item instance: `SELECT PageId FROM Page WHERE PageAreaId=<a> AND PageItemId='<itemId>'` (`ParagraphItemId` for paragraphs). `copy_page` / `copy_paragraph` DO return real ids — only the create path lies. **Local installs only**: on a hosted install, find the new row with `get_pages_by_area_id` (paragraphs: `get_paragraphs_by_page_id`) |
 | MCP `copy_page` on an ordinary content page | The **whole call** — it refuses with `"Standard pages are Not allowed."` for every destination (top level, a page-preset folder, the source page's own parent), and the message names neither side. The wrapper appears restricted to template/preset pages | DW 10.28.4 | The restriction is the MCP tool's, not the platform's: `GET /Admin/Api/NewPageInfoForCopy?SourcePageId=..&DestinationParentPageId=..` then `POST /Admin/Api/PageCopy` copies an ordinary `Swift-v2_Page` including its subtree and language mirrors (measured DW 10.28.1). Where the wrapper is the only surface, build with `save_pages` and assemble content with `GridRowCopy` + `copy_paragraph` |
 | MCP `set_page_menu` (`showInMenu`) | The intent. The verb documents `showInMenu` as "the page's ShowInMenu flag"; **there is no `PageShowInMenu` column on the schema** and the write lands on `PageActive`, so `showInMenu:false` unpublishes the page while `PageShowInLegend` (what Swift navigation reads) stays as it was | DW 10.28.4 | Use `set_page_menu` for `showInSitemap` only. For the navigation flag, `GetPageById` then `PageSave` a COMPLETE model with `ShowInLegend:false` — measured to flip alone with zero collateral on 10.28.1 |
 | MCP `add_product_image` with a `groupId` | Nothing is dropped, but it is an **ADD, not a move**: the same `filePath` under a new `groupId` mints a second detail row and only flips `isDefault`. It also accepts a `filePath` that does not exist on disk and returns a healthy `detailId` | DW 10.26.12 | Follow every add with `remove_product_image` on details outside the target group, and check the path against `list_files` first. Read back `GroupedAssetsByProductId` and assert exactly one `isDefault` per product |
@@ -155,6 +192,55 @@ the schema in `tools/list`:
 |---|---|---|
 | `patch_products_safe` `customFields` | `[{id: "<full path>", value: "<string>"}]`, both members required, both **strings** | `[{systemName: ..., value: 0}]`, which is the shape `/Admin/Api/ProductById` ECHOES when you read the same fields back |
 | `set_paragraph_item_fields` `fields` | a MAP: `{Layout:'tabs', Title:'Specifications'}` (`additionalProperties: string`) | a list of `{systemName, value}` objects |
+
+#### The identifier-parameter convention is split, and a wrong name fails hintlessly
+
+The by-id tools and the paragraph/module tools disagree about what to call the identifier, so guessing
+from the tool name is a coin flip:
+
+| Family | Parameter | Examples |
+|---|---|---|
+| Entity deletes and other single-entity verbs | bare **`id`** | `delete_order` and its family take `{"id": ...}`, never `orderId` |
+| Batch-by-id reads | a **list** member, not `id` | On 0.4.4 the by-id reads are plural — `get_products_by_ids`, `get_groups_by_ids`, `get_orders_by_ids`, `get_users_by_ids`, `get_pages_by_ids` — and take a list; read the member name from the schema rather than assuming `ids`, and never send the singular `id` these tools' retired predecessors took |
+| Product-by-SKU | singular **`sku`** | `get_products_by_sku` |
+| Paragraph, module and grid tools | **`pageId`** or **`paragraphId`** | `get_paragraphs_by_page_id` and `get_grid_rows_by_page_id` take `pageId`; `get_paragraph_item_field_values` and `get_module_settings` take `paragraphId`. Passing `id` to any of them fails |
+
+**An access denial is the FIRST symptom of a stale tool name, not of a scope problem.** That is the
+reading to reach for, because the alternative reading — the key is under-scoped — points at the one
+thing that cannot be the cause and costs a detour through credentials before anyone re-reads the name.
+Tool names get renamed between builds: one measured session found an entire step's chain of ten
+payment and shipping verbs absent because the family had been renamed to a `_method` suffix and the
+update verbs folded into bulk saves, and every one of them answered as a permission refusal on a
+FullAccess key that every other write in the same pass went through. **A tool chain copied from prose
+is stale until checked against `tools/list`**; regenerate it from the registry rather than from the
+document that carries it.
+
+A name no server registers answers this hintless shape:
+`"An error occurred invoking <tool>: Access denied. MCP configuration <name> is not allowed to call
+tool <tool>. Required permission: <p>. Allowed permission: none."` **`<p>` is whatever the tool
+DECLARES, not a statement about registration**, so the message shape settles nothing. Measured on one
+FullAccess key in one session, both names absent from that build's `tools/list`: a retired core getter
+answered `Required permission: none. Allowed permission: none.`, while a verb belonging to an optional
+add-in answered `Required permission: Create. Allowed permission: none.` Reading the second as a real
+capability gate produces a request for a grant that can never be granted.
+
+**The only reliable test is the registry**: check the name against this build's `tools/list` (the
+repo's `scripts/mcp-tools/<version>.json`, named by `scripts/mcp-tools/index.json`, is the captured
+FullAccess set of the current add-in version, with the retired names under its `notRegisteredOn*` key). If the name is absent, it is a wrong name — plan the work without it. If it is
+present and the call is still denied, it is a capability gate worth asking about. Together with the
+bare `"An error occurred invoking '<tool>'."` — the argument-validation error — neither message is
+ever evidence about registration in either direction.
+
+**The two hintless shapes map to two different causes, and reading one for the other sends the fix
+the wrong way.** Measured on `get_item_type_fields` on DW 10.28.x with MCP 0.4.4:
+
+| Shape | What it means | Next move |
+|---|---|---|
+| The bare `"An error occurred invoking '<tool>'."` | A wrong or missing argument **name** — the add-in validates names before dispatch. `{"itemType": "<type>"}` on a tool whose key is `systemName` answers exactly this. | Re-read the tool's schema in `tools/list` and call again with the declared key |
+| A successful response with an **empty** result array | The lookup ran and matched nothing — the key was right, the **value** was not. `{"systemName": "<type that does not exist>"}` answers `{"result":[]}`; the same key with a real type answers its fields. | Check the identifier value: confirm the item type exists (`get_item_types`) before concluding the type has no fields |
+
+So take the parameter name from the tool's own schema in `tools/list` rather than from its name, and
+read an empty result as a lookup that matched nothing rather than as a probable typo.
 
 For `customFields` the key is the full `ProductCategory|<cat>|<field>` path and **every value must be
 stringified**, numbers included; a multi-select list is a **comma-joined string**, not a JSON array

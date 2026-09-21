@@ -8,6 +8,8 @@ narrow sanctioned SQL cases.
 ## Contents
 
 - [The Management API admin surface](#the-management-api-admin-surface)
+  - [Flushing the product read-through cache after a Data Integration write](#flushing-the-product-read-through-cache-after-a-data-integration-write)
+  - [Restricting the legacy Data Integration job-runner route](#restricting-the-legacy-data-integration-job-runner-route)
 - [OpenAPI discovery](#openapi-discovery)
 - [Reference-path discovery](#reference-path-discovery)
 - [SQL-direct content seeding — Page / GridRow / Paragraph](#sql-direct-content-seeding--page--gridrow--paragraph)
@@ -64,6 +66,22 @@ worked case): you cannot call it from inside the persona's own session. Two hone
 Route 1 is preferred wherever the control exists, because route 2 forges an artefact and proves
 nothing about the user's own view.
 
+**The exception is the descriptor.** `GET /Admin/Api/api.json` is served without the bearer check: 200
+with no `Authorization` header, with a junk bearer and with another site's key alike, so a probe that
+asserts a key through it passes whether the key is right, wrong or absent [dw 10.28.10]. Assert a key
+on a command endpoint (`McpConfigurationAll` answers 401 to any key but the host's own), and keep
+`api.json` for the catalogue read and liveness polls.
+
+### Keep payload strings ASCII: a curly apostrophe turns a correct write into a 500
+
+A JSON payload carrying U+2019 (a curly apostrophe), passed to `curl` as a bash single-quoted
+argument, reached `/Admin/Api` as invalid UTF-8 and answered HTTP 500 `Cannot transcode invalid UTF-8
+JSON text to UTF-16 string`; the same payload with an ASCII apostrophe answered 200 [dw 10.28.8]. The
+model was correct in every respect, so the 500 reads as a defect in the payload. Keep every generated
+string ASCII on the way to `/Admin/Api`, or send the body as UTF-8 bytes (`Invoke-DwApi` in
+[`../scripts/Dw.Api.psm1`](../scripts/Dw.Api.psm1) does), and when a write 500s with a transcode
+error, look for a smart quote before looking at the model.
+
 ### Short command names are not unique — an installed add-in can SHADOW a platform verb
 
 Commands register under a short name, and short-name resolution prefers the add-in. So a solution
@@ -101,6 +119,18 @@ GET EmailById -> POST EmailSave  (verbatim)                        -> 500
 any round-trip save**, and when a `Save` 500s on a verbatim round-trip, bisect the model rather than
 hunting the data. `Remove-DwDisplayOnlyMember` in [`../scripts/Dw.Api.psm1`](../scripts/Dw.Api.psm1)
 is the canned strip.
+
+**The round-trip rule, by what the call answers** [dw 10.28.10 · mcp 0.6.0-beta]. Every row was measured on a
+`Get<Entity>ById` model posted back to its `<Entity>Save`, or on the read that precedes one; the
+recipe in the last column carries the verb-level row.
+
+| The call answers | What is true | Do instead | Row |
+|---|---|---|---|
+| 500 naming a `$.<Member>` path that "could not be converted" | The read model carries a member of the parent's type that the save binds as its own enum (`OrderType` on an order line). | Drop that member and post the rest unchanged. | [`recipes-commerce-orders.md`](recipes-commerce-orders.md) "Order-line verb traps" |
+| 500 `Exception has been thrown by the target of an invocation.` on an enum value you set | The value is not a member name in the save enum's casing: the read model returns another casing (`publicationState` reads `published` and saves `Unpublished`), and a natural value such as `Hidden` is no member at all. | Send the member name in the save enum's casing; this 500 is a value error, never a host fault. | [`recipes-content.md`](recipes-content.md) "Page verb and tool traps" |
+| 200 `ok`, echoing the model | A member the entity does not allow at that scope is dropped and the stored value wins (a master-only product field written on a variant). | Read the row back through a reader other than the save's echo. | [`recipes-pim.md`](recipes-pim.md) "Product verb and tool traps" |
+| 400 `Unable to load query parameters` on the read | The verb exists and a required parameter is missing or misnamed (`GetOrderLineById` needs `OrderId` beside `OrderLineId`; `CountryByCode` binds `CountryCode`). | Re-probe with the named parameter before reporting a missing verb. | the two commerce recipes |
+| 500 `Serialization of System.Type is not supported` on the read | The read verb itself is broken on the build while its paired save works (`ProductCatalogGroupsSortList`). | Write, then read back on the rendered surface. | [`recipes-pim.md`](recipes-pim.md) "Product verb and tool traps" |
 
 ### Enum properties on a save model bind by NAME — an integer silently coerces to `default(TEnum)` = 0
 
@@ -144,6 +174,8 @@ row:
 (SELECT COUNT(*) FROM UnifiedPermission p
   WHERE ISNUMERIC(p.PermissionUserId) = 1 AND TRY_CAST(p.PermissionUserId AS int) = g.AccessUserId)
 ```
+
+**Local installs only**: a hosted install has no documented read path that counts the grants per user or group, so an online build asks the user before deleting groups.
 
 `WHERE ISNUMERIC(...) = 1` in the same predicate does **not** save the bare comparison: there is no
 guaranteed evaluation order. **Compare on the string side (`p.PermissionUserId = CAST(g.AccessUserId AS
@@ -210,6 +242,59 @@ windows. So probing is **not free**:
 Related and equally cheap: `HealthProviderChecksByProviderName` and its two siblings serve the Insights
 health-provider data over the same bearer, with each check returning the literal SQL it ran.
 
+### Flushing the product read-through cache after a Data Integration write
+
+An inbound Data Integration activity that writes extended or global product fields leaves the
+read-through cache in front of `ProductService` stale even with
+`DisableCacheClearingAndIndexUpdates=False`: the provider clears its own caches, not that one. The
+measured shape is a job that reports rows affected and completes, a page reading the columns with
+raw SQL showing the new values on the next request, and the storefront reading the same fields
+through the product service showing the old ones indefinitely.
+
+**Surface: Management API `CacheInformationRefresh`.** One call, no restart:
+
+```
+POST /Admin/Api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Ecommerce.Products.ProductService"}
+```
+
+The storage type name is `Dynamicweb.Ecommerce.Products.ProductService`. The namespace the
+templates call through, `Dynamicweb.Ecommerce.Services.Products`, is **not** a cache storage type
+and the API answers "Cache storage type not found".
+
+A *scheduled* import inherits the staleness silently, so any nightly activity whose effect must be
+visible on the storefront needs this flush wired next to it. Inside the product there is no tool for
+this storage type: an in-product reader re-saves the affected products through the product tools,
+which invalidates the entry on the write path, or asks for the flush. The full per-surface table is
+[`cache-invalidation.md`](cache-invalidation.md).
+
+### Restricting the legacy Data Integration job-runner route
+
+The legacy route `/admin/public/webservices/integrationv2/JobRunner.aspx?jobsToRun=<job>` executes
+**any** integration job on an anonymous GET — no cookie, no bearer — and on builds where the modern
+`/Admin/Integration/JobRunner` route 404s it is the only route that works. Treat every install as
+exposed until proven otherwise.
+
+**Surface: IIS host configuration.** The only mitigation available is a path restriction committed
+to `applicationHost.config`:
+
+```xml
+<location path="<site>/admin/public/webservices/integrationv2">
+  <system.webServer>
+    <security>
+      <ipSecurity allowUnlisted="false">
+        <add ipAddress="127.0.0.1" allowed="true" />
+      </ipSecurity>
+    </security>
+  </system.webServer>
+</location>
+```
+
+Local installs only, and only where you own the machine: on a shared or hosted install the
+`ipSecurity` section is locked at machine level and the edit is unavailable — a site-level
+`web.config` attempt answers 500 on every URL including `/Admin`. It owes an IIS configuration
+reload. Re-probe the modern route on each platform version: when it stops 404ing it becomes the
+auth-required replacement and the restriction can come off.
+
 ## OpenAPI discovery
 
 The OpenAPI JSON path on a running DW10 host is not officially documented and varies by Swashbuckle
@@ -267,13 +352,15 @@ wiring, sibling links) that raw SQL skips. When MCP doesn't expose an operation,
 through `POST /Admin/Api/ParagraphSave` — see
 [dw-content-modelling](../../dw-content-modelling/SKILL.md) (`modelling-discipline.md`) §2.
 
-**`save_pages` does not persist `urlName` / `navigationTag` / `hidden` (verified 10.27.x).** Even the
-MCP-first path needs a **targeted** SQL touch-up for these three: a page created via `save_pages` lands
-with a derived URL slug, no navigation tag, and default visibility **regardless of what you pass** for
-those fields. This is the sanctioned "confirmed silent no-op → local SQL fallback" case (round-trip-verify
-it): after the MCP create, set `Page.PageUrlName`, the navigation-tag column, and `Page.PageHidden` via SQL
-(then restart per the cache rules below). Keep the page's *creation* on MCP/the API — do not fall back to
-authoring the whole row in SQL.
+**`save_pages` accepts `navigationTag` / `hidden` as documented members of its input schema and
+persists neither (verified 10.27.x-10.28.x on MCP 0.4.4); `urlName` it does persist.** On DW 10.28.x
+the slug passed in `urlName` reaches `Page.PageUrlName` and wins over the `menuText`-derived one, so
+keep slug pinning on MCP and confirm it by fetching the composed URL — no page read projects the
+column. The remaining two need a **targeted** touch-up: a page created via `save_pages` lands with no
+navigation tag and default visibility **regardless of what you pass**. `PageNavigationTag` is reachable
+through the Management API `PageSave`; `Page.PageHidden` is the sanctioned "confirmed silent no-op →
+local SQL fallback" case (round-trip-verify it, then restart per the cache rules below). Keep the
+page's *creation* on MCP/the API — do not fall back to authoring the whole row in SQL.
 
 **Read side — the ADO.NET single-row indexing footgun silently returns a COLUMN where you expected a
 ROW.** This bites the sanctioned use of SQL (verification reads), not the retired one, so it survives the
@@ -287,6 +374,8 @@ $rows = Invoke-SqlQuery "SELECT PageId, PageName FROM Page WHERE …"   # return
 $rows[0].PageId        # WRONG — $rows unrolled to the DataRow; [0] is column 0, .PageId then reads off it
 @($rows)[0].PageId     # correct — force the array, then index the row
 ```
+
+**Local installs only**: on a hosted install there is no SQL read to index; read the row back through `GetPageById` or `get_pages_by_area_id` instead.
 
 **Fix it INSIDE the shared read helper — forcing `@()` at the call site is not a rule that holds.** Four
 independent workstreams hit this on the same day against one shared `_sql.ps1`, and each produced a confident
@@ -358,6 +447,128 @@ Same failure shape as the two traps above: a comparison that returns a plausible
 is worse than no comparison, because it makes "the write did not land" and "my reader is broken" the same
 observation.
 
+### The shared module's verbs, and the two it refuses
+
+One line per rule, so a reader who never opens a script still learns it. The read half is
+[`Dw.Api.psm1`](../scripts/Dw.Api.psm1); the write half is
+[`Dw.Api.Write.psm1`](../scripts/Dw.Api.Write.psm1), a separate file because a script that reads,
+uploads, deletes users and rewrites settings is the co-located verb cluster endpoint protection
+scores.
+
+**Read half.**
+
+- `Invoke-DwQuery` - a list verb applies a default page size while still reporting the full
+  `totalCount`, so page 1 of 4 makes a present item read as ABSENT. Always send the page size,
+  walk every page, and reconcile the collected count against `totalCount` before any membership
+  test. A host that ignores the page parameter answers page 2 with page 1's rows, so a repeated
+  page is refused rather than concatenated.
+- Retry, inside `Invoke-DwApi` - a 429 is the server refusing before it acts, so it is safe to
+  retry whatever the method. A 5xx may have applied a write before failing, so only a read is
+  retried. Backoff doubles; a `Retry-After` header wins.
+- `Invoke-DwTaskRun` / `Get-DwTaskLastRun` - a task run is ASYNCHRONOUS. A freshness window of
+  the form "last run is within the last two minutes" is satisfied by the PREVIOUS run, so capture
+  the task's own last-run value before the trigger and poll for it to CHANGE. Never a wall clock.
+- `Test-DwPageProbe` - a Razor compile error still answers HTTP 200, so a status-only probe passes
+  a page that renders an error: read the body. A suppressed redirect does not throw in PowerShell
+  7, so inspect the returned response before the caught one, and never combine a zero redirect
+  limit with the HTTP-error-check switch (together they throw with no response). A response header
+  is a string array, so index it before casting or a healthy request lands in the failure handler
+  with a blank status.
+- `Get-DwServedFileHash` - the file archive is reached through junctions and file-change
+  notification does not propagate through one, so the host can keep serving the old bytes. The
+  stale copy carries every sentinel marker the new one does, so only a hash of the SERVED bytes
+  separates them.
+- `Get-DwSqlCount` - a blank is NOT a zero. A count helper that returns empty for a failed read
+  makes "nothing matched" and "the read never ran" the same observation, and a delete gated on
+  "count is 0" then passes on a read that never happened.
+- `ConvertTo-DwApiValue` - a DataRow field, a DBNull or any non-primitive handed to the JSON
+  serializer reaches the API as a JSON OBJECT. The binder cannot bind it, the property lands as an
+  empty string, and the call still answers ok, so the write silently blanks the column it meant to
+  preserve. Booleans and numbers stay typed; the binder wants those.
+- `Get-DwCategoryFieldSort` - there is no API read of the category field sort: the list GET answers
+  500 because the shared sort-screen query model exposes a save-command member of type
+  `System.Type`. Only the save command is usable, so the read before that write comes from SQL.
+- `Get-DwBrowserUserAgent` - the one place a browser-shaped User-Agent is set, with the reason
+  inline. The platform silently drops cart commands for a non-browser UA: the command answers 200,
+  creates the cart row and adds ZERO order lines. That is a protocol requirement of the target,
+  not evasion, and it belongs in one named helper rather than pasted into each probe.
+
+**Write half.** Every verb is a reported dry run until `-Apply`, and every one proves the write by
+READING BACK; an HTTP 200 is never the evidence.
+
+- `Remove-DwUser`, `Remove-DwGroup` - the ids go as an array of STRINGS. A singular numeric id
+  answers 400 and leaves the row alive; a numeric array element answers 500 and leaves the row
+  alive. Both read as success to a wrapper that only checks that the call returned.
+- `Remove-DwDynamicStructure` - the verb ignores the integer structure id entirely and binds the
+  unique-id GUID; an integer answers 500 with a GUID conversion error.
+- `Set-DwGlobalSetting` + `Assert-DwGlobalSettingNode` - the save does not validate the key against
+  a schema. Naming a path that does not exist CREATES it, the save answers ok, and the by-key read
+  echoes the invented key back while the application keeps reading the real one. So re-parse the
+  config file, require the key to resolve to exactly one node ANYWHERE in the tree (a stray sibling
+  under a different parent is what makes a setting dead), and assert a caller-supplied effect.
+- `Send-DwFile` - the upload verb derives the destination name from the LOCAL filename, so an
+  upload can genuinely succeed at creating a second file beside the one it meant to replace. The
+  destination name is mandatory; the archive's reported size lags the write, so poll for it; and
+  hash the served bytes afterwards.
+- `Clear-DwRecycleBin` - clearing one id legitimately removes more than one row, because a master
+  cascades to its language copies. Assert the removed id SET is a subset of your own expected set;
+  a count delta fires on correct behaviour.
+
+**Refused, and not for a caller's convenience.** Neither has a shipped script, here or anywhere:
+
+- **Arbitrary SQL executed through a scheduled task.** Already a banned path, and the one verb that
+  turns the module into a remote code-execution tool.
+- **Admin-account creation and deletion, and backend-access revocation.** Admin-account lifecycle
+  does not belong in a shipped script: it is half of the verb cluster that gets a file quarantined.
+  Note also that denying backend access by the flag alone is a NO-OP on an admin row, because the
+  property is computed and short-circuits on the admin check - the levers that actually work are
+  demoting the user type and deactivating the account. Do that on the admin Users screen, by hand,
+  where a human can see what else the account owns.
+
+### AV-safe scripts: endpoint protection scores the verb cluster, not the syntax
+
+The AMSI false positive above is the mild form. The severe form is a behavioural engine that
+quarantines and **deletes** a tracked script from the working tree, then denies that path for
+recreation. Measured on maintainer machines: two harness scripts went; a larger file in the same
+directory, with more calls to the web cmdlets and more TLS bypasses, did not. Neither flagged file
+carried a single obfuscation construct. What they carried and the survivor did not was one file
+that uploaded arbitrary files into a live web server's file archive, created and deleted an
+administrator, ran arbitrary SQL through a scheduled task, and spoofed a browser User-Agent.
+
+So the authoring rules, which the shared module already follows and
+[`Dw.Api.psm1`](../scripts/Dw.Api.psm1) is the model for:
+
+- **Split by capability.** Read and assert in one file; each write family in its own. Keep a file
+  under roughly 400 lines. Shared plumbing in the one module, imported `$PSScriptRoot`-relative
+  with `-ErrorAction Stop` and followed by `Assert-DwConnection`, failing loudly when the import
+  is blocked.
+- **HTTP through the cmdlets with named parameters.** No `System.Net.WebClient`, no
+  `DownloadString`, no `Add-Type`, no reflection, no `Invoke-Expression`, no base64 payload.
+- **Gate the TLS bypass.** `-SkipCertificateCheck` only for a loopback base URL or an explicit
+  `-AllowSelfSignedCertificate` opt-in. An unconditional bypass on every call is itself scored.
+- **Never spoof a `User-Agent` silently.** Where a browser-shaped `User-Agent` or `Accept` header
+  is functionally required (the cart-command refusal, image-handler content negotiation), set it
+  in one named helper with an inline `# why:` comment naming the protocol reason.
+- **Secrets from the environment only**, masked in every log line. No literal password, no inline
+  connection string carrying credentials, no token as a parameter default, no
+  `ConvertTo-SecureString -AsPlainText`.
+- **Dry run by default.** `[CmdletBinding(SupportsShouldProcess)]` with `-Apply` to write.
+- **Three verb families stay out of shipped scripts entirely**: admin-account creation and
+  deletion, backend-access revocation, and arbitrary SQL executed through the platform (the last
+  is already refused here as a remote-SQL path). A recipe that needs one names the admin screen.
+
+**Owner actions, and the only durable fix.** Content hygiene lowers the score; it does not lift an
+existing verdict. Those three are console-side, not code: **path exclusions** in the
+endpoint-protection policy for the repo trees and the agent scratchpad root, **Authenticode
+signing** of every shipped `.ps1`/`.psm1` with an internal certificate plus an `AllSigned` or
+`RemoteSigned` execution policy, and a **false-positive submission** to the vendor so the cloud
+verdict is corrected tenant-wide. And in every case, **never re-use a burned path**: a flagged
+filename stays dead on that machine, so the capability comes back under a new name.
+
+The machine-checkable half of this is enforced by the repo validator; the owner actions are not
+checkable. The full authoring contract is in `dw-skill-authoring` ("Shipping scripts" ->
+"AV-safe scripts").
+
 ### Bulk string edits: DW 10 still ships legacy `text` / `ntext` columns
 
 `REPLACE` refuses `ntext` as its first argument, so a straightforward bulk string fix fails on exactly the
@@ -367,6 +578,8 @@ tables where long strings live (e.g. `GeneralLog.LogDescription`):
 UPDATE GeneralLog SET LogDescription = REPLACE(LogDescription, …)
   -> Argument data type ntext is invalid for argument 1 of replace function
 ```
+
+**Local installs only**: a hosted install has no write path for a bulk string sweep over log or content columns, so an online build asks the user.
 
 **`CAST(… AS nvarchar(max))` inside the `REPLACE`** is the fix. Any bulk-content or anonymisation sweep must
 name the legacy column types explicitly, or it silently skips the tables it cannot update — and then reports a
@@ -407,6 +620,8 @@ INSERT INTO Page (
     1, 0, 0, 1, 1, '2026-01-01 00:00:00', '2999-12-31 23:59:59', NEWID(), 1);
 ```
 
+**Local installs only**: on a hosted install, create the page with `save_pages` and set what it drops through `PageSave`.
+
 `PageActiveFrom` / `PageActiveTo` are the silent killers — without them page-resolution treats the row
 as scheduled-out and returns 404 even though the slug resolves. The other NOT-NULL columns surface a
 more useful `Cannot insert NULL` on first attempt. (`PageActive` vs `PageHidden` semantics — "Hidden in
@@ -422,6 +637,8 @@ INSERT INTO GridRow (
     GridRowSort, GridRowUniqueId        -- NEWID()
 ) VALUES (<pageId>, 'Grid', '1Column', 'Swift-v2_Row', 1, NEWID());
 ```
+
+**Local installs only**: on a hosted install, create the row with `save_grid_rows` or `GridRowCreate`.
 
 `GridRowDefinitionId` must name a RowDefinition JSON that actually exists under
 `Designs/<design>/Grid/Page/RowDefinitions/` — an unknown id renders **nothing, silently** (the row and
@@ -510,6 +727,8 @@ INSERT INTO Paragraph (
     '2026-01-01', '2999-12-31 23:59:59', GETDATE(), GETDATE(), 1, 1, 0);
 ```
 
+**Local installs only**: on a hosted install, create the paragraph with `save_paragraphs` and set paragraph scalars with `ParagraphSave`.
+
 - **`ParagraphGlobalId` is INT-typed despite the name.** Setting it via `NEWID()` (which works for
   `ParagraphUniqueId`) fails with a type-conversion error. Use `0`.
 - **`ParagraphTemplate` is the optional-looking column you do NOT want to omit** — leaving it `NULL`/`''`
@@ -526,6 +745,8 @@ renders as empty wrapper markup.
 INSERT INTO [ItemType_Swift-v2_Text] (Id, Title, Subtitle, Text, ItemInstanceType)
 VALUES ('<newId>', '', '', '<your html or text>', '');   -- ItemInstanceType: '' not NULL
 ```
+
+**Local installs only**: on a hosted install, `save_paragraphs` mints the item instance and `set_item_field_values` writes its fields, so no item id is allocated by hand.
 
 - **`ItemInstanceType` is `nvarchar NOT NULL` — use empty string, not NULL.** Several
   `ItemType_Swift-v2_*` tables ship this column; `NULL` fails with `Cannot insert the value NULL into
@@ -550,6 +771,8 @@ INSERT at an intermediate value:
 UPDATE GridRow SET GridRowSort = GridRowSort * 10 WHERE GridRowPageId = <pageId>;  -- now 10,20,30
 INSERT INTO GridRow (..., GridRowSort, ...) VALUES (..., 25, ...);                  -- insert at 25
 ```
+
+**Local installs only**: on a hosted install, set `sort` through `save_grid_rows`, and paragraph sort through `ParagraphSave`.
 
 This sidesteps duplicate-sort ties (DW10 renders ties non-deterministically → inconsistent layout).
 Same pattern for `ParagraphSort` within a GridRow.

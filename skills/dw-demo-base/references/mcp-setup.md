@@ -9,13 +9,15 @@
 - [Step 3 — Create the MCP configuration in DW10 admin UI (API Key)](#step-3--create-the-mcp-configuration-in-dw10-admin-ui-api-key)
 - [Step 3b — Paste the bearer into `.mcp.json` and per-demo memory](#step-3b--paste-the-bearer-into-mcpjson-and-per-demo-memory)
 - [Step 3 (headless alternative) — create the token + MCP config without the admin UI](#step-3-headless-alternative--create-the-token--mcp-config-without-the-admin-ui)
+- [Step 3 (Management API alternative): mint a key in one process; rotation stops at mint-and-store](#step-3-management-api-alternative-mint-a-key-in-one-process-rotation-stops-at-mint-and-store)
 - [Autonomous/headless fallback — call `/admin/mcp` directly as JSON-RPC 2.0](#autonomousheadless-fallback--call-adminmcp-directly-as-json-rpc-20)
 - [Step 4 — The MCP verification gate](#step-4--the-mcp-verification-gate)
 - [Step 5 — Install Browser MCP (machine-level, do once per Windows account)](#step-5--install-browser-mcp-machine-level-do-once-per-windows-account)
 - [Step 6 — Discover bearer tokens (the discover-from-project-files rule)](#step-6--discover-bearer-tokens-the-discover-from-project-files-rule)
+- [Upgrade a package where it is already referenced — never through the Add-in manager](#upgrade-a-package-where-it-is-already-referenced--never-through-the-add-in-manager)
 - [Triage table — when verification fails](#triage-table--when-verification-fails)
 
-Wire MCP for the Dynamicweb MCP server (`dynamicweb-commerce-mcp`) bundled with `Dynamicweb.Suite` 10.x. The canonical flow is **API-Key auth with a static bearer in `.mcp.json`** — five steps in **strict order**:
+Wire MCP for the Backend MCP server — the AppStore app **Truvio Commerce MCP**, reached from Claude Code as the server `dynamicweb-commerce-mcp` — on a host running `Dynamicweb.Suite` 10.x. Install the app itself from the AppStore first ([`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §1); never pin the pre-rename `Dynamicweb.MCP` package in the host csproj. The canonical flow is **API-Key auth with a static bearer in `.mcp.json`** — five steps in **strict order**:
 
 0. On a first-time machine, install the Browser MCP (Step 5) before anything else — Step 3 is driven through its tools.
 1. Write `.mcp.json` with the discovered HTTPS port (bearer placeholder filled in Step 3b).
@@ -175,6 +177,58 @@ Any such bootstrap branch added to `Program.cs` during standup (a password-set, 
 
 ---
 
+## Step 3 (Management API alternative): mint a key in one process; rotation stops at mint-and-store
+
+When a Management API bearer is already in hand, the MCP configuration and its key can be minted over
+the Management API instead of the admin UI. Two behaviours of that route decide how the procedure is
+written:
+
+- Management API `McpConfigurationCreateSave` (`POST /admin/api/McpConfigurationCreateSave`) creates the
+  configuration and returns its id in `modelIdentifier`, **without the key**.
+- Management API `McpConfigurationOverview` (`GET /admin/api/McpConfigurationOverview?Id=<id>`) returns
+  the plaintext in `model.plaintextApiKey` on the **first read after creation only**. Every later read
+  returns an empty string while `model.hasApiKey` stays `true`. A procedure that reads the overview once
+  to test the key and again to store it stores the empty string, and nothing fails: the memory write and
+  the `.mcp.json` write both succeed and leave `Authorization: Bearer ` with no key.
+
+**Create, capture, length-assert, store and verify in one process**, from the single captured value.
+Never re-read the overview expecting the key; a configuration whose key was not captured is abandoned
+and a new one is created.
+
+```powershell
+$base = $env:DW_BASE_URL
+$mgmt = @{ Authorization = "Bearer $env:DW_API_TOKEN" }
+$body = @{ Model = @{ name = '<configuration-name>'; allowEverything = $true } } | ConvertTo-Json
+$id = (Invoke-RestMethod -Method Post -Uri "$base/admin/api/McpConfigurationCreateSave" -Headers $mgmt `
+        -ContentType 'application/json' -Body $body -SkipCertificateCheck).modelIdentifier
+$ov  = Invoke-RestMethod -Uri "$base/admin/api/McpConfigurationOverview?Id=$id" -Headers $mgmt -SkipCertificateCheck
+$key = $ov.model.plaintextApiKey          # the one read that carries it
+if ([string]::IsNullOrEmpty($key)) { throw "Configuration $id revealed no key (already read once). Create a new configuration." }
+"captured key length: $($key.Length)"     # log the length, never the key
+# Read back every flag you set: a create or save can answer ok and keep the old value.
+if (-not $ov.model.allowEverything) { Write-Warning "allowEverything did not take on configuration $id; set access in the admin UI (Step 3)." }
+# Prove the captured key authenticates BEFORE writing it anywhere.
+(Invoke-WebRequest -Uri "$base/admin/api/AddinAvailable" -Headers @{ Authorization = "Bearer $key" } -SkipCertificateCheck).StatusCode
+# Now write .mcp.json and the per-demo memory (Step 3b, Step 6) from $key, read each back,
+# and assert the stored bearer length equals $key.Length.
+```
+
+### Rotation stops at mint-and-store
+
+An agent can mint and store a replacement key; it cannot revoke the old one. Management API
+`McpConfigurationDelete` on the configuration that issued the old key does not revoke it (a configuration
+can report `hasApiKey: false` while its key still authenticates), an app-pool recycle does not revoke it,
+and no Management API query lists or deletes API keys: every `ApiKey*` spelling answers
+`Unknown query`. Deleting a configuration is therefore never reported as revocation.
+
+1. Mint and store the replacement (above) and move every consumer onto it.
+2. Probe the old key: `GET /admin/api/AddinAvailable` with it as the bearer. A `200` means the old key is
+   live: report the rotation as **incomplete** and raise an owner action to delete the old key by hand in
+   the admin UI, in the list of issued API keys (**Settings → System → Developer → API keys**).
+3. The rotation is complete only when the old key answers `401` or `403` on that same probe.
+
+---
+
 ## Autonomous/headless fallback — call `/admin/mcp` directly as JSON-RPC 2.0
 
 Steps 1–4 wire the Dynamicweb MCP server into the **Claude Code client**, which gates a newly-configured project server behind a one-time **interactive approval prompt** ("Pending approval"). That prompt is an interactive-only gate: an autonomous or headless agent that never sees a human can wait on it forever — the tools never surface and the run stalls with no error to react to. This is the tool-side twin of the OAuth interactive-click blocker the "Why API Key by default" preamble calls out: the API-Key default clears the *auth* gate, but the client's *approval* gate is separate.
@@ -277,6 +331,32 @@ If a token isn't in conversation state and no memory entry exists, capture again
 
 ---
 
+## Upgrade a package where it is already referenced — never through the Add-in manager
+
+**A package the host csproj already references is upgraded by bumping the `PackageReference` and
+redeploying `bin` — installing the same package through Settings > Developer > Add-ins bricks the
+whole site.** The Add-in install lands in `Files/System/AddIns/Installed/<pkg>/lib/<tfm>/`, and with
+`AddIns.AllowLoad=True` the AddInManager scans that folder **in addition to** `bin`. Two assemblies
+declaring the same type names make the per-base-type cache throw on the duplicate key, and because
+the notification manager enumerates subscribers on every page view, storefront, `/Admin` and the
+scheduled tasks all go down together — not just the feature the package provides. The Event Viewer
+fills with `System.ArgumentException: An item with the same key has already been added. Key:
+<Namespace>.<Type>` from `AddInManager.AddTypesToCache`, and nothing in the database records the
+install: **the folder is the registry.**
+
+- **Probe (cheap, standing):** compare the basenames of `*.dll` under
+  `Files/System/AddIns/Installed/**/lib/*` against `Application/bin/*.dll` and assert the
+  intersection is empty. A non-empty intersection is the defect, before the site is even loaded.
+- **Recovery:** move `Files/System/AddIns/Installed/<pkg>` out of the tree and recycle. The
+  storefront, `/Admin` and the next scheduled-task tick come back clean immediately.
+- **Do not resolve it the other way** by deleting the assembly from `bin`: an add-in package
+  typically ships only its own DLL, so any dependency the newer version introduced is then missing,
+  and `bin` is the csproj build output that the next build restores anyway. The upgrade belongs in
+  the csproj.
+
+This applies to every package a host references directly — the MCP package and the Serializer engine
+are the two that recur.
+
 ## Triage table — when verification fails
 
 | Symptom | Fix |
@@ -284,8 +364,10 @@ If a token isn't in conversation state and no memory entry exists, capture again
 | `claude mcp list` shows "Failed to connect" | Almost always the TLS bypass: the User-scope `NODE_TLS_REJECT_UNAUTHORIZED=0` env var is missing (project-level config is silently insufficient) — fix per Step 2, then fully restart Claude Code from a fresh shell. Also check: is the `Dynamicweb.Host.Suite` host actually running on the port `.mcp.json` references? |
 | `claude mcp list` shows the server but requests fail `401 Unauthorized` despite a substituted bearer | The bearer in `.mcp.json` is not the EXACT plaintext key the admin UI displayed — check for extra whitespace or a trailing newline introduced when pasting. |
 | `claude mcp list` shows the server but `ToolSearch +dynamicweb` returns 0 / 401 Unauthorized on `/admin/mcp` requests | **Three distinct causes — check in order.** (1) `.mcp.json` still has the literal `<MCP_API_KEY>` placeholder — substitute the plaintext key from the admin UI (Step 3b). (2) No MCP configuration exists on the DW side — admin UI → Settings → Integration → MCP configurations → New, set **Access = Full access**, **Authentication method = API Key**, save, copy the displayed plaintext key (shown once), and paste into `.mcp.json`. (3) Stale bearer (config was deleted/regenerated since the key was last captured) — the configuration row in the admin UI is now linked to a different `AccessUserTokenId`; capture the new key and update `.mcp.json` + per-demo memory. |
-| AppStore install of "Backend MCP" appears to do nothing — no UI confirmation, the MCP configurations menu the app is supposed to add never appears, `/admin/mcp` returns 404 | **Two distinct causes, in order of likelihood.** (1) **Host TFM is net8.** The MCP AddIn loader requires .NET 10 even though the package ships net6/net8 lib binaries. Symptom: install POST returns 200, files drop to `wwwroot/Files/System/AddIns/Installed/Dynamicweb.MCP.<ver>/lib/`, but AddIn never registers. Fix: pin csproj `<TargetFramework>net10.0</TargetFramework>` and restart the host (verify in startup log: `Dynamicweb is running on .NET 10 or greater`). See [`../../dw-setup-install/references/install-anatomy.md`](../../dw-setup-install/references/install-anatomy.md) §2. (2) **Stuck DB update queue** (or buggy CREATE in update queue). Check `wwwroot/Files/System/Log/EventViewer/*.log` for `Update failed:.*Cannot find the object`. Recovery: `../../dw-setup-upgrade/references/db-update-recovery.md` (Mode A or B depending on triage). |
+| AppStore install of "Backend MCP" appears to do nothing — no UI confirmation, the MCP configurations menu the app is supposed to add never appears, `/admin/mcp` returns 404 | **Two distinct causes, in order of likelihood.** (1) **Host TFM is net8.** The MCP AddIn loader requires .NET 10 even though the package ships net6/net8 lib binaries. Symptom: install POST returns 200, files drop to `wwwroot/Files/System/AddIns/Installed/<package>.<ver>/lib/` (`Truvio.Commerce.MCP.*` since the rename, `Dynamicweb.MCP.*` on a host installed before it), but AddIn never registers. Fix: pin csproj `<TargetFramework>net10.0</TargetFramework>` and restart the host (verify in startup log: `Dynamicweb is running on .NET 10 or greater`). See [`../../dw-setup-install/references/install-anatomy.md`](../../dw-setup-install/references/install-anatomy.md) §2. (2) **Stuck DB update queue** (or buggy CREATE in update queue). Check `wwwroot/Files/System/Log/EventViewer/*.log` for `Update failed:.*Cannot find the object`. Recovery: `../../dw-setup-upgrade/references/db-update-recovery.md` (Mode A or B depending on triage). |
 | Mid-run MCP call fails with `401 Unauthorized` after a host restart | Should be rare with API-Key auth (the bearer is DB-backed, stateless, and the host revalidates against `AccessUserToken` on every request). If it happens: the admin UI's MCP config was likely deleted/recreated, which generates a new `AccessUserTokenId` and invalidates the old plaintext key. Open the admin UI, confirm the MCP configuration still exists, and capture a fresh key if the link is broken. **Do NOT silently pivot to direct-SQL fallbacks** for create/update operations — that bypasses MCP cache invalidation AND leaves required columns unset (e.g. `EcomDetails.DetailLanguageId` defaulting to empty string, see `dw-demo-pim/references/structural-model.md` §2.10). The MCP-plugin tools (e.g. `import_product_images_from_urls`, `add_product_image`) have NO Management API endpoint backing — there is no plain-HTTP fallback that preserves their column-population guarantees. |
+| Storefront AND `/Admin` both answer 500 after an add-in install, with `An item with the same key has already been added` in the Event Viewer | The package is loaded twice — once from `bin` (csproj `PackageReference`) and once from `Files/System/AddIns/Installed/`. Move the Installed folder out and recycle; upgrade by bumping the `PackageReference`. See "Upgrade a package where it is already referenced" above. |
+| A tool `tools/list` lists is refused on call with `Access denied ... Required permission: none. Allowed permission: none.` while sibling tools answer | The grant is per MCP configuration (its permission preset), not per client, and the message does not name the missing grant. Check the configuration's preset in the admin UI (Settings, Integration, MCP configurations) and re-create it with `Access = Full access` when it is narrower; until then fall back to the Management API read for that entity. The same shape hides a restricted tool family entirely: names absent from `tools/list` answer the same denial when called, so a missing name is a grant to check, never proof the tool does not exist. |
 | Mid-run MCP call fails with `MCP server "..." requires re-authorization (token expired)` | You're on the legacy Claude.ai OAuth auth method, not API Key — that's exactly the failure mode the API-Key default exists to avoid. Switch the admin UI's MCP configuration to `Authentication method = API Key`, capture the plaintext key, and update `.mcp.json` per Step 3b. After that, host restarts and Claude Code restarts no longer trigger re-auth. |
 
 

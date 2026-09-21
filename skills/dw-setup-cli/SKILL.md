@@ -4,7 +4,7 @@ type: flow
 group: setup
 mcp: none
 dynamo: false
-description: 'Operate a Dynamicweb 10 solution with the `dw` CLI — install `.dll`/`.nupkg` add-ins, upload and update Files-archive content, export the archive, trigger a recycle, and prove the change landed. Triggers: deploy or install an add-in, `dw install`, `dw files`, upload or update templates, export a solution''s files, trigger a recycle, API-key auth for the CLI, `dw install` reported success but nothing changed, an import that silently skipped, deciding whether a task belongs to the CLI or the Dynamicweb MCP server. Non-triggers: upgrading a solution''s platform version -> dw-setup-upgrade; connection strings and environment configuration -> dw-setup-config; installing a solution from scratch -> dw-setup-install; writing the add-in code itself -> dw-extend-providers; content, product or order writes that MCP already covers -> dw-content-modelling.'
+description: 'Deploy DW10 add-ins and Files content with the dw CLI. Triggers: dw install/files, DLL/NuGet upload, templates, archive export, recycle, API-key auth, silently skipped imports. Platform upgrades -> dw-setup-upgrade.'
 ---
 
 You are operating a live Dynamicweb 10 solution through the `dw` CLI. Every command here writes to a real
@@ -57,7 +57,7 @@ item fields, not in any `.cshtml`, so no amount of template editing will change 
 | Product images, Integration source files | **MCP** | Typed, and inside its writable paths |
 | Reading a template just to inspect it | Either | MCP `read_file` is cheaper than an export |
 | Anything MCP covers | **MCP**, never `dw command` | See below |
-| Nothing above fits and no MCP server exists | `dw command` + `CommandByName` | Last resort |
+| Nothing above fits and no MCP server exists | `dw command` + `CommandByName` | A CLI transport for the **Management API** (rung 2 of the action ladder in [`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"), not a surface of its own — so it ranks below MCP and above the serializer |
 
 ### Never hand-build an API call when MCP can do it
 
@@ -182,7 +182,7 @@ here.
 
 | Task | Reference | The trap it documents |
 |---|---|---|
-| Install a `.dll`/`.nupkg` add-in, queued or immediate, and trigger a recycle | [references/addin-install.md](references/addin-install.md) | `dw install` reports success whether or not your assembly loaded |
+| Install a `.dll`/`.nupkg` add-in, queued or immediate, trigger a recycle, or copy a host assembly onto a self-hosted IIS install (stop, copy, start) | [references/addin-install.md](references/addin-install.md) | `dw install` reports success whether or not your assembly loaded |
 | Upload, update, export, delete or move Files-archive content | [references/files-archive.md](references/files-archive.md) | without `-o` an import silently skips, and 1.1.2+ prints no API response to tell you |
 
 Whichever you run, Step 3 is not optional.

@@ -1,21 +1,29 @@
-# Order lifecycle internals — seeding, saves, invoices, subscriptions, RMA cache, CSR impersonation
+# Order lifecycle internals — seeding, saves, invoices, subscriptions, CSR impersonation
 
 Field-validated DW10 order knowledge: what `create_orders` actually writes, the platform-owns-the-id
-rule on every `*Save`, the re-save-reverts-SQL trap, invoices as `EcomOrders` rows, subscriptions,
-the RMA service cache, reorder mechanics, and CSR sales-on-behalf impersonation.
+rule on every `*Save`, the re-save-reverts-SQL trap and the flush-then-touch ordering that makes a SQL
+touch-up survive, invoices as `EcomOrders` rows, subscriptions, reorder mechanics, and CSR
+sales-on-behalf impersonation.
+
+Sibling references in this skill: [`cart-commands.md`](cart-commands.md),
+[`checkout-configuration.md`](checkout-configuration.md),
+[`order-states-and-quotes.md`](order-states-and-quotes.md),
+[`order-notifications.md`](order-notifications.md),
+[`customer-center-surfaces.md`](customer-center-surfaces.md),
+[`rma-and-claims.md`](rma-and-claims.md), [`promotions-engines.md`](promotions-engines.md).
 
 ## Contents
 
 - [Order completion: created orders default to carts](#order-completion-created-orders-default-to-carts-not-completed-orders)
 - [OrderCustomerNumber is not set by create_orders](#ordercustomernumber-is-not-set-by-create_orders)
 - [Area-currency filters order history](#area-currency-filters-order-history)
-- [Order-line prices: seed after the currency restart](#order-line-prices-seed-after-the-currency-restart-then-backfill-totals)
+- [Orders built over MCP persist no totals](#orders-built-over-mcp-persist-no-totals-place-priced-orders-through-the-storefront)
 - [The platform OWNS ids and timestamps](#the-platform-owns-ids-and-timestamps--a-save-discards-the-ones-you-send)
 - [A re-saving verb reverts raw-SQL edits](#a-re-saving-verb-reverts-raw-sql-edits--orderrecalculate-writes-the-cached-order-back)
 - [`GetOrderList` inner-joins `EcomShops`](#getorderlist-inner-joins-ecomshops--orders-on-a-deleted-shop-vanish-from-every-commerce-grid)
 - [An invoice is an `EcomOrders` row](#an-invoice-is-an-ecomorders-row--and-invoicesave-requires-orderstateid)
 - [Subscriptions have no create verb](#subscriptions-have-no-create-verb--the-shape-is-one-flag-plus-an-ecomrecurringorder-row)
-- [The RMA read path is a persistent service cache](#the-rma-read-path-is-a-persistent-service-cache-that-raw-sql-cannot-invalidate--and-rmalist-masks-it)
+- [RMA and claims live in their own reference](#rma-and-claims-live-in-their-own-reference)
 - [SQL backfills vs runtime subscribers](#sql-backfills-vs-runtime-subscribers)
 - [The canonical order read surface](#the-canonical-order-read-surface)
 - [CSR sales-on-behalf — impersonation mechanics](#csr-sales-on-behalf--impersonation-mechanics)
@@ -24,39 +32,25 @@ the RMA service cache, reorder mechanics, and CSR sales-on-behalf impersonation.
 
 ## Order completion: created orders default to carts, not completed orders
 
-`mcp__dynamicweb-commerce-mcp__create_orders` seeds rows into `EcomOrders` with `OrderComplete=0` —
+`create_orders` seeds rows into `EcomOrders` with `OrderComplete=0` —
 i.e. **carts**, not completed orders. Surfaces that list order history (the account-side Orders
 paragraph, CSR order-impersonation views) filter on `OrderComplete=1` and silently skip the cart
 rows. The symptom is "I created N orders but the My Orders tab is empty," not an error.
 
-When the rows are meant to be order *history* (not in-progress carts), backfill the flag in one SQL
-after `create_orders` returns:
-
-```powershell
-sqlcmd -S "<dwserver>" -d <dwdb> -E -Q `
-  "UPDATE EcomOrders SET OrderComplete = 1 WHERE OrderComplete = 0 AND OrderCart = 0 AND OrderID LIKE 'ORDER%'"
-```
-
-Scope the `WHERE` precisely enough to skip rows that are intentionally carts. The
-`mcp__dynamicweb-commerce-mcp__complete_order` tool exists and works on individual orders, but it
-runs the full price-recalc + workflow chain per call — slow for bulk seeding and able to fail when
-pricing has unresolved currency / country gaps. Direct `UPDATE` is the right tool for bulk
-completion; reserve `complete_order` for flows where the side-effects (workflow, email, inventory)
-are intended.
+When the rows are meant to be order *history* (not in-progress carts), the flag has to be set after
+`create_orders` returns. In product, run `complete_order` per order. It works on individual orders, but it
+runs the full price-recalc + workflow chain per call: slow for bulk seeding, able to fail when pricing has
+unresolved currency / country gaps, and it fires the workflow, email and inventory side effects. A bulk flag
+write that skips those side effects, and skips the rows that are intentionally carts, is out of product:
+[`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Bulk-completing seeded orders".
 
 ## OrderCustomerNumber is not set by create_orders
 
 The account-side Orders paragraph resolves order history via a `UseCustomerNumber` lookup against the
 user's `AccessUserCustomerNumber`. `create_orders` populates `OrderCustomerAccessUserId` but **not**
-`OrderCustomerNumber`, so B2B account-side displays render empty until it is backfilled:
-
-```sql
-UPDATE o
-SET OrderCustomerNumber = u.AccessUserCustomerNumber
-FROM EcomOrders o
-JOIN AccessUser u ON u.AccessUserID = o.OrderCustomerAccessUserId
-WHERE o.OrderCustomerNumber IS NULL OR o.OrderCustomerNumber = '';
-```
+`OrderCustomerNumber`, so B2B account-side displays render empty until it is backfilled from each buyer's
+`AccessUserCustomerNumber`. `update_orders` has no customer-number member, so in product ask the user. Out
+of product: [`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Backfilling `OrderCustomerNumber` from the buyer".
 
 ## Area-currency filters order history
 
@@ -65,27 +59,33 @@ currency. If the `Area` row defaults to one currency/country and orders are seed
 order list renders empty silently. Align the area's default currency to the seeded
 `OrderCurrencyCode` (or seed orders in the area's default) **before** backfilling completion.
 
-## Order-line prices: seed after the currency restart, then backfill totals
+## Orders built over MCP persist no totals: place priced orders through the storefront
 
-`add_products` (the order-line seeding tool) writes **only the unit-price columns**
-(`OrderLineUnitPriceWithoutVAT`/`WithVAT`) — it computes neither the line totals
-(`OrderLinePriceWithoutVAT`/`WithVAT`) nor the order totals. And the unit price you pass is not
-always the one that lands:
+**An order built with MCP tools carries no trustworthy stored totals** [mcp 0.4.4]. Measured on the cart
+path, `create_orders` (`orderType: "Cart"`), then `add_products`, then `convert_cart_to_order` stored an
+order whose order total and every line price were 0. An earlier measurement had `add_products` write only
+the unit-price columns (`OrderLineUnitPriceWithoutVAT`/`WithVAT`) and neither the line totals nor the order
+totals. The tools that look like the repair are not one:
 
-- **Change the default currency → restart → THEN seed.** A changed default currency only
-  materializes on restart; order lines seeded before that restart can land with unit prices
-  **×100** (a two-decimal exponent artifact — e.g. an explicit `12.50` stored as `1250`).
-- **Qty-tier `EcomPrices` rows silently reprice seeded lines.** A line whose product/quantity
-  matches a tier row is repriced to the tier price, ignoring the explicit `unitPriceWithoutVat`
-  passed to the tool.
-- **After seeding, run a sanity sweep + backfill in SQL:** flag any
-  `OrderLineUnitPriceWithoutVAT` above a plausible maximum and ÷100-normalize it; then backfill
-  the line totals (unit × quantity into `OrderLinePriceWithoutVAT`/`WithVAT`) and the order
-  totals (`OrderPriceWithVAT`, `OrderPriceWithoutVAT`, `OrderPriceBeforeFees*`).
+- **`force_price_recalculation` computes without saving.** It returned the recomputed total, and the row
+  kept 0.
+- **`validate_order_prices` reads the stored values back instead of recomputing them**, so it reported the
+  0 order as valid.
+- **`update_order_line` writes the unit price only.** The line total and every order total stay as they
+  were, so an order repriced over MCP shows unit prices that multiply to neither its lines nor its total.
+- **The unit price passed is not always the one that lands.** A line seeded before a changed default
+  currency has taken effect can land at ×100 (an explicit `12.50` stored as `1250`), and a quantity-tier
+  `EcomPrices` row reprices a matching line to the tier price.
 
-**Verify:** seed one order post-restart with an explicit price; assert
-`OrderLineUnitPriceWithoutVAT` equals the requested value and the account-side order list shows a
-non-zero total after an `OrderService` cache flush.
+So **place priced demo orders through the storefront checkout**, as a signed-in buyer, and do not reprice
+seeded orders over MCP. In product, that means asking the user to place them on the storefront. Assert on
+the order, never on a line: `get_orders_by_ids` must show a non-zero order total equal to the sum of the
+line totals plus fees. The scripted checkout, and the re-total for an order that has to be kept, are out of
+product: [`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md).
+
+The tools become usable only through an MCP project change: price lines through the price provider, save
+after a recalculation, re-total the line and the order after `update_order_line`, and make
+`validate_order_prices` recompute.
 
 ## The platform OWNS ids and timestamps — a `*Save` discards the ones you send
 
@@ -104,9 +104,11 @@ by looking at the rendered screen.
 - **After any `*Save`, read the id back from the response or a list query** — never assume the id you sent is
   the id that exists. Where the two keys must be reconciled, join through the list query that carries both
   (`InvoiceList` returns `id` = the minted ledger id **and** `invoiceNumber` = yours).
-- **No verb anywhere in the order / invoice / RMA families can set a creation timestamp.** Backdating
-  seeded data is therefore raw SQL **keyed on the minted id** — a sanctioned exception, and the only shape
-  that works.
+- **No MCP tool and no verb in the order / invoice / RMA families sets a creation timestamp**;
+  `update_orders` carries no order date. In product, a seeded order cannot be backdated: say so and ask
+  the user. Out of product it is SQL keyed on the minted id, written last and followed by an
+  application-pool recycle ([`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md)
+  "Backdating an order").
 - Neighbouring shapes measured on the same pass: `OrderSave` validates the billing address, so a model without
   `customerCountryCode` answers `400 {"CustomerCountryCode":["Billing country should be set."]}`; and
   `OrderRecalculate` takes **`OrderId`, singular** — passing `Ids` answers
@@ -131,17 +133,43 @@ WORKS:  OrderNew -> OrderSave -> OrderLineAddProductsBySKU -> SQL line qty -> Or
 - **The rule generalises past orders:** *any* API verb that re-saves an entity reverts raw-SQL edits made
   behind it. **API writes first, SQL last, never re-save afterwards.** The discount family's instance of
   the same mechanism is in [`promotions-engines.md`](promotions-engines.md).
-- **The related read-side behaviour needs no intervention.** Immediately after a write the grids serve the
+- **The admin read side needs no intervention.** Immediately after a write the grids serve the
   cached order model, but it turns over on its own within a couple of minutes and `GetOrderById` reads
-  through to current values — **no recycle and no cache-bust verb is needed**, so do not add one to the
-  recipe and do not read the brief staleness as a failed write.
+  through to current values, so do not read that brief staleness as a failed write. **The storefront
+  customer center is the exception for a SQL-written order date**: its order list kept the placement
+  times until an application-pool recycle, which is why the backdating recipe owes one.
 
 Assert it: seeded order dates still match the intended backdated values **after the full build sequence
 completes**, not after the SQL step.
 
+### The SQL write is not only invisible to the cached service — the next save DESTROYS it
+
+Staging a value on an order with an `UPDATE` and then running code that should react to it fails twice
+over, and the second failure is the expensive one. The reading code loads the order through
+`OrderService.GetById`, a **read-through cache**, so it holds the pre-`UPDATE` entity — the familiar
+stale read. It then does what almost every order-touching path does, `Services.Orders.Save(order)`, and
+**that save writes the whole cached entity back over the row**, reverting the column the SQL had set. A
+`SELECT` immediately after the `UPDATE` says the write succeeded; a `SELECT` after the next unrelated API
+save says it never happened. No error, no warning, no log line on either side. That is materially worse
+than a stale read, because a stale read at least leaves the database telling the truth.
+
+**Every SQL touch on a DW-cached table is a write, then a flush of the owning service, then the code
+that reads it — and nothing may re-save the entity afterwards.** The ordered sequence is in
+[`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Order the SQL write and the cache flush".
+
+Both halves of that sequence are load-bearing, and they were measured on the same solution days apart.
+**Skip the flush** and the staged value is read stale and then erased by the next save. **Do the flush**
+and the write survives and is the shipped path: a bulk repoint of an order column by SQL followed by the
+`OrderService` flush read back correctly through the platform's own read (MCP `get_orders_by_ids`) on
+every changed row, with the rendered customer-center surfaces byte-identical before and after — which is
+itself the proof that nothing else moved. **Local installs only**; a hosted install has no SQL rung, so
+the operation has to be expressed through the MCP tool that owns the column (`update_orders` where it models the column) or not at all. The
+per-entity flush table is in
+[`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md).
+
 ## `OrderSave` on an existing order is a reconciliation pass against live platform state
 
-Editing one cosmetic string on a settled order through the sanctioned `/Admin/Api/OrderSave` path moved
+Editing one cosmetic string on a settled order through the sanctioned Management API `OrderSave` path moved
 **11 columns when exactly 1 was requested**, with HTTP 200 and `successful: true`. Three mechanisms
 compose, and none of them warns:
 
@@ -160,7 +188,7 @@ compose, and none of them warns:
   just to reach the save at all.
 
 **Do not use `OrderSave` to edit a cosmetic field on a historical order.** Where a company or name string
-on a settled order must change, the honest options are (a) a targeted SQL `UPDATE` on that string column
+on a settled order must change, the honest options are (a) a targeted SQL `UPDATE` on that string column (local installs only; a hosted install asks the user)
 with **no** subsequent `OrderSave` or `OrderRecalculate` (either one re-zeroes it), or (b) saving only
 orders whose every line SKU still resolves in `EcomProducts` AND whose delivery country is set. Restoring
 afterwards through `OrderSave` is not available: the same recalculation re-zeroes it, and a shipping
@@ -181,7 +209,7 @@ model has no null or omit semantics, and an empty string is itself a write.
 
 **The safe idiom is a measured pre-flight plus a full-column post-diff:**
 
-1. Before the save, pull the row with SQL and the model with the `*ById` verb, and **fail on any column
+1. Before the save, pull the row with SQL (local installs only; a hosted install has no raw-row read) and the model with the `*ById` verb, and **fail on any column
    where they disagree outside the intended set.** Every disagreement is a field the save will silently
    rewrite.
 2. Pre-flight the recalculation hazards: every `EcomOrderLines.OrderLineProductId` resolves in
@@ -193,7 +221,7 @@ model has no null or omit semantics, and an empty string is itself a write.
 Comparing only the fields you changed is exactly the check that misses this class of defect. Where a
 shell cart carries only resolved defaults worth painting on, `OrderDelete` beats a graft.
 
-(Note the read parameter: `GET /Admin/Api/GetOrderById?OrderId=<id>`, because `Id` answers 400.)
+(The Management API `GetOrderById` read binds `OrderId`; a request naming `Id` answers 400.)
 
 ## `GetOrderList` inner-joins `EcomShops` — orders on a deleted shop vanish from every Commerce grid
 
@@ -206,12 +234,9 @@ The arithmetic across three grids proves the join exactly: on one host the compl
 `live-shop + blank + dead-shop`, and the grid rendered exactly `live-shop + blank`. Blank `OrderShopId` rows
 **do** render; only rows naming a shop that is absent from `EcomShops` disappear.
 
-**Any order backfill must write an `OrderShopId` that exists in `EcomShops`, or leave it blank.** Gate it:
-
-```sql
-SELECT COUNT(*) FROM EcomOrders
- WHERE OrderShopId <> '' AND OrderShopId NOT IN (SELECT ShopId FROM EcomShops);   -- must be 0
-```
+**Any order backfill must write an `OrderShopId` that exists in `EcomShops`, or leave it blank.** No MCP tool is known to read
+orders on a deleted shop, so in product ask the user. The gate query is out of product:
+[`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Gating an order backfill on live shop ids".
 
 This is a good candidate for the Ecommerce health provider to surface — worth raising with the vendor.
 
@@ -253,28 +278,13 @@ own start/end/interval, and the rendered screen showed "Every 1 months" / "Every
 correctly. **Assert `FutureDeliveriesByRecurringOrderId` returns a non-empty schedule for every seeded
 subscription.**
 
-## The RMA read path is a persistent service cache that raw SQL cannot invalidate — and `RmaList` masks it
+## RMA and claims live in their own reference
 
-`RmaList` queries SQL directly; **`RmaById` / `RmaComments` serve a persistent
-`ReturnMerchandiseAuthorizationService` cache that no SQL write invalidates.** After a SQL backdate the list
-grid shows the new dates while the detail view keeps serving the pre-SQL object graph — including rows that
-were deleted. **The correct-looking list is what hides the stale detail**, which is why this reads as a
-rendering bug rather than a cache.
-
-```
-POST CacheInformationRefresh
-{ "CacheTypeName": "Dynamicweb.Ecommerce.Orders.ReturnMerchandiseAuthorization.ReturnMerchandiseAuthorizationService" }
-```
-
-- **Any raw-SQL write to RMA data must be followed by that flush** — no recycle needed.
-- **Match FULL type names when hunting a cache id.** Filtering the ~96-entry cache list with `-match "rma"`
-  also matches `inteRMAtional`, `infoRMAtion` and `foRMAt`; the substring hunt is what makes the right entry
-  hard to find.
-- **Consequence for scheduled work: a SQL-only task cannot call that verb**, so a nightly date shift leaves
-  the RMA detail view stale by design until the cache turns over. Say so when designing the job rather than
-  debugging it later.
-
-Assert `RmaById` returns the same `CreatedAt` as the `RmaList` row after a SQL edit **plus** the flush.
+The whole return-merchandise surface — which surface creates a claim that the customer center can
+see, the `EcomNumbers` claim-number counter, the three-write state rename, the persistent
+`ReturnMerchandiseAuthorizationService` cache that every raw-SQL write owes a flush to, the
+ViewModel-driven customer-center app, and the notification mail's own tag set — is in
+[`rma-and-claims.md`](rma-and-claims.md).
 
 ## SQL backfills vs runtime subscribers
 
@@ -350,6 +360,13 @@ uses the stock module command:
 ?NowImpersonating=true&DWExtranetSecondaryUserSelector=<targetUserId>&Redirect=<post-impersonation-url>
 ```
 
+**`Redirect` takes a RELATIVE URL and is used verbatim** — `Redirect=Default.aspx%3FId%3D<pageId>`,
+percent-encoded because it carries a querystring of its own; the shipped templates build it as
+`Uri.EscapeDataString("Default.aspx?Id=" + pageId)`. Every neighbouring parameter in that link is a
+bare id, so `Redirect=Id=<n>` is the natural guess and it redirects to `/Id=<n>`, which 404s — **after
+the identity switch has already succeeded**, leaving the session impersonating somebody on a
+not-found page with nothing in the response naming the cause. Going back does not undo it.
+
 It sets the `Dynamicweb.Ecommerce.Customers.User.ImpersonatedUser` session value; the switch-back link
 is `?DwExtranetRemoveSecondaryUser=1`. While impersonating, the customer's order list renders through
 the same `Account/Orders/` paragraph (same template, same `OrderSource` discriminator), a header
@@ -358,11 +375,19 @@ mixed-source-orders requirement (badge by source channel) maps onto this 1:1 —
 whatever the order's `OrderSource` column holds; rendering is paragraph-driven, no controller changes.
 
 **Why the Accounts page can be empty while Users is populated.** The Accounts page's `UserGroups`
-module filters by `ListGroupType` (stock = `SystemAccount`). An account group appears under Accounts
-**only when its `AccessUser` row carries `AccessUserUserAndGroupType = 'SystemAccount'`**. A group made
-via `save_user_groups` lands with that column NULL, so it never lists under Accounts even though its
-members show under Users. Fix: set the flag on the account group, then refresh the security cache
-(restart is the reliable way). Do **not** switch the module to `ListGroupType=''` to list everything —
+module filters by `ListGroupType` (stock = `SystemAccount`). A **B2B account group** appears under
+Accounts **only when its `AccessUser` row carries `AccessUserUserAndGroupType = 'SystemAccount'`**. A
+group made via `save_user_groups` lands with that column NULL, so it never lists under Accounts even
+though its members show under Users. **State the group's role before setting this column:** a **DC
+scoping group** wants the opposite value — NULL, so it stays visible in the default Users tree — and
+a non-NULL type hides it (see
+[`dw-commerce-b2b/references/dc-scoping.md`](../../dw-commerce-b2b/references/dc-scoping.md)
+"For a DC scoping group, leave `AccessUserUserAndGroupType` NULL"). **No MCP tool sets the type**:
+`save_user_groups` has no type member. In product, set it on the group's admin screen (a root group,
+type `SystemAccount`); out of product it is a Management API `GroupSave` full-model round trip
+([`recipes-users.md`](../../dw-data-access/references/recipes-users.md) "Set a user group's type").
+Verify on the storefront CSR Accounts page, not on the column; if the group still does not list, refresh
+the security cache (restart is the reliable way). Do **not** switch the module to `ListGroupType=''` to list everything —
 that surfaces internal staff groups as if they were customer accounts.
 
 ### `AccessUserSecondaryRelation` — the impersonation grant
@@ -379,32 +404,23 @@ one table:
 The naming is counter-intuitive ("Secondary user" reads as a sub-user, the opposite of DW's
 interpretation). Verified direction (DW10 admin labels): the CSR's profile "Users this user can
 impersonate" lists rows where the CSR's id is in `UserId`; the customer's profile "Users that can
-impersonate this user" lists rows where the customer's id is in `SecondaryUserId`. A single grant:
-
-```sql
-INSERT INTO AccessUserSecondaryRelation
-    (AccessUserSecondaryRelationUserId,            -- CSR id
-     AccessUserSecondaryRelationSecondaryUserId)   -- customer id
-VALUES (<csr_user_id>, <customer_user_id>);
-```
+impersonate this user" lists rows where the customer's id is in `SecondaryUserId`. One grant is one row: the CSR in `UserId`, the customer in `SecondaryUserId`.
 
 **Symptom of wrong direction:** the impersonation bar is empty and the customer's admin profile shows
 the CSR under "Users that can impersonate this user". Swap the two ids. Don't trust the column name;
 trust the screen label.
 
-**Required follow-up, not picked up live.** After the SQL change: (1) **rebuild the Secondary user
-index** (the lookup is index-backed); (2) **clear the user/system cache** (DW caches `AccessUser`
-objects in process).
+**In product, grant with `add_impersonatable_users` and read the direction back with
+`get_impersonatable_users`.** The SQL grant is out of product:
+[`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md) "Granting impersonation by SQL, then the Secondary users index build".
+
+**A grant written behind the platform is not picked up live.** It owes two follow-ups: (1) a **rebuild of
+the Secondary users index** (the lookup is index-backed); (2) a **clear of the user/system cache** (DW caches
+`AccessUser` objects in process).
 
 The rebuild is a **two-call** sequence, because `BuildIndex` hard-requires a `BuildName` that the index
-model does not expose. Resolve the builder first, then build:
-
-```
-GET  /Admin/Api/IndexBuildersByRepositoryAndIndexName?Repository=Secondary%20users&IndexName=Users.index
-     -> name "Users", assemblyQualifiedName Dynamicweb.Security.UserManagement.Indexing.UserIndexBuilder
-POST /Admin/Api/BuildIndex {"Repository":"Secondary users","IndexName":"Users.index","BuildName":"Users"}
-     -> ok;  IndexStatusesAll then reports "Secondary users|Users.index" state=success
-```
+model does not expose: the builder (name `Users`, type
+`Dynamicweb.Security.UserManagement.Indexing.UserIndexBuilder`) is resolved first, then built.
 
 `IndexByRepositoryAndName` returns only counts (`balancerTypeName`, `schemaExtenderFieldsCount`,
 `indexFieldsCount`) and **no builds collection**, so the build name is not discoverable from it, and
@@ -450,6 +466,8 @@ before checkout. A Reorder button is one line of Razor in an Order-detail conten
 When you seed customer-experience data yourself (MCP `create_orders` + `add_products`, or SQL) instead
 of relying on pre-provisioned baseline content, stock filters silently hide otherwise-correct data:
 
+- **Priced orders come from the storefront checkout**, not from the MCP order tools, which persist no
+  totals; see "Orders built over MCP persist no totals" above.
 - **Placed orders only show in "My orders" when `EcomOrders.OrderComplete = 1`** (and
   `OrderCompletedDate`). See "Order completion" above. Quotes/carts list by their own discriminators
   (`OrderIsQuote`, `OrderCart`) and don't need this.
@@ -457,6 +475,7 @@ of relying on pre-provisioned baseline content, stock filters silently hide othe
   `ProductReferenceUrl`, `UnitId` — pass empty strings, never NULL. The list header is one
   `EcomCustomerFavoriteLists` row per user (`IsDefault = 1` for the default). The storefront reads it
   via `Pageview.User.GetFavoriteLists()`. There is no MCP tool for favorites — SQL-only.
+  **Local installs only**: a hosted install has no favorites write, so ask the user.
 - **Stock checkout reads the billing address from the user-*profile* fields, not from `UserAddress`
   records.** A buyer seeded with `save_user_addresses` (a Billing + Shipping `UserAddress`) but a blank
   profile address (`AccessUser.Address/Zip/City`) cannot complete checkout — stock
@@ -473,6 +492,6 @@ engines, a voucher grid fed by the legacy one, and an encrypted gift-card code �
 
 (Gating the CSR section away from non-CSR users — and gating buyer dashboards away from the CSR — is the
 Permission entity store's job; see
-[`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §15. DC-scoped buyer
+[`page-gating.md`](../../dw-users-permissions/references/page-gating.md) §15. DC-scoped buyer
 catalogs/shipping that a CSR impersonates onto are
 [`dc-scoping.md`](../../dw-commerce-b2b/references/dc-scoping.md).)

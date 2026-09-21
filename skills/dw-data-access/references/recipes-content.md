@@ -1,0 +1,398 @@
+# Out-of-product recipes — Content
+
+This reference holds the out-of-product recipes for content (pages, paragraphs, grid rows, item types and item fields, language layers): Management API
+commands at `/admin/api/...`, serializer layers, and direct SQL. The in-product skills for this
+area are `dynamo: true` and carry no instruction on those surfaces, so they keep a one-line pointer
+here instead of the recipe.
+
+Every recipe names its surface in the repo convention: MCP tools `snake_case` in backticks,
+Management API commands `PascalCase` in backticks with the route on first use in this file,
+serializer operations by command or by layer and mode, and `SQL` labelled as such in a fenced `sql`
+block. Every SQL recipe states three things inline — why the higher surfaces do not cover it, that
+it is **local installs only**, and the cache flush or host restart it owes.
+
+## Contents
+
+- [Writing `PageNavigationTag` directly](#writing-pagenavigationtag-directly)
+
+- [Wire a language layer's Area row to the PIM language](#wire-a-language-layers-area-row-to-the-pim-language)
+- [Create a language layer — `AreaCopy`, and why never an Area row clone](#create-a-language-layer--areacopy-and-why-never-an-area-row-clone)
+- [Mirror permissions onto a fresh language layer](#mirror-permissions-onto-a-fresh-language-layer)
+- [Repair repeater children the copier dropped](#repair-repeater-children-the-copier-dropped)
+- [Repair a master grid row with a NULL GridRowItemId](#repair-a-master-grid-row-with-a-null-gridrowitemid)
+- [Tell a dangling item-list pointer from an empty list](#tell-a-dangling-item-list-pointer-from-an-empty-list)
+- [Load translated strings without mojibake — the sqlcmd codepage](#load-translated-strings-without-mojibake--the-sqlcmd-codepage)
+- [Culture-coded area URL prefixes](#culture-coded-area-url-prefixes)
+- [Clear PageShortCut baseline cruft](#clear-pageshortcut-baseline-cruft)
+- [Set `PageNavigationTag`](#set-pagenavigationtag)
+- [Add a field to an item type that holds content](#add-a-field-to-an-item-type-that-holds-content)
+- [Edit repeater children through `ParagraphSave`](#edit-repeater-children-through-paragraphsave)
+- [Audit generic item folders for shim templates](#audit-generic-item-folders-for-shim-templates)
+- [Find emoji codepoints in rendered chrome](#find-emoji-codepoints-in-rendered-chrome)
+- [Page verb and tool traps measured on a live host](#page-verb-and-tool-traps-measured-on-a-live-host)
+
+## Writing `PageNavigationTag` directly
+
+**Surface: `SQL`.** `navigationTag` IS a member of the MCP `save_pages` input schema on MCP 0.4.4 —
+it is accepted and then not persisted. The Management API `PageSave` at `/admin/api/PageSave` reaches
+`PageNavigationTag` ("Set `PageNavigationTag`", below), so this SQL form is the last resort.
+
+```sql
+UPDATE Page SET PageNavigationTag = 'MyTag' WHERE PageId = <pageId>;
+```
+
+Three things this recipe owes:
+
+- **Why the higher surfaces do not cover it** — the MCP page model carries the member and drops the
+  value on 10.28.x; use SQL only where `PageSave` is not available.
+- **Local installs only** — a hosted install has no SQL surface at all. On a hosted install, write
+  the tag with Management API `PageSave`.
+- **The debt it owes** — a host restart. The page cache is not touched by a direct column write, so
+  `GetPageIdByNavigationTag()` keeps returning `0` until the application pool recycles.
+
+Because of that third point the tag is the wrong lookup key for anything a template has just
+created. Resolve a freshly created page or paragraph **by item type** instead: the paragraph cache
+is invalidated by the API write that created the row, so the item-type lookup is cache-fresh on the
+very next request and neither the SQL nor the restart is needed. See
+[dw-render-razor](../../dw-render-razor/SKILL.md) `references/paragraph-endpoints.md` §1 for that
+recipe.
+
+## Wire a language layer's Area row to the PIM language
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`language-layers.md`, "Wiring the area to PIM language").
+
+After the layer exists its `Area.AreaEcomLanguageId` still points at the master's PIM language, so
+the layer renders localized chrome around master-language product values. Inside the product the
+write is MCP `save_areas`, or Settings → Content → Websites → the layer → regional settings. `SQL`
+is the fallback for the columns `save_areas` does not model on a given build (currency, country
+code) and is **local installs only** (on a hosted install, `save_areas`, and for the rest a full-model
+`GetAreaById` then `AreaSave` round trip at `/admin/api/AreaSave`, never a partial model); it owes a
+host restart, because the area row is read from the
+startup cache.
+
+```sql
+UPDATE Area SET
+  AreaEcomLanguageId = N'<LANG2>',
+  AreaEcomCurrencyId = N'<EUR>',          -- usually inherited; change for markets with another currency
+  AreaEcomCountryCode = N'<NL>',          -- drives the default VAT / shipping region
+  AreaActive = 1
+WHERE AreaId = <newAreaId>;
+```
+
+PIM must already hold the matching `LANG2` row with the products translated to it.
+
+## Create a language layer — `AreaCopy`, and why never an Area row clone
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`language-layers.md`, "Creating the layer").
+
+MCP `create_language_version` and `copy_area` are the in-product surface. Where MCP is unavailable,
+or where `copy_area` is the broken one on the build in hand (it answered "Area was not copied" on
+DW 10.25.6), the Management API command `AreaCopy` is proven:
+
+```
+POST /admin/api/AreaCopy
+{"Model": {"SourceAreaId": <masterId>, "Name": "...", "Culture": "<culture>",
+           "CopyPermissions": true, "AsWebsite": false}}
+-> {"status":"ok", "modelIdentifier":"<newAreaId>"}
+```
+
+`AsWebsite=false` means a language layer (a sibling carrying the `AreaMasterAreaId` back-link);
+`true` means an independent website. Some 10.25.x builds accept `Query.`-prefixed query-string
+parameters instead — try the JSON body first and fall back to the query string.
+
+**Never mint the layer with a SQL `INSERT INTO Area`.** A layer is a multi-table create (roughly 95
+page clones plus paragraph, grid-row, item-localization and sibling-link bookkeeping); a row clone
+produces a partially-cloned tree missing PDPs, sign-in, customer-center and every sibling-page link,
+and no flush or restart repairs it. This is the one content create with no sanctioned SQL form.
+
+The command also has a host-config prereq: it opens a second SQL connection inside a
+`TransactionScope`, and without the host's distributed-transaction prereqs it fails with
+`System.Transactions.TransactionException: The operation is not valid for the state of the
+transaction` — an environmental error that reads as an input-shape error. The prereqs are owned by
+[dw-setup-install](../../dw-setup-install/SKILL.md): the `ImplicitDistributedTransactions` opt-in,
+the MSDTC service with inbound/outbound and firewall setup, and the net10-host caveat where a
+fully-configured host still cannot promote and needs the `Enlist=false` connection-string
+workaround.
+
+## Mirror permissions onto a fresh language layer
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`language-layers.md`, "What a full-content AreaCopy does NOT carry", item 2).
+
+Permissions are not cloned, and `CopyPermissions: true` does not change that for frontend pages — so
+every protected page in the copy is public until the rows are mirrored onto the layer's sibling page
+ids (`Page.PageMasterPageId` gives the mapping). Write the rows with `PermissionSave`
+([`recipes-users.md`](recipes-users.md)), then flush:
+
+```
+POST /admin/api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Security.Permissions.PermissionService"}
+```
+
+The nav tree caches separately, so a host restart is owed as well as the flush.
+
+## Repair repeater children the copier dropped
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`language-layers.md`, "What a full-content AreaCopy does NOT carry", item 1).
+
+The copier remaps repeater children with an unquoted SQL `CASE`, so STRING item ids parse as column
+names, the INSERT dies with `Invalid column name '...'` (the real exception reaches only the event
+log), and the paragraph clone lands with `ParagraphItemType` / `ParagraphItemId` wiped. Numeric-id
+children clone fine, so the prevention is to give repeater children numeric item ids.
+
+`SQL` is sanctioned for both halves here — MCP and the Management API are both proven broken for
+this shape — and stays **local installs only**. The detection query is read-only; the repair owes a
+`CacheInformationRefresh` on `ParagraphService` and `PageService`.
+
+```sql
+SELECT p.ParagraphID, p.ParagraphPageID
+FROM Paragraph p JOIN Page pg ON pg.PageID = p.ParagraphPageID
+WHERE pg.PageAreaId = <layerAreaId>
+  AND p.ParagraphItemType = '' AND p.ParagraphModuleSystemName = '';
+```
+
+Every row is a dropped item. Per stub: clone the `ItemList` row, its child rows, the
+`ItemListRelation` rows and the parent item, then re-point the stub paragraph at the clone.
+
+On a hosted install, detect the stubs with `get_pages_by_area_id` and `get_paragraphs_by_page_id` (an
+empty item type); the repair has no documented write path there, so an online build asks the user.
+
+## Repair a master grid row with a NULL GridRowItemId
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`language-layers.md`, "Every save on a mastered page costs two objects").
+
+On a mastered page `save_grid_rows` gives the MIRROR a real `GridRowItemId` and leaves the MASTER's
+row NULL, and a Swift row renders from the item INSTANCE — so the master language renders no columns
+while the translation renders correctly. No verb sets `GridRowItemId` on a master row on 10.28.x,
+which is why this one is `SQL`, **local installs only** (a hosted install has no documented write path
+for a master row; an online build tries Management API `GridRowSave`, which mints a missing row item,
+then asks the user), and owes a `CacheInformationRefresh` on
+`ParagraphService` and `PageService`.
+
+Allocate the id through the platform's own per-type allocator, the `ItemTypeId(ItemType, Current,
+Seed)` table — never `MAX(Id)+1` on the `ItemType_<name>` table, which collides the next time the
+platform allocates:
+
+```sql
+UPDATE ItemTypeId SET [Current] = [Current] + 1 WHERE ItemType = 'Swift-v2_Row';
+-- then INSERT the instance row carrying the new value and stamp GridRow.GridRowItemId with it
+```
+
+## Tell a dangling item-list pointer from an empty list
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`language-layers.md`, "A DANGLING item-list pointer reads exactly like an empty list").
+
+The in-product discriminator is `add_repeatable_item`, whose error names the missing list. Where the
+database is reachable, a read-only `SELECT` answers the same question across a whole deserialize at
+once. Read-only, **local installs only** by convention, no flush owed:
+
+```sql
+SELECT COUNT(*) FROM ItemList WHERE Id = <pointer>;   -- 0 = dangling, not empty
+SELECT COUNT(*) FROM ItemList;                        -- 0 rows after the bad deserialize
+SELECT COUNT(*) FROM ItemListRelation;                -- 0 rows with it
+```
+
+## Load translated strings without mojibake — the sqlcmd codepage
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`language-layers.md`, "The three-layer translation cascade").
+
+`sqlcmd` defaults to the system codepage (Windows-1252 on western Windows), so a UTF-8 `.sql` file
+carrying multibyte characters is mangled at parse time and stored corrupted in `NVARCHAR` even
+though the literal is `N'...'` — an accented character arrives as a two-character double-encoded
+sequence. Two fixes, in preference order:
+
+```powershell
+
+# preferred: build the statements in PowerShell (UTF-16 in memory) and never touch a .sql file
+Invoke-Sqlcmd -ServerInstance "<server>" -Database "<db>" -Query $updateStatement
+```
+
+or save the `.sql` as UTF-8-with-BOM, which `sqlcmd` detects. The inline route is the more robust of
+the two, since a BOM is easy to lose on re-save. To measure damage already stored, this skill ships
+the read-only census script `Invoke-DwMojibakeCensus.ps1`. Restart the host after editing
+`Translations.xml` (cached at startup) and after touching header item rows (composition cache).
+
+**Local installs only**: on a hosted install, write translated strings through `apply_translation` (or
+`set_item_field_values`), which takes JSON and has no codepage step; the census script needs the
+database too, so stored damage there is checked on the rendered page.
+
+## Culture-coded area URL prefixes
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`language-layers.md`, "Friendly URL config").
+
+Switching every area to a culture code makes the language switch visible in the URL bar. The
+in-product write is MCP `save_areas` (url name and the active flag, including deactivating the cruft
+area a failed copy left behind). `SQL` covers the same columns where no MCP connection exists, is
+**local installs only**, and owes a host restart — the URL provider caches the area URL map at
+startup.
+
+```sql
+UPDATE Area SET AreaUrlName = N'en-us' WHERE AreaId = <master>;
+UPDATE Area SET AreaUrlName = N'nl-nl' WHERE AreaId = <nlLayer>;
+UPDATE Area SET AreaActive = 0 WHERE AreaId = <cruftLayerId>;   -- disable failed-copy cruft
+```
+
+## Clear PageShortCut baseline cruft
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`language-layers.md`, "PageShortCut baseline cruft").
+
+Some baselines ship pages whose `Page.PageShortCut` points at a hardcoded old page id that does not
+exist after a deserialize; the frontend 301-redirects to it and the visitor gets a 404. No MCP tool
+and no Management API verb exposes `PageShortCut`, so this is `SQL`, **local installs only** (a hosted install has no documented read or write
+path for the column, so an online build asks the user), and it
+owes a host restart (page metadata is cached). Clear only shortcuts whose target id is dead — a
+shortcut to an id that exists (a sign-in folder pointing at its form page) is intentional.
+
+```sql
+SELECT PageId, PageAreaId, PageMenuText, PageShortCut FROM Page
+WHERE PageShortCut LIKE '%Default.aspx%';
+UPDATE Page SET PageShortCut = N'' WHERE PageId IN (<aboutPageId>, <clonePageIds>);
+```
+
+Add content to the now-empty page or it renders as header plus footer.
+
+## Set `PageNavigationTag`
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`page-paragraph-writes.md`, "Saves that report success but silently drop a field" and
+"`save_pages` persists `urlName`, and no page read projects it").
+
+**The slug does not belong here.** On DW 10.28.x with MCP 0.4.4 `save_pages` persists `urlName` to
+`Page.PageUrlName` and it wins over the `menuText`-derived slug, so pinning a slug is an in-product
+write — pass `urlName` and confirm with a 200 on the composed URL.
+
+`navigationTag` is the member `save_pages` accepts and drops, so that column needs a second surface.
+The Management API `PageSave` reaches `PageNavigationTag`. The `SQL` form below is the last resort
+when neither is available: no MCP tool reaches the column and no read projects it, it is **local
+installs only**, and it owes a host restart, so batch it before the restart the job already owes and
+assert the rendered link rather than the call's status.
+
+```sql
+UPDATE Page SET PageNavigationTag = N'<tag>' WHERE PageId = <pageId>;
+```
+
+## Add a field to an item type that holds content
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`modelling-discipline.md`, "To ADD a field to a type that already holds live content").
+
+**Surface: Management API.** `ItemFieldNew` returns a field shell for an existing type and
+`ItemFieldSave` ALTERs the `ItemType_<Type>` table to add the column, leaving every existing row
+intact. The Management API is reachable on a hosted install too, so the same two calls are the online
+route; no MCP tool is documented in these skills as the add-one-field verb.
+
+```
+GET  /Admin/Api/ItemFieldNew?ItemTypeSystemName=<Type>&ItemFieldGroupSystemName=General
+POST /Admin/Api/ItemFieldSave { Model: { ..., systemName:"<Field>", isNew:true,
+       editorType:"Dynamicweb.Content.Items.Editors.TextEditor, Dynamicweb",
+       underlyingType:"System.String, System.Private.CoreLib" } }   -> status ok
+
+ItemType_<Type>: 15 -> 16 columns, rows 12 -> 12, new column <Field> nvarchar(255)
+```
+
+Guard the call with a before/after content fingerprint plus a row count (column list, row count and a
+per-row digest of existing values), then assert exactly one new column with the expected name and type
+and an unchanged fingerprint. No cache flush or restart is owed: the field is usable on the next request.
+
+## Edit repeater children through `ParagraphSave`
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`modelling-discipline.md`, "How repeater children are stored").
+
+**Surface: Management API.** The edit path is `ParagraphSave` posted to
+`POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById` with a Bearer token. The admin Visual
+Editor's slide editor is a client of the same route, so its save can be captured and replayed. The
+in-product equivalents are the MCP tools `get_repeatable_item_field`, `add_repeatable_item`,
+`remove_repeatable_items` and, once a child exists, `set_item_field_values` on the child's item type and
+id. No cache flush or restart is owed: `ParagraphSave` runs the domain service, which invalidates the
+render cache. Proven end-to-end on a `Swift-v2_Slider`: a headless save created a slide and then edited
+it in place, and the storefront rendered the change on the next GET. [dw 10.28.1 · swift 2.4]
+
+Minimal payload (edit the existing child `1`; use `"ItemId": ""` to create):
+
+```jsonc
+POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
+{
+  "QueryData": { "Id": <paragraphId> },
+  "model": {
+    "ItemType": "Swift-v2_Slider",
+    "Layout": "CardCoverNavInline.cshtml",
+    "ContentItem|Swift-v2_Slider|General|Items": [
+      {
+        "ItemId": "1",                       // "" creates; an existing id edits in place
+        "ItemType": "Swift-v2_Slider_Item",
+        "Label": "<slide label>",
+        "ContentInfo": { "AreaId": 3, "PageId": 153, "GridRowId": 185, "ParagraphId": <paragraphId> },
+        "RelationItem": { "Groups": [] },
+        "ModelRawData": "{\"RelationItem|Swift-v2_Slider_Item|General|Title\":\"<p>...</p>\", \"RelationItem|Swift-v2_Slider_Item|General|Text\":\"<p>...</p>\", \"RelationItem|Swift-v2_Slider_Item|General|Button\":null}"
+      }
+    ]
+  }
+}
+```
+
+The payload rules (the full desired child set, `ItemId` create or edit, string-only `ModelRawData`, the
+link binder shape) and the lying-success traps stay with the in-product home. Neither the save response
+nor `GetParagraphById` can verify the write; this is the measured readback that shows why:
+
+```
+GET  /Admin/Api/GetParagraphById?Id=<paragraphId>
+  -> contentItem.groups[0].fields[0] {name: "Items", value: 323}    # before all four saves
+  -> ...                             {name: "Items", value: 323}    # after all four saves
+POST /Admin/Api/ParagraphSave?Query.Type=GetParagraphById
+  -> {status: "ok", exception: null}   with model...Items.value echoing the posted ModelRawData VERBATIM,
+                                       including field values that provably did NOT persist
+```
+
+Verify every child write on the rendered page (a live GET, or `fetch_frontend_page_html` in product).
+
+## Audit generic item folders for shim templates
+
+In-product home: [dw-content-modelling](../../dw-content-modelling/SKILL.md)
+(`modelling-discipline.md`, "Audit query").
+
+**Surface: local filesystem (PowerShell).** Lists paragraph templates inside a stock `Swift-v2_*` item
+folder whose file name is not a stock `Swift-v2_*` name, the shim smell. `$Root` is the folder that holds
+`Templates\`. **Local installs only**: on a hosted install, or in product, walk
+`Templates/Designs/Swift-v2/Paragraph/` with the MCP tool `list_files`. Read-only, nothing owed.
+
+```powershell
+Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph\Swift-v2_*\*" -Filter '*.cshtml' `
+    | Where-Object { $_.Name -notlike 'Swift-v2_*' }
+```
+
+This is also grep #6 of the discipline audit grep pack in [`recipes-swift.md`](recipes-swift.md)
+"Discipline audit grep pack".
+
+## Find emoji codepoints in rendered chrome
+
+In-product home: [dw-render-razor](../../dw-render-razor/SKILL.md)
+(`razor-surfaces-and-pitfalls.md`, "Emoji codepoints render in color regardless of CSS `color:`").
+
+**Surface: HTTP fetch (PowerShell).** Fetches the rendered storefront page and lists every emoji
+codepoint in it. Works against any reachable host; in product, fetch the page with
+`fetch_frontend_page_html` and search the returned HTML for the same ranges. Read-only, nothing owed.
+
+```powershell
+$page = (Invoke-WebRequest -SkipCertificateCheck https://localhost:<port>/).Content
+[regex]::Matches($page, '[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}]') | Select-Object -ExpandProperty Value -Unique
+```
+
+Any hit inside `<header>`, `<footer>`, `<nav>` or a value-props band renders in color on Windows.
+
+## Page verb and tool traps measured on a live host
+
+Each row is a call that answers as if it had done what was asked [dw 10.28.10 · mcp 0.6.0-beta]. The rows mix surfaces, so
+each names its own, and every "do instead" ends with a read that is not the call's own echo.
+
+| Surface | Call | What it answers | What is true | Do instead |
+|---|---|---|---|---|
+| MCP | `save_pages` with `metaTitle` | `succeeded` per page | Nothing persists: `get_pages_by_ids` reads the old value and the rendered `<title>` is unchanged; no `save_pages` member carries the meta description at all. | Page SEO goes through Management API `PageSave` with the full `GetPageById` model, the meta title and description members changed; then read the rendered `<title>` (a live GET, or `fetch_frontend_page_html` in product). |
+| Management API | `PageSave` with `publicationState: "Hidden"` (or `"hidden"`) | 500 `Exception has been thrown by the target of an invocation.`, nothing written | The accepted values are `published` and `Unpublished`; the read model returns lower case, so its casing is not the save enum's casing. | Send `Unpublished` to take a page off the site (it then answers 404 anonymously) and confirm with an anonymous GET. |

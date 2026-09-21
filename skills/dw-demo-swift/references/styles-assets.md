@@ -32,6 +32,14 @@ demo's Swift version (from the versions prompt) is only a compatibility check he
 The layer lives in the demo's Distribution clone at `<demo-root>\distribution\layers\theme-default\`;
 it resolves from the live `layers/INDEX.json` on the latest gate-proven `main` (the usual demo consume).
 
+**Do not pull here — assert the scaffold SHA.** The scaffold pass owns the Distribution checkout and
+recorded its SHA in `CUSTOMISATIONS.md` as the build's reproducibility stamp
+([`dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) "This pass owns
+the checkout"). Read `git -C $dist rev-parse HEAD`, compare it with the recorded stamp, and **stop**
+on a mismatch with "distribution checkout moved since scaffold, <recorded> -> <current>" rather than
+continuing on layer content the earlier passes never saw. The clone branch below stays only for a
+checkout that does not exist yet; record its SHA as the stamp if this is the first pass to run.
+
 ```powershell
 $demoRoot = (Get-Location).Path
 $dist     = "$demoRoot\distribution"                 # the Distribution clone (from deserialize-flow §3)
@@ -39,7 +47,7 @@ $theme    = "$dist\layers\theme-default"
 if (Test-Path "$dist\.git") {
   git -C $dist pull --ff-only origin main             # main IS the version — fast-forward to the gate-proven tip
 } else {
-  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
   git clone "https://github.com/$repo" $dist
 }
 $index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
@@ -74,6 +82,40 @@ $dst = "<demo>\Dynamicweb.Host.Suite\wwwroot\Files"
 Copy-Item -Recurse "$src\*" "$dst\" -Force   # lands ColorSchemes/Buttons/Typography + Custom defaults
 ```
 
+**Staging the files is not the last step — wire the head include, or none of it loads.** The overlay
+lands `DefaultHeadInclude.cshtml` and `default_custom.css` on disk, and the include is only ever
+reached through the area item field `Swift-v2_Master.CustomHeadInclude`, which nothing in the overlay
+sets. Until that field points at the staged include, the theme's custom sheet and its CSS custom
+properties are simply absent from every rendered page — with no error, and with the Style-asset
+sheets themselves loading normally, so three of the four sheets link and the fourth does not.
+
+```
+Swift-v2_Master.CustomHeadInclude = /Files/Templates/Designs/Swift-v2/Custom/DefaultHeadInclude.cshtml
+```
+
+Set it once per environment, by SQL or by a full `websiteItem` round-trip through `AreaSave`. **Local installs only** applies to the SQL write: on a hosted install, use the `AreaSave` round trip. That round trip persists String fields such as this one but drops the `SelectedImage` master fields (`Favicon`, `AppleTouchIcon`, `MetaImage`), and an MCP write to the master item stays invisible behind the cached area until an `AreaSave` round trip: both in [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) §"Area master item fields". **The
+field is environment-owned** — it sits in the serializer config's `excludeFieldsByItemType`, so the
+deserializer will neither write it nor overwrite it: it must be set on the host rather than shipped
+in content, and it survives a re-deserialize afterwards.
+
+Gate it on the rendered page, not on the file copy: fetch `/` and assert **all four** theme sheets
+are linked (the three Style-asset sheets plus `Custom/default_custom.css`) and at least one of the
+theme's inline custom properties is present; then re-run the deserialize and re-assert, which is what
+proves the field is environment-owned rather than merely set. **Run that gate after every deserialize,
+not only during a re-skin.** A one-shot deserialize leaves the field empty, the three Style-asset sheets
+link normally, nothing errors, and a structural proof reports green over a site missing its entire
+Tier-1 token block — so the gate belongs in the deserialize flow
+([`deserialize-flow.md`](deserialize-flow.md)) and the missing `Custom/default_custom.css` is a FAIL,
+not a polish item.
+
+**The field holds ONE path, and `default_custom.css` is registered from inside the default include.**
+Pointing `CustomHeadInclude` at a customer head include therefore *unloads* `theme-default`'s Tier 1
+unless the customer include registers it again — the natural reading, point the field at the customer
+include and expect both sheets, loses the theme silently and with no error. The customer include carries
+**both** `AddStylesheet` calls, in the load order the Tier-0 motion below prescribes
+(`default_custom.css` first, `<customer>_custom.css` second). Assert on the served head: five sheets,
+the two `Custom/` sheets last and in that order.
+
 For a customer re-skin, leave `theme-default`'s files as staged and add the customer's own Styles
 JSON+CSS pairs plus `<customer>_custom.css` on top ([`re-skin.md`](re-skin.md)); hand-edit patterns
 and Area-column wiring follow [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §7.
@@ -89,18 +131,40 @@ renaming the ids makes each row resolve to nothing and the site loses its bandin
 `/Files/System/Styles/ColorSchemes/<Area.AreaColorSchemeGroupId>.css`, so the **group** is repointable
 per area while the ids inside the file are the binding key.
 
+**The surface is the style tools, not a hand-edit.** `save_color_schemes`, `save_typographies` and
+`save_button_styles` write the `.json` model and regenerate the `.css` in one operation (the group is
+created if it does not exist), and `save_areas` repoints the area at the result. Read the current state
+back with `get_color_schemes`, `get_typographies` and `get_button_styles` first: everything below is a
+partial edit of what the theme layer already staged, not a build from nothing.
+
+**First, choose the group — the two answers behave differently and the choice has to be recorded.**
+
+| Choice | When it is right | What it costs |
+|---|---|---|
+| **Write the shipped group** (`default`) in place | The area already binds it and the demo will not be re-staged from the theme layer again | A re-stage of `theme-default`'s `files/` reverts the palette; record that in the ledger as an accepted consequence |
+| **Create a net-new `<customer>` group** and repoint the area | The shipped group must survive a layer refresh, or the host serves more than one branded area | One extra `save_areas` call, and every later read has to name the customer group rather than `default` |
+
+Either way the ids inside the group stay the stock seven — that half is unchanged and is the load-bearing one.
+
 The prescribed motion:
 
-1. Add net-new `<customer>.{json,css}` **pairs** under `System/Styles/{ColorSchemes,Typography,Buttons}`.
-   Never edit `theme-default`'s `default.*` or the stock swift / buttons / fonts assets.
+1. Write the palette with `save_color_schemes`, tagging every row with the chosen `groupId`. One call
+   carries all seven schemes. The tool writes the `.json` model and regenerates the `.css` together, so
+   the "edit the `.json` too" rule below governs a hand-edit and not the tool path.
 2. **Reuse the seven stock scheme ids verbatim** (`light`, `lightgrey1`, `lightgrey2`, `dark`,
    `darksubtle`, `primary`, `secondary`) so every existing `data-dw-colorscheme` maps over unchanged.
-3. Per scheme, edit **both the hex and the `rgb` triplet**, in **both** the `.css` and the `.json`.
-   `--dw-color-button-primary` is emitted once per scheme in each notation, so a brand swap is 14
-   literals across 7 schemes, not 7, and the `.json` must carry them or the admin swatch lies.
-4. Repoint the four `Area` style columns by SQL, not by `AreaSave`:
-   `UPDATE Area SET AreaColorSchemeGroupId='<customer>', AreaColorSchemeId='light',
-   AreaTypographyId='<customer>', AreaButtonStyleId='<customer>' WHERE AreaId=<id>;`
+3. Write typography with `save_typographies` and the button style with `save_button_styles`.
+   **Button shape is a name, never a number**: the model takes one of `Squared`, `Rounded` or `Pill`.
+   A brief that specifies a shape as an integer is unresolvable — a zero-based reading and a one-based
+   reading name different shapes and produce visibly different buttons — so settle it against the
+   brief's own gloss before writing, read the shipped value back with `get_button_styles`, and record
+   the name. Write shape names into every downstream artefact (brief, asserts, ledger) so the number
+   never travels. The unambiguous fields (`borderSize`, `paddingX`, `paddingY`) matching the shipped
+   style exactly is what makes a contested shape easy to miss.
+4. Repoint the area with `save_areas`, setting `colorSchemeGroupId`, `colorSchemeId`, `typographyId`
+   and `buttonStyleId`. This is a tool call; no SQL is needed and none is owed. (A host whose area rows
+   must be repointed outside the product has the column-level recipe in
+   [`dw-data-access/references/recipes-swift.md`](../../dw-data-access/references/recipes-swift.md).)
 5. Put brand-accent work on `theme-default`'s declared hooks: `--td-accent` / `--td-accent-soft` first
    (they recolour nav hover, mega-menu hover, the underline caret, outline/ghost hover and chips in a
    handful of lines), then `--dw-color-accent` as the brand slot. When a token cannot be expressed by
@@ -108,17 +172,48 @@ The prescribed motion:
    condition** rather than in the generated sheet, so the model never lies.
 6. Head load order is load-bearing: `default_custom.css` **then** `<customer>_custom.css`.
 
+**Three brand tokens the model cannot reach, all Tier-1 declarations, so plan for them.**
+
+- **The per-edge fills of the theme's edge motif.** `theme-default` paints a section-edge motif
+  (`--td-edge-mask`) on the home page's section boundaries and on the footer crest, and each edge takes
+  its fill from a neighbour: the footer crest reads `--dw-color-background` off the `<footer>` element
+  while the dark colour scheme sits on the footer's inner grid rows, and a section edge reads the row
+  below it. On a stock light delivery every edge therefore computes white over white and nothing is
+  visible, with no error and with the motif's rules present in the CSSOM. The sheet's own notes say a
+  brand sets the fills when both sides match: declare `--td-edge-fill-hero`, `--td-edge-fill-alt` and
+  `--td-edge-fill-footer` in `:root` in `<customer>_custom.css` (a tint on a light ground, the ink on a
+  dark one). Assert the computed `background-color` of each edge pseudo-element differs from the ground on
+  both of its sides; an edge whose fill equals its ground on either side is a red row, not a skipped one.
+
+- **The contrast half of the accent pair.** A custom colour id is letters, digits and underscore only and
+  emits `--dw-color-{id}`, so `accent` is writable and a hyphenated `accent-contrast` is not — and the
+  underscored spelling emits a `--dw-color-` token no consumer reads. The generator also derives `--dw-color-button-primary-contrast` itself and
+  overwrites a brand value there. `theme-default`'s accent convention is a *pair*, so declare
+  `--dw-color-accent-contrast` (and `--dw-color-button-primary-contrast` where the brand names one) in
+  `<customer>_custom.css`, scoped to the seven scheme selectors and loaded after the generated sheet so
+  source order wins, with the retirement condition written into the block.
+- **The font fallback stack.** `ParagraphFont` and `HeadingFont` take one family name each and the
+  generated sheet emits `--dw-font-family` with that single name and nothing after it, plus one `@import`
+  per face per weight from a third-party font host — so a blocked or slow font host drops the whole site
+  to the browser default rather than to the specified near-match. Multi-word families are fine: the
+  generator percent-encodes the spaces and the resulting URL resolves. Declare the full stacks in
+  `<customer>_custom.css` against the **three** selector groups the generated sheet sets the variable on
+  — body, the heading group and the button group — loaded after the generated sheet, so source order wins
+  and no `!important` is needed.
+
 Also rejected: renaming `Area.AreaName` for portal branding. That breaks the composed serializer
 manifests, whose `files[]` paths key off the area name; `MetaSiteName`, the page title and the logo
-name carry the naming instead. Gate on the **served** site: the head links all four sheets in order,
-the served sheets carry the new accent, every `data-dw-colorscheme` in the served HTML is one of the
-seven stock ids and resolves to a rule, and the stock files keep their pre-pass mtimes.
+name carry the naming instead — this is the rule, and [`re-skin.md`](re-skin.md) Step 0.2 names
+`MetaSiteName` as the identity edit for exactly this reason. Gate on the **served** site: the head links
+all four sheets in order, the served sheets carry the new accent, every `data-dw-colorscheme` in the
+served HTML is one of the seven stock ids and resolves to a rule, and the stock files keep their
+pre-pass mtimes.
 
 ## Hand-editing a generated Style asset — edit the `.json` model too
 
 The `<design>.css` under `System/Styles/ColorSchemes/` is **generated output**, not the source of truth: the sibling `<design>.json` holds the same values as a model (`Schemes[].{Id, BackgroundColor, ForegroundColor, PrimaryButtonColor, SecondaryButtonColor, CustomColors}`) and the admin Styles editor writes both in a single operation — the two files carry the same `Last-Modified` to the second. Edit only the emitted `.css` and the model still carries the old value, so any regeneration (the next time anyone opens and saves the design) silently reverts the site, days later, with no deploy to blame.
 
-So: when a demo must hand-edit a Style asset, **edit the `.json` in the same pass and upload both**; pre-flight should parse the `.json` and assert every scheme carries the new value, and the post-upload check should re-fetch both files and confirm zero literals of the retired value.
+So: when a demo must hand-edit a Style asset, **edit the `.json` in the same pass and upload both**; pre-flight should parse the `.json` and assert every scheme carries the new value, and the post-upload check should re-fetch both files and confirm zero literals of the retired value. A scripted palette needs no hand-edit at all: `ColorSchemeSave` takes a `Schemes[]` entry as its model and regenerates the pair ([`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) §"Style assets: replay a palette from a stored file").
 
 This is not an edge case for a palette change: primary buttons paint from `--dw-color-button-primary`, which is declared **only** in the generated colour-scheme CSS (as a hex *and* an `rgb` triplet, once per scheme). A `<customer>_custom.css` loaded afterwards cannot override a variable it never mentions, and declaring the variable there instead is the wrong fix — it leaves the model lying and the admin swatch stale. Full sweep: [`re-skin.md`](re-skin.md) §"A palette swap is a multi-file, multi-notation sweep".
 

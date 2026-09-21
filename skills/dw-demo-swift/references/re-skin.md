@@ -2,6 +2,8 @@
 
 > Customer-themed re-skin recipe for a Swift 2 baseline. Defaults to the configuration-only path (admin UI Visual Editor + theme tokens -- see [admin-ui-authoring.md](admin-ui-authoring.md)). Escalation ladder when configuration falls short: (1) project-scoped CSS overrides at `Files/Templates/Designs/Swift-v2/Custom/<customer>_custom.css` consuming the `--dw-*` variables Dynamicweb generates from admin; (2) layout-only `.cshtml` content-layouts for tailored screens; (3) controller/provider `.cs` triggers base's customisations-ledger preflight ([dw-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md)).
 >
+> **Before this file: choose the branding path.** The recipe below is the tool-and-CSS path, which is the right one for a re-skin on top of content that is already on the host and for anything the layer route cannot carry. When the demo starts from the Distribution's `sample-data` layer and the brand touches more than roughly a hundred subjects, the **default is to brand the YAML first** and deserialize it, then come back here for the theme tier and the fixes. The three paths and the measured comparison are owned by [`../../dw-demo-base/references/branded-demo-paths.md`](../../dw-demo-base/references/branded-demo-paths.md).
+>
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).
 
 ## Contents
@@ -10,7 +12,9 @@
 - [The escalation ladder](#the-escalation-ladder)
 - [The `<customer>_custom.css` naming hard rule](#the-customer_customcss-naming-hard-rule)
 - [Re-skin smell: "Swift-v2_Text shim + foreign cshtml"](#re-skin-smell-swift-v2_text-shim--foreign-cshtml)
+- [Before Step 0: read the branding path when the solution carries one](#before-step-0-read-the-branding-path-when-the-solution-carries-one)
 - [Step 0 — the zero-state pass](#step-0--the-zero-state-pass)
+- [Step 0.5a — An assert that cannot fail is not an assert](#step-05a--an-assert-that-cannot-fail-is-not-an-assert)
 - [Recipe](#recipe)
 - [Scoping hooks — one content page vs the whole catalog](#scoping-hooks--one-content-page-vs-the-whole-catalog)
 - [A palette swap is a multi-file, multi-notation sweep](#a-palette-swap-is-a-multi-file-multi-notation-sweep)
@@ -26,6 +30,7 @@
 - [Selector reach — scope what hides content, comment what counts children](#selector-reach--scope-what-hides-content-comment-what-counts-children)
 - [Row colour schemes paint the SECTION, not the paragraph](#row-colour-schemes-paint-the-section-not-the-paragraph)
 - [Colour contrast — resolve the EFFECTIVE alpha before darkening anything](#colour-contrast--resolve-the-effective-alpha-before-darkening-anything)
+- [Interactive states — hover is measured, never assumed](#interactive-states--hover-is-measured-never-assumed)
 - [A workaround block must name the condition that retires it](#a-workaround-block-must-name-the-condition-that-retires-it)
 - [What this recipe does NOT do](#what-this-recipe-does-not-do)
 
@@ -34,7 +39,7 @@
 Vendor-generic Swift re-skin doctrine is now owned by the foundational skills:
 
 - **The "never edit standard templates" never-touch list + allowed override slot, the item-type + variant + CSS "separate the styling from the content" pattern, the Pixel-perfect "what you may / may not create" escalation, and the Pre-escalation "search the source first" check** — owned by the `dw-swift-building` foundational skill, owned by [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9 ("Re-skin doctrine").
-- **`CustomHeadInclude` + `?<ticks>` static-token wiring** — owned by [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3.
+- **`CustomHeadInclude` + explicit `?v=` cache-buster wiring** — owned by [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3.
 - **Color schemes architecture + cascade** (including silent scheme-name typo resolution to `data-dw-colorscheme=""`) — owned by [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §4.
 - **CSS pitfalls** (over-broad `[data-dw-button]`, bare `footer { }`, emoji color-font, header brand-bar vs colorscheme rules, webfont vendoring for `--dw-font-family`) — owned by [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §5.
 - **Custom variant filename-sort hijack of empty-`ParagraphTemplate` paragraphs** — [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §4; the verification step for any re-skin that adds a custom variant must check this.
@@ -45,12 +50,25 @@ This file keeps the demo-specific spine: the zero-state pass, the escalation lad
 
 **The ladder starts FROM `theme-default`** — the single presentation layer every edition composes (no theme choice, no overlay layers in the Distribution). Stage its `files/` onto the host first ([`styles-assets.md`](styles-assets.md)): it carries the default Styles JSON+CSS pairs, `default_custom.css` (including the header-nav affordance core — [`header-menu.md`](header-menu.md)), and `DefaultHeadInclude.cshtml`. Customer overrides go in `<customer>_custom.css`, never by editing `theme-default`'s own files.
 
-| Tier | Surface | What it touches | Owner |
-|------|---------|-----------------|-------|
-| 0 | Admin UI Style Tools (Settings → Content → Styles) | Color schemes, button shape, typography — generates the `Styles/*.{json,css}` pairs | [styles-assets.md](styles-assets.md) + [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §7 |
-| 1 | `Custom/<customer>_custom.css` | Brand variables, hover states, hacks the schemes don't cover | this file (naming rule below) + [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 (wiring) |
-| 2 | New layout-only `.cshtml` content layouts | Pixel-perfect reshaping of an item type's render | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9 |
-| 3 | Controller / provider `.cs` (customisations-ledger preflight) | Anything that needs server-side logic | [dw-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md) |
+| Tier | Surface | Reachable over MCP? | What it touches | Owner |
+|------|---------|---------------------|-----------------|-------|
+| 0 | `save_color_schemes` / `save_typographies` / `save_button_styles` + `save_areas` (the same writes the admin Style Tools make); for a scripted replay the Management API twins are `ColorSchemeSave` + `ColorSchemeGroupSave`, `TypographySave`, `ButtonSave` and `FontSave` ([`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) §"Style assets: replay a palette from a stored file") | **Yes**, and scriptable over the Management API | Color schemes, button shape, typography — writes the `Styles/*.{json,css}` pairs and binds them to the area | [styles-assets.md](styles-assets.md) + [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §7 |
+| 1 | `Custom/<customer>_custom.css` + `Custom/<customer>HeadInclude.cshtml` | **No — filesystem only** | Brand variables, hover states, hacks the schemes don't cover | this file (naming rule below) + [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 (wiring) |
+| 2 | New layout-only `.cshtml` content layouts | **No — filesystem only** | Pixel-perfect reshaping of an item type's render | [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9 |
+| 3 | Controller / provider `.cs` (customisations-ledger preflight) | **No — filesystem + build** | Anything that needs server-side logic | [dw-demo-base/references/customisations.md](../../dw-demo-base/references/customisations.md) |
+
+**Read the staged theme sheet before writing a Tier-1 rule.** `theme-default` absorbs fixes that started as customer rules, so before adding a rule to `<customer>_custom.css`, search the staged `Custom/default_custom.css` for the same selector and property. Write the customer rule only when the theme does not already own the value; when it does, record that the theme owns it. A Tier-1 rule that duplicates a staged theme rule is a finding, not a fix: both produce the same pixels, so no probe sees the duplicate, and the next theme change to that value is silently overridden on every branded site.
+
+**Tiers 1 to 3 are filesystem work, so they are local-install-only.** `upload_file` is the only archive
+write tool and it is scoped to `/Files/Images` (media) and `/Files/Files/Integration` (integration drop
+files); template and config locations are deliberately not writable, and no other tool reaches them. Brand
+*assets* therefore upload fine — a logo and a favicon land under `/Files/Images` over MCP — while the
+customer stylesheet, the customer head include and every layout-only `.cshtml` have **no tool surface at
+all**. On a hosted install reached only by URL and an API key, the re-skin ceiling is Tier 0 plus the admin
+Style Tools, exactly as the missing SQL rung is a ceiling there ([`dw-demo-hosted`](../../dw-demo-hosted/SKILL.md));
+say that out loud in the plan doc's ceilings section rather than discovering it at Tier 1. A demo that needs
+Tier 1 on a hosted install needs a design-assets write surface, which is a tool request and not a
+documentation workaround.
 
 Before climbing the ladder, run the Pre-escalation "search the source first" check in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9 — most "I need a custom template" reflexes resolve to a canonical surface (permission entity store for role gates, `Page.Loaded` subscriber for redirects, `CustomHeadInclude` for a project stylesheet, `Pageview.User.*` for identity).
 
@@ -59,15 +77,19 @@ Before climbing the ladder, run the Pre-escalation "search the source first" che
 **Brand CSS goes in `<customer>_custom.css` — never in a file named `custom.css`.** Swift ships `Custom/custom.css` as a placeholder template (`body { background: hotpink !important; }`) and the design-css doc's load-order example shows an `Assets/css/custom.css` — both are Swift sample code. Writing brand CSS into a file named exactly `custom.css` breaks the shipped sample and turns the upgrade story into a merge instead of a file-drop. Create the customer-named sibling — same naming discipline as the `<Prefix>_*` item types:
 
 - The override file: `Files/Templates/Designs/Swift-v2/Custom/<customer>_custom.css`
-- Wired via a head-include partial: `Custom/<customer>HeadInclude.cshtml` registered on the Master area's `CustomHeadInclude` field (the `AddStylesheet` wiring + the `?<ticks>` static-token caveat live in [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 — put demo-critical CSS in an inline `<style>` block where the cache-buster is static).
+- Wired via a head-include partial: `Custom/<customer>HeadInclude.cshtml` registered on the Master area's `CustomHeadInclude` field (the `AddStylesheet` wiring, the site token that does not move, and the explicit `?v=` buster live in [`razor-surfaces-and-pitfalls.md`](../../dw-render-razor/references/razor-surfaces-and-pitfalls.md) §3 — put demo-critical CSS in an inline `<style>` block).
 
-Verification: `git diff --name-only -- '*custom.css'` must never show a path ending in `custom.css` other than `<customer>_custom.css`. Any file named exactly `custom.css` in the diff is a re-skin bug — revert it and move the rules (this is grep #9 of the discipline audit in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §10).
+Verification is a **directory listing of the `Custom/` folder**, not a diff: list it and require `custom.css` to still be the shipped hotpink placeholder, `default_custom.css` untouched, and exactly one added sheet, named `<customer>_custom.css`. A listing works wherever the `Files` tree lives; a version-control diff does not, because a local-install demo keeps its `Files` tree under the site root and outside every repository, so the diff silently reports nothing on a host that has the bug. Any file named exactly `custom.css` carrying brand rules is a re-skin bug — revert it and move the rules (this is grep #9 of the discipline audit in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §10).
 
 ## Re-skin smell: "Swift-v2_Text shim + foreign cshtml"
 
 Symptom: a paragraph template path like `Templates\Designs\Swift-v2\Paragraph\Swift-v2_Text\<Project>SomeName.cshtml` that has nothing to do with text. The paragraph is created as Swift Text in admin, then the template path is overridden to point at this file. The editor sees only Title/Subtitle/Text fields; the template ignores most of them and bakes the real fields as hardcoded literals.
 
 Fix: define a `<Prefix>_<ConceptName>` custom item type — see [`modelling-discipline.md`](../../dw-content-modelling/references/modelling-discipline.md) §2 ("Custom item types — the `<Prefix>_*` discipline") and the separate-the-styling-from-content pattern in [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9.
+
+## Before Step 0: read the branding path when the solution carries one
+
+When the solution carries a baseline guide page tree (a `Baseline guide` page with a `Branding path` child, served under `/<lang>/baseline-guide`), read its branding path first. It is the ordered brand procedure for that solution and each step names the skill and the tools it expects, so load the skill a step names before acting on the step. The guide pages are content the brand pass must leave standing: check before the first write and again after the last that `/<lang>/baseline-guide` answers 200 with a body containing `Baseline guide` and `/<lang>/baseline-guide/branding-path` answers 200. A 404 both before and after only means the solution does not carry the guide; a 200 before and a 404 after is a loss the pass caused.
 
 ## Step 0 — the zero-state pass
 
@@ -85,6 +107,9 @@ Fetch the served HTML of the storyline page set and grep it for the shipped base
 | `Whether it's in our homes` | the USP / features band rendering an unwritten field's `defaultValue` |
 | `High Quality Products and Parts` | the shipped hero headline |
 | `Swift` inside `header`/`footer` brand slots | the platform wordmark still standing in for the customer mark |
+| `NO ICON` (inline SVG in the footer navigation) | `Swift-v2_PageProperties` items shipped with `Icon` set to the placeholder sentinel `/Files/Icons/1_none.svg`, which the navigation template inlines as an SVG that draws those words; clear the `Icon` field on every page-properties item that carries it (`set_item_field_values`, value `""`), never treat the sentinel as "no icon" |
+| `alt="<the layer's asset row id prefix>"` on PDP gallery images (the shipped demo layer's rows read `TC-DETAIL-`, `TC-HOVER-`, `TC-GAL-`) | the stock PDP gallery uses the asset row's id as `alt`, so serialized row ids leak onto every PDP; no verb renames an asset row id (delete and re-add loses `IsDefault`, sort and variant inheritance), so ship a `DetailsName` on every `Images` row in the layer, or override the gallery template to use the asset name or the product name |
+| `alt="/Files/` on the header and footer logo | `Swift-v2_Logo` renders the image path as the `alt`; `LogoName` feeds the `title`, not the `alt`, and no item field sets it, so a brand pass cannot fix it online; accept it as a shipped template defect recorded in the ledger, or repoint the paragraph at a net-new Custom-lane copy that uses `LogoName` as `alt`; an accessibility probe asserts no `img` `alt` begins with `/Files/` |
 
 ```powershell
 $pages   = @('/', '/shop', '/customer-center')      # plus every storyline page and language prefix
@@ -103,7 +128,11 @@ Extend the list with any string the composed edition adds — the check is the *
 Three first-class steps, each visible in the first five seconds of a demo — never left "for polish":
 
 1. **Frontpage title and meta title** — `save_pages` with the customer's own `metaTitle`; assert the served `<title>` no longer matches the tripwire list.
-2. **Area name** — surfaces in admin, the page tree, and generated meta; set it to the customer slug.
+2. **`Swift-v2_Master.MetaSiteName`** — the site name that surfaces in generated meta and in the served
+   `<title>` chain; set it to the customer's own name. **Leave `Area.AreaName` alone**: a composed
+   serializer manifest keys its `files[]` paths off the area name, so renaming the area breaks the
+   manifests, and `MetaSiteName`, the page title and the logo name carry the naming instead
+   ([`styles-assets.md`](styles-assets.md) "Also rejected"). Assert the served `<title>`, not the field.
 3. **Header and footer brand** — the logo asset *and* the wordmark text. The footer brand is a separate paragraph from the header one and is the one that survives a logo swap. Assert both from the served `header` and `footer` fragments, not the logo field.
 
 ### Step 0.3 — Resolve every `defaultValue` field
@@ -131,11 +160,48 @@ Three dispositions, in preference order: **rewire** at the customer's own data (
 
 `document.images.length` on the frontpage and shop landing catches the whole class: a seeded catalogue with no attached assets renders as grey placeholder tiles, and every structural PLP assert passes over it. Assert a floor per surface (`> 0` on the frontpage, a per-category coverage target on the PLP) in this pass, not at polish. Sourcing the imagery is its own brief — [`asset-organisation.md`](asset-organisation.md) "Catalogue imagery is its own brief"; what belongs here is only the measurement.
 
+### Step 0.5a — An assert that cannot fail is not an assert
+
+**Write every assert against what a runner can actually see, not against the surface it guards.** Five
+shapes recur; the first three report PASS on a broken site, and the last two report FAIL on a correct
+one, which is just as expensive because the usual recovery is to quietly rewrite the assert until it
+passes:
+
+1. **A copy sweep anchored on a bare word.** Swift's own markup carries the word `placeholder` as an HTML
+   attribute and as a platform class name on the search modal, so "zero case-insensitive matches of
+   `placeholder` on every page" can never pass, on any site, however clean. Anchor the sweep on the
+   **planted marker** instead — the exact stock-copy tripwire set in Step 0.1, or the literal
+   `Placeholder` plus the separator the baseline plants — and state that the attribute and the class are
+   expected matches.
+2. **A measurement whose instrument was never found.** The 390/430 viewport pass needs a browser runner,
+   and a demo build machine has one — it ships with the demo agent tooling rather than under the skills
+   tree, so a search of the skills folder proves nothing. Resolve it from the demo agent's configuration
+   and **run the leg** ([`mobile-pass.md`](mobile-pass.md)). Only a lookup that genuinely finds no driver
+   makes the leg UNRUNNABLE, reported with the failed lookup named. Reporting PASS on an unrun leg is the
+   defect; so is recording unrunnable without having looked.
+3. **A check that assumes version control.** See the `custom.css` naming rule above: a local-install demo's
+   `Files` tree sits under the site root and outside every repository, so a diff-shaped check reports clean
+   on a host that has the bug. Restate it against the filesystem or the served page.
+4. **A count over a shared table.** A row count that is not scoped to the rows this build owns counts the
+   stock rows and the other shops' rows too, so the expected number can never be reached on a correct
+   build — measured on one shop-to-group relation table, an unqualified count returned three times the
+   expected figure, all of it correct data. Scope every count by the id prefix the build assigns or by the
+   owning shop, and write the scope into the assert rather than into a comment beside it.
+5. **A rendered count compared against a total.** A paged listing renders **`MIN(page size, total)`** rows
+   behind a load-more control, so "rendered rows equal the header count" holds only while the catalogue
+   fits on one page and fails on every build that outgrows it. Assert the two separately: the rendered card
+   count equals the configured page size while a load-more control is present, and the header total equals
+   the index document count for the shop.
+
+The general form: before writing an assert, name the runner that will execute it and the observation it
+reads. An assert whose observation is unavailable, or whose PASS condition holds on a broken site, gets
+rewritten into one over served markup or a tool read-back — or it is dropped and recorded as unproven.
+
 ### Step 0.6 — Arm the asserts on gate run one
 
 **Design verification is a property of every gate run, not of the design brief** — an unconfigured design leg stamps `SKIP` and reports `PASS` over overflow, skeleton bands and shipped copy. Three legs arm from the first run against a raw deserialize, with no custom design configuration:
 
-1. **Overflow** — `document.body.scrollWidth === window.innerWidth` at desktop and mobile widths.
+1. **Overflow** — `document.body.scrollWidth === window.innerWidth` AND `window.innerWidth === the requested width`, at desktop and mobile widths. Both readouts: unshrinkable content widens the layout viewport, after which the first comparison holds on a page that renders zoomed out (`dw-demo-base/references/visual-qa.md` "Breakpoints").
 2. **Skeleton / empty-band scan** — the Step 0.4 detector, over the storyline page set.
 3. **Stock-copy tripwire** — the Step 0.1 regex, over the served HTML.
 
@@ -149,6 +215,7 @@ Operates on a deserialized Swift 2.4 composition (framework-only `base` + `surfa
 
 - Drop the customer's logo file into `<demo>\Dynamicweb.Host.Suite\wwwroot\Files\Images\<customer>-logo.svg` (or `.png`).
 - Admin UI: Pages → `Header _ Footer` → Header paragraph → Logo property → set to `Files/Images/<customer>-logo.svg`.
+- **A transparent PNG mark goes through the image handler as `format=png`, or as inline SVG.** `GetImage.ashx` answers `image/jpeg` for `format=webp` and for a request with no format at all; only `format=png` returns a PNG. A transparent logo routed the default way therefore loses its alpha and paints on a solid box, most visibly a white inverse wordmark on a dark footer, and a probe counting `naturalWidth` passes a boxed logo. Read the served bytes (a JPEG starts `FF D8 FF`) or the `Content-Type`, not the source file; the same handler's resolution rule is in [`asset-organisation.md`](asset-organisation.md) §6. The logo's `alt` is a separate shipped defect, in the Step 0.1 tripwire table.
 
 ### 2. Theme tokens (color palette + typography)
 
@@ -166,7 +233,7 @@ Operates on a deserialized Swift 2.4 composition (framework-only `base` + `surfa
 - Browse to `/` (home) and `/customer-center/` while logged in -- verify logo, palette, and copy are applied.
 - Run `git status` in `<demo>\` -- NO `.cs` changes in `Controllers/` or `Providers/` (would trip the customisations-ledger preflight) and NO `.scss` / `.ts` changes (recompilation drift). `.cshtml` changes must be net-new content layouts (the §Pixel-perfect escalation, [`component-system-and-reskin.md`](../../dw-swift-building/references/component-system-and-reskin.md) §9), never modifications to existing standard `.cshtml` — confirm with `git diff`.
 - If a `<customer>_custom.css` was edited: expected — verify its path and its `Custom/<customer>HeadInclude.cshtml` wiring per the naming rule above, and that stock `Custom/custom.css` remains the hotpink placeholder (`git diff --name-only -- '*custom.css'` hits only `<customer>_custom.css`).
-- **Image-band height is a Tier-1 (hard) re-skin item — cap it, do not eyeball it.** The stock `Swift-v2_Image` band and the slider cover-card carry no serialized height field, so a swapped-in photo renders at full column-width height and towers over the fold; every re-skin that changes photography reproduces this. Fix: a Tier-1 CSS cap on the image wrapper and the slider cover-card — `aspect-ratio` + `max-height: min(60vh, 640px)` + `object-fit: cover`. A full-bleed hero may fill the fold; a content-band image must not. Definition of done: no image band taller than the configured viewport fraction, measured by the `tall` detector in [`visual-qa.md`](../../dw-demo-base/references/visual-qa.md).
+- **Image-band height is a Tier-1 (hard) re-skin item — cap it, do not eyeball it.** The stock `Swift-v2_Image` band and the slider cover-card carry no serialized height field, so a swapped-in photo renders at full column-width height and towers over the fold; every re-skin that changes photography reproduces this. Fix: read the staged `Custom/default_custom.css` first. Current `theme-default` ships this cap itself (`aspect-ratio` + `max-height: min(60vh, 640px)` + `object-fit: cover` on `[data-dw-itemtype="swift-v2_image"] figure` and its `img`), so on a staged theme the customer sheet carries no image cap and the pass records that the theme owns it. Only for a selector the staged sheet does not cap (the image wrapper or the slider cover-card) does a Tier-1 cap with those three declarations go into `<customer>_custom.css`. A full-bleed hero may fill the fold; a content-band image must not. Definition of done: no image band taller than the configured viewport fraction, measured by the `tall` detector in [`visual-qa.md`](../../dw-demo-base/references/visual-qa.md).
 - **Verify shipped CSS in the CSSOM, not on disk** — see [§CSS that silently never reaches the browser](#css-that-silently-never-reaches-the-browser).
 - **Run the mobile pass before "ready".** A desktop-clean re-skin routinely stretches the phone canvas — fixed-width mega-menu, non-wrapping footer/USP rows, `.flex-fill` beating the column bases you just set. Method, trap catalogue and Tier-1 fixes: [`mobile-pass.md`](mobile-pass.md). On theme-default ≥1.2.0 most fixes already ship — that pass is a verification, not a re-derivation.
 
@@ -250,6 +317,7 @@ Bootstrap utilities are declared `!important` — `.flex-fill` is `flex: 1 1 aut
 - **Mark the counterpart rule in the wider tier `!important` too**, so the later source-order rule still wins — otherwise the layout tier and the clearance tier disagree across a band of widths (a nav meant to wrap stays inline while the two-line clearance token already applies).
 - **Assert the computed value, never the presence of the declaration** — `getComputedStyle(el).display === "grid"`; sweep viewports asserting the flex line count flips exactly at the media-query edge.
 - **A grid dropped into a text paragraph inherits Swift's reading measure — measure the rendered TILE, never the column count.** Swift wraps a paragraph body in a div carrying a prose `max-width` (~757px) inside a full-content-width container — right for running text, wrong for a card rack: the grid keeps its column count while each card collapses to half the intended width, and **a column count is not a size**, so structural assertions pass. Lift the cap for exactly the element that *directly* contains the grid (`[data-dw-itemtype="swift-v2_text"] :has(> .<grid-class>) { max-width: none }`), leave headings at their reading measure, and assert the **rendered card width in px** per breakpoint.
+- **A shared-theme cap written for one component variant selects every variant of that component — and a half-`!important` cap collapses the others to zero.** Measured on the slider: the theme's cover-card block is authored for the tile layouts and selects `[data-dw-itemtype="swift-v2_slider"] .swiffy-slider .card`, i.e. **every** slider layout. It zeroes `min-height` with `!important` — removing the inline `min-height` that is the full-bleed hero layout's only height source — and sets `height: clamp(...)` **without** `!important`, which then loses to the card's own Bootstrap `.h-100` (`height: 100% !important`). `height: 100%` of an auto-height ancestor chain resolves to 0, so the hero renders as a thin dark strip carrying only its indicator dots, with no error and no console noise. Two rules follow: **a theme cap must be scoped to the variants it was written for** (select on something only those variants emit — the full-bleed hero is the one that writes `--swiffy-slider-item-width: 100%` on its container), and **a cap that competes with a Bootstrap utility must carry `!important` on every declaration in the block, or the block half-applies.** Fix it in the theme layer; carry a demo-local override in the Tier-1 sheet only until that ships. Second-order trap on the same component: the hero's copy is an absolutely-positioned `.card-img-overlay`, so a restored card never grows with long copy and the CTA is clipped at phone widths — put the overlay back in flow (`position: relative; inset: auto; min-height: inherit`) and leave the cover image absolute behind it. Assert the card's `getBoundingClientRect().height` at desktop and phone and that the CTA's bottom is inside the card, and confirm the tile layouts still measure their original clamp.
 - **Line-view rows need `min-width: 0` and a bounded title.** In a `nowrap` flex row with fixed non-shrinkable siblings, the product title is the only `flex-shrink: 1` child and absorbs the whole overcommit — collapsing to `width: 0` with `overflow: visible` and painting across the description lane. Give the title a basis and a floor (`flex: 0 1 320px; min-width: 180px`) plus a 2-line `-webkit-line-clamp`; make the description a shrinkable single-line ellipsis lane (`flex: 1 1 140px; min-width: 0`). Assert per row: title box does not intersect description box, title ≤2 lines, at 1440 and 390.
 
 ## Grid galleries and thumbnail strips
@@ -268,7 +336,7 @@ main                            { padding-top: var(--bar-clearance); }
 main:has(> section:first-child [data-swift-poster]) { padding-top: 0; }  /* poster flows behind — :first-child shifts in VE, see §Scoping hooks */
 ```
 
-`overflow: hidden` on the pill (the reflex for clipping a border-radius) clips the megamenu and dropdowns — never use it here; keep a standing guard against **any** `overflow` declaration inside header-scoped rules.
+`overflow: hidden` on the pill (the reflex for clipping a border-radius) clips the megamenu and dropdowns — never use it there. **Scope the guard to the ancestors a panel escapes through** (the pill, the header element, the nav row), not to every header-scoped rule: a blanket "no `overflow` anywhere under the header" guard bans the one declaration that contains a visually-hidden label and permits the overflow it exists to prevent (next bullet).
 
 - **Key the clearance token on the served DOM, not on a breakpoint.** Dynamicweb picks between two different header content pages **server-side by user-agent**, not viewport width: a phone UA gets a 2-row (~84px) header carrying `swift-v2_offcanvasnavigation`; a desktop UA **at the same 390px width** gets a 3-row (~177px) header carrying `swift-v2_menurelatedcontent`. A media query cannot tell the two documents apart, so a breakpoint-keyed token is silently wrong for whichever document was not measured. Select on the DOM, outside any media query:
 
@@ -280,7 +348,7 @@ main:has(> section:first-child [data-swift-poster]) { padding-top: 0; }  /* post
 
   Specificity (0,2,1) beats `:root` (0,1,0) regardless of source order; without `:has()` support the `:root` default applies — over-clearance, not breakage — and it self-corrects at every width. Do **not** re-fit the breakpoint token: the narrow desktop browser legitimately receives the 3-row header at the same width. Assert clearance (`firstContent.top - header.bottom`, threshold −2..24) per viewport **with a real device descriptor**, keeping a desktop-UA control at the same width.
 - **Budget the gutters against the container's own −32px.** `[data-swift-container]` sets `max-width: calc(-32px + min(<cap>, 100%))` — 32px narrower than its parent — and centres with auto margins that resolve to **16px per side** below the cap, so any budget computed as `viewport − 2·inset − 2·padding` is 32px optimistic. Override to `max-width: min(<cap>, 100%)` (preserve the cap — it is the composition's max content width) and assert the first column's left edge equals `inset + padding` with computed `marginLeft` `0px`.
-- **Icon-only header controls: `clip` + `clip-path`, not the classic sr-only idiom** — the traditional visually-hidden recipe uses `overflow: hidden`, which the header guard bans. Use `position:absolute; width:1px; height:1px; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap`; never `display:none` or `font-size:0` (both strip the accessible name). Assert: no `overflow` declaration in header-scoped rules, the megamenu opens with no ancestor computing `overflow-y != visible`, and the control's accessible name is non-empty.
+- **Icon-only header controls: the visually-hidden label ships `overflow: hidden`.** `clip-path` (and the legacy `clip`) crop **painting** only — they create no scroll container and contain no scrollable overflow, so a 1×1 box holding a `white-space: nowrap` label still contributes the label's full width to every ancestor's scroll width, and the absolutely-positioned variant measures *worse* than leaving the label in flow. Use `position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0`; never `display:none` or `font-size:0` (both strip the accessible name). The panel-clipping worry is answered by SCOPE: this rule belongs on a 1×1 label span with no descendants and must never be written against a header ancestor a megamenu or off-canvas panel escapes through. Assert: the megamenu opens with no *ancestor* computing `overflow-y != visible`, the control's accessible name is non-empty, and `documentElement.scrollWidth` equals the requested width at every mobile descriptor. The A/B measurement behind this is in [`layout-verification.md`](../../dw-swift-building/references/layout-verification.md) §"Visually hidden means `overflow: hidden`".
 - **A fixed-vh poster behind a fixed bar has viewport-UNSTABLE clearance.** `object-fit: cover` on a wide fixed-height box is **width**-driven, so the subject's vertical position scales with viewport width while the bar height is fixed px — a focal-point nudge clears one width and re-breaks another. Pair a **top-anchored crop** (`object-position: 50% 0%`) with a master image carrying deliberate sky headroom (subject in the lower third) and a page-scoped first-row height cap under the design gate's band-height guard. Verify measured clearance at four widths.
 
 ## Section-boundary decoration — negative-top pseudo-elements
@@ -325,6 +393,22 @@ The collapse rules above hide content on purpose. Both failure modes are silent:
 
 **A reported contrast failure whose foreground colour appears nowhere in any sheet is an ancestor-opacity composite, not a scheme token.** Swift renders the accordion body as `<div class="accordion-body mb-0-last-child opacity-75">` and Bootstrap ships `.opacity-75 { opacity: .75 !important }`, multiplying the already-muted paragraph alpha — the reported colour is **emergent**, never declared, so grepping the hex finds nothing. Resolve the effective alpha (declared alpha × every ancestor `opacity`, walked via `getComputedStyle`) before choosing a fix, and **prefer removing the redundant dim over darkening the colour** — the same ancestor opacity multiplies a darker value back below the threshold it was meant to clear; verify arithmetically. The right-fix shape: `main .accordion .accordion-body.opacity-75 { opacity: 1 !important }`. The class is a family, not an incident — it recurs wherever opacity-dimmed muted text sits on a near-white band (`breadcrumb-item.active`, product short description, `.text-success` stock label, `.fs-7.opacity-85` product number): fix the family in **one** pass against the sheet you own, and route Swift/Bootstrap defaults on a signed-off design to the owner as a decision.
 
+## Interactive states — hover is measured, never assumed
+
+**A re-skin that is clean at rest can be unreadable on hover, and no resting-state probe can see it.** Three hover defects shipped green on a signed-off skin and were caught by the owner, because the design leg reads computed styles at rest only (Foundry #1277 proposes the `hover-contrast` probe that closes this). Until that probe lands, hover is a manual checklist item on every re-skin.
+
+**Guard the two theme rules the ladder inherits.** Both live in `theme-default`'s `default_custom.css`, both are fixed at theme-default 2.3.5, and both bite again on any older pin:
+
+1. the filled-button hover `[data-dw-button]:not(outline):not(ghost):not(secondary):hover` excludes three variants and Swift emits more, so a text or icon button hovers to a filled disc under same-colour content;
+2. `[data-swift-page-header] a:hover { color: var(--td-accent) }` matches header CTAs too, because Swift renders them as anchors carrying `data-dw-button` — on a skin whose accent is also its button fill that is accent on accent (Foundry #1274, #1275).
+
+**Enumerate the variants before writing a hover rule.** Swift emits `primary`, `secondary`, `link`, `outline`, `outline-primary`, `outline-secondary`, `ghost`, and an **EMPTY** `data-dw-button` on customer-center and CSR row action toggles (`<button class="btn btn-outline-secondary" data-dw-button>`). The empty value and the `outline-*` family are the two that every `:not()` chain forgets; `[data-dw-button=""]` and `[data-dw-button^="outline-"]` are the selectors that catch them.
+
+**Measurement recipe.** Playwright at the desktop viewport: remove the cookie modal first (it intercepts the pointer and every hover silently lands on the overlay), `page.hover(sel)`, then read `getComputedStyle` `backgroundColor` and `color` on the control and on its icon, resolving `rgba` against the painted ancestor before computing contrast (see [§Colour contrast](#colour-contrast--resolve-the-effective-alpha-before-darkening-anything)). Floor: 4.5:1, or 3:1 for large text. Do one pass anonymously for the header and hero, and one **signed in through the persona** for the customer-center and CSR lists — the empty-value row toggle exists on no anonymous page, which is exactly why it shipped broken. Record before and after values; a screenshot alone does not prove a contrast ratio.
+
+**The SVG logo cap targets the `figure`, and a filename grep proves nothing.** `Swift-v2_Logo/Plain.cshtml` takes an `IsSvg()` branch and inlines the file with `@ReadFile` inside `figure.icon-auto`: there is no `<img>` and no filename in the served HTML, so assert the inline `<svg>` `viewBox` or the measured geometry instead, and write the responsive cap against `[data-dw-itemtype="swift-v2_logo"] figure.icon-auto` (Foundry #1278, and [mobile-pass.md](mobile-pass.md) §logo lockup). A mark whose paths carry explicit `fill` values also ignores `.icon-auto svg { fill: currentColor }`.
+
+**Feature tiles align by flexbox, not by copy length.** Swift's icon-top Feature paints its icon on an inline black square and lets each tile grow with its own text, so buttons across a three-column row land at different heights. The tile's inner `> div:not(.d-flex)` becomes a full-height column flexbox with the button wrapper at `margin-top: auto`, and the icon figure takes the soft accent tint at the theme radius plus `align-self: flex-start` — without that last declaration the column stretches the icon box to the full column width. Shipped in theme-default 2.3.5 (Foundry #1276); author it into `<customer>_custom.css` only on an older pin. The icon-left variant renders `> div.d-flex` and must be left alone.
 ## A workaround block must name the condition that retires it
 
 **A workaround that works is invisible: no assert fails, and the constraint that justified it can be retired without anything noticing.** Canonical shape: a CSS block painting the correct photo as a `background-image` while holding the real `<img>` at `opacity: 0` — the card looks right while the database still references a different image and any future edit to the slide is silently painted over. **State the deletion condition inside the block's own comment** (what must become true for removal, and what breaks while it stays), and **never remove a workaround in a run that cannot land the real fix** — deleting it alone puts the wrong content back on a live page. Probe: flag any rule painting a `background-image` onto an element whose child `<img>` is held at `opacity: 0` (almost always a data defect wearing a costume) and fail the design leg with the selector named.

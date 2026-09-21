@@ -10,7 +10,7 @@
 - [6. Sign-in profiles / switch user (Swift 2.4) — not impersonation](#6-sign-in-profiles--switch-user-swift-24--not-impersonation)
 - [7. Signing in AS a persona — the field names, and the right assertion target](#7-signing-in-as-a-persona--the-field-names-and-the-right-assertion-target)
 - [8. Renaming a persona is a sweep, not a user edit](#8-renaming-a-persona-is-a-sweep-not-a-user-edit)
-- [9. Checkout delivery date and custom order fields](#9-checkout-delivery-date-and-custom-order-fields)
+- [9. Checkout — paths, method names, delivery date and custom order fields](#9-checkout--paths-method-names-delivery-date-and-custom-order-fields)
 - [10. The storefront account-admin page (Swift 2.4 UserGroups app)](#10-the-storefront-account-admin-page-swift-24-usergroups-app)
 - [11. The B2B DC pattern (one AccessUser group per Stock Location)](#11-the-b2b-dc-pattern-one-accessuser-group-per-stock-location)
 
@@ -32,7 +32,7 @@ Rebuilding is never the right answer. The stock section already supports imperso
 
 ## 2. Page-tree map
 
-Source-of-truth: `<demo-root>\distribution\layers\base\replace\_content\Swift 2\Customer center\` deserialized into a running host. Backtick-quote any path string when copying into other tools -- folder names contain spaces.
+Source-of-truth: `<demo-root>\distribution\layers\surface-swift\replace\_content\Swift 2\Customer center\` deserialized into a running host. Backtick-quote any path string when copying into other tools -- folder names contain spaces.
 
 ```
 Customer center/
@@ -48,9 +48,28 @@ Customer center/
 
 From base **2.3.2** the Overview landing is a **tile dashboard** (stock `Swift-v2_Feature` cards linking to Orders / Quotes / Carts / Favorites / Addresses / Profile / Returns), not a bare order list, and a stock **My returns** RMA page (`eCom_CustomerExperienceCenterRma`) ships in the buyer `Customer center/` tree. Seed every list those tiles open onto — see [dashboard-seeding.md](dashboard-seeding.md).
 
-From base **2.4.0** the Overview is a **per-role tile dashboard on one shared page**: the buyer tiles (Orders / Quotes / Carts / Favorites / Addresses / Profile / Returns) AND the CSR tiles (Accounts / Orders / Carts / Users) live on the same `Overview` page, each tile (and its grid row) carrying a serialized `permissions:` block so a buyer sees only buyer tiles and a CSR sees only CSR tiles — no code, no split landing. The old separate `CSR/` tile dashboard was retired (its function pages stay); a CSR now lands on the same Overview and sees the CSR tiles. This gating is derived entirely from the base-layer YAML (serializer ≥ 0.8.0-beta) — see §3 and [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §15.
+From base **2.4.0** the Overview is a **per-role tile dashboard on one shared page**: the buyer tiles (Orders / Quotes / Carts / Favorites / Addresses / Profile / Returns) AND the CSR tiles (Accounts / Orders / Carts / Users) live on the same `Overview` page, each tile (and its grid row) carrying a serialized `permissions:` block so a buyer sees only buyer tiles and a CSR sees only CSR tiles — no code, no split landing. The old separate `CSR/` tile dashboard was retired (its function pages stay); a CSR now lands on the same Overview and sees the CSR tiles. This gating is derived entirely from the base-layer YAML (serializer ≥ 0.8.0-beta) — see §3 and [`page-gating.md`](../../dw-users-permissions/references/page-gating.md) §15.
 
 This is the canonical tree any Customer-360 / sales-on-behalf demo references (`Customer center/CSR/{Orders, Accounts, Carts, Users}`). It's pre-built, paragraph-driven, requires no custom Razor.
+
+**Prove a CSR gate as a PAIR, by page id, on the body length.** The natural negative check — sign in as a
+buyer-only persona, fetch the CSR accounts path, expect something other than a 200 with content — fails
+twice over on this tree. First, the CSR subtree commonly has **no resolvable friendly URL**: the composed
+path 404s for every persona, the authorised CSR included, so the check passes without ever reaching the
+gate and would pass identically on a solution with the exposure it exists to catch. Second, a denied Swift
+page answers **HTTP 200 with a near-empty body** (a low-hundreds-of-bytes shell), so no status-code
+comparison can see the deny either. The runnable form:
+
+1. Read the CSR page ids from the page tree (`get_pages_by_parent_id` down the `Customer center/CSR/`
+   branch) rather than composing a path from memory.
+2. Fetch the SAME page id as the denied persona **and** as the authorised CSR persona, in one pass:
+   `/Default.aspx?ID=<pageId>` addresses a page by id whatever its url resolution does.
+3. PASS requires **both** halves: the CSR persona receives a full page, and the denied persona receives a
+   body an order of magnitude smaller. A run where both personas receive the same response is a broken
+   assert, not a pass — including the run where both receive 404.
+
+An assert that never succeeds for the authorised persona is not a gate. The vendor-generic half of this
+rule lives in [`page-gating.md`](../../dw-users-permissions/references/page-gating.md) §15.
 
 **The impersonation entrypoint is the `Customer center/CSR/Users/` page, not `CSR/Accounts/`.** Accounts is by design a company directory (no impersonate button); Users lists individual users and carries the "Impersonate" link. Opening Accounts and seeing "no impersonate button" is expected — send the CSR to Users. The full mechanics are foundational (§3).
 
@@ -59,10 +78,10 @@ This is the canonical tree any Customer-360 / sales-on-behalf demo references (`
 The vendor-generic mechanics behind this section are owned by foundational skills; this demo file only carries the stock-CSR rule (§1), the page tree (§2), and the persona presentation (§5).
 
 - **Impersonation flow** (the `?NowImpersonating=true&DWExtranetSecondaryUserSelector=…&Redirect=…` command, the Accounts-vs-Users page distinction, the `SystemAccount` `ListGroupType` filter that decides whether an account lists under CSR/Accounts), **the `AccessUserSecondaryRelation` grant** (the impersonator/customer column direction + the required Secondary-user index rebuild + user-cache clear), **the reorder mechanic** (`cartcmd=copyorder` / `CustomerCenterCmd=Reorder` — both append to an existing active cart and no-op without one — plus the `cartcmd=add/remove/delete/empty/update` family), and **seeding the section's demo data** (`OrderComplete=1` so placed orders show in "My orders"; favorites SQL NOT-NULL columns; the profile-address-vs-`UserAddress` checkout gotcha): vendor-generic CSR / order knowledge is owned by the `dw-commerce-orders` foundational skill — staged in [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) ("CSR sales-on-behalf — impersonation mechanics", "Reorder a past order", "Seeding the CSR/account section's demo data").
-- **Hiding the CSR section from non-CSR users, gating buyer (Account) sections away from a pure CSR persona, the highest-level-wins frontend resolution rule, and the CC-nav-renders-through-three-templates map**: vendor-generic permission-gating is owned by the `dw-users-permissions` foundational skill — staged in [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §15 ("Render-time half — page/paragraph permissions"). **Canonical gate (base ≥ 2.4.0 on serializer ≥ 0.8.0-beta): the `permissions:` blocks are carried IN THE BASE LAYER YAML** — on pages, grid rows, AND paragraphs — and deserialize straight into `UnifiedPermission` (page/grid-row/paragraph rows). No live admin-panel or SQL step after deserialize: the gate is already in the layer. **Per-role tiles on ONE shared Overview page are the stock pattern** (buyer tiles gated `Customers=all / CSR=none`, CSR tiles `CSR=all / Customers=none`, all `Anonymous=none`); the separate CSR split-landing is retired. The live post-deserialize `UnifiedPermission` seed (admin Permissions panel / SQL INSERT + cache flush) is now a **legacy fallback** for older bases/engines only. Verify the YAML-carried gating applied with the Foundry permissions-parity check (every serialized block ⇔ matching `UnifiedPermission` rows). Never gate via per-template `foreach` filters or raw `SELECT FROM AccessUserGroupRelation`.
-- **Customer-specific (contract) pricing** (scope by customer number not `customerGroupId`; lowest matching price wins; resolves live in cart/checkout not PLP/PDP; the `force_price_recalculation` verification trap): vendor-generic catalog/pricing knowledge is owned by the `dw-commerce-catalog` foundational skill — staged in [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.13.
+- **Hiding the CSR section from non-CSR users, gating buyer (Account) sections away from a pure CSR persona, the highest-level-wins frontend resolution rule, and the CC-nav-renders-through-three-templates map**: vendor-generic permission-gating is owned by the `dw-users-permissions` foundational skill — staged in [`page-gating.md`](../../dw-users-permissions/references/page-gating.md) §15 ("Render-time half — page/paragraph permissions"). **Canonical gate (base ≥ 2.4.0 on serializer ≥ 0.8.0-beta): the `permissions:` blocks are carried IN THE BASE LAYER YAML** — on pages, grid rows, AND paragraphs — and deserialize straight into `UnifiedPermission` (page/grid-row/paragraph rows). No live admin-panel or SQL step after deserialize: the gate is already in the layer. **Per-role tiles on ONE shared Overview page are the stock pattern** (buyer tiles gated `Customers=all / CSR=none`, CSR tiles `CSR=all / Customers=none`, all `Anonymous=none`); the separate CSR split-landing is retired. The live post-deserialize `UnifiedPermission` seed (admin Permissions panel / SQL INSERT + cache flush) is now a **legacy fallback** for older bases/engines only. Verify the YAML-carried gating applied with the Foundry permissions-parity check (every serialized block ⇔ matching `UnifiedPermission` rows). Never gate via per-template `foreach` filters or raw `SELECT FROM AccessUserGroupRelation`.
+- **Customer-specific (contract) pricing** (scope by customer number not `customerGroupId`; lowest matching price wins; resolves live in cart/checkout not PLP/PDP; the `force_price_recalculation` verification trap): vendor-generic catalog/pricing knowledge is owned by the `dw-commerce-catalog` foundational skill — staged in [`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.13. **Lowest matching row wins applies across the variant axis too, and a variant's own row never outranks a lower master row.** A master list row carrying no variant id matches every combination, and so does a contract row keyed on the customer number, so while either sits below the variant-keyed rows, every combination of that master renders one price (the delivery API's `prices[]` lists the variant row beside the winning master row, which is the tell). A per-combination price beat therefore needs the master's list and group rows keyed per variant or removed from variant masters, and the contract row set above or per variant; verify by reading one combination's price through the delivery API or `get_prices_by_product_id`, never by the presence of the variant row.
 
-  **DW 10.28 behaviour — bind the area currency explicitly before debugging any price.** On DW 10.28+ an area with no bound `AreaEcomCurrencyId` derives its currency from the area **CULTURE** (an `en-US` area silently prices in USD via currency conversion), not from `CurrencyIsDefault`. Wrong-currency cart/checkout totals on a demo are almost always this, not a pricing-rule bug — bind `AreaEcomShopId`/`AreaEcomCurrencyId`/`AreaEcomLanguageId` per area + restart, per [`deserialize-flow.md`](deserialize-flow.md) §7 ("Mandatory consumer obligation").
+  **DW 10.28 behaviour — bind the area currency explicitly before debugging any price.** On DW 10.28+ an area with no bound `AreaEcomCurrencyId` derives its currency from the area **CULTURE** (an `en-US` area silently prices in USD via currency conversion), not from `CurrencyIsDefault`. Wrong-currency cart/checkout totals on a demo are almost always this, not a pricing-rule bug — bind `AreaEcomCurrencyId` (and `AreaEcomLanguageId`) per area + restart, per [`deserialize-flow.md`](deserialize-flow.md) §7 ("Mandatory consumer obligation"). Price resolution does not need `AreaEcomShopId`, and binding it has a precondition of its own (every browsable group related to the shop) stated in the same section.
 
   **Presenter note — the PDP header "from" price is expected behaviour, not a pricing bug.** Stock Swift's PDP header renders the **master product "from" price**; the resolved variant + customer-affiliation/contract price is computed only in **cart/order context**. So the header price legitimately differs from what the cart later shows for a specific variant or a logged-in contract customer — this is not a defect and does not need debugging during polish. Present it by walking the price down the cascade: show the master "from" price on the PDP, then add to cart / sign in as the contract customer and let the **cart** reveal the resolved price. (This is the PDP-header face of the "resolves live in cart/checkout not PLP/PDP" rule above.)
 
@@ -74,8 +93,12 @@ Symptom: CSR Overview page has empty grid rows, or `CSR/Orders/` shows no orders
 2. **Logged-in user is not in a CSR group** -- `EcomCustomers.GroupId` doesn't include a CSR-permission UserGroup row. The customer-flavoured baseline is expected to seed a CSR sample user; the stock `AdminUser` default has admin perms but isn't in a customer-facing CSR group.
 3. **CSR ↔ customer grants not wired** -- `AccessUserSecondaryRelation` is empty for this CSR, or the column direction is inverted, or the required index-rebuild + cache-clear follow-up was skipped. See [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) "`AccessUserSecondaryRelation` — the impersonation grant".
 4. **Index not built or cache stale after wiring the grant** -- see [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md). For Products-index rebuilds, see [dw-demo-pim/references/governance.md "Recovery recipe: Rebuild Products index"](../../dw-demo-pim/references/governance.md).
+5. **The demo's own account group has no type, or the CSR group has no impersonation relation over it** -- the CSR Accounts app (the UserGroups app on that page) lists only groups whose type is `SystemAccount`, so a B2B account group shipped with an empty type never lists for a signed-in CSR even though every user relation is correct, and the CSR sees only the framework's sample accounts; CSR Users stays empty until the CSR group carries an impersonation relation over the account group. A shipped demo layer can arrive in exactly this state, so check it on a fresh delivery rather than assuming the persona note holds. Set the type (no MCP write takes it: the group's admin screen, or a Management API `GroupSave` full-model round trip, per [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) "CSR sales-on-behalf") and grant the relation with MCP `add_impersonatable_groups` (the CSR group over the account group); then the account lists, its detail shows the personas, CSR Users lists them and impersonation works. Verify by signing in as the CSR and reading the Accounts page, never by the group row.
 
-What is NOT the cause: missing paragraphs / broken templates / Swift 2.3 incompatibility. The swift/2.3 baseline is verified working by [`deserialize-flow.md`](deserialize-flow.md); if the page renders at all, the structure is intact and the issue is data-side.
+What is NOT the cause of an EMPTY section: missing paragraphs / Swift 2.3 incompatibility. The swift/2.3 baseline is verified working by [`deserialize-flow.md`](deserialize-flow.md); if the page renders at all, the structure is intact and the issue is data-side. Two symptoms on a POPULATED section are not data either, and no data write reaches them:
+
+- **My orders renders the product id where the product number belongs.** The stock `eCom/CustomerExperienceCenter/Orders/List/Orders_List.cshtml` prints `orderline.ProductId` on the expanded order while `Orders/Detail/Orders_Details.cshtml` prints `orderline.ProductNumber`; the stored line is correct (read it back through the order tools). Internal ids leak into the customer view and a rebrand that renames SKUs cannot reach them. The route is a net-new copy of the list template printing `ProductNumber`, repointed through the paragraph's module settings ([`paragraphs.md`](paragraphs.md), the customer-experience-centre template shapes), or the upstream Swift fix; the sibling omissions in the same two templates are in [`shipped-template-defects.md`](../../dw-swift-building/references/shipped-template-defects.md).
+- **The CSR Accounts search box does not narrow the list.** The box sends `q`, every account still lists, and the "No accounts found" empty state renders only when the list was empty to begin with. Read the UserGroups app paragraph's settings (`get_module_settings`) and compare the search parameter it declares with the key the app reads; a mismatch is a paragraph-settings fix (`set_module_settings`, then a restart, since module settings are cached at start), not a data one. Verify with a query for one account's name and assert the list length drops to one.
 
 Once the diagnosis is "data-side", drive the fix from [dashboard-seeding.md](dashboard-seeding.md) — the per-tile seed checklist that makes every buyer and CSR list land (the "no empty lists on demo day" bar).
 
@@ -83,7 +106,7 @@ Once the diagnosis is "data-side", drive the fix from [dashboard-seeding.md](das
 
 A demo with multiple personas (customer admin / buyer / browse / CSR) lands harder when the storefront makes the persona switch *visible*. Stock Swift renders every signed-in user the same: blue avatar circle + name. To distinguish:
 
-- Derive a role from `AccessUser.AccessUserCustomerNumber` suffix (a per-demo convention — e.g. `...-ADMIN`, `...-OWNER`, `...-BUYER`, `...-BROWSE`) **plus** CSR group membership via `Pageview.User.GetGroups()` (the suffix-as-role flag and the `GetGroups()` accessor are foundational — see [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §16 and [`dw-render-viewmodels`](../../dw-render-viewmodels/SKILL.md)).
+- Derive a role from `AccessUser.AccessUserCustomerNumber` suffix (a per-demo convention — e.g. `...-ADMIN`, `...-OWNER`, `...-BUYER`, `...-BROWSE`) **plus** CSR group membership via `Pageview.User.GetGroups()` (the suffix-as-role flag and the `GetGroups()` accessor are foundational — see [`page-gating.md`](../../dw-users-permissions/references/page-gating.md) §16 and [`dw-render-viewmodels`](../../dw-render-viewmodels/SKILL.md)).
 - Map each role to a **ring color** + **badge background/foreground**. Suggested palette: blue for admin/owner, teal for buyer, gray for browse, amber for CSR. (Adjust per-demo to fit the brand layer.)
 - Render in **both** avatar templates: `Users/UserView/Detail/UserAvatar.cshtml` (header top-right) AND `Users/UserView/Detail/UserInfo.cshtml` (the bigger avatar inside the CC sidebar). Same logic, same palette — keep them visually consistent or the persona signal feels accidental rather than designed.
 - Add the user's `Company` field below the role badge — distinguishes one buyer's company name from another's at a glance.
@@ -151,6 +174,7 @@ free → `UserSave` the target row (which updates the database **and** the cache
 doing rather than SQL-editing the row) → SQL-restore the whole set. Repeat per row. Verify afterwards that
 `/dwapi/users/info/profiles/switch` still returns `200` for every profile — the parking step is exactly the
 kind of edit that leaves a set half-restored.
+**Local installs only**: a hosted install has no write path for the parking step, so an online build asks the user.
 
 ### Zero-custom-code picker recipe (SQL + one restart)
 
@@ -165,6 +189,8 @@ kind of edit that leaves a set half-restored.
    `<ListUserProfiles>True</ListUserProfiles>` +
    `<UserProfilesTemplate>SelectableUsers.cshtml</UserProfilesTemplate>`.
 4. **Restart once** (user + paragraph caches).
+
+**Local installs only**: on a hosted install, create the profile rows with `UserSave` on DW 10.29+ (it rejects the duplicate username before 10.29) and restart through the CloudHosting `recycle.txt` control file; below 10.29 a hosted install has no write path for this, so an online build asks the user.
 
 Per-profile data isolation comes free: contract prices key on `PriceUserCustomerNumber` and the
 My-orders list filters on `RetrieveListBasedOn=UseUserID` — both differ per profile row.
@@ -202,6 +228,20 @@ storefront API  :  POST /dwapi/users/authenticate   { userName, password }      
 must reuse the same web session. A persona-login gate should assert a **signed-in marker on the
 customer-centre page**, not a POST status code.
 
+**Sign out between personas — always, in a demo script and in a probe.** Authenticating a second user
+over a live extranet session does **not** clear the context cart: the platform keeps the previous
+persona's cart, mints a `DynamicwebEcomCart<newUserId>` cookie for the same encrypted order id, and
+**persists that cart id onto the new user's `AccessUser` row**. So the leak is not a session artefact
+that a fresh browser clears — it is written to the user, and it reappears in every later session,
+including from a brand-new profile. The anonymous-to-authenticated transition clears correctly; the
+authenticated-to-authenticated one is the gap.
+
+The explicit log-off path (`/Admin/Public/ExtranetLogoff.aspx`) drops the cookie and the session cart
+correctly, which is what makes the workaround reliable: **navigate through the log-off between logins,
+or use a separate browser profile per persona.** Prove it both ways once — run the two-login script
+with and without the log-off step and assert that in the log-off run the new user's
+`DynamicwebEcomCart<id>` cookie is absent and their `AccessUserCartId` is unchanged.
+
 ## 8. Renaming a persona is a sweep, not a user edit
 
 **A persona is not a user-table row.** It is referenced by hardcoded credentials in shared harnesses, by
@@ -238,7 +278,48 @@ a user row by raw SQL: the in-process user cache is unflushable and the failure 
 ([`cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md)
 "Raw-SQL `AccessUser` writes create a split brain").
 
-## 9. Checkout delivery date and custom order fields
+## 9. Checkout — paths, method names, delivery date and custom order fields
+
+### Resolve the checkout URLs by walking the cart subtree
+
+**Resolve the checkout URLs by walking the cart subtree, never by composing a remembered path.** The
+shopping-cart branch (`Cart` with children for the empty cart, the anonymous checkout, the user checkout
+and the quote checkout) resolves its friendly urls **outside the culture prefix** that every content page
+carries — the checkout screens answer at bare `/checkout` and `/user/checkout` while `/` content sits under
+`/<culture>/`. A path composed as `<culture>/cart/checkout-user` 404s, which reads as a failed publish and
+sends the pass debugging the content tree. Read the page ids from the tree, fetch each by
+`/Default.aspx?ID=<pageId>` following redirects, and record the `url` each one lands on: that measured url
+is the one every later assert and every demo link uses. This is the same measured-prefix discipline the
+language layer needs ([`language-layers.md`](language-layers.md)).
+
+**Read the shipped method names before asserting on them.** The stock payment and shipping rows on the
+current baseline carry **English** names, while several still describe themselves in the platform vendor's
+home locale in the `description` field — so an assert that sweeps for that locale's method names passes
+vacuously before any work is done, and the debrand that actually matters is the descriptions. Start the
+step with `get_payment_methods` and `get_shipping_methods`, debrand the names **and** the descriptions,
+deactivate the carriers the demo does not use, and write the asserts against the rows just read rather than
+against a remembered name list.
+
+**The first checkout screen carries no method radios.** It collects customer details; the payment and
+shipping options render on a later step that only a cart past that step reaches. So "the checkout renders at
+least one payment and one shipping option" is a **persona-dependent leg** driven through the flow, not a
+GET — a cart driven straight to the checkout url renders neither, correctly. Assert the method rows
+themselves with the read tools, and keep the rendered-radio assert on the driven leg.
+
+
+### Populate the billing block on every buying contact, or their ship-tos vanish at checkout
+
+**Swift's checkout hides ALL delivery addresses when the user's own billing-address fields are
+empty.** `eCom7/CartV2/Step/Helpers/AddressUser.cshtml` builds a comma-joined string from the
+`AccessUser` row's OWN address fields and, when that string is blank, renders "You do not have any
+address yet" **instead of** the delivery-address list — even when the user has `AccessUserAddress`
+ship-to rows that the Admin API happily returns.
+
+So a user import that lands ship-tos but not a billing address produces a persona who cannot check
+out, **with no error anywhere**, and an app-pool recycle does not help: it is a data gap, not a cache
+one. **Fix it in the data — populate the billing block for every buying contact** rather than
+patching the template. Assert it per persona by reaching the delivery-address step in the real
+checkout flow and counting the ship-tos rendered, not by reading the addresses back through the API.
 
 ### The delivery-date beat needs NO custom order field
 
@@ -272,6 +353,7 @@ ALTER TABLE EcomOrders ADD [<SystemName>] <type> NULL;
 
 Flush the `OrderFieldService`/`OrderService` caches (or restart the host) before reading any
 order.
+**Local installs only**: a hosted install has no documented write path for this (MCP `create_order_field` fails, below), so an online build asks the user.
 
 ### MCP `create_order_field` fails on a foreign-key violation (version-pinned)
 
@@ -286,7 +368,7 @@ beat needs a custom field at all (see the delivery-date rule).
 The "Manage users" page an account admin uses to invite, activate, impersonate and remove their own
 people. The permission gate that decides whether ANY of it works, the module's real property set, the
 `AccountListScope` directory filter and the single-account-person modelling trade-off are foundational —
-[`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §17. **Read that
+[`user-group-operations.md`](../../dw-users-permissions/references/user-group-operations.md) §17. **Read that
 first: out of the box every command on this page is refused with a 200 and a toast, and the buttons still
 render.** What follows is the demo-facing behaviour of the same page.
 
@@ -467,7 +549,12 @@ gate cannot be written without one. Two curl gotchas ride along:
 
 - `/Default.aspx?ID=...` **301-redirects** to the friendly URL, so a probe needs `-L` (0 bytes without
   it) and a POST needs `--post301`, or post straight to the friendly URL.
-- Swift posts cart forms as **multipart** (FormData), so use `-F`, not `--data`.
+- Swift posts **cart** forms as multipart (FormData), so use `-F` there — and only there. This is not
+  a general form rule: an ordinary Razor form declares no `enctype`, a browser posts it
+  urlencoded, and a `-F` probe against one is truncated after the sixth field with the later required
+  fields reported missing. Read the rendered form's `enctype` and match it
+  ([`../../dw-demo-base/references/browser-automation.md`](../../dw-demo-base/references/browser-automation.md)
+  "Post a form the way the rendered form posts it").
 
 **Never clear a cart with a lines-only SQL delete.** DW holds the `Order` object in memory, and a
 `DELETE FROM EcomOrderLines` does not invalidate it: on the next cart command the cached Order
@@ -480,6 +567,8 @@ DELETE FROM EcomOrderLines WHERE OrderId = <cart>;
 DELETE FROM EcomOrders     WHERE OrderCart = 1;     -- the cart ROW too
 -- then restart the app pool, which drops the cached Order
 ```
+
+**Local installs only**: on a hosted install, remove the cart with MCP `delete_order`, then restart through the CloudHosting `recycle.txt` control file.
 
 Regression test for the trap: run the identical cart sequence twice with the full reset between runs
 and assert identical line counts and quantities both times. Without the reset, run two doubles.

@@ -4,8 +4,8 @@ type: flow
 group: demo
 mcp: required
 dynamo: false
-compatibility: Requires PowerShell 7.x
-description: Foundation skill for Dynamicweb 10 demos — scaffolds the dw10-suite host, wires Backend MCP and the localhost TLS bypass, and drops the customisations and customer-context guardrails. Does NOT load a baseline. Use FIRST on any new Dynamicweb demo, when MCP tools fail to load ("Failed to connect", silent tools/list), on a fresh Windows machine, when auditing the customisation budget, when "pinning the platform" for a Distribution-validating scaffold, or when the demo targets a hosted/cloud install reached only by URL + Admin API key (routes to dw-demo-hosted). Also owns the orchestrator abstraction (GSD primary vs the native `/demo:*` commands) — "drive the demo build", "GSD vs native" route to references/orchestrator.md. Sister skills (dw-demo-pim, dw-demo-swift, dw-demo-headless, dw-demo-hosted, dw-demo-erp, dw-integration-bc, dw-demo-foldback) are Use AFTER, never standalone. `<demo>\customer-context\` is read-only.
+compatibility: Requires PowerShell 7.x; the admin-shell driver also needs Node.js 20+ with Playwright + Chromium
+description: 'Set up DW10 demos and build orchestration; baseline loading belongs to sister skills. Use FIRST for local/hosted demos, MCP connection/TLS failures, platform pinning, customisation audits, GSD/native commands, and branded-demo path choice.'
 ---
 
 # Dynamicweb Demo Base Skill
@@ -16,6 +16,10 @@ This flow establishes the Dynamicweb MCP connection itself: the scaffold steps r
 MCP, and every step after the MCP wiring assumes it is live. If the MCP wiring fails, stop
 and fix it before continuing — do not substitute direct SQL or file edits for the tool
 calls later steps name.
+
+The ladder those rungs belong to is foundational —
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"; this skill owns
+only the demo deltas ([references/surface-priority.md](references/surface-priority.md)).
 
 The foundation skill for any Dynamicweb 10 demo. **Use FIRST** on every new Dynamicweb demo. Sister skills (`dw-demo-pim`, `dw-demo-swift`) inherit the `.mcp.json`, `CUSTOMISATIONS.md`, and TLS bypass that this skill establishes -- they are **Use AFTER**, never standalone.
 
@@ -68,17 +72,25 @@ Loading reference content into the project DB is **NOT** part of this skill's ca
 
 The Serializer install steps live in base so any sister skill can pull them; the act of deserializing is Swift- or headless-specific.
 
+**Branding that content is a separate choice, and it has a default.** Once an edition's demo
+content is on the host, a demo is branded one of three ways: author a demo-local brand layer in
+YAML and deserialize it (**the default**), deliver the edition as shipped and rebrand it through
+the tools, or model everything over the tools from a blank host. The three paths, their ordered
+steps with a check each, the measured cost of each, and the conditions under which the tool path
+is the right one are owned by [references/branded-demo-paths.md](references/branded-demo-paths.md).
+Every branding instruction in the sister skills routes there before it routes to a write surface.
+
 ### Versions prompt + Distribution clone/checkout
 
-All demo artifacts live in ONE consolidated Distribution repo, cloned per-demo into `<demo-root>\distribution\` — **main IS the version**: consumers pin the latest gate-proven `main` (never a release zip or tag checkout), resolve layers from `layers/INDEX.json` (a retired name resolves loudly to its `supersededBy` successor), and record the resolved commit SHA in `CUSTOMISATIONS.md` as the reproducibility stamp. Before any artifact is fetched, ask the user the **DW10 version** and the **Swift version** (e.g. `2.4`; the current cycle is **Swift 2.4 on DW 10.28.1-PreRelease**) and record both in `CUSTOMISATIONS.md` — the Distribution supports the current latest Swift release only and rolls forward with it. The verbatim clone/resolve recipe, the `gateProven` assertion, and the `$env:DW_DISTRIBUTION_REPO` override live in [references/scaffold.md](references/scaffold.md) §5.
+All demo artifacts live in ONE consolidated Distribution repo, the public `justdynamics/Truvio.Commerce.Distribution`, cloned per-demo into `<demo-root>\distribution\` — **main IS the version**: consumers pin the latest gate-proven `main` (never a release zip or tag checkout), resolve layers from `layers/INDEX.json` (a retired name resolves loudly to its `supersededBy` successor), and record the resolved commit SHA in `CUSTOMISATIONS.md` as the reproducibility stamp. Before any artifact is fetched, ask the user the **DW10 version** and the **Swift version** (e.g. `2.4`; the current cycle is **Swift 2.4 on DW 10.28.1-PreRelease**) and record both in `CUSTOMISATIONS.md` — the Distribution supports the current latest Swift release only and rolls forward with it. The verbatim clone/resolve recipe, the `gateProven` assertion, and the `$env:DW_DISTRIBUTION_REPO` override live in [references/scaffold.md](references/scaffold.md) §5.
 
 The former standalone demo-theme and feature-pack repos are **archived** — their themes and packs are now theme/feature layers in the Distribution:
 
 | Artifact | Source (in the Distribution clone) | Working tree | Consumed by |
 |---|---|---|---|
 | Serialized base | `layers/base` (kind base) — **framework-only**: 16 framework SQL sets in `replace/_sql/` (countries, currencies, languages, shops, payments, shippings, VAT, order flow/states, AccessUser), **zero content, zero pages, empty catalog by design** | `<demo-root>\distribution\layers\base\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Swift content surface | `layers/surface-swift` (kind surface) — ALL Swift content: both areas (`Swift 2` + `Swift 2 Nederlands`) in `replace/_content/` + `merge/_content/`, `UrlPath` in `replace/_sql/`, and its **own item-type XMLs** (`itemtypes/`, 128 `ItemType_Swift-v2_*.xml`) | `<demo-root>\distribution\layers\surface-swift\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
-| Demo catalog + identities *(optional)* | `layers/sample-data` (kind sample-data) — ships ALL demo content as SQL files (`merge/_sql/catalog.sql`: products / groups / prices; `merge/_sql/identities.sql`: buyer + CSR); editions activate it via `sampleData: true` (e.g. `swift-demo`); otherwise author per-demo via the [`dw-demo-pim`](../dw-demo-pim/SKILL.md) recipes | `<demo-root>\distribution\layers\sample-data\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
+| Swift content surface | `layers/surface-swift` (kind surface) — ALL Swift content: the one `Swift 2` area in `replace/_content/` + `merge/_content/`, `UrlPath` in `replace/_sql/`, and its **own item-type XMLs** (`itemtypes/`, 128 `ItemType_Swift-v2_*.xml`) | `<demo-root>\distribution\layers\surface-swift\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
+| Demo catalog + identities *(optional)* | `layers/sample-data` (kind sample-data), the ONE demo dataset: the browsable catalogue, the three personas on one B2B account, the twelve orders, the storefront copy and the brand assets, as serialized row documents (`merge/_sql/`), content YAML (`merge/_content/`, `replace/_content/`) and `files/`. Editions activate it via `sampleData: true` (e.g. `swift-demo`). A demo **rebrands it in place** through its own layer ([references/branded-demo-paths.md](references/branded-demo-paths.md)); a demo that wants no shipped catalogue authors per-demo via the [`dw-demo-pim`](../dw-demo-pim/SKILL.md) recipes | `<demo-root>\distribution\layers\sample-data\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) §3 |
 | Demo theme / style assets | `layers/theme-default` (kind theme — pure disk-overlay `files/`, no serialized DB content). **The ONE presentation layer** — every Swift demo starts from `theme-default` and re-skins on top of it; there is no theme choice and no separate overlay layers (the header-nav affordance CSS ships inside `theme-default`'s `default_custom.css`) | `<demo-root>\distribution\layers\theme-default\` | [`dw-demo-swift/references/styles-assets.md`](../dw-demo-swift/references/styles-assets.md) |
 | Feature pack | `layers/<name>` (kind feature) | `<demo-root>\distribution\layers\<name>\` | [`dw-demo-swift/references/pack-activation.md`](../dw-demo-swift/references/pack-activation.md) |
 | Swift design package | local clone of `https://github.com/dynamicweb/Swift` (release tag `v<version>.0` — the upstream Swift product still ships releases) | `<demo-root>\dw-swift\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) "Design-package deploy" |
@@ -88,17 +100,20 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 | If you need to... | Read this reference |
 |---|---|
 | How a demo build is **driven** — GSD vs the native `/demo:*` commands, `--standalone`, the strictness gradient, acceptance criteria | references/orchestrator.md |
+| **Brand a demo to a customer**: the three paths (YAML brand layer first, deserialize-then-tools, tools only), the measured cost of each, ordered steps with a check per step, and the traps. Read it BEFORE the first brand write | **references/branded-demo-paths.md** |
 | Verify a fresh machine is build-ready (incl. the MSDTC check behind AreaCopy `TransactionException`s) | references/setup-checks.md |
+| **Audit a restored or copied database for orphaned shop/group relation rows** before trusting any group-tree inventory | references/setup-checks.md §2b |
 | **Build on, or publish onto, a hosted/cloud install** (URL + Admin API key only — no scaffold, no SQL; the session-start probe, the Management API recipe pack, lying-success verification, the flush-then-restart ladder, inherited-clone remediation; and for a publish: pre-flight, transport map, id collisions, index rebuild) | **[`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)** |
 | Ask the demo's DW10 + Swift versions; clone/resolve the Distribution per-demo | references/setup-checks.md (versions prompt) + references/scaffold.md §5 |
 | Scaffold the project | references/scaffold.md |
 | **Pin the platform** for a Distribution-validating scaffold (why floating `10.*` fails sideways); the DB-wizard "Login failed" race | references/scaffold.md §2.2 + §3 |
 | **Start / stop / restart the demo host** — durable `Start-Process` recipe, ownership-verified stop, flush-first ladder, `--framework` / `$pid` / apphost-exe launch traps | references/host-lifecycle.md |
 | Get MCP working (and verify it); understand the two-layer TLS bypass | references/mcp-setup.md |
+| **Upgrade a package the host csproj already references** — and recover a site 500ing on duplicate type keys after an Add-in-manager install | references/mcp-setup.md ("Upgrade a package where it is already referenced") |
 | Install Browser MCP (`@playwright/mcp`); recover from browser-launch errors | references/browser-automation.md |
 | **Read a storefront screenshot critically** — programmatic defect detectors, the interaction pass, the eyeball checklist, symptom→fix routing, per-page definition of done | **references/visual-qa.md** |
 | **Sweep for real-person PII and vendor boilerplate** — whole-database string sweep, stock vendor legal copy, locale-shaped patterns. **Blocking pre-demo leg**, hardest on a cloned host | **references/pii-sweep.md** |
-| The surface contract — scaffold vs build phases, surfaces per instance type, why SQL-cloning structural trees fails | references/surface-priority.md |
+| The demo deltas on the action ladder — scaffold vs build phases, the bootstrap one-clicks, Browser MCP scope (the ladder itself is foundational, in `dw-data-access`) | references/surface-priority.md |
 | Generic demo-storytelling tactics (audience framing, one-source-N-shapes, the customer-wording glossary) | references/demo-tactics.md |
 | Manage the customisation budget; audit it at end of phase | references/customisations.md |
 | Honor the customer-context read-only contract | references/customer-context.md |
@@ -131,14 +146,39 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 | [Restart-DwHost.ps1](scripts/Restart-DwHost.ps1) | Writes: starts/stops THIS solution's host process, a lock file, log files | Guarded host lifecycle: port-scoped ownership-verified stop, index-build-in-flight guard, lock with stale takeover, durable redirected start, /Admin readiness poll. `-Port` and `-SolutionPath` are mandatory — no defaults |
 | [Invoke-DwPiiScan.ps1](scripts/Invoke-DwPiiScan.ps1) | Read-only (optionally writes a report file) | The mechanical half of the PII/vendor sweep: string-column census, person-PII counts, whole-DB term sweep (SQL local-only), rendered-page and download probes by URL. Classes and counts only — never values |
 | [Remove-SwiftVendorBoilerplate.ps1](scripts/Remove-SwiftVendorBoilerplate.ps1) | Dry-run by default; `-Apply` rewrites stock vendor boilerplate in Swift items + module settings, backing originals up | Content-matched debrand of the stock phrases (pii-sweep Rule 2); cookie names untouched by construction; lists the manual-pass remainder. Local installs only |
+| [Test-DwDemoStoryline.ps1](scripts/Test-DwDemoStoryline.ps1) | Read-only (optionally writes a JSON result file) | The consumer self-check, not a gate: every storyline page answers 200 and carries no placeholder copy in its VISIBLE TEXT, and every persona signs in with the session proved to BE that persona. Zero probes is FAIL. Secrets from the environment or a secrets file, masked in every line. Its hermetic Pester suite is [scripts/tests/Test-DwDemoStoryline.Tests.ps1](scripts/tests/Test-DwDemoStoryline.Tests.ps1) |
+| [admin-shell-driver.mjs](scripts/admin-shell-driver.mjs) | Read-only by default; `gridEditCell` writes one cell behind a read-back/abort guard | The five DW 10.28 admin-shell Playwright guards as an importable module plus a small CLI. The rules stay in [references/browser-automation.md](references/browser-automation.md) — this is the how. Node.js 20+ with Playwright |
+
+
+### `Test-DwDemoStoryline.ps1` config shape
+
+One JSON file, `-ConfigPath`. Everything is optional except what you actually check; a
+config that declares neither `pages[]` nor `personas.accounts[]` is **FAIL**, because
+nothing measured is not a pass.
+
+| Key | Meaning |
+|---|---|
+| `baseUrl` | Host base URL. Else `-BaseUrl`, else `$env:DW_BASE_URL`. No default host |
+| `placeholderRegex` | Matched against the page's VISIBLE TEXT. Default: lorem / TODO / placeholder / sample text / xxxx+ |
+| `pages[]` | A path string, or `{ path, minBytes, maxBytes, contains[], notContains[] }`. Fetched anonymously |
+| `personas.login` | `{ path, method, usernameField, passwordField, contentType: form\|json, successCodes[], extraFields{} }` |
+| `personas.identityPath` | Default identity page for every account |
+| `personas.accounts[]` | `{ role, username, secretEnv \| secretKey, identityPath, identityContains }` |
+
+A secret is read from the environment variable named in `secretEnv`, or from the JSON file
+at `-SecretsPath` under `secretKey`. It is never in the config, never a parameter and never
+printed — the output masks it to `<set, N chars>`. Without `identityPath` +
+`identityContains` the result says the check was **status only**, because a 200 from a login
+endpoint that mints no storefront cookie leaves the session anonymous, and an anonymous
+session satisfies every denial check for the wrong reason.
 
 ## Surface priority for CREATES (always-on rule)
 
-Creating things in DW10 has a strict surface priority, split into two phases by the MCP verification gate. **Scaffold phase** (before the gate): the admin UI via the Browser MCP is an action surface, scoped to the bootstrap one-clicks. **Build phase** (after the gate — and hosted/headless installs from the first request): **MCP first → Management API → direct SQL last resort (local only, sanctioned cases only)**; the admin UI is **verification-only** — every UI click is an Admin API call underneath, so a "UI-only" operation means the endpoint hasn't been found yet. On hosted installs there is no SQL rung: probe for MCP, else Management API, else ask the user ([`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)). The full contract — the surface table, the scaffold ladder, why SQL-cloning structural trees is forbidden — is owned by [references/surface-priority.md](references/surface-priority.md). This rule is owned by this skill and inherited by every sister skill.
+The action ladder — MCP tools, then the Management API at `/admin/api/...`, then the serializer, then direct SQL as a local-install-only last resort, with the admin UI as verification only — is foundational and owned by [`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance". A demo splits it into **two phases** by the MCP verification gate. **Scaffold phase** (before the gate): the admin UI via the Browser MCP is an action surface, scoped to the bootstrap one-clicks. **Build phase** (after the gate — and hosted/headless installs from the first request): the foundational ladder applies without exception; take the highest rung that reaches the operation and a "UI-only" operation means the endpoint hasn't been found yet. On hosted installs there is no SQL rung: probe for MCP, else Management API, else ask the user ([`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)). The demo deltas — the phase gate, the scaffold ladder, the long-form SQL-cloning ban — are owned by [references/surface-priority.md](references/surface-priority.md). This phase rule is owned by this skill and inherited by every sister skill.
 
-## Two guarded-writes (always-on rules)
+## Three guarded-writes (always-on rules)
 
-These are mandatory write-time preflight rules. They share one mental model -- "guarded write triggered by path glob" -- with two glob patterns and two outcomes.
+These are mandatory write-time preflight rules. They share one mental model -- "guarded write triggered by path glob" -- with three glob patterns and three outcomes.
 
 1. **Custom code path** (the customisations-ledger preflight -- three branches). Before writing any file matching:
    - `Dynamicweb.Host.Suite/Controllers/**/*.cs`
@@ -156,6 +196,17 @@ These are mandatory write-time preflight rules. They share one mental model -- "
 
 2. **Customer-context path** (the customer-context read-only contract -- hard abort, no approve branch). Any write to a path containing `customer-context\` (case-insensitive, both separators) aborts and redirects to `<demo>\notes\` or `<demo>\extracts\`. The canonical abort message, path-matching rule, and detection signature live in `references/customer-context.md`.
 
+3. **Distribution layer path** (the layer read-only contract -- three branches, same shape as rule 1). Before writing any file matching `distribution[/\\]layers[/\\]` (case-insensitive, both separators):
+
+   **Invoke `AskUserQuestion`** with this exact shape:
+   > "This edits a Distribution layer, not this demo. The clone may be shared with other demos and the next `git pull --ff-only` will clobber or refuse. [Approve+log as a Distribution PR / Change it on the instance instead / Cancel]"
+
+   - **Approve+log** -> make the edit on a branch of the Distribution checkout and log it as a pull request against the Distribution, never as a loose working-tree change; append the row to `<demo>\CUSTOMISATIONS.md`.
+   - **Change it on the instance instead** -> abort the write; make the fix on the running host (admin UI or MCP) and, if it must persist, raise it as a layer issue.
+   - **Cancel** -> abort.
+
+   Branding never edits a layer: a re-skin writes theme files and instance content, not layer YAML. The same rule is restated where branding work happens -- `dw-demo-swift/references/re-skin.md`, `styles-assets.md` and `deserialize-flow.md` -- and this is its enforcement point.
+
 **Rationale:** Many B2B customers are fleeing heavily-customised legacy commerce/ERP stacks; the customisation budget is itself a pitch beat at the demo's closing slide. Every approved row is a deliberate trade-off; every Cancel/Refactor is a small win.
 
 ## Artifact hygiene — the demo root is not a scratchpad (always-on rule)
@@ -170,7 +221,7 @@ Ephemeral build evidence (QA screenshots, host logs, Playwright DOM/a11y dumps) 
    | `notes\logs\` | host stdout/stderr logs | the "Host lifecycle authority" `Start-Process` recipe below |
    | `notes\snapshots\` | Playwright DOM / accessibility dumps | `references/browser-automation.md` |
 
-2. **Root allowlist.** Only these may sit at the demo root: the plan doc (`DEMO-PLAN.md`), `CLAUDE.md`, `CUSTOMISATIONS.md`, `.gitignore`, `.mcp.json`, and directories. Anything else an agent wants to write at root routes to `notes\` instead — the same redirect wording as the customer-context contract ("did you mean `<demo>\notes\`?"). The harness enforces this end-of-phase (see the Foundry root-allowlist check).
+2. **Root allowlist.** Only these may sit at the demo root: the plan doc (`DEMO-PLAN.md`, whose five-section contract is in [references/demo-tactics.md](references/demo-tactics.md)), `CLAUDE.md` (dropped by the entry check in [references/customer-context.md](references/customer-context.md) §6), `CUSTOMISATIONS.md`, `.gitignore`, `.mcp.json`, and directories. **Audit the root on entry as well as end-of-phase** — a solution scaffolded by anything other than [references/scaffold.md](references/scaffold.md) commonly arrives carrying extra root files already, and reporting them on the first pass is cheaper than carrying them to the hand-over. Anything else an agent wants to write at root routes to `notes\` instead — the same redirect wording as the customer-context contract ("did you mean `<demo>\notes\`?"). The harness enforces this end-of-phase (see the Foundry root-allowlist check).
 
 3. **Naming rule — name evidence for what it IS.** An evidence dump is named for its content (`admin-a11y-snapshot-*.md`, `home-desktop-*.jpeg`), never for what it was captured *during*. Security-suggestive names for non-secret dumps (e.g. an accessibility snapshot saved as `apikeylist.md`) are forbidden — they read as leaked-secrets files to any human or scanner.
 
@@ -182,7 +233,7 @@ Ephemeral build evidence (QA screenshots, host logs, Playwright DOM/a11y dumps) 
 
 Three rules, owned in full by [references/pii-sweep.md](references/pii-sweep.md) — read it before any demo is shown, published, screenshared or handed over:
 
-1. **Renaming the user rows fixes nothing.** Order snapshots, address rows, token labels, log text and JSON merge-field snapshots each hold an independent copy. Enumerate by scanning **every string column**, classify by **sampling the values** (not by table name), fix, then **re-scan** — fixing one layer exposes the next.
+1. **Renaming the user rows fixes nothing.** Order snapshots, address rows, token labels, log text and JSON merge-field snapshots each hold an independent copy. Enumerate by scanning **every string column**, classify by **sampling the values** (not by table name), fix, then **re-scan** — fixing one layer exposes the next. **Crawl the rendered corpus signed in as each persona**, customer-centre order pages included: the order-time identity snapshot is invisible to a user-table check and to an anonymous crawl alike.
 2. **Sweep the stock vendor boilerplate too** — privacy / cookie / terms pages, corporate addresses, the email-recipient author list. De-brand the marketing and legal copy; keep genuinely technical vendor references accurate rather than inventing false identifiers.
 3. **A term-grep cannot find placeholder data containing none of your terms.** Add locale-*shaped* patterns (foreign dialling codes, foreign postcodes, registration-number formats) and keep the rendered-page eyeball pass as a **required** step.
 

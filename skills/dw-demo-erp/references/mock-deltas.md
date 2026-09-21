@@ -18,7 +18,7 @@ There is **no live wire**. There is no file polling daemon, no JSON inbox, no hu
 
 - The DB is pre-staged into the **post-BC-sync state** — every value that BC would have written (price, stock, reorder, lifecycle state, etc.) is already in `EcomProducts` as if the delta arrived overnight.
 - The demo narrates *"BC sent us this; look at the result."* Evidence is the data, the action-rule definition, and the email template — not a live trigger.
-- **One** scheduled task (Settings → System → Scheduled tasks → `<Demo> RESET to clean state`) flips everything back to the canonical starting state via a SQL subtask. The presenter clicks "Run now" between demos.
+- **One** scheduled task (Settings → System → Scheduled tasks → `<Demo> RESET to clean state`) flips everything back to the canonical starting state through an Integration activity. It is registered DISABLED and driven with `POST /Admin/Api/TaskRun`, which ignores `TaskEnabled`, so it can never fire on a clock tick mid-demo.
 
 The model is intentionally one-direction (BC → PIM). The PIM → BC enrichment story is told via a single static field-mapping artefact checked into the demo solution. No JSON inboxes, no folder structure, no in-demo firing protocol.
 
@@ -41,8 +41,14 @@ question is **what the beat's evidence is**:
 | Option | What runs | Use when the evidence is | Cost |
 |---|---|---|---|
 | 1 — narrate the staged state | nothing; the data is already post-sync | an **admin screen** (product detail, action rule, mail template) | none |
-| 2 — `RunSqlScheduledTaskAddIn` | one SQL transaction | an **admin screen**, and the demo needs a between-runs RESET | none (built-in add-in) |
-| 3 — a real Integration Framework activity | a `SqlProvider` source over a staged table into an `EcomProvider` destination | the **STOREFRONT** — a PDP, a PLP, a cart line | none (configuration; no provider class to write) |
+| **3 — a real Integration Framework activity** | a `SqlProvider` source over a staged table into the destination provider that owns the entity (products and groups `EcomProvider`; orders, carts and quotes `OrderProvider`; users and addresses `UserProvider`; stock and prices were measured riding `DynamicwebProvider`; custom tables `SqlProvider`), bound to a task through `JobScheduledTaskAddIn`. The source carries a literal connection string: the empty-node fallback is destination-only | the **STOREFRONT** — a PDP, a PLP, a cart line — **and any RESET** | none (configuration; no provider class to write) |
+| 2 — `RunSqlScheduledTaskAddIn` | one SQL statement, *if* it executes | an admin screen, when the effect is asserted independently after every run | none (built-in add-in), plus the verification below |
+
+**Option 3 is the default, including for the RESET.** It is not custom code: DW10 ships both
+`SqlProvider` and `EcomProvider`, so an activity over them is configuration, it costs nothing on the
+customisations ledger, and it stays fully DB-staged — no files, no tenant, no network. It also gives
+the demo a **visible source/target pair** to open on screen, which is the whole point of narrating an
+integration, and its activity log reports per-table row counts that a runbook can assert.
 
 **A raw-SQL write cannot drive a storefront-visible beat.** The Ecommerce price and product caches
 are read-through and a SQL `UPDATE` bypasses every domain-service hook that invalidates them, so the
@@ -51,12 +57,27 @@ returned the pre-write price. Touching `ProductUpdated` does not help either: it
 clear it: a write through a domain surface (option 3), or an explicit `CacheInformationRefresh` sweep
 over the Ecommerce product/price service caches as a named step in the runbook. **So option 2's RESET
 restores DATA only** — pair it with a cache-invalidating step whenever the storefront is the oracle.
+A raw write to a cached aggregate is also destroyed by the next API save of that entity, not merely
+read stale, so the ordering is always UPDATE → flush → touch; see
+[dw-data-access](../../dw-data-access/references/cache-invalidation.md).
 
-Option 3 is not custom code. The recipe's older wording ("no provider class is registered") conflated
-*no CUSTOM provider* with *no activity*: DW10 ships both `SqlProvider` and `EcomProvider`, so an
-activity over them is configuration, it costs nothing on the customisations ledger, and it stays fully
-DB-staged — no files, no tenant, no network. It also gives the demo a **visible source/target pair**
-to open on screen, which is the whole point of narrating an integration.
+**`RunSqlScheduledTaskAddIn` reports success and silence identically.** On 10.28.x it has been
+measured binding its parameters, firing, logging `Run returned: True` and setting `TaskLastResult`
+True while executing **no SQL at all** — with the same statement writing rows when run by hand, and
+a `JobScheduledTaskAddIn` activity writing to the same table through the same account seconds later.
+Malformed settings *are* reported (an unescaped `<` in the blob sets `TaskLastResult` False with an
+`XmlException` from `LoadParametersFromXml`), which is exactly what makes the silent case
+misleading: the add-in demonstrably reads its configuration and demonstrably knows how to fail, and
+still never reports that it ran nothing. So **never treat this add-in's run result as evidence** —
+assert the effect (a row count, a checksum, a rendered page) after every run, or use option 3, whose
+log counts the rows it moved.
+
+**A raw-SQL write cannot drive a storefront-visible beat either.** The Ecommerce price and product
+caches are read-through and a SQL `UPDATE` bypasses every domain-service hook that invalidates them,
+so the PDP keeps rendering the old value indefinitely. Touching `ProductUpdated` does not help: it is
+not a cache key. Two things clear it — a write through a domain surface, or an explicit
+`CacheInformationRefresh` over the Ecommerce product and price service caches as a named runbook
+step. **So an option-2 RESET restores DATA only**, and only when it ran.
 
 ## The recipe
 
@@ -82,26 +103,36 @@ Build one PowerShell + SQL script at `<demo>/.planning/stage-and-reset.ps1` that
 
 Reference implementation: `<demo>/.planning/stage-and-reset.ps1` (build-time tooling — adapt per demo).
 
+**Local installs only**: on a hosted install, stage the post-sync values through `patch_products_safe` or `update_products`.
+
 ### Step 3 — Register the RESET scheduled task
 
-Use the built-in `Dynamicweb.Scheduling.ScheduledTaskAddIns.RunSqlScheduledTaskAddIn` (in `Dynamicweb.Core`). No customisation needed — this addin ships with DW10 and accepts a `SQL Query` text parameter + a `Log debugging info` bool.
+**Bind the task to an Integration Framework activity** (`JobScheduledTaskAddIn`, option 3) wherever
+the reset can be expressed as a restore from a staged baseline table — its log counts the rows it
+moved, so the run is self-evidencing. The `ScheduledTask` row shape below is the same either way.
 
-Idempotent SQL insert with hex-encoded XML settings (dodges all escaping):
+The built-in `Dynamicweb.Scheduling.ScheduledTaskAddIns.RunSqlScheduledTaskAddIn` (in
+`Dynamicweb.Core`) accepts a `SQL Query` text parameter and a `Log debugging info` bool and needs no
+customisation — but see the option-2 warning above: its success signal does not distinguish "ran the
+SQL" from "ran nothing", so a task built on it needs an independent effect assertion after every run.
+
+The `ScheduledTask` row itself still has to be registered. Idempotent SQL insert with hex-encoded XML
+settings (dodges all escaping) — the settings document below carries whatever parameters the chosen
+add-in declares:
 
 ```powershell
-$resetSql = @'
-UPDATE EcomProducts SET ProductStock=5, ProductWorkflowStateId=4, ProductActive=1, g_bc_reorder='yes', g_lifecycle_state='active' WHERE ProductId='PROD7' AND ProductLanguageId='LANG1' AND ProductVariantId='';
-UPDATE EcomProducts SET ProductPrice=249.0 WHERE ProductId='PROD1' AND ProductLanguageId='LANG1' AND ProductVariantId='';
--- ... one UPDATE per "Pre" row from Step 1 ...
-'@
+# The activity that restores the "Pre" column of the Step 1 table, by name.
+$activity = '<Demo> RESET to clean state'
 
-$sqlEsc = $resetSql -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;'
-$type = 'Dynamicweb.Scheduling.ScheduledTaskAddIns.RunSqlScheduledTaskAddIn'
+$esc  = { param($s) $s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;' }
+# The settings document repeats the type name WITHOUT the assembly, on the root and on every
+# child; TaskAddInTypeName below carries the assembly-qualified form. Read the parameter names
+# off the add-in's own metadata rather than guessing them.
+$type = 'Dynamicweb.DataIntegration.Integration.JobScheduledTaskAddIn'
 $xml = @"
 <?xml version=`"1.0`" encoding=`"utf-8`"?>
 <Parameters addin=`"$type`">
-  <Parameter addin=`"$type`" name=`"SQL Query`" value=`"$sqlEsc`" />
-  <Parameter addin=`"$type`" name=`"Log debugging info`" value=`"True`" />
+  <Parameter addin=`"$type`" name=`"<parameter name from the add-in's metadata>`" value=`"$(& $esc $activity)`" />
 </Parameters>
 "@
 $bytes = [System.Text.Encoding]::Unicode.GetBytes($xml)
@@ -111,24 +142,43 @@ $hex   = '0x' + (($bytes | ForEach-Object { $_.ToString('x2') }) -join '')
 SET NOCOUNT ON;
 IF NOT EXISTS (SELECT 1 FROM ScheduledTask WHERE TaskName=N'<Demo> RESET to clean state')
   INSERT INTO ScheduledTask
-    (TaskName, TaskBegin, TaskEnd, TaskLastRun, TaskNextRun, TaskEnabled, TaskType,
+    (TaskName, TaskParentId, TaskBegin, TaskEnd, TaskLastRun, TaskNextRun, TaskEnabled, TaskType,
      TaskMinute, TaskHour, TaskDay, TaskWday,
      TaskAddInTypeName, TaskAddInSettings, TaskComment,
      TaskCheckPrevious, TaskSort, TaskStartFromLastRun, TaskLastResult)
   VALUES
-    (N'<Demo> RESET to clean state',
-     GETDATE(), '9999-12-31', '2000-01-01', '9999-12-31', 1, 0,
-     0, 0, 0, 0,
-     'Dynamicweb.Scheduling.ScheduledTaskAddIns.RunSqlScheduledTaskAddIn, Dynamicweb.Core',
+    (N'<Demo> RESET to clean state', NULL,
+     '2099-01-01 03:30', '9999-12-31', '1900-01-01', '2099-01-01 03:30', 0, 0,
+     1440, 0, 0, 0,
+     'Dynamicweb.DataIntegration.Integration.JobScheduledTaskAddIn, Dynamicweb.DataIntegration',
      CAST($hex AS NVARCHAR(MAX)),
-     N'Resets demo data to canonical starting state. Click Run now between demos. Rebuild the Products index afterwards.',
-     0, 0, 0, 1);
+     N'Resets demo data to canonical starting state. Drive it with TaskRun between demos. Rebuild the Products index afterwards.',
+     0, 0, 0, NULL);
 "@ | sqlcmd -S "<server>" -d <db> -E
 ```
 
-`TaskNextRun='9999-12-31'` keeps the task enabled but never auto-fires; the presenter triggers it from the admin UI.
+**Local installs only**: on a hosted install, register the task through `create_scheduled_task` or `TaskSave` and prove it from `GET /Admin/Api/Tasks`.
 
-**NOT NULL columns** in `ScheduledTask` that bite if you forget: `TaskLastRun`, `TaskNextRun`, `TaskMinute`, `TaskHour`, `TaskDay`, `TaskWday`, `TaskStartFromLastRun`.
+**A presenter-triggered task sets EVERY schedule column to `-1`** — `TaskMinute`, `TaskHour`,
+`TaskDay`, `TaskWday` — as well as `TaskNextRun = '9999-12-31'`. That is the shape the platform's own
+shipped tasks use, and it survives any number of pool restarts without firing.
+
+A far-future `TaskNextRun` on its own is **not** a kill switch. DW re-evaluates overdue tasks at
+application start and fires them, so a task carrying a "realistic" nightly minute/hour pair
+self-fires about a minute after anything recycles the pool — and a demo reset that writes
+`app_offline` is exactly that trigger. The symptom is unrequested runs appearing in the history the
+presenter shows on screen, plus drift in any assertion that counts executions. **Carry the nightly
+cadence in the task name, the task comment, the folder description and a staged
+`ScheduledTaskExecution` history**, never in a live minute/hour pair; then only presenter-fired runs
+land on top of the staged history, and the execution count after a reset is an exact assertion.
+
+When the presenter fires the task on demand, `POST /Admin/Api/TaskRun {"TaskId":<n>}` ignores `TaskEnabled` entirely, so the row can stay disabled and still run on request without any schedule side effect.
+
+**`TaskParentId` must be `NULL`, never `0`** — the scheduler enumerates the parent list, so a `0`
+makes the task invisible with no log line anywhere. `TaskComment` is `nvarchar(255)` and SQL Server
+refuses rather than trims; `TaskLastRun` is NOT NULL; `TaskParam0..4`, `TaskTarget`, `TaskAssembly`,
+`TaskNamespace`, `TaskClass`, `TaskAddInSettings` and `TaskLastException` are empty strings on every
+live row, not NULL; and `TaskMinute` with `TaskType = 0` is an interval in minutes.
 
 Three rules make the difference between a registered task and one the app cannot see:
 
@@ -137,11 +187,17 @@ Three rules make the difference between a registered task and one the app cannot
   stores a string the add-in loader cannot parse — the task exists, opens in admin, and does nothing.
   The hex-encoded `CAST(… AS NVARCHAR(MAX))` above is a SQL-insertion device, not an escaping one: the
   bytes it carries are the literal document.
-- **A SQL-inserted `ScheduledTask` row is invisible to the running app until a recycle.** The
-  scheduled-task service caches its task collection at application start, so
-  `POST /Admin/Api/TaskRun {TaskId:<n>}` answers **404 "The task with id: N was not found"** for a row
-  that demonstrably exists. **Prefer registering through `TaskSave`**, which the running app sees
-  immediately; when the SQL path is the only option, recycle before claiming registration succeeded.
+- **Every SQL write to the schedule is invisible to the running app until the task list is
+  flushed or the pool recycles — inserts and updates alike.** The scheduler serves the
+  `ScheduledTask` schedule from the `Dynamicweb.Scheduling.TaskService` cache and never re-reads
+  it on its own, so `POST /Admin/Api/TaskRun {TaskId:<n>}` answers **404 "The task with id: N was
+  not found"** for a SQL-inserted row that demonstrably exists, and a `TaskNextRun` rewritten by
+  SQL is ignored even on a task that has been firing correctly for a week; a pool with no idle
+  timeout and no periodic restart never picks any of it up. `POST /Admin/Api/CacheInformationRefresh
+  {"CacheTypeName":"Dynamicweb.Scheduling.TaskService"}` makes the row live on the next tick with
+  no recycle. **Register and re-schedule through `TaskSave`**, which the running app sees
+  immediately; when the SQL path is the only option, flush (or recycle) before claiming
+  registration succeeded.
 - **Prove registration from the task list, not from the INSERT.** `GET /Admin/Api/Tasks` must return
   the task by name — mind the 10-row default page size, which is how a freshly added task reads as
   absent on a host that already has ten.
@@ -198,20 +254,33 @@ stays in the database; the only additions are two staging tables and configurati
 Both live in the solution's own database, so the `SqlProvider` source needs no external connection.
 Key them on the product number the catalogue actually uses.
 
+**Local installs only**: a hosted install has no write path for custom staging tables, so an online build asks the user.
+
 ### 2. Build two activities
 
 Source `Dynamicweb.DataIntegration.Providers.SqlProvider.SqlProvider` over the staging table →
 destination `Dynamicweb.DataIntegration.Providers.EcomProvider.EcomProvider`. One activity per
-direction (apply / reset). The job XML lands under `Files/Integration/jobs/<activity>.xml`.
+direction (apply / reset). The job XML lands on disk at
+`<wwwroot>/Files/Files/Integration/jobs/<activity>.xml` — note the doubled `Files\Files`, and that
+the file name **is** the activity name the task binds to. Encoding, the `<Schema>` block and the
+column element shapes are owned by
+[`../../dw-integration-framework/references/job-file-format.md`](../../dw-integration-framework/references/job-file-format.md).
 
 Two destination settings carry the safety of the whole beat:
 
 - **`UpdateOnlyExistingProducts=True`** — the activity updates the catalogue, never invents rows.
 - **`UseStrictPrimaryKeyMatching=True`** — a key that does not resolve fails rather than fanning out.
 
-Because the write goes through `EcomProvider`, the domain services invalidate their own caches: the
-PDP reflects the new price on the next request with no manual flush. That is the entire reason this
-option exists.
+Because the write goes through `EcomProvider` the domain services invalidate the caches behind
+price and product rows, so the PDP reflects the new price on the next request with no manual flush.
+That is the entire reason this option exists.
+
+**The one gap: extended and global product fields.** A run that writes those columns leaves the
+read-through cache in front of `ProductService` stale even with cache clearing enabled, and a
+scheduled activity inherits that silently — so wire
+`POST /Admin/Api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Ecommerce.Products.ProductService"}`
+into the task chain for any activity whose product-field effect must be visible. Details in
+[`../../dw-integration-framework/references/provider-behaviour.md`](../../dw-integration-framework/references/provider-behaviour.md#ecomprovider-as-a-destination).
 
 ### 3. Bind each activity to a scheduled task
 
@@ -244,6 +313,14 @@ The staged pair only earns its place if the reset is exact:
   reconstruct it.
 - The rendered PDP shows the new value after apply and the original after reset, read from the page
   rather than from SQL.
+
+Two ordering rules make a reset chain single-pass rather than "run it twice and hope", and both are
+owned by
+[`../../dw-integration-framework/references/provider-behaviour.md`](../../dw-integration-framework/references/provider-behaviour.md#restores-and-resets-built-on-activities):
+**purge the entities the session created before restoring the tables**, and **scope every reset by a
+marker column the generator stamps** rather than by an id list or a date. The second one has teeth
+here in particular: an integration key is the "already processed" flag, so a reset that nulls it
+re-arms the integration and the next export sweeps the whole seeded history.
 
 ## Do not
 

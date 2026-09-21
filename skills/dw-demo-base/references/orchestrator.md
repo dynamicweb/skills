@@ -2,6 +2,7 @@
 
 ## Contents
 
+- [The build path an orchestrator sequences](#the-build-path-an-orchestrator-sequences)
 - [Running modes](#running-modes)
 - [Standalone — the lightweight in-skill harness (no orchestrator)](#standalone--the-lightweight-in-skill-harness-no-orchestrator)
 - [Detection and deference (the native command set steps aside for GSD)](#detection-and-deference-the-native-command-set-steps-aside-for-gsd)
@@ -10,6 +11,7 @@
 - [Reuse mapping (GSD mode) — reuse GSD primitives, do not rebuild them](#reuse-mapping-gsd-mode--reuse-gsd-primitives-do-not-rebuild-them)
 - [Two kinds of gate (why scaffold is gated without pausing for a human)](#two-kinds-of-gate-why-scaffold-is-gated-without-pausing-for-a-human)
 - [Strictness gradient — one human pause, automated quality elsewhere (every mode)](#strictness-gradient--one-human-pause-automated-quality-elsewhere-every-mode)
+- [Dispatched sessions: the brief carries the execution authority](#dispatched-sessions-the-brief-carries-the-execution-authority)
 - [Model tier — a dial on the orchestrator, never a fork of the skills](#model-tier--a-dial-on-the-orchestrator-never-a-fork-of-the-skills)
 - [Discovery prompts (impact-analysis input — shared by both orchestrators)](#discovery-prompts-impact-analysis-input--shared-by-both-orchestrators)
 - [Acceptance criteria (the shared definition of PASS)](#acceptance-criteria-the-shared-definition-of-pass)
@@ -44,6 +46,24 @@ Two orchestrators are supported, plus the no-orchestrator floor:
 Both orchestrators read the **same** SKILL.md files; no skill is rewritten for either path. The
 native command set detects GSD and steps aside when it is present, so the two never drive the
 same build.
+
+## The build path an orchestrator sequences
+
+An orchestrator sequences phases; it does not get to invent the build path. **The default path a
+demo build takes is the YAML brand layer**: compose the edition that ships the demo content,
+author a demo-local brand layer over it, deliver and deserialize, and use the tools only for the
+few subjects Deserialize cannot carry. Measured against the alternative on the same brief, the
+same starting layer and the same pins, it finished in 60.5 min against 79.3, spent 1.43 M tokens
+against 2.03 M, landed 88.02 % of brand values by deserialize against none, rebuilt itself in
+176 s, and produced 4 findings against 24.
+
+"Drive the demo build" therefore means: **path A** in
+[branded-demo-paths.md](branded-demo-paths.md), with **path B (deserialize first, then tools)**
+as the explicit alternative an orchestrator selects, and says it is selecting, when one of that
+file's four conditions holds (a small change set, no local compose, a brand that lives in
+subjects with no serialized route, or a throwaway nobody will rebuild). Both paths are supported;
+the choice is made once, before the first brand write, and recorded in the plan doc. Whichever
+path is chosen, the phase order, the gates and the human pause below are unchanged.
 
 ## Running modes
 
@@ -244,6 +264,56 @@ demo, drop the loop depth: GSD `--skip-research` and `/gsd-fast` skip the heavie
 `--standalone` forces the single-pass floor. The one gate that never lifts is the impact sign-off
 — that is the decision a demo lives or dies on. Polish stays free in every mode.
 
+## Dispatched sessions: the brief carries the execution authority
+
+A **dispatched** session is one an orchestrator or a launcher starts from a written brief with no
+human at the keyboard. It is non-interactive, and that changes what a brief has to say. **A
+question is not a pause, it is the end of the run.** There is nobody to answer it, so the turn
+that asks it is the last turn.
+
+The measured failure is not a refusal and not a crash. A brief described what to build in full
+detail but never said that the live deploy was authorised. The session ran dozens of turns, spent
+real money, exited 0, shipped nothing, and closed its final turn by asking permission to deploy.
+The agent behaved correctly: the first outward-facing write to a prospect's demo *should* need
+confirmation. Because the session cannot obtain that confirmation, the brief has to supply it up
+front.
+
+Every dispatched brief therefore opens with an **EXECUTION AUTHORITY** preamble carrying three
+clauses:
+
+1. **The session is non-interactive and a question ends the run.** State it, so the agent
+   resolves ambiguity inside the brief's scope instead of asking.
+2. **The brief's sign-off IS the deploy authorisation**, with the scope explicitly bounded.
+   Name what the authority does *not* cover, so the bound is machine-readable rather than
+   implied: the human design sign-off and the host's version-pin file are the two standing
+   exclusions (`references/visual-qa.md` owns the first; the second is a host lever, not
+   build content).
+3. **The run ends on a verdict.** The gate runs last and a FAIL verdict is **emitted**, never
+   swallowed by a silent exit. A run that ends without a verdict is a harness failure, not a
+   soft outcome (see "Acceptance criteria" below).
+
+Two fixes that look right and are not:
+
+- **"Do not ask questions" is the wrong instruction.** It buys silence by removing the agent's
+  ability to refuse work outside the brief. Scope the authority; never blanket it. An agent that
+  still refuses out-of-scope work is the behaviour you want to keep.
+- **Loosening the permission prompt is not the fix either.** In the measured run the session's own
+  permission-denial record was empty: nothing in the harness ever blocked the agent, it chose
+  to ask.
+  A permission flag cannot repair a brief that never granted the authority.
+
+The preamble belongs in the **template the dispatcher renders**, so every launched brief carries
+it by construction. Per-brief boilerplate is exactly the thing that is missing on the brief that
+needs it.
+
+**A branch inherits main's gate-proven stamp.** One authority bound worth stating whenever a
+dispatched build consumes a Distribution *branch* rather than `main`: the `layers/INDEX.json`
+`gateProven` marker does not travel with branches. A PR branch carries `main`'s stamp, and the
+standard preflight asserts only that the marker is present and well formed, so a branch that has
+edited layers still reads as gate-proven. Treat the stamp as **unproven** on any branch whose
+`layers/**` paths changed after the commit that last wrote it, and say so in the plan rather than
+quoting the inherited marker back as proof.
+
 ## Model tier — a dial on the orchestrator, never a fork of the skills
 
 A skill is authored **once**, for the least capable model the demo chain is expected to run on.
@@ -300,7 +370,7 @@ defect class then surfaces when a human eyeballs the site, which is exactly what
 exists to prevent. From the scaffold gate onward, three legs run against a raw deserialize with no
 custom design configuration:
 
-1. **Overflow** — `document.body.scrollWidth === window.innerWidth` at desktop and mobile widths.
+1. **Overflow** — `document.body.scrollWidth === window.innerWidth` AND `window.innerWidth === the requested width`, at desktop and mobile widths. Both readouts: unshrinkable content widens the layout viewport, after which the first comparison holds on a page that renders zoomed out (`dw-demo-base/references/visual-qa.md` "Breakpoints").
 2. **Skeleton / empty-band scan** — a band carrying a heading and no content children, or almost no
    text, is a skeleton.
 3. **Stock-copy tripwire** — the shipped baseline's own copy strings, grepped against the served HTML.

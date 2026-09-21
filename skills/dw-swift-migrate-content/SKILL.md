@@ -4,17 +4,58 @@ type: flow
 group: swift
 mcp: required
 dynamo: true
-description: 'Bring the CONTENT of an existing/old website into a Dynamicweb 10 solution as a standard, modern Swift 2 site — extract a source site''s pages/media and rebuild them here. Source-agnostic: a Dynamicweb solution (Swift v1/Rapido/Espresso/custom, read via /dwapi) or any other site (generic HTML crawl). Triggers: import/rebuild a whole existing site''s content in Swift 2, migrate this site''s content into the solution, rebuild an old site as Swift 2. Non-triggers: a faithful Swift 1 1:1 layout port -> dw-swift-migrate-v1; migrating PIM product structure/data -> dw-pim-migrate-dw9; a single new page with design intent -> dw-swift-page-design.'
+description: 'Rebuild an existing website and its content as a modern Swift 2 site. Triggers: whole-site content migration from Dynamicweb or another platform. Non-triggers: faithful Swift 1 layout port -> dw-swift-migrate-v1; one designed page -> dw-swift-page-design.'
 ---
 
 # Swift 2 Content Migration
 
+## Tool availability: call `tools/list` before planning
+
+`extract_site_content`, `get_extracted_site`, `get_extracted_page`, `build_pages`,
+`import_site_media`, `apply_brand_color_scheme` and `setup_website_chrome` are ordinary MCP
+tools: the add-in declares them on its migration tool class, and that class is marked restricted,
+so they reach an MCP configuration only once that configuration has been granted them. Without
+the grant the names are absent from `tools/list` and a call answers `Access denied ... Required
+permission: Read. Allowed permission: none` [mcp 0.6.0-beta]. That is a grant on the solution, not
+a property of the client: Dynamo and an external client alike get the family when the
+configuration they connect with carries it.
+
+So **call `tools/list` first and read the answer**, in Dynamo and outside it:
+
+- The seven names are present: run the skill as written. Nothing below applies.
+- They are absent: name the missing tools and say the fix is to grant the migration tools to the
+  MCP configuration this session connects with (the denial text names that configuration), then
+  call `tools/list` again. Never tell the user the skill cannot run on this client, and never
+  read the absence as a missing add-in: the family ships inside the Backend MCP add-in itself, so
+  an AppStore search for a separate "migration" app finds nothing by design and proves nothing.
+
+While the grant is missing, nothing registered replaces the extraction: no registered tool reads
+another site's pages (`fetch_frontend_page_html` summarises a page of this solution only), so
+there is no source to build from. Only when the user supplies the source content (the page list,
+the copy and the media) can the construction, one part of the work, be done with registered
+tools, slower and per page:
+
+- For `build_pages`: `save_pages`, `save_grid_rows`, `save_paragraphs` and
+  `set_paragraph_item_fields`, reading back with `get_pages_by_area_id` and
+  `get_paragraphs_by_page_id`.
+- For `apply_brand_color_scheme`: `save_color_schemes`, then `save_areas` with
+  `colorSchemeGroupId` and `colorSchemeId`.
+- For `setup_website_chrome`: the chrome the area already has (`get_areas`), and a missing header
+  or footer built with `save_pages` and `save_paragraphs` and wired through `save_areas`.
+- For `import_site_media`: `upload_file`.
+
+That path replaces the construction only, never a decision, and it carries none of the
+`build_pages` guarantees (plan validation, content filled from the extraction, precondition
+checks), so read every page back.
+
 ## MCP preflight
 
-This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,
-verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
-MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
-for the tool calls this skill names.
+This skill drives the Dynamicweb MCP server — its steps are tool calls, and the MCP tool set plus
+read/write under `Files/` is the whole surface they may use. Verify the tools are available before
+starting. If a step's tool is missing, **stop at that step** and tell the user what is missing and
+which admin screen performs it; do not substitute a guessed HTTP call, a file edit outside
+`Files/`, or SQL. The Management API, the serializer and direct SQL are out-of-product surfaces,
+owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a step here.
 
 Use this skill when the user wants the CONTENT of an existing/old website brought into this
 solution as a standard, modern **Swift 2** site — extract a source site and rebuild its pages

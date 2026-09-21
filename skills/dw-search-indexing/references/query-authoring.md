@@ -49,7 +49,7 @@ whichever one you happen to call decides what you believe:
 command resolves an `ICacheStorage` implementor, every implementor is an entity service, and none owns
 the `Searching:Queries` key. A restart is nevertheless **not** required.
 
-**`GET /Admin/Api/QueryById?Id=<a GUID that does not exist>` re-initialises the cache as a side
+**A `QueryById` read of a GUID that does not exist re-initialises the cache as a side
 effect.** `QueryHelper.GetQueryById` re-runs `InitQueriesCache` on a cache **miss**, so the throwaway
 GUID always misses and always refreshes. The `400 "Unable to load query parameters for query type:
 QueryById"` it answers is expected — it comes from the model being null *after* the refresh ran. Any
@@ -63,6 +63,8 @@ operation and the next query verb.
 
 Definition of done: rename a `.query` through the file verbs, assert `QueryById.model.fileName` still
 reports the OLD name, flush, assert it reports the NEW name. No recycle, no version bump.
+
+Out of product: [`recipes-search.md`](../../dw-data-access/references/recipes-search.md) "Flushing the query cache with a missed `QueryById` read".
 
 ## Lifecycle: copy, name, relocate, delete
 
@@ -90,8 +92,8 @@ Definition of done: both files carry the intended base name, the file's own `Nam
 
 ### Relocating — `QueryMove`, never a file move
 
-`POST /Admin/Api/QueryMove {Id, FilePath}` where `FilePath` is the destination **folder** (virtual, e.g.
-`/Files/System/SmartSearches/Ecommerce/Shared/<subfolder>`). It refuses same-place and existing-target,
+`QueryMove` takes the query `Id` and a `FilePath` that names the destination **folder** (virtual, e.g.
+`/Files/System/SmartSearches/Ecommerce/Shared/<subfolder>`), not a file. It refuses same-place and existing-target,
 creates the destination folder if absent (no folder-create verb needed), moves the `.query`, moves the
 `.configuration` sibling, updates `query.FileName` and writes the cache.
 
@@ -107,6 +109,8 @@ creates the destination folder if absent (no folder-create verb needed), moves t
 
 Per move, assert: source gone, destination `.query` **and** `.configuration` present, `folderPath` under
 the shared path, result count unchanged, and **zero GUIDs present in both trees**.
+
+Out of product: [`recipes-search.md`](../../dw-data-access/references/recipes-search.md) "Relocating a query with `QueryMove`".
 
 ### Deleting
 

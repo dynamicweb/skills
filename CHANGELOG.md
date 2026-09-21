@@ -3,7 +3,7 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
-## [4.38.0]
+## [5.3.0]
 
 New `dw-commerce-cpq` skill: building a Carrot Solutions CPQ configurator on Dynamicweb 10.
 
@@ -30,6 +30,1076 @@ New `dw-commerce-cpq` skill: building a Carrot Solutions CPQ configurator on Dyn
   that its SQL is string-interpolated rather than parameterised, so interpolated values belong on
   constrained inputs.
 
+## [5.2.1]
+
+- Skill descriptions use compact purposes, distinctive triggers and essential routing
+  boundaries to reduce discovery context across the role bundles.
+- Authoring guidance targets concise descriptions while preserving demo prerequisites
+  and the distinctions between adjacent skills.
+
+## [5.2.0]
+
+The Foundry scripts roadmap lands in the corpus: the AV-safe script contract and the validator
+rules that enforce its checkable half, the shared module split into a read half and a write half,
+the generic probes and the consumer self-check, and the two-part script sprint that turns seven
+retype-risk recipes into shipped scripts. 100 hermetic Pester tests come with them.
+
+- **AV-safe scripts are a stated contract and a validator rule.** Endpoint protection scores a
+  script on the verbs it co-locates, not on its syntax: two harness scripts carrying file upload
+  plus admin-account lifecycle plus arbitrary SQL plus a spoofed User-Agent were quarantined and
+  deleted from their working trees, while a larger file beside them, with more web-cmdlet calls
+  and more TLS bypasses, went untouched. Neither flagged file held a single obfuscation construct.
+  `dw-skill-authoring` ("Shipping scripts" -> "AV-safe scripts") and
+  `dw-data-access/references/management-api-and-sql.md`, next to the AMSI note that records the
+  mild form of the same failure, now carry the rules: one capability per file with the destructive
+  verbs split out, HTTP through the cmdlets with named parameters, a gated TLS bypass, no silent
+  User-Agent spoof, secrets from the environment only, dry run by default, and three verb families
+  (admin-account lifecycle, backend-access revocation, arbitrary SQL) that stay out of a shipped
+  script entirely. The three durable fixes are console-side and marked as owner actions: path
+  exclusions, Authenticode signing, and a false-positive submission. A burned path is never reused.
+- **`validate-skills.py` enforces the machine-checkable half** over every `.ps1`/`.psm1` under
+  `skills/*/scripts/`: `Invoke-Expression`, `Add-Type`, `FromBase64String` and the legacy web
+  client are errors, so is a credential literal, a TLS bypass the file does not gate on a loopback
+  URL or an opt-in switch, and a `User-Agent` set with no `# why:` comment naming the protocol
+  reason. Past 400 lines is a warning. Comments and help blocks are exempt, because the rules score
+  code and not prose. `python scripts/validate-skills.py --self-test` proves each rule fires
+  against `scripts/tests/fixtures/av-nonconforming` and that a conforming module stays clean.
+- **The shared module gains the paged read half, and a separate write half.** The capabilities of
+  a quarantined harness helper are re-authored rather than copied, split so no one file carries
+  the verb cluster that got the original flagged. `Dw.Api.psm1` gains `Invoke-DwQuery` (walks every
+  page, reconciles the collected count against the server's own total, and refuses a repeated page
+  rather than doubling the rows), a 429 and read-5xx retry with exponential backoff inside
+  `Invoke-DwApi` (a write 5xx is never retried: it may have applied before it failed),
+  `Get-DwTaskLastRun`/`Invoke-DwTaskRun` (poll the task's own last-run for a CHANGE, because a
+  wall-clock freshness window is satisfied by the previous run), `Test-DwPageProbe` (reads the
+  body: a Razor compile error still answers 200), `Get-DwServedFileHash` (the static-file cache
+  does not invalidate through a junction), `Get-DwSqlCount` (a blank is not a zero),
+  `ConvertTo-DwApiValue`, `Get-DwCategoryFieldSort`, `Get-DwConnection` and
+  `Get-DwBrowserUserAgent` (one documented place for the UA the platform's cart commands require).
+- **New `Dw.Api.Write.psm1`** carries the write and cleanup verbs - `Remove-DwUser`,
+  `Remove-DwGroup`, `Remove-DwDynamicStructure`, `Set-DwGlobalSetting` +
+  `Assert-DwGlobalSettingNode`, `Send-DwFile`, `Clear-DwRecycleBin` - each
+  `SupportsShouldProcess`, each a reported dry run that issues no request until `-Apply`, each
+  proving the write by reading back. It **refuses** arbitrary SQL through a scheduled task and the
+  whole admin-account lifecycle (creation, deletion, backend-access revocation): those are half of
+  the flagged verb cluster and belong on the admin Users screen, not in a shipped script. The
+  owning reference states every rule in prose, so nothing is learnable only by reading a script.
+- **First Pester suite in the repo**: `skills/dw-data-access/scripts/tests/Dw.Api.Tests.ps1`, 27
+  hermetic tests with no host, database or network - paging concatenation and the repeated-page
+  refusal, retry and backoff including the write-5xx exclusion, the DataRow payload fence, the
+  count contract, and that every write verb is a no-op issuing zero requests without `-Apply`.
+
+Scripts roadmap Phase 3 (docs/SCRIPTS-ROADMAP.md §4): the generic probes get a home in the
+skills, and the consumer self-check deferred to 5.0.1 ships.
+
+- **`dw-demo-base/scripts/admin-shell-driver.mjs`** — the five DW 10.28 admin-shell Playwright
+  guards, as an importable module plus a small CLI (`node admin-shell-driver.mjs tree-nav --base
+  <url>`). `references/browser-automation.md` keeps the five rules in prose and links the script for
+  the how; no rule lives only in a script. Credentials from `DW_ADMIN_USER` / `DW_ADMIN_PASSWORD` or
+  a `--storage-state` session, never a flag or a default; TLS bypass only for localhost or an
+  explicit `--allow-self-signed`.
+- **`dw-demo-base/scripts/Test-DwDemoStoryline.ps1`** — the consumer self-check deferred to 5.0.1:
+  status per storyline page, the placeholder regex on the VISIBLE TEXT, persona sign-in with the
+  session proved to BE that persona, zero probes is FAIL. Plain JSON, no verdict contract, nothing
+  else from the Foundry gate. Hermetic Pester suite in `scripts/tests/` (18 tests, mocked HTTP).
+- **`dw-demo-swift/scripts/overflow-probe.js` + `Test-DwViewportOverflow.ps1`** — the generic
+  canvas-fit / legibility / overlap core lifted from the Foundry's `design-probes.mjs`: `innerWidth
+  === requested` AND `body.scrollWidth === innerWidth`, the offender named by right edge with the
+  closed-drawer false offender set aside, WCAG contrast per text leaf, line-box text overlap. Every
+  threshold is a parameter; the Swift 2 values are the `.ps1` defaults and are documented in
+  `references/mobile-pass.md`. A sub-breakpoint viewport with no device descriptor is refused.
+- **`dw-demo-swift/scripts/nav-affordance-probes.mjs`** — the four nav-affordance probes, one home
+  for skills consumers (the Foundry keeps its own harness copy for its edition gate). Both `.mjs`
+  files lost their hardcoded host default.
+- Both skills declare their runtimes in `compatibility:`; the roadmap's proposed `dw-swift-building`
+  home was overridden by its own Dynamo rule (scripts live only in `dynamo: false` skills), so the
+  viewport and nav probes land in `dw-demo-swift`.
+
+Scripts roadmap §5, the script sprint: the seven recipes named in the "Suggested sprint order"
+row, landed once each across two PRs (dynamicweb/skills #154, #156). Each owning reference keeps
+the rule and the why and links the script for the how, so no knowledge is exclusive to a script.
+
+- **`dw-data-access/scripts/Copy-DwIntegrationJob.ps1`** — the UTF-16LE copy, decode, round-trip
+  and GUID-remint sequence for an integration job file, the strongest retype-risk candidate in the
+  backlog. Diffs the round-trip before writing.
+- **`dw-data-access/scripts/Test-DwJobSchema.ps1`** — the five job-file faults that each fail at
+  run time pointing somewhere else. The doubled `Files\Files` archive root and the false-clean grep
+  stay in prose.
+- **`dw-setup-config/scripts/Test-DwFileArchiveExposure.ps1`** — go-live item 8 as one anonymous
+  request per path, reported SERVED / EXPECTED / BLOCKED. Self-contained, because the bundles that
+  ship this skill do not ship `dw-data-access`. Wanted by two fold PRs; landed once.
+- **`dw-data-access/scripts/Register-DwScheduledTask.ps1`** — the multi-column `ScheduledTask` row
+  contract: `TaskParentId` NULL and not 0, every schedule column -1, registered disabled, literal
+  settings XML, the `TaskService` flush, the paged verification read. Refuses a RunSql add-in.
+  `TaskBegin` / `TaskNextRun` semantics stay in prose.
+- **`dw-data-access/scripts/Invoke-DwSqlThenFlush.ps1`** — UPDATE, flush, touch, made unskippable.
+  Also wanted by two fold PRs; landed once.
+- **New `dw-data-access/scripts/Dw.Sql.Local.psm1`** — the one local-only SQL non-query path, in
+  its own small file rather than widening `Dw.Api.psm1`, refusing a remote server the same way.
+- **`dw-data-access/scripts/Invoke-DwAssortmentBuild.ps1`** — flag, build, poll
+  `get_assortments_for_build` until drained, count the built items, activate only on a non-zero
+  count. Refuses `-ActivateWhenNonEmpty` alongside `-SkipCountGate`, because the count **is** the
+  gate: activating a zero-item assortment takes the whole catalogue away from everyone holding it.
+- **`dw-data-access/scripts/Set-DwPermission.ps1`** — the nested `{Model:{...}}` body, the string
+  `Key`, the four-part `|$|` composite identifier, and the read-back with `SubName` omitted. The
+  sparse `PermissionLevel` table stays in prose, so an in-product reader can still recognise a
+  denial at level 1.
+- **`dw-data-access/scripts/Test-DwPageGating.ps1`** — both personas in one pass, by page id,
+  comparing rendered body sizes. One persona refused, or equal bodies, is a broken check and not a
+  pass.
+- **`dw-data-access/scripts/Test-DwImpersonationGrant.ps1`** — reads
+  `AccessUserSecondaryRelation` in both directions and names which one it found, then reports the
+  `Users.index` state, so a grant is not called live while the index still answers from the
+  pre-write documents.
+- **New owning reference `dw-data-access/references/recipes-integration.md`**, plus new sections in
+  `references/recipes-extend.md`, `references/recipes-commerce.md`, `references/recipes-users.md`
+  and `references/cache-invalidation.md`; `dw-commerce-b2b`, `dw-integration-framework`,
+  `dw-setup-config` and `dw-users-permissions` point at them.
+- **A repo-root `tests/` suite**: 100 hermetic Pester tests, no host, database or network. It lives
+  outside `skills/`, where the shipped-script contract does not apply to it.
+- **`Repair-DwCustomerNumber.ps1` is deliberately omitted.** The roadmap gates it on the recipe
+  being fully specified, and `account-shape.md` gives the ordering and the two guards but not the
+  UPDATE statement or the revert generation it requires. A bulk rewrite across dozens of
+  `AccessUser` and `EcomOrders` rows is not a script to infer.
+
+## [5.1.5]
+
+Hover is a re-skin deliverable, not a side effect.
+
+- **`dw-demo-swift/references/re-skin.md` gains an §Interactive states checklist.** A skin that is
+  clean at rest can be unreadable on hover, and the design gate measures resting state only, so three
+  hover defects reached an owner sign-off green (Foundry #1274, #1275, #1277). The section names the two
+  `theme-default` rules to guard — the filled-button hover whose `:not()` chain misses variants Swift
+  actually emits, and the header anchor hover that repaints button text — and lists the full variant set,
+  including the **empty** `data-dw-button` on customer-center row action toggles that no anonymous page
+  carries.
+- **A hover measurement recipe**: remove the cookie modal first or every `page.hover` lands on the
+  overlay; read computed background and colour on the control and its icon; resolve alpha before
+  computing contrast; run one anonymous pass and one signed-in pass through the persona.
+- **Two adjacent traps recorded**: the Swift Logo template inlines SVG marks, so a filename grep can
+  never prove the logo and the responsive cap must target `figure.icon-auto` (Foundry #1278); and the
+  icon-top Feature tile aligns by full-height column flexbox with `align-self: flex-start` on the icon
+  box (Foundry #1276, shipped in theme-default 2.3.5).
+
+## [5.1.4]
+
+The Distribution repo is named verbatim, so a build can no longer talk itself out of it.
+
+- **`justdynamics/Truvio.Commerce.Distribution` replaces the `<owner>/<distribution-repo>`
+  placeholder** in every clone snippet (`dw-demo-base/references/scaffold.md` §5,
+  `dw-demo-swift` deserialize-flow, pack-activation and styles-assets) and in the prose that
+  pointed at `$env:DW_DISTRIBUTION_REPO`. The variable survives as an optional mirror override,
+  never a prerequisite: the repo is public, so an unset variable is not a missing repo. A presales
+  build read the unset variable plus a repo search under the wrong org as "no Distribution
+  access", fell through to path C, and shipped without the product index, the personas and the
+  sign-in that the `sample-data` layer carries working. `scaffold.md` §5 now says what to do
+  instead: clone the default, and on failure report the git error and ask for the mirror.
+- **`branded-demo-paths.md` "Path C by accident"**: a missing checkout is a discovery failure until
+  proven otherwise; "YAML first without the Distribution" is not path A but path C with extra files;
+  and a "minimum foundation, no sample content" brief still takes path A, because the brand layer
+  replaces the shipped copy rather than adding to it.
+- **`dw-swift-migrate-content` tool-availability rule** gains the missing half: the seven migration
+  tools ship inside the Backend MCP add-in and are gated by the configuration grant, so an
+  AppStore search for a separate migration app finds nothing by design and proves nothing.
+
+## [5.1.3]
+
+A patch release that folds the measured learnings of the 5.1 experiment into the corpus. One
+validator rule now refuses client-exclusivity wording in a `dynamo: true` skill, so the rule
+5.1.1 stated in prose holds at every model tier. The rest is measurement written down where the
+work that hits it reads it: the data-access verb and tool traps a live DW 10.28 host produced,
+and the Swift 2 storefront traps a measured rebrand hit, both as table rows. It adds and
+sharpens rules; it changes no skill contract and no `worksOn` axis.
+
+- **The validator refuses client-exclusivity wording in a `dynamo: true` skill.** "Dynamo only",
+  "stops here", "external client stops", "cannot run this skill", or a `compatibility:` value
+  naming a client is an error, never baselined. The rule 5.1.1 stated in prose now holds at every
+  model tier: a skill states a precondition and how to test it (`tools/list`); it never tells a
+  client to stop because of who it is, and an unmeasured claim never lands as instruction.
+- **Row-file order is stated as what it is.** The deserializer ignores the manifest's `files[]`
+  list, reads a table directory in culture-sensitive file-name order (a convention, not a
+  contract), and merges two documents of one identity with the later file winning; on a blank
+  host a partial row with no full row beside it inserts a row holding only its columns.
+- **The theme-after-layer upload is stated with its workaround.** Every edition theme's `files/`
+  lands after every composed layer's `files/`, last writer wins per path; a brand layer that must
+  win a theme path is listed as a theme after the default, with a `theme.json` binding equal to
+  the default's so the binding writes nothing.
+- **A listed tool can still be refused.** `mcp-setup.md`'s triage table gains the
+  `Required permission: none. Allowed permission: none.` row: the grant is the MCP configuration's
+  permission preset, not the client; check the preset, fall back to the Management API read, and
+  read a name missing from `tools/list` as a grant to check rather than a tool that does not exist.
+- **Verb and tool traps measured on a live 10.28 host land as table rows in the `dw-data-access`
+  recipes.** Six product fields are master-only by default, so a master save through `ProductSave`,
+  `patch_products_safe` or `update_products` overwrites every variant while echoing success, and the
+  unlock (`ProductAttributeSettingsSave` with `VariantEditing`) comes first (`recipes-pim.md`, beside
+  `ProductAssetByProductKey` ignoring the variant id, the category-field lists answering 0 and the
+  group sort list 500ing); `save_pages` `metaTitle` persisting nothing and `PageSave` taking
+  `Unpublished`, not `Hidden` (`recipes-content.md`); `OrderLineSave` 500ing on its own round-tripped
+  `OrderType` and `GetOrderLineById` needing `OrderId` (`recipes-commerce-orders.md`); `CountryByCode`
+  binding `CountryCode` (`recipes-commerce.md`); `get_product_index_status` reporting a default index
+  the host need not have (`recipes-search.md`); and the round-trip rule by what the call answers
+  (`management-api-and-sql.md`). `dw-pim-modelling`'s structural model says, in MCP terms, that a
+  variant value needs the field to allow changes across variants first.
+- **The storefront traps a measured rebrand hit are written down where the storefront work reads them.** `dw-demo-swift` carries them as rows and bullets in the files that own each surface: the customer centre (an account group with no type and no CSR relation never lists, the order list printing the product id, the accounts search that does not narrow), the pricing cascade (a variant's own price row never outranks a lower master or contract row), the deserialize obligation (bind the shop only after every browsable group is related to it, or subgroup product pages render a `dw-error`), the mobile pass (the header's action links on one row at 390 in both auth states, and the logo width that pushes the cart link down), the theme tier (the per-edge fills the edge motif needs when both sides match), the rebrand recipe (the image handler answering JPEG for `webp` and for no format, the page-properties icon sentinel drawing `NO ICON`, the gallery and logo `alt` defects as tripwire rows), the cheat sheet (verify a variant by its own URL, not the selector click) and the button contract (a page link drops its query string, so a group link is a URL). `dw-swift-page-blocks` gains the same button gotcha in MCP terms, and `dw-demo-base`'s trap list sharpens four rows with the measured symptom.
+
+## [5.1.2]
+
+A patch release that names the paths to a branded demo and gives the corpus a default. A measured
+comparison of the two write channels, run on one brief, one starting layer and one set of pins,
+decided it: branding the YAML first and deserializing it beats rebranding the delivered site
+through the tools. Both paths stay documented and supported; what changes is which one a skill
+teaches first.
+
+- **`dw-demo-base` owns a new reference, `references/branded-demo-paths.md`.** Three paths, each
+  with its ordered steps, a runnable check per step, the artefacts it leaves and what stays
+  repeatable: (A) YAML first, author a demo-local layer of kind `sample-data` over the
+  Distribution's own demo layer and deserialize it, tools only for the master fields
+  `excludeFieldsByItemType` protects; (B) deserialize the edition as shipped, then rebrand through
+  the MCP tools and the Management API; (C) tools only from a blank host. A is the default, B is
+  the explicit alternative, C is the floor.
+- **The default is stated with the numbers behind it.** Path A against path B on the same brief:
+  60.5 min against 79.3, 1.43 M tokens against 2.03 M, 19 hand-made write calls against 1,833,
+  88.02 % of brand values landed by deserialize against none, a full rebuild in 176 s with no
+  tools and no restart against not repeatable as a unit, and 4 findings against 24 of which 9 were
+  tool-path write gaps. The four conditions under which the tool path is still the right one are
+  stated with the same weight: a small change set, no local compose, a brand living in subjects
+  with no serialized route, and a throwaway nobody will rebuild.
+- **The traps both arms hit are written down where the path names them.** Master-only product
+  fields resetting every variant on a master save, orders landing with zero totals, verbs that
+  answer 200 and persist nothing, an account group with no type staying invisible to the CSR, the
+  image handler dropping alpha and answering JPEG for a `webp` request, one zip per serializer
+  mode, row documents read in file-name order, theme files uploaded after layer files, the five
+  master fields Deserialize never carries, and the self-hosted install with no online restart
+  route.
+- **The routing is the point, so it lands in every place that chooses a write surface.** The
+  orchestrator reference now answers "drive the demo build" with path A by default and path B as
+  a deliberate, recorded selection; the native `/demo:build` command routes brand work through the
+  path choice before it routes to a skill; `dw-demo-swift`'s re-skin ladder opens by saying the
+  YAML comes first when the demo starts from the shipped demo layer.
+- **Two statements the merged demo layer had outdated are corrected, not appended to.** The
+  `sample-data` layer is no longer two SQL files (`catalog.sql` plus `identities.sql`): it is the
+  one demo dataset, carrying the browsable catalogue, the three personas on one B2B account, the
+  twelve orders, the storefront copy and the brand assets as row documents, content YAML and
+  `files/`, and a demo rebrands it in place rather than assembling one.
+
+## [5.1.1]
+
+A patch release that corrects one statement 5.1 shipped as binding text: that the eleven migration tools are Dynamo-only and that an external client must stop. Measured against a live 0.6.0-beta endpoint, the tools are real MCP tools behind a solution-side grant, so the skills now state the condition and tell the client to check `tools/list` instead of stopping.
+
+- **`dynamo:` is a visibility flag, never an exclusivity flag.** The README, `CLAUDE.md` and the validator docstring now say it in those words: `dynamo: true` publishes the skill to the in-product assistant and constrains its content to what an MCP client can execute, and the skill runs anywhere an MCP client runs. The ratchet is unchanged.
+- **The "Dynamo only" gating is removed from `dw-pim-migrate-dw9`, `dw-swift-migrate-content` and `dw-swift-migrate-v1`.** The `compatibility:` key, the "Dynamo only" section, the "an external client stops here" instruction and the "no permission grant adds them to the endpoint" claim are gone. Each skill now opens with a tool-availability section that says the family is declared on the add-in's migration tool class, that the class is marked restricted so an MCP configuration sees it only once granted, and that the client calls `tools/list` and runs the skill when the names are there.
+- **The tool registry records the measured denial.** `scripts/mcp-tools/0.6.0.json` keeps the eleven under `not-on-endpoint` as unlisted names, and now records what a call actually answers, `Access denied ... Required permission: Read. Allowed permission: none`, rather than asserting no grant can reach them.
+
+## [5.1.0]
+
+The 5.1 release. It empties the Dynamo baseline, moves the MCP axis to the measured `Truvio.Commerce.MCP` 0.6.0-beta, sweeps the serializer rename and marks every SQL block local-install only. It changes one `worksOn` axis (the MCP add-in) and no skill contract.
+
+- **The Dynamo baseline is empty and the ratchet is a hard error (#138 to #141).** Four stacked PRs split the out-of-product steps of every `dynamo: true` skill into the `dw-data-access` recipes: content and Swift (100 to 81), commerce (81 to 49), PIM (49 to 27), then search, permissions, audit trail and providers (27 to 0). The source skills keep the platform facts, cite the MCP tools, and point to the recipes. `recipes-extend.md` is new. `scripts/dynamo-baseline.json` is now `{}` and stays in place, so every file reads as 0 and one non-MCP instruction in any `dynamo: true` file fails validation.
+- **The MCP add-in moves to the measured `Truvio.Commerce.MCP` 0.6.0-beta (#137).** `scripts/mcp-tools/0.6.0.json` replaces `0.4.4.json` as the only supported registry (604 tools, the same name set as 0.4.4). `versions.json` records floor `>=0.6.0-beta`, measured `0.6.0-beta`, and the validator resolves a pre-release measured version by its core. The 11 migration tools the endpoint does not serve are stated as a measured fact, and `dw-pim-migrate-dw9`, `dw-swift-migrate-content` and `dw-swift-migrate-v1` are marked Dynamo-only through `compatibility:`.
+- **Every SQL block is marked local-install only and names its online equivalent (#136).** 324 SQL locations audited: 123 fixed, 13 already compliant, 95 findings where a hosted install has no verifiable path and the build asks the user. The online-mode probe 4 no longer reads the hosted database: it uses MCP read tools, then Management API queries, and records a read neither answers as unverified.
+- **The serializer rename is swept and `api.json` no longer passes as a key proof (#135).** The corpus teaches `Serialize`, `Deserialize` and `PackageDownload`, with the old names only in the deprecated-alias table. `serializer-reference.md` documents `PackageUnzip` (Serializer 1.0.1-beta), and the online route for a serialized tree is `Upload`, then `PackageUnzip`, then `Deserialize`. `api.json` answers without a key check, so a key is proven on `McpConfigurationAll`. Admin API payloads stay ASCII, since a curly apostrophe through a bash argument answers a transcode 500. The serializer floor is read from `compat.apps`, not the deprecated `minSerializerVersion`.
+- **The serializer axis is unchanged.** `versions.json` still records Serializer floor `>=1.0.0-beta`, measured `1.0.0-beta`; the 1.0.1-beta surface is documented from the Serializer's own release, and the measured value moves only with a release that re-measures it.
+
+## [5.0.1]
+
+A patch release that folds the learning backlog the 5.0 end-to-end rounds refilled. It adds and corrects rules; it changes no contract and no `worksOn` axis.
+
+- **Five fold-backs, one skill family each (#129 to #133).** SQL gotchas, scheduled tasks and integration jobs; Swift branding and master item writes; host setup, key handling and release testing; content and PIM write traps; orders, groups and assortments where the MCP tools cannot write. Each PR body names the rules it lands and the files they live in.
+- **Five statements the corpus carried were wrong and are rewritten, not appended to.** The page rename recipe (a Title write re-derives the URL slug; the recipe now pins `urlName`, fixed in all four places it was copied), the area cache row that a measured no-op area save contradicts, a user-group table that said no group write exists, "no recycle after an SQL order write", and empty-variant price rows needing no per-variant copies.
+- **The MCP write gaps are stated as gaps.** Orders built over MCP keep no totals, `update_order_line` writes the unit price only, no MCP write takes a group type or an order date, and an assortment permission delete is inert. Each carries the out-of-product workaround in the `dw-data-access` recipes home, and `dw-extend-mcp-tools/references/tool-surface-gaps.md` lists what the MCP project lacks.
+- **The host MCP preflight accepts the renamed add-in id.** `Truvio.Commerce.MCP` is matched beside `Dynamicweb.MCP`, and a pre-release suffix no longer fails the floor comparison. `versions.json` still records the measured 0.4.4 set; moving it to the renamed add-in waits for a measurement on a live host.
+- **The Dynamo baseline is re-measured, not relaxed.** `scripts/dynamo-baseline.json` records 100 violations across 16 files, down from the 120 across 17 it carried; no fold in this release raised any file. Emptying it remains 5.1 work.
+- **Split for placement.** `recipes-commerce.md` hands its orders section to `recipes-commerce-orders.md`, and `page-paragraph-writes.md` hands what the rendered page shows after a write to `render-after-write.md`.
+
+## [5.0.0]
+
+The 5.0 release. It closes the 4.x fold line and ships the version spine, so the corpus states what it works on in one machine-readable file and every downstream artifact can cite one tag.
+
+- **The 4.x fold line landed as one stack and is now rolled up here.** The grouped fold sprints merged in order as PRs #118 through #123 (4.41.0 orders, RMA and claims; 4.42.0 Data Integration and the ERP feed keying; 4.43.0 index-file authoring, PIM structure and localization; 4.44.0 Swift grid rows and shipped-template defects; 4.45.0 scheduler and provider contracts; 4.46.0 content modelling, localization, permissions and B2B), with #125 (4.40.0 render surfaces), #116 (4.39.0 the action ladder), #124 (4.47.0 the standing-e2e amendments) and #126 (the manifest regeneration) alongside them, tagged `v4.47.0`. Their individual entries stay below; nothing in them is restated here.
+- **The version spine (#127) is what makes this a major.** `versions.json` at the repo root, vendor axes only, is now the compatibility statement; the built manifest carries it as manifest version 2; the validator enforces the schema, the stamp-token rule and the per-app-version MCP tool registry; one CI workflow gates every pull request and every push to `main`. The detail is in the 5.0.0-alpha.1 notes below, unchanged.
+- **`worksOn` is measured, not claimed.** The measured set this release publishes was observed on a live host by the Foundry gate run of 2026-09-13: Dynamicweb 10.28.10, Swift `v2.4.0`, `Dynamicweb.MCP` 0.4.4, `Truvio.Commerce.Serializer` 1.0.0-beta. The floors stay the published claim (`dw >=10.28.1`, `swift ==2.4`, MCP `>=0.4.4`, serializer `>=1.0.0-beta`, the last two not required).
+- **The Dynamo boundary is a per-skill declaration with a shrinking ratchet, not a finished split.** The `dynamo` frontmatter field, the manifest filter and the validator rule (#111) decide what an MCP-only reader sees; `scripts/dynamo-baseline.json` still carries 120 recorded violations across 17 files and only ever shrinks. Emptying it is 5.1 work, not something this release claims.
+- **Serializer naming is stated by floor, not yet swept.** `versions.json` names the 1.0.0-beta engine as the measured and floor version; the 1.0-beta command rename (`SerializerSerialize`/`SerializerDeserialize` to `Serialize`/`Deserialize`, with deprecated aliases through the beta) is still present in `dw-demo-base/references/serializer-reference.md`, which the aliases keep correct. The rename sweep is 5.1 work.
+
+## [5.0.0-alpha.1]
+
+The version spine. The corpus states what it works on in one file, the statement travels in the built manifest, and the validator enforces it: version awareness stops being prose and becomes a contract a reader, a validator and a host can all check.
+
+- **`versions.json` at the repo root is the compatibility statement, vendor axes only.** The Dynamicweb release, the Swift tag and the AppStore apps (the MCP add-in, the serializer), each with a `floor` the library publishes and the concrete version its facts were last `measured` on. Nothing downstream is named anywhere in it: the dependency points up, so a distribution cites the skills tag it was proven with and the skills never cite a distribution. The validator parses the file against exactly that schema, rejects a `measured` that is a range and a `floor` that is not one.
+- **A skill deviates only through an optional `versions:` frontmatter block**, same axes, same rules; a skill without one inherits the repo statement.
+- **A version-specific fact ends with a stamp token, never a bare number in prose.** One bracketed token in the fixed axis order dw, mcp, serializer, swift, only the axes that were varied, found by one regex. A bare version number outside a token, a fenced block, a URL or the frontmatter is an error, ratcheted per file against `scripts/version-stamp-allowlist.json` the way the Dynamo baseline works: the allowlist is the migration backlog and only ever shrinks.
+- **The MCP tool registry is per app version.** `scripts/mcp-tools.json` becomes `scripts/mcp-tools/<version>.json` plus an `index.json` naming the current and supported set; the validator resolves through the index and falls back to current, so a tool that a later server stops registering becomes a locatable diff instead of an edit to one shared list. The flat path errors for one release with the move instruction.
+- **Manifest version 2 carries `worksOn` verbatim**, so a consumer that already fetches `manifest.json` can compare it with the host it is running on. `build-manifest.mjs --check` now fails on a stale version marker or `worksOn` as well as a stale skill list.
+- **One CI workflow gates every pull request and every push to main**: the skills validator, the PowerShell parse pass and the manifest freshness check.
+- **`dw-data-access` owns the preflight recipe.** How a session reads the four axes off the host it is pointed at (the platform release from the Management API's own `api.json`, the add-in versions from the installed folder names, the Swift tag from the stamp file, otherwise the user), an MCP-only variant for in-product readers, `unknown` for any axis that cannot be read, and the floor comparison that warns before acting.
+
+## [4.47.0]
+
+Fold-back sprint: amendments found by the end-to-end test session building the standing test solution from the top of the fold stack. First amendment: the serializer pin reads the Distribution floor from base.contract.json instead of a literal version, the platform floor the engine needs is stated, one invocation shape (Mode in the JSON body) replaces the two contradicting ones, and the deserialize flow points at the reference instead of copying it.
+
+- **The serializer install step reads the engine floor from the Distribution, never a version printed in a skill.** A literal pin in `dw-demo-base/references/serializer-reference.md` had drifted several releases behind the base layer's own `minSerializerVersion`, so an agent one-shotting from the skill installed an engine the layers reject outright. The install step now reads `minSerializerVersion` from `layers/base/base.contract.json` on the Distribution's `main`, installs the latest published release at or above it, asserts the resolved version, and pins what the restore actually resolved. The Dynamicweb platform ring the engine binds to is stated alongside it, so a host on an older ring is upgraded before the engine is installed rather than after the endpoints 404. The Step 2 config filename is likewise derived from the checked-out base's own `swiftVersion`.
+- **`SerializerDeserialize` has one documented call shape: `Mode` in the flat JSON body.** The reference carried two competing shapes stamped to different engines, and `dw-demo-swift/references/deserialize-flow.md` §4 carried a third copy. The body shape is now the single home, with the canonical two-pass snippet and the dry-run gate beside it; the query-string form survives only as a tombstone that states why it can never override a body `Mode`. The retired `Deploy`/`Seed` predicate spellings get the same one-line treatment instead of a version-conditional table. `deserialize-flow.md` §4 and `pack-activation.md` now call that section instead of restating it, and the permissions engine floor in `dw-users-permissions` points at the contract key rather than a number.
+
+## [4.46.0]
+
+Fold-back sprint: dw-content-modelling, dw-content-localization, dw-users-permissions and dw-commerce-b2b. Thirty-eight demo-build learnings land with two reference splits (the permission layers reference becomes four files, the modelling discipline reference three, section numbering continuous), the MCP-tool versus Admin-API command tables extended in B2B and introduced in permissions, and one correction: the flat PermissionSave body published in two places returns 400 and is rewritten to the nested model shape with the sparse level enum.
+
+Content, users/permissions and B2B: the permission write surface corrected, four oversized
+references split by topic, and every recipe named for the surface it runs on.
+
+- **`PermissionSave` takes a nested `{Model:{…}}` body, `Key` is a string, and `PermissionLevel`
+  is sparse — the previously published flat body is wrong.** The flat shape returns HTTP 400
+  `Command.Model cannot be null` and writes nothing, and the level numbers are `None=1, Read=4,
+  Edit=20, Create=84, Delete=340, All=1364`, so a row at level `1` is a denial. Reading a solution's
+  own rows as a 0-based ladder writes the opposite of what was meant on a page that is supposed to be
+  gated. The corrected body, the enum values, the composite `|$|` identifier and the upsert semantics
+  now live in one place (`grant-mechanics.md` §7); the two flat examples elsewhere in the corpus were
+  rewritten.
+- **Backend authorisation is the `Section` entity plus three implicit user roles, and the
+  `Section` grant's LEVEL cascades to the screens under it.** A non-Administrator backend user
+  resolves as `AuthenticatedFrontend`, which grants nothing, so a new backend identity signs in to an
+  admin shell with no navigation at all until one `Section` row exists — and at `Read` that area
+  renders with every Save command silently withheld. The old "UI permissions hide elements without
+  affecting functional access, and do not cascade" wording described Capability Control and was being
+  read as the `Section` rule; both are now stated side by side, with the area keys (the `AreaBase`
+  subclass names) and the fact that no API enumerates them.
+- **A positive-only page grant denies nobody.** A group with no explicit row inherits its parent's
+  permission, and the parent of a root-level page is the permissive area default — so the gate that
+  reads as working (anonymous is redirected) admits every signed-in persona it did not name. The rule
+  is now one explicit row per group, verified by signing in as a denied persona rather than by reading
+  the rows back. Paired with it: **page permissions resolve against the EFFECTIVE user**, so a
+  staff-gated page is unreachable for the whole of an impersonation session — land the impersonation
+  redirect on a customer-visible page and put staff affordances in the impersonation bar.
+- **New MCP-tool versus Management-API-verb table for users, groups and impersonation.** The three
+  write shapes differ per operation and per element type: `UserGroupRelationSave` is a list command
+  that answers `HTTP 200 "No items selected"` for the documented single-relation body,
+  `UsersAddToGroups` takes string ids, `UserImpersonateAdd` takes int ids, and its undocumented
+  counterpart `UserImpersonateDelete` inherits string ids from `ListItemsCommandBase` — there is no
+  `…ToRemove` property to find. Every refusal on this surface arrives as HTTP 200, so the assertion is
+  the relation table.
+- **An MCP `update_users` / `save_user_groups` call is a whole-entity save against the cache** —
+  partial in what you may send, total in what it writes. `update_users {"users":[{"id":N}]}` is not a
+  no-op: it is precisely the call that reverts a SQL write made on that row a second earlier, and
+  `save_user_groups` blanks every column outside its own model. This is now the stated exception to
+  the standing "SQL write plus an API touch to invalidate" recipe in `cache-invalidation.md`.
+- **An impersonation grant is denormalised into the Users index, and nothing marks it dirty.**
+  Removal needs a Full `BuildIndex`, not a cache flush — and the natural set-equality proof passes
+  regardless, because it is structurally blind to a stale grant on the other identity's document.
+  `AccessUserAdministratorInGroups` is documented as unusable in the same pass: it reads back empty
+  through every API, so an account-admin role rests on group membership.
+- **Assortment work: the flag, the build and the relation write are three independent
+  operations.** `assign_products_to_assortment` sets no rebuild flag; `flag_assortments_for_rebuild`
+  and `build_assortments` take an array of request objects, not a flat id list, and fail opaquely on
+  the plausible shape; a SQL-set `AssortmentRebuildRequired` is invisible to the builder's in-process
+  cache, so SQL is a read path here. Two safety rules join them: count an assortment's built items
+  before activating it (a zero-item assortment is a catalogue blackout for every holder, not a no-op),
+  and check `EcomAssortmentGroupRelations` before removing any group even while assortments are
+  disabled. Enabling assortments prunes live cart lines outside the buyer's range, silently, on every
+  cart load.
+- **Contract-versus-list pricing per audience is stock configuration, not code.** Informative price
+  rows honour `PriceUserGroupId` exactly like ordinary rows, so a group-scoped pair (net + informative
+  list) plus the shipped `ShowInformativePrice` field gives one audience a struck-through list price
+  and the other the list price alone — configured by the second audience having NO rows.
+- **New `account-shape.md`: the customer number identifies the account, not the contact.** Four
+  stock features compare it as an exact string, so a per-contact suffix turns all four off while the
+  settings still read as enabled; the reference carries the one-query diagnostic, the group-scoped
+  fallback that must post literal delivery fields, the measured recipe for normalising a suffix away
+  (templates first, data last, revert proven in a rolled-back transaction, user index rebuilt), and
+  the account-wide favourites pattern — `RetrieveListBasedOn = UseCustomerNumber` plus impersonation,
+  with the `FavoriteCmd` vocabulary and its `FavoriteListId=0` silent no-op.
+- **A page save re-derives `PageMenuText` from the item type's title field — and `reorder_pages`
+  saves.** An ordering call renames every sibling whose item Title differs from its menu text, and on
+  a translated site it replaces the mirrors' translations with the master's wording. The durable shape
+  is `set_page_item_fields {Title}` then `save_pages {id}`; `set_page_menu` reports success and
+  changes nothing.
+- **The language mirror inherits unevenly.** A `save_*` on a mastered page creates the mirror page,
+  its grid row and its paragraph — carrying the paragraph's template and NOT its field values — while
+  leaving the MASTER's grid row without an item instance, so the master renders blank and the
+  translation renders correctly. Create on the master only, set the mirror's values explicitly, and
+  repair a master row through the platform's per-type allocator rather than `MAX(Id)+1`.
+- **`place_app_paragraph` leaves `ParagraphItemType` empty, and a Swift 2 grid column renders a
+  paragraph through its item type** — so the paragraph is live and correct in the database and
+  invisible on the page, with every assertion passing. Copy a working app paragraph instead and rebind
+  its grid row. Also folded: `save_pages` has no `navigationTag` member and drops the key; a re-parent
+  is invisible to the rendered navigation until the app domain restarts while a PageActive change is
+  live immediately; repeatable item-list children render from a cache that only a new parent item
+  crosses; `<QueryConditions>` in `ParagraphModuleSettings` is the per-paragraph query-default lever.
+- **The item-type XML-drop trap is stated as a condition, not an absolute.** The definition is
+  materialised when it is LOADED: on a local install an app-pool restart is enough, on the hosted
+  boxes previously measured it never was and the API route is the fix. What holds everywhere is the
+  ordering, and the positive half is now recorded too — `ItemTypeSave` plus `ItemFieldSave` create the
+  table and a renderable paragraph type live on the next request, with no restart and no cache flush,
+  which is what makes a new type affordable inside a no-restart change window. The stock Swift
+  `ButtonEditor` string `defaultValue` is named as the producer of the `ConverterException` that the
+  consequences table already described.
+- **Swift stock copy falls through to retail-worded defaults on the site's own culture.** A key
+  with no row for the site language renders its shipped `DefaultValue`, so a B2B storefront reads like
+  a webshop in the stock and price blocks while `Translations.xml` looks complete.
+- **Four oversized references split by topic.** `permission-layers.md` (76 KB) became
+  `permission-layers.md` (the storage model), `grant-mechanics.md`, `page-gating.md` and
+  `user-group-operations.md`; `modelling-discipline.md` (54 KB) became `modelling-discipline.md`,
+  `page-paragraph-writes.md` and `language-layers.md`. Section numbering is continuous across each
+  family, so every existing §-reference still resolves; the ten inbound links in other skills were
+  repointed.
+
+justdynamics/Truvio.Commerce.Foundry#640, justdynamics/Truvio.Commerce.Foundry#643,
+justdynamics/Truvio.Commerce.Foundry#673, justdynamics/Truvio.Commerce.Foundry#690,
+justdynamics/Truvio.Commerce.Foundry#691, justdynamics/Truvio.Commerce.Foundry#720,
+justdynamics/Truvio.Commerce.Foundry#743, justdynamics/Truvio.Commerce.Foundry#746,
+justdynamics/Truvio.Commerce.Foundry#751, justdynamics/Truvio.Commerce.Foundry#752,
+justdynamics/Truvio.Commerce.Foundry#753, justdynamics/Truvio.Commerce.Foundry#770,
+justdynamics/Truvio.Commerce.Foundry#773, justdynamics/Truvio.Commerce.Foundry#779,
+justdynamics/Truvio.Commerce.Foundry#794, justdynamics/Truvio.Commerce.Foundry#795,
+justdynamics/Truvio.Commerce.Foundry#798, justdynamics/Truvio.Commerce.Foundry#801,
+justdynamics/Truvio.Commerce.Foundry#802, justdynamics/Truvio.Commerce.Foundry#814,
+justdynamics/Truvio.Commerce.Foundry#815, justdynamics/Truvio.Commerce.Foundry#833,
+justdynamics/Truvio.Commerce.Foundry#835, justdynamics/Truvio.Commerce.Foundry#842,
+justdynamics/Truvio.Commerce.Foundry#845, justdynamics/Truvio.Commerce.Foundry#853,
+justdynamics/Truvio.Commerce.Foundry#857, justdynamics/Truvio.Commerce.Foundry#866,
+justdynamics/Truvio.Commerce.Foundry#867, justdynamics/Truvio.Commerce.Foundry#898,
+justdynamics/Truvio.Commerce.Foundry#901, justdynamics/Truvio.Commerce.Foundry#903,
+justdynamics/Truvio.Commerce.Foundry#929, justdynamics/Truvio.Commerce.Foundry#930,
+justdynamics/Truvio.Commerce.Foundry#931, justdynamics/Truvio.Commerce.Foundry#932
+
+## [4.45.0]
+
+Fold-back sprint: dw-extend-providers, dw-extend-scheduled-tasks, dw-extend-mcp-tools, dw-extend-csharp-api, dw-data-access references, dw-setup-config and dw-setup-cli. Forty-six demo-build learnings land the scheduler contract (a scheduled-task run result is not evidence of effect; the schedule is served from a service cache; overdue tasks fire at app start), the notification-subscriber and provider contracts, the table of columns that fall outside an MCP tool's model when the Admin API command carries them, the SQL cache debt as UPDATE, flush, then touch with the per-entity taxonomy, a new SQL-direct gotchas reference, and the host-assembly copy recipe for the CLI skill. A scheduled-task code sample that used a logger enum member which does not exist is corrected.
+
+Extending a Dynamicweb 10 instance: the scheduler's real contract, the checkout/provider contracts,
+what an MCP tool's model leaves out, and the cache debt a SQL write owes.
+
+- **`RunSqlScheduledTaskAddIn` executes no SQL on 10.28.x and reports success anyway** — it binds its
+  parameters, logs `Run returned: True`, sets `TaskLastResult True`, and writes nothing. Measured
+  down to a bare single-row `INSERT`, with a hand-run control and a `JobScheduledTaskAddIn` activity
+  both writing through the same account. `dw-extend-scheduled-tasks` now routes SQL-shaped background
+  work to `JobScheduledTaskAddIn` or a C# `BaseScheduledTaskAddIn`, and the SKILL.md pitfall that
+  prescribed an assertion-SQL diagnostic through that add-in is retired. The `dw-demo-erp` DB-staged
+  mock, whose RESET rung was built on it, is corrected in the same pass.
+- **New `dw-extend-scheduled-tasks/references/scheduler-rows-and-runs.md`** — the scheduler facts the
+  column names actively mislead about. `TaskParentId` must be `NULL`, never `0` (the scheduler walks
+  the parent list, and a `0` produces no log line anywhere). `TaskBegin`'s time of day is the slot and
+  `TaskNextRun` is derived, so a hand-set next run is a one-shot and a single on-demand run silently
+  re-plans the task. `TaskCheckPrevious` gates on the previous task in the co-queued `TaskSort` order,
+  not on the row's own previous run — there is no overlap guard, and a flagged task with no queued
+  predecessor runs normally. `TaskRun` ignores `TaskEnabled` entirely, which makes "registered
+  disabled, driven only by `TaskRun`" the safe shape for a destructive job. The run history is on
+  disk under `Files/System/Log/ScheduledTasks`; there is no `ScheduledTaskLog` table, and the
+  `TaskLast*` columns read as "this platform records nothing" on a solution that has never thrown.
+  Also the row contract for a SQL registration, the task list as a flushable `TaskService` cache
+  rather than an app-start snapshot, and the domain-service recipe for clearing an indexed PIM field.
+- **The scheduled-task sample code compiles now.** `Dynamicweb.Logging.LogLevel` has no
+  `Informational` member (it is `Information`), and under `ImplicitUsings` both `ILogger` and
+  `LogLevel` are ambiguous with `Microsoft.Extensions.Logging`; the sample carries explicit aliases.
+- **New provider contracts in `dw-extend-providers`.** `checkout-handlers.md`: the base is
+  `Dynamicweb.Ecommerce.Cart.CheckoutHandler` with zero abstract members, `PaymentCheckoutSystemName`
+  is a .NET type name and `PaymentAddInType` stores the enum *name*; `GetBaseUrl(order)` already
+  carries the callback order id, and appending it again renders a blank page with nothing logged;
+  `OrderTransactionPayGatewayCode` is `nvarchar(4)`, so a longer code makes `SetOrderComplete` throw
+  and the order completes with every transaction column empty; `SetOrderComplete` persists the whole
+  posted payment form into `OrderGatewayResult`, so an inline card form must never POST the PAN;
+  and the platform maintains `order.CaptureAmount`, so a handler that writes it stores double.
+  `pricing-fees-and-validation.md`: `FeeProvider.FindFee` must return `null` (the manager breaks on
+  the first non-null, so a zero price suppresses everything after it), `FindFee` is the *shipping*
+  fee and a card surcharge belongs on the payment-fee notification, price and fee providers activate
+  by attribute with no UI step, an exclusive price provider's own scope test is the whole
+  specification, and every shipped ordering rule parses through `Double.TryParse` so a date
+  comparison always needs a custom discovered `Rule`. `notification-contracts.md`: refusal is per
+  notification and never platform-wide, the user before-save hook cannot veto and does not reach the
+  password path, cart order-validation is raised at the checkout step only, the product-catalog
+  notifications are annotated with their raiser so a per-view write lands on the detail path, and a
+  `Standard.Page.Loaded` subscriber can redirect a page out of reach invisibly to every content API.
+- **`dw-extend-mcp-tools` names the one cause behind "MCP and the Admin API disagree":** the tool
+  carries its own model, which is a subset of the domain service's, and nothing says which columns
+  fall outside it. New `references/tool-surface-gaps.md` catalogues the measured cases — write-only
+  shop language relations with no read-back, custom order fields absent from the order read, the
+  shipping/payment group restrictions and method-country relations no tool exposes, two translation
+  entities with no verb in either direction, `delete_products` leaving group relations and category
+  field values dangling, and `force_price_recalculation` broken on this build. The identifier
+  parameter convention is also recorded: by-id tools take a bare `id`, paragraph and module tools
+  take `pageId`/`paragraphId`, and a mis-named argument can return a successful empty `content: []`.
+- **A raw SQL write to a cached entity is not merely read stale — the next API save erases it.**
+  `dw-data-access/references/cache-invalidation.md` now states the ordering once: `UPDATE`, flush the
+  owning service, then touch the entity, with nothing re-saving it in between. Alongside it, the
+  per-entity invalidation taxonomy — self-invalidating, recycle-clears-it, needs-an-API-round-trip —
+  because "SQL plus a recycle is enough" behaved oppositely on two entities of one build. New rows
+  for `EcomProductsRelated` (its own `ProductRelatedGroupService` / `ProductRelatedService` storage
+  types; a `ProductService` flush and a full index build both do nothing) and for
+  `Paragraph.ParagraphModuleSettings`, plus a note that cache type names are not inferable.
+- **New `dw-data-access/references/sql-direct-gotchas.md`** — `ParagraphModuleSettings` holds XML in
+  an `nvarchar(max)` column, so `CONVERT(xml, …)` on the assignment fails with an error that reads
+  backwards; and IDENTITY allocation is not transactional, so every id printed by a rolled-back dry
+  run is invalid at commit time (capture with `SCOPE_IDENTITY`, assert on counts and relationships).
+- **The Dynamicweb file archive is public by extension, not by permission** — new
+  `dw-setup-config/references/host-exposure-and-paths.md`. `.xml` and `.json` are not on the
+  static-file blocklist and a `/Files` request never reaches the page pipeline, so integration job
+  files publish their `SqlProvider` connection credentials anonymously and a role-gated asset library
+  gates the browser without gating a byte. The fix is the provider's own `<SourceServerSSPI>` /
+  `<DestinationServerSSPI>` switches, which survive Dynamicweb re-serialising the job files; a
+  site-level `requestFiltering` deny is unavailable where the `<security>` section is machine-locked.
+  Same file: a `web.config` `<location path="." inheritInChildApplications="false">` means an
+  explicitly configured sub-path loses the ASP.NET Core handler and 404s while the filter under test
+  still passes.
+- **Config reload semantics and a mail-server prerequisite in `dw-setup-config`.** A product-index
+  `.query` file hot-reloads and `GlobalSettings.config` does not, so query shapes are free to iterate
+  and a settings change costs the recycle. And mail-dependent sign-in is *disabled*, not degraded,
+  when SMTP is unreachable: a magic-link token is not committed unless the send succeeds, so the
+  saved `.eml` carries a well-formed link that can never redeem.
+- **C# API additions in `dw-extend-csharp-api`.** Loyalty accrual goes through
+  `LoyaltyService.CreateTransaction`, which writes the ledger and the balance together, with
+  `ObjectElement` as the durable dedupe — `AddPointsToUserPointBalance` moves the balance with no
+  audit trail, and `Order.AfterSave` fires on every save of a completed order. And a Razor template
+  compiles into its own dynamic assembly with no `InternalsVisibleTo`, so every member it references,
+  `const` strings included, must be `public`.
+- **`dw-setup-cli`** gains the self-hosted deploy order: app-pool **stop**, copy the DLL, **start** —
+  a recycle drains the old worker, which keeps `bin/*.dll` locked.
+
+justdynamics/Truvio.Commerce.Foundry#647, justdynamics/Truvio.Commerce.Foundry#652,
+justdynamics/Truvio.Commerce.Foundry#664, justdynamics/Truvio.Commerce.Foundry#666,
+justdynamics/Truvio.Commerce.Foundry#676, justdynamics/Truvio.Commerce.Foundry#679,
+justdynamics/Truvio.Commerce.Foundry#680, justdynamics/Truvio.Commerce.Foundry#684,
+justdynamics/Truvio.Commerce.Foundry#706, justdynamics/Truvio.Commerce.Foundry#707,
+justdynamics/Truvio.Commerce.Foundry#711, justdynamics/Truvio.Commerce.Foundry#712,
+justdynamics/Truvio.Commerce.Foundry#716, justdynamics/Truvio.Commerce.Foundry#742,
+justdynamics/Truvio.Commerce.Foundry#755, justdynamics/Truvio.Commerce.Foundry#756,
+justdynamics/Truvio.Commerce.Foundry#758, justdynamics/Truvio.Commerce.Foundry#759,
+justdynamics/Truvio.Commerce.Foundry#797, justdynamics/Truvio.Commerce.Foundry#806,
+justdynamics/Truvio.Commerce.Foundry#807, justdynamics/Truvio.Commerce.Foundry#808,
+justdynamics/Truvio.Commerce.Foundry#809, justdynamics/Truvio.Commerce.Foundry#810,
+justdynamics/Truvio.Commerce.Foundry#811, justdynamics/Truvio.Commerce.Foundry#812,
+justdynamics/Truvio.Commerce.Foundry#816, justdynamics/Truvio.Commerce.Foundry#841,
+justdynamics/Truvio.Commerce.Foundry#846, justdynamics/Truvio.Commerce.Foundry#847,
+justdynamics/Truvio.Commerce.Foundry#849, justdynamics/Truvio.Commerce.Foundry#852,
+justdynamics/Truvio.Commerce.Foundry#854, justdynamics/Truvio.Commerce.Foundry#856,
+justdynamics/Truvio.Commerce.Foundry#875, justdynamics/Truvio.Commerce.Foundry#883,
+justdynamics/Truvio.Commerce.Foundry#888, justdynamics/Truvio.Commerce.Foundry#889,
+justdynamics/Truvio.Commerce.Foundry#891, justdynamics/Truvio.Commerce.Foundry#915,
+justdynamics/Truvio.Commerce.Foundry#916, justdynamics/Truvio.Commerce.Foundry#917,
+justdynamics/Truvio.Commerce.Foundry#919, justdynamics/Truvio.Commerce.Foundry#924
+
+folded into the `dw-data-access` per-entity section; the issue itself is a duplicate of #676)
+
+## [4.44.0]
+
+Fold-back sprint: dw-demo-swift, dw-swift-building, dw-swift-page-blocks and dw-swift-page-design. Forty-one demo-build learnings land as three foundational references under dw-swift-building (grid-row mechanics, layout verification, shipped-template defects on Swift 2.4.0) and two demo references (the fresh-deserialize sweep, RMA claims in the customer center), with four rewrites of guidance that was wrong: the visually-hidden idiom that caused the overflow its guard exists to prevent, the paragraph-template restart row, the header mega-menu bridge, and the grid-row copy claim. A demo engagement slug that had leaked into the mobile-pass reference is scrubbed.
+
+The Swift cluster: the layout truths a markup assert cannot see, the row mechanics behind a page that
+saves and does not render, and the shipped-template defects a build inherits.
+
+- **A visually-hidden label ships `overflow: hidden` — `clip-path` does not contain overflow.**
+  `re-skin.md`'s floating-header recipe prescribed the `clip` + `clip-path` idiom with no `overflow`
+  declaration, and shipped a standing guard forbidding `overflow` anywhere under the header. Measured
+  A/B/C/D at two device widths: that idiom is the WORST variant (19px and 18px of horizontal overflow
+  against 4px and 0px with the label simply left in flow), because `clip-path` crops painting and
+  creates no scroll container. The rule is rewritten, not annotated, and the guard is re-scoped to the
+  ancestors a megamenu or off-canvas panel escapes through. The accessible name survives in every
+  variant, so containment costs nothing.
+- **Horizontal overflow needs three numbers, not one, and the offender is named by RIGHT EDGE.**
+  `body.scrollWidth <= innerWidth` is satisfied by construction once the browser widens the layout
+  viewport to fit unshrinkable content — a 262px stretch reported as zero. Assert `innerWidth` equals
+  the requested width as well. And a width-sorted offender walk reliably names a closed Bootstrap
+  off-canvas drawer, which tracks the overflow while contributing nothing to it; the element whose
+  right edge equals `documentElement.scrollWidth` is the cause. Both legs are now in the mobile pass
+  and in a new foundational reference, with the recurring Swift causes (a Bootstrap `g-col-N` span
+  over an `auto-fit` grid, the `.mw-75ch` reading measure on authored content).
+- **Every viewport pass owes BOTH auth states.** Swift's mobile header renders a ~48px initials button
+  signed in and a ~123px labelled anchor anonymous, so a signed-in sweep measuring 0 on ten checks and
+  an anonymous sweep measuring 71px on the same pages are both correct. The anonymous control is the
+  wider one.
+- **New `layout-verification.md`** (`dw-swift-building`) — the four defect classes that clear every
+  HTTP and DOM-presence check: horizontal overflow, a control present and styled but under a card's
+  stretched row link (only `elementFromPoint` at its centre sees it), an anchor coloured by its row's
+  *declared* colour scheme rather than the background the page paints, and a band that renders nothing
+  while still paying its spacing. Routed from `dw-swift-page-design`, `dw-demo-swift` and
+  `dw-swift-page-blocks`.
+- **New `grid-rows-and-binding.md`** (`dw-swift-building`) — one home for the row mechanics that were
+  being rediscovered one attribute at a time. `GridRowCopy` carries **five** donor attributes
+  (paragraphs, spacing, the paragraph's `ParagraphTemplate`, `GridRowSort`, `GridRowContainerWidth`)
+  and does **not** append, correcting the older "copy appends only" claim; normalisation is part of the
+  copy step. The column-binding law is stated in full: binding is by `ParagraphGridRowColumn`, never by
+  sort, so a one-column row drops every paragraph after the first and a doubled-up multi-column row
+  renders the other column empty — with parking-in-an-undefined-column as a clean reversible retire.
+  An inert row still pays its spacing plus the flex wrapper's padding, so `GridRowActive = 0` through
+  `GridRowSave` is the lever and `ParagraphShowParagraph` is inert. And an idempotency marker must be a
+  string the row RENDERS: an id-range check misses on the next run and duplicates the work.
+- **New `shipped-template-defects.md`** (`dw-swift-building`) — what the shipped Swift 2 templates do
+  not do. Two Swift 2.4.0 templates call `System.Web.HttpUtility` and do not compile on DW 10.29/.NET
+  10 (one serves raw Razor to a visitor, the other fails silently because nothing watches an invitation
+  mail render); the product-search dropdown dereferences `DefaultImage` unguarded where its shipped
+  sibling null-guards the same field, so it throws for every term that MATCHES on a catalogue without
+  images; the order list and detail never render the payment method although every sibling detail
+  template does, so a payment-method migration has no customer surface to verify on.
+- **"No prices" is a claim about display, not delivery.** Swift 2's add-to-cart component posts
+  `ProductPrice` / `ProductDiscount` as hidden inputs on the PDP *and* on every product card, and the
+  card wrapper emits `data-product-price` for analytics. A template money guard wraps OUTPUT and
+  reaches none of them, and a tags-stripped census is blind to them by construction — which is how a
+  fifteen-surface audit reports zero currency strings on a page delivering every price twice per
+  product. The honest position is "not displayed"; the stronger claim means forking two shipped
+  components. Relatedly, a bare currency-symbol `notContains` can never pass on a Swift list page,
+  because the shipped `PriceRange` facet emits currency-shaped option labels for every visitor — anchor
+  the census on the decimal and pair it with a byte floor.
+- **New `fresh-deserialize-sweep.md`** (`dw-demo-swift`) — the prospect-visible fiction a baseline
+  ships, swept BEFORE the demo path is built, precisely because none of it is on the demo path and it
+  survives a rebrand that edits every page a build touches. Six families, including one that exists
+  only in an ATTRIBUTE: the shipped logo template falls back to the vendor name when its name field is
+  empty, so blanking the field — the natural rebrand action — restores the word. The sweep therefore
+  runs over the raw served HTML, and the rebrand rule is **name every field, never blank one**. Also
+  carries the default-currency check (symbol, culture, rate and patterns, asserted by a symbol being
+  PRESENT) and the rule that a licence-gated surface is retired rather than demoed as a dead button.
+- **New `rma-claims.md`** (`dw-demo-swift`) — a warranty, service or claims surface is the platform's
+  own RMA machine renamed, never a parallel entity: the comment trail, the backend transition screen
+  and the claim numbering come free, and only the vocabulary and two templates are data. Includes the
+  serial-number column that exists with no frontend input, and the shipped `<BoughtFromDate>` that
+  silently empties the claim form's order picker on any install that is not brand new.
+- **The megamenu needs a PANEL-anchored apron** (`header-menu.md`, platform truth 4). Both documented
+  bridges are unavailable there — the caret rules force the stock toggle pseudo to `position: static`,
+  and megamenu items carry `.position-static` by design so an item-anchored pseudo cannot anchor — and
+  the apron itself fails until `overflow: visible` is restored on the panel, because an auto-overflow
+  box clips its own out-of-box pseudo-elements. The older "panel-anchored bridge rejected" line is
+  corrected rather than left standing.
+- **`ParagraphTemplate`, `ParagraphGridRowColumn` and `ParagraphModuleSettings` are not content
+  fields.** `cache-invalidation.md` listed `ParagraphTemplate` under the one SQL pattern that needs no
+  restart; all three are measured as needing one, and a module paragraph reads its settings once at
+  application start, so a repoint commits and stays invisible with no error and nothing in the log.
+  A SQL-written `ParagraphTemplate` also puts its paragraph on the never-whole-model-save list.
+- **`AreaSave` writes `AreaDomainLock` wrong**, stringifying the model's boolean into the literal
+  `"False"` in a column the URL builder reads as a host name — so every absolute URL for the new area
+  points at `https://false:443/`. It rides in on the full-model round trip that the master-binding rule
+  makes mandatory. Stated beside the existing `AreaDomain` repair as one rule: the columns `AreaSave`
+  does not write correctly are repaired by SQL in the same step, and a green response is not evidence.
+- **A customisation ban is scoped to the presales-demo context, and a lifted ban still owes the
+  surface.** The payment-provider / checkout-handler ban now names the condition that lifts it (an MVP
+  or delivery build whose signed scope names the mechanism), requires the brief to cite the ban it
+  overrides, and states that where the corpus carries no recipe, writing one is part of the work.
+- Smaller corrections in place: a headless create applies the item type's XML `defaultValue`, so a
+  `ButtonEditor` field manufactures the exact bare-label string that aborts the whole paragraph at
+  render; a cloned model posted with `id: 0` is not a create path; signing a second persona in over a
+  live session transfers the cart and **persists it onto the new user's row**; Swift's checkout hides
+  ALL delivery addresses when the user's own billing block is empty (a data gap, not a cache one); the
+  shipped dashboard widgets carry no scope parameter at all, so an aggregate board needs alternate
+  templates and a zero-orders persona to assert with; `PageHidden` breaks the page's own friendly URL
+  while `Default.aspx?ID=n` still redirects to it, which is the diagnostic signature; field display
+  groups leave the parent row empty after a successful save because the data lands in three child
+  tables; and staging a theme's disk overlay does nothing until the area's `CustomHeadInclude` is
+  wired, which the integrity sweep now asserts as a fourth stylesheet.
+
+## [4.43.0]
+
+Fold-back sprint: dw-search-indexing, dw-pim-modelling, dw-pim-localization, dw-demo-base and dw-demo-foldback. Twenty-eight demo-build learnings land the index-file authoring rules that are invisible through the API as one table, sharpen the PIM structural and localization references in their existing homes, and fold the demo-base host and fold-back rules; four supersede sweeps rewrite the scroll-width-only mobile assert, the multipart cart-form rule, the deserialize output-directory option and the governance-metric recommendation where they lived.
+
+- **A `.index` file is authored on the filesystem, and every rule that matters there is invisible from
+  the API.** `BuildIndex`, `IndexStatusesByRepository` and `FieldDefinitionBasesByRepositoryAndIndexName`
+  all report a healthy index while a declared field is absent, so `dw-search-indexing` now carries one
+  table of the authoring rules — `Field/@Source` is a database column while `Copy/@Sources` are index
+  system names, a `Copy` field may carry `Analyzer` and `Boost`, `Skip*` settings sit on the `<Build>`
+  nodes and are read at build time (no restart), an extension-declared field cannot be overridden from
+  the file — plus the standing rule that an index schema is asserted against the Lucene directory,
+  never against the API, and the negative fact that no backend free-text or wildcard search setting
+  exists on this build.
+
+- **The shipped user index carries a password hash and the whole impersonation graph in the same
+  document.** Standing up a user repository writes one hash per account into a Lucene file under the
+  web root, from the platform's own schema extender, with no switch; the same extender publishes
+  `CanImpersonate` / `CanBeImpersonatedBy`, group-expanded and numeric, which makes a permission-scoped
+  user picker one query arm. Both facts are stated together in `dw-search-indexing`, with pointers from
+  `dw-users-permissions` where readers of a permission-scoping query actually look.
+
+- **A repository `.query` gets its Lucene query shape from the right-hand side's declared `Type`, and a
+  parameter set to the empty string is not an unset one.** A numeric field needs `System.Int32` /
+  `System.Int32[]`; a string type against it matches nothing, silently, failing closed. A missing `Type`
+  surfaces as `The given key '' was not present in the dictionary`, and `IsIndexed=False` on a stored
+  document is not a diagnostic. Separately, an unset parameter drops its arm while an empty one is
+  compared and matches nothing — so a caller assigns only the parameters it has a value for.
+
+- **A field declared in the index schema is not thereby queryable.** Custom product fields arrive as
+  stored payload and no `Field` or `Copy` declaration makes them filterable; a field the builder
+  populates for only some documents produces a sort that works in one direction and looks inert in the
+  other; and `IsEmpty` has no working serialization on the Lucene provider, so "this field has no
+  value" is expressed positively (a sentinel, or a real value on every document) or not at all. The
+  complementary-count check that catches all three is restated where each lands.
+
+- **Say what actually triggers a rebuild.** `ShopAutoBuildIndex` does not fire for a product written
+  through the Management API or an MCP tool, so the promise is a scheduled Update build, not a
+  save-triggered one. The MCP index tools default `indexName` to a name the repository does not carry
+  and then succeed vacuously; pass the index file name, and gate on the document count rather than on
+  `completed: true`.
+
+- **PIM structural facts that no read surface reports**: `EcomGroups.GroupType` is the only thing
+  separating the data-model tree from the catalogue tree and the MCP group reads omit it, so a
+  group-tree cleanup reads it first; `ProductId` is a 30-character column while `ProductNumber` is 255,
+  with nothing validating the difference before a bulk import; a per-location attribute has no home
+  outside `EcomStockUnit`; asset categories are `EcomDetailsGroup` with two shipped rows, so a
+  document's type comes from its own name; and the standard fields `get_standard_fields` lists are
+  `EcomProducts` columns that the MCP custom-field path cannot write — the reachable write is a
+  `ProductById` → `ProductSave` round trip.
+
+- **"Falls back to the default language" means that one layer and no other.** Translation rows stranded
+  under a non-default layer are invisible rather than fallen back, so they are authored under the live
+  default language; and a missing translation is never an error — one view model returns the system
+  name and another returns the raw id, which makes the delivery API unusable for verifying an
+  asset-category translation.
+
+- **Demo-build gates that passed while the thing they guard was broken.** A serializer dry run's entry
+  count is the blast radius, not a count, because deserialize is driven by the manifest under
+  `SerializeRoot` and ignores the config's predicates and `outputDirectory` — scoping a run means
+  swapping the manifest, with a byte-for-byte unstage assertion. A mobile overflow check comparing
+  `scrollWidth` to `innerWidth` cannot fire once unshrinkable content has widened the layout viewport,
+  so `innerWidth` is asserted against the requested width as well. A PII sweep runs over the rendered
+  corpus as each persona, because orders keep their own copy of the customer identity. A form probe
+  matches the rendered form's `enctype` instead of assuming multipart. And a scripted edit asserts a
+  non-zero diff, with line-wise patterns written `[^\r\n]*\r?\n` against CRLF layer text.
+
+- **Two demo-host hazards**: a restored database routinely carries orphaned shop/group relation rows
+  that no surface reports and that make a group audit unreadable — a standing post-restore query now
+  catches them; and a package the host csproj already references must be upgraded there, because an
+  Add-in-manager install of the same package duplicates type keys and takes the whole site down.
+
+justdynamics/Truvio.Commerce.Foundry#644, justdynamics/Truvio.Commerce.Foundry#672,
+justdynamics/Truvio.Commerce.Foundry#674, justdynamics/Truvio.Commerce.Foundry#675,
+justdynamics/Truvio.Commerce.Foundry#681, justdynamics/Truvio.Commerce.Foundry#695,
+justdynamics/Truvio.Commerce.Foundry#714, justdynamics/Truvio.Commerce.Foundry#715,
+justdynamics/Truvio.Commerce.Foundry#721, justdynamics/Truvio.Commerce.Foundry#727,
+justdynamics/Truvio.Commerce.Foundry#740, justdynamics/Truvio.Commerce.Foundry#761,
+justdynamics/Truvio.Commerce.Foundry#762, justdynamics/Truvio.Commerce.Foundry#763,
+justdynamics/Truvio.Commerce.Foundry#765, justdynamics/Truvio.Commerce.Foundry#766,
+justdynamics/Truvio.Commerce.Foundry#771, justdynamics/Truvio.Commerce.Foundry#783,
+justdynamics/Truvio.Commerce.Foundry#787, justdynamics/Truvio.Commerce.Foundry#803,
+justdynamics/Truvio.Commerce.Foundry#804, justdynamics/Truvio.Commerce.Foundry#879,
+justdynamics/Truvio.Commerce.Foundry#899, justdynamics/Truvio.Commerce.Foundry#900,
+justdynamics/Truvio.Commerce.Foundry#904, justdynamics/Truvio.Commerce.Foundry#945
+
+and the stage/unstage recipe; the engine ask — honour `outputDirectory` on the deserialize path, or
+hard-fail when manifest entries are not accounted for by the config predicates — stays with the
+serializer), justdynamics/Truvio.Commerce.Foundry#728 (skill half: the `innerWidth` assertion and the
+vertical-navigation rule; the harness probe change and the layer fix stay with their owners)
+
+## [4.42.0]
+
+Fold-back sprint: dw-integration-framework, dw-integration-erp and dw-demo-erp. Forty demo-build learnings give the integration framework its first references (the job-file format, destination-side provider behaviour, custom provider authoring), add feed keying to the ERP skill and a two-way mock recipe to the ERP demo skill, and rewrite three measurably wrong claims in the mock-deltas reference.
+
+A Data Integration activity is a file on disk with a frozen schema snapshot, and the shipped
+providers each lie about something specific on the way in.
+
+- **`dw-integration-framework` gets a `references/` directory** — it had none, while being the
+  emptiest target for the largest issue cluster. Three files: `job-file-format.md` (the on-disk
+  activity), `provider-behaviour.md` (what each shipped provider does when it writes), and
+  `custom-provider-authoring.md` (the C# material lifted out of SKILL.md, which was over the
+  16 KB activation budget). SKILL.md becomes the nav layer with a "Where to find things" table.
+- **The job file is the authoring surface nobody documented.** An activity is
+  `<wwwroot>/Files/Files/Integration/jobs/<name>.xml` — the doubled `Files\Files` is the archive
+  root keeping its own leading segment, so a stored `/Files/X` path is served at `/Files/Files/X`
+  and a single-`Files` URL 404s. The file name **is** the activity name a scheduled task binds to;
+  `Files/System/Integration/Jobs/` is a shipped-template decoy; the file is UTF-16LE with a BOM, so
+  every scripting stack's default UTF-8 write produces a file the runner will not read (and a naive
+  `grep` over one is a false clean). The recipe is copy-an-existing-job, decode with a `utf16le`
+  codec, round-trip, diff against the source, and re-mint the `<mapping uid>` GUID.
+- **A job's `<Schema>` is a cached snapshot, and the failure mode differs by side.** A column added
+  after the job was saved is **silently dropped** on the source side and a **hard refusal** on the
+  destination side, so every activity on a solution goes stale the moment a custom product or order
+  field is created. `does not exists in the schema` now reads as a stale snapshot first, not a
+  mapping typo. A SqlProvider job with no authored `<Schema>` expands the entire database into its
+  own definition on first run and then validates against that.
+- **Two column element shapes, distinguishable only by which end they are on.** A SQL destination
+  writer casts every schema column to `ProviderHelpers.SqlColumn`; a SqlProvider source reader does
+  not cast at all, so the plain `Integration.Column` form makes the same file half right and the
+  `InvalidCastException` points at the destination table instead of the schema. `<limit>` is a
+  character count.
+- **The shipped providers' destination behaviour, measured.** `EcomProvider` matches on
+  ProductId → ProductNumber → ProductName, mints `ImportedPROD<n>` ids for anything it creates
+  regardless of the `CreateMissing*` flags, orphans category field values on an in-place re-key,
+  clears the primary-group flag on multi-group products every run, requires the whole ten-column
+  price identity for `EcomPrices` or throws a `KeyNotFoundException` after the temp tables have
+  loaded, and rewrites every language row of a group in its `EcomGroups` merge. `UserProvider`
+  writes five tables, expands a 255-character group CSV additively, and **silently deletes**
+  unresolved address and impersonation rows while reporting Completed. `OrderProvider` as a
+  destination is update-only (its INSERT lists only the mapped columns) and copies the integration
+  id straight into the line's parent key; as an export source its cart filter does not exclude
+  ledger entries, so imported invoices are posted back as sales orders.
+- **A write through a provider is not automatically a cache invalidation.** An `EcomProvider` run
+  writing extended or global product fields leaves the `ProductService` read-through cache stale
+  even with `DisableCacheClearingAndIndexUpdates=False` — new row in
+  `dw-data-access/references/cache-invalidation.md`, with the storage type name the API accepts.
+  And a state written by a job (or by SQL) raises **no** order-state notification: those fire on
+  `OrderService.Save` only, so "the ERP flips the status and the customer is emailed" is code.
+- **Job files are served anonymously.** `.xml` is not on the static-file blocklist, so a
+  SqlProvider connection string is a database password on a public URL — and DW re-serializes the
+  job on every run, so a hand edit does not hold. Integrated security (`*ServerSSPI`) is the fix;
+  the empty-connection-string fallback is **destination-only**, so a SQL *source* must name an
+  instance (relatively, if it is local). The legacy `JobRunner.aspx` route executes any job on an
+  anonymous GET and the modern authenticated route 404s on affected builds; the only mitigation is
+  an IIS path restriction, unavailable on a shared host.
+- **Restores and resets built on activities need an order and a marker.** Purge the entities the
+  session created **before** restoring tables — the delete half of delete-rows-missing-from-source
+  is unreliable while a parent is live, and the log counts rows written, never rows removed. Scope
+  every reset by a marker column the generator stamps, and **never null an integration key**: it is
+  the already-processed flag, so clearing it re-arms the integration for every row touched.
+  SqlProvider round trips also truncate datetime to whole seconds and stage into a clone whose
+  unique indexes lose their filters.
+- **`dw-integration-erp` gains `references/feed-keying.md`** — the key contract that was entirely
+  undocumented: map the ERP's natural key to `ProductNumber` to update a hand-built catalogue in
+  place, decide on source-derived ids before the first load, keep group names byte-exact because
+  they are the matching key, and apply the three casing fixes the shipped order-export template
+  needs (plus the unit-price column that arrives empty).
+- **`dw-demo-erp` gains a two-directional mock flavor** (`references/two-way-mock.md`): four
+  shipped-provider activities, `OrderStateAfterExport` for the status flip, `OrderIntegrationOrderId`
+  for the document-number writeback, staging tables seeded from live rows so the sync is
+  value-idempotent, and a reset that does not re-arm the export. Zero custom code, zero
+  customisations-ledger rows.
+- **Two corrections in `dw-demo-erp/references/mock-deltas.md`.** `RunSqlScheduledTaskAddIn` has
+  been measured binding, firing, logging `Run returned: True` and executing no SQL at all, so it is
+  demoted below the activity route and no longer treated as self-evidencing. And a far-future
+  `TaskNextRun` is **not** a kill switch: DW fires overdue tasks at application start, so a task
+  carrying a realistic minute/hour pair self-fires on any pool restart — every schedule column goes
+  to `-1` and the cadence lives in the name and a staged execution history. The scheduler-cache
+  rule is broadened from SQL-inserted rows to **every** SQL write to the schedule, inserts and
+  updates alike.
+- **`dw-demo-erp/references/erp-data-shape.md`**: when a rule needs a fact the feed does not carry,
+  add the field at generation time. A correlated proxy (range derived from stock quantity) produces
+  a plausible-looking result and breaks silently on exactly the rows where the two facts diverge.
+
+justdynamics/Truvio.Commerce.Foundry#655, justdynamics/Truvio.Commerce.Foundry#656,
+justdynamics/Truvio.Commerce.Foundry#657, justdynamics/Truvio.Commerce.Foundry#658,
+justdynamics/Truvio.Commerce.Foundry#661, justdynamics/Truvio.Commerce.Foundry#662,
+justdynamics/Truvio.Commerce.Foundry#692, justdynamics/Truvio.Commerce.Foundry#696,
+justdynamics/Truvio.Commerce.Foundry#697, justdynamics/Truvio.Commerce.Foundry#698,
+justdynamics/Truvio.Commerce.Foundry#699, justdynamics/Truvio.Commerce.Foundry#700,
+justdynamics/Truvio.Commerce.Foundry#701, justdynamics/Truvio.Commerce.Foundry#702,
+justdynamics/Truvio.Commerce.Foundry#708, justdynamics/Truvio.Commerce.Foundry#709,
+justdynamics/Truvio.Commerce.Foundry#710, justdynamics/Truvio.Commerce.Foundry#729,
+justdynamics/Truvio.Commerce.Foundry#730, justdynamics/Truvio.Commerce.Foundry#731,
+justdynamics/Truvio.Commerce.Foundry#732, justdynamics/Truvio.Commerce.Foundry#735,
+justdynamics/Truvio.Commerce.Foundry#736, justdynamics/Truvio.Commerce.Foundry#754,
+justdynamics/Truvio.Commerce.Foundry#826, justdynamics/Truvio.Commerce.Foundry#827,
+justdynamics/Truvio.Commerce.Foundry#828, justdynamics/Truvio.Commerce.Foundry#829,
+justdynamics/Truvio.Commerce.Foundry#831, justdynamics/Truvio.Commerce.Foundry#876,
+justdynamics/Truvio.Commerce.Foundry#882, justdynamics/Truvio.Commerce.Foundry#892,
+justdynamics/Truvio.Commerce.Foundry#893, justdynamics/Truvio.Commerce.Foundry#918,
+justdynamics/Truvio.Commerce.Foundry#921, justdynamics/Truvio.Commerce.Foundry#922,
+justdynamics/Truvio.Commerce.Foundry#923, justdynamics/Truvio.Commerce.Foundry#926
+
+## [4.41.0]
+
+Fold-back sprint: dw-commerce-orders and dw-commerce-catalog. Forty-seven demo-build learnings land as a routed reference set: the RMA and claims surface (previously uncovered), the measured cart-command contracts (the SKILL.md tables described behaviour the platform does not have), checkout configuration, order states and quotes, order notifications, customer-center surfaces, and catalog listing and stock. The SQL-then-API-save ordering is stated once with both measurements.
+
+- **`dw-commerce-orders` is now a routed reference set, not one growing file.** The single 32KB
+  `order-lifecycle.md` covered order seeding and saves and nothing else, so every cart, checkout,
+  RMA, state-machine and notification learning had no home. Split into
+  `cart-commands.md`, `checkout-configuration.md`, `order-states-and-quotes.md`,
+  `order-notifications.md`, `customer-center-surfaces.md` and `rma-and-claims.md`, with a
+  "Where to find things" routing table in `SKILL.md`; `order-lifecycle.md` keeps seeding, saves,
+  invoices, subscriptions, the read surface and CSR impersonation.
+
+- **The RMA / claims surface is documented for the first time.** Which of the three creation
+  surfaces writes what (MCP `create_rma` produces a backend-only stub; Admin API `RmaSave` binds an
+  empty `Model.Id` and the singular `OrderLineId`; the frontend `addrma` is the complete model and
+  the only route that raises the mail), why the customer-center list INNER JOINs the comment and
+  order-line tables so a commentless RMA can never appear, that a state rename is three writes
+  across two stores plus the backend default-name column, that the API and the frontend write
+  different empties into the same column, that every save of an existing RMA logs a customer-block
+  comment into the customer-visible history, and the `ReturnMerchandiseAuthorizationService` flush
+  every raw-SQL write owes. The customer-center RMA app is ViewModel-driven while the only shipped
+  templates are DW9 tag templates, and it is the one app in the family that ignores
+  `RetrieveListBasedOn`.
+
+- **Cart commands say what they do, replacing a table that said what they sound like.** `archive`
+  clears the active-cart pointer and archives nothing (model archiving as a cart-flow order state);
+  `copyExtended` copies the session's active cart and ignores `CartId` — which makes the shipped
+  saved-carts link a live defect — and is the only ownership move; `setcart` selects a cart and
+  never transfers it, leaving two users pointing at one; `createnew` needs `SetActive`; `setname`
+  writes `OrderDisplayName`; `setmulti` SETS quantities, deletes at zero and is last-row-wins for a
+  duplicate product. Plus the two gates every scripted cart proof must pass (the bot User-Agent
+  refusal that still mints the cart, and the pre-command 301), the redirect that drops the whole
+  querystring, the unchecked `AccessUserCartId` adoption that leaks a cart across users, and the
+  fact that rendering the cart page persists the order header.
+
+- **Checkout configuration gets the data-side contracts a checkout needs before it can complete.**
+  Method country binding (a cart delivering outside the relation set gets zero options, no error
+  and no empty state, with payment masking it), the two legal `feeRulesSource` values and the
+  flat-rate recipe, the payment radio whose posted name drops a syllable the element id carries,
+  validation groups (no admin UI, the hand-written row contract, a dangling reference that
+  validates nothing, and the rule that a field gates the step it is posted on), the 1970 sentinel
+  on unset date order fields, saved cards as service-only because the checksum hashes the identity
+  the INSERT assigns, and the global setting that makes the zero-value add-a-card journey possible.
+
+- **Order-LINE fields need no storage column, and the `EcomOrderField` trap does not generalise.**
+  Values live in the `OrderLineFieldValues` blob already present on every line, so adding one is a
+  row rather than a maintenance window — but the definition is inert without a shop/group relation
+  row, and the entry is materialised at line-creation time, so a line that predates the relation can
+  never take a value.
+
+- **The SQL-then-save ordering is stated once.** A raw write to a DW-cached table is not merely read
+  stale: the next save of the cached entity writes the whole entity back and destroys it, silently
+  and at an unpredictable later moment. The working sequence is UPDATE, flush the owning service
+  with `CacheInformationRefresh`, then touch — proven on both sides, by a staged value erased
+  without the flush and by a bulk column repoint that survived with it.
+
+- **Order states, removal and the cart/quote conversion.** `delete_order_state` leaves dangling
+  transition rows and the id generator re-issues a freed id into any flow, so a two-ended LEFT JOIN
+  integrity assertion is mandatory whenever states are touched; `OrderDelete` is a soft delete that
+  refuses completed orders, and `OrderCancel {Id}` then `OrderDelete {Ids}` is the working pair
+  (note the singular/plural key split); `UpdateCartToQuote` leaves `IsCart` set and
+  `DowngradeToCart` renames the original order and inserts a copy under the old id, so any
+  bookkeeping row keyed on the order id must be written against the pre-call id. Swift 2's
+  Accept-quote button loads its modal from an endpoint that refuses any order that is not a cart,
+  so it can never work on a quote.
+
+- **Notification mail: three settings, three resolution roots, and an artefact that under-reports.**
+  The order-state template is a bare file name under one fixed folder, the RMA template resolves at
+  the Templates root, and the cart app's `Mail1Template` is design-relative — and when
+  `Mail1Template` is empty the body is a *page*, leaving the shipped mail template as dead code that
+  grep cannot distinguish from the live one. A template that will not load is mailed to the customer
+  rather than aborting the send, cart-flow states notify exactly like order-flow states, and the
+  honest assertion surface on a black-hole SMTP host is Queue UNION Badmail, on content.
+
+- **`dw-commerce-catalog` gains a listing-and-stock reference.** Any default sort on the catalog
+  paragraph or the query replaces search relevance (and the header search shares that paragraph), so
+  group listings are ordered with `UseGroupSortInGroupContext` and scaffolding is hidden with
+  `ProductExcludeFromIndex`, never with a sort or a root `GroupID` default. `ProductHidden` is
+  enforced in the entity SELECT, absent from the index and unwritable by every DW10 API, so a
+  listing counts hidden products and renders none — assert rendered rows equal the header count.
+  Plus the `AssetCategories` double-listing, what order completion decrements in the two stock
+  tables (it follows the stock location on the line, so assume both move and make the inbound sync
+  own both), and the `0`-not-`NULL` stock-location convention on unscoped price rows.
+
+## [4.40.0]
+
+Fold-back sprint: the three render skills. Eighteen demo-build learnings land as two new dw-render-razor references (the template compile contract and the paragraph-as-endpoint response contract), a view-model traps reference, a tag-contexts reference, and one rewrite of the stylesheet cache-buster guidance that was wrong rather than incomplete.
+
+- **A Razor template compiles warnings-as-errors at render time, so every compile message is a hard
+  render failure.** New `dw-render-razor/references/template-compilation.md` collects everything that
+  decides whether a template compiles and which template a request reaches: the symptom table for an
+  `[Obsolete]` call site and the current substitutes on DW 10.28.x, the `@using` rule for extension
+  methods, which helpers exist on `ViewModelTemplate<T>` versus the classic tag base (`GetGlobalValue`
+  and `@Html.Raw()` are absent, with the substitutes that work), `@Include` inlining every partial
+  into one compiled scope, and the `RenderPartial<T> : ViewModelBase` constraint with the three-rule
+  recipe for sharing one file across both template families. Previously these surfaced one compile
+  error at a time, each of which reads as a caching problem because the error page dumps the
+  generated listing and names the file nobody edited.
+
+- **`ParagraphTemplate` paths are fully qualified, because a relative path resolves against
+  `/Files/Templates/` and its miss is an HTTP 200 with English prose in the layout.** The failure is
+  invisible to every metric a storefront gate uses — status code, `dw-error` count, byte size — so
+  the same section tells a reader to grep the served markup for `Template file not found`.
+
+- **The paragraph-as-endpoint pattern now has a response contract.** New
+  `dw-render-razor/references/paragraph-endpoints.md` is one ordered recipe plus one table:
+  `PageClean` + `?ParagraphID=` addressing, keeping the endpoint out of the host page's composition
+  with an inactive grid row (MCP `save_grid_rows`) so the page's own response is unchanged, resolving
+  the endpoint by item type instead of by navigation tag, and what reaches the wire —
+  `Response.StatusCode` yes, `Response.AddHeader` yes, `Response.ContentType` no (the page pipeline
+  stamps `text/html` over it), `BinaryWrite` never (synchronous IO is disallowed under the in-process
+  IIS host), `Response.Clear()` inert. With delivery shapes that do work (attachment header, base64
+  data URI) and the parsing libraries already in bin — EPPlus, MiniExcel, CsvHelper — which make a
+  spreadsheet parse free of a deploy. No PDF renderer ships in bin.
+
+- **Surface rung named where SQL is the pull.** `UPDATE Page SET PageNavigationTag = …` leaves
+  `GetPageIdByNavigationTag()` returning `0` until the app pool recycles, is local-install only, and
+  owes a host restart; the item-type paragraph lookup is cache-fresh and owes nothing, so it is the
+  folded recipe and SQL appears only as the rung that does not reach the operation.
+
+- **A template guard decides what is drawn, not what is allowed.** A Dynamicweb app handles its POST
+  before its template renders, so a Razor-rendered refusal is a UI affordance; the test that tells
+  the two apart is a scripted POST in the same session with a before/after read of the protected
+  value, never a re-read of the page. Under impersonation, `Pageview.User` is the effective user and
+  cannot see the condition at all — `UserContext.Current.ImpersonatingUser` is the real identity.
+  Paired with the notification subscriber that is the rule which holds.
+
+- **`Context.Current.Items["ProductDetails"]` is the last product *rendered* in the request, not the
+  page's product** — so it is populated on a list page too, and `product != null` is not a test for
+  "this is a PDP". Branch on the page's own item type or an explicit view parameter.
+
+- **View-model properties that are nullable, and properties whose name is not their meaning.** New
+  `dw-render-viewmodels/references/viewmodel-traps.md`: `DefaultImage` and `Price` are nullable, and
+  in a template that loops the blast radius is the whole surface rather than the one row — one
+  image-less product replaces a catalogue with a `dw-error` dump at HTTP 200 with the chrome intact,
+  which a status-and-byte-count gate cannot see. Names the two shipped Swift 2.2 templates that
+  dereference `product.DefaultImage.Value` unguarded. Plus `MediaViewModel.Name` holding the detail
+  id while the friendly `EcomDetails.DetailsName` surfaces as `DisplayName`, and `StockLevel` being a
+  label rather than a quantity — a contradiction the skill's own example carried, now corrected.
+
+- **`AddStylesheet` appends the site's own token after any query string the caller supplied.** The
+  guidance in `razor-surfaces-and-pitfalls.md` §3 is rewritten rather than annotated: the site token
+  can be static across edits, deploys and restarts (observed 10.25.x through 10.28.x), which is why
+  an explicit `?v=` buster is needed at all, and the resulting double `?` in the emitted URL is
+  cosmetic — it serves 200 and does bust the cache.
+
+- **Tag names get proved from their renderer, because a blank table is not an unpopulated context.**
+  New `dw-render-templatetags/references/tag-contexts.md` carries the full RMA notification-email tag
+  set, whose prefix is `Ecom:Rma.` (mixed case — the only prefix on the platform that is not the
+  upper-cased entity name), whose order id is `OriginalOrderId` (derived from the first RMA order
+  line; `EcomRmas` has no order column) and whose status splits into `State` and `StateName`. It also
+  names the two things the renderer does not give a template, which still need a subscriber on
+  `Ecommerce.Rma.BeforeRmaEmailSend`. This corrects an earlier reading that the context was
+  unpopulated.
+
+- **A tag inside a loop may carry the parent entity's value.**
+  `Ecom:Cart.ShippingMethod.Price` in Swift's `Shippingmethods` loop is the order's shipping fee,
+  identical on every row, and there is no per-method price tag at all. Invisible on a stock install
+  where every fee is zero and every row reads "Free"; the first non-zero fee makes every method
+  display the selected method's price. With the template-side fix and the general test for any
+  in-loop tag.
+
+- **Reference hygiene.** `razor-surfaces-and-pitfalls.md` crossed the 20 KB reference ceiling, so its
+  `ViewModelTemplate<>` pitfalls section moved wholesale into `template-compilation.md` and the two
+  demo-skill routing rows that pointed at it were repointed. Duplicated worked examples in the two
+  render SKILL.md bodies were replaced with pointers to the reference files that already carry them,
+  bringing both back inside the 16,000-character activation budget.
+
+justdynamics/Truvio.Commerce.Foundry#750, justdynamics/Truvio.Commerce.Foundry#776,
+justdynamics/Truvio.Commerce.Foundry#784, justdynamics/Truvio.Commerce.Foundry#799,
+justdynamics/Truvio.Commerce.Foundry#800, justdynamics/Truvio.Commerce.Foundry#844,
+justdynamics/Truvio.Commerce.Foundry#848, justdynamics/Truvio.Commerce.Foundry#850,
+justdynamics/Truvio.Commerce.Foundry#868, justdynamics/Truvio.Commerce.Foundry#877,
+justdynamics/Truvio.Commerce.Foundry#878, justdynamics/Truvio.Commerce.Foundry#880,
+justdynamics/Truvio.Commerce.Foundry#881, justdynamics/Truvio.Commerce.Foundry#886,
+justdynamics/Truvio.Commerce.Foundry#894, justdynamics/Truvio.Commerce.Foundry#909
+
+## [4.39.0]
+
+**Correction, same release: Dynamo is MCP-only, and the boundary is now mechanical.** The in-product agent that loads `manifest.json` acts through the MCP tool set and read/write under `Files/`, and through nothing else — no Management API, no serializer, no SQL, no shell, no git, no browser, no host restart — so the first cut of this release told twenty in-product skills to drop to a rung that does not exist there, and gave headless installs and Dynamo one shared table column. The per-instance-type table now gives Dynamo its own column (MCP the only action surface; Management API, serializer and SQL absent; `Files/` read-write present; the admin UI named, never driven; asking the user the only fallback) and leaves headless with every rung. The `dynamo: true` boilerplate is MCP-only: when no tool covers the operation, stop and tell the user which admin screen performs it. `dw-data-access` (it ships PowerShell and is a ladder-and-SQL reference) and `dw-headless-delivery` (a `/dwapi/` catalog for a frontend built outside the product) flip to `dynamo: false` and leave the manifest; the two in-product facts the flip would have cost — success is not proof, and which writes owe a rebuild — become the new `dw-data-write-effects` skill, in MCP terms only. Six per-area `recipes-*.md` skeletons in `dw-data-access` give the out-of-product recipes a home for the folds that follow, `dw-skill-authoring` and `dw-demo-foldback` state the rule, and `scripts/validate-skills.py` enforces it against `scripts/dynamo-baseline.json` — a per-file ratchet over the pre-existing backlog, so no `dynamo: true` file may gain a non-MCP instruction.
+
+Contract change: the ladder of surfaces into an instance (MCP tools, Management API, serializer, direct SQL) gets one foundational owner, every skill's no-MCP paragraph names the next rung instead of stopping, and naming the surface becomes an authoring and fold-back gate.
+
+- **The ladder of surfaces into a Dynamicweb instance has one foundational owner, and every reader can reach it.** `dw-data-access/SKILL.md` gains `## Surfaces into a Dynamicweb instance — the action ladder`: four ranked rungs (1 MCP tools `snake_case`, 2 Management API `PascalCase` at `/admin/api/...`, 3 serializer layers, 4 direct SQL — last resort, local installs only), a per-instance-type table saying which rungs exist on a local, hosted and headless/Dynamo install, and the rules that hold at every rung (the admin UI is a rung-2 client and verification only; a verb-registry negative proves a verb absent, never a capability absent; capture the admin UI's own HTTP call read-only and replay it; success is not proof; API writes first, SQL last, nothing re-saves afterwards; never SQL-clone a structural tree). The serializer is on the ladder for the first time, with the rule that a layer beats a long MCP or API loop when the write is bulk or ids must survive. `dw-data-access` is `dynamo: true`, so the ladder now ships in `manifest.json` — previously the only complete statement lived in a demo skill that Dynamo never loads. The existing in-process section is renamed `## In-process C#: Service API vs the Database class` so its scope is unambiguous.
+
+- **"No MCP" no longer means "do nothing".** The `## Without MCP` (15 skills) and `## MCP preflight` (13 skills) boilerplate now names the next rung down — the Management API reaching the same domain services, the serializer for bulk id-preserving loads — states that direct SQL is local-install only and owes a flush or restart, and links to the owner section. Demo skills keep their preflight and gain the link plus a pointer to the demo deltas. `dw-setup-cli`'s `dw command` + `CommandByName` rung is reconciled as a CLI transport of the Management API, not a fifth surface.
+
+- **The demo documents keep only their deltas.** `dw-demo-pim/references/access-surfaces.md` no longer sells four co-equal surfaces to be picked by whichever is fastest, and no longer recommends SQL for structural fixes: it is now the PIM-specific application of the ladder (which rung owns which PIM operation, structural fixes stay on rungs 1-2, the filesystem is a different store and owes a `BuildIndex`) and links up. `dw-demo-base/references/surface-priority.md` keeps the two-phase model, the scaffold-phase bootstrap one-clicks, the Browser MCP scope, the long-form SQL-cloning detail and the silent-no-op round-trip rule, and points its build-phase rule at the owner instead of restating it.
+
+- **Naming the surface is now a contract, checked twice.** `dw-skill-authoring` "Writing the instruction body" states the convention: MCP tools `snake_case` in backticks, Management API commands `PascalCase` in backticks with the route on first use, serializer by command or by layer and mode, SQL labelled `SQL` in a fenced block; "verb" is reserved for Management API commands and "tool" for MCP; a table mixing surfaces carries a `Surface` column; every SQL recipe states why not a higher surface, local installs only, and the flush or restart it owes. `dw-demo-foldback` gains Step 1b.6 (surface-naming sweep) and the matching verification-gate line, so a fold that leaves a recipe surface-less does not pass.
+
+- **Locality sweep.** Per-recipe "SQL last resort" notes that carried no hosting qualifier now say `(local install only)` inline — `modelling-discipline.md`, `permission-layers.md`, `backend-mcp-server.md`, the demo build command and `visual-qa.md` — and the Direct SQL row of `cache-invalidation.md` "Surface scope" states the rung and the local-only rule. The 35 SQL recipes themselves are unchanged here; the per-cluster folds carry them.
+
+## [4.38.0]
+
+The Truvio Commerce rebrand, and the install rule it broke: an AppStore app is installed from the
+AppStore, never from a remembered NuGet id.
+
+- **The Backend MCP is now `Truvio.Commerce.MCP`** (AppStore app "Truvio Commerce MCP"), formerly
+  `Dynamicweb.MCP`. The pre-rename id still resolves on nuget.org, so an agent writing the id it
+  remembers gets a green restore, a green build and a **stale AddIn with no error to react to** —
+  the exact failure this release exists to prevent. `/admin/mcp` is unchanged.
+- **`backend-mcp-server.md` §1 is inverted.** Was "NuGet `PackageReference` (default), AppStore (last
+  resort)"; is now **AppStore first**. A hand-written `<PackageReference>` for an app the AppStore
+  carries (Backend MCP, PIM for Business Central connector, `StaticLinkManager`) is a defect. The
+  csproj route survives as an **escape hatch that requires an explicit user choice**: report which
+  AppStore route failed, state that **the AppStore version could not be resolved**, name the id and
+  version proposed and where they came from (a live resolve or the user, never memory), then wait for
+  a yes. An existing `Dynamicweb.MCP` reference in a host csproj gets removed.
+- **New `install-anatomy.md` §6, "Package naming after the rebrand, and the AppStore boundary"** —
+  the platform-level home for both rules. Old §6/§7 renumber to §7/§8; the three cross-references in
+  `dw-demo-base/references/scaffold.md` follow.
+- **Repo-wide terminology rule** in `CLAUDE.md` ("Product naming") and `dw-skill-authoring`
+  ("Naming"): the product is **Truvio Commerce (powered by Dynamicweb)**; the rebrand renames product
+  prose only. Namespaces, `Dynamicweb.Suite`, admin paths, `/dwapi/`, DB tables, `GlobalSettings`
+  keys, `dw-*` skill names, `dynamicweb-*` bundles, `doc.dynamicweb.dev` and `github.com/dynamicweb`
+  all keep "Dynamicweb". Newly published packages carry `Truvio.Commerce.*`. **Never write a package
+  id, app name or version from memory.**
+- **Reflection snippets stop hardcoding the assembly name.** `backend-mcp-server.md` §4 and
+  `dw-extend-csharp-api` now resolve the MCP assembly out of `AppDomain.CurrentDomain` matching either
+  id, and find the type by full-name suffix — correct before and after the rename.
+- Call sites updated: `dw-demo-base` (`scaffold.md` §2.1, `surface-priority.md` scaffold phase,
+  `mcp-setup.md` preamble + triage row), `dw-extend-mcp-tools/SKILL.md`, `dw-setup-install/SKILL.md`,
+  and `dw-extend-providers/references/addin-lifecycle.md` (the rule generalized to all AppStore AddIns).
 ## [4.37.0]
 
 New `dw-extend-admin-ui` skill: extending the administration interface from your own assembly.

@@ -16,7 +16,7 @@ Use PowerShell `Start-Process` so the host survives the spawning subshell, **and
 powershell -Command "Start-Process -FilePath 'dotnet' -ArgumentList 'run','--launch-profile','Dynamicweb.Host.Suite' -WorkingDirectory '<absolute-path-to-Suite>' -WindowStyle Hidden -PassThru -RedirectStandardOutput '<demo>\notes\logs\host-out.log' -RedirectStandardError '<demo>\notes\logs\host-err.log' | Select-Object -ExpandProperty Id"
 ```
 
-Returns PID. After kickoff, poll `/Admin` (or `/admin/api/api.json` with bearer) until 200, then proceed.
+Returns PID. After kickoff, poll `/Admin` (or `/admin/api/api.json`) until 200, then proceed. This is a liveness poll only: `api.json` answers 200 with no key or a wrong one, so it proves the host is up, not that the key works.
 
 **Do NOT** use plain `dotnet run` via Bash `run_in_background:true` — when the bash subshell ends, dotnet receives SIGHUP and the host dies after the next idle window. We've seen this fail with exit 127 mid-session.
 
@@ -43,6 +43,36 @@ if ($p) {
 `<PORT>` is the HTTPS port from `Dynamicweb.Host.Suite/Properties/launchSettings.json` (the discover-from-project-files source of truth — see `scaffold.md`). The ownership check costs one command and is what keeps a two-agent, two-host machine safe; a warning from it means the port assumption is wrong — rediscover the port from THIS demo's project files, never widen the kill.
 
 **Never force-kill during an index build.** A `Stop-Process -Force` mid-`BuildIndex` corrupts the index instance being written — leaving a "blocking repair candidate" / "must be recovered" state that a single rebuild does not clear (the recovery recipe is `dw-demo-swift/references/integrity-sweep.md` Check 5). Before stopping the host, confirm no Lucene build is in flight (`GET /admin/api/IndexStatusByRepositoryAndIndexName` — not `Running`); if one is, let it finish or use a graceful stop, and only force-kill a host that is genuinely wedged.
+
+## Proving zero restarts by attribution, not by process id
+
+A worker pid that is unchanged across the work is a fact to record, not the proof. It holds only while
+nothing else can restart the process, and on a shared IIS host something else can: a recycle schedule
+set once under `applicationPoolDefaults` restarts every pool at the same time of day, while each pool's
+own `recycling/periodicRestart` reads all zeros with an empty schedule, because it inherits the default.
+A pid proof on such a host only shows that the work finished before the schedule fired.
+
+A zero-restart claim asserts two things over the work window:
+
+1. **No agent-attributable restart.** No `appcmd` recycle, stop or set, no build or `dotnet run`
+   restart, no DLL copy into `bin/`, no `web.config` or `applicationHost.config` edit, no NuGet restore,
+   no `GlobalSettings.config` hand-edit. Each is separately assertable from the session's own command log.
+2. **Every recycle event in the window carries a reason that is not yours.** The WAS event message
+   names the reason (a scheduled recycle time, an elapsed-time limit, an on-demand request):
+
+```powershell
+# READ-ONLY. $from / $to bound the work window.
+Get-WinEvent -FilterHashtable @{ LogName = 'System'; ProviderName = 'Microsoft-Windows-WAS'
+                                 Id = 5074, 5076, 5079; StartTime = $from; EndTime = $to } -ErrorAction SilentlyContinue |
+  Select-Object TimeCreated, Id, Message
+# Where a machine-wide schedule lives (read the applicationPoolDefaults recycling block, not the pool's own):
+& "$env:windir\system32\inetsrv\appcmd.exe" list config /section:applicationPools
+```
+
+Every pool recycling within the same second for "reached its scheduled recycle time" is the machine
+schedule. An on-demand recycle in the window needs a named owner before the claim stands. Record the
+current worker pid beside the claim as a fact. A run that will span a known scheduled recycle says so up
+front and places any step that must not be interrupted around it.
 
 ## Visibility ≠ permission
 

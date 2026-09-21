@@ -3,6 +3,10 @@
 ## Contents
 
 - [Installation](#installation)
+- [Invocation: the routes](#invocation-the-routes)
+- [Inline scope](#inline-scope--narrowing-one-run)
+- [The YAML ownership header](#the-yaml-ownership-header)
+- [Migration note — the deprecated aliases](#migration-note--the-deprecated-aliases)
 - [Baseline shape](#baseline-shape)
 - [Internals — upstream pointer block](#internals--upstream-pointer-block)
 - [Common failure patterns and diagnostics](#common-failure-patterns-and-diagnostics)
@@ -11,9 +15,9 @@
 
 > Install + failure-triage reference for the DW Serializer. Owns: the **fact the Serializer exists** for any Dynamicweb demo, **how to install it in the demo host** (one-time-per-host DLL drop + config staging), **common failure patterns**, and **versioning / baseline compatibility**.
 >
-> **Operational baseline-deserialize steps** (POST `/Admin/Api/SerializerDeserialize`, integrity sweep, schema-drift workarounds) are owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md). Only Swift demos need that flow — PIM demos start from a blank/fresh DB.
+> **Operational baseline-deserialize steps** (POST `/Admin/Api/Deserialize`, integrity sweep, schema-drift workarounds) are owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md). Only Swift demos need that flow — PIM demos start from a blank/fresh DB.
 >
-> **The engine installs from a public NuGet package, not a repo clone.** The Serializer ships as the public NuGet package **`Truvio.Commerce.Serializer`** (**0.6.9-beta or newer**) — add it as a `PackageReference` to the host and restore. There is **no `$env:DW_SERIALIZER_REPO` clone step** and none is required to deserialize; a partner reproduces the whole flow from the package alone. A local clone of the engine repo is **optional**, and only for internals deep-dives — see "Internals — upstream pointer block" below. When this reference disagrees with the engine's published docs, the published docs win (the baseline-drift self-diagnosis rule: skill text is the second source of truth).
+> **The engine installs from a public NuGet package, not a repo clone.** The Serializer ships as the public NuGet package **`Truvio.Commerce.Serializer`**: add it as a `PackageReference` to the host and restore. **Never install a version copied out of a document, including this one.** The authoritative floor is the engine entry in the compatibility statement that ships with the layers you deserialize (the base layer's `base.contract.json`, `compat.apps`, the entry whose `id` is `Truvio.Commerce.Serializer`, field `min`); install the latest published engine release at or above it ("Installation" Step 1). There is **no `$env:DW_SERIALIZER_REPO` clone step** and none is required to deserialize; a partner reproduces the whole flow from the package alone. A local clone of the engine repo is **optional**, and only for internals deep-dives; see "Internals — upstream pointer block" below. When this reference disagrees with the engine's published docs, the published docs win (the baseline-drift self-diagnosis rule: skill text is the second source of truth).
 
 ## Installation
 
@@ -21,57 +25,118 @@ Add the NuGet package (Step 1), then stage the config (Step 2). Both are per-hos
 
 ### Step 1 — Add the `Truvio.Commerce.Serializer` NuGet package to the host
 
-The engine is the public NuGet package **`Truvio.Commerce.Serializer`** (pin **0.6.9-beta or newer** — the version that ships the `?mode=replace` / `?mode=merge` endpoint aliases and the flat `predicates` config schema this file documents). Add it as a `PackageReference` to `Dynamicweb.Host.Suite` and restore — the engine assembly flows into the host build automatically, so there is **no manual DLL build and no copy into `bin/Debug/<TFM>/`**:
+**Read the engine floor from the layers before installing anything.** The layers declare, machine-readably, the oldest engine that can deserialize them. An engine below that floor cannot load them at all: the failure is a rejected run, not a degraded one. Read the floor from the checked-out layers (see [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §3 for the checkout):
 
 ```powershell
-dotnet add Dynamicweb.Host.Suite package Truvio.Commerce.Serializer --prerelease   # resolves 0.6.9-beta+
-dotnet restore Dynamicweb.Host.Suite
+# The floor is data, not a constant. The layers' own compatibility statement is the authority, not this file.
+$contract = Get-Content "distribution\layers\base\base.contract.json" -Raw | ConvertFrom-Json
+$floor = ($contract.compat.apps | Where-Object id -eq 'Truvio.Commerce.Serializer').min
+if (-not $floor) { throw "No Truvio.Commerce.Serializer entry under compat.apps: ask the user where this solution states its engine floor." }
+$floor   # the floor typically trails the published engine by a release or two
 ```
 
-Pin an exact version in the csproj (`<PackageReference Include="Truvio.Commerce.Serializer" Version="0.6.9-beta" />`) so a demo reproduces on the same engine it was proven against; bump it deliberately when adopting a newer engine. Restart the host after the restore so the new assembly is loaded. (The package targets net8.0; .NET 10's runtime back-loads net8.0 assemblies fine — no TFM juggling, because NuGet resolves the assembly into the host's own build output.)
+Then install the **latest published release at or above `$floor`** as a `PackageReference` on `Dynamicweb.Host.Suite` and restore — the engine assembly flows into the host build automatically, so there is **no manual DLL build and no copy into `bin/Debug/<TFM>/`**:
+
+```powershell
+dotnet add Dynamicweb.Host.Suite package Truvio.Commerce.Serializer --prerelease   # latest release
+dotnet restore Dynamicweb.Host.Suite
+# Assert the resolved version is at or above $floor before going any further.
+dotnet list Dynamicweb.Host.Suite package --include-prerelease |
+  Select-String "Truvio.Commerce.Serializer"
+```
+
+Pin **the version the restore actually resolved** in the csproj (`<PackageReference Include="Truvio.Commerce.Serializer" Version="<resolved>" />`) so a demo reproduces on the engine it was proven against; re-read the floor and re-resolve when adopting a newer engine or a newer Distribution `main`.
+
+**Platform floor — the engine binds to Dynamicweb 10.28.x.** The package compiles against the `DynamicwebVersion` pin in its own csproj (a 10.28.1 prerelease on the current release line), and the app-store install filter compares the host's DW version against that pin, so a host on an older ring (10.27.x) is never offered the package and the assembly never loads there. Bring the host to 10.28.x **before** installing the engine; Serializer endpoints that 404 on a 10.27.x host are this, not a missing config.
+
+Restart the host after the restore so the new assembly is loaded. (The package targets net8.0; .NET 10's runtime back-loads net8.0 assemblies fine — no TFM juggling, because NuGet resolves the assembly into the host's own build output.)
 
 ### Step 2 — Stage `Files/System/Serializer/Serializer.config.json`
 
-The Serializer requires a config at `<host>/wwwroot/Files/System/Serializer/Serializer.config.json` (version-sensitive — see the path note below). Without one, `/Admin/Api/SerializerDeserialize` returns `Serializer.config.json not found (also checked ContentSync.config.json)`. The predicate config ships **with the layer being deserialized** — the `base` layer carries it under its `config/` tree (`distribution\layers\base\config\swift-2.3.json`); stage that as the starting point (or author one per the flat-`predicates` schema documented in "Replace vs Merge" below):
+The Serializer requires a config at `<host>/wwwroot/Files/System/Serializer/Serializer.config.json` (see the path note below). Without one, `/Admin/Api/Deserialize` returns `Serializer.config.json not found (also checked ContentSync.config.json)`. The predicate config ships **with the layer being deserialized** — the `base` layer carries it under its `config/` tree, one file per Swift release (`distribution\layers\base\config\swift-<version>.json` — take the one the checked-out base's `swiftVersion` names, never a filename copied from a document); stage that as the starting point (or author one per the flat-`predicates` schema documented in "Replace vs Merge" below):
 
 ```powershell
 $cfgDir = "Dynamicweb.Host.Suite\wwwroot\Files\System\Serializer"
 New-Item -ItemType Directory -Path $cfgDir -Force | Out-Null
 # The base layer's checked-out config tree (see deserialize-flow.md §3 for the Distribution checkout).
-Copy-Item "distribution\layers\base\config\swift-2.3.json" `
+# Resolve the filename from the layer, not from this file.
+$swift = (Get-Content "distribution\layers\base\base.contract.json" -Raw |
+          ConvertFrom-Json).swiftVersion
+Copy-Item "distribution\layers\base\config\swift-$($swift -replace '\.\d+$','').json" `
           "$cfgDir\Serializer.config.json" -Force
 ```
 
-**Path note (version-sensitive).** On DW **10.27.4** + Serializer engine **0.6.8-beta** the engine reads the config from `Files/System/Serializer/Serializer.config.json`. Older installs staged it at the `Files/` root (`Files/Serializer.config.json`); the engine's actual read location is what wins, so stage it where the running engine looks. Confirm the location on a given host by where the engine creates `SerializeRoot/` — it lands under `Files/System/Serializer/`, alongside the config (the deserialize flow reads `Files/System/Serializer/SerializeRoot/<deploy|seed>/`).
+**Path note.** The engine reads the config from `Files/System/Serializer/Serializer.config.json`. Older installs staged it at the `Files/` root (`Files/Serializer.config.json`); the engine's actual read location is what wins, so stage it where the running engine looks. Confirm the location on a given host by where the engine creates `SerializeRoot/` — it lands under `Files/System/Serializer/`, alongside the config (the deserialize flow reads `Files/System/Serializer/SerializeRoot/<replace|merge>/`).
 
-The config is a single flat `predicates: [...]` list with a per-entry `"mode"` field. **Read the engine version before trusting a shipped config's `mode` spelling** — the enum was renamed, and the loader rejects the other spelling outright rather than aliasing it (see "Replace vs Merge" below).
+The config is a single flat `predicates: [...]` list with a per-entry `"mode"` field spelled `Replace` or `Merge` (see "Replace vs Merge" below).
 
 **Validate the staged config with one call before deserializing anything:** `GET /Admin/Api/SerializerSettings` must return 200 with a non-empty `predicatesSummary`. On a config the loader rejects, *every* Serializer call 500s — including this read-only one — so a config authored for the wrong engine major is indistinguishable from a broken install until you make this probe.
 
 ### Verification
 
-After steps 1–2, restart the host. `/Admin/Api/SerializerDeserialize` should respond (a smoke POST typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
+After steps 1–2, restart the host — the restart is for the newly restored package, not for the config: `Serializer.config.json` is read on the request path [serializer 1.0.0-beta], so later config edits need no recycle, only a `GET /Admin/Api/SerializerSettings` read-back. `/Admin/Api/Deserialize` should respond (a smoke POST typically returns a structured result with `0 predicates` rather than a 404 / config-missing error). Once installed, baseline content is loaded via [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md).
 
-### Replace vs Merge (the predicate `mode` enum — version-sensitive)
+### Replace vs Merge (the predicate `mode` enum)
 
-Two **conflict strategies** for the same deserialize pipeline, set per predicate. **The enum spelling depends on the engine major, and the loader rejects the other spelling — it does not alias it:**
+Two **conflict strategies** for the same deserialize pipeline, set per predicate. On every engine at or above the Distribution floor the predicate `"mode"` field takes **`"Replace"` or `"Merge"`**, and the mode for a *run* travels in the JSON body of `Deserialize` ("Invocation — the three routes" below), or per document in the YAML ownership header ("The YAML ownership header" below). `IsDryRun` reports the `created / updated / skipped / failed` counts without writing — use it before every hosted deserialize.
 
-| Engine | Predicate `"mode"` accepts | Notes |
+*Tombstone: `"Deploy"` / `"Seed"` were the predicate enum on engines below the current floor — `ConfigLoader.ValidatePredicates` now throws `Unknown mode 'Deploy' for predicate '<name>' — valid values: Replace, Merge`, so a config carrying them 500s **every** Serializer call, the read-only `GET /Admin/Api/SerializerSettings` included.*
+
+When a layer ships a config, check its `mode` spelling before staging it — a config the loader rejects is indistinguishable from a broken install until that `SerializerSettings` probe is made. (The legacy `deploy: { predicates: [...] }` / `seed: { ... }` *shape* is rejected by `ConfigLoader` too.)
+
+### Invocation: the routes
+
+The Management API route is the command class name without `Command`, so the Serializer's entire
+callable surface is four POSTs [serializer 1.0.1-beta]:
+
+| Route | Command | Body |
 |---|---|---|
-| **0.8.x**+ | **`"Replace"` / `"Merge"`** | `Deploy`/`Seed` are **rejected**: `ConfigLoader.ValidatePredicates` throws `Unknown mode 'Deploy' for predicate '<name>' — valid values: Replace, Merge`. The mode for a run is passed in the **JSON body** — `POST /Admin/Api/SerializerDeserialize {"Mode":"Replace","StrictMode":false,"IsDryRun":false}`. `IsDryRun` reports the `created / updated / skipped / failed` counts without writing — use it before every hosted deserialize. |
-| **≤ 0.6.9-beta** | `"Deploy"` / `"Seed"` | `replace`/`merge` are accepted as aliases at the `?mode=` endpoint and as the layer mode-dir names `replace/` + `merge/`, but the predicate field keeps the enum spelling. Flow owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §4. |
+| `POST /Admin/Api/Serialize` | `SerializeCommand` | `{"Mode":"replace"\|"merge"}`, optional `"Scope":{...}` |
+| `POST /Admin/Api/Deserialize` | `DeserializeCommand` | the same, plus `StrictMode`, `QuarantineUnresolvableLinks`, `IsDryRun` |
+| `POST /Admin/Api/PackageDownload` | `PackageDownloadCommand` | flat `PageId`, `AreaId`, `Scope`, `IncludeAssets`; returns the zip |
+| `POST /Admin/Api/PackageUnzip` | `PackageUnzipCommand` | flat `FilePath`, `Mode`, `AreaId` (a `PackageDownload` zip only); unzips a zip already on the host into `SerializeRoot/<mode>/` |
 
-A config authored for one engine major therefore **500s the other on every call** — including `GET /Admin/Api/SerializerSettings`. When a layer ships a config, check its `mode` spelling against the engine the host actually runs before staging it. (The legacy `deploy: { predicates: [...] }` / `seed: { ... }` *shape* is rejected by `ConfigLoader` on every version.)
+`PackageDownload` is the **page-package zip** route, and its `Scope` is an enum —
+`PageAndSubpages`, `PageOnly` or `SubpagesOnly` — plus a boolean `IncludeAssets`. It hands back a
+file and writes nothing into the baseline. A **subtree serialize that folds into the mode
+manifest** is a different thing entirely: that is `Serialize` with an inline `Scope` object
+("Inline scope" below). Reach for `PackageDownload` only when the deliverable is the zip.
 
-**`Mode` goes in the BODY, and an omitted `Mode` DEFAULTS TO REPLACE.** `SerializerDeserialize` is a
-flat (non-`Model`-wrapped) POST command: `Mode` is read from the JSON body only, a `Mode` on the query
-string has no effect, and the property's default value is `Replace` rather than an
-explicit-required value. `{"IsDryRun":true}` alone therefore runs a Replace dry run, which means **an
-empty `{}` body executes a LIVE REPLACE against the target**. Always send `Mode`; never send `{}`.
-Verified body forms on 10.28.8:
+**`PackageUnzip` is how a serialized tree reaches a host you cannot copy files onto.** It does no
+upload: send the zip with the standard `POST /Admin/Api/Upload` into `/Files/System/Serializer/Upload/`,
+then unzip and deserialize [serializer 1.0.1-beta]:
 
 ```
-POST https://<host>/Admin/Api/SerializerDeserialize      Authorization: Bearer CLAUDE.<hex>
+POST /Admin/Api/PackageUnzip {"FilePath":"/Files/System/Serializer/Upload/layer.zip","Mode":"replace"}
+POST /Admin/Api/Deserialize  {"Mode":"replace"}
+```
+
+- **It replaces the whole `SerializeRoot/<mode>/` folder.** Whatever was staged in that mode is gone, so
+  the next `Deserialize` of the mode applies exactly the zip.
+- **Two zip shapes.** A mode tree: the contents of `SerializeRoot/<mode>/`, with `<mode>-manifest.json`
+  at the zip root (not wrapped in a folder) and a manifest name that matches `Mode`. Or a
+  `PackageDownload` zip: pass `AreaId`; it lands under `_content/` with a whole-area manifest entry, and
+  its bundled `_assets/` files are not restored into the Files archive (the response says how many).
+- **`FilePath`** is a `/Files` path; a bare file name resolves to `/Files/System/Serializer/Upload/`.
+- **A rejected zip changes nothing.** Over 256 MB, over 1 GB unzipped, over 100,000 files, an absolute
+  or `..` entry, a wrapped tree or the other mode's manifest answers `Invalid` before anything is
+  written; the unzip goes to a staging folder and is swapped in only when complete.
+- **Grants.** `PackageUnzip` needs the package upload grant; `PackageDownload` needs the package
+  download grant and Read on the page. Both grants are open until an admin manages them.
+
+1.0.1-beta removed, with no alias, the `SerializerUploadRoot` command and the single-package admin UI:
+the Download Package and Upload Package actions, Import to database on zip files, the Deserialize
+from zip screens and their routes, and the Permissions group on the Serialize settings screen. On an
+older host you may still meet them; on a current one the transfer is `PackageDownload` out, and
+`Upload` plus `PackageUnzip` in.
+
+**There is one deserialize invocation shape: a flat JSON body carrying `Mode`.** `Deserialize` is a
+flat (non-`Model`-wrapped) POST command whose `Mode` property defaults to `Replace` rather than being
+explicit-required, so `{"IsDryRun":true}` alone runs a Replace dry run and **an empty `{}` body
+executes a LIVE REPLACE against the target**. Always send `Mode`; never send `{}`. Body forms:
+
+```
+POST https://<host>/Admin/Api/Deserialize      Authorization: Bearer <api-token>
 
 {"IsDryRun": true,  "Mode": "Replace"}     # dry run, replace tree
 {"IsDryRun": true,  "Mode": "Merge"}       # dry run, merge tree
@@ -79,13 +144,117 @@ POST https://<host>/Admin/Api/SerializerDeserialize      Authorization: Bearer C
 {"IsDryRun": false, "Mode": "Merge"}       # real run
 ```
 
-Values are Pascal-case. The response is `{"status":"ok"|"error","message":"..."}`; on a strict-mode
+`StrictMode` (bool) and `QuarantineUnresolvableLinks` (bool) ride in the same body. Mode values parse
+case-insensitively into the engine's `SerializerMode` enum; write them Pascal-case. The canonical
+two-pass call — replace first, then merge — is:
+
+```powershell
+foreach ($m in @("Replace", "Merge")) {
+  $body = @{ Mode = $m; IsDryRun = $false } | ConvertTo-Json
+  Invoke-RestMethod -Uri "https://<host>/Admin/Api/Deserialize" -Method POST `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" -Body $body -SkipCertificateCheck
+}
+```
+
+Run it dry first (`IsDryRun = $true`) and read the entry count, per "Read the ENTRY COUNT" below.
+
+**A `?mode=` on the query string OVERRIDES the body `Mode`. Never send both.** Measured
+[serializer 0.9.0-beta] and unchanged since: `POST /Admin/Api/Deserialize?mode=merge` with body
+`{"Mode":"Replace","IsDryRun":true}` runs a **Merge**. The engine consults the query parameter only
+when the body `Mode` still holds its `"replace"` default — and since that default is the very string
+the common call sends, a body saying `Replace` is indistinguishable from a body saying nothing, so
+`?mode=merge` wins every time the body says `Replace`. Only a body `Mode` of `Merge` is out of the
+query parameter's reach. `?scope=` is a query fallback on the same footing, with the same rule. The
+host's own OpenAPI document (`GET /Admin/Api/api.json`) declares a request body for this command and
+no parameters array at all, so the binding is undocumented as well as override-shaped. One shape:
+`Mode` in the body, nothing on the query string. The same body-then-query precedence applies to
+`strictMode`, `dryRun` and `quarantineUnresolvableLinks`.
+
+The response is `{"status":"ok"|"error","message":"..."}`; on a strict-mode
 escalation the HTTP code is 400 with `status:"error"` and the escalated warnings inline in `message`,
 which names the failing `entryId`, so read `message` rather than the code alone. Same transport rules
 as the rest of the surface: queries are GET, commands are POST, a wrong verb is a 400 "Unknown
 command" / "Unknown query" and never a 404. Command bodies are `{"Model":{...}}`-wrapped for models
-(`AreaSave`) and **flat** for simple commands (`BuildIndex`, `SerializerDeserialize`); the wrapping
+(`AreaSave`) and **flat** for simple commands (`BuildIndex`, `Deserialize`); the wrapping
 error is literally `{"Command.Model":["Command.Model cannot be null"]}`.
+
+### Inline scope — narrowing one run
+
+Both `Serialize` and `Deserialize` take an optional inline `Scope` object that narrows the run to
+part of what the config already covers [serializer 1.0.0-beta]. Two shapes:
+
+```
+{"Mode":"replace", "Scope":{"areaId":3, "path":"/Shop/Products"}}    # content scope
+{"Mode":"replace", "Scope":{"table":"EcomProducts"}}                 # SQL-table scope
+```
+
+**The contract is: fall inside, and only narrow.** The scope must land inside a configured predicate
+**of the same mode**, and it may only make that predicate smaller —
+
+- `excludes` are **unioned** (the run excludes the predicate's set plus yours),
+- `where` clauses are **ANDed** onto the predicate's own,
+- `includeFields` must be a **subset** of the predicate's.
+
+Anything that would widen the predicate, or that matches no predicate of that mode, is rejected
+before the run with HTTP `Invalid` and a message starting `Inline scope rejected (...)`. Read the
+parenthesis: it names which rule the scope broke.
+
+**On `Deserialize`, a SqlTable scope is a table name and nothing else.** `where`, `includeFields`,
+`excludeFields` and `excludeXmlElements` are all rejected on that path — the deserialize side has no
+way to honour a partial row. A content scope carries the full `areaId` + `path` shape on both verbs.
+
+A **scoped serialize folds into the mode manifest** — it rewrites the entries it covered and leaves
+the rest of the manifest alone. That is a deliberate non-cleanup: it will not remove entries that
+have gone stale outside the scope, so a scoped serialize is a surgical update, never a re-baseline.
+
+### The YAML ownership header
+
+Every document the serializer writes now opens with an ownership header — quoted keys, one mode
+[serializer 1.0.0-beta]:
+
+```yaml
+"ownership":
+  "mode": "replace"
+```
+
+`Deserialize` honours it **per document**, so one run can carry documents of both ownerships and each
+lands under its own conflict strategy. A document **without** the header runs with the **pass mode** —
+the `Mode` in the body — which is exactly why every layer authored before this header exists
+deserializes unchanged: absence means "do what the pass says", not "reject".
+
+**Upgrade hosts together.** The header is a format change in both directions: an older serializer
+reading SQL rows a current one wrote fails strict on the unknown `ownership` column
+[serializer 0.9.0-beta]. A mixed estate is the failure mode, not a version skew per se. Re-serialize
+baselines with the current engine when convenient; nothing forces it, because the read path is
+backward-tolerant and only the old engine is not.
+
+### Migration note — the deprecated aliases
+
+Three old route names still answer through the beta and are **removed in the 1.0.0 release**
+[serializer 1.0.0-beta]. Call the new names; this table exists so you recognise the old ones in an
+existing script, not so you write them.
+
+| Deprecated alias | Call instead | Note |
+|---|---|---|
+| `SerializerSerialize` | `Serialize` | identical parameters, binding, query fallbacks, work and HTTP status |
+| `SerializerDeserialize` | `Deserialize` | same |
+| `SerializeSubtree` | `PackageDownload` | the alias **never** serialized into the baseline; it was always the zip |
+
+Two observable differences while an alias is still answering:
+
+1. A message response gains one appended sentence — `Deprecated: '<old>' is an alias of '<new>' and
+   is removed in the 1.0.0 release. Call '<new>' instead.` A **file** response (the `PackageDownload`
+   zip) carries no notice at all.
+2. The run log gains a line prefixed `DEPRECATED` — **not** `WARNING`, so strict mode does not
+   escalate it and a strict run over an alias still passes. The line is written only when the run
+   reaches the orchestrator; an early exit (invalid mode, a rejected inline scope, a missing config,
+   `Mode subfolder not found`, `contains no YAML files`) returns before the log flushes, while the
+   appended sentence is on the message either way.
+
+The appended sentence is the migration hazard worth naming: **a caller comparing `Message` for exact
+equality breaks; a caller matching a prefix keeps working.** Check any assertion you own against
+`Message` before pointing it at an alias.
 
 **Dry-run CONTENT counts under-report by design; only `failed > 0` gates.** A dry run cannot create
 parents, so every child whose parent would not yet exist is deferred rather than counted. A
@@ -93,14 +262,55 @@ parents, so every child whose parent would not yet exist is deferred rather than
 composition: the real run created all 77 pages and 104 paragraphs (dry Replace 724 created / 8 updated
 / 64 skipped / 0 failed over 19 entries, real Replace 984 / 10 / 33 / 0). Content counts in a dry run
 are a lower bound, not a prediction. Gate the dry run on `failed == 0` and the absence of escalated
-strict-mode warnings, nothing else.
+strict-mode warnings.
 
-**Always pass `?mode=` explicitly on 0.6.9 — both passes.** A mode-less `POST /Admin/Api/SerializerDeserialize` on engine 0.6.9-beta targets the **legacy `deploy` folder** rather than `SerializeRoot/replace/`, and returns **HTTP 400 `deploy contains no YAML files`** against a layer that stages `replace/`+`merge/`. Run `?mode=replace` first, then `?mode=merge` — never a bare POST. The two-pass sequence + snippet is owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §4.
+**Read the ENTRY COUNT as well — it is not a count, it is the blast radius.** `failed == 0` is
+necessary and not sufficient: a dry run reporting `94 created, 252 updated, 680 skipped, 0 failed
+across 19 entries` is a perfectly healthy-looking line describing a run that is about to rewrite
+nineteen entries of somebody else's baseline. Match the entry count, and the entry ids, against what
+you intended to run, every time, before the real run. The mechanism that makes this the load-bearing
+readout is next.
+
+**Deserialize is driven by the MANIFEST under `SerializeRoot`, not by the config predicates.**
+`Deserialize` resolves what to run from `SerializeRoot/<mode>/<mode>-manifest.json` and
+walks the entries it finds there. `predicates` and `outputDirectory` in `Serializer.config.json`
+govern **serialize** (and validation) only — on the deserialize path `outputDirectory` is not
+consulted at all, so the engine reads the default `Files/System/Serializer/SerializeRoot` regardless
+of where the config points, and it does so across an app-pool restart. A config narrowed to one
+predicate, with the layer tree correctly staged under a private root, therefore dry-ran all nineteen
+entries of an unrelated baseline — including a `content/area-<id>` entry with 188 updates that a real
+run would have written over six phases of content edits. It reported `0 failed` while being
+completely wrong about what it would write. (Same family as the `Mode` default above: an input the
+caller believes is authoritative is ignored, and the silent default is the widest possible blast
+radius.)
+
+**To deserialize ONE entry, swap the manifest — narrowing the config does nothing.** The proven
+staging recipe, which a composer script should own end to end:
+
+1. Build the rewritten layer tree in the **workspace**, never in place under `SerializeRoot`.
+2. Assert the staged set both ways: every file the manifest names exists on disk, **and** no staged
+   file is missing from the manifest.
+3. Back up the three live files — `SerializeRoot/<mode>/<mode>-manifest.json`, the mode tree's own
+   `_content/templates.manifest.yml`, and `Serializer.config.json`. **Guard the manifest backup with
+   `entries.length > 1`**, so a re-stage cannot overwrite the baseline backup with the already-staged
+   one-entry manifest.
+4. Copy the tree in and swap both manifests and the config.
+5. Dry-run and **read the entry count**: exactly one entry, named, with zero mentions of any other
+   area. That is the gate; `0 failed` is not.
+6. Run, then unstage: delete the staged tree, restore the three files, and **assert
+   `SerializeRoot` is byte-for-byte back** (file count, manifest entry count, config predicate
+   count), throwing if it is not.
+
+Between stage and unstage the manifest carries exactly one entry, so a Replace run can only reach
+that entry. Prove the containment with a before/after measurement on an area the run must not touch
+(pages, paragraphs and grid rows identical on both sides).
+
+**A run reads only its own mode subfolder.** `Mode: "Replace"` walks `SerializeRoot/replace/`, `Mode: "Merge"` walks `SerializeRoot/merge/`; a missing subfolder returns `Mode subfolder not found: <path>` and an empty one returns `<path> contains no YAML files`. Both are staging faults, not engine faults. The two-pass *sequence* in a Swift build is owned by [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) §4; the call shape is owned here.
 
 | Mode (dir / alias) | `"mode"` field | Conflict strategy | Use for |
 |---|---|---|---|
-| **replace** | `Replace` (0.8.x) / `Deploy` (≤0.6.9) | Source-wins. Re-deserialize overwrites target. | Developer-owned deployment data: shop structure, item types, VAT rates, country list, payment method definitions. Identical across envs. |
-| **merge** | `Merge` (0.8.x) / `Seed` (≤0.6.9) | Field-level merge. YAML fills only fields the target has not set; customer edits preserved across re-deploys. | First-run content: Customer Center welcome copy, FAQ body text, newsletter templates. Bootstrap data that transitions to customer ownership. |
+| **replace** | `Replace` | Source-wins. Re-deserialize overwrites target. | Developer-owned deployment data: shop structure, item types, VAT rates, country list, payment method definitions. Identical across envs. |
+| **merge** | `Merge` | Field-level merge. YAML fills only fields the target has not set; customer edits preserved across re-deploys. | First-run content: Customer Center welcome copy, FAQ body text, newsletter templates. Bootstrap data that transitions to customer ownership. |
 
 For Swift `base` layer restore ([`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md)), the meaningful pass is **replace**; the **merge** pass runs but the base ships no catalog, so it lands nothing (see deserialize-flow §4).
 
@@ -127,6 +337,17 @@ Two operational facts worth keeping in mind without loading upstream docs:
 
 ## Common failure patterns and diagnostics
 
+### Strict-mode false positives — a 400 whose warnings describe no defect
+
+Strict mode escalates *every* warning, so a run that writes correctly can still answer 400. Before
+treating a 400 as a payload defect, check the escalated warning list against this table: when every
+listed warning is one of these, the run is sound and the response code carries no information.
+
+| Escalated warning | Fires when | Why it is a false positive | Do this |
+|---|---|---|---|
+| `Warning: Area with ID <n> not found. Skipping entry 'content/area-<n>...'` | A **dry run** (`IsDryRun: true`) whose replace tree would create that area for the first time. The run reports `0 failed` and every `content/area-<n>` entry reports `C0 U0 S0 F0`. | The content provider resolves the target area by id *before* applying `area.yml`. A dry run never writes, so the area cannot come into existence mid-run and the provider takes its skip branch; the live path instead logs `Area created: ID=`. On an empty target the preview of a first-ever content import is structurally incapable of returning 200. | Confirm the escalated list contains **only** this warning, then proceed to the live run with the same body and `IsDryRun: false`. The live run returns 200 and creates the area. Assert: with `SELECT COUNT(*) FROM Area` = 0 the dry run 400s on this warning alone, and the live run answers 200 with `SELECT COUNT(*) FROM Area` = 1. |
+| `WARNING: Missing grid-row template: '<n>Column...Email'` | A merge pass over content that carries newsletter/email grid rows, on a host where the definition file does exist under `Files/Templates/Designs/Swift-v2/Grid/Email/RowDefinitions/`. The run itself reports `0 failed`, and the warning repeats once per content entry processed after the newsletter pages, so its multiplicity carries no information. | The engine's grid-row template resolver scans only `Grid/Page/RowDefinitions/`, so every definition that lives under `Grid/Email/RowDefinitions/` is unfindable to it while being perfectly resolvable to the frontend. | Verify the named `.json` exists under some `Grid/*/RowDefinitions/` folder, then accept the run. Assert: every `definitionId` used anywhere in the composed `SerializeRoot` has a matching `.json` under some `Designs/Swift-v2/Grid/*/RowDefinitions/`; when that holds and the response reports `0 failed`, a `Missing grid-row template` escalation is a PASS. Do **not** null the reference on the source and do **not** turn strict mode off to get past it. |
+
 ### "FK orphan on EcomGroupId" (or any FK warning)
 
 **Symptom:** `WARNING: Could not re-enable FK constraints for [EcomShopGroupRelation]: ... FOREIGN KEY constraint "DW_FK_..."`.
@@ -143,6 +364,8 @@ WHERE NOT EXISTS (
   SELECT 1 FROM [EcomShops] s WHERE s.ShopId = r.ShopGroupShopId
 );
 ```
+
+**Local installs only**: a hosted install has no read path for orphaned relation rows, so an online build asks the user.
 
 **Fix paths:**
 
@@ -163,6 +386,8 @@ WHERE NOT EXISTS (
 SELECT * FROM [ItemType_Swift-v2_Logo]
 WHERE Link LIKE '%Default.aspx?%=3421%';
 ```
+
+**Local installs only**: on a hosted install, read the candidate paragraphs' `Link` values with `get_paragraph_item_field_values`.
 
 **Fix paths:**
 
@@ -194,18 +419,22 @@ WHERE Link LIKE '%Default.aspx?%=3421%';
 **Fix paths:**
 
 1. Deploy the missing template alongside the DLL (filesystem rsync / git pull / Azure Files sync).
-2. Null the stale reference on source. For Swift 2.2, `tools/swift22-cleanup/05-null-stale-template-refs.sql` covers three known-stale templates (`1ColumnEmail`, `2ColumnsEmail`, `Swift-v2_PageNoLayout.cshtml`).
+2. Null the stale reference on source, once you have confirmed the file really is absent. For the legacy Swift 2.2 cleanup set, `tools/swift22-cleanup/05-null-stale-template-refs.sql` nulls three references (`1ColumnEmail`, `2ColumnsEmail`, `Swift-v2_PageNoLayout.cshtml`). The two email ones are **not** stale on a current design tree — their definitions ship under `Grid/Email/RowDefinitions/` and the engine merely fails to look there (see "Strict-mode false positives" above). Running that cleanup against a current baseline deletes live references; check the disk before nulling anything.
 
 ## Versioning and baseline-format compatibility
 
 The Serializer's API surface (Management API commands, predicate shape, YAML format) is **stable for the current release line** (per upstream README). Config schema and runtime-exclusion defaults may evolve before 1.0.
+
+### Reading the engine floor
+
+The floor is **the engine entry in the layers' own compatibility statement**: `base.contract.json` in the base layer, `compat.apps`, the entry whose `id` is `Truvio.Commerce.Serializer`, field `min`. It is the floor a gate enforces and the only version statement to act on. A contract can carry other serializer-version fields beside it, left over from an older schema; they are not the floor, and where one disagrees with the `compat.apps` entry, the entry wins. A base that raises the floor does so because it ships something older engines drop or reject (for example the YAML-carried page/grid-row/paragraph `permissions:` blocks), so an engine below the floor produces a run that is rejected outright or, worse, silently missing what the floor was raised for. Read it, install the latest release at or above it, record the resolved version alongside the commit SHA of the layers you deserialized in the demo's own notes. Both floors are gates: this one, and the platform floor in "Installation" Step 1.
 
 ### How to tell if a baseline is too old
 
 Three signals:
 
 1. **`SourcePageId` missing** from page YAML → baseline pre-dates the Serializer's cross-environment link-rewriting support. Re-serialize from a current Serializer version.
-2. **Legacy `deploy: { predicates: [...] }` / `seed: { ... }` config shape** → older config schema. ConfigLoader rejects it in favour of the flat `predicates: [...]` list. Migrate the config; YAML payloads are unchanged. A config carrying the *right* shape can still be rejected for the wrong `mode` spelling — match the enum to the engine major ("Replace vs Merge" above).
+2. **Legacy `deploy: { predicates: [...] }` / `seed: { ... }` config shape, or `Deploy`/`Seed` `mode` spellings** → older config schema. ConfigLoader rejects both in favour of the flat `predicates: [...]` list with `Replace`/`Merge` modes. Migrate the config; YAML payloads are unchanged ("Replace vs Merge" above).
 3. **`UpdateVersion_ecom.xml` style update tracking** → pre-DW-9.14 era. Not a Serializer issue per se; affects the host DW10's update-manager queue (see `../../dw-setup-upgrade/references/db-update-recovery.md`).
 
 ### How baselines roll
@@ -218,9 +447,14 @@ Baseline rolls happen out-of-band — when Dynamicweb ships a new Swift release,
 |---|---|
 | Install the Serializer in the demo host (build DLL, copy to bin, stage config) | "Installation" section above |
 | Run a baseline content deserialize (Swift demos only) | [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) |
+| Call `Deserialize` (the one body shape, both passes) | "Invocation: the routes" above |
+| Narrow a run to one area or one table without re-staging a manifest | "Inline scope — narrowing one run" above |
+| Download a page-package zip (`PackageDownload`) | "Invocation: the routes" above |
+| Put a serialized tree onto a host (`Upload`, then `PackageUnzip`) | "Invocation: the routes" above |
+| Recognise a deprecated alias in an existing script | "Migration note — the deprecated aliases" above |
 | Post-deserialize integrity checks | [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md) |
 | Recover from DW10 update-queue bugs (independent of Serializer) | `../../dw-setup-upgrade/references/db-update-recovery.md` |
-| Install the engine into the host | NuGet `Truvio.Commerce.Serializer` (0.6.9-beta+) — "Installation" Step 1 above (no repo clone) |
+| Install the engine into the host | NuGet `Truvio.Commerce.Serializer`, latest release at or above the `compat.apps` engine floor in the layers' `base.contract.json`; see "Installation" Step 1 above (no repo clone) |
 | Serializer internals — architecture, YAML schema, strict mode, link resolution, tools (canonical) | the `Truvio.Commerce.Serializer` engine repo `docs\` + source — an **optional** clone ("Internals — upstream pointer block" above) |
 
 

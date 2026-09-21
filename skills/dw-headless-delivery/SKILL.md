@@ -3,8 +3,8 @@ name: dw-headless-delivery
 type: knowledge
 group: headless
 mcp: none
-dynamo: true
-description: 'Build decoupled frontends using the Dynamicweb 10 /dwapi/ delivery API. Covers authentication, content, ecommerce, users, navigation, forms, and query endpoints. Triggers: REST API, delivery API, headless frontend, decoupled architecture, /dwapi/, React integration, Vue integration, Angular integration, HTMX integration, web components, fetch content from API, headless CMS, headless commerce. Non-triggers: server-side Razor templates -> dw-render-razor; building traditional Swift storefront -> dw-swift-building.'
+dynamo: false
+description: 'Build decoupled frontends with the Dynamicweb 10 /dwapi/ delivery API. Triggers: headless CMS or commerce, REST API, React, Vue, Angular, HTMX, content or query endpoints. Non-triggers: Razor -> dw-render-razor; Swift storefront -> dw-swift-building.'
 ---
 
 # Dynamicweb Headless Delivery API

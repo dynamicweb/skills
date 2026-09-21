@@ -4,8 +4,7 @@ type: knowledge
 group: commerce
 mcp: none
 dynamo: false
-description: >-
-  Build and operate a Carrot Solutions CPQ configurator on Dynamicweb 10 - the model/version/group/input hierarchy, the input, BOM, price and output rule engine, catalogue-driven Lookup Lists, the CPQ page and item types, and the card-as-quote model. Triggers: build a product configurator, model CPQ inputs or rules, write an input rule or BOM rule, drive configurator options from the product catalogue, publish a CPQ page, understand CPQ cards and revisions, decide whether CPQ needs an ERP, a CPQ page renders blank or unthemed, configurator options come back empty. Non-triggers: Dynamicweb variants and BOM on the product record -> dw-pim-modelling; discounts and vouchers on the order -> dw-commerce-orders; the Business Central connector itself -> dw-integration-bc.
+description: 'Build Carrot Solutions CPQ configurators on DW10. Triggers: input/BOM/price rules, Lookup Lists, CPQ pages/cards, ERP requirements, blank pages or empty options. Product variants/BOM -> dw-pim-modelling; discounts -> dw-commerce-orders.'
 ---
 
 # Dynamicweb CPQ

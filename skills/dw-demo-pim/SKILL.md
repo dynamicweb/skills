@@ -4,7 +4,7 @@ type: flow
 group: demo
 mcp: required
 dynamo: false
-description: 'Dynamicweb 10 PIM modelling -- starts from a blank/fresh DB, building product data from scratch via MCP (no baseline deserialize). Triggers: modelling PIM data structures (shops vs channels, repositories/indexes, variants, BOM, categories, assortments, Dynamic Workspaces), choosing Storefront-first vs PIM-first setup order, fixing "completeness rules don''t show", building PIM dashboards, GUID-collision errors in the Products tree, designing the product workflow / approval flow, designing the role/permission matrix for a PIM team, translating products into additional EcomLanguages, recovering from data-load mishaps or stale indexes, post-mutation cache invalidation. Non-triggers: setup/MCP/TLS issues -> dw-demo-base; storefront/content/re-skin -> dw-demo-swift; ERP -> dw-demo-erp. Use AFTER dw-demo-base (assumes MCP connected with >200 tools).'
+description: 'Build DW10 PIM demos from a blank database. Triggers: variants/BOM, workspaces/dashboards, completeness, approvals, team permissions, languages, GUID collisions, data-load/cache recovery. Use AFTER dw-demo-base.'
 ---
 
 # Dynamicweb PIM Demo Skill
@@ -15,6 +15,11 @@ This skill drives the Dynamicweb MCP server — its steps are tool calls. Before
 verify the Dynamicweb MCP tools are available. If they are not, stop and tell the user the
 MCP connection is missing; do not substitute direct SQL, file edits, or guessed HTTP calls
 for the tool calls this skill names.
+
+The ladder those rungs belong to is foundational —
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"; the demo deltas
+(phase gate, scaffold one-clicks, Browser MCP) are in
+[`dw-demo-base/references/surface-priority.md`](../dw-demo-base/references/surface-priority.md).
 
 PIM modelling, structural mental model, governance, and recovery for Dynamicweb 10 demo builds. **Use AFTER** `dw-demo-base` -- this skill assumes MCP is connected with >200 tools. If MCP isn't connected, fix that there first ([dw-demo-base/references/mcp-setup.md](../dw-demo-base/references/mcp-setup.md)).
 
@@ -55,7 +60,7 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 
 | If you need to... | Read this reference |
 |---|---|
-| Pick the right access surface (MCP / API / SQL / FS) for a given task | references/access-surfaces.md |
+| Which rung of the action ladder a given PIM task belongs on, and the per-project reference paths | references/access-surfaces.md |
 | Understand the structural model (incl. §2.3a native "Publish to channel" action, §2.5a single-axis variants, §2.11 Pricing / `PriceQuantity>0` cart gotcha, §2.12 Dynamic Workspaces) | references/structural-model.md |
 | Pick the right setup-order variant — Storefront-first or **PIM-first** (no `ShopType=1` shop, Dynamic Workspaces + workflow-driven) | references/canonical-setup-order.md (§0 decision matrix at top) |
 | Diagnose "rules don't show", build dashboards, recover from missing seed rows or stale indexes | references/governance.md |

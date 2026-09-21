@@ -91,6 +91,8 @@ A plain string array binds fine despite the DTO declaring `IEnumerable<ScreenPre
 by `SELECT COUNT(*) FROM ScreenPresetColumns` per preset against the intended column count, and by
 the worklist grid rendering the named headers.
 
+**Local installs only** for the `SELECT`: on a hosted install, the rendered worklist grid is the check.
+
 ## Screen presets: create, audience, default
 
 **Sweep `ScreenPresetAccessUserRelation` before creating the first preset.** `ScreenPresetDelete` does
@@ -103,6 +105,8 @@ that stale audience:
 DELETE r FROM ScreenPresetAccessUserRelation r
 WHERE NOT EXISTS (SELECT 1 FROM ScreenPreset p WHERE p.ScreenPresetId = r.PresetRelationPresetId);
 ```
+
+**Local installs only**: a hosted install has no documented path that sweeps orphaned relation rows; set each new preset's audience with `ScreenPresetSetRelations` and read it back on the rendered screen.
 
 **`ScreenPresetSetAsDefault` with `SelectedPresetId = 0` is the un-set.** There is no Remove / Clear /
 Unset verb and the UI offers no affordance on the edit screen. The set verb doubles as the un-set:

@@ -4,17 +4,20 @@ type: knowledge
 group: commerce
 mcp: optional
 dynamo: true
-description: 'Render product catalogs and assortments in Dynamicweb 10, and convert or set a product price in a specific currency through the MCP tools. Triggers: ProductListViewModel, catalog display, assortment rendering, convert an amount between currencies, set a price in a non-default currency. Non-triggers: product workflow -> dw-pim-workflow; orders and checkout -> dw-commerce-orders.'
+description: 'Render Dynamicweb 10 catalogs and assortments, and manage currency-specific prices. Triggers: ProductListViewModel, catalog display, assortment rendering, currency conversion, set product price. Non-triggers: orders or checkout -> dw-commerce-orders.'
 ---
 
 # Product Catalog Rendering
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
-apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
-review, or produce payloads and configuration for the user to apply — and do not substitute
-direct SQL, file edits, or guessed HTTP calls for those tool calls.
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the way to apply it, and
+in-product they are the only way — the MCP tool set plus read/write under `Files/` is the whole
+surface these steps may use. When no tool covers the operation, **stop and tell the user**, naming
+the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
+outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
+product, are never a step in this skill, and are owned by
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 ## App and Template Overview
 
@@ -220,9 +223,12 @@ x default" factor — convert a market rate into this model before saving.
 
 A product index is required for the Product Catalog app to serve results. The full setup (repository → index → instances → build configuration → fields → query → build), facet field rules, and auto-rebuild triggers live in [dw-search-indexing](../dw-search-indexing).
 
-## Deep reference
+## Where to find things
 
-[references/catalog-publishing.md](references/catalog-publishing.md) — the field-validated catalog internals: Catalog-vs-Channel group trees (the published-to story), the native "Publish to channel" action, channels + feeds (and the `/dwapi/feeds/{id}` URL shape), assortments-vs-channels, the pricing traps (tier rows not honored by the stock cart, the canonical price read surface, customer-specific contract prices), and the Management API chains for variants (no SQL), product relations, images, and shops — including the `ShopSave` `UsageType` trap and the create-vs-update verb split.
+| Reference | Load it for |
+|---|---|
+| [references/catalog-publishing.md](references/catalog-publishing.md) | Catalog-vs-Channel group trees (the published-to story), the native "Publish to channel" action, channels + feeds, assortments-vs-channels, the pricing traps (tier rows not honored by the stock cart, the canonical price read surface, customer-specific contract prices), and the variant, product-relation, image and shop chains — including the shop `UsageType` trap and the create-vs-update split |
+| [references/listing-and-stock.md](references/listing-and-stock.md) | why a default sort kills search relevance and what to order a group listing with instead, `ProductHidden` (counted by the index, dropped by the entity fetch, unwritable by every API), the `AssetCategories` duplication, what order completion decrements in the two stock tables, and the unscoped-price stock-location sentinel |
 
 ## Pitfalls
 
@@ -231,6 +237,8 @@ A product index is required for the Product Catalog app to serve results. The fu
 **Set facet fields to non-analyzed** — an analyzed facet field splits values like "Light Blue" into "light" and "blue", corrupting facet display and filtering.
 
 **Search index out of sync after deletes** — only full rebuilds remove deleted products. An Update build does not detect deletions.
+
+**A list's header count exceeds the rows it renders** — hidden products are counted by the index and dropped by the entity fetch. Assert rendered rows equal the header count on every listing probe; see [references/listing-and-stock.md](references/listing-and-stock.md).
 
 **`Model.FacetGroups` is null** — if the app is not configured with a facet group in its Index settings, `FacetGroups` is null (not an empty list). Always null-check before iterating.
 

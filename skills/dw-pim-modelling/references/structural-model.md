@@ -12,9 +12,10 @@ Deep field-validated knowledge for Dynamicweb 10 PIM structural modelling. Getti
 - [2.8 Product Categories + Fields (data model internals)](#28-product-categories--fields-data-model-internals)
 - [Range category fields are half-implemented: do not model a demo attribute as one](#range-category-fields-ecomfieldtype-25-are-half-implemented-do-not-model-a-demo-attribute-as-one)
 - [2.10 Assets](#210-assets)
+- [2.11 Stock units — a per-location attribute needs a per-location home](#211-stock-units--a-per-location-attribute-needs-a-per-location-home)
 - [2.12 Dynamic Workspaces — projections, not storage](#212-dynamic-workspaces--projections-not-storage)
 - [Standard ProductField inventory — audit before creating customs](#standard-productfield-inventory--audit-before-creating-customs)
-- [Recovery recipe: collapse a custom field back into its standard](#recovery-recipe-collapse-a-custom-field-back-into-its-standard)
+- [Recovery: collapse a custom field back into its standard](#recovery-collapse-a-custom-field-back-into-its-standard)
 
 ### 2.1 Shop types — one enum controls everything
 
@@ -26,8 +27,8 @@ Deep field-validated knowledge for Dynamicweb 10 PIM structural modelling. Getti
 - `4` **DataStructure** (holds data models — NOT customer-facing)
 
 **Rules:**
-- **One Shop per brand/market** — don't create duplicates. To rename the default `SHOP1`, send the WHOLE model through `save_shops` (see the full-replace rule below); `UPDATE EcomShops SET ShopName = '...' WHERE ShopId = 'SHOP1'` is the SQL fallback where the tool is permission-blocked.
-- **MCP `save_shops` is a FULL-ENTITY REPLACE, not a partial update.** `ShopTools.SaveShops` binds the request item into a fresh `Shop` entity and saves it whole, so a name-only payload resets every column not sent: measured on one host, `{"shops":[{"id":"SHOP1","name":"AgriHub Store"}]}` answered `succeeded:1` and left `ShopAutoBuildIndex` false (was true), `ShopOrderFlowId` NULL (was 1), `ShopImageFolder` / `ShopImagePatternMain` NULL, `ShopAlternativeImagePatterns` empty (was 9 entries), `ShopCompletionRules` NULL, and `ShopCreated` restamped to now. Its sibling `save_areas` documents "on update only the fields you send are changed"; `save_shops` does not, and the response model projects only `id`/`name`/`usageType`/`topLevelProductGroups`, so the damage is invisible in the echo. **Snapshot the row first** (`SELECT * FROM EcomShops WHERE ShopId=... FOR JSON PATH`), send the complete model, then diff the row back. `ShopAutoBuildIndex` silently flipping to false is the leg that costs a later index rebuild.
+- **One Shop per brand/market** — don't create duplicates. To rename the default shop, send `save_shops` its id and the new name and nothing else (see the partial-update rule below).
+- **`save_shops` is a TRUE PARTIAL UPDATE on MCP 0.4.4 and later — send the id plus only the fields you mean to change.** Measured on 0.4.4 with DW 10.28.x: an id-and-name payload changes exactly one column, leaving `UsageType`, the auto-build-index flag, the image folder and patterns, the order-flow id, the completion rules and the created stamp untouched. The tool's own description states the behaviour, and **the tool description wins over any prose when the two disagree** — read it before composing a payload. An older, narrower server bound the request item into a fresh entity and saved it whole, so a name-only save there reset every column not sent; that behaviour is retired, and a snapshot-and-resend written for it is both unnecessary work and the riskier motion, because it re-sends values read before any concurrent write.
 - **Channels for feeds** — each external system (Shopify, Home Depot, OrderEase, etc.) gets its own ShopType=3 shop with its own group tree. Products get related INTO those groups to control what the feed publishes.
 - **DataStructure for data models** — a separate ShopType=4 shop owns the data model tree. Never park data models under the commerce shop.
 - **EVERY shop needs a language relation** — insert into `EcomShopLanguageRelation(ShopId, LanguageId, IsDefault)`. Missing this causes "channel with no name" display in admin.
@@ -56,6 +57,18 @@ So in the admin tree, a `ShopType=1` Shop and a `ShopType=3` Channel sit side-by
 - Admin distinguishes the product's "Groups/Channels" tab vs "Data Models" tab by filtering on parent shop's `UsageType`: Shop/Channel → Groups tab; DataStructure → Data Models tab. Cite `Dynamicweb.Products.UI/Queries/ProductGroupRelationsByProductIdQuery.cs:38` — `return usageType is ShopType.Shop or ShopType.Channel;` — and the mirror `Dynamicweb.Products.UI/Queries/ProductRelationsByProductIdQuery.cs:40` — `return usageType is ShopType.DataStructure;`. A "PIM-only" product (relations only to ShopType=4 groups) therefore renders an empty Groups/Channels tab — that's the visible signal that nothing is published.
 - **Every group needs an `EcomShopGroupRelation` row, SUBGROUPS INCLUDED. DW resolves a group to its shop through that table and does NOT walk the parent chain.** A subgroup created with MCP `save_groups {name, parentGroupId}` and no `shopId` gets its `EcomGroupRelations` parent row and no shop relation, and the result is a branch that renders but resolves zero products: navigation walks `EcomGroupRelations` so the tree still shows the group, the PLP page returns 200 with the right `h1`, `ProductCatalogGroupById` on it returns `shopId: null`, `ProductsByGroupId` returns `totalCount 0` for a product whose `EcomGroupProductRelation` row demonstrably exists, and the product index writes no `ParentGroupIDs` for it. It is not a cache: measured surviving an `app_offline` recycle plus a Full index rebuild. **Pass `shopId` AND `parentGroupId` in the same `save_groups` call**, then assert the relation: a healthy tree carries one `EcomShopGroupRelation` row for every group (18/18 child groups on a reference install). A missing row on a group whose products all render is the separate "channel with no name" display fault.
 - **Every group needs `GroupType` set explicitly.** NULL defaults to 0 (Common) — data models not set to 2 will appear as catalog groups.
+- **`GroupType` is the ONLY discriminator, and the MCP group reads do not return it.** A
+  `GroupType=2` DataModel group is indistinguishable from a `GroupType=0` catalog group by every
+  surface an inventory would use: it is attached to a shop, it comes back from MCP `get_groups` /
+  `get_subgroups` exactly like a Common group, it holds `EcomGroupProductRelation` rows exactly like
+  a Common group, and it may carry the same display name as a real category (one solution had the
+  same category name on both trees). MCP `get_groups_by_ids` omits `GroupType` entirely, so a
+  "duplicate legacy tree" label derived from those tools can point straight at the data-model tree,
+  and deleting it un-assigns the data model from every product that carries it. **Read `GroupType`
+  before any group-tree audit, cleanup or deletion** — from `EcomGroups` by `SQL` where no higher
+  surface reports it (a read, local install only, no cache debt), or by reconstructing the tree from
+  the MCP `create_data_models` contract, which states the folder/model/dataset shape. Refuse to
+  proceed on any group whose `GroupType` is 1, 2 or 3 without explicit PIM sign-off.
 - **Every DataModel group needs `ProductCategoryId`** pointing at a CategoryFields category — that's how field values get plumbed to the product.
 - **A data set (`GroupType=3`) stores only its DELTAS from the parent data model's defaults.** The data model above it carries Details-tab default values in `EcomProductCategoryFieldGroupValue`; the data set inherits those, and `DataSetGroupSave` persists only the fields whose value DIFFERS from the inherited default. Measured: 8 values posted to a data set under a data model carrying 5 defaults stored 4 rows, and a second identical save produced the same 4. This is correct behaviour that reads exactly like a failed save, so **an assertion counting stored data-set values must expect (values posted MINUS values equal to the parent default)**. The create is also two-step: `DataSetGroupSave` with `CategoryId` set returns the id, and only a re-read through `DataSetGroupById` exposes the category fields to fill. `DataSetGroupNew` returns an EMPTY `categoryFields` collection because `CategoryId` is not set yet.
 
@@ -66,23 +79,51 @@ A variant on a hero product is NOT a single row. It needs:
 1. **`EcomVariantGroups`** + **`EcomVariantOptions`** (the dimension vocabulary — e.g. a size axis → 9/12/17)
 2. **`EcomVariantGroupProductRelation`** — links variant groups to a product. One row per (product, group).
 3. **`EcomVariantOptionsProductRelation`** — the combinations. VariantId is the dot-joined option IDs: `VO1.VO4` = first option of group 1 AND first option of group 2 (see `VariantCombinationService.cs:221`). Missing combination rows fail silently at the worst spot: a storefront add-to-cart POST for the variant returns **HTTP 200 and adds nothing**. Existence-guard every direct SQL junction INSERT (`IF NOT EXISTS ... INSERT`) so a re-run converges instead of stacking duplicate relation rows — then restart the host: variant relations are read through a cache resolved at startup.
+   **Local installs only** for the junction INSERT: on a hosted install `assign_variant_groups_to_product` and `create_variant_combinations` write these rows.
 4. **`EcomProducts`** row per variant — copies master's 60+ columns but overrides `ProductVariantId` (same as step 3), `ProductNumber` (**must be unique per variant** — master `ProductNumber` + dash + short suffix derived from the variant option ids; e.g. master `<CAT>-<SKU>` → `<CAT>-<SKU>-A`, `-B`, `-C`), `ProductActive=1`. Without this row, variants exist but are inactive with no SKU label.
 
 **Hard rule: `ProductNumber` MUST be unique across master + every variant in the family.** Multiple `EcomProducts` rows that share `ProductId` are normal (they're the master + each variant), but their `ProductNumber` values must NOT collide. Downstream consumers that flatten the master/variant tree into separate rows — most notably the PIM-for-Business-Central connector, which exposes each variant as its own BC item via `BCProductIdsByLastModified` and dedupes by SKU — will silently drop variants whose number already matches another row's number. Symptom: BC's "PIM Product List" shows N copies of the same number (one per variant + master), all with the master's name, and the import refuses to create the variant items.
 
-**Regression vector (this WILL happen):** the admin UI's master-product rename flow and some bulk-update paths propagate the master's new `ProductNumber` to every row sharing the same `ProductId` — including the variants — wiping out per-variant suffixes. Re-applying the suffix is idempotent and safe to bake into a verification step / re-run of a seed:
-```sql
-UPDATE EcomProducts
-SET ProductNumber = ProductNumber + '-' + REPLACE(ProductVariantId, 'VO-', '')
-WHERE ProductVariantId <> ''
-  AND ProductLanguageId = 'LANG1'
-  AND CHARINDEX('-' + REPLACE(ProductVariantId, 'VO-', ''), ProductNumber) = 0;
-```
-Then trigger a Products index rebuild (`POST /admin/api/BuildIndex {"Repository":"Products","IndexName":"Products.index","BuildName":"Full"}`) so the BC connector and any other index-backed surface picks up the new SKUs. The BC tenant itself caches its imported PIM Product List — re-run its "Get items from PIM" / sync action after the index rebuild, and if BC dedupes on the same DW `ProductId`, you may need to clear the previously-imported rows on the BC side first. Adjust the `REPLACE(..., 'VO-', '')` term if your variant-option ids don't follow the `VO-<code>` convention; for composite (multi-axis) variants where `ProductVariantId` is dot-joined (e.g. `VO-FIN-WHITE.VO-INT-PINK`), substitute a per-row `NumSuffix` lookup table instead of the `REPLACE`.
+**Regression vector (this WILL happen):** the admin UI's master-product rename flow and some bulk-update paths propagate the master's new `ProductNumber` to every row sharing the same `ProductId`, including the variants, wiping out per-variant suffixes. Re-applying the suffix is idempotent and belongs in a verification step or a seed re-run.
 
-Use `INSERT INTO EcomProducts (col1,col2,...) SELECT m.col1, m.col2, ... FROM @combinations v INNER JOIN EcomProducts m ON m.ProductId = v.MasterId AND m.ProductVariantId = ''` — copy master, override 3 fields. Make `ProductNumber` one of the overridden fields, not a copied one.
+After the repair, rebuild the Products index (`wait_for_product_index` with `repositoryName: "Products"` and `indexName: "Products.index"`) so the BC connector and any other index-backed surface picks up the new SKUs. The BC tenant itself caches its imported PIM Product List: re-run its "Get items from PIM" / sync action after the index rebuild, and if BC dedupes on the same DW `ProductId`, clear the previously-imported rows on the BC side first.
 
-**MCP `create_variant_combinations` gotcha — it leaves the combo rows NULL where it matters.** The MCP tool creates the per-variant `EcomProducts` rows for you, but it leaves **`ProductActive`** and **`ProductPrice`** **NULL** on the combinations. A NULL-active, NULL-price variant is **invisible storefront-wide** — it does not render in the PDP variant selector and an add-to-cart for it no-ops, exactly like a missing combination row, so it reads as "the tool didn't create them" when the rows are actually there. After `create_variant_combinations`, always set `ProductActive=1` and a real `ProductPrice` (and the §2.5a extras — `ProductDefaultUnitId`, per-variant `ProductStock`) on the new combo rows, then restart/flush. Verify by selecting the combo rows and confirming none have `ProductActive IS NULL` or a NULL price before declaring variants done.
+A variant `EcomProducts` row is a copy of the master row with three columns overridden: `ProductVariantId`, `ProductNumber` (never a copied column) and `ProductActive`. On a hosted install no MCP tool writes a variant `EcomProducts` row (below).
+
+Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Re-applying per-variant `ProductNumber` suffixes" and "Writing the per-variant `EcomProducts` row on 10.28.x".
+
+**On 10.28.x no write surface reaches a variant `EcomProducts` row, and the two variant tools each drop
+part of what they promise.** This is the single most expensive thing to discover late, so plan the beat
+around it rather than against it.
+
+| Call | What it does | What it does NOT do |
+|---|---|---|
+| `create_variant_combinations` | Creates the combination rows | Inherits nothing from the master: number empty, active and price NULL, name and descriptions and every custom field empty. The tool's own text says the combination inherits the master row; measured, it does not |
+| `combine_products_as_variants` | Re-parents standalone products as combinations, and the rows come out active | Copies no scalar column onto the combination: the per-product number is empty and the price is the **master's** on every combination. The standalone rows are deleted, so their number and price are **discarded, not moved**. It also blanks the **MASTER** row's number: measured, every master given variants lost its `ProductNumber` (47 of 52 masters kept one; the five variant parents did not) [dw 10.28.10 · mcp 0.4.4], so the family's anchor SKU leaves the catalogue while a search by any other key still finds the product |
+| `patch_products_safe` / `update_products` with `id` + `variantId` | Answers `succeeded: 1` and echoes every requested value | Writes nothing to the variant row. The echo is the request model, never a post-write read |
+
+**Snapshot master numbers before `combine_products_as_variants`, and restore them after.** Read each
+master with `get_products_by_ids` and keep a `ProductId`-to-number map. After the combine, write the
+number back on the master row with `patch_products_safe` (`id` and `number`, `variantId` left empty),
+then re-read with `get_products_by_ids` and assert the number on the master: that read is the assert,
+not the patch echo. Assert the SKU against the product read rather than a storefront search for it.
+
+**The working sequence on this build:**
+
+1. `save_variant_groups` + `save_variant_options` for the vocabulary, keying each option on the group
+   id the group save returned, never an id you supplied (the trap is in
+   [SKILL.md](../SKILL.md) "The correct flow"), then `assign_variant_groups_to_product`.
+2. `create_variant_combinations` for the combination rows.
+3. **Per-variant PRICE with `save_prices`**, carrying `productId` **and** `variantId` (plus
+   `currencyCode`, `amount`, and `quantity: 0`). This one lands, persists, and is resolved by the stock
+   price provider — it is the whole of the per-variant differentiation that works.
+4. Read the price rows back with `get_prices_by_product_id`; that read is the assert.
+
+**Per-variant `ProductNumber`, name and stock have no working write surface on 10.28.x.** Plan no
+per-variant SKU beat and promise none; a brief that needs per-variant SKUs on this build needs the
+out-of-product repair path ([`dw-data-access/references/recipes-pim.md`](../../dw-data-access/references/recipes-pim.md))
+and therefore a local install. Where the per-variant rows must carry active, number, unit and stock
+values, they are set outside the product in the same place.
 
 **Enum properties on Management API save models bind by NAME, so a variant write that reuses the DB
 ordinal silently zeroes the column.** `VariantGroupTranslationSave` with `DisplayType` read straight out
@@ -101,12 +142,13 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
 - Per-variant `EcomProducts` gotchas beyond the §2.5 override list:
   - Copy **`ProductDefaultUnitId`** onto every variant row. Variants without it silently drop the per-unit price column from the quantity-break table — the master shows Qty / per-unit / per-piece, the variants show a narrower table, and it reads like a pricing bug even though prices never differed.
   - Seed **per-variant `ProductStock`**, and do it for **every language row** — variants default to 0 even when the master has stock.
-  - Quantity-break `EcomPrices` rows with an empty `PriceProductVariantId` apply to **all** variants — no per-variant duplication needed.
+  - Before writing a variant-specific number, price, stock, short description, meta title or meta description, the field must allow changes across variants (a per-field product-field setting, off by default on a stock host): with it off, a master save copies the master value onto every variant row, and a variant write is echoed as a success and lost, so read the variant back with `get_products_by_sku` before trusting the response.
+  - Quantity-break and group `EcomPrices` rows with an empty `PriceProductVariantId` apply to **all** variants, and the lowest matching row wins across them, so a master-level row undercuts every variant priced above it. Where variants carry different prices, write the rows per variant id (dw-commerce-catalog, `catalog-publishing.md` §2.13).
 - Restart the host before verifying — the PDP selector reads the product cache, so the variants don't show until the bounce. (No restart on a hosted install: bulk-flush the product/stock/price service caches instead.)
 
 ### 2.6 Bundles (BOM) — two concerns
 
-1. **Product is BOM** — `UPDATE EcomProducts SET ProductType = 2` (enum: 0=stock, 1=service, 2=bom, 3=giftcard).
+1. **Product is BOM**: `ProductType` 2 (enum: 0=stock, 1=service, 2=bom, 3=giftcard), set in product as Product type BOM on the product edit screen.
 2. **Components** — rows in `EcomProductItems`. Two row shapes, split by `ProductItemBomGroupId`:
    - **Fixed component** (predefined bundle line): `ProductItemBomProductId` = the component product
      (append the concatenated variant id for a specific variant, e.g. `PRODx` + `VOn` — and set
@@ -121,22 +163,17 @@ When the product has exactly ONE variant axis (a Color selector, a tier ladder),
    - Both shapes: `ProductItemProductId` = parent bundle, plus `ProductItemQuantity`,
      `ProductItemName`, `ProductItemRequired`, `ProductItemSortOrder`. `ProductItemBomProductId` and
      `ProductItemBomVariantId` are NOT NULL — use `''`, never SQL `NULL`.
-3. **RESTART THE HOST AFTER INSERTING PRODUCTITEMS** — `ProductItem` uses a `Lazy<Dictionary<...>>` cache (see `ProductItem.cs:145`). Raw SQL inserts bypass it. Until restart, the Bundles tab shows empty.
-   **The API alternative — `ProductItemAdd` — accepts exactly one payload shape, `{ProductId, Model}`**, and
-   both plausible variations throw rather than degrade. It runs the domain service, so it needs no restart
-   and is the correct route on any host where SQL is not sanctioned:
-   ```
-   { "ProductId": "<parentProductId>", "Model": { … the BOM line … } }   -> ok
-   … with ProductOrGroupIds in the payload   -> 500  "Index was outside the bounds of the array"
-   … with Model omitted                      -> 400  "Command.Model cannot be null"
-   ```
-   The 500 is the misleading one: an index-out-of-bounds reads as a platform defect worth reporting, when it
-   is the binder rejecting an extra key. Verify BOM lines on the rendered PDP (a kit's lines are visible
-   there), not on the add response.
+3. **No MCP tool creates or reads a BOM line.** In product, add components on the product's BOM tab and verify them on the rendered PDP, where a kit's lines are visible. The out-of-product routes, Management API `ProductItemAdd` with the one payload shape it accepts and the `SQL` fallback with the host restart it owes, are in [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Asset categories and BOM lines".
 4. Bundles should get their OWN data model (e.g. a `BundleAttributes` category with bundle-specific fields: UnitsPerCase, RetailerSegment, PlanoReady, etc.). Different products → different data models.
 
 ### 2.8 Product Categories + Fields (data model internals)
 
+- **`EcomProducts.ProductId` is `NVARCHAR(30)`; `ProductNumber` is `NVARCHAR(255)`.** A
+  business-key-as-product-id plan therefore has a hard 30-character ceiling that the product number
+  does not share, and **no layer validates it before the write** — the failure surfaces as a
+  truncation error inside a bulk import run, not as a validation message. Enforce the length in
+  whatever mints the id (the generator, the XSL, the mapping) before the payload reaches the import,
+  and keep the long business key on `ProductNumber`.
 - **Category** = row in `EcomProductCategory` + translation row in `EcomProductCategoryTranslation`. Categories are SOLUTION-GLOBAL — not scoped to shops.
 - **Fields on a category** = rows in `EcomProductCategoryField` + translations in `EcomProductCategoryFieldTranslation`.
 - **`reference_category` is load-bearing and easy to miss** — the hidden template category that powers every admin completeness/rule lookup, plus its blank-panel gotcha and seed SQL, lives in [dw-pim-completeness](../../dw-pim-completeness/references/rules-and-dashboards.md).
@@ -193,7 +230,8 @@ back with the new value and dropped. Assert every row in this table against raw 
 | `ProductFieldSave` with `Sort` | `status: ok`, response model carries the new `sort` | `FieldSortOrder` unchanged (71 sort writes, 0 rows moved) | `ProductCategoryFieldSaveSort` (next row) |
 | `ProductFieldSave` with `TemplateName` | `status: ok`, response carries the new `templateName` | `FieldTemplateTag` unchanged | Nothing. `FieldTemplateTag` is **create-only** (below) |
 | `ProductCategoryFieldSaveSort` with BARE field ids in `OrderedIds` | `{"status":"ok","model":null}` | Zero rows moved. Each `OrderedId` resolves as a fully-qualified product-field id, a bare system name resolves to nothing, and the empty set is written as a no-op | Build every id as `ProductCategory\|<CategoryId>\|<fieldSystemName>`, in the wanted order. A top-level `CategoryId` property on the body does NOT help: the qualification must be inside each id. Qualified ids rewrote all 18 sort orders to a gapless 1..18 |
-| `create_category_fields` echo | `fieldOptions: []` and `allowChangesAcrossLanguages: false` even when five options and `true` were sent | **Both persisted correctly.** The echo renders the per-category field copy before the shared `reference_category` option set is attached | Read back with `get_product_category_fields`, which shows all five options with translations on every target category. This echo lies in the safe direction, so do not "fix" a field that is already correct |
+| `create_category_fields` echo | `fieldOptions: []` and `allowChangesAcrossLanguages: false` even when five options and `true` were sent | **Both persisted correctly.** The echo renders the per-category field copy before the shared `reference_category` option set is attached | The echo lies in the safe direction, so do not "fix" a field that is already correct. `get_product_category_fields` does **not** settle it either — see the row below |
+| `get_product_category_fields` read-back | Returns every category field on the solution whatever `categoryId` is passed, carries no id member, renders the field type as a number in `typeName`, and reports `options: []` on every list field | **The write is correct in both tables; only the read is wrong.** The projection is the reference-field pool rather than the per-category rows, and it does not resolve the option set, which hangs off the shared `reference_category` field id rather than off the concrete category | Treat it as a **label-only listing**: useful for "does a field with this label exist", useless as proof of per-category assignment or of an option set. Twenty-four rows on a six-field category is the tool, not a collapsed model, and an empty `options` array is never grounds to re-send options — re-sending stacks duplicates. The per-category field set and the option counts are read outside the product ([`dw-data-access/references/recipes-pim.md`](../../dw-data-access/references/recipes-pim.md)); in-product, the create call's own `succeeded`/`failed` counts are the write proof |
 
 **`FieldTemplateTag` is write-once at field CREATE, through every surface.** `ProductFieldSave` drops
 it, and so does the admin field-edit screen (`/Admin/UI/Products/ProductAttributeEdit/<guid>?FieldId=…`):
@@ -203,6 +241,8 @@ value to rule out a uniqueness constraint, same result. A field that needs a tem
 recreated (which discards its stored values) or shipped with the tag from the start. Sweep for the gap:
 `SELECT FieldTemplateTag FROM EcomProductCategoryField WHERE FieldTemplateTag IS NULL OR FieldTemplateTag = ''`
 must be empty on a healthy solution.
+
+**Local installs only** for these SQL reads: on a hosted install no MCP tool reads these columns reliably, so ask the user.
 
 ### Range category fields (`EcomFieldType` 25) are half-implemented: do not model a demo attribute as one
 
@@ -224,14 +264,14 @@ fails silently:
 | Rebuild | A Full `Products\|Products.index` rebuild **re-poisons** the values (4 of 5 builds in one day), and the poisoning was present before the build too, so the build triggers rather than causes it | Check and repair after **every** build, not once per pass. The DB stays correct throughout; both the Management and Delivery APIs lie |
 | Completeness | Range (and boolean) category fields never satisfy a completeness rule: a product with every rule field populated in the DB scored 91%. A `patch_products_safe` naming three OTHER scalars silently DELETED both range-typed fields from the product | The worklist can never drain, and there is no warning on the delete |
 
-**The read surfaces disagree, and only one of them is honest.** MCP `get_product_by_id` renders every
+**The read surfaces disagree, and only one of them is honest.** MCP `get_products_by_ids` renders every
 range as the literal string `"RangeValue { Minimum = , Maximum =  }"` whether or not a value exists,
-and the index answers `IsEmpty` for all of them. **`/Admin/Api/ProductById` is the only reader that
-returns the typed value the admin editor renders.** Assert there, and report populated/empty counts
-explicitly rather than inferring from either of the other two.
+and the index answers `IsEmpty` for all of them. **The Management API `ProductById` read is the only reader
+that returns the typed value the admin editor renders**; no MCP read does. Report populated and empty
+counts explicitly rather than inferring from either of the other two. Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Reading a Range field value back: `ProductById`".
 
 **If a catalogue must carry Range values:** treat them as write-once at seed time through the path that
-originally worked, re-inject them from SQL BEFORE any `ProductSave` round-trip (the save wipes them
+originally worked, re-inject them from SQL (local installs only; a hosted install asks the user) BEFORE any `ProductSave` round-trip (the save wipes them
 otherwise), and gate on the post-build repair after every index build.
 
 ### 2.10 Assets
@@ -239,11 +279,38 @@ otherwise), and gate on the post-build repair after every index build.
 - Files live in `wwwroot/Files/Images/...` (or any `/Files/` subfolder).
 - Product asset record = `EcomDetails` row:
   - `DetailProductId`, `DetailVariantId`, `DetailLanguageId`, `DetailType=0` (image), `DetailValue=<file path>`, `DetailIsDefault` (primary), `DetailsGroupId` (asset category numeric id — check `EcomDetailsGroup`)
-- Asset categories = `EcomDetailsGroup` table. Default installs ship with at least `Images` (id=1). New categories (e.g. `Manuals` for PDFs) are SQL-only — no MCP tool exists for `EcomDetailsGroup` mutations. Insert into both `EcomDetailsGroup` (set `DetailsGroupExtensions` to filter file types, e.g. `'pdf'`, and `DetailsGroupDefaultUploadFolder` to the target path) AND `EcomDetailsGroupTranslation` (one row per language).
-- MCP tools `add_product_image` / `import_product_images_from_urls` / `upload_product_images` handle both download-to-disk + DB row. **Plugin-only — no Management API endpoints back these.** They live entirely in the MCP plugin code path; if the MCP session dies (token expiry, plugin restart, host restart) there is no `POST /admin/api/...` fallback for asset registration. The fallback is direct SQL INSERT on `EcomDetails`.
+- Asset categories = `EcomDetailsGroup` table — **not `EcomAssetCategory`, which does not exist on this
+  platform.** A stock solution ships exactly two groups, `Images` and `Documentation`, and **there is
+  no per-document-type category**: the difference between a spec sheet, a safety data sheet, a
+  warranty and an installation guide lives only in the free-text `EcomDetails.DetailsName` on each row
+  inside the single `Documentation` group. So a documents tab that promises a **type** column derives
+  it from the asset's own name and says so; a tab built by iterating asset categories renders at most
+  two sections whatever the specification asked for. Either mint the extra categories deliberately, or
+  design the surface around names — do not assume the categories are there. New categories (e.g.
+  `Manuals` for PDFs) have no MCP tool; `get_product_asset_categories` only reads them. A category carries a file-type filter (`DetailsGroupExtensions`, e.g. `pdf`), a default upload folder and one name row per language. In product, create it on the asset-category settings screen; the out-of-product routes (Management API `AssetCategorySave`, else `SQL`) are in [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Asset categories and BOM lines".
+- MCP tools `add_product_image` / `import_product_images_from_urls` / `upload_product_images` handle both download-to-disk + DB row. **Plugin-only: no Management API command backs these.** They live entirely in the MCP plugin code path; if the MCP session dies (token expiry, plugin restart, host restart) there is no Management API fallback for asset registration. The fallback is direct SQL INSERT on `EcomDetails`.
 - **`import_product_images_from_urls` does NOT set a default image** — it registers the `EcomDetails` rows with `DetailIsDefault=0` on all of them. A product then has images-but-no-default, and that is a **frontend-breaking** state, not a cosmetic one: the Swift card template **NREs on a product with images but no default**, and because the PLP renders cards in a loop, one such product **degrades the WHOLE product-list page** (the list throws, not just that one card). After any `import_product_images_from_urls` run, set a default: `UPDATE EcomDetails SET DetailIsDefault=1 WHERE DetailProductId=<id> AND DetailLanguageId='LANG1' AND DetailValue=<chosen path>` (exactly one default per product/variant/language), then flush/restart. Make "a DEFAULT image is set" a per-product verification gate for exactly this reason.
 - **Bulk SQL INSERT must set `DetailLanguageId` to a real language code** (e.g. `'LANG1'`), not empty string and not NULL. The admin asset query and the per-product image listings filter strict-equality on this column, so empty-string language renders the row invisible despite being on disk and registered. Symptom: SQL count says 9 details for the product, admin product page shows 0 assets, file is at the path. Recovery: `UPDATE EcomDetails SET DetailLanguageId = 'LANG1' WHERE DetailLanguageId = '' OR DetailLanguageId IS NULL;` then host restart to flush asset caches. The MCP tools always populate this column correctly — this gotcha only fires when bulk SQL inserts skip the field.
 - After bulk SQL inserts, **restart the host** to flush the `EcomDetails` cache (the same restart-after-SQL protocol that product mutations require).
+- **Local installs only** for the SQL inserts above: on a hosted install attach with `add_product_image` and set the default with `set_product_primary_image`.
+
+### 2.11 Stock units — a per-location attribute needs a per-location home
+
+`EcomStockUnit` is the per-(product, stock location) row, and it is the **only** place a per-location
+attribute can live. The two homes a specification usually proposes for one are both impossible:
+
+- `EcomStockUnit.StockUnitExpectedDelivery` is a `DATETIME` — it carries the date an inbound
+  replenishment arrives and cannot carry its quantity.
+- A product custom field is **per product**, so it cannot differ per location; a single value there
+  silently means "the same everywhere", which is the opposite of what a per-location figure claims.
+
+So an inbound quantity (or any other per-location number) needs a per-location column on
+`EcomStockUnit`, or an equivalent custom table keyed the same way — an `ALTER TABLE` on a local
+install, with the host restarted afterwards to flush the stock caches, because no MCP tool or
+Management API verb extends that table. Two follow-on facts worth deciding before the column is
+added: the delivery API projects the whole `stockUnits[]` collection per product, and the
+platform's own stock resolution defaults to the **first** stock unit, so a storefront row that
+should show the signed-in user's own location needs its own resolution step rather than the default.
 
 ### 2.12 Dynamic Workspaces — projections, not storage
 
@@ -304,40 +371,28 @@ level to `6+1433+768+29+703 = 2939`, exactly the query, and the sibling workspac
 **Narrow the backing query** rather than treating the node counts as independent of it.
 
 **Creating a workspace is TWO commands, and `DynamicStructureSave` silently drops a `Levels` collection.**
-Posting `{QueryData:{}, model:{Name, QueryId, Levels:[…]}}` answers `200 {"status":"ok"}`, echoes a real
-id, and creates a workspace with **zero levels**. A zero-level workspace still appears in the Products
-tree and expands to nothing, so it reads as "the query returned nothing" rather than "the write was
-ignored", and nothing in the response mentions the dropped array. Levels are a separate aggregate:
+No MCP tool creates or reads a Dynamic Workspace; in product the user builds it on the Dynamic Workspaces
+screen. A save carrying `Levels` answers `200 {"status":"ok"}`, echoes a real id, and creates a
+workspace with **zero levels**. A zero-level workspace still appears in the Products tree and expands to
+nothing, so it reads as "the query returned nothing" rather than "the write was ignored", and nothing in
+the response mentions the dropped array. Levels are a separate aggregate, each saved by
+`DynamicStructureLevelSave`:
 
-```
-1) POST /Admin/Api/DynamicStructureSave  {"QueryData":{}, "model":{"Name":…, "QueryId":…}}
-2) per level, POST /Admin/Api/DynamicStructureLevelSave
-   {"QueryData":{"StructureId":<guid>,"Type":"DynamicStructureLevelNew"},
-    "model":{"StructureId":<guid>,          // REQUIRED inside the model, not only in QueryData
-             "SourceType":"DataModelKey"|"ProductField","SourceField":…,
-             "SortDirection":"Ascending","Index":<n>,
-             "UseRelationOnProductCreate":<bool>,"UseCompleteness":<bool>}}
-```
+- **`StructureId` is validated out of the level MODEL**, not only the query envelope.
+- **`Index` defaults to `0`** when the model omits it (the admin form has no Index editor), so levels
+  created in sequence all land at index 0 with undefined ordering.
+- **`UseCompleteness` and `UseRelationOnProductCreate` are never hydrated on the level read, so a
+  read-modify-write CLEARS them.** The read returns `false` for both regardless of the stored values
+  (measured against a row holding `UseCompleteness=1`), while the save persists both correctly, so a
+  self-draining completeness workspace quietly stops draining. Both booleans are set explicitly on every
+  save, never round-tripped.
+- **There is no read query for either aggregate** (`DynamicStructureList`, `DynamicStructures`,
+  `DynamicStructureGet`, `DynamicStructureById` and `DynamicStructureFields` all answer `Unknown query`),
+  so the API cannot verify its own write: the stored `DynamicStructureLevels` rows are the only proof, one
+  per intended level with `DynamicStructureLevelIndex` running 1..n. `status: ok` from
+  `DynamicStructureSave` proves nothing about levels.
 
-- **`StructureId` is validated out of the MODEL.** With it only in the query envelope the call answers
-  `400 {"":["Model validation failed"],"StructureId":["The value is required."]}`.
-- **Always pass `Index` explicitly.** It defaults to `0` when the model omits it (the admin form has no
-  Index editor), so levels created in sequence all land at index 0 with undefined ordering. Re-saving
-  with `model.Index=1|2` fixes the order.
-- **`UseCompleteness` and `UseRelationOnProductCreate` are never hydrated on the read, so a
-  read-modify-write CLEARS them.** `GET /Admin/Api/DynamicStructureLevelById?Id=<n>&StructureId=<guid>`
-  returns `useRelationOnProductCreate:false, useCompleteness:false` regardless of the stored values
-  (measured against a DB row holding `UseCompleteness=1`), while `DynamicStructureLevelSave` persists
-  both booleans correctly. Posting back the model you just read therefore writes both flags to false,
-  and a self-draining completeness workspace quietly stops draining. **Never round-trip a
-  `DynamicStructureLevel` model**: read the true state from `DynamicStructureLevels` (or keep an
-  intended-state table) and set BOTH booleans explicitly on every save.
-- **There is no read query for either aggregate.** `DynamicStructureList`, `DynamicStructures`,
-  `DynamicStructureGet`, `DynamicStructureById` and `DynamicStructureFields` all answer
-  `400 "Unknown query"`, so the API cannot verify its own write and SQL is the only read-back. Assert
-  `COUNT(*) FROM DynamicStructureLevels` for the structure's `DynamicStructureUniqueId` equals the
-  number of levels intended, and that `DynamicStructureLevelIndex` is 1..n with no duplicates.
-  `status: ok` from `DynamicStructureSave` proves nothing about levels.
+Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Creating a Dynamic Workspace: `DynamicStructureSave` then `DynamicStructureLevelSave`".
 
 **When workspaces are the right answer:**
 - "Show me products by **brand**": 1 level, `LevelType=ProductField`, `SourceField=ManufacturerID`.
@@ -390,61 +445,30 @@ DW10 ships ~50 standard `ProductField` system names, hardcoded in `dw10source/sr
 1. **Exact-name duplicate.** A custom `EcomProductField` row with `ProductFieldSystemName` matching a standard (e.g. `ProductWeight`, `ProductHeight`, `ProductWidth`, `ProductDepth`, `ProductVolume`, `ProductEAN`) causes two definitions of the same field. Edit screens and field-picker UIs may render twice; some lookups pick the first by autoid (unpredictable across solutions). Always pure duplication, never useful.
 2. **Alias duplicate.** A custom field with a *different* SystemName but storing the same semantic value (e.g. `g_ean` next to standard `ProductEAN`; `g_weight_kg` next to `ProductWeight`; `g_height_cm` next to `ProductHeight`). Splits data across two columns. Completion rules, feeds, and integrations have to pick one — usually pick the custom (since that's why it was added) — and the standard column appears empty. BC connector and most off-the-shelf integrations key off the standard, so the data silently never reaches them.
 
+**A standard field is a COLUMN on `EcomProducts`, not an `EcomProductField` row — and the MCP
+custom-field path cannot write one.** MCP `get_standard_fields` lists them all, which reads as a list
+of writable targets and is not: `patch_products_safe` with `customFields: [{ id: "ProductEAN" }]`
+fails every row with `No ProductField or ProductFieldValue based on the given system name`, because
+that path resolves through the product-field tables, and `update_products` exposes no property for it
+either. Read the current value with `get_products_by_ids`, which does carry the scalar; the write is
+the product edit screen's own field, and the same holds for every other `EcomProducts` scalar the MCP
+model omits. Outside the product: see dw-data-access `recipes-pim.md` §Writing a standard
+`EcomProducts` scalar the MCP model omits.
+
 **Preflight rule (do this BEFORE creating any custom field):**
 
 Compare the proposed SystemName against the standard set. The full list is in `ProductField.FieldSystemName` constants — load it once and grep before each `create_product_fields` MCP call or SQL insert. The semantic-overlap set (the ones most often duplicated by alias) covers physical dimensions (Weight, Height, Width, Depth, Volume), identifiers (EAN, Number, ManufacturerID), pricing (Price, Cost, PriceType), stock (Stock, StockGroupID, NeverOutOfStock), content (Name, ShortDescription, LongDescription, MetaTitle/Description/Keywords/Canonical/Url), images (ImageDefault, ImageSmall, ImageMedium, ImageLarge, Images), workflow (WorkflowStateId, Active, Discontinued, ReplacementProductId, DiscontinuedAction), and audit (Created, Updated, Type, DefaultShopID, DefaultUnitID, ExpectedDelivery). If you need one of these, **use the standard**.
 
 Legitimate customs to keep: anything genuinely solution-specific that has no standard equivalent — e.g. ERP-sync hints (`g_bc_reorder`), action-rule routing fields (`g_notify_email` for auto-offline mail recipient), free-text supplier (different from the `ProductManufacturerID` select), lifecycle-state mirrors used by external automation. Use a consistent prefix (`g_` is a common convention) so the legitimate customs are visually distinct from accidental standard-overlap mistakes.
 
-## Recovery recipe: collapse a custom field back into its standard
+## Recovery: collapse a custom field back into its standard
 
-When a PIM has already accumulated standard-field duplicates (typical after rushed initial modelling), fold each custom back into its standard before continuing. Order matters: backfill data, rewire references, then drop the custom — never delete first.
+When a PIM has already accumulated standard-field duplicates (typical after rushed initial modelling), fold each custom back into its standard before continuing. Order matters, and deleting first loses data: backfill the standard column from the custom where the standard is empty; rewire completion-rule references from the custom system name to the standard; delete the duplicate `EcomProductField` rows (exact-name and alias both); drop the custom columns from `EcomProducts`, their auto-named default constraints first (a column with a default constraint refuses the drop with msg 5074); and remove the `UnifiedPermission` grants that named the deleted system names.
 
-```sql
--- 1) Backfill the standard column from the custom where the standard is empty.
-UPDATE EcomProducts SET ProductEAN    = g_ean        WHERE g_ean        IS NOT NULL AND g_ean        <> '' AND (ProductEAN    IS NULL OR ProductEAN    = '');
-UPDATE EcomProducts SET ProductWeight = g_weight_kg  WHERE g_weight_kg  > 0 AND (ProductWeight IS NULL OR ProductWeight = 0);
--- ...repeat per duplicated dimension/identifier...
+Afterwards `ProductFieldService`, `ProductService`, `CompletionRuleService` and `PermissionService` hold stale rows until flushed, and the Products index needs a Full build (`wait_for_product_index` with `repositoryName: "Products"` and `indexName: "Products.index"`; see [dw-pim-completeness](../../dw-pim-completeness/references/rules-and-dashboards.md)).
 
--- 2) Rewire completion-rule references from custom SystemName to standard.
-UPDATE EcomCompletionRules
-SET EcomCompletionRuleProductFields =
-      REPLACE(REPLACE(EcomCompletionRuleProductFields, 'g_weight_kg', 'ProductWeight'), 'g_ean', 'ProductEAN')
-WHERE EcomCompletionRuleProductFields LIKE '%g_ean%'
-   OR EcomCompletionRuleProductFields LIKE '%g_weight_kg%';
+In product: rewire the rules with `create_or_update_completeness_rules` and remove the duplicate fields with `delete_product_fields`; no MCP tool backfills a standard `EcomProducts` scalar or drops a column (see [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Writing a standard `EcomProducts` scalar the MCP model omits"), so ask the user for those steps.
 
--- 3) Delete the duplicate EcomProductField rows (BOTH exact-name + alias).
-DELETE FROM EcomProductField
- WHERE ProductFieldSystemName IN
-   ('ProductWeight','ProductHeight','ProductWidth','ProductDepth','ProductVolume',
-    'g_ean','g_weight_kg','g_height_cm','g_width_cm','g_length_cm');
-
--- 4) Drop the custom columns from EcomProducts. Drop their default constraints first
---    (auto-named, vary per install) so the DROP COLUMN doesn't fail with msg 5074.
-DECLARE @def nvarchar(200), @sql nvarchar(500);
-DECLARE colcur CURSOR FOR
-  SELECT dc.name FROM sys.default_constraints dc
-   JOIN sys.columns c ON c.default_object_id = dc.object_id
-  WHERE c.object_id = OBJECT_ID('EcomProducts')
-    AND c.name IN ('g_ean','g_weight_kg','g_height_cm','g_width_cm','g_length_cm');
-OPEN colcur; FETCH NEXT FROM colcur INTO @def;
-WHILE @@FETCH_STATUS = 0 BEGIN
-  SET @sql = 'ALTER TABLE EcomProducts DROP CONSTRAINT [' + @def + ']';
-  EXEC sp_executesql @sql;
-  FETCH NEXT FROM colcur INTO @def;
-END
-CLOSE colcur; DEALLOCATE colcur;
-
-ALTER TABLE EcomProducts DROP COLUMN g_ean;
-ALTER TABLE EcomProducts DROP COLUMN g_weight_kg;
--- ...one per dropped column...
-
--- 5) Clean any UnifiedPermission grants that referenced the now-deleted SystemNames.
-DELETE FROM UnifiedPermission
- WHERE PermissionName = 'ProductField'
-   AND PermissionKey IN ('g_ean','g_weight_kg','g_height_cm','g_width_cm','g_length_cm');
-```
-
-Then flush `ProductFieldService`, `ProductService`, `CompletionRuleService`, `PermissionService` and trigger a Full `BuildIndex` on the Products repository (see [dw-pim-completeness](../../dw-pim-completeness/references/rules-and-dashboards.md) for the rebuild recovery recipe).
+Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Collapsing a custom field back into its standard".
 
 **Completion-rule regex note**: `EcomCompletionRules` uses a comma-separated SystemName list (`EcomCompletionRuleProductFields`), not regex. Rule "completeness" is a field-has-value check, not a pattern match. `EcomValidationRules` is a separate table for input-validation patterns and is independent — touch that only if a custom field carried a regex pattern (`FieldValidationPattern` on `EcomProductCategoryField`) that needs replicating on the standard.

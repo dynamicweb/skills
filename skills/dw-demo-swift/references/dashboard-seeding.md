@@ -11,6 +11,7 @@
 - [7. Email flow bootstrap — folders and the fully-prefixed schema](#7-email-flow-bootstrap--folders-and-the-fully-prefixed-schema)
 - [8. Keeping seeded dates current — the demo clock](#8-keeping-seeded-dates-current--the-demo-clock)
 - [9. Deterministic recipe preference + idempotency](#9-deterministic-recipe-preference--idempotency)
+- [10. The shipped dashboard widgets are customer-centre-only](#10-the-shipped-dashboard-widgets-are-customer-centre-only)
 
 > The demo-context seeding step that makes the Swift Customer Center land. From base **2.3.2**, the Customer Center **Overview** is a tile dashboard (Orders, Quotes, Carts, Favorites, Addresses, Profile, Returns) instead of a bare order list, and a stock **"My returns"** RMA page ships in the buyer tree. Tiles route to real function pages — but a tile that opens onto an empty list reads as a broken demo. This step seeds every list the buyer (and the CSR) will open. The underlying seeding *mechanics* are foundational; this file is the demo-swift *orchestration* that sequences them and states the coverage bar.
 >
@@ -56,6 +57,8 @@ Seed the signed-in buyer so every tile lands. Exact SQL/API mechanics are founda
 | My profile | complete profile fields | populate name / company / email / phone + the address fields the checkout "Continue" gate reads | [`order-lifecycle.md`](../../dw-commerce-orders/references/order-lifecycle.md) |
 | My returns | ≥1 RMA request against a completed order | raise a return from a completed order (stock RMA add flow) so `RMAList.cshtml` has a row; depends on the My-orders seed landing first | stock `eCom_CustomerExperienceCenterRma`; base `EcomOrderFlow`/`EcomOrderStates`/`EcomOrderStateRules` supply the return-eligible states |
 
+**Local installs only** (the My favorites SQL): on a hosted install, seed favorites through the storefront `FavoriteCmd` requests `createfavoritelist` and `addproducttofavoritelist`, signed in as the buyer.
+
 "Mixed states" matters for the Orders tile specifically — a list where every row says the same status looks synthetic. Spread the seeded orders across the states the base's `EcomOrderStates` ships so the status column tells a story (placed → in progress → shipped/completed).
 
 ## 5. CSR view seed
@@ -86,6 +89,8 @@ A campaign email that shows 0 sent / 0 clicked reads exactly like an unfinished 
 4. Bounces: a non-empty `RecipientErrorMessage` on the recipient rows you want to show as failed.
 5. Clicks + link performance: `OMCLink` rows for the tracked links (`LinkReferenceKey` = the message id as varchar) plus `OMCLinkClick` rows (`LinkClickClickerKey` = the recipient id as varchar).
 
+**Local installs only**: a hosted install has no write path for send history, so an online build asks the user.
+
 Verify by calling `RecipientStatisticsByEmail?EmailId=<n>` and `LinkClicksByEmail` for each seeded email and checking the numbers match the seed — a green insert proves nothing, the grid query is the test.
 
 ## 7. Email flow bootstrap — folders and the fully-prefixed schema
@@ -94,6 +99,8 @@ Two failure modes that both present as "the flow isn't there":
 
 - **`EmailMarketingFlow` columns are fully table-prefixed.** The real schema is `EmailMarketingFlowId`, `EmailMarketingFlowFolderId`, `EmailMarketingFlowName`, `EmailMarketingFlowRecipientsIds`, … — there are no bare `FolderId` / `Name` / `RecipientsIds` columns. Bare-name SQL is a compile error, and the `RunSql` add-in surfaces it as a **contentless Exception** with no message to diagnose from. Dump `sys.columns` for `OBJECT_ID('EmailMarketingFlow')` before writing anything, and never trust an abbreviated column list in a hand-written schema note.
 - **A flow must carry its folder id or the folder node renders empty.** `FlowListScreen` queries `FlowsByFolderId?FolderId=<n>`, so a flow left at folder `0` (top level) shows "No results found" under the folder you created for it — even though the flow exists, is active, and has steps and recipients. Create the `FlowFolder` row **first**, then set `EmailMarketingFlowFolderId` to that folder's id on the flow.
+
+**Local installs only**: a hosted install has no documented write path for these rows, so an online build asks the user.
 
 Validate after a recycle: `FlowsByFolderId?FolderId=<folder>` returns `totalCount >= 1` and the admin flow list for that folder shows the row.
 
@@ -131,6 +138,8 @@ UPDATE [EcomGiftCard]
    AND [GiftCardExpiryDate] > GETDATE();
 ```
 
+**Local installs only**: a hosted install has no documented path for this SQL date shifter, so an online build asks the user.
+
 Measured across a rewind-and-run cycle: the live cards moved +1 day while the cancelled one stayed frozen and still read `active=False` through the gift-card list query. **Assert it** — a cancelled gift card still reads inactive after the nightly refresher runs. Gift-card storage semantics (encrypted codes, one bad row 500ing the whole family) are owned by [`promotions-engines.md`](../../dw-commerce-orders/references/promotions-engines.md).
 
 Verify by reading order dates back through the delivery API after idle days and confirming the marketing dashboards read as current, and that the recurring task reports Success with `nextRun` advancing. Task creation semantics (`Begin` re-anchoring, the toggling `TaskToggleActive`, `TaskSave` with `Id=0` creating a new task every call) are owned by [sql-direct-seeding.md](sql-direct-seeding.md) "Scheduled-task creation semantics".
@@ -140,3 +149,32 @@ Verify by reading order dates back through the delivery API after idle days and 
 - Prefer recipes an agent can run **deterministically** and re-run safely: Management API commands and idempotent SQL (`WHERE NOT EXISTS` / stable seed ids) over UI clicking. Several of these have **no MCP surface** (favorites, `AccessUserSecondaryRelation`, order-state backfills) and are SQL-only — see the owners above.
 - Make the seed **idempotent**: key rows on stable ids/order numbers (e.g. `OrderID LIKE 'ORDER%'`) so a second run does not double-seed. The demo is re-provisioned often; a seed that only works on a virgin DB is a liability. For the email stats seed (§6) key on the message id — one `EmailMessage` per campaign email — so a re-run replaces its recipient/click rows instead of doubling the counts.
 - After seeding orders, **complete them** (`OrderComplete=1` + `OrderCompletedDate`) and, where you raised returns, confirm the RMA row exists — then rebuild the order/products indexes and clear the user cache so the storefront lists and the CSR impersonation views pick the rows up in the same session.
+
+## 10. The shipped dashboard widgets are customer-centre-only
+
+**The shipped `Swift-v2_Dashboard_*` item types carry only `Title` and `BaseLink` — there is no shop,
+group, user or scope parameter on any of them**, and their shipped partials are HTMX fragments that
+call the delivery API's order search with a delivery-API token, which scopes orders to the
+**authenticated user**. So an aggregate or corporate board built on them renders the signed-in user's
+own history on every number, chart and list tile, with no error and no misconfiguration. That is
+correct for a customer-centre dashboard and structurally unable to express an aggregate one — the
+scoping is the partial's design, not a setting that was missed.
+
+**To build an aggregate board on the shipped card chrome, keep the item type and repoint the paragraph
+at an alternate template** under `Paragraph/Swift-v2_Dashboard_<Type>/`, rendering server-side from a
+parameterised query. No add-in, no scheduled task and no shipped `.cshtml` touched — the same
+alternate-template pattern used for audience pricing and stock. Two rules travel with it, and both
+have cost a rebuild:
+
+- An explicit `ParagraphTemplate` beats the item type's own default, and the property is
+  write-inert through `ParagraphSave` on some builds — so **every repointed paragraph joins the
+  never-whole-model-save list** ([`paragraphs.md`](paragraphs.md)).
+- **Assert each tile while signed in as a persona with ZERO personal orders.** That persona is what
+  discriminates the shipped partial from the alternate template; as any user with orders, both look
+  plausible. Add one click-through assert per tile, including a negative (a filter value that must
+  return the other set and nothing of the first).
+
+Reaching for the backend dashboards instead answers a different question: backend **query** widgets
+click through, but stock counter widgets are dead tiles and grid-widget rows are not clickable, and
+orders, claims, applications and part demand are not product queries — so a backend board cannot
+deliver "every tile clicks through".

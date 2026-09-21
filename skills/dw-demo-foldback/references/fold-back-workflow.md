@@ -191,6 +191,37 @@ the name is wrong. Keep the retired-name list in `INDEX.json`, never hardcoded i
 `scripts/validate-skills.py` — a blocklist forks a second source of truth that drifts on the next
 rename.
 
+### 6. Surface-naming sweep — every folded recipe names its rung
+
+For each recipe the fold adds or rewrites:
+
+- **Surface named**, in the repo convention: MCP `snake_case`, Management API `PascalCase` command or
+  route, serializer by command or by layer and mode, SQL labelled `SQL` in a fenced block. "Call the
+  save endpoint" does not pass.
+- **Mixed-surface tables carry a `Surface` column.** A row whose value comes from a DB column and its
+  neighbour from a Management API property are two surfaces; label them.
+- **Every SQL recipe states all three:** why the higher surfaces do not cover it (which rung was
+  tried, what it did), **local installs only**, and the cache flush or host restart it owes (link the
+  matching [`dw-data-access/references/cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md) row).
+- **Instance-type scope stated** when the recipe is not portable — on the recipe, not only in the
+  skill's preamble.
+
+The ladder itself is foundational (`dw-data-access` "Surfaces into a Dynamicweb instance"); restating
+it in a demo skill is a dedup failure (check 2), and a foundational recipe linking to
+`surface-priority.md` is a boundary violation (Step 1).
+
+### 7. Dynamo boundary — a fold into a `dynamo: true` skill adds no non-MCP instruction
+
+Check the target skill's `dynamo:` frontmatter before drafting. A `dynamo: true` skill is served to
+the agent running inside the product, whose whole surface is the MCP tool set plus read/write under
+`Files/` — no Management API, no serializer, no SQL, no shell, no git, no browser, no host restart.
+A fold that would add an instruction on any of those surfaces goes instead to the `dw-data-access`
+recipes reference for its area
+([`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) and its siblings for
+content, pim, users, search and swift), and the `dynamo: true` skill keeps a **one-line pointer** to
+it rather than the recipe. `scripts/validate-skills.py` ratchets this against
+`scripts/dynamo-baseline.json`: a file that gains a violation fails the build.
+
 ## Step 1c: Lifting a script from a demo build
 
 A demo build's `scripts/` folder is a fold-back source like its notes, with one extra bar and a
@@ -226,6 +257,24 @@ the script in the same PR, and the Step 1b §1 supersede sweep runs on the block
 tokens (`RunSqlScheduledTaskAddIn`, `Get-NetTCPConnection`, ...) so no second copy survives in
 another reference. The demo's own copy is retired, or its header points at the shipped script,
 so the next engagement extends the shipped one instead of forking it again.
+
+**An edit that claims to change something asserts that it did.** A scripted rewrite that matches
+nothing returns its input unchanged and logs OK, so the step reports success, the value it was
+supposed to remove survives the composer, the staging and the deserialize, and it surfaces later as
+authored content rather than as a failed edit. Count the files actually rewritten, compare the bytes
+before and after, and **fail closed on a zero-diff rewrite** — every rewrite, not just the ones that
+look risky. Where a script stages a file set, assert it both ways as well: every file the manifest
+names exists on disk, and no staged file is missing from the manifest.
+
+**Write line-wise patterns as `[^\r\n]*\r?\n`, never `.*\n`.** Layer, distribution and shipped
+template text is CRLF. In a JavaScript regex `.` matches any character except a line terminator, and
+`\r` *is* a line terminator, so `/^"key":.*\n/m` can never match a CRLF line: `.*` stops before the
+`\r` and the pattern then demands `\n`. The reason this is nearly invisible is that it discriminates
+by edit **shape**, not by file — `/^("key":).*$/m` with the `m` flag matches fine on CRLF (`$` matches
+before the `\r`), so every value-**rewrite** in the same script keeps working and only the edits that
+consume the line terminator (deleting a whole line) silently no-op. One such edit in a script whose
+other twenty passed is the normal presentation. The same byte fact bites anchors written as source
+literals in a script: an LF anchor matches a CRLF file zero times.
 
 **Smoke-test rule.** A write script is smoke-tested on a local host you own before its PR is
 opened. A hosted install is never the first target: only after the script has passed locally,
@@ -345,7 +394,13 @@ already-installed bundle `/plugin install` is a no-op that leaves the old versio
 5. **Content-hygiene gate passed (Step 1b)** — supersede sweep run if the learning corrects
    anything; no second copy of an existing lesson; routing row updated on a scope change; every
    Distribution layer name checked against `INDEX.json`.
-6. Branch pushed and a **PR open** against the integration branch; after merge, the marketplace
+6. **Surface-naming sweep passed (Step 1b.6)** — every folded recipe names its rung; every SQL
+   recipe states why the higher surfaces do not cover it, that it is local installs only, and the
+   cache flush or host restart it owes.
+7. **Dynamo boundary held (Step 1b.7)** — no `dynamo: true` skill gained an instruction outside the
+   MCP tool set plus `Files/`; every such recipe landed in the `dw-data-access` recipes reference for
+   its area with a one-line pointer left behind, and the validator's dynamo ratchet is clean.
+8. Branch pushed and a **PR open** against the integration branch; after merge, the marketplace
    clone is at the new commit and the user has the slash-command pair.
 
 If any of these fail, surface the failure — a half-folded learning is worse than not folding it,

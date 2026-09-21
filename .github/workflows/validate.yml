@@ -1,26 +1,28 @@
-name: manifest-check
+name: validate
 
-# Fail the build if manifest.json is out of sync with the skills' frontmatter,
-# or if the skills fail structural validation (frontmatter, links, bundle
-# closure). Dynamo (the Dynamicweb MCP server) fetches manifest.json directly,
-# so a stale manifest ships broken discovery to every Dynamo user.
+# The one gate on this repo, run on every pull request and every push to main.
+# It proves three things: the skills validate structurally (frontmatter, links,
+# bundle closure, the Dynamo surface ratchet, MCP tool names and the version
+# spine), every shipped PowerShell script parses, and manifest.json is current.
+# Dynamo (the Dynamicweb MCP server) fetches manifest.json directly, so a stale
+# manifest ships broken discovery to every Dynamo user.
 
 on:
   push:
-    branches: [v2, main]
+    branches: [main]
   pull_request:
 
 jobs:
-  manifest:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - name: Validate skills
         run: |
           pip install pyyaml
@@ -30,7 +32,7 @@ jobs:
         run: |
           $failures = @()
           Get-ChildItem skills -Recurse -File -Include *.ps1, *.psm1 |
-            Where-Object { $_.FullName -match '[\\/]scripts[\\/]' } |
+            Where-Object { $_.FullName -match '[\/]scripts[\/]' } |
             ForEach-Object {
               $tokens = $null
               $parseErrors = $null

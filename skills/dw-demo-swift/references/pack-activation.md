@@ -55,7 +55,7 @@ is a base-layer improvement, not a pack.
 - A Management API bearer token captured in the current conversation (format `CLAUDE.<hex>`; keep it
   in conversation state, never write it to a file).
 - The feature layer present in the demo's Distribution clone
-  (repo URL from `$env:DW_DISTRIBUTION_REPO`) at `<demo-root>\distribution\layers\<name>\`,
+  (`justdynamics/Truvio.Commerce.Distribution`, or the `$env:DW_DISTRIBUTION_REPO` mirror override) at `<demo-root>\distribution\layers\<name>\`,
   `layer.json` at the folder root — deserialize-flow §3 already cloned the Distribution; §4 below
   fast-forwards to `origin/main` and resolves the layer from `INDEX.json`. The reproducibility pin
   is the resolved commit SHA.
@@ -98,6 +98,14 @@ version**) and resolve the layer from the live `layers/INDEX.json` — a feature
 consumed via an `editions/<name>.json` that composes base + this pack at gate-proven versions. No
 hardcoded machine-wide literals — everything lands under the demo root.
 
+**Do not pull here — assert the scaffold SHA.** The scaffold pass owns the Distribution checkout and
+recorded its SHA in `CUSTOMISATIONS.md` as the build's reproducibility stamp
+([`dw-demo-base/references/scaffold.md`](../../dw-demo-base/references/scaffold.md) "This pass owns
+the checkout"). Read `git -C $dist rev-parse HEAD`, compare it with the recorded stamp, and **stop**
+on a mismatch with "distribution checkout moved since scaffold, <recorded> -> <current>" rather than
+continuing on layer content the earlier passes never saw. The clone branch below stays only for a
+checkout that does not exist yet; record its SHA as the stamp if this is the first pass to run.
+
 ```powershell
 $packName = "feature-pricing"       # the feature layer you are installing
 $demoRoot = (Get-Location).Path     # the demo project root
@@ -107,7 +115,7 @@ $packDir  = "$dist\layers\$packName"
 if (Test-Path "$dist\.git") {
   git -C $dist pull --ff-only origin main
 } else {
-  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "<owner>/<distribution-repo>" }
+  $repo = if ($env:DW_DISTRIBUTION_REPO) { $env:DW_DISTRIBUTION_REPO } else { "justdynamics/Truvio.Commerce.Distribution" }
   git clone "https://github.com/$repo" $dist
 }
 $index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
@@ -210,8 +218,8 @@ Track exactly what you copy — removing the pack later deletes exactly these fi
 The fragment is serializer YAML that lands the pack's data. Stage each mode tree named in
 `fragmentModes` into the host's `SerializeRoot`, then POST the deserialize — one POST per mode.
 
-> **STAGE THE FRAGMENT ISOLATED — say it loudly.** A `POST /Admin/Api/SerializerDeserialize?mode=<m>`
-> deserializes **everything in `SerializeRoot/<m>/`**, not just the files you copied in. If the base
+> **STAGE THE FRAGMENT ISOLATED — say it loudly.** A `Deserialize` POST carrying
+> `{"Mode":"<m>"}` deserializes **everything in `SerializeRoot/<m>/`**, not just the files you copied in. If the base
 > layer's trees are still sitting in `SerializeRoot/replace/` and `SerializeRoot/merge/` from the
 > §"deserialize-flow.md" run, dropping the fragment alongside them **re-deserializes the base too** —
 > and the base `replace` pass is **source-wins**, so it re-applies the base layer's framework rows and
@@ -244,9 +252,14 @@ foreach ($mode in $pack.fragmentModes) {          # e.g. 'merge', or 'replace','
   if (Test-Path $modeSrc) {
     New-Item -ItemType Directory -Path "$serializeRoot\$mode" -Force | Out-Null
     Copy-Item -Recurse "$modeSrc\*" "$serializeRoot\$mode\" -Force
+    # Mode travels in the JSON body and nothing goes on the query string: a ?mode=
+    # on the URL overrides the body Mode. One call shape, owned by
+    # ../../dw-demo-base/references/serializer-reference.md "Invocation — one shape".
+    $body = @{ Mode = $mode; IsDryRun = $false } | ConvertTo-Json
     $resp = Invoke-RestMethod `
-      -Uri "https://localhost:$port/Admin/Api/SerializerDeserialize?mode=$mode" `
-      -Method POST -Headers @{ Authorization = "Bearer $token" } -SkipCertificateCheck
+      -Uri "https://localhost:$port/Admin/Api/Deserialize" `
+      -Method POST -Headers @{ Authorization = "Bearer $token" } `
+      -ContentType "application/json" -Body $body -SkipCertificateCheck
     Remove-Item -Recurse -Force "$serializeRoot\$mode"   # clear the staged fragment before the next mode
   }
 }
@@ -267,6 +280,7 @@ orderable until the next start. Then confirm the install:
 
 - **Config rows exist.** For each `layer.json` `configRows` entry, run its `EXISTS` probe (e.g.
   `SELECT 1 FROM <table> WHERE <where>`) and confirm the row is present.
+  **Local installs only**: on a hosted install, read each row through the MCP tool or Management API query that owns its table, and ask the user for a table no read reaches.
 - **Behavior works.** Exercise the pack's frontend path (an anonymous or signed-in GET of the page it
   ships) and confirm the declared behavior — a marker file appears, a body pattern renders, or a cart
   line carries the pack's price.
@@ -302,8 +316,11 @@ Pack-specific behaviors and known limitations to expect after install:
 
 - **feature-subscription-orders** ships its own **disabled** `Place recurring orders` scheduled task in its
   fragment. It arrives disabled deliberately — enable it only when the demo actually exercises
-  recurring-order generation, so an idle demo host never fires it. Confirm the task exists (a
-  `configRows` probe) and leave it disabled unless the storyline needs it.
+  recurring-order generation, so an idle demo host never fires it. Leave it disabled unless the
+  storyline needs it. The platform also **seeds a disabled row of the same name on application
+  start whenever it is absent**, so "the task exists" is not evidence the fragment applied: probe a
+  column only the fragment writes, and never assert the scheduled-task `COUNT(*)` across a restart:
+  assert on the task names the pack owns.
 - **feature-pricing** ships a **compile-optional `IPriceProvider`** (see §5 "The `customCode`
   declaration"): **contract pricing works zero-code** (native default provider) and **quantity-tier
   enforcement requires the §6 opt-in compile**. Install data-only unless the demo needs qty-tier

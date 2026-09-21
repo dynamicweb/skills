@@ -4,17 +4,20 @@ type: knowledge
 group: pim
 mcp: optional
 dynamo: true
-description: 'Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, query-driven automatic workflows — and enrich products against a query by filling their missing completion fields. Triggers: create completion rules, assign rules to data models or product groups, understand completeness scoring, set up completeness-driven query movement, fill/enrich missing product fields from a query. Non-triggers: manual workflow states -> dw-pim-workflow; the Data Model schema -> dw-pim-modelling.'
+description: 'Configure PIM completion rules, scoring, automatic query movement, and missing-field enrichment. Triggers: assign rules, calculate completeness, enrich query results. Non-triggers: manual states or transitions -> dw-pim-workflow; schema -> dw-pim-modelling.'
 ---
 
 # Product Completeness
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
-apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
-review, or produce payloads and configuration for the user to apply — and do not substitute
-direct SQL, file edits, or guessed HTTP calls for those tool calls.
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the way to apply it, and
+in-product they are the only way — the MCP tool set plus read/write under `Files/` is the whole
+surface these steps may use. When no tool covers the operation, **stop and tell the user**, naming
+the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
+outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
+product, are never a step in this skill, and are owned by
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 ## What Completeness Is
 

@@ -4,7 +4,8 @@ type: knowledge
 group: setup
 mcp: none
 dynamo: false
-description: 'Configure Dynamicweb 10 environment and connection settings. Triggers: configuration surfaces, environment setup, connection strings, GlobalSettings, appsettings.json, environment variables, SMTP, log retention, go-live checklist. Non-triggers: upgrading versions -> dw-setup-upgrade; installing new solutions -> dw-setup-install.'
+compatibility: Requires PowerShell 7.x
+description: 'Configure DW10 environments and connections. Triggers: GlobalSettings, appsettings.json, environment variables, connection strings, SMTP, log retention, go-live settings. Fresh install -> dw-setup-install.'
 ---
 
 # Dynamicweb 10 Configuration
@@ -14,6 +15,7 @@ description: 'Configure Dynamicweb 10 environment and connection settings. Trigg
 | Topic | Where |
 |---|---|
 | Tracking, Insights and health providers — which tables the Marketing widgets actually read (`Tracking*`, not `Statv2*`), the `DoNotTrackConnectionCloseHeader` empty-tracking trap, the 10.28.x cookie-write defect, `Tracking/Level` parse fallback, the `TrackingSession%` table-name resolution hazard, health providers over `/Admin/Api`, the partially-contained-DB `ContentDataHealthProvider` 500, and `GeneralLog`/`ScheduledTaskExecution` retention | [`references/tracking-insights.md`](references/tracking-insights.md) |
+| The file archive is public by extension (`.xml` / `.json` are not blocked, so job-file credentials and gated asset libraries are anonymously downloadable), integrated security for `SqlProvider` activities, and the `web.config` `<location>` that unhooks the app from a configured sub-path | [`references/host-exposure-and-paths.md`](references/host-exposure-and-paths.md) |
 
 ## Configuration Files and Their Priority
 
@@ -27,6 +29,18 @@ Dynamicweb 10 uses a layered configuration system. All `.config` files in `/File
 | `GlobalSettings.Database.config` | `/Files/` root | DB connection only — overrides GlobalSettings |
 | `web.config` | Solution root (IIS only) | Environment variables, process path |
 | `launchSettings.json` | Project root | VS / .NET CLI launch profiles |
+
+### Which config surfaces reload, and which cost a restart
+
+The reload semantics differ per file, and the difference is a restart budget:
+
+| Surface | Reload |
+|---|---|
+| A product-index `.query` file | **Hot** — watched and re-read within seconds. Iterate query shapes freely; a storefront listing empties and refills on the edit alone |
+| `GlobalSettings.config` (and its `GlobalSettings.*.config` overrides) | **Restart.** An ecommerce switch flipped here changes nothing at all until the app pool recycles |
+
+So sequence a change window as: settle every `.query` shape first, for free, then spend the one
+recycle on the `GlobalSettings` change.
 
 ## appsettings.json
 
@@ -96,6 +110,8 @@ Two remedies, in order:
    DW10 login page instead of Setup.
 2. Re-enter the password on the target host so it is encrypted with that host's own keys.
 
+**Local installs only**: a hosted install's database login is managed by the host, so neither the `sqlcmd` test nor the login grant applies there.
+
 ## Programmatic Access to GlobalSettings
 
 ```csharp
@@ -136,6 +152,7 @@ no duplicate appended.
 - Never treat `GlobalSettingByKey` as proof a setting is applied. It echoes back a key you invented.
   Assert the **effect** instead, for auditing that is `SELECT COUNT(*) FROM Audit` increasing across a
   `ProductSave`.
+  **Local installs only** for the `SELECT`: on a hosted install, assert it with `get_audits_by_query`.
 
 ## Setting the Environment
 
@@ -197,6 +214,26 @@ Access via **Settings** in the Dynamicweb admin:
 
 Cloud default: `smtp.dynamicweb-cms.com`. On Azure App Service, check **"Do not use SMTP pickup directory"** and use an external SMTP relay — the pickup directory is not supported on App Service.
 
+**Point `/Globalsettings/System/MailServer/Server` at a reachable SMTP service on every host,
+including an offline dev or demo box** (`127.0.0.1` works on Windows with the IIS SMTP feature).
+Mail-dependent sign-in is **disabled, not degraded, when the send throws**: a magic-link token is not
+committed unless the send succeeds. With an unreachable server the user gets an `EmailException`
+stack trace rendered onto the sign-in page, Dynamicweb still saves a correct, fully formed message
+with a real one-time URL — and opening that URL, immediately and well inside its expiry, returns the
+sign-in form with `MfaVerificationFailed`. It reads as "magic link is broken in Dynamicweb" and it is
+"mail is down". Changing that one setting makes the identical link redeem first time.
+
+Where the token has to be read out of the platform rather than an inbox, note that the location moves
+with the outcome:
+
+| Send outcome | Where the message is |
+|---|---|
+| **Failed** | `Files/System/Log/EmailHandler/<timestamp>_<guid>.eml`, logged as "The message was saved for reference" — a complete message whose link does **not** work |
+| **Succeeded** | No copy is written at all; the message is wherever the SMTP service put it. With an unroutable recipient on a Windows host that is the service's Badmail folder, which quotes the original verbatim |
+
+So an acceptance criterion of "the outgoing mail is visible in the mail log" is satisfiable on a host
+where the link provably does not work. Assert the sign-in, not the mail.
+
 ## Dynamicweb Cloud Control Files
 
 Place these files in `/Files/System/CloudHosting/` to trigger platform operations:
@@ -225,6 +262,37 @@ Drive:\
         ...
 ```
 
+## Host Request-Pipeline Options
+
+These are host options, not Dynamicweb settings: they live in `web.config` (or `Program.cs`) next
+to the solution, and every change owes an application restart. Nothing inside the product reaches
+them.
+
+### `AllowSynchronousIO` — what it unblocks, and why it is rarely the answer
+
+ASP.NET Core disallows synchronous IO on the request stream by default. Any code path that writes
+the response through a synchronous `Stream.Write` therefore throws
+`Synchronous operations are disallowed` under the in-process IIS host. The Dynamicweb response
+member built on that path is `Response.BinaryWrite(byte[])`, called from a Razor template.
+
+Enabling it is a host edit:
+
+```xml
+<!-- web.config, under <system.webServer> for the in-process module -->
+<aspNetCore ...>
+  <handlerSettings>
+    <handlerSetting name="allowSynchronousIO" value="true" />
+  </handlerSettings>
+</aspNetCore>
+```
+
+or, in `Program.cs`, `services.Configure<IISServerOptions>(o => o.AllowSynchronousIO = true)`.
+
+Either way: the edit is outside `/Files/`, it needs an application restart, and it relaxes a
+platform-wide protection for one call site. Prefer the template-side shape that needs no host
+change — inline the bytes into the authorised response as a base64 `data:` URI on an
+`<a download="…">` — and keep this option for a host you own and have measured.
+
 ## Go-Live Checklist
 
 1. **`DisableDebug` = `true`** — Settings > System > Global Settings. Required for production performance.
@@ -234,6 +302,11 @@ Drive:\
 5. **SMTP relay verified** — send a test email from the admin before go-live.
 6. **`GlobalSettings.Database.config` in place and gitignored** — no DB credentials in version control.
 7. **IIS app pool: `LoadUserProfile = true`** — required for Windows auth scenarios.
+8. **File-archive exposure enumerated** — anonymously request every extension you ship under `/Files`
+   and record what answers 200. Integration job files carry integrated security rather than a
+   connection string (grep them as UTF-16LE), and any asset library that is meant to be gated is
+   moved off the web root or put behind an authenticated handler. See "The file archive is public by
+   extension" above.
 
 ## Recommended .gitignore Entries
 
@@ -258,6 +331,20 @@ Templates/Designs/**/_parsed
 **Backslash escaping** — `FilesPath` in `appsettings.json` on Windows requires double-backslash: `"C:\\DwSolutions\\Files"`.
 
 **Azure scale-out** — Dynamicweb does not support horizontal scale-out (multiple instances). Only scale-up is supported.
+
+## Scripts (scripts/)
+
+| Script | Reads / writes | What it does |
+|---|---|---|
+| [Test-DwFileArchiveExposure.ps1](scripts/Test-DwFileArchiveExposure.ps1) | Read-only | Performs go-live checklist item 8: one anonymous, cookie-free, bearer-free request per archive path, reporting SERVED / EXPECTED / BLOCKED. The default path set is the one measured on a stock 10.28.x install (the job folder, the item XML, the serializer config, a blocked-extension control, and the legacy Data Integration job runner). An undeclared 200 fails the run; `-ExpectServed` turns an exposure that cannot be closed into a declared caveat. Self-contained — it imports nothing, because a bundle shipping this skill does not ship `dw-data-access` |
+
+```powershell
+pwsh -NoProfile -File scripts/Test-DwFileArchiveExposure.ps1 -BaseUrl "https://<host>"
+```
+
+The rule it enforces, and the two rules it cannot check (the UTF-16LE false-clean grep, the doubled
+`Files\Files` root), are in
+[`references/host-exposure-and-paths.md`](references/host-exposure-and-paths.md).
 
 ## Next Steps
 

@@ -12,6 +12,7 @@
 - [Check 6: Icon set populated under `Files/Images/Icons/` (Pitfall: blank-blue-button storefront)](#check-6-icon-set-populated-under-filesimagesicons-pitfall-blank-blue-button-storefront)
 - [Check 7: Raw SQL in paragraph templates (DW10 discipline)](#check-7-raw-sql-in-paragraph-templates-dw10-discipline)
 - [Check 8: Style assets staged + emitted (the theme gate)](#check-8-style-assets-staged--emitted-the-theme-gate)
+- [Check 9: The storefront catalogue renders products](#check-9-the-storefront-catalogue-renders-products)
 - [Sweep complete](#sweep-complete)
 
 > Mandatory post-deserialize integrity sweep. Eight sequential checks. Run after [`deserialize-flow.md`](deserialize-flow.md) returns 2xx. The skill refuses to declare deserialize complete until ALL eight pass. Strict-mode Serializer is the first line of defence — this sweep is the second, catching DW10-specific failures strict mode does not detect.
@@ -68,6 +69,8 @@ if ([int]$result.Trim() -lt 1) {
   throw "reference_category parent row missing. See ../../dw-demo-pim/references/governance.md 'Completeness rules' for the seed pattern."
 }
 ```
+
+**Local installs only**: a hosted install has no verified read path for this hidden row, so an online build checks that the product completeness panel renders in the admin UI.
 
 **Scope note:** Check 2 only **detects** the missing row. The seed-rule context (the four-rows-per-field SQL pattern) lives in the PIM skill — see [`../../dw-demo-pim/references/governance.md`](../../dw-demo-pim/references/governance.md) "Completeness rules — why they sometimes don't show" for the seed pattern.
 
@@ -136,6 +139,8 @@ if ($missing) {
 }
 ```
 
+**Local installs only**: on a hosted install, read each feed with MCP `get_feed_by_id` and check each template path with MCP `list_files`.
+
 **Note:** If strict-mode Serializer already raised these, Check 4 is a no-op. If Check 4 fires and strict mode did NOT, strict mode missed a category — document it in the per-demo `CUSTOMISATIONS.md` as an environmental drift note so the next deserialize on this machine inherits the warning.
 
 ## Check 5: BuildIndex (by the `.index` Build Name) + wait for a fresh successful build
@@ -159,10 +164,10 @@ if (-not $buildName) { throw "No <Build Name> in $idxPath — cannot resolve Bui
 - `GET /admin/api/IndexStatusByRepositoryAndIndexName?Repository=<repo>&IndexName=<name>.index` → model `{ State: Success|Warning|Error, StateDescription, LastRun, ... }`
 - `GET /admin/api/InstanceStatusByName?Repository=<repo>&IndexName=<name>.index&InstanceName=<instance>` → model `{ State: Completed|Failed|Running, LifecycleState: NeverBuilt|Starting|Running|Completed|Failed|Interrupted, LastSuccessfulBuild, CurrentCount, TotalCount }`
 
-Confirm the exact paths against the host's own catalog (`GET /admin/api/api.json`, bearer-authed) when in doubt. Live JSON responses come back **camelCase** even though the catalog declares PascalCase — PowerShell property access is case-insensitive so the probe below is unaffected; case-sensitive consumers must expect camelCase.
+Confirm the exact paths against the host's own catalog (`GET /admin/api/api.json`, which is served without a key check) when in doubt. Live JSON responses come back **camelCase** even though the catalog declares PascalCase — PowerShell property access is case-insensitive so the probe below is unaffected; case-sensitive consumers must expect camelCase.
 
 **Probe** — run the enforced form,
-[`../../dw-search-indexing/scripts/Build-DwProductIndex.ps1`](../../dw-search-indexing/scripts/Build-DwProductIndex.ps1),
+[`../../dw-data-access/scripts/Build-DwProductIndex.ps1`](../../dw-data-access/scripts/Build-DwProductIndex.ps1),
 with `-Passes 2` (one instance refreshes per run on a 2-instance index) and the `BuildName`
 resolved from the repository's own XML — NEVER assume `Full` here:
 
@@ -171,7 +176,7 @@ $repo = '<Repository>'   # read from Files/System/Repositories/ — solution-spe
 $idx  = '<Name>.index'
 $buildName = ([xml](Get-Content "wwwroot/Files/System/Repositories/$repo/$idx" -Raw)).SelectSingleNode('//Build/@Name').Value
 if (-not $buildName) { throw "No <Build Name> in the index XML — cannot resolve BuildName." }
-pwsh -NoProfile -File ../dw-search-indexing/scripts/Build-DwProductIndex.ps1 -Repository $repo -IndexName $idx -BuildName $buildName -Passes 2
+pwsh -NoProfile -File ../dw-data-access/scripts/Build-DwProductIndex.ps1 -Repository $repo -IndexName $idx -BuildName $buildName -Passes 2
 ```
 
 **Assert every instance is current, not just one.** After the two passes, confirm each instance of the index reports a fresh successful build — a single healthy instance masks a stale sibling. Query `InstanceStatusByName` per instance and check `LastSuccessfulBuild` is fresh against the run; any instance still reporting "must be recovered" means the second pass didn't take — recover it (below).
@@ -271,8 +276,8 @@ pack covers URL substring scans, hard-coded slugs, category-name branching, mast
 
 ## Check 8: Style assets staged + emitted (the theme gate)
 
-**What is verified:** the Areas' style wiring resolves to real files, and the storefront actually
-emits the three style links. `TryGet*Style` fails **silently** when the file behind an Area's
+**What is verified:** the Areas' style wiring resolves to real files, the storefront emits every
+style link, **and the theme's own custom sheet is wired through the area's `CustomHeadInclude`**. `TryGet*Style` fails **silently** when the file behind an Area's
 style id is absent, and `swift.css` alone renders a page that looks "almost right" — structural
 layout intact, every font in the browser's serif fallback, buttons unstyled. Hosts have shipped
 in that state without anyone noticing, because nothing errors.
@@ -296,7 +301,13 @@ $html = (Invoke-WebRequest "https://localhost:$port/" -SkipCertificateCheck -Use
 foreach ($dir in 'ColorSchemes','Buttons','Typography') {
     if ($html -notmatch "Styles/$dir/[^""]+\.css") { throw "Home <head> emits no $dir stylesheet — empty-state pitfall." }
 }
+# 3. The theme's custom sheet is reached — it loads ONLY through the area's CustomHeadInclude
+if ($html -notmatch 'Custom/default_custom\.css') {
+    throw "Home <head> emits no default_custom.css — set Swift-v2_Master.CustomHeadInclude on the area (styles-assets.md)."
+}
 ```
+
+**Local installs only**: on a hosted install, read the area's style ids with MCP `get_area_by_id` and check the files with MCP `list_files`; steps 2 and 3 run unchanged against the site URL.
 
 **Beyond the mechanical probe:** a full-page screenshot of the home page must read as a
 *designed* page — brand or neutral-theme typography, styled buttons, coherent color schemes.
@@ -304,13 +315,56 @@ A page in serif fallback with browser-default buttons fails this check even when
 without errors. Run the polish gate in
 [`visual-qa.md`](../../dw-demo-base/references/visual-qa.md) before declaring the host ready.
 
-**Recovery:** stage the theme's three pairs and rewire the Areas per
+**This check fails on a clean one-shot deserialize.** The field is in the serializer's
+`excludeFieldsByItemType`, so no content can carry it: a freshly deserialized host has it empty, the three
+Style-asset sheets link normally, nothing errors, and only this probe sees that the theme's whole Tier-1
+token block is absent. Treat a missing `Custom/default_custom.css` as a FAIL of the deserialize, not as a
+polish item.
+
+**Recovery:** stage the theme's Style pairs, wire `Swift-v2_Master.CustomHeadInclude` to the staged
+`DefaultHeadInclude.cshtml`, and rewire the Areas per
 [`deserialize-flow.md`](deserialize-flow.md) "Stage the theme's Style assets" +
-[`styles-assets.md`](styles-assets.md); restart so the resolved style URLs reload.
+[`styles-assets.md`](styles-assets.md); restart so the resolved style URLs reload. On a site whose field
+already points at a **customer** head include, the fix is not to repoint the field back: the field holds one
+path and `default_custom.css` is registered from inside the default include, so the customer include must
+register both sheets itself, `default_custom.css` first ([`styles-assets.md`](styles-assets.md)).
+
+## Check 9: The storefront catalogue renders products
+
+**What is verified:** the storefront's catalogue query resolves, its index holds documents, and the
+product listing page renders product cards. Checks 1-8 can all pass on a host whose PLP is empty,
+because the catalogue fails *inside* a 200 response instead of failing the request.
+
+1. **The query file resolves.** `Files/System/Repositories/<repo>/Products.query` and
+   `Products.facets` exist, where `<repo>` is the repository the catalogue paragraph itself names —
+   read it with `get_module_settings` on that paragraph's `IndexQuery`, never a tool default. On a
+   Swift storefront that is `ProductsFrontend`. A missing file renders an empty PLP with no error.
+2. **The index holds documents.** `get_product_index_status`, called with that `repositoryName`
+   **and** `indexName` as the file name including the suffix (`Products.index`) — the tool defaults
+   both to the literal `Products` and answers a bare `Idle` with no `documentCount` member for a pair
+   that addresses nothing — reports `documentCount > 0`. **A completed build with zero
+   documents is a failure, not a success:** a zero-document index cannot serve a query at all, and
+   the catalogue app writes the resulting `numHits must be > 0` exception into the page body. A
+   build that finished before the content load is the usual cause, and the daily drain would have
+   healed it overnight, so rebuild explicitly with `build_product_index` + `wait_for_product_index`
+   *after* the deserialize and the fixture load, and assert the count again. The five preconditions
+   behind a build that never drains, with their asserts, are in
+   [`index-management.md`](../../dw-search-indexing/references/index-management.md) — run them there
+   rather than restating them here.
+3. **The page renders cards.** `fetch_frontend_page_html` on the shop page returns HTTP 200 **and**
+   at least one product-card element, **and zero occurrences of the emitted error markup**
+   `<pre class="dw-error">` / `<h2 class="dw-error">`. Match the markup, not the bare strings
+   `dw-error` or "Error executing template" — a guide page that quotes those strings as copy is a
+   false positive, and the status code alone proves nothing here.
+
+**Recovery if Check 9 fails:** author or restore the storefront query per
+[`../../dw-demo-pim/references/canonical-setup-order.md`](../../dw-demo-pim/references/canonical-setup-order.md)
+Step 17, then rebuild the index and re-run all three parts. Do not declare the baseline restored on
+a 200 alone.
 
 ## Sweep complete
 
-When all eight checks pass, deserialize is verified complete. The skill may now declare "baseline restored" to the user.
+When all nine checks pass, deserialize is verified complete. The skill may now declare "baseline restored" to the user.
 
 Log the result + layer name + timestamp in the per-demo `CUSTOMISATIONS.md` as a deserialize event row, and record the resolved commit SHA there too. This is structural — every deserialize is reproducible by re-running this flow against the same layer name at the commit SHA recorded in `CUSTOMISATIONS.md` (consumers pin `origin/main`; the SHA is the forensic reproducibility stamp).
 

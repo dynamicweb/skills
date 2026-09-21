@@ -4,17 +4,20 @@ type: knowledge
 group: pim
 mcp: optional
 dynamo: true
-description: 'Model Dynamicweb 10 PIM data — Data Models, category fields, variant groups, and global vs category field storage — and create products, variant groups/combinations through the MCP tools. Triggers: design or refactor a Data Model, choose global vs category fields, structure variant groups, organize category groups vs product folders, create/clone a product or variant, set up variant options/combinations. Non-triggers: workflow states and transitions -> dw-pim-workflow; completeness rules and scores -> dw-pim-completeness; translating products -> dw-pim-localization.'
+description: 'Model PIM Data Models, fields, folders, products, and variants. Triggers: global vs category fields, category groups, variant options or combinations, create or clone products. Non-triggers: workflow -> dw-pim-workflow; completeness -> dw-pim-completeness.'
 ---
 
 # PIM Data Modelling
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
-apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
-review, or produce payloads and configuration for the user to apply — and do not substitute
-direct SQL, file edits, or guessed HTTP calls for those tool calls.
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the way to apply it, and
+in-product they are the only way — the MCP tool set plus read/write under `Files/` is the whole
+surface these steps may use. When no tool covers the operation, **stop and tell the user**, naming
+the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
+outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
+product, are never a step in this skill, and are owned by
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 ## Core Concepts
 
@@ -148,7 +151,7 @@ Admin path: **Products > Data > Variant Groups**
 
 | Intent | Tool |
 |---|---|
-| List / inspect variant groups | `get_variant_groups`, `get_variant_group_by_id`, `get_variant_groups_by_product_id` |
+| List / inspect variant groups | `get_variant_groups`, `get_variant_groups_by_ids`, `get_variant_groups_by_product_id` |
 | Create / update a group (`DisplayType` controls storefront UI) | `save_variant_groups` |
 | List / create / update options in a group | `get_variant_options`, `save_variant_options` |
 | Assign variant groups to a product | `assign_variant_groups_to_product` |
@@ -178,6 +181,13 @@ combinations (`create_variant_combinations` — each combination's option ids mu
 **exactly one option per assigned group**, no more, no fewer) → verify
 (`get_variant_combinations`, confirm the expected matrix, e.g. 3 colors × 2 sizes = 6
 combinations).
+
+**Key options on the group id the platform returns.** Measured [dw 10.28.10 · mcp 0.4.4]:
+`save_variant_groups` ignores a supplied `id` on create and mints its own, and `save_variant_options`
+accepts a `groupId` that does not exist and creates the options under it, orphaned, with no error.
+Capture each group id from the `save_variant_groups` response (or `get_variant_groups`), pass that
+as `groupId`, and read the options back with `get_variant_options` before assigning the group. An
+orphan is repaired by re-saving the option with its `id` and the real `groupId`, which re-parents it.
 
 Full matrix size is the product of option counts across assigned groups. Decide with the user
 whether they want the full matrix or only specific sellable combinations — create only the
@@ -234,7 +244,7 @@ Products not linked to any Data Model have only standard/global fields.
 
 ## Deep reference
 
-[references/structural-model.md](references/structural-model.md) — the field-validated structural mental model: shop types (`EcomShops.ShopType`) and admin-nav mapping, group types (`EcomGroups.GroupType`), variants (3-table shape, single-axis lean shape, unique-`ProductNumber` rule, MCP `create_variant_combinations` NULL gotcha), BOM bundles (`EcomProductItems` row shapes, `ProductItemAdd` payload), category/field internals (`EcomProductCategoryField`, option-value storage, `reference_category` option buckets, `ProductFieldSave` retype trap), assets (`EcomDetails`, default-image gate), Dynamic Workspaces internals, the standard `ProductField` inventory preflight, and the collapse-custom-field-into-standard recovery recipe.
+[references/structural-model.md](references/structural-model.md) — the field-validated structural mental model: shop types (`EcomShops.ShopType`) and admin-nav mapping, group types (`EcomGroups.GroupType`), variants (3-table shape, single-axis lean shape, unique-`ProductNumber` rule, MCP `create_variant_combinations` NULL gotcha), BOM bundles (`EcomProductItems` row shapes, `ProductItemAdd` payload), category/field internals (`EcomProductCategoryField`, option-value storage, `reference_category` option buckets, `ProductFieldSave` retype trap), assets (`EcomDetails`, the two shipped `EcomDetailsGroup` categories and where a document's type really lives, default-image gate), per-location stock-unit attributes, Dynamic Workspaces internals, the standard `ProductField` inventory preflight (including the `ProductById` → `ProductSave` round trip for the `EcomProducts` scalars MCP cannot write), and the collapse-custom-field-into-standard recovery recipe.
 
 ## Next Steps
 

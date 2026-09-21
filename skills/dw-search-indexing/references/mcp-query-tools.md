@@ -9,6 +9,7 @@ building a demo host). This file covers the MCP tool surface a normal agent has 
 
 ## Contents
 
+- [A rendered PLP shows MIN(page size, total) — never the header count](#a-rendered-plp-shows-minpage-size-total--never-the-header-count)
 - [Product query vs repository index query — get this right first](#product-query-vs-repository-index-query--get-this-right-first)
 - [Tool map](#tool-map)
 - [The read–edit–verify loop (mandatory for every expression change)](#the-readeditverify-loop-mandatory-for-every-expression-change)
@@ -19,6 +20,23 @@ building a demo host). This file covers the MCP tool surface a normal agent has 
 - [Deleting a query safely](#deleting-a-query-safely)
 - [Dashboard binding](#dashboard-binding)
 - [Query configuration (admin UI settings)](#query-configuration-admin-ui-settings)
+
+## A rendered PLP shows MIN(page size, total) — never the header count
+
+A storefront product list pages server-side behind a load-more control, so the **rendered card count is
+the page size** while the header total is the whole hit count. They are equal only while the catalogue
+fits on one page, which is why an assert written as "rendered rows equal the header count" passes on a
+small seed and then fails on every build that outgrows it — on a correct catalogue.
+
+Assert the two separately:
+
+- the rendered card count equals the configured page size, with a load-more control present;
+- the header total equals the index `documentCount` for the shop's repository (`get_product_index_status`
+  with both `repositoryName` and the full `indexName` including its `.index` suffix).
+
+A mismatch between the header total and the document count is a real finding — a stale index, a
+mis-scoped shop, or a query filtering more than intended. A mismatch between the card count and the
+header total is the paging working.
 
 ## Product query vs repository index query — get this right first
 
@@ -33,6 +51,11 @@ deleted:
   the storefront product list; also Content/Files). Shown in the Repositories tree, not the
   Products > Queries screen. Managed by the `*_index_quer*` tools (`get_index_queries`,
   `delete_index_queries`, `*_index_query_expressions`). Each result reports its `Repository`.
+
+Both families are registered on MCP 0.4.4 — the split is real, not a build difference. A call to
+either that comes back `An error occurred invoking <tool>.` is this add-in's argument-validation
+error (a missing or misnamed required argument), not a missing tool; re-read `tools/list` and call
+again rather than switching families over it.
 
 They share the same `.query` file format but differ in **location, accessor, UI surface, and
 purpose**. The product-query tools are scoped to PIM and will REFUSE an id that resolves to a
@@ -114,12 +137,21 @@ under the root AND:
 - groups: `[(GroupKey 0, ParentGroupKey -1, Operator And), (GroupKey 1, ParentGroupKey 0,
   Operator Or)]`
 - expressions:
-  - `(GroupKey 1, Field 'AssortmentIDs', Operator IsEmpty)`
   - `(GroupKey 1, Field 'AssortmentIDs', Operator MatchAny, ValueType 'Macro', Value
     'Dynamicweb.UserManagement.Context:AssortmentIDs')`
 - plus every other pre-existing condition re-referenced by `SourceNodeKey` into GroupKey 0.
 
 Use `MatchAny` (not `Equal`) when both sides can hold multiple IDs.
+
+**The "or no assortment" half of that pattern is only half-buildable, so put every product in an
+assortment instead.** An `IsEmpty` arm on `AssortmentIDs` parses and matches nothing on the Lucene
+provider on 10.28.x, and its no-`Right` form throws and takes the page down (the shapes and the
+mechanism are in
+[`query-expressions.md`](query-expressions.md#operators-what-the-enum-implies-vs-what-matches)). The
+working shape is to range every product somewhere — a product with no natural assortment is ranged
+everywhere rather than nowhere — after which the macro arm alone is the whole filter and the SQL and
+index paths agree. If an OR arm for the empty case is unavoidable, assert its row count before
+shipping it; it will report zero without raising anything.
 
 ## Index must be built before queries return data
 
@@ -127,10 +159,23 @@ A query reads from an index. If the index has never been built, or is stale afte
 field change, queries return zero or wrong results even when the expression is correct. The
 reliable order:
 
-1. `build_product_index` to (re)build.
-2. `wait_for_product_index` (or poll `get_product_index_status`) until it reports complete
-   with a non-zero document count.
+1. MCP `build_product_index` to (re)build — **passing `indexName` explicitly, as the index FILE
+   name including the `.index` extension** (`Products.index`).
+2. MCP `wait_for_product_index` (or poll `get_product_index_status`) until it reports complete
+   **with a non-zero `documentCount`**.
 3. Only then trust query results.
+
+**Pass `indexName` on every call in that sequence.** MCP `build_product_index`,
+`wait_for_product_index` and `get_product_index_status` default `indexName` to `Products`, while the
+real repository index file is `Products.index` — so the default addresses a nonexistent index and
+**succeeds vacuously**: `wait_for_product_index` answers `{"completed":true,"message":"Full index
+build completed"}` with the index untouched, and the status comes back `{"status":"Idle"}` carrying
+no `documentCount` and no `lastBuild`. **A status with no `documentCount` means the tool addressed
+nothing** — gate on the document count, never on `completed:true`; that is the whole in-product
+detection, and it fires on the very first build. A build that "worked" and changed nothing can also
+be confirmed from outside the product, where a wrong index name answers not-found instead of
+succeeding: dw-data-access `recipes-search.md` §Re-running an index build on the Management API. With the file name passed, both Lucene instances rebuild and the status carries a
+document count and `indexState Success`.
 
 `build_product_index` handles the already-running case gracefully — it will not start a second
 concurrent build.

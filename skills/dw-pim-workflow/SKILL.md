@@ -4,17 +4,20 @@ type: knowledge
 group: pim
 mcp: optional
 dynamo: true
-description: 'Configure Dynamicweb 10 PIM workflows — named states, transitions, and editorial handoffs across the product enrichment lifecycle. Triggers: create a PIM workflow, define workflow states and transitions, set up manual editorial handoffs, configure state notifications. Non-triggers: completeness-driven automatic movement -> dw-pim-completeness; the Data Model schema -> dw-pim-modelling.'
+description: 'Configure manual PIM workflows with named states, transitions, editorial handoffs, and notifications. Triggers: create workflow states or transitions. Non-triggers: completeness-driven automatic movement -> dw-pim-completeness; schema -> dw-pim-modelling.'
 ---
 
 # PIM Workflow
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
-apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
-review, or produce payloads and configuration for the user to apply — and do not substitute
-direct SQL, file edits, or guessed HTTP calls for those tool calls.
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the way to apply it, and
+in-product they are the only way — the MCP tool set plus read/write under `Files/` is the whole
+surface these steps may use. When no tool covers the operation, **stop and tell the user**, naming
+the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
+outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
+product, are never a step in this skill, and are owned by
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
 ## What PIM Workflows Are
 

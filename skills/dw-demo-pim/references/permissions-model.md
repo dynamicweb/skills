@@ -19,7 +19,7 @@
 | The three-layer model — flag, tables, entity registry, admin bypass, cache flush | [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) |
 | Generic grant mechanics — `PermissionLevel` bits, functional-view checklist, Read→Edit bump, dual-gate, field-level differentiation technique, plaintext-password hatch | same candidate, §7–§13 |
 | Demo persona → grant mapping (Editor / Reviewer / Publisher / Admin) | [`permissions-recipes.md`](permissions-recipes.md) |
-| Render-time permissions (storefront `Page` / `Paragraph`) | [`permission-layers.md`](../../dw-users-permissions/references/permission-layers.md) §15 |
+| Render-time permissions (storefront `Page` / `Paragraph`) | [`page-gating.md`](../../dw-users-permissions/references/page-gating.md) §15 |
 
 ## Cross-cutting placement note (demo-routing)
 

@@ -30,6 +30,7 @@ skills/
   dw-extend-*/              # C# API, providers, scheduled tasks, MCP tools, admin UI
   dw-integration-*/         # Integration Framework, ERP connectors, Business Central
   dw-data-access/           # data-access patterns and caching
+  dw-data-write-effects/    # proving a write landed, and the rebuilds it owes
   dw-data-audit-trail/      # investigate who/when/why something changed
   dw-source-explorer/       # browse Dynamicweb source on GitHub
   dw-source-doc-lookup/     # consult the live Dynamicweb documentation
@@ -45,10 +46,10 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 |--------|----------|-----------------|
 | `dynamicweb-setup` | Provisioning Dynamicweb 10 | setup-install, setup-config, setup-upgrade, setup-cli |
 | `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, content-localization, swift-building, swift-page-blocks, swift-page-design, swift-migrate-v1, swift-migrate-content, headless-delivery |
-| `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions, data-access |
-| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, extend-admin-ui, integration-framework, integration-erp, integration-bc, data-access, data-audit-trail |
+| `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions, data-access, data-write-effects |
+| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, extend-admin-ui, integration-framework, integration-erp, integration-bc, data-access, data-write-effects, data-audit-trail |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, source-doc-lookup, extend-mcp-tools |
-| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, demo-foldback, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, swift-building) |
+| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, demo-foldback, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, data-write-effects, swift-building) |
 
 ## Skills
 
@@ -165,6 +166,9 @@ Live "PIM for Business Central connector" demos — expose the local DW host pub
 **[dw-data-access](skills/dw-data-access/SKILL.md)**
 Choose appropriate data-access patterns and optimize caching.
 
+**[dw-data-write-effects](skills/dw-data-write-effects/SKILL.md)**
+Prove a write landed (success is not proof — round-trip it) and know which mutations owe a follow-up rebuild: product index, assortments, price recalculation, country cache.
+
 **[dw-data-audit-trail](skills/dw-data-audit-trail/SKILL.md)**
 Investigate why something changed, who changed a record, when a value was set, or inspect version/history for any Dynamicweb 10 entity.
 
@@ -177,7 +181,7 @@ Consult the live Dynamicweb documentation as the source of truth before answerin
 ### Demos (Presales)
 
 **[dw-demo-base](skills/dw-demo-base/SKILL.md)**
-Foundation skill for all demos. Scaffolds the dw10-suite host (pinning `Dynamicweb.Suite` to the Distribution's gate-proven platform version when the scaffold validates Distribution content), wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first. Also owns the **orchestrator abstraction** ([references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md)) — how a build is driven, GSD primary or the native `/demo:*` command set. Hosted/cloud installs (building on one, publishing a local demo onto one) route to `dw-demo-hosted`. Owns the **visual-QA design gate** ([references/visual-qa.md](skills/dw-demo-base/references/visual-qa.md)) — the mechanical definition-of-done (overflow, section-gap, image-band-height, PLP row-content detectors) plus a human taste sign-off, armed from the first gate run. The **product-query verb surface** lives in dw-search-indexing — [query-authoring.md](skills/dw-search-indexing/references/query-authoring.md) (which read verb is authoritative, the restart-free query-cache flush, `QueryMove`/`QueryCopy` order of operations) and [query-expressions.md](skills/dw-search-indexing/references/query-expressions.md) (expression `Path` semantics, operator reality, sorting, result paging, and the three ways a build verb answers 200 and builds nothing).
+Foundation skill for all demos. Scaffolds the dw10-suite host (pinning `Dynamicweb.Suite` to the Distribution's gate-proven platform version when the scaffold validates Distribution content), wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first. Also owns the **orchestrator abstraction** ([references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md)) — how a build is driven, GSD primary or the native `/demo:*` command set. Hosted/cloud installs (building on one, publishing a local demo onto one) route to `dw-demo-hosted`. Owns the **branded-demo path choice** ([references/branded-demo-paths.md](skills/dw-demo-base/references/branded-demo-paths.md)): YAML brand layer first (the measured default), deserialize-then-tools, or tools only, with the conditions under which the tool path is right. Owns the **visual-QA design gate** ([references/visual-qa.md](skills/dw-demo-base/references/visual-qa.md)) — the mechanical definition-of-done (overflow, section-gap, image-band-height, PLP row-content detectors) plus a human taste sign-off, armed from the first gate run. The **product-query verb surface** lives in dw-search-indexing — [query-authoring.md](skills/dw-search-indexing/references/query-authoring.md) (which read verb is authoritative, the restart-free query-cache flush, `QueryMove`/`QueryCopy` order of operations) and [query-expressions.md](skills/dw-search-indexing/references/query-expressions.md) (expression `Path` semantics, operator reality, sorting, result paging, and the three ways a build verb answers 200 and builds nothing).
 
 **[dw-demo-pim](skills/dw-demo-pim/SKILL.md)**
 PIM modelling from a blank DB — product data built from scratch via MCP. Use after `dw-demo-base`.
@@ -225,7 +229,10 @@ auto-discover skills; Claude Code does not use it (it loads skills via `marketpl
 still sees every skill).
 
 Every skill declares its **Dynamo visibility** in frontmatter — `dynamo: true` puts it in the
-manifest, `dynamo: false` leaves it out entirely. Dynamo runs inside a Dynamicweb install with
+manifest, `dynamo: false` leaves it out entirely. The flag is visibility, never exclusivity: a
+`dynamo: true` skill is *usable in Dynamo*, its content is held to what an MCP client can
+execute, and it runs anywhere an MCP client runs: Claude Code, Dynamo, any other agent. No skill
+is Dynamo-only, and no skill tells a client to stop because it is not Dynamo. Dynamo runs inside a Dynamicweb install with
 MCP tools and read/write access under `Files/`; it has no shell, SQL, git, browser, or csproj.
 A skill whose steps need one of those (the demo chain, local install/upgrade, ngrok, MCP tool
 authoring, source browsing) is `dynamo: false`, because offering it to an in-product admin is

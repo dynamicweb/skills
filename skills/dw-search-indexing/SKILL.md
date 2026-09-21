@@ -4,26 +4,30 @@ type: knowledge
 group: search
 mcp: optional
 dynamo: true
-compatibility: Requires PowerShell 7.x
-description: 'Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, product index setup — and design/fix a PIM product query or repository index query through the MCP tools. Triggers: set up a product, content, user, or SQL index, configure repositories and index instances, tune analyzers or field boosts, understand Lucene scoring, build/restructure/delete a product query or a repository index query (e.g. ProductsFrontend), a query returns nothing/everything unexpectedly. Non-triggers: PIM data modelling -> dw-pim-modelling; product completeness -> dw-pim-completeness.'
+description: 'Build Dynamicweb 10 Lucene indexes and repository or PIM queries. Triggers: builders, instances, analyzers, boosts, scoring, ProductsFrontend, empty or overbroad query. Non-triggers: PIM modelling -> dw-pim-modelling; completeness -> dw-pim-completeness.'
 ---
 
 # Search Indexing
 
 ## Without MCP
 
-The knowledge here stands alone; the Dynamicweb MCP tools it names are the preferred way to
-apply it. When no Dynamicweb MCP server is connected, work in advisory mode — explain,
-review, or produce payloads and configuration for the user to apply — and do not substitute
-direct SQL, file edits, or guessed HTTP calls for those tool calls.
+The knowledge here stands alone; the Dynamicweb MCP tools it names are the way to apply it, and
+in-product they are the only way — the MCP tool set plus read/write under `Files/` is the whole
+surface these steps may use. When no tool covers the operation, **stop and tell the user**, naming
+the admin screen that performs it, rather than substituting a guessed HTTP call, a file edit
+outside `Files/`, or SQL. The Management API, the serializer and direct SQL exist only outside the
+product, are never a step in this skill, and are owned by
+[`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
-## Scripts (scripts/)
+## Rebuilding an index
 
-| Script | Reads / writes | What it does |
-|---|---|---|
-| [Build-DwProductIndex.ps1](scripts/Build-DwProductIndex.ps1) | Writes: rebuilds a Lucene index (flushes product caches first) | The flush-build-poll recipe with the freshness guard, the Error-vs-first-build distinction, the 10.28.x status-verb fallback, and `-Passes 2` for multi-instance indexes; never re-fires on a timeout |
-
-Run with `pwsh -NoProfile -File scripts/Build-DwProductIndex.ps1 -Repository <repo> -IndexName <name>.index`; the contract it implements is in [references/index-management.md](references/index-management.md).
+In-product, a product index rebuild is `build_product_index`, then `wait_for_product_index` or
+`get_product_index_status` — see
+[`dw-data-write-effects`](../dw-data-write-effects/SKILL.md) for what a write owes before the
+rebuild is worth issuing. The out-of-product enforced form (the flush-build-poll script) lives with
+the other out-of-product surfaces in
+[`dw-data-access`](../dw-data-access/SKILL.md) "Scripts (scripts/)"; the contract it implements is
+in [references/index-management.md](references/index-management.md).
 
 ## Engine
 
@@ -128,17 +132,23 @@ Fields used as facets have strict requirements:
 
 ## Auto-Rebuilding the Index
 
-Three triggers:
+| Trigger | Where to configure | What it actually covers |
+|---------|------------------|---|
+| On product save (in PIM) | Channel settings → Advanced Information tab → select a product index | Saves made **through the PIM admin surface**. On 10.28.x `ShopAutoBuildIndex=True` does **not** fire for a product written through Management API `ProductSave` or MCP `patch_products_safe` — see below |
+| After integration activity | Integration activity settings → Repositories to rebuild | Every product the activity touched |
+| On schedule | Settings > Scheduled Tasks → "Build repository index" task | Everything, on the task's cadence |
 
-| Trigger | Where to configure |
-|---------|------------------|
-| On product save (in PIM) | Channel settings → Advanced Information tab → select a product index |
-| After integration activity | Integration activity settings → Repositories to rebuild |
-| On schedule | Settings > Scheduled Tasks → "Build repository index" task |
+**Promise a scheduled Update build, not a save-triggered rebuild, for anything written through an
+API surface.** Measured on 10.28.x with a channel configured exactly as documented: a product write
+through MCP `patch_products_safe` landed in `EcomProducts` with `ProductUpdated` moved, and produced
+no build, no queue drain through the five-minute *Repository task handler*, and no storefront change.
+The machinery exists (`ProductIndexBuilderService.Add(Shop, productIds)`, `BuildAllQueued()`, the
+builder's `UpdateWithIds` action) — the trigger is not reached from that save path, and direct SQL
+writes have never fired it either.
 
-**Note:** Auto-rebuild on save does NOT remove deleted products from the index. Deletions require a Full build.
-
-The recommended approach is a scheduled Full rebuild at a quiet time (e.g., nightly) plus an Update build during business hours for near-real-time updates.
+**Auto-rebuild on save does NOT remove deleted products either.** Both facts point at the same
+shape: a scheduled Full rebuild at a quiet time plus an hourly Partial/Update build on
+`RepositoryScheduledTaskAddIn`, which is proven to pick up an API-written edit within the hour.
 
 ## Queries
 
@@ -156,7 +166,7 @@ A query defines how the Product Catalog app retrieves results. Three components:
 | `ContainsExtended` | Anywhere match (higher performance cost) |
 | `MatchAny` / `MatchAll` | Array matching — **one value per expression**. A comma-joined right-hand side is matched as a single opaque term and returns zero rows |
 | `In` | Set membership from a **request parameter** (URL syntax `&Color=[Red],[Blue]`). As an authored constant it is unreliable: on some builds a comma-separated value matches zero, on others the platform normalises it into an Or-group of per-value `Equal` nodes that the admin UI then renders as N hardcoded literals |
-| `IsEmpty` | Null/empty check |
+| `IsEmpty` | Null/empty check in the enum — **no working XML serialization on the Lucene provider on 10.28.x**: in a repository `.query` it parses and matches nothing, and the no-`Right`-element form throws and takes down every module on the page. Model "has no value" as a positive predicate instead (see below) |
 
 **Express alternation as an OR group of single-value expressions, not as a comma-separated value.**
 Exact matching on an analysed field (product numbers, codes) needs `Equal` — or an OR group of `Equal`s
@@ -226,9 +236,9 @@ distinction, a worked assortment-visibility example, and safe deletion live in
 
 Field-validated internals, split across four references:
 
-- [references/index-management.md](references/index-management.md) — the index/repository file layer: where `.index` and `.query` files live (feed queries at repository ROOT, dashboard queries in Shared ONLY), the schema-extender requirement, `CustomField_<SystemName>` index naming for custom fields, the MCP query payload contract, the GUID-duplication bug, channel isolation as a query-time filter, currency integrity as a build precondition, and the full flush-then-rebuild recovery recipe.
+- [references/index-management.md](references/index-management.md) — the index/repository file layer: where `.index` and `.query` files live (feed queries at repository ROOT, dashboard queries in Shared ONLY), **the `.index` authoring rules the API cannot show you** (`Field/@Source` vs `Copy/@Sources`, `Analyzer`/`Boost` on copy fields, build-time `Skip*` settings, extension-declared fields, and asserting a schema against the Lucene directory), the schema-extender requirement, `CustomField_<SystemName>` index naming for custom fields, **what the shipped user index publishes — a password hash and the impersonation graph**, the Files index and where a DAM keyword has to be written, the MCP query payload contract, the GUID-duplication bug, channel isolation as a query-time filter, currency integrity as a build precondition, and the full flush-then-rebuild recovery recipe.
 - [references/query-authoring.md](references/query-authoring.md) — the `Query*` verb lifecycle: which of the three read verbs is authoritative, `QueryCopy`/`QueryMove`/`QueryDelete` mechanics, and the restart-free query-cache flush (throwaway-GUID `QueryById` GET).
-- [references/query-expressions.md](references/query-expressions.md) — expression `Path` semantics (an unresolvable path APPENDS; `Path:"0"` rewrites the ROOT group), operator reality (`In`/`MatchAny` traps), sorting and paging behaviour, declared-but-unpopulated index fields, and the three ways a build verb answers 200 and builds nothing.
+- [references/query-expressions.md](references/query-expressions.md) — expression `Path` semantics (an unresolvable path APPENDS; `Path:"0"` rewrites the ROOT group), operator reality (`In`/`MatchAny` traps), **the right-hand `Type` attribute that decides the Lucene query shape** (numeric fields need `System.Int32` / `System.Int32[]`), **set-only-the-parameters-you-have-a-value-for**, sorting and paging behaviour, declared-but-unpopulated index fields, and the three ways a build verb answers 200 and builds nothing.
 - [references/mcp-query-tools.md](references/mcp-query-tools.md) — the MCP tool-level contract for both query families: tool map, read-edit-verify loop, `ValueType` macros, a worked example, index-build ordering, facet parameter binding, safe deletion, and dashboard binding.
 
 ## Pitfalls
@@ -239,7 +249,7 @@ Field-validated internals, split across four references:
 
 **Deletions need Full builds** — Update builds (hourly, on-save) do not detect or remove deleted products. A nightly Full rebuild is required to keep the index clean of stale products.
 
-**NULL values** — Lucene cannot index NULL. Always set `EmptyStringReplacement` on the index to a sentinel value (e.g., `"__empty__"`) and use `IsEmpty` expressions in queries to filter/detect empty fields.
+**NULL values** — Lucene cannot index NULL. Set `EmptyStringReplacement` on the index to a sentinel value (e.g., `"__empty__"`) and **filter on the sentinel with `Equal`** rather than on `IsEmpty`: the index cannot reliably express "this field has no value" (operator table above), so the sentinel term is what makes the empty case queryable. Better still, give every document a real value where the data model allows it.
 
 ## Next Steps
 

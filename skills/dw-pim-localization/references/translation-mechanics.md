@@ -68,6 +68,48 @@ Per the official doc page `dynamicweb10/products/concepts/localization.html`:
 **Variant rule:** Each language version of a product can have its own variant text per
 `EcomVariantOptionsTranslation`. But variant **groups** themselves fall back.
 
+### "Falls back" means to the DEFAULT language row, and only to that one
+
+The fallback reads one layer: the language marked `LanguageIsDefault=1`. It is not a search across
+the other layers, so **rows authored under a non-default layer are invisible, not "fallen back"** —
+`StockLocation.GetName(languageId)` and its siblings look for the requested language, then the
+default, and stop. A restored or cloned database is where this bites: a translation set can exist
+only under a dead layer (`EcomUnitTranslations`, `EcomStockLocationTranslations` and
+`EcomDetailsGroupTranslation` all under one legacy `LanguageId`) while the live site's default is a
+different one, and the result is empty unit names on the PDP and MCP `get_stock_locations` returning
+`name: ""` for every location. Marking a different language default does not rescue them either —
+measured before and after exactly that fix, with the same empty result both times.
+
+**So author or migrate those rows under the site's live default language rather than relying on
+cross-language fallback.** Establish which layer that is with MCP `get_languages` — the row flagged
+default is the only one the fallback reads — before writing anything, then write through the tool
+that owns the object: `save_unit_translation`, `save_group_translations`,
+`set_option_translations`, `save_country_translation` and the rest of the chrome table below. Re-run
+the empty-string probe on the rendered surface to confirm; the row is not proof, the render is.
+
+`EcomDetailsGroupTranslation` is the one exception — asset-category names have no tool and no verb on
+10.28.x, so in product they are an admin-screen edit under the product's asset categories. Outside
+the product: see dw-data-access `recipes-pim.md` §Asset-category names.
+
+### A missing translation is never an error — and each view model hides it differently
+
+Nothing reports a missing translation row, and a view model's fallback can hand back a plausible
+name for a row that does not exist. Two fallbacks worth knowing by heart:
+
+- **An asset-category name falls back to its SystemName.** The view model is SystemName-derived on
+  this build and never consults `EcomDetailsGroupTranslation`, so asking for a language with zero
+  translation rows in any layer still returns a plausible English name. **No read that goes through
+  that view model can verify an asset-category translation.**
+- **A related-group name falls back to the raw id** (`{"id":"<RELGROUPID>","name":"<RELGROUPID>"}`).
+  A name equal to the id is a missing-row signal, not a label.
+
+So verify an asset-category translation by rendering one of the templates that actually call
+`DetailsGroup.GetName()`, never by reading a name back off a product model. Make the two checks
+standing assertions: every group referenced by a live product has `name != id`, and every asset
+category has a translation row in the default language before any surface's name is trusted. The
+full per-field fallback table for the delivery API is in dw-data-access `recipes-pim.md`
+§Reading translations back off the delivery API.
+
 ## The admin-UI flow (what a human does)
 
 1. Settings → Ecommerce → Languages → add a new language row (give it `LanguageId` like `LANG2`, ISO `Culture` like `nl-NL`, native name "Nederlands").
@@ -97,7 +139,7 @@ Group translation row:
 
 - `EcomGroupTranslation` (similarly stores per-language name, navigation name, description for each `EcomGroup.GroupId`)
 
-**Schema discovery rule:** When in doubt, `SELECT name FROM sys.tables WHERE name LIKE 'Ecom%Translation%' OR name LIKE 'Ecom%Language%'` first, then `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('<table>')` to confirm column shape on the specific DW version. Schemas drift between minor DW versions.
+**Schema discovery rule:** When in doubt, `SELECT name FROM sys.tables WHERE name LIKE 'Ecom%Translation%' OR name LIKE 'Ecom%Language%'` first, then `SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('<table>')` to confirm column shape on the specific DW version. Schemas drift between minor DW versions. **Local installs only**: on a hosted install the MCP column below is the reachable surface.
 
 ## Surfaces — which MCP tools do what
 
@@ -109,6 +151,8 @@ Group translation row:
 | Create a language version of a product | (none — admin-only "Add languages" action) | Cloning rows in `EcomProductTranslation` (and any per-field tables) |
 | Set/update translated field values | `update_products` with `languageId` param OR `patch_products_safe` | Update column on `EcomProductTranslation` (and per-field translation tables) |
 | Translate a group | (none) | Insert + update `EcomGroupTranslation` |
+
+**Local installs only**: the SQL fallback column. On a hosted install, a product language version is `add_products_to_language`, a group name is `save_group_translations`, and the per-product language list has no MCP read.
 
 **Important MCP gotcha:** `update_products` accepts a `languageId` parameter. Pass the language string
 ID (e.g. `LANG2`) to write to that language version. Omitting it writes to the default (master)
@@ -125,9 +169,9 @@ recoveries, depending on intent:
 
 - The product should exist in the served language *in addition* to the default → after `create_products`,
   add the language version and write name/description via `update_products` with `languageId=<served>`
-  (or SQL on `EcomProductTranslation`), then rebuild the Products index.
+  (or, on local installs only, SQL on `EcomProductTranslation`), then rebuild the Products index.
 - The served language should itself be the default the products land on → set that `EcomLanguages` row
-  `LanguageIsDefault=1` **before** `create_products`, or SQL-repoint the created rows' language column,
+  `LanguageIsDefault=1` **before** `create_products`, or (local installs only) SQL-repoint the created rows' language column,
   then rebuild the index.
 
 **Validate:** after the index rebuild, the product is visible on the served-language PLP (not just in
@@ -139,12 +183,13 @@ with no group rows for the new language it returns **null** — group-driven fro
 (`Swift-v2_ProductGroupGrid`, group-name surfaces) render **empty**, not English-fallback. The proven
 shape on 10.25 is a per-language `EcomGroups` row per group (clone the default-language rows overriding
 `GroupLanguageId` + `GroupName` via a dynamic column-list INSERT that excludes identity columns). A
-blank category grid on a language layer is this gap, every time. Use `update_groups` MCP with
-`languageId=<new>` OR direct SQL `INSERT INTO EcomGroupTranslation` / per-language `EcomGroups` rows.
+blank category grid on a language layer is this gap, every time. In product: `save_groups` writes the
+group row and `save_group_translations` writes the per-language name; no update_groups tool is registered.
+Outside the product the bulk path is the per-language `EcomGroups` clone: see
+[dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-pim.md`.
 
 **Cache invalidation:** After bulk-translating products, run the `build_assortments` MCP tool
-plus a full Products `BuildIndex`
-(`POST /admin/api/BuildIndex {Repository:Products, IndexName:Products.index, BuildName:Full, BuildType:Full}`).
+plus a full Products index build with `wait_for_product_index` with `repositoryName: "Products"` and `indexName: "Products.index"`.
 The catalog frontend pulls names + facets from the index; without a rebuild, the storefront still renders
 the master language strings even when the storefront context switches.
 
@@ -165,28 +210,13 @@ The fix is to INSERT one `EcomProductField` row per standard field that **needs 
 descriptions, meta. Leave physical dimensions, prices, stock, dates, manufacturer FK, etc. alone (they
 should NOT be per-language).
 
-```sql
--- Seed standard text fields with AllowChangesAcrossLanguages=1.
--- ProductFieldAutoId is IDENTITY — let SQL Server assign it; do NOT include it in the column list.
--- ProductFieldId: stable string key. Convention is FIELD<n> continuing the existing sequence
--- (FIELD1-FIELD7 reserved for the scaffold's dimensions).
-INSERT INTO EcomProductField (
-  ProductFieldId, ProductFieldName, ProductFieldSystemName, ProductFieldTypeId, ProductFieldTypeName,
-  ProductFieldLocked, ProductFieldSort, ProductFieldDoNotRender, ProductFieldIsStandard,
-  ProductFieldAllowChangesAcrossLanguages, ProductFieldAllowChangesAcrossVariants,
-  ProductFieldRequired, ProductFieldReadOnly,
-  ProductFieldShowFieldOnBothMasterAndVariant, ProductFieldUseAsFacet
-)
-VALUES
-  (N'FIELD8',  N'Name',              N'ProductName',             1, N'Text',       1, 0, 0, 1, 1, 1, 0, 0, 0, 0),  -- variants can differ
-  (N'FIELD9',  N'Short description', N'ProductShortDescription', 14, N'EditorText', 1, 0, 0, 1, 1, 0, 0, 0, 0, 0),
-  (N'FIELD10', N'Long description',  N'ProductLongDescription',  14, N'EditorText', 1, 0, 0, 1, 1, 0, 0, 0, 0, 0),
-  (N'FIELD11', N'Meta title',        N'ProductMetaTitle',        1, N'Text',       1, 0, 0, 1, 1, 0, 0, 0, 0, 0),
-  (N'FIELD12', N'Meta description',  N'ProductMetaDescription',  2, N'LargeText',  1, 0, 0, 1, 1, 0, 0, 0, 0, 0),
-  (N'FIELD13', N'Meta keywords',     N'ProductMetaKeywords',     2, N'LargeText',  1, 0, 0, 1, 1, 0, 0, 0, 0, 0),
-  (N'FIELD14', N'Meta canonical',    N'ProductMetaCanonical',    1, N'Text',       1, 0, 0, 1, 1, 0, 0, 0, 0, 0),
-  (N'FIELD15', N'Meta URL',          N'ProductMetaUrl',          1, N'Text',       1, 0, 0, 1, 1, 0, 0, 0, 0, 0);
-```
+The seed is one row per translatable standard field, carrying the flags in the table below.
+`ProductFieldAutoId` is an identity column and `ProductFieldId` continues the existing `FIELD<n>`
+sequence (`FIELD1`-`FIELD7` hold the scaffold's dimensions). `update_product_fields` sets
+`allowChangesAcrossLanguages` on a field it resolves by id or system name; whether it creates a missing
+standard-field row has not been measured.
+
+Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Seeding standard-field `EcomProductField` rows for per-language editing".
 
 | SystemName | TypeId/Name | LangEdit | VarEdit | Notes |
 |---|---|---|---|---|
@@ -211,10 +241,12 @@ and `/Language`): older DW10 versions read this XML to populate `EcomProductFiel
 Modern DW10 (≥10.25) marks the migration as complete via
 `/Globalsettings/Ecom/ProductLanguageControl/MigrationToDatabaseDone = true` after the first walk, after
 which the XML is ignored and the DB rows are authoritative. **Don't edit the XML — it's vestigial.**
-Insert/UPDATE the DB rows directly per the recipe above.
+The DB rows are the authority.
 
 **Cache:** the EcomProductField list is loaded at startup. Restart the host after seeding before
 reopening a product translation page.
+
+**Local installs only**: on a hosted install no MCP tool is known to write a standard-field `EcomProductField` row, so ask the user.
 
 ## Read `EcomProductField` BEFORE planning any per-language or per-variant product write
 
@@ -305,14 +337,13 @@ A translation write needs a row to write into, and the two creates work differen
   `ok`, all zero rows inserted: `Model.LanguageId` set with the default `modelIdentifier`;
   `modelIdentifier` rewritten to `GROUP513|ESU`; `LanguageId` passed as a sibling command parameter; and
   `modelIdentifier` removed entirely. The recipes that appear to work with this verb only work because
-  those groups already HAD the target language row. Create the row as a clone of the default-language
-  row through the sanctioned scheduled-task SQL runner (`INSERT INTO EcomGroups (<every column except
-  the identity GroupAutoId>) SELECT <same columns, GroupLanguageId and GroupName substituted> FROM
-  EcomGroups WHERE GroupId=@g AND GroupLanguageId='ENU'`), then
-  `POST /Admin/Api/CacheInformationRefresh {"CacheTypeName":"Dynamicweb.Ecommerce.Products.GroupService"}`
-  or every subsequent read is stale. After that `ProductCatalogGroupSave` works normally on the new row.
+  those groups already HAD the target language row. In product `save_group_translations` writes the
+  language row (see the table below). A row created outside the tools sits behind the
+  `Dynamicweb.Ecommerce.Products.GroupService` cache, so every read stays stale until that cache is
+  flushed; after the flush `ProductCatalogGroupSave` works normally on the new row.
   `ProductCatalogGroupTranslationsSave` is the auto-translate action and needs a configured translation
   provider; `ProductCatalogGroupNew` requires a `ParentId` and mints a new group, not a language row.
+  Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Minting a catalogue-group language row: the `EcomGroups` clone".
 - **A `400 {"successful":false,"message":"Unable to load query parameters for query type: '<Verb>ById'"}`
   from any `*ById` query means the requested ROW does not exist, not that the parameters are wrong.**
   Measured on both `ProductById?Id=<new product>&LanguageId=ESU` and
@@ -325,12 +356,12 @@ A translation write needs a row to write into, and the two creates work differen
 Field labels, group names, option labels and variant names all take a per-language write. Each surface
 takes a DIFFERENT payload shape, and the wrong shape answers either a bare
 "An error occurred invoking `<tool>`" with no field detail (MCP) or a 400 naming a property that is in
-no read model (`/Admin/Api`), which is what makes this read as "there is no write path". All four
+no read model (Management API), which is what makes this read as "there is no write path". All four
 verified by SQL row counts on one 10.28.4 host:
 
 | Surface | Verb | Payload | Verified |
 |---|---|---|---|
-| Category-field LABEL | `POST /Admin/Api/ProductCategoryFieldTranslationSave` | flat `Model:{CategoryId, FieldId, LanguageId, Name}`, where `Name` carries the LABEL | 160/160 rows, 0 failures, `EcomProductCategoryFieldTranslation` FRC rows appear |
+| Category-field LABEL | no MCP tool; the Management API `ProductCategoryFieldTranslationSave` | a flat model of category, field, language and `Name`, where `Name` carries the LABEL | 160/160 rows, 0 failures, `EcomProductCategoryFieldTranslation` FRC rows appear |
 | Catalogue-group NAME | MCP `save_group_translations` | `{translations:[{groupId, languageId, name}]}` | 56 succeeded, `EcomGroups` FRC rows 0 → 56 |
 | Field-option LABEL | MCP `set_option_translations` | `{requests:[{fieldId:"ProductCategory\|<cat>\|<field>", optionValue, languageId, name}]}` | 88/88, `EcomFieldOptionTranslation` FRC rows 0 → 88 |
 | Variant group / option NAME | MCP `save_variant_groups` / `save_variant_options` | a per-language `names` array of `{id, value}` where **`id` is the LANGUAGE id** | 5 groups + 40 options, `EcomVariantsOptions` FRC rows 0 → 40 |
@@ -340,9 +371,7 @@ verified by SQL row counts on one 10.28.4 host:
 - **Both variant verbs are whole-entity replaces: read the current model first and APPEND the new
   language to `names`,** or the existing name is dropped. Assert the prior-language rows still exist
   afterwards.
-- Shapes rejected on the way, for the label verb: `{Label:…}`, `{SystemName:…}` and `{Id:…}` all answer
-  `400 "FieldId: The value is required"`, and sending BOTH `Model` and `model` keys answers 500
-  "An item with the same key has already been added. Key: model".
+- The category-field label has no MCP tool. Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Category-field label translations: `ProductCategoryFieldTranslationSave`".
 - This covers the CHROME. Per-product field VALUES on a non-master language layer are a separate
   question, governed by `EcomProductField` flags (see the section above).
 
@@ -364,12 +393,8 @@ changes such as `OrderStateColor` are a different surface — those are cached a
 ## Adding a new language — the platform steps
 
 1. **Verify framework readiness** — does the host have countries/currencies/area set up? Check `EcomLanguages` for the default row first.
-2. **Insert the new EcomLanguage row** (admin UI: Settings → Ecommerce → Languages → "+ New", or via SQL if scripted):
-   ```sql
-   INSERT INTO EcomLanguages (LanguageId, LanguageCulture, LanguageCode2, LanguageName, LanguageNativeName, LanguageIsDefault)
-   VALUES (N'<langId>', N'<culture>', N'<iso2>', N'<englishName>', N'<nativeName>', 0);
-   ```
-3. **Translate group names** first (groups must be translated so the navigation tree localizes) — see the group-translation null gotcha above. Use `update_groups` MCP with `languageId=<new>` OR direct SQL.
+2. **Create the new EcomLanguage row** with `save_languages` (or in the admin UI: Settings → Ecommerce → Languages → "+ New").
+3. **Translate group names** first (groups must be translated so the navigation tree localizes) — see the group-translation null gotcha above. Use `save_groups` plus `save_group_translations` with the target `languageId`.
 4. **Translate product name + short description** via `update_products`/`patch_products_safe` with `languageId=<new>`. Custom-field translation can be deferred; the fallback handles it.
 5. **Rebuild the index** + run `build_assortments` if assortments are in play.
 6. **Do NOT sweep the unused `EcomLanguages` rows.** Currency records are per language: every unused

@@ -5,7 +5,7 @@ group: setup
 mcp: none
 dynamo: false
 compatibility: Requires PowerShell 7.x
-description: 'Install Dynamicweb Swift 2 from scratch — download and import the database, extract files, install the temporary MCP add-ins payload, and write the first-run bootstrap manifest. Triggers: a fresh or empty Dynamicweb instance needs Swift 2 installed, bootstrap the MCP connection on a new install, download and import the Swift 2 baseline. Non-triggers: install exists and needs business configuration -> dw-setup-config; presales demo host scaffolding, TLS, and MCP wiring -> the presales demo bundle.'
+description: 'Install Swift 2 on a fresh DW10 instance. Triggers: baseline database/files, initial MCP add-ins. Existing settings -> dw-setup-config; presales host/MCP/TLS scaffolding -> presales bundle.'
 ---
 
 # DynamicWeb Swift 2 Installer
@@ -14,7 +14,7 @@ description: 'Install Dynamicweb Swift 2 from scratch — download and import th
 
 | Topic | Where |
 |---|---|
-| Host install anatomy — machine prerequisites (.NET 10 SDK, ProjectTemplates, SQL Express), the mandatory `net10.0` TargetFramework, build-time host-config patches (`ImplicitDistributedTransactions`, `Files\System` build exclusion), MSDTC, release rings, install anti-patterns, and the first-run license gate + headless admin-password recovery | [`references/install-anatomy.md`](references/install-anatomy.md) |
+| Host install anatomy — machine prerequisites (.NET 10 SDK, ProjectTemplates, SQL Express), the mandatory `net10.0` TargetFramework, build-time host-config patches (`ImplicitDistributedTransactions`, `Files\System` build exclusion), MSDTC, release rings, package naming after the Truvio Commerce rebrand and the AppStore-vs-csproj install boundary, install anti-patterns, and the first-run license gate + headless admin-password recovery | [`references/install-anatomy.md`](references/install-anatomy.md) |
 
 ## Scripts (scripts/)
 
@@ -99,6 +99,8 @@ pwsh -NoProfile -File "scripts/install-swift2.ps1" `
 7. Writes a one-time bootstrap manifest to `Files/System/mcp-bootstrap.json`
 8. Writes `GlobalSettings.Database.config` with the database connection
 
+**Local installs only**: a hosted install is handed over already installed, so the script has no target there.
+
 ---
 
 ## Degraded Path - Manual Installation
@@ -121,6 +123,7 @@ If the automated script fails (no sqlpackage, download blocked, wrong SQL Server
    ```
    sqlpackage /Action:Import /TargetServerName:localhost /TargetDatabaseName:swift2 /SourceFile:swift2.bacpac
    ```
+   **Local installs only**: a hosted install is handed over already installed, so there is no database to import.
 
 4. **Copy Custom.Mcp add-ins** into `Files/System/AddIns/Installed/Custom.Mcp.10.0.0`
 
@@ -220,6 +223,7 @@ Drop it first:
 ```powershell
 sqlcmd -S localhost -Q "DROP DATABASE [swift2]"
 ```
+**Local installs only**: a hosted install has no database to drop, so an online build asks the user to reset it.
 Or use a different database name.
 
 ### Download fails
