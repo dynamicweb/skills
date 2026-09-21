@@ -4,7 +4,7 @@ type: knowledge
 group: render
 mcp: none
 dynamo: true
-description: 'Fetch and shape content using ViewModels in Dynamicweb 10 templates. Triggers: ViewModel patterns, ViewModel properties, data shaping with ViewModels, when to drop to C# API. Non-triggers: TemplateTags syntax -> dw-render-templatetags; template structure and Razor -> dw-render-razor; direct C# API usage -> dw-extend-csharp-api.'
+description: 'Fetch and shape content with Dynamicweb 10 ViewModels. Triggers: ViewModel properties or patterns, data shaping, when to use the C# API. Non-triggers: TemplateTags -> dw-render-templatetags; template structure or Razor -> dw-render-razor.'
 ---
 
 # ViewModels: Rendering with Model-Based Data Access

@@ -4,7 +4,7 @@ type: flow
 group: setup
 mcp: none
 dynamo: false
-description: 'Manage Dynamicweb 10 version upgrades and migration mechanics. Triggers: upgrading versions, migration steps, pre-upgrade checks, DW9 to DW10 migration, minor version upgrades within DW10. Non-triggers: initial setup -> dw-setup-install; configuration -> dw-setup-config.'
+description: 'Upgrade Dynamicweb platform versions. Triggers: DW9-to-DW10 migration, DW10 minor upgrades, pre-upgrade checks. Product catalog migration -> dw-pim-migrate-dw9; fresh install -> dw-setup-install.'
 ---
 
 # Dynamicweb 10 Upgrade Guide

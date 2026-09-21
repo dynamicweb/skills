@@ -4,7 +4,7 @@ type: flow
 group: data
 mcp: required
 dynamo: true
-description: 'Investigate why something changed, who changed a record, when a value was set, or inspect version/history for any Dynamicweb 10 entity, using the Dynamicweb.Auditing subsystem and its AuditQuery filter. Triggers: "why did this change", "who changed this product/order/page", "when was this field set", inspect audit log or version history. Non-triggers: reverting or fixing the change itself (a separate write, not this skill); data-access/caching patterns -> dw-data-access.'
+description: 'Investigate DW10 audit logs and version history. Triggers: who changed a product/order/page, when a field was set, why a record changed, AuditQuery. Investigation only; reverting is a separate write.'
 ---
 
 # Audit Trail Investigation

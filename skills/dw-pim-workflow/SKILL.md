@@ -4,7 +4,7 @@ type: knowledge
 group: pim
 mcp: optional
 dynamo: true
-description: 'Configure Dynamicweb 10 PIM workflows — named states, transitions, and editorial handoffs across the product enrichment lifecycle. Triggers: create a PIM workflow, define workflow states and transitions, set up manual editorial handoffs, configure state notifications. Non-triggers: completeness-driven automatic movement -> dw-pim-completeness; the Data Model schema -> dw-pim-modelling.'
+description: 'Configure manual PIM workflows with named states, transitions, editorial handoffs, and notifications. Triggers: create workflow states or transitions. Non-triggers: completeness-driven automatic movement -> dw-pim-completeness; schema -> dw-pim-modelling.'
 ---
 
 # PIM Workflow

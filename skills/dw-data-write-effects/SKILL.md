@@ -4,7 +4,7 @@ type: knowledge
 group: data
 mcp: optional
 dynamo: true
-description: 'What a write to a Dynamicweb 10 instance actually leaves behind — how to prove it landed, and which mutations owe a follow-up MCP call before anything downstream reflects them. Triggers: the save returned ok but the value did not change, the product list or search results are stale after an edit, prices or assortments did not update, index says done but the row is missing, verify a write landed, which rebuild does this change need. Non-triggers: choosing the surface to act through, cache flushing by verb, host restarts and SQL ordering -> dw-data-access; catalog and price modelling -> dw-commerce-catalog; index and query design -> dw-search-indexing.'
+description: 'Verify DW10 writes and refresh dependent data. Triggers: save succeeded but value unchanged, stale search/products, missing index rows, prices or assortments not updated. Surface/cache mechanics -> dw-data-access.'
 ---
 
 # Write effects: proving a write landed, and what it owes afterwards

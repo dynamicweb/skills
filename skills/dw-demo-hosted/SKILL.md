@@ -4,7 +4,7 @@ type: flow
 group: demo
 mcp: optional
 dynamo: false
-description: 'Build or publish a Dynamicweb 10 demo on a vendor-hosted/cloud install reached only by URL + Admin API bearer key — no scaffold, no SQL, no filesystem. Triggers: the engagement hands over a site URL and a `CLAUDE.<hex>` key instead of a machine; "build on the cloud install"; "publish this site"; "push the demo to the hosted install"; "migrate local to hosted"; a Management API write that returns ok but changes nothing; an inherited/cloned demo host with 500s, stale tasks or ACL faults; CloudHosting control files (recycle/restart/changeversion). Use AFTER dw-demo-base — it owns the guardrails, the versions prompt, and the surface-priority rule this skill inherits. Non-triggers: a local scaffold on the demo machine -> dw-demo-base; Swift content and templates -> dw-demo-swift; the PII sweep itself -> dw-demo-base references/pii-sweep.md.'
+description: 'Build or publish DW10 demos on hosted/cloud installs using a URL and Admin API key. Triggers: local-to-hosted deployment, silent writes, cloned-host 500/ACL faults, CloudHosting recycle/version. Use AFTER dw-demo-base.'
 ---
 
 # Hosted (cloud) demo installs

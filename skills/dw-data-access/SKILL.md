@@ -5,7 +5,7 @@ group: data
 mcp: optional
 dynamo: false
 compatibility: Requires PowerShell 7.x
-description: 'Choose the surface to act on a Dynamicweb 10 instance through, and the data-access and caching patterns inside it. Triggers: the action ladder, which surface, MCP vs Management API vs serializer vs SQL, data access, API vs SQL, cache invalidation, SQL gotchas. Non-triggers: C# API usage -> dw-extend-csharp-api; specific domain logic -> domain-specific skills.'
+description: 'Choose DW10 data-access surfaces and caching patterns. Triggers: MCP vs Management API vs serializer vs SQL, action ladder, cache invalidation, SQL gotchas. C# coding -> dw-extend-csharp-api.'
 ---
 
 # Data Access in Dynamicweb 10

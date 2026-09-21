@@ -4,7 +4,7 @@ type: flow
 group: extend
 mcp: none
 dynamo: false
-description: 'Extend the Dynamicweb 10 administration interface from your own assembly — list, edit and overview screens, an area in the sidebar, nodes in an area tree, entries in an existing Actions menu, and injectors into screens you do not own. Triggers: add a screen to the admin, ListScreen, EditScreen, OverviewScreen, ScreenInjector, an area or tree node in the sidebar, add a button or Actions-menu entry to an existing screen, change a screen someone else owns, my screen compiles and installs but never renders, an injected action renders dimmed and inert. Non-triggers: providers, notification subscribers and scheduled tasks -> dw-extend-providers; the C# API and Services layer for non-UI code -> dw-extend-csharp-api; getting the built assembly onto a solution -> dw-setup-cli; frontend templates and Razor -> dw-render-razor.'
+description: 'Extend DW10 admin screens, sidebar trees and actions. Triggers: ListScreen, EditScreen, OverviewScreen, ScreenInjector, screens not rendering, dimmed injected actions. Assembly deployment -> dw-setup-cli.'
 ---
 
 You are extending the Dynamicweb 10 admin interface (the "backend") from your own assembly in a customer

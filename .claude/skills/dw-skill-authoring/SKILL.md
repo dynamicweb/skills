@@ -86,7 +86,7 @@ type: <knowledge | flow>
 group: <area — pim, search, render, setup, extend, integration, commerce, users, swift, headless, content, data, source, demo>
 mcp: <required | optional | none>
 dynamo: <true | false>
-description: <one to three sentences. First sentence states what the skill does. Remaining sentences list the exact trigger phrases / conditions that activate it.>
+description: <concise purpose followed by distinctive triggers and essential routing boundaries>
 ---
 ```
 
@@ -97,23 +97,26 @@ MCP dependence and `dynamo` its manifest visibility — see the next two section
 
 The `description` is the **activation signal** — it is matched against the user's request at
 runtime, and it is the only part of the skill the model sees before deciding to load it. Treat
-it as the skill's interface, not its summary. Third person, this shape:
+it as the skill's interface, not its summary. Aim for 180-260 characters, with the
+distinctive capability first so a shortened catalog entry remains useful. Use this shape:
 
 1. **First sentence** — what the skill does.
-2. **`Triggers:`** — the phrases / conditions / error symptoms that should activate it.
-3. **`Non-triggers:`** — adjacent cases that belong to a sibling skill, each routed with
-   `-> dw-<other-skill>`.
+2. **`Triggers:`**: discriminating phrases, conditions or error symptoms, without repeating
+   the purpose or listing every synonym.
+3. Include a short `-> dw-<other-skill>` boundary only for a likely selection ambiguity.
+   Keep detailed routing and operating instructions in the body or its references.
 
 Example (`dw-pim-completeness`):
 
 ```
-description: Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, and query-driven automatic workflows. Triggers: create completion rules, assign rules to data models or product groups, understand completeness scoring, set up completeness-driven query movement. Non-triggers: manual workflow states -> dw-pim-workflow; the Data Model schema -> dw-pim-modelling.
+description: 'Configure DW10 product completeness. Triggers: completion rules, scoring, automatic query movement, enrich missing fields. Manual editorial states -> dw-pim-workflow.'
 ```
 
 Demo skills additionally carry a `Use AFTER dw-demo-base` marker. Keep descriptions on a single
-line and within the **1024-character** cap — parsers truncate past it, silently dropping trigger
-coverage (the validator errors over the cap). A description crowding the cap is a signal the
-skill owns too many unrelated routes; split the skill rather than compressing the triggers.
+line and within the **1024-character** parser cap (the validator errors over the cap).
+The discovery budget covers all enabled entries, including copies in multiple bundles:
+1024 characters is a parser limit, not a writing target. Review ambiguous sibling skills
+together and preserve their distinct selection cues when shortening descriptions.
 
 ## MCP dependence (`mcp:` field)
 

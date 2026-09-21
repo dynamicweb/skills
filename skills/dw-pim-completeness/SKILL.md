@@ -4,7 +4,7 @@ type: knowledge
 group: pim
 mcp: optional
 dynamo: true
-description: 'Configure Dynamicweb 10 product completeness — completion rules, completeness scoring, query-driven automatic workflows — and enrich products against a query by filling their missing completion fields. Triggers: create completion rules, assign rules to data models or product groups, understand completeness scoring, set up completeness-driven query movement, fill/enrich missing product fields from a query. Non-triggers: manual workflow states -> dw-pim-workflow; the Data Model schema -> dw-pim-modelling.'
+description: 'Configure PIM completion rules, scoring, automatic query movement, and missing-field enrichment. Triggers: assign rules, calculate completeness, enrich query results. Non-triggers: manual states or transitions -> dw-pim-workflow; schema -> dw-pim-modelling.'
 ---
 
 # Product Completeness

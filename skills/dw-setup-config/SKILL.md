@@ -5,7 +5,7 @@ group: setup
 mcp: none
 dynamo: false
 compatibility: Requires PowerShell 7.x
-description: 'Configure Dynamicweb 10 environment and connection settings. Triggers: configuration surfaces, environment setup, connection strings, GlobalSettings, appsettings.json, environment variables, SMTP, log retention, go-live checklist. Non-triggers: upgrading versions -> dw-setup-upgrade; installing new solutions -> dw-setup-install.'
+description: 'Configure DW10 environments and connections. Triggers: GlobalSettings, appsettings.json, environment variables, connection strings, SMTP, log retention, go-live settings. Fresh install -> dw-setup-install.'
 ---
 
 # Dynamicweb 10 Configuration

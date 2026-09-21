@@ -4,7 +4,7 @@ type: knowledge
 group: extend
 mcp: none
 dynamo: true
-description: 'Build providers, notification subscribers, and AddIns for Dynamicweb 10. Triggers: notification subscribers, providers, AddIns, reacting to save/delete events, custom price logic, custom shipping, custom payment, custom authentication. Non-triggers: C# API usage -> dw-extend-csharp-api; scheduled background work -> dw-extend-scheduled-tasks.'
+description: 'Build DW10 providers, AddIns and notification subscribers. Triggers: save/delete events, custom price/shipping/payment/authentication logic. Scheduled jobs -> dw-extend-scheduled-tasks.'
 ---
 
 # Providers and Notification Subscribers

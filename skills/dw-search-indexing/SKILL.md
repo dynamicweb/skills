@@ -4,7 +4,7 @@ type: knowledge
 group: search
 mcp: optional
 dynamo: true
-description: 'Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, product index setup — and design/fix a PIM product query or repository index query through the MCP tools. Triggers: set up a product, content, user, or SQL index, configure repositories and index instances, tune analyzers or field boosts, understand Lucene scoring, build/restructure/delete a product query or a repository index query (e.g. ProductsFrontend), a query returns nothing/everything unexpectedly. Non-triggers: PIM data modelling -> dw-pim-modelling; product completeness -> dw-pim-completeness.'
+description: 'Build Dynamicweb 10 Lucene indexes and repository or PIM queries. Triggers: builders, instances, analyzers, boosts, scoring, ProductsFrontend, empty or overbroad query. Non-triggers: PIM modelling -> dw-pim-modelling; completeness -> dw-pim-completeness.'
 ---
 
 # Search Indexing

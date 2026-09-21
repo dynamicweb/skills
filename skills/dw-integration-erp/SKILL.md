@@ -4,7 +4,7 @@ type: knowledge
 group: integration
 mcp: none
 dynamo: false
-description: 'Configure ERP connectors and data ownership in Dynamicweb 10. Triggers: ERP integration, data shape ownership, connector configuration. Non-triggers: Integration Framework basics -> dw-integration-framework; Business Central -> dw-integration-bc.'
+description: 'Configure DW10 ERP connectors and data ownership. Triggers: ERP integration, source-of-truth mapping, connector configuration. Activity setup/troubleshooting -> dw-integration-framework.'
 ---
 
 # ERP Integration

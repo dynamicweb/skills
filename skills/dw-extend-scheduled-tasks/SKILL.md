@@ -4,7 +4,7 @@ type: knowledge
 group: extend
 mcp: none
 dynamo: false
-description: 'Create and manage scheduled tasks in Dynamicweb 10 including RunSqlScheduledTaskAddIn. Triggers: scheduled tasks, background jobs, RunSqlScheduledTaskAddIn. Non-triggers: notification handling -> dw-extend-providers; MCP tool authoring -> dw-extend-mcp-tools.'
+description: 'Create and manage DW10 scheduled tasks. Triggers: background jobs, scheduled task AddIns, RunSqlScheduledTaskAddIn. Event notifications -> dw-extend-providers.'
 ---
 
 # Scheduled Tasks

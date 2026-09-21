@@ -4,7 +4,7 @@ type: knowledge
 group: integration
 mcp: optional
 dynamo: true
-description: 'Understand Dynamicweb 10 Integration Framework architecture and patterns, and set up, run, schedule, or diagnose a Data Integration activity through the MCP tools. Triggers: Integration Framework, external systems, source/target providers, import/export products/users/orders via CSV/XML/Excel/OData, a failed or hanging integration activity. Non-triggers: ERP specifics -> dw-integration-erp; Business Central -> dw-integration-bc.'
+description: 'Configure, run and diagnose DW10 Data Integration activities. Triggers: source/target providers, CSV/XML/Excel/OData import/export, scheduling, failed or hanging activities. ERP ownership -> dw-integration-erp.'
 ---
 
 # Integration Framework

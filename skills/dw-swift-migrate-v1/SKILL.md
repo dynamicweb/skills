@@ -4,7 +4,7 @@ type: flow
 group: swift
 mcp: required
 dynamo: true
-description: 'Migrate pages from a Swift 1 (Swift v1) solution to Swift 2 and KEEP THE LAYOUT — a faithful, structure-preserving port (Swift 1 and Swift 2 share the same grid model, so the layout carries over 1:1). Reuses site extraction + page-build tools in faithful mode with an explicit Swift 1 -> Swift 2 component/layout mapping. Triggers: migrate a Swift 1 site to Swift 2 keeping the layout, port Swift v1 pages 1:1, faithful Swift 1 -> Swift 2 conversion. Non-triggers: a free content re-design or a non-Swift-1 source -> dw-swift-migrate-content; a plain new page with no migration source -> dw-swift-page-design.'
+description: 'Port Swift 1 pages to Swift 2 while preserving layout and structure. Triggers: Swift v1 migration, 1:1 layout port, faithful Swift conversion. Non-triggers: redesign or non-Swift source -> dw-swift-migrate-content; new page -> dw-swift-page-design.'
 ---
 
 # Swift 1 → Swift 2 Migration

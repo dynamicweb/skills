@@ -4,7 +4,7 @@ type: flow
 group: extend
 mcp: none
 dynamo: false
-description: 'Step-by-step guide for adding new MCP tools to the Dynamicweb MCP project — tool classes, services, models, and route handlers. Triggers: create a new MCP tool or domain area, add services/models/route handlers to the MCP project, expose a new operation over MCP. Non-triggers: understanding existing Dynamicweb APIs before coding -> dw-source-explorer; building product queries -> dw-search-indexing.'
+description: 'Add tools to the Dynamicweb MCP project. Triggers: new MCP operation/domain, tool classes, services, models, route handlers. Existing API internals -> dw-source-explorer.'
 ---
 
 # MCP Tool Creator
