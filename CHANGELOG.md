@@ -3,6 +3,33 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.3.0]
+
+New `dw-commerce-cpq` skill: building a Carrot Solutions CPQ configurator on Dynamicweb 10.
+
+- **CPQ is a partner product, so nothing documents it as a platform surface.** The vendor ships a
+  tutorial rather than a reference, and its guidance is incomplete in ways that cost time: it
+  instructs authors to bind a page to a model with a naming convention that the product does not
+  implement, and leaves the price-rule expression grammar as an empty heading. The skill is grounded
+  in the shipped assemblies, templates and schema instead.
+- **The question every CPQ project opens with is whether it needs an ERP, and the answer is no.**
+  Rule evaluation, pricing, cart, order, quote and document generation are all local; Business
+  Central is reached only to materialise a result as an ERP record, and each of those paths returns
+  early when no connector is configured. The BOM-line table's BC columns stay null until a connector
+  exists, so an ERP is a later increment rather than a prerequisite. The one silent exception is an
+  input lookup authored against the ERP, which renders an empty option list and no error.
+- **Documents the failure modes that produce no error at all**: a page with no tabs paragraph renders
+  blank because every CPQ row starts hidden; an unset theme interpolates to a filename that does not
+  exist and loads no stylesheet; a page is pinned to a model *version* and does not follow a new one;
+  renaming an input silently breaks every rule that referenced it; and `required` and `readonly` are
+  properties reached through `setproperty` rather than action verbs, so writing them as verbs saves
+  cleanly and does nothing.
+- Covers both condition dialects with worked examples, the operator table (`contain` is singular,
+  `start with` carries a space), the action and `setproperty` vocabularies, the BOM item contract and
+  when a line must describe itself, and the complete `dw_sql` Lookup List configuration — including
+  that its SQL is string-interpolated rather than parameterised, so interpolated values belong on
+  constrained inputs.
+
 ## [5.2.1]
 
 - Skill descriptions use compact purposes, distinctive triggers and essential routing

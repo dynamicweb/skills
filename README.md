@@ -128,6 +128,9 @@ Handle orders, checkout, and cart functionality.
 **[dw-commerce-b2b](skills/dw-commerce-b2b/SKILL.md)**
 Implement B2B patterns — customer groups, scoped assortments, and sales workflows.
 
+**[dw-commerce-cpq](skills/dw-commerce-cpq/SKILL.md)**
+Build and operate a Carrot Solutions CPQ configurator — models, rules, catalogue-driven lookups, pages, and the card-as-quote model.
+
 **[dw-search-indexing](skills/dw-search-indexing/SKILL.md)**
 Build and configure Dynamicweb 10 search indexes on Lucene — index types, builders, analyzers, scoring, and product index setup.
 
