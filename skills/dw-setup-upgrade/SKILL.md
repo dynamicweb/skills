@@ -231,7 +231,19 @@ ALTER ROLE [db_backupoperator] ADD MEMBER [yourDwDbUserName]
 
 ## Cloud Release Rings
 
-Cloud-hosted solutions receive upgrades through rings R0 (cutting-edge) → R4 (stable). Production typically runs R3/R4. To change ring, place a `changeversion.txt` file containing `R1`–`R4` in `/Files/System/CloudHosting/`.
+Dynamicweb cuts a milestone monthly and moves it through the rings first-in first-out, one step per
+month. **R0 is the newest ring, not the oldest**: it carries the current milestone through its
+30-day soak and is for demo, test and local development only. R1 is current, R2 is current+1, R3 is
+current+2, R4 is current+3, so a higher number is an older, longer-settled milestone, and
+production sits on R3 or R4. Inside a major the public .NET API is source and binary compatible, so
+moving between rings is a version move, not a porting job. The .NET 10 move is an opt-in rollout
+per ring with multi-targeted packages, which is why a ring folder or token can name the runtime
+alongside the ring. Policy of record:
+[Dynamicweb release policy](https://doc.dynamicweb.dev/documentation/fundamentals/dw10release/releasepolicy.html).
+
+To change ring on a hosted solution, place a `changeversion.txt` file containing `R1` through `R4`
+in `/Files/System/CloudHosting/`. Confirm the switch by re-reading `info.version`; a recycle alone
+is not proof.
 
 ## Next Steps
 

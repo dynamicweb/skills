@@ -75,21 +75,26 @@ Checks (errors fail the build, warnings are printed but do not):
     The error names the file, the line and the closest registered name.
   - `versions.json` (repo root) parses against the one published schema: exactly
     `schema` (1), `worksOn`, `measuredAt`, `policy`; `worksOn` carrying exactly
-    `dw`, `swift` and `apps`; each axis exactly `floor` + `measured`; each app
+    `dw`, `swift` and `apps`; each axis exactly `floor` + `measured`, and the
+    `dw` axis optionally `ring` (R0-R4) + `tfm` (`net10.0`); each app
     `id`/`floor`/`measured`/`required` plus an optional `scope`. `measured` is
     one concrete version (never a range, never `x`); `floor` is a valid range
     (`>=`, `==`, `>`, `~`, `^` or a bare version). Vendor axes only — the file
     never names a distribution or a harness.
   - An optional per-skill `versions:` frontmatter block (axes `dw`, `mcp`,
-    `serializer`, `swift`, each `{ floor, measured }`) is validated by the same
+    `serializer`, `swift`, each `{ floor, measured }`, `dw` also taking
+    `ring`/`tfm`) is validated by the same
     rules and may carry no other axis. A skill without the block inherits
     `versions.json`.
   - Version stamps in the body: a version-specific fact ends with one bracketed
-    token, `[dw 10.28.10 · mcp 0.4.4]` — axes in the fixed order
+    token, `[dw 10.28.11 · mcp 0.6.0]` — axes in the fixed order
     dw · mcp · serializer · swift, ` · ` separated, only the axes that were
-    varied, each named once. Every candidate token is found by one regex and
+    varied, each named once. The `dw` axis may print a hosting ring instead of
+    a release, `[dw R1 · mcp 0.6.0]`, for a fact that is true of the ring
+    rather than of one build. Every candidate token is found by one regex and
     then checked for order, duplication and version shape. A bare inline
-    version number (`10.2x.y`, `0.4.x`, `0.9.x`, `Swift 2.x`) outside a token,
+    version number (`10.2x.y`, `0.4.x`, `0.9.x`, `Swift 2.x`) or a bare ring
+    (`R0`-`R4`) outside a token,
     a fenced block, a URL or the frontmatter is an ERROR, ratcheted per file
     against `scripts/version-stamp-allowlist.json` the way the Dynamo baseline
     works: a file above its entry fails, below is fine, so the allowlist only
@@ -1111,6 +1116,10 @@ STAMP_ALLOWLIST = REPO / "scripts" / "version-stamp-allowlist.json"
 # The axes a stamp token and a per-skill `versions:` block may name, in the
 # fixed order a token prints them.
 STAMP_AXES = ("dw", "mcp", "serializer", "swift")
+# Keys the `dw` axis may carry beyond `floor` + `measured`. Outward
+# compatibility is claimed against the hosting ring, so the ring and the
+# framework it served travel with the release number.
+DW_AXIS_EXTRAS = frozenset({"ring", "tfm"})
 # `measured` is exactly one concrete version: never a range, never an `x`.
 MEASURED_RE = re.compile(r"^\d+(?:\.\d+){1,3}(?:-[0-9A-Za-z][0-9A-Za-z.]*)?$")
 # `floor` is a compatibility claim: a comparator (or nothing) plus a version.
@@ -1118,24 +1127,52 @@ MEASURED_RE = re.compile(r"^\d+(?:\.\d+){1,3}(?:-[0-9A-Za-z][0-9A-Za-z.]*)?$")
 FLOOR_RE = re.compile(
     r"^(?:>=|<=|==|>|<|~|\^)?\d+(?:\.\d+){0,3}(?:-[0-9A-Za-z][0-9A-Za-z.]*)?$")
 ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# The Dynamicweb hosting ring a compat claim was proven on. R0 is the current
+# milestone under its 30-day soak (demo, test and local dev only); R1 is
+# current, R2 current+1, R3 current+2, R4 current+3.
+RING_RE = re.compile(r"^R[0-4]$")
+# The target framework moniker the ring served that release on.
+TFM_RE = re.compile(r"^net\d+\.\d+$")
 
 # One regex finds every candidate stamp token; the contents are then checked
 # for axis order, duplication and version shape.
 STAMP_TOKEN_RE = re.compile(r"\[((?:dw|mcp|serializer|swift) [^\]\n]*)\]")
-# A bare inline version number: the shapes this corpus actually carries.
-BARE_VERSION_RE = re.compile(r"10\.2\d\.\d+|0\.4\.\d|0\.9\.\d|Swift 2\.\d")
+# A bare inline version number: the shapes this corpus actually carries, plus
+# the hosting ring - a ring is a compat claim the same way a version is, so it
+# belongs in a stamp token too.
+BARE_VERSION_RE = re.compile(
+    r"10\.2\d\.\d+|0\.4\.\d|0\.9\.\d|Swift 2\.\d|\bR[0-4]\b")
 URL_RE = re.compile(r"(?:https?://|www\.)\S+")
 
 
-def check_axis(where: str, axis: str, value: object) -> None:
-    """`{ floor, measured }` for one axis, with both fields well-formed."""
+def check_axis(where: str, axis: str, value: object,
+               optional: frozenset[str] = frozenset()) -> None:
+    """`{ floor, measured }` for one axis, with both fields well-formed.
+
+    The `dw` axis may also carry `ring` and `tfm`: the hosting ring the claim
+    was proven on and the framework that ring served it on. Both are passed in
+    through `optional`, so no other axis gains them.
+    """
     if not isinstance(value, dict):
         err(f"{where}: `{axis}` must be a mapping with `floor` and `measured`")
         return
-    extra = set(value) - {"floor", "measured"}
+    extra = set(value) - {"floor", "measured"} - optional
     if extra:
+        allowed = "`floor` + `measured`"
+        if optional:
+            allowed += " plus " + " / ".join(f"`{k}`" for k in sorted(optional))
         err(f"{where}: `{axis}` carries unknown key(s) {sorted(extra)} - "
-            "an axis is exactly `floor` + `measured`")
+            f"an axis is exactly {allowed}")
+    if "ring" in value:
+        ring = value["ring"]
+        if not isinstance(ring, str) or not RING_RE.match(ring):
+            err(f"{where}: `{axis}.ring` must be a hosting ring R0-R4 "
+                f"(got {ring!r})")
+    if "tfm" in value:
+        tfm = value["tfm"]
+        if not isinstance(tfm, str) or not TFM_RE.match(tfm):
+            err(f"{where}: `{axis}.tfm` must be a framework moniker such as "
+                f"'net10.0' (got {tfm!r})")
     measured = value.get("measured")
     if not isinstance(measured, str) or not MEASURED_RE.match(measured):
         err(f"{where}: `{axis}.measured` must be one concrete version "
@@ -1219,7 +1256,8 @@ def check_versions_file() -> None:
             f"'swift'] (got {sorted(works_on)})")
     for axis in ("dw", "swift"):
         if axis in works_on:
-            check_axis("versions.json", f"worksOn.{axis}", works_on[axis])
+            check_axis("versions.json", f"worksOn.{axis}", works_on[axis],
+                       DW_AXIS_EXTRAS if axis == "dw" else frozenset())
     apps = works_on.get("apps")
     if not isinstance(apps, list) or not apps:
         err("versions.json: `worksOn.apps` must be a non-empty array")
@@ -1316,7 +1354,8 @@ def check_skill_versions_blocks() -> None:
                 f"{sorted(unknown)} - allowed: {list(STAMP_AXES)}")
         for axis in STAMP_AXES:
             if axis in block:
-                check_axis(where, f"versions.{axis}", block[axis])
+                check_axis(where, f"versions.{axis}", block[axis],
+                           DW_AXIS_EXTRAS if axis == "dw" else frozenset())
 
 
 def stamp_token_problems(token: str) -> str | None:
@@ -1331,7 +1370,11 @@ def stamp_token_problems(token: str) -> str | None:
         if axis in seen:
             return f"axis `{axis}` named twice"
         seen.append(axis)
-        if not MEASURED_RE.match(version):
+        if not MEASURED_RE.match(version) and not (
+                axis == "dw" and RING_RE.match(version)):
+            if axis == "dw":
+                return (f"`{axis} {version}` is neither one concrete version "
+                        "nor a hosting ring R0-R4")
             return f"`{axis} {version}` is not one concrete version"
     order = [STAMP_AXES.index(a) for a in seen]
     if order != sorted(order):

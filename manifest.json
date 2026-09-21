@@ -1,10 +1,12 @@
 {
   "version": 2,
-  "generatedAt": "2026-09-21T09:55:05.771Z",
+  "generatedAt": "2026-09-21T10:00:09.888Z",
   "worksOn": {
     "dw": {
+      "ring": "R1",
+      "tfm": "net10.0",
       "floor": ">=10.28.1",
-      "measured": "10.28.10"
+      "measured": "10.28.11"
     },
     "swift": {
       "floor": "==2.4",
