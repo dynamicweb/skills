@@ -3,6 +3,28 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.6.0]
+
+New foundational skill `dw-integration-fo-discovery`: outside-in discovery of the data model a
+Dynamics 365 Finance & Operations (or legacy AX 2009/2012) environment actually runs on, before any
+Dynamicweb integration mapping starts.
+
+- Six phases, each owned by a reference: access surfaces, structural inventory, population census,
+  key centrality (find the spine identifier), process footprint, and the synthesis brief; plus a
+  legacy-AX fork for XPO / model store / SQL-replica environments.
+- Six PowerShell assets (`Get-FoToken`, `Export-FoMetadata`, `Invoke-FoCensus`,
+  `Measure-KeyCentrality`, `New-ModelDiagram`, `ConvertFrom-Xpo`), all read-only against the ERP,
+  paced, and honouring `Retry-After` on 429; two output templates (data-model brief, premise-free
+  clarification questions).
+- Vendor-generic: every example is illustrative (placeholder prefixes `XYZ` / `ABC` / `INT`, a
+  `<discovery-dir>` output folder), and the skill routes only to foundational skills
+  (`dw-integration-erp`, `dw-integration-framework`).
+- `mcp: none`, `dynamo: false`: the flow runs on OData and PowerShell outside the product. The
+  Dynamics 365 ERP MCP server is documented as one ERP-side access surface among several, and its
+  tool names are added to `notTools` in `scripts/mcp-tools/0.6.0.json` so the validator does not read
+  them as Dynamicweb MCP tools.
+- Bundled in `dynamicweb-backend` and `dynamicweb-presales`, next to `dw-integration-erp`.
+
 ## [5.5.0]
 
 Four demo-build drifts folded back, one artifact per theme.
