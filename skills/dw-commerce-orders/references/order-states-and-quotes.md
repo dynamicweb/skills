@@ -23,6 +23,18 @@ a wrong one answers a bare `"An error occurred invoking 'create_order_state'"` n
   value back is precisely what fails.
 - **`color` is a hex literal** (`#F59E0B`). The dashboard-widget palette names are rejected here.
 
+**Pass an explicit unused id on a create.** Without one, `create_order_state` mints the next value of
+the `EcomNumbers` `OS` counter and saves it as an upsert, so where the counter lags the table the
+"new" state silently replaces an existing one; measured, two id-less creates returned `OS5` and `OS6`
+and overwrote a cart flow's Draft and Approved states while the table ran to `OS14`. A database built
+by restoring or deserializing rows never advances the counters, so every such host starts with them
+lagging, and the same mint-then-upsert applies to shipping (`SHIP`), payment (`PAY`) and price
+(`PRICE`) ids. Read the existing ids first (`get_order_states`), pass an id past the highest one,
+and assert afterwards that every pre-existing state still carries its pre-existing name. Where the
+counters can be set (the backend number-series screen), raise each `NumberCounter` to at least the
+highest numeric suffix in its table (`OS` against `EcomOrderStates`, `SHIP` against `EcomShippings`,
+`PAY` against `EcomPayments`, `PRICE` against `EcomPrices`) before any id-less create.
+
 **The tool reaches no other state column.** It has no parameter for `AllowEdit`, `AllowOrder` or any
 of the ten `EcomOrderStates` mail columns, so in-product a state ladder is MCP create plus the
 backend order-states screen for the rest — name that screen rather than promising the tool covers

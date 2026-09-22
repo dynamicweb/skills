@@ -235,11 +235,14 @@ of each other, with B's simpler surface as the tie-breaker.
 
 **Assets.**
 
-- **The image handler drops alpha.** The handler answers JPEG for a `format=webp` request and for a
-  request with no format; only `format=png` keeps a PNG's alpha. A transparent logo routed the default
-  way paints on a solid box (a white inverse mark on a dark footer is where it shows), and a probe that
-  counts `naturalWidth` passes it. Request transparent marks with `format=png` or bind them as inline
-  SVG, and check the served content type or the first bytes rather than the source file.
+- **The image handler drops alpha on the no-format route.** The handler answers JPEG for a request
+  with no format. For `format=webp` it negotiates on the `Accept` header: a browser (which sends
+  `image/webp`) gets WebP with its alpha, and a request without that header gets JPEG; `format=png`
+  keeps a PNG's alpha either way. A transparent logo routed with no format paints on a solid box (a
+  white inverse mark on a dark footer is where it shows), and a probe that counts `naturalWidth`
+  passes it. Request transparent marks with `format=png` or bind them as inline SVG, and check the
+  served content type or the first bytes of a request with a browser-shaped `Accept` header
+  ([`visual-qa.md`](visual-qa.md)) rather than the source file.
 - **An asset id can render as alt text.** The product gallery uses the asset row id for `alt`, so
   the shipped keys leak into the markup of a branded PDP. No verb renames an asset row id, and a
   delete plus re-add loses the default flag, the sort and the variant inheritance, so the online

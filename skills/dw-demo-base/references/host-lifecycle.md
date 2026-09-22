@@ -26,6 +26,18 @@ Returns PID. After kickoff, poll `/Admin` (or `/admin/api/api.json`) until 200, 
 - **Launch through `dotnet run` only — the apphost exe under `bin/` is not a launch surface.** Starting `bin\Debug\<TFM>\Dynamicweb.Host.Suite.exe` directly boots a host that serves pages but is silently **degraded**: item-based paragraphs fall back to defaults (stock logo/text instead of configured content), every product list renders empty, and nothing is logged — the symptom reads as data loss or broken permissions and costs hours of misdiagnosis. If a running host shows that symptom set, check how it was started before debugging anything else.
 - **Silent early exits while sibling DW hosts run:** a freshly started demo host that disappears minutes after start with no exception and no shutdown line in its log — while other DW10 hosts run on the same machine — should be retested with the sibling hosts stopped before any deeper diagnosis. On demo day, run only the demo's own host and confirm sustained uptime (browse a product list and a cart page) before presenting.
 
+## After any start: prove the frontend initialised
+
+**A throwing add-in initializer can skip the frontend initialisation with nothing logged, until the next recycle.** DW runs the pipeline initializers in rank order inside an empty `catch` and marks the step done either way [dw 10.29.4]. The MCP add-in runs at rank 0, and its credential backfill (`BackfillLegacyCredentials`, an `INSERT INTO McpConfigurationCredential`) is unguarded, so one SQL timeout there skips the classic frontend pipeline, which runs last: no `ItemManager.Initialize`, no page URL tree, no URL index.
+
+**Fingerprint**, all at once after a start:
+
+- every friendly URL answers the DW 404, while `Default.aspx?ID=<id>` for the same page answers 200 with an empty shell;
+- Swift paragraph templates throw `NullReferenceException` on `Model.Item`;
+- the Event Viewer log of that start lacks the item-type duplicate warning (`two or more xml-files which contains items with same system name`) that every normal start on the same solution logs, and usually carries the SQL timeout instead.
+
+**Cure: recycle the app pool once** (`appcmd recycle apppool /apppool.name:<pool>` on IIS; `Restart-DwHost.ps1` on a `dotnet run` host). Nothing in the content caused it. Before blaming the last content change or rolling it back, compare one friendly URL with its `Default.aspx?ID=` twin: a rollback made in the same recycle appears to confirm the wrong cause.
+
 ## Stop — port-scoped AND ownership-verified
 
 Assume sibling demo hosts are running on this machine. Kill by the **PID returned from Start-Process** when you have it. When you don't, resolve the PID from **THIS demo's launchSettings port** and confirm the owning process's command line points at THIS demo's solution folder before stopping it — every demo scaffolds the same `Dynamicweb.Host.Suite` project, so a name / command-line match (`*Dynamicweb.Host.Suite*`, `Stop-Process -Name dotnet`, killing every `dotnet` PID) kills *sibling* demos' hosts:

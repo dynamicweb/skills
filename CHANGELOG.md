@@ -3,6 +3,40 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.6.0]
+
+Eight 2026-09 triage corrections, each a row that stated something a live host no longer (or never)
+bore out.
+
+- **Page meta titles go through `PageSave`, not `save_pages`.** `dw-demo-swift/references/re-skin.md`
+  Step 0.2 and `cheat-sheet.md` no longer send `metaTitle` through MCP `save_pages`, which answers
+  `succeeded` and persists nothing; the route is Management API `PageSave` with the full
+  `GetPageById` model, asserted on the served `<title>`.
+- **`HideInMenu` is the page state that hides a page from menus.** `dw-data-access`
+  `recipes-content.md` and `management-api-and-sql.md` name the `PublishingMode` members
+  (`Published`, `Unpublished`, `HideInMenu`): `Hidden` is no member and 500s.
+- **Product category fields are `PropertyFields`.** `recipes-pim.md` replaces the `ProductById`
+  inventory workaround with `ProductCategoriesAll?CategoryType=PropertyFields`: the zero on the
+  default filter is the correct answer, not a defect.
+- **`ProductAssetByProductKey` with `ProductVariantId` is version-tagged.** The "parameter ignored"
+  row was seen on 10.28.10 only; 10.28.11 lists the variant's own rows beside the inherited master
+  rows, so the row now reads the `onMaster` flag first.
+- **`GetImage.ashx` `format=webp` negotiates on `Accept`.** `re-skin.md` and
+  `dw-demo-base/references/branded-demo-paths.md` state that a browser gets WebP with alpha and only
+  a request without `image/webp` in `Accept` gets JPEG; the no-format route is the one that drops
+  alpha.
+- **A refused tool name is checked against `tools/list` first.** The `mcp-setup.md` triage row no
+  longer treats a name absent from `tools/list` as a restricted tool family: the singular by-id
+  getters are not registered on MCP 0.6.0 and answer the same denial.
+- **Friendly URLs 404 after a start while `Default.aspx?ID=` answers: recycle once.**
+  `dw-demo-base/references/host-lifecycle.md` gains the after-start check: a throwing add-in
+  initializer skips the frontend initialisation inside an empty `catch`, with the fingerprint (no
+  item-type duplicate warning at that start) and the cure; `mcp-setup.md` carries the triage row.
+- **An id-less create can overwrite a row when `EcomNumbers` lags.**
+  `dw-commerce-orders/references/order-states-and-quotes.md` and `checkout-configuration.md`: order
+  state, shipping, payment and price ids are minted from counters a restored or deserialized
+  database never advances; pass an explicit unused id or raise the counter first.
+
 ## [5.5.0]
 
 Four demo-build drifts folded back, one artifact per theme.
