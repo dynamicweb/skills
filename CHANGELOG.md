@@ -3,6 +3,51 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.4.0]
+
+Outward compatibility is claimed against the Dynamicweb **hosting ring** the estate proved on,
+not against a hand-typed version floor. A ring is a fact you read off the host; a floor is a
+number somebody remembered.
+
+- **`versions.json` and `manifest.json` carry the ring.** `worksOn.dw` is now
+  `{ "ring": "R1", "tfm": "net10.0", "floor": ">=10.28.1", "measured": "10.28.11" }`. `measured`
+  moves to the release the 2026-09-17 gate observed and `measuredAt` follows it. `floor` stays for
+  one release as a deliberate alias, so a consumer reading the old key keeps working while the
+  ring becomes the claim. `manifest.json` was regenerated with `scripts/build-manifest.mjs`, which
+  copies `worksOn` verbatim, and was not hand-edited.
+- **`validate-skills.py` knows what a ring is.** The `dw` axis may carry `ring` (R0 to R4) and
+  `tfm` (`net10.0`), in `versions.json` and in a per-skill `versions:` block, and both are shape
+  checked; no other axis gains them. A stamp token may print a ring where the fact is true of the
+  ring rather than of one build, `[dw R1 · mcp 0.6.0]`, and only on the `dw` axis. A bare ring in
+  prose is an error the same way a bare version is, ratcheted per file against
+  `scripts/version-stamp-allowlist.json`; five files carrying ring prose get an allowance that
+  records the current count, the way the Dynamo baseline absorbed its own backlog.
+- **Reading the ring is a preflight step.** `dw-data-access` ("Reading the host's versions") now
+  reads the ring two ways: the `Application\bin` symlink target under
+  `F:\Domains\Applications\DW10\<Ring>\bin` on a VM-style install, where `R1-NET10` is ring 1
+  on .NET 10 and a plain `R1` folder is ring 1 on the older runtime; and
+  `Files/System/CloudHosting/changeversion.txt` on a hosted site. When neither is readable the
+  ring is unknown and is recorded as `null`, never guessed.
+- **The ring order is stated correctly, and the contradiction is gone.** R0 is the **newest**, the
+  current milestone in its 30-day soak, for demo, test and local development only; R1 current, R2
+  current+1, R3 current+2, R4 current+3. Milestones are cut monthly and move first-in first-out,
+  one step per month, so a higher ring number is an older, longer-settled build. The .NET 10 move
+  is an opt-in rollout per ring with multi-targeted packages. `dw-setup-install`
+  (`install-anatomy.md` section 5), `dw-setup-upgrade` and `dw-setup-config` all cite the
+  [Dynamicweb release policy](https://doc.dynamicweb.dev/documentation/fundamentals/dw10release/releasepolicy.html).
+  `install-anatomy.md` previously numbered rings with higher as earlier; that is corrected.
+- **The `Dynamicweb.Suite.RingN` NuGet table survives, marked for what it is.** It is a build-time
+  triage channel only, never something a shipped app depends on, its numbering is UNVERIFIED
+  against nuget.org, and it is not the hosting ring numbering.
+- **`install-swift2.ps1` stops baking in Swift 2.2.0.** The download URLs take the Swift release
+  from `versions.json` (`worksOn.swift.measured`) through `-VersionsJsonPath`, which defaults to
+  the nearest `versions.json` above the script. A missing or unparseable file is a hard failure
+  with the reason, never a silent fallback to a stale literal. The database package name carries
+  a date stamp and the portal changed its own pattern between releases
+  (`swift2.2.0-20260129-database.zip`, `swift-2.4.0-20260702-database.zip`), so `versions.json`
+  states it in full as `worksOn.swift.databasePackage`, the validator checks it names `measured`,
+  and `-SwiftDatabasePackage` is only an override.
+
 ## [5.3.0]
 
 New `dw-commerce-cpq` skill: building a Carrot Solutions CPQ configurator on Dynamicweb 10.

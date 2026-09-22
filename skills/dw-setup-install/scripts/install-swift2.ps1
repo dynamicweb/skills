@@ -5,8 +5,10 @@
     Installs the latest Swift 2 solution onto a fresh Dynamicweb 10 instance.
 
 .DESCRIPTION
-    Downloads the latest Swift 2 database, files, and demo data from the Dynamicweb
-    downloads portal, imports the database, extracts files, copies the Custom.Mcp
+    Downloads the Swift 2 database, files, and demo data from the Dynamicweb
+    downloads portal for the Swift release stated in the corpus versions.json
+    (worksOn.swift.measured). This script bakes in no Swift version of its own
+    and fails loudly when versions.json is missing, imports the database, extracts files, copies the Custom.Mcp
     add-ins payload, writes the bootstrap manifest, and creates the database config.
     Owning reference: dw-setup-install/SKILL.md (Happy Path). Traps encoded:
     sqlpackage discovery across install locations, the nested Files/ folder inside
@@ -43,11 +45,27 @@
 .PARAMETER SkipDownload
     Skip downloading if the packages already exist locally.
 
+.PARAMETER VersionsJsonPath
+    Path to the corpus versions.json that states the Swift release this install
+    targets. Default: the nearest versions.json found by walking up from the
+    script. The Swift version is read from worksOn.swift.measured and no Swift
+    version is baked into this script; a missing or unparseable file is a hard
+    failure, never a fallback to a stale literal.
+
+.PARAMETER SwiftDatabasePackage
+    Override for the Swift database package name on the downloads portal
+    (for example swift-2.4.0-20260702-database.zip). By default it is read
+    from versions.json worksOn.swift.databasePackage, which states the full
+    name because the portal changed its own pattern between releases and a
+    date stamp alone cannot rebuild it. Missing in both places is a hard
+    failure naming the portal folder to read it from.
+
 .EXAMPLE
     pwsh -NoProfile -File scripts/install-swift2.ps1
 
-    Installs Swift 2 with the defaults: localhost SQL Server, database "swift2",
-    Files folder C:\DwSolutions\Swift2\Files.
+    Installs the Swift release named in versions.json with the defaults:
+    localhost SQL Server, database "swift2", Files folder
+    C:\DwSolutions\Swift2\Files.
 
 .EXAMPLE
     pwsh -NoProfile -File scripts/install-swift2.ps1 -TargetServer ".\SQLEXPRESS" -TargetDatabase "mybusiness" -FilesPath "C:\MyProject\wwwroot\Files"
@@ -65,23 +83,74 @@ param(
     [string]$DownloadPath = "$env:TEMP\dw-swift-install",
     [string]$CustomMcpAddInsSourcePath = "",
     [int]$BootstrapSecretTtlMinutes = 30,
-    [switch]$SkipDownload
+    [switch]$SkipDownload,
+    [string]$VersionsJsonPath = "",
+    [string]$SwiftDatabasePackage = ""
 )
 
 $ErrorActionPreference = "Stop"
 
+function Resolve-VersionsJson([string]$Explicit) {
+    if ($Explicit) {
+        if (-not (Test-Path -LiteralPath $Explicit)) {
+            throw "versions.json not found at '$Explicit'. Pass -VersionsJsonPath with the path to the corpus versions.json."
+        }
+        return (Resolve-Path -LiteralPath $Explicit).Path
+    }
+    $dir = $PSScriptRoot
+    while ($dir) {
+        $candidate = Join-Path $dir "versions.json"
+        if (Test-Path -LiteralPath $candidate) { return $candidate }
+        $parent = Split-Path -Parent $dir
+        if ($parent -eq $dir) { break }
+        $dir = $parent
+    }
+    throw "versions.json not found above '$PSScriptRoot'. This script takes the Swift release from the corpus versions.json and bakes in no version of its own. Pass -VersionsJsonPath."
+}
+
+function Get-SwiftVersion([string]$Path) {
+    try {
+        $doc = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+    } catch {
+        throw "versions.json at '$Path' is not valid JSON: $($_.Exception.Message)"
+    }
+    $version = $doc.worksOn.swift.measured
+    if (-not $version) {
+        throw "versions.json at '$Path' carries no worksOn.swift.measured, so the Swift release to install is unknown."
+    }
+    return [string]$version
+}
+
+function Get-SwiftDatabasePackage([string]$Path, [string]$Version, [string]$Override) {
+    if ($Override) { return $Override }
+    $doc = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+    $pkg = $doc.worksOn.swift.databasePackage
+    if (-not $pkg) {
+        throw "versions.json at '$Path' carries no worksOn.swift.databasePackage. The portal names the database zip with a date stamp and no stable pattern; read the name off Files/Files/Releases/Swift/Swift-v$Version-demo-data/ and add it to versions.json (or pass -SwiftDatabasePackage)."
+    }
+    if ([string]$pkg -notmatch [regex]::Escape($Version)) {
+        throw "versions.json at '$Path' names database package '$pkg', which does not carry the Swift release '$Version' it states as measured."
+    }
+    return [string]$pkg
+}
+
+$VersionsFile = Resolve-VersionsJson $VersionsJsonPath
+$SwiftVersion = Get-SwiftVersion $VersionsFile
+$SwiftDatabasePackage = Get-SwiftDatabasePackage $VersionsFile $SwiftVersion $SwiftDatabasePackage
+Write-Host "Swift release from $VersionsFile : $SwiftVersion (database package $SwiftDatabasePackage)"
+
 $BaseUrl = "https://doc.dynamicweb.com/Admin/Public/Download.aspx?File="
 $Downloads = @{
     Database = @{
-        Url = "${BaseUrl}/Files/Files/Releases/Swift/Swift-v2.2.0-demo-data/swift2.2.0-20260129-database.zip"
+        Url = "${BaseUrl}/Files/Files/Releases/Swift/Swift-v$SwiftVersion-demo-data/$SwiftDatabasePackage"
         FileName = "swift2-database.zip"
     }
     Files = @{
-        Url = "${BaseUrl}/Files/Files/Releases/Swift/Swift-v2.2.0/Swift_v2.2.0_Files.zip"
+        Url = "${BaseUrl}/Files/Files/Releases/Swift/Swift-v$SwiftVersion/Swift_v${SwiftVersion}_Files.zip"
         FileName = "swift2-files.zip"
     }
     DemoData = @{
-        Url = "${BaseUrl}/Files/Files/Releases/Swift/Swift-v2.2.0-demo-data/swift-demo-data-2.2.0.zip"
+        Url = "${BaseUrl}/Files/Files/Releases/Swift/Swift-v$SwiftVersion-demo-data/swift-demo-data-$SwiftVersion.zip"
         FileName = "swift2-demo-data.zip"
     }
 }

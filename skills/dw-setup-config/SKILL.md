@@ -240,10 +240,19 @@ Place these files in `/Files/System/CloudHosting/` to trigger platform operation
 
 | File | Effect |
 |------|--------|
-| `changeversion.txt` containing `R1`–`R4` | Switch release ring |
+| `changeversion.txt` containing `R1` through `R4` | Switch release ring |
 | `recycle.txt` | Recycle the application pool |
 | `restart.txt` | Full application restart |
 | `BackupRestoreDB/backup.txt` | Trigger database bacpac export |
+
+**Ring order, since it reads backwards:** R0 is the *newest*: the current milestone under its
+30-day soak, for demo, test and local development only. R1 is current, R2 current+1, R3 current+2,
+R4 current+3. Milestones are cut monthly and move through the rings first-in first-out, one step
+per month, so a higher ring number is an older, longer-settled build. The .NET 10 move is an opt-in
+rollout per ring with multi-targeted packages. Policy of record:
+[Dynamicweb release policy](https://doc.dynamicweb.dev/documentation/fundamentals/dw10release/releasepolicy.html).
+`changeversion.txt` is the ring pin and nothing else; use `recycle.txt` or `restart.txt` to
+restart, never a rewrite of this file.
 
 ## Multi-Tenant / IIS Folder Structure
 

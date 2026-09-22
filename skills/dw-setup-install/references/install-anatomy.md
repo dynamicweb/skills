@@ -6,7 +6,7 @@
 - [2. The host TargetFramework MUST be `net10.0`](#2-the-host-targetframework-must-be-net100)
 - [3. Build-time host-config patches](#3-build-time-host-config-patches)
 - [4. MSDTC for cross-connection TransactionScope](#4-msdtc-for-cross-connection-transactionscope)
-- [5. Release rings (regression triage only)](#5-release-rings-regression-triage-only)
+- [5. Release rings](#5-release-rings)
 - [6. Package naming after the rebrand, and the AppStore boundary](#6-package-naming-after-the-rebrand-and-the-appstore-boundary)
 - [7. Anti-patterns](#7-anti-patterns)
 - [8. First-run license gate + headless admin-password recovery](#8-first-run-license-gate--headless-admin-password-recovery)
@@ -192,31 +192,61 @@ exception lands in `Files/System/Log/EventViewer/<guid>.log`, not the API respon
 3. Run the AreaCopy.
 4. Revert the connection string and restart again.
 
-## 5. Release rings (regression triage only)
+## 5. Release rings
 
-Dynamicweb publishes the Suite as five parallel NuGet packages — one per release ring. Ring 0
-(`Dynamicweb.Suite`) is the stable default and the ring every install should ship on. Rings 1–4
-(`Dynamicweb.Suite.Ring1` … `Ring4`) are earlier-cadence preview tracks (higher number = earlier ring,
-faster cadence).
+### 5.1 - The hosting rings (the policy of record)
+
+A hosting ring is what an outward compatibility claim is made against. Dynamicweb cuts a milestone
+monthly and moves it through the rings **first-in first-out, one step per month**:
+
+| Ring | What it carries | Use for |
+|---|---|---|
+| R0 | The **current milestone**, in its 30-day soak | Demo, test and local development only |
+| R1 | Current | Production |
+| R2 | Current+1 | Production |
+| R3 | Current+2 | Production |
+| R4 | Current+3 | Production, the most settled |
+
+**R0 is the newest ring, not the oldest, and a higher number is an older and longer-settled
+milestone.** Inside a major the public .NET API is source and binary compatible, so moving between
+rings is a version move and not a porting job. The .NET 10 move is an **opt-in rollout per ring**
+with multi-targeted packages, which is why a ring can be named with its runtime (`R1-NET10`) as
+well as on its own (`R1`). Policy of record:
+[Dynamicweb release policy](https://doc.dynamicweb.dev/documentation/fundamentals/dw10release/releasepolicy.html).
+
+A hosted solution changes ring by uploading `Files/System/CloudHosting/changeversion.txt`
+containing `R1` through `R4`. A VM-style install carries the ring in the `Application\bin` symlink
+target under `F:\Domains\Applications\DW10\<Ring>\bin`. When neither is readable the ring is
+unknown and is recorded as null, never guessed.
+
+### 5.2 - The `Dynamicweb.Suite.RingN` NuGet packages (regression triage only)
+
+**These are a build-time triage channel and nothing else. A shipped app never depends on one**, and
+the numbering below is **UNVERIFIED against nuget.org**: confirm it on the package listing before
+acting on it. In particular, the NuGet ring numbers are *not* the hosting ring numbers in section
+5.1, and the relationship between the two has not been re-measured.
 
 | Package | Ring | Versioning | Use for |
 |---|---|---|---|
-| `Dynamicweb.Suite` | 0 (stable) | `10.x.y` (e.g. `10.25.8`) | **Default.** Ship on this. |
+| `Dynamicweb.Suite` | 0 (stable) | `10.x.y` | **Default.** Ship on this. |
 | `Dynamicweb.Suite.Ring1` | 1 | `YYYY.M.D` (e.g. `2026.5.20`) | Regression triage |
-| `Dynamicweb.Suite.Ring2..4` | 2–4 | `YYYY.M.D` | Internal validation tracks; rarely useful |
+| `Dynamicweb.Suite.Ring2..4` | 2-4 | `YYYY.M.D` | Internal validation tracks; rarely useful |
 
-Browse versions at <https://www.nuget.org/packages?q=DynamicWeb.Suite>. **Mind the version-scheme
-split:** Ring 0 uses semver-style `10.x.y`; Rings 1–4 use date-stamped `YYYY.M.D`. A `10.*` float will
-NOT match a Ring-N package, and vice versa.
+Browse versions at <https://www.nuget.org/packages?q=DynamicWeb.Suite> and take the real numbering
+from there. **Mind the version-scheme split:** the default package uses semver-style `10.x.y`; the
+`RingN` packages use date-stamped `YYYY.M.D`. A `10.*` float will NOT match a `RingN` package, and
+vice versa.
 
-**When to swap:** only as regression triage — a bug shows on Ring 0 and you want to know whether it
-reproduces on a later ring. Same result on Ring N → platform-wide bug; gone on Ring N → ring-specific,
-will land in the next Ring-0 promotion. After triage, **swap back to `Dynamicweb.Suite`**.
+**When to swap:** only as regression triage, a bug shows on the default package and you want to
+know whether it reproduces on a `RingN` build. Same result on `RingN` → platform-wide bug; gone on
+`RingN` → specific to the default package's build, and the fix lands in its next promotion. After
+triage, **swap back to `Dynamicweb.Suite`**: leaving a `RingN` reference in a csproj is a shipped
+dependency on a triage channel.
 
 ```xml
 <!-- Default -->
 <PackageReference Include="Dynamicweb.Suite" Version="10.*" />
-<!-- Triage on Ring 1 (bump the year prefix when crossing into a new year) -->
+<!-- Triage on the Ring1 package (bump the year prefix when crossing into a new year) -->
 <PackageReference Include="Dynamicweb.Suite.Ring1" Version="2026.*" />
 ```
 
