@@ -160,6 +160,9 @@ Understand Dynamicweb 10 Integration Framework architecture and patterns.
 **[dw-integration-erp](skills/dw-integration-erp/SKILL.md)**
 Configure ERP connectors and data ownership.
 
+**[dw-integration-fo-discovery](skills/dw-integration-fo-discovery/SKILL.md)**
+Discover the data model a Dynamics 365 Finance & Operations (or AX 2009/2012) environment actually runs on, from outside, before integration mapping.
+
 **[dw-integration-bc](skills/dw-integration-bc/SKILL.md)**
 Live "PIM for Business Central connector" demos — expose the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface.
 
