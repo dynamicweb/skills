@@ -3,6 +3,37 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.5.0]
+
+Four demo-build drifts folded back, one artifact per theme.
+
+- **Rotation no longer stops at mint-and-store where the database is reachable.**
+  `dw-demo-base/references/mcp-setup.md` gains step 2b: an API-key bearer is validated against its
+  `AccessUserToken` row on every request, so deleting that row revokes the key at once and with no
+  recycle, while `McpConfigurationDelete` never does. The step names the three ways to identify the
+  row (`McpConfigurationCredential.TokenId`, `AccessUserTokenName`, the key prefix before the dot),
+  requires an `INSERT` backup of the row before the delete, gives the delete order
+  (`McpConfigurationCredential` rows first, then `AccessUserToken`), and keeps the owner action only
+  for hosts whose database is out of reach. The same section states that `allowEverything` from
+  `McpConfigurationCreateSave` did not take on DW 10.27.x and that a `tools/list` of 0 tools on a key
+  that authenticates is the symptom.
+- **`System/CloudHosting/recycle.txt` is inert on a self-hosted IIS install.**
+  `dw-demo-hosted/references/online-mode.md` states that a clone of a cloud baseline carries the
+  folder without the watcher that consumes the marker, so an online-mode build there has no restart
+  route: record the restart as owed, name the missing route, and ask the operator for an app-pool
+  recycle as a counted manual intervention.
+- **A serializer `merge` of a table with no primary key deletes the host's rows.**
+  `dw-data-access/SKILL.md` carries the trap by symptom, so it is usable before the engine fix ships:
+  the SqlTable provider chooses truncate-and-insert from the key metadata before it reads the mode,
+  `sp_pkeys` is the only key source, and `DynamicStructures` and `Languages` are the heaps that
+  matter on DW 10.28. Includes the `OBJECTPROPERTY(..., 'TableHasPrimaryKey')` check, the
+  `replace`-only-and-opt-in handling, and the per-entry `keyColumns` field the fix in flight adds.
+- **A suppressed `<base href>` 404s every Swift variant click.**
+  `dw-demo-swift/references/re-skin.md` pairs the new trap with the existing no-bare-`#fragment`
+  rule: `DoNotIncludeBaseHref` defaults to `False` and Swift's relative `Default.aspx?ID=…` variant
+  URL depends on that, so a baseline shipping it `True` breaks variant selection silently. Keeps the
+  setting, not a template patch, as the fix, and states that deep-linking with `&VariantID=` hides it.
+
 ## [5.4.0]
 
 Outward compatibility is claimed against the Dynamicweb **hosting ring** the estate proved on,

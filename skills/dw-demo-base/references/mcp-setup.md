@@ -213,19 +213,50 @@ if (-not $ov.model.allowEverything) { Write-Warning "allowEverything did not tak
 # and assert the stored bearer length equals $key.Length.
 ```
 
+**`allowEverything` is the flag that does not take over this route.** Measured on DW 10.27.x: the create
+answers `ok` with an id, the overview reads back `allowEverything: False`, and `McpConfigurationSave`
+with the flag set changes nothing. **The symptom downstream is a `tools/list` that returns 0 tools on a
+key that authenticates** — a `200` from `/admin/api/AddinAvailable` and an empty tool catalogue at the
+same time is this, not a transport fault, so read the flag before blaming the client (Step 4b triages
+`count == 0` the same way). Grant the access on the configuration in the admin UI (Step 3); on a local
+install the flag is stored on the `McpConfiguration` row and a value written there is read at startup,
+so an app-pool recycle is part of that write.
+
 ### Rotation stops at mint-and-store
 
-An agent can mint and store a replacement key; it cannot revoke the old one. Management API
-`McpConfigurationDelete` on the configuration that issued the old key does not revoke it (a configuration
-can report `hasApiKey: false` while its key still authenticates), an app-pool recycle does not revoke it,
-and no Management API query lists or deletes API keys: every `ApiKey*` spelling answers
-`Unknown query`. Deleting a configuration is therefore never reported as revocation.
+An agent can mint and store a replacement key; whether it can revoke the old one depends on **one
+thing: database reach**. Management API `McpConfigurationDelete` on the configuration that issued the
+old key does not revoke it (a configuration can report `hasApiKey: false` while its key still
+authenticates), an app-pool recycle does not revoke it, and no Management API query lists or deletes API
+keys: every `ApiKey*` spelling answers `Unknown query`. Deleting a configuration is therefore never
+reported as revocation. **What does revoke is deleting the key's `AccessUserToken` row** — the bearer is
+validated against that row on every request, so the delete takes effect at once and needs no recycle.
 
 1. Mint and store the replacement (above) and move every consumer onto it.
 2. Probe the old key: `GET /admin/api/AddinAvailable` with it as the bearer. A `200` means the old key is
-   live: report the rotation as **incomplete** and raise an owner action to delete the old key by hand in
-   the admin UI, in the list of issued API keys (**Settings → System → Developer → API keys**).
+   still live.
+2b. **When that probe answers `200` and the demo database is reachable, revoke the key yourself** — local
+   installs only, and the one sanctioned rung-4 step in this file. Identify the row three ways, in this
+   order of confidence: `McpConfigurationCredential.TokenId` for the configuration that issued it,
+   `AccessUserTokenName` (the name typed when the configuration was created), or the key's own prefix —
+   the segment **before the dot** — which is stored on the row while the secret half is not. Then:
+   1. **Back the row up as an `INSERT` statement first**, so the revocation is reversible if the wrong
+      token was picked. Write the backup to a gitignored path outside the skill corpus and treat it as a
+      credential: it reproduces a live token row.
+   2. Delete the binding rows before the token row, or the delete fails on the reference:
+      `DELETE FROM McpConfigurationCredential WHERE TokenId = <id>;` then
+      `DELETE FROM AccessUserToken WHERE AccessUserTokenId = <id>;`. Expect one row each; a delete that
+      reports a different count means the identification was wrong — restore from the backup and re-identify.
+   3. Probe again (step 3), and probe the **replacement** key too: a `200` on the new key and a `401` on
+      the old one is the pair that closes the rotation.
 3. The rotation is complete only when the old key answers `401` or `403` on that same probe.
+4. **Only where the database is out of reach** (a hosted solution, a host whose database is not exposed to
+   this session) does the rotation stop at mint-and-store: report it as **incomplete** and raise an owner
+   action to delete the old key by hand in the admin UI, in the list of issued API keys
+   (**Settings → System → Developer → API keys**).
+
+Never paste a key, a row backup or a password into a session log, a ledger or a tracked file; log the
+key's length, the token id and the probe status codes, which is everything the procedure needs.
 
 ---
 
