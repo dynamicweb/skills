@@ -95,7 +95,10 @@ The rule, for `save_shipping_methods` and for every bulk save with an optional s
 1. **Read the ids first** (`get_shipping_methods` / `get_payment_methods`) and keep the census.
 2. **Create with an explicit unused id**, chosen past the highest existing one — never by omitting it.
    `create_shipping_method` (name and active only) allocates correctly and is the safe create path where
-   the extra fields can be filled in a follow-up save.
+   the extra fields can be filled in a follow-up save, once the `EcomNumbers` `SHIP` counter is at or
+   past the table's highest id: a restored or deserialized database never advances it, and a minted id
+   that already exists is overwritten ([`order-states-and-quotes.md`](order-states-and-quotes.md)
+   "Building an order-state ladder").
 3. **Assert on a second census**: the count rose by exactly the number of items sent, every pre-existing
    id still carries its pre-existing name, and every new id is one you chose. The response echo names the
    ids it assigned, so the damage is visible there too — read it rather than the succeeded count.

@@ -127,7 +127,7 @@ Extend the list with any string the composed edition adds — the check is the *
 
 Three first-class steps, each visible in the first five seconds of a demo — never left "for polish":
 
-1. **Frontpage title and meta title** — `save_pages` with the customer's own `metaTitle`; assert the served `<title>` no longer matches the tripwire list.
+1. **Frontpage title and meta title** — Management API `PageSave` with the full `GetPageById` model, its meta title (and meta description) changed to the customer's own; assert the served `<title>` no longer matches the tripwire list. Not MCP `save_pages`: it answers `succeeded` for a `metaTitle` and persists nothing, and no member of it carries the meta description ([`recipes-content.md`](../../dw-data-access/references/recipes-content.md) "Page verb and tool traps").
 2. **`Swift-v2_Master.MetaSiteName`** — the site name that surfaces in generated meta and in the served
    `<title>` chain; set it to the customer's own name. **Leave `Area.AreaName` alone**: a composed
    serializer manifest keys its `files[]` paths off the area name, so renaming the area breaks the
@@ -215,7 +215,7 @@ Operates on a deserialized Swift 2.4 composition (framework-only `base` + `surfa
 
 - Drop the customer's logo file into `<demo>\Dynamicweb.Host.Suite\wwwroot\Files\Images\<customer>-logo.svg` (or `.png`).
 - Admin UI: Pages → `Header _ Footer` → Header paragraph → Logo property → set to `Files/Images/<customer>-logo.svg`.
-- **A transparent PNG mark goes through the image handler as `format=png`, or as inline SVG.** `GetImage.ashx` answers `image/jpeg` for `format=webp` and for a request with no format at all; only `format=png` returns a PNG. A transparent logo routed the default way therefore loses its alpha and paints on a solid box, most visibly a white inverse wordmark on a dark footer, and a probe counting `naturalWidth` passes a boxed logo. Read the served bytes (a JPEG starts `FF D8 FF`) or the `Content-Type`, not the source file; the same handler's resolution rule is in [`asset-organisation.md`](asset-organisation.md) §6. The logo's `alt` is a separate shipped defect, in the Step 0.1 tripwire table.
+- **A transparent PNG mark goes through the image handler as `format=png`, or as inline SVG.** `GetImage.ashx` answers `image/jpeg` for a request with no format at all, and for `format=webp` it negotiates on the `Accept` header: a browser, which sends `image/webp`, gets WebP with its alpha, while a request without that header (`curl`, a script) gets `image/jpeg`; `format=png` returns a PNG either way. A transparent logo routed with no format therefore loses its alpha and paints on a solid box, most visibly a white inverse wordmark on a dark footer, and a probe counting `naturalWidth` passes a boxed logo. Read the served bytes (a JPEG starts `FF D8 FF`) or the `Content-Type` of a request carrying a browser-shaped `Accept` header ([`visual-qa.md`](../../dw-demo-base/references/visual-qa.md)), not the source file; the same handler's resolution rule is in [`asset-organisation.md`](asset-organisation.md) §6. The logo's `alt` is a separate shipped defect, in the Step 0.1 tripwire table.
 
 ### 2. Theme tokens (color palette + typography)
 
