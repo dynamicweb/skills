@@ -77,7 +77,11 @@
   "sp_rename",
   "data_create_entities",
   "data_find_entity_type",
-  "data_get_entity_metadata"
+  "data_get_entity_metadata",
+  "data_find_entities",
+  "data_find_entities_sql",
+  "api_find_actions",
+  "api_invoke_action"
  ],
  "tools": {
   "add_fixed_lines": {
