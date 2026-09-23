@@ -3,6 +3,19 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.6.1]
+
+Releases are cut by CI, so a version bump can no longer merge without its tag.
+
+- **New `.github/workflows/release-tags.yml`.** On every push to `main` it reads
+  `metadata.version` from `.claude-plugin/marketplace.json` and, when tag `v<version>` does not
+  exist yet, creates an annotated tag on the pushed commit and a GitHub release whose notes are
+  that version's `## [<version>]` section of this file (generated notes when the section is
+  absent). A version with a `-` suffix is marked prerelease. An existing tag is never moved; a
+  push without a bump does nothing. `GITHUB_TOKEN` only, `contents: write`.
+- **`dw-skill-authoring` "The PR workflow" step 5** no longer asks for a hand-cut tag: the version
+  bump is what cuts the release.
+
 ## [5.6.0]
 
 Eight 2026-09 triage corrections, each a row that stated something a live host no longer (or never)

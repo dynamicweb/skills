@@ -464,8 +464,11 @@ skill edit does not.
 3. Update `CHANGELOG.md` and bump `marketplace.json`'s `metadata.version` (semver) in the same
    commit when skills are added/renamed or contracts change.
 4. Commit, push the branch, open the PR against `main` with `gh pr create`.
-5. Squash-merge after review, so each PR is one atomic commit. Tag a release (`v<X.Y.Z>`) only
-   when cutting a version, not per PR.
+5. Squash-merge after review, so each PR is one atomic commit. Do not tag by hand: on every push
+   to `main`, `.github/workflows/release-tags.yml` reads `metadata.version` and, when tag
+   `v<X.Y.Z>` does not exist yet, cuts it on the merge commit with a GitHub release whose notes are
+   that version's `CHANGELOG.md` section. A merge that does not bump the version cuts nothing, so
+   the version bump in step 3 is what cuts a release.
 
 The **PR title is the commit subject** — name what changed and why. No `Co-Authored-By` lines or
 other self-attribution in commit messages or PR bodies.
