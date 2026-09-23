@@ -56,13 +56,13 @@ The distributed-transaction host prereqs (MSDTC, the net10 promotion caveat) onl
 
 ### 2.2 — Platform pin — scaffolds that validate Distribution content
 
-A scaffold whose purpose is to **deserialize and validate the Distribution's layers/editions** MUST pin the host's `Dynamicweb.Suite` package to the platform version the Distribution gate-proved on — its `layers/INDEX.json` `gateProven.dwPlatformVersion` (the same value the versions prompt captured as the DW10 answer; currently **`10.28.1-PreRelease`**). Set it explicitly in the host `.csproj`:
+A scaffold whose purpose is to **deserialize and validate the Distribution's layers/editions** MUST pin the host's `Dynamicweb.Suite` package to the platform version the Distribution gate-proved on — its `layers/INDEX.json` `gateProven.dwPlatformVersion` (the same value the versions prompt captured as the DW10 answer). Read the value from the checked-out `INDEX.json` at scaffold time and never copy a literal from a document: the gate host rolls with its hosting ring (`gateProven.dw.ring`, the ring the skills' own `versions.json` `worksOn.dw` names with its `tfm`), so a version printed here is stale by the next monthly promotion. Set it explicitly in the host `.csproj`:
 
 ```xml
-<PackageReference Include="Dynamicweb.Suite" Version="10.28.1-PreRelease" />
+<PackageReference Include="Dynamicweb.Suite" Version="<gateProven.dwPlatformVersion>" />
 ```
 
-**Floating `10.*` is a sideways-failure trap, not a convenience.** `Dynamicweb.Suite 10.*` resolves to the latest **STABLE** (`10.27.6` at the last full run) — NOT the gate-proven prerelease. Version-coupled layers then fail *silently sideways*: `feature-b2b-comms`' flow SQL uses `10.28.1` (unprefixed) column names that `10.27.6` doesn't have — strict mode rejects the table and the flow simply **can't exist**, with no loud error. The static file-tree gate stays green; only a runtime deserialize on the *right* platform proves the content. Pinning to `gateProven.dwPlatformVersion` is the fix. (This is why "version policy out of scope" has its one carve-out — a content-validating scaffold on the wrong platform validates nothing.)
+**Floating `10.*` is a sideways-failure trap, not a convenience.** `Dynamicweb.Suite 10.*` resolves to the latest **STABLE** (`10.27.6` at the last full run) — NOT the gate-proven release. Version-coupled layers then fail *silently sideways*: `feature-b2b-comms`' flow SQL uses `10.28.1` (unprefixed) column names that `10.27.6` doesn't have — strict mode rejects the table and the flow simply **can't exist**, with no loud error. The static file-tree gate stays green; only a runtime deserialize on the *right* platform proves the content. Pinning to `gateProven.dwPlatformVersion` is the fix. (This is why "version policy out of scope" has its one carve-out — a content-validating scaffold on the wrong platform validates nothing.)
 
 **The single exception:** a **platform-currency probe** — a scaffold built to test the Distribution against a *newer* platform than it gate-proved on — deliberately floats `10.*` (or pins the candidate). Floating is legitimate there and **nowhere else**: any scaffold whose output is a claim about Distribution content pins.
 

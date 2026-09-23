@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "5.6.1"
+    "version": "5.6.2"
   },
   "plugins": [
     {
