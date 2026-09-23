@@ -78,7 +78,11 @@ Checks (errors fail the build, warnings are printed but do not):
     `dw`, `swift` and `apps`; each axis exactly `floor` + `measured`, and the
     `dw` axis optionally `ring` (R0-R4) + `tfm` (`net10.0`), the `swift` axis
     optionally `databasePackage` (the portal's database zip name); each app
-    `id`/`floor`/`measured`/`required` plus an optional `scope`. `measured` is
+    `id`/`floor`/`measured`/`required` plus an optional `scope` and an optional
+    `predecessors` list (retired package ids the app replaced, never aliases:
+    no app may be keyed by one). The `dw` axis and each app may carry a floor
+    `reason` (`ref` + `why`) and a `flag` (`untraced`, `no-reason-given`)
+    marking what the reason could not settle. `measured` is
     one concrete version (never a range, never `x`); `floor` is a valid range
     (`>=`, `==`, `>`, `~`, `^` or a bare version). Vendor axes only — the file
     never names a distribution or a harness.
@@ -1120,7 +1124,13 @@ STAMP_AXES = ("dw", "mcp", "serializer", "swift")
 # Keys the `dw` axis may carry beyond `floor` + `measured`. Outward
 # compatibility is claimed against the hosting ring, so the ring and the
 # framework it served travel with the release number.
-DW_AXIS_EXTRAS = frozenset({"ring", "tfm"})
+DW_AXIS_EXTRAS = frozenset({"ring", "tfm", "reason", "flag"})
+# Why a floor sits where it does: `ref` names the issue or PR the floor
+# depends on, `why` says what the dependency is. `flag` marks what the reason
+# could not settle: `untraced` (no issue or PR), `no-reason-given` (the ref
+# exists but names no dependency). A floor without a real dependency says so
+# through the flag instead of an invented reason.
+FLOOR_FLAGS = frozenset({"untraced", "no-reason-given"})
 # `measured` is exactly one concrete version: never a range, never an `x`.
 MEASURED_RE = re.compile(r"^\d+(?:\.\d+){1,3}(?:-[0-9A-Za-z][0-9A-Za-z.]*)?$")
 # `floor` is a compatibility claim: a comparator (or nothing) plus a version.
@@ -1179,6 +1189,16 @@ def check_axis(where: str, axis: str, value: object,
         if not isinstance(tfm, str) or not TFM_RE.match(tfm):
             err(f"{where}: `{axis}.tfm` must be a framework moniker such as "
                 f"'net10.0' (got {tfm!r})")
+    if "reason" in value:
+        reason = value["reason"]
+        if (not isinstance(reason, dict) or set(reason) != {"ref", "why"}
+                or not all(isinstance(reason[k], str) and reason[k].strip()
+                           for k in ("ref", "why"))):
+            err(f"{where}: `{axis}.reason` must be exactly {{ ref, why }}, "
+                f"both non-empty strings (got {reason!r})")
+    if "flag" in value and value["flag"] not in FLOOR_FLAGS:
+        err(f"{where}: `{axis}.flag` must be one of {sorted(FLOOR_FLAGS)} "
+            f"(got {value['flag']!r})")
     if "databasePackage" in value:
         pkg = value["databasePackage"]
         m = DB_PACKAGE_RE.match(pkg) if isinstance(pkg, str) else None
@@ -1209,8 +1229,10 @@ def load_versions() -> dict | None:
         return None
 
 
-# The MCP add-in id since the Truvio Commerce rebrand, and the pre-rename id.
-MCP_APP_IDS = ("Truvio.Commerce.MCP", "Dynamicweb.MCP")
+# The MCP add-in id. `Dynamicweb.MCP` is its retired predecessor, not an
+# alias: versions.json lists it under the app's `predecessors`, and an app
+# entry keyed by it is an error.
+MCP_APP_ID = "Truvio.Commerce.MCP"
 
 
 def works_on_mcp_version() -> str | None:
@@ -1227,7 +1249,7 @@ def works_on_mcp_version() -> str | None:
     if not isinstance(apps, list):
         return None
     for app in apps:
-        if isinstance(app, dict) and app.get("id") in MCP_APP_IDS:
+        if isinstance(app, dict) and app.get("id") == MCP_APP_ID:
             v = app.get("measured")
             # The registry file is named by the version core: a measured
             # `0.6.0-beta` resolves to `scripts/mcp-tools/0.6.0.json`.
@@ -1282,7 +1304,8 @@ def check_versions_file() -> None:
         if not isinstance(app, dict):
             err(f"{where} must be an object")
             continue
-        unknown = set(app) - {"id", "floor", "measured", "required", "scope"}
+        unknown = set(app) - {"id", "floor", "measured", "required", "scope",
+                              "predecessors", "reason", "flag"}
         if unknown:
             err(f"{where} carries unknown key(s) {sorted(unknown)}")
         missing = {"id", "floor", "measured", "required"} - set(app)
@@ -1294,8 +1317,24 @@ def check_versions_file() -> None:
             err(f"{where}: `required` must be a boolean")
         if "scope" in app and not isinstance(app["scope"], str):
             err(f"{where}: `scope` must be a string")
+        preds = app.get("predecessors", [])
+        if (not isinstance(preds, list)
+                or not all(isinstance(p, str) and p for p in preds)):
+            err(f"{where}: `predecessors` must be a list of package ids")
         check_axis(where, "app", {k: v for k, v in app.items()
-                                 if k in ("floor", "measured")})
+                                 if k in ("floor", "measured", "reason",
+                                          "flag")},
+                   frozenset({"reason", "flag"}))
+    # A predecessor is a retired package, never an alias: no app entry may be
+    # keyed by one, or a host carrying only the retired package would read as
+    # matching the floor.
+    retired = {p for app in apps if isinstance(app, dict)
+               for p in (app.get("predecessors") or [])
+               if isinstance(p, str)}
+    for i, app in enumerate(apps):
+        if isinstance(app, dict) and app.get("id") in retired:
+            err(f"versions.json: worksOn.apps[{i}]: `{app['id']}` is a retired "
+                f"predecessor, not an app id - key the entry by its successor")
 
 
 # `versions:` in frontmatter is the one nested block in this corpus, so the

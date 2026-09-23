@@ -107,11 +107,13 @@ which is what an outward compatibility claim is actually made against.
    either), the ring is **unknown** and is recorded as `null`. Never guess it: a ring is not
    derivable from `info.version`, from the Swift tag, or from how new the build looks.
 3. **App versions** — list the folder names under `Files/System/AddIns/Installed/`. Each is
-   `<id>.<version>`, so the serializer is the folder starting `Truvio.Commerce.Serializer.`. The MCP
-   add-in carries one of two ids: `Truvio.Commerce.MCP.` since the rebrand, or the pre-rename
-   `Dynamicweb.MCP.` that many hosts still report. Match both, and record **which id** you found: a
-   pre-rename folder is a stale install worth naming, not a silent equivalent. A missing folder under
-   every known id means the add-in is not installed, which is an answer, not an error.
+   `<id>.<version>`, so the serializer is the folder starting `Truvio.Commerce.Serializer.` and the
+   MCP add-in the folder starting `Truvio.Commerce.MCP.`. A `Dynamicweb.MCP.` folder, which many hosts
+   still report, is the add-in's retired **predecessor** (listed under the app's `predecessors` in
+   `worksOn`), not the same app under another id: record it by name, and read a host that carries
+   only the predecessor as **below the MCP floor**, never as matching it and never as an absent
+   optional app. A missing folder under the id and every predecessor means the add-in is not
+   installed, which is an answer, not an error.
 4. **Swift tag** — read `Files/System/Truvio/swift.stamp.json` and take its `tag`/`version`. When the
    file is absent the site carries no Swift marker at all: ask the user which Swift release the
    solution tracks and record the answer. Never infer it from a template folder name.
@@ -127,8 +129,8 @@ way — record that axis as `unknown`. Record `unknown` for any axis you cannot 
 `floor` per axis (what the corpus claims to work on) and `measured` (the host its facts were last
 observed on). The `dw` axis also carries `ring` and `tfm`: the hosting ring and framework the corpus
 was proven on. Compare the host's ring against it as context, not as a gate; a ring mismatch is
-worth naming in the note, and a ring of `null` suppresses the comparison entirely. An app in `worksOn` matches the host folder under its id or under that id's known
-rename (the MCP pair above). Compare the numeric version core: an add-in folder can carry a
+worth naming in the note, and a ring of `null` suppresses the comparison entirely. An app in `worksOn` matches the host folder under its `id` only; a folder under one
+of its `predecessors` is below the floor (the MCP case above). Compare the numeric version core: an add-in folder can carry a
 pre-release suffix (`-BETA`, `-beta`) that neither the floor nor `measured` shows, so strip it for the
 comparison and keep it in the `hostVersions` note. For each axis that read as a concrete version,
 compare the host against the floor:

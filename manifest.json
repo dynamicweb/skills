@@ -1,12 +1,17 @@
 {
   "version": 2,
-  "generatedAt": "2026-09-23T14:44:19.622Z",
+  "generatedAt": "2026-09-23T14:57:04.899Z",
   "worksOn": {
     "dw": {
       "ring": "R1",
       "tfm": "net10.0",
       "floor": ">=10.28.1",
-      "measured": "10.28.11"
+      "measured": "10.28.11",
+      "reason": {
+        "ref": "dynamicweb/skills#127",
+        "why": "Set by the first version spine as the release the corpus was then measured on. Neither that PR nor any skill names a dependency on 10.28.1; the ring and tfm were added by dynamicweb/skills#158."
+      },
+      "flag": "no-reason-given"
     },
     "swift": {
       "floor": "==2.4",
@@ -16,9 +21,16 @@
     "apps": [
       {
         "id": "Truvio.Commerce.MCP",
+        "predecessors": [
+          "Dynamicweb.MCP"
+        ],
         "floor": ">=0.6.0-beta",
         "measured": "0.6.0-beta",
-        "required": false
+        "required": false,
+        "reason": {
+          "ref": "dynamicweb/skills#137",
+          "why": "0.6.0 adds skills inside the MCP server and Dynamo, which the corpus and its consumers build on (owner ruling mcp-floor-06)."
+        }
       },
       {
         "id": "Truvio.Commerce.Serializer",

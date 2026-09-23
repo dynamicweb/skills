@@ -3,6 +3,28 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.6.2]
+
+Version floor accuracy: every floor `versions.json` states now says why it sits there, and three
+statements that named the wrong version are corrected.
+
+- **`versions.json` floors carry a `reason`.** The MCP add-in floor stays `>=0.6.0-beta` for
+  `Truvio.Commerce.MCP`, with the reason that 0.6.0 adds skills inside the MCP server and Dynamo
+  (dynamicweb/skills#137). The `dw` floor `>=10.28.1` cites #127, which set it, and is flagged
+  `no-reason-given`: neither that PR nor any skill names a dependency on 10.28.1, so none is
+  recorded. The validator accepts `reason` (`ref` + `why`) and `flag` (`untraced`,
+  `no-reason-given`) on the `dw` axis and on each app.
+- **`Dynamicweb.MCP` is the retired predecessor, not an alias.** The MCP app lists it under a new
+  `predecessors` key; the validator resolves the MCP version by `Truvio.Commerce.MCP` alone and
+  rejects an app keyed by a predecessor. `dw-data-access`'s host-version preflight reads a host
+  that carries only `Dynamicweb.MCP` as below the MCP floor instead of matching it.
+- **`dw-demo-base` `scaffold.md` §2.2 no longer prints a platform pin.** The stale
+  `Dynamicweb.Suite 10.28.1-PreRelease` literal is replaced by the value read from the
+  Distribution's `gateProven.dwPlatformVersion`, which rolls with the proven hosting ring.
+- **`dw-demo-base` `serializer-reference.md` states the Serializer's real install floor.** The
+  package is packed at `DynamicwebVersion` 10.17.5 and installs from there up; the claim that it
+  binds to 10.28.x and is never offered to an older host is removed.
+
 ## [5.6.1]
 
 Releases are cut by CI, so a version bump can no longer merge without its tag.
