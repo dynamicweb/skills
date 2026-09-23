@@ -3,6 +3,24 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.6.3]
+
+The `dw` axis of `versions.json` states no platform floor. The `>=10.28.1` floor had no consumer:
+dynamicweb/skills#127 set it as the release the corpus was then measured on, #167 found no skill,
+script or validator rule depending on 10.28.1, and the skills ship no binary. Under the floor rule
+(a floor exists only when a consumer depends on it) the floor, its `reason` and its
+`no-reason-given` flag are removed.
+
+- **`worksOn.dw` is `ring` + `tfm` + `measured`.** The outward claim is the hosting ring the corpus
+  was proven on (`R1`, `net10.0`) and the release it was last measured on (`10.28.11`); a
+  version-specific fact keeps its own stamp. The `swift` axis and the app floors are unchanged.
+- **The validator accepts a `dw` axis without a floor**, in `versions.json` and in a per-skill
+  `versions:` block. `reason` and `flag` describe a floor, so either one without a floor is an
+  error. Every other axis still requires its floor.
+- **`dw-data-access` host-version preflight** compares the host against a floor only on an axis
+  that states one; the platform release is compared with `measured` as a re-measure signal and
+  never warns.
+
 ## [5.6.2]
 
 Version floor accuracy: every floor `versions.json` states now says why it sits there, and three

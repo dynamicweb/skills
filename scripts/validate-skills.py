@@ -80,15 +80,18 @@ Checks (errors fail the build, warnings are printed but do not):
     optionally `databasePackage` (the portal's database zip name); each app
     `id`/`floor`/`measured`/`required` plus an optional `scope` and an optional
     `predecessors` list (retired package ids the app replaced, never aliases:
-    no app may be keyed by one). The `dw` axis and each app may carry a floor
-    `reason` (`ref` + `why`) and a `flag` (`untraced`, `no-reason-given`)
-    marking what the reason could not settle. `measured` is
+    no app may be keyed by one). The `dw` axis `floor` is optional: the skills
+    ship no binary, so the outward claim is the ring + tfm + `measured`, and a
+    floor is stated only when a skill depends on a release. The `dw` axis and
+    each app may carry a floor `reason` (`ref` + `why`) and a `flag`
+    (`untraced`, `no-reason-given`) marking what the reason could not settle;
+    both describe a floor, so neither may appear without one. `measured` is
     one concrete version (never a range, never `x`); `floor` is a valid range
     (`>=`, `==`, `>`, `~`, `^` or a bare version). Vendor axes only — the file
     never names a distribution or a harness.
   - An optional per-skill `versions:` frontmatter block (axes `dw`, `mcp`,
     `serializer`, `swift`, each `{ floor, measured }`, `dw` also taking
-    `ring`/`tfm`) is validated by the same
+    `ring`/`tfm` and leaving `floor` optional) is validated by the same
     rules and may carry no other axis. A skill without the block inherits
     `versions.json`.
   - Version stamps in the body: a version-specific fact ends with one bracketed
@@ -1123,7 +1126,10 @@ STAMP_ALLOWLIST = REPO / "scripts" / "version-stamp-allowlist.json"
 STAMP_AXES = ("dw", "mcp", "serializer", "swift")
 # Keys the `dw` axis may carry beyond `floor` + `measured`. Outward
 # compatibility is claimed against the hosting ring, so the ring and the
-# framework it served travel with the release number.
+# framework it served travel with the release number. The skills ship no
+# binary, so the `dw` axis needs no floor: one exists only when a skill
+# depends on a release (owner ruling redesign-floors), and `reason`/`flag`
+# travel with it.
 DW_AXIS_EXTRAS = frozenset({"ring", "tfm", "reason", "flag"})
 # Why a floor sits where it does: `ref` names the issue or PR the floor
 # depends on, `why` says what the dependency is. `flag` marks what the reason
@@ -1162,12 +1168,15 @@ URL_RE = re.compile(r"(?:https?://|www\.)\S+")
 
 
 def check_axis(where: str, axis: str, value: object,
-               optional: frozenset[str] = frozenset()) -> None:
+               optional: frozenset[str] = frozenset(),
+               floor_required: bool = True) -> None:
     """`{ floor, measured }` for one axis, with both fields well-formed.
 
     The `dw` axis may also carry `ring` and `tfm`: the hosting ring the claim
     was proven on and the framework that ring served it on. Both are passed in
-    through `optional`, so no other axis gains them.
+    through `optional`, so no other axis gains them. With `floor_required`
+    false (the `dw` axis) the floor may be absent; `reason` and `flag` then
+    have nothing to describe and are errors.
     """
     if not isinstance(value, dict):
         err(f"{where}: `{axis}` must be a mapping with `floor` and `measured`")
@@ -1212,10 +1221,16 @@ def check_axis(where: str, axis: str, value: object,
     if not isinstance(measured, str) or not MEASURED_RE.match(measured):
         err(f"{where}: `{axis}.measured` must be one concrete version "
             f"(got {measured!r}) - never a range, never `x`")
+    if "floor" not in value and not floor_required:
+        for key in ("reason", "flag"):
+            if key in value:
+                err(f"{where}: `{axis}.{key}` describes a floor, and "
+                    f"`{axis}` states none - drop it or state the floor")
+        return
     floor = value.get("floor")
     if not isinstance(floor, str) or not FLOOR_RE.match(floor):
         err(f"{where}: `{axis}.floor` must be a version range such as "
-            f"'>=10.28.1' or '==2.4' (got {floor!r})")
+            f"'>=0.6.0-beta' or '==2.4' (got {floor!r})")
 
 
 def load_versions() -> dict | None:
@@ -1294,7 +1309,8 @@ def check_versions_file() -> None:
     for axis in ("dw", "swift"):
         if axis in works_on:
             check_axis("versions.json", f"worksOn.{axis}", works_on[axis],
-                       DW_AXIS_EXTRAS if axis == "dw" else SWIFT_AXIS_EXTRAS)
+                       DW_AXIS_EXTRAS if axis == "dw" else SWIFT_AXIS_EXTRAS,
+                       floor_required=axis != "dw")
     apps = works_on.get("apps")
     if not isinstance(apps, list) or not apps:
         err("versions.json: `worksOn.apps` must be a non-empty array")
@@ -1409,7 +1425,8 @@ def check_skill_versions_blocks() -> None:
         for axis in STAMP_AXES:
             if axis in block:
                 check_axis(where, f"versions.{axis}", block[axis],
-                           DW_AXIS_EXTRAS if axis == "dw" else frozenset())
+                           DW_AXIS_EXTRAS if axis == "dw" else frozenset(),
+                           floor_required=axis != "dw")
 
 
 def stamp_token_problems(token: str) -> str | None:

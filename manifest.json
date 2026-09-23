@@ -1,17 +1,11 @@
 {
   "version": 2,
-  "generatedAt": "2026-09-23T14:57:04.899Z",
+  "generatedAt": "2026-09-23T15:51:05.745Z",
   "worksOn": {
     "dw": {
       "ring": "R1",
       "tfm": "net10.0",
-      "floor": ">=10.28.1",
-      "measured": "10.28.11",
-      "reason": {
-        "ref": "dynamicweb/skills#127",
-        "why": "Set by the first version spine as the release the corpus was then measured on. Neither that PR nor any skill names a dependency on 10.28.1; the ring and tfm were added by dynamicweb/skills#158."
-      },
-      "flag": "no-reason-given"
+      "measured": "10.28.11"
     },
     "swift": {
       "floor": "==2.4",
