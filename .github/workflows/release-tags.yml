@@ -1,0 +1,100 @@
+name: release-tags
+
+# Cuts the release for the version main declares. On every push to main this reads
+# `metadata.version` from .claude-plugin/marketplace.json and, when tag `v<version>` does not exist
+# yet, creates an annotated tag on the pushed commit and a GitHub release whose notes are that
+# version's `## [<version>]` section of CHANGELOG.md (`--generate-notes` when the section is absent
+# or empty). A version with a `-` suffix is marked prerelease.
+#
+# Idempotent: a push that does not bump the version finds the tag and does nothing. An existing tag
+# is never moved or re-cut, wherever it points. A tag that exists without its release (a rerun after
+# a failed release step) gets the release created on that tag, never a new tag.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # push the tag and create the release
+
+concurrency:
+  group: release-tags
+  cancel-in-progress: false
+
+jobs:
+  tag-and-release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Read the declared version
+        id: version
+        run: |
+          version=$(jq -r '.metadata.version // empty' .claude-plugin/marketplace.json)
+          if [ -z "$version" ]; then
+            echo "::error::.claude-plugin/marketplace.json carries no metadata.version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "Declared version: $version"
+
+      - name: Cut the tag if missing
+        id: tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Ask the remote, not only the checkout: the remote is the source of truth.
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+            target=$(git rev-list -n 1 "$TAG" 2>/dev/null || echo "unknown")
+            echo "::notice::Tag $TAG already exists (on $target); it is left untouched."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $VERSION" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG"
+          echo "Created $TAG on $GITHUB_SHA"
+
+      - name: Create the release if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "::notice::Release $TAG already exists; nothing to do."
+            exit 0
+          fi
+
+          # The section for exactly this version: from its `## [<version>]` heading to the next
+          # `## ` heading, heading excluded, leading and trailing blank lines trimmed.
+          notes="${RUNNER_TEMP:-.}/release-notes.md"
+          awk -v heading="## [$VERSION]" '
+            index($0, "## ") == 1 { if (found) exit; if ($0 == heading) { found = 1; next } }
+            found { lines[++n] = $0 }
+            END {
+              first = 1; while (first <= n && lines[first] ~ /^[[:space:]]*$/) first++
+              last = n;  while (last >= first && lines[last] ~ /^[[:space:]]*$/) last--
+              for (i = first; i <= last; i++) print lines[i]
+            }' CHANGELOG.md > "$notes"
+
+          args=(--verify-tag --title "$VERSION")
+          if [ -s "$notes" ]; then
+            args+=(--notes-file "$notes")
+          else
+            echo "::warning::CHANGELOG.md has no section for [$VERSION]; using generated notes."
+            args+=(--generate-notes)
+          fi
+          case "$VERSION" in
+            *-*) args+=(--prerelease) ;;
+          esac
+
+          gh release create "$TAG" "${args[@]}"
+          echo "Created release $TAG"
