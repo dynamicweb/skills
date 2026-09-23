@@ -126,20 +126,24 @@ outside the Files tree, so the ring reads as `null` there. The platform release 
 way — record that axis as `unknown`. Record `unknown` for any axis you cannot read, and never guess one.
 
 **Then compare.** The skills' own compatibility statement ships in `manifest.json` as `worksOn`: a
-`floor` per axis (what the corpus claims to work on) and `measured` (the host its facts were last
-observed on). The `dw` axis also carries `ring` and `tfm`: the hosting ring and framework the corpus
-was proven on. Compare the host's ring against it as context, not as a gate; a ring mismatch is
+`floor` on an axis (what the corpus claims to work on) and `measured` (the host its facts were last
+observed on). The `dw` axis carries `ring` and `tfm` in place of a floor: the hosting ring and
+framework the corpus was proven on. The skills ship no binary and no skill depends on one Dynamicweb
+release, so there is no platform floor to breach; a version-specific fact carries its own stamp.
+Compare the host's ring against it as context, not as a gate; a ring mismatch is
 worth naming in the note, and a ring of `null` suppresses the comparison entirely. An app in `worksOn` matches the host folder under its `id` only; a folder under one
 of its `predecessors` is below the floor (the MCP case above). Compare the numeric version core: an add-in folder can carry a
 pre-release suffix (`-BETA`, `-beta`) that neither the floor nor `measured` shows, so strip it for the
-comparison and keep it in the `hostVersions` note. For each axis that read as a concrete version,
-compare the host against the floor:
+comparison and keep it in the `hostVersions` note. For each axis that states a floor and read as a
+concrete version, compare the host against the floor:
 
 - host below the floor → **warn the user before acting**: name the axis, the host version and the
   floor, and say that recipes may reference behavior the host does not have.
 - host at or above the floor, but not equal to `measured` → proceed; treat any step that fails in a
   version-shaped way as a re-measure candidate, and file it rather than working around it silently.
 - axis `unknown` → proceed, and suppress floor warnings for that axis only.
+- axis with no floor (`dw`) → proceed with no warning; a host not equal to `measured` is the same
+  re-measure case as above.
 
 An add-in whose `required` flag is false is not a blocker: its floor applies only to the skills that
 cover it, and the scope is stated in `worksOn` beside the app.
