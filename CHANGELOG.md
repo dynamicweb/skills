@@ -3,6 +3,35 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.7.0]
+
+New demo skill **`dw-demo-fo`**: a live Dynamics 365 Finance and Operations demo gets its own legal entity
+in a shared sandbox. Recovered from the laptop build of the skill and completed with two scripts measured
+against a unified sandbox.
+
+- **Standing choices.** Each demo company is seeded from a golden company through a Data management
+  configuration package (`ExportToPackage` / `ImportFromPackage` are bound OData actions on
+  `DataManagementDefinitionGroups`), not a fresh copy per company. Connections are OData-only; the F&O plugin
+  package is parked. A retired demo company is marked dormant and its DW site unbound, never deleted.
+- **References.** `demo-company.md` (create, seed, shape, verify, retire), `company-profile.md` (per-company
+  vs tenant-wide), `connection-modes.md` (script and job access, the parked plugin and its Dataverse
+  guest-access wall), `dw-wiring.md` (the `dataAreaId` pin on every job), `shared-sandbox.md`, and a
+  company-profile template under `assets/templates/`.
+- **The measured copy gap chain.** Copy into legal entity from a stock US donor ran 365 entities in 2 h 14 min
+  with 3,506 row errors. Templates without Cash and bank management leave no bank groups or accounts, which
+  fails customer and vendor payment methods, which fails most customers; company-scoped custom-list dimension
+  values (ItemGroup) are not copied; Ledger parameters is not an OData entity, so its `RevRecJournalNameId`
+  failure needs the UI "Copy data to target" re-run.
+- **Scripts (PowerShell 7, Windows for the token cache).** `Fo.Api.psm1` (connection discovery, self-renewing
+  token, 429 retry, and a regex-split parser for `GetExecutionErrors`, whose string payload carries unescaped
+  quotes that break `ConvertFrom-Json`); `Connect-FoDeviceCode.ps1` (delegated device-code sign-in, refresh
+  token cached with DPAPI); `New-DemoCompany.ps1`; `Watch-CopyProgress.ps1`; `Repair-CopyGaps.ps1`
+  (idempotent GET-then-POST copy of the missing bank and payment configuration, dry run unless `-Apply`); and
+  `Test-DemoCompany.ps1`.
+- **`scripts/mcp-tools/0.6.0.json`** lists the F&O MCP server's `data_create_entities`,
+  `data_find_entity_type` and `data_get_entity_metadata` under `notTools`: they are named in the references
+  and are not Dynamicweb MCP tools.
+
 ## [5.6.3]
 
 The `dw` axis of `versions.json` states no platform floor. The `>=10.28.1` floor had no consumer:
