@@ -74,7 +74,10 @@
   "reference_category",
   "run_in_background",
   "snake_case",
-  "sp_rename"
+  "sp_rename",
+  "data_create_entities",
+  "data_find_entity_type",
+  "data_get_entity_metadata"
  ],
  "tools": {
   "add_fixed_lines": {
