@@ -424,7 +424,7 @@ bundle — either add the target skill to the bundle or route through its SKILL.
 
 The `dynamicweb-presales` bundle has a hard dependency chain — `dw-demo-base` must run before any
 sister skill (`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`,
-`dw-demo-erp`, `dw-demo-foldback`, `dw-integration-bc`). Sister skill descriptions carry a
+`dw-demo-erp`, `dw-demo-fo`, `dw-demo-foldback`, `dw-integration-bc`). Sister skill descriptions carry a
 "Use AFTER dw-demo-base" marker; preserve it on any edit.
 
 ## Validation
