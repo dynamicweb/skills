@@ -1,0 +1,250 @@
+{
+ "group": "ERP FO",
+ "stage": [
+  {
+   "job": "FO Products 1 stage",
+   "entity": "ReleasedProductsV2",
+   "table": "FoStage_ReleasedProducts",
+   "endpointId": 0,
+   "cols": [
+    "dataAreaId",
+    "ItemNumber",
+    "SearchName",
+    "ProductSearchName",
+    "ProductType",
+    "ProductSubType",
+    "ProductGroupId",
+    "ItemModelGroupId",
+    "SalesUnitSymbol",
+    "InventoryUnitSymbol",
+    "SalesPrice",
+    "SalesPriceQuantity",
+    "NetProductWeight",
+    "ProductLifecycleStateId",
+    "SellStartDate"
+   ]
+  },
+  {
+   "job": "FO Product names 1 stage",
+   "entity": "ProductTranslations",
+   "table": "FoStage_ProductTranslations",
+   "endpointId": 0,
+   "cols": [
+    "ProductNumber",
+    "LanguageId",
+    "ProductName",
+    "Description"
+   ]
+  },
+  {
+   "job": "FO Categories 1 stage",
+   "entity": "ProductCategories",
+   "table": "FoStage_ProductCategories",
+   "endpointId": 0,
+   "cols": [
+    "ProductCategoryHierarchyName",
+    "CategoryName",
+    "CategoryCode",
+    "CategoryDescription",
+    "ParentProductCategoryName",
+    "FriendlyCategoryName",
+    "CategoryRecordId"
+   ]
+  },
+  {
+   "job": "FO Category assignments 1 stage",
+   "entity": "ProductCategoryAssignments",
+   "table": "FoStage_ProductCategoryAssignments",
+   "endpointId": 0,
+   "cols": [
+    "ProductNumber",
+    "ProductCategoryName",
+    "ProductCategoryHierarchyName",
+    "DisplayOrder"
+   ]
+  },
+  {
+   "job": "FO Customers 1 stage",
+   "entity": "CustomersV3",
+   "table": "FoStage_Customers",
+   "endpointId": 0,
+   "cols": [
+    "dataAreaId",
+    "CustomerAccount",
+    "OrganizationName",
+    "CustomerGroupId",
+    "DiscountPriceGroupId",
+    "PaymentTerms",
+    "CreditLimit",
+    "SalesCurrencyCode",
+    "AddressStreet",
+    "AddressCity",
+    "AddressState",
+    "AddressZipCode",
+    "AddressCountryRegionId",
+    "PrimaryContactEmail",
+    "PrimaryContactPhone",
+    "OnHoldStatus"
+   ]
+  },
+  {
+   "job": "FO Prices 1 stage",
+   "entity": "SalesPriceAgreements",
+   "table": "FoStage_SalesPriceAgreements",
+   "endpointId": 0,
+   "cols": [
+    "dataAreaId",
+    "RecordId",
+    "ItemNumber",
+    "PriceCustomerGroupCode",
+    "CustomerAccountNumber",
+    "PriceApplicableFromDate",
+    "PriceApplicableToDate",
+    "FromQuantity",
+    "ToQuantity",
+    "Price",
+    "PriceCurrencyCode",
+    "QuantityUnitySymbol",
+    "SalesPriceQuantity"
+   ]
+  },
+  {
+   "job": "FO Warehouses 1 stage",
+   "entity": "Warehouses",
+   "table": "FoStage_Warehouses",
+   "endpointId": 0,
+   "cols": [
+    "dataAreaId",
+    "WarehouseId",
+    "WarehouseName",
+    "OperationalSiteId",
+    "PrimaryAddressCity",
+    "PrimaryAddressStateId"
+   ]
+  },
+  {
+   "job": "FO Stock 1 stage",
+   "entity": "WarehousesOnHandV2",
+   "table": "FoStage_WarehousesOnHand",
+   "endpointId": 0,
+   "cols": [
+    "dataAreaId",
+    "ItemNumber",
+    "ProductColorId",
+    "ProductConfigurationId",
+    "ProductSizeId",
+    "ProductStyleId",
+    "ProductVersionId",
+    "InventorySiteId",
+    "InventoryWarehouseId",
+    "AvailableOnHandQuantity",
+    "OnHandQuantity",
+    "ReservedOnHandQuantity",
+    "OnOrderQuantity",
+    "TotalAvailableQuantity"
+   ]
+  },
+  {
+   "job": "FO Sales orders 1 stage",
+   "entity": "SalesOrderHeadersV2",
+   "table": "FoStage_SalesOrderHeaders",
+   "endpointId": 0,
+   "cols": [
+    "dataAreaId",
+    "SalesOrderNumber",
+    "CustomersOrderReference",
+    "SalesOrderStatus",
+    "SalesOrderProcessingStatus",
+    "OrderingCustomerAccountNumber",
+    "InvoiceCustomerAccountNumber",
+    "CurrencyCode",
+    "RequestedShippingDate",
+    "ConfirmedShippingDate",
+    "DeliveryModeCode",
+    "OrderCreationDateTime",
+    "OrderTotalAmount"
+   ]
+  },
+  {
+   "job": "FO Sales order lines 1 stage",
+   "entity": "SalesOrderLines",
+   "table": "FoStage_SalesOrderLines",
+   "endpointId": 0,
+   "cols": [
+    "dataAreaId",
+    "InventoryLotId",
+    "SalesOrderNumber",
+    "LineNumber",
+    "ItemNumber",
+    "OrderedSalesQuantity",
+    "SalesPrice",
+    "LineAmount",
+    "SalesOrderLineStatus",
+    "CurrencyCode",
+    "ConfirmedShippingDate"
+   ]
+  },
+  {
+   "job": "FO Invoices 1 stage",
+   "entity": "SalesInvoiceHeadersV2",
+   "table": "FoStage_SalesInvoiceHeaders",
+   "endpointId": 0,
+   "cols": [
+    "dataAreaId",
+    "InvoiceNumber",
+    "InvoiceDate",
+    "LedgerVoucher",
+    "SalesOrderNumber",
+    "CustomersOrderReference",
+    "InvoiceCustomerAccountNumber",
+    "TotalInvoiceAmount",
+    "TotalTaxAmount",
+    "CurrencyCode"
+   ]
+  }
+ ],
+ "export": [
+  {
+   "job": "FO Order export 1 headers",
+   "entity": "SalesOrderHeadersV2",
+   "view": "FoStage_v_OrderExportHeaders",
+   "endpointId": 0,
+   "keys": [
+    "dataAreaId",
+    "SalesOrderNumber"
+   ],
+   "cols": [
+    "dataAreaId",
+    "SalesOrderNumber",
+    "CustomersOrderReference",
+    "OrderingCustomerAccountNumber",
+    "InvoiceCustomerAccountNumber",
+    "CurrencyCode",
+    "Email"
+   ]
+  },
+  {
+   "job": "FO Order export 2 lines",
+   "entity": "SalesOrderLines",
+   "view": "FoStage_v_OrderExportLines",
+   "endpointId": 0,
+   "keys": [
+    "dataAreaId",
+    "SalesOrderNumber",
+    "LineNumber"
+   ],
+   "cols": [
+    "dataAreaId",
+    "SalesOrderNumber",
+    "LineNumber",
+    "ItemNumber",
+    "OrderedSalesQuantity",
+    "SalesPrice",
+    "SalesUnitSymbol",
+    "LineDescription",
+    "CustomersLineNumber"
+   ]
+  }
+ ],
+ "_comment": "Replace every endpointId with the id MCP save_integration_endpoint returned for that entity set. Column names are F&O property names; staging tables are created from this spec by the sql subcommand."
+}

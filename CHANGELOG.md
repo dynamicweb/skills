@@ -3,6 +3,36 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.0]
+
+The Dynamics 365 Finance and Operations integration, discovery to verified run, as two foundational skills wired
+to the `dw-demo-fo` demo company.
+
+- **New foundational skill `dw-integration-fo-discovery`** (first proposed as 5.6.0, landed here): outside-in
+  discovery of the data model an F&O (or AX 2009/2012) environment actually runs on, before any mapping. Six
+  phases (access surfaces, structural inventory, population census, key centrality, process footprint, synthesis
+  brief) plus a legacy-AX fork; six read-only PowerShell assets and two output templates. The Dynamics 365 ERP MCP
+  tool names are in `notTools` of `scripts/mcp-tools/0.6.0.json`.
+- **New foundational skill `dw-integration-fo`**: the build. Endpoint collection with S2S authentication (the
+  add-in's exact parameter labels, the trailing-slash resource, one authentication per endpoint), the entity map
+  (`ReleasedProductsV2` + `ProductTranslations`, `ProductCategories` / `ProductCategoryAssignments`, `CustomersV3`,
+  `SalesPriceAgreements`, `Warehouses` / `WarehousesOnHandV2`, `SalesOrderHeadersV2` / `SalesOrderLines`,
+  `SalesInvoiceHeadersV2`), stage 1 staging and stage 2 views, the state-gated sales order export with a mark-sent
+  step, status and invoices back, and an eight-rung verification ladder.
+- **`scripts/fo_job_files.py`** (Python 3.12, standard library): entity subset from a pulled `$metadata`, the
+  staging DDL, and the OData job files in the platform's own shape, because MCP `create_integration_activity`
+  refuses an OData source until its endpoint authenticates.
+- **Measured traps folded in:** an empty `<conditionals />` element drops the whole mapping silently; an existing
+  activity validates new mappings against its stored schema snapshot, not the live view; the OData readiness probe
+  retries ten times with delays up to 600 s before a job fails on a bad credential; `test_integration_endpoint`
+  reports only `Unauthorized`; the Ecom provider has no `EcomGroupProductRelation` table (use `Groups` /
+  `PrimaryGroup`); a destination-tables-only mirror on `EcomPrices` deletes every price the job did not write;
+  `ReleasedProductsV2` carries no product name.
+- **Wiring:** `dw-demo-fo` routes its job build to `dw-integration-fo`; `dw-integration-fo-discovery` hands off to
+  it; `dw-integration-framework` points to it. Both skills join the `dynamicweb-backend` and `dynamicweb-presales`
+  bundles. The F&O connector plugin stays parked; the skill carries a pointer to its `DWService` / `DWWebservice`
+  WCF naming defect.
+
 ## [5.7.0]
 
 New demo skill **`dw-demo-fo`**: a live Dynamics 365 Finance and Operations demo gets its own legal entity

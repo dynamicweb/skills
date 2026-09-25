@@ -43,8 +43,11 @@ The identity's default company is worth setting to the demo company anyway, as a
 turns a forgotten filter into the right answer instead of the wrong one. It does not replace the filter, and
 it cannot when one app serves several demo companies.
 
-Job mechanics themselves (endpoint, OData provider, activities, mappings) belong to
-[`dw-integration-framework`](../../dw-integration-framework/SKILL.md); this file only adds the company pin.
+Job mechanics themselves (endpoints and S2S auth, the entity map, staging tables and stage-2 views, the order
+export, status and invoices back) belong to [`dw-integration-fo`](../../dw-integration-fo/SKILL.md), provider
+mechanics to [`dw-integration-framework`](../../dw-integration-framework/SKILL.md); this file only adds the
+company pin. While the demo company does not exist yet, build the whole chain against its code anyway: reads
+return nothing, and the export is refused by its runner until `LegalEntities` lists the company.
 
 ## Hosted (online-mode) DW installs
 
