@@ -109,8 +109,9 @@ scope, note its known defect: the service and the service group are both named `
 
 - **`$metadata` answering 200 proves nothing.** It answers for any valid token; an entity read returns 403 until
   the app is mapped to an F&O user under *Microsoft Entra applications*. Test with an entity read.
-- **A bad credential costs minutes, not a second.** The OData source probes `<entity>?$top=1` and retries ten
-  times with a growing delay (5 s up to 300 s) before the job fails. Test the endpoint before queueing a job.
+- **A bad credential costs the whole request timeout, not a second.** The OData source probes `<entity>?$top=1`
+  and retries with delays growing to 600 s until the activity's request timeout (20 minutes in the recipe) ends
+  the job. Test the endpoint before queueing a job.
 - **`test_integration_endpoint` says only `Unauthorized`.** The Entra error code (`AADSTS...`) is not surfaced;
   get it from a direct token request when the cause is not obvious.
 - **`ReleasedProductsV2` has no product name.** Names and descriptions come from `ProductTranslations`
