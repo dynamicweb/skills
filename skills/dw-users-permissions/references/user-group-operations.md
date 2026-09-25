@@ -239,8 +239,9 @@ Management API verbs are `PascalCase`, out of product, and the recipes for them 
 | Grant impersonation | none | `UserImpersonateAdd` `{"UserOrGroupId":<int>,"ICanImpersonateUsersOrGroups":true,"UserOrGroupIdsToAdd":[<int>]}` | Ids are **ints** here. |
 | Revoke impersonation | none | `UserImpersonateDelete` `{"UserOrGroupId":<int>,"ICanImpersonateUsersOrGroups":true,"Ids":["<string>"]}` | `Ids` is **inherited from `ListItemsCommandBase`, and its elements are STRINGS**. No `…ToRemove` / `…ToDelete` property exists anywhere in the assembly, so hunting for a symmetric counterpart to `UserOrGroupIdsToAdd` finds nothing; the read twin `GroupsICanImpersonateByGroupId` returns exactly the values `Ids` wants, as `modelIdentifier` strings. |
 | Write an entity permission grant | `assign_permissions_to_assortment` (assortments only) | `PermissionSave` | [`grant-mechanics.md`](grant-mechanics.md) §7. |
+| Create a user custom field | none | none found: `CustomFieldSave` only updates an existing field | See "No create path for a user custom field" below. |
 
-Three rules come out of that table.
+Three rules come out of that table, and one gap.
 
 **A refusal arrives as HTTP 200.** The wrong-shape refusal above and a permission refusal on the
 storefront app both return 200 with a normal-looking body, so a helper reading the status field
@@ -279,6 +280,18 @@ genuinely has to be written, the write path is the method pair `AddToGroupAdmini
 `RemoveFromGroupAdministrators(groupId)` on `Dynamicweb.Security.UserManagement.User` plus a user
 save — the property has no setter but the type does have the methods, so a SQL write is not
 equivalent to the platform's own write path.
+
+**No create path for a user custom field** [dw 10.28.12 · swift 2.4]. `CustomFieldNew`
+with `TableName=AccessUser` returns an empty model, and `CustomFieldSave` with that model filled in
+(`systemName` `AccessUser_<Name>`, `tableName` `AccessUser`, `fieldType` `text`) answers HTTP 200
+`{"status":"notFound","message":"Custom field does not exist. …"}`. `fieldType` `Text` fails the same
+way. `CustomFieldSave` only updates a field that already exists, and afterwards `AccessUser` carries no
+new column. The MCP tool set has no user custom field tool either. The admin screen for user custom fields
+(Settings > Users > Custom fields) is the remaining candidate; the command it sends has not been traced,
+so where a new field is required, ask the user to create it there and confirm the `AccessUser` column
+before writing to it. Where the data fits, prefer the native columns: consent, for example, fits
+`AccessUserNewsletterAllowed` with `AccessUserEmailPermissionGivenOn` / `AccessUserEmailPermissionUpdatedOn`
+for when it was given, and `AccessUserComment` for its source.
 
 ## 17c. An impersonation grant is denormalised into the Users index
 
