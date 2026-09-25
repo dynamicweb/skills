@@ -88,9 +88,10 @@ MCP `test_integration_endpoint` executes the endpoint's request once with its au
 | hangs | the entity carries a binary/image column and `$select` is missing | add `$select` |
 
 The OData source's own readiness probe, run at the start of every job, is `GET <entity>?$top=1` without the
-endpoint's other parameters. On failure it retries **ten times** with a growing delay (5, 15, 30, 45, 60, 180, 300 s
-and on), so a job queued against a broken credential blocks the run queue for many minutes before it fails. Test
-the endpoint first; never discover a credential problem by running a job.
+endpoint's other parameters. On failure it retries with a growing delay (measured: 5, 15, 30, 45, 60, 180, 300,
+600 s) until the activity's *Request timeout (minutes)* elapses, then fails with *Request has timed out after
+<n> milliseconds*: with a 20-minute timeout, a job queued against a broken credential holds the run queue for 20
+minutes. Test the endpoint first; never discover a credential problem by running a job.
 
 ## Building before the secret exists
 

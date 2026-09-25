@@ -24,7 +24,7 @@ to the `dw-demo-fo` demo company.
   refuses an OData source until its endpoint authenticates.
 - **Measured traps folded in:** an empty `<conditionals />` element drops the whole mapping silently; an existing
   activity validates new mappings against its stored schema snapshot, not the live view; the OData readiness probe
-  retries ten times with delays up to 600 s before a job fails on a bad credential; `test_integration_endpoint`
+  retries with delays up to 600 s until the request timeout (20 minutes) fails the job on a bad credential; `test_integration_endpoint`
   reports only `Unauthorized`; the Ecom provider has no `EcomGroupProductRelation` table (use `Groups` /
   `PrimaryGroup`); a destination-tables-only mirror on `EcomPrices` deletes every price the job did not write;
   `ReleasedProductsV2` carries no product name.
