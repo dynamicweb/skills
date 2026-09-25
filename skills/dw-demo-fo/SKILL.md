@@ -65,7 +65,7 @@ These are decided; follow them unless the environment owner rules otherwise.
 | 1 | **Profile** | What does this customer's company look like, and what of that is even per-company? | [references/company-profile.md](references/company-profile.md) |
 | 2 | **Company** | Create the legal entity and seed it from the golden company | [references/demo-company.md](references/demo-company.md) §1-2 |
 | 3 | **Shape** | Apply the profile: numbering, dimensions, sites, groups, catalog, spine identifier | [references/demo-company.md](references/demo-company.md) §3 |
-| 4 | **Wiring** | Pin every DW Integration Framework job to this company and nothing else | [references/dw-wiring.md](references/dw-wiring.md) |
+| 4 | **Wiring** | Pin every DW Integration Framework job to this company and nothing else; build the jobs with `dw-integration-fo` | [references/dw-wiring.md](references/dw-wiring.md) |
 | 5 | **Verify / retire** | Round-trip check; a re-runnable seed; dormant, not deleted, at the end | [references/demo-company.md](references/demo-company.md) §5-6 |
 | - | **Sandbox discipline** | Sharing one tenant across demos without breaking anyone else's | [references/shared-sandbox.md](references/shared-sandbox.md) |
 
@@ -101,7 +101,7 @@ Secrets come from the environment (`$env:FO_CLIENT_SECRET`) or a vault, never fr
 | Create the legal entity, build the golden company, seed from its package, repair the measured copy gaps, verify, retire | references/demo-company.md |
 | Point DW jobs at exactly one `dataAreaId`; connect a hosted DW install to F&O | references/dw-wiring.md |
 | Share one sandbox across several customer demos without collisions | references/shared-sandbox.md |
-| Build the jobs themselves (OData provider, endpoints, activities) | [`dw-integration-framework`](../dw-integration-framework/SKILL.md), ownership split in [`dw-integration-erp`](../dw-integration-erp/SKILL.md) |
+| Build the jobs themselves: endpoints with S2S auth, the entity map, staging and stage-2 views, the order export, status and invoices back, the verification ladder | [`dw-integration-fo`](../dw-integration-fo/SKILL.md) (after [`dw-integration-fo-discovery`](../dw-integration-fo-discovery/SKILL.md)); provider mechanics in [`dw-integration-framework`](../dw-integration-framework/SKILL.md), ownership split in [`dw-integration-erp`](../dw-integration-erp/SKILL.md) |
 
 ## Always-on rules
 
@@ -128,6 +128,8 @@ Secrets come from the environment (`$env:FO_CLIENT_SECRET`) or a vault, never fr
 - **`dw-demo-erp`**: the DB-staged mock. Use INSTEAD of this skill when no live ERP tenant is in scope, and
   read its ERP-to-PIM data-shape reference either way.
 - **`dw-demo-hosted`**: the hosted (online-mode) install this skill's wiring phase may target.
+- **`dw-integration-fo`**: the foundational F&O integration build (endpoints, staging, order export,
+  verification) this skill's wiring phase uses; its runner refuses an order export into any company but the demo's.
 - **`dw-integration-bc`**: Business Central, a structurally different mechanism. Do not reuse these recipes.
 - **`dw-demo-pim`** / **`dw-demo-swift`**: the DW side the ERP data lands in.
 

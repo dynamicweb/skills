@@ -85,6 +85,7 @@ taken from the session only ([access-surfaces.md](references/access-surfaces.md)
 
 - `dw-integration-erp` — the ERP ↔ PIM ownership split the brief's §7 applies.
 - `dw-integration-framework` — Integration Framework vocabulary for the hand-off (activities, providers, mapping) and for building the jobs this skill scopes.
+- `dw-integration-fo` — the build this discovery scopes: endpoints, stage 1 staging, stage 2 views, the order export and the verification ladder.
 
 ## Top-level pitfalls
 

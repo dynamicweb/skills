@@ -47,9 +47,9 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | `dynamicweb-setup` | Provisioning Dynamicweb 10 | setup-install, setup-config, setup-upgrade, setup-cli |
 | `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, content-localization, swift-building, swift-page-blocks, swift-page-design, swift-migrate-v1, swift-migrate-content, headless-delivery |
 | `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions, data-access, data-write-effects |
-| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, extend-admin-ui, integration-framework, integration-erp, integration-bc, data-access, data-write-effects, data-audit-trail |
+| `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, extend-admin-ui, integration-framework, integration-erp, integration-fo-discovery, integration-fo, integration-bc, data-access, data-write-effects, data-audit-trail |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, source-doc-lookup, extend-mcp-tools |
-| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, demo-fo, demo-foldback, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, data-write-effects, swift-building) |
+| `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, demo-fo, demo-foldback, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, integration-fo-discovery, integration-fo, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, data-write-effects, swift-building) |
 
 ## Skills
 
@@ -162,6 +162,9 @@ Configure ERP connectors and data ownership.
 
 **[dw-integration-fo-discovery](skills/dw-integration-fo-discovery/SKILL.md)**
 Discover the data model a Dynamics 365 Finance & Operations (or AX 2009/2012) environment actually runs on, from outside, before integration mapping.
+
+**[dw-integration-fo](skills/dw-integration-fo/SKILL.md)**
+Build the Dynamics 365 Finance & Operations integration end to end on the Integration Framework: S2S endpoints, the F&O entity map, OData-to-staging activities, stage-2 SQL views into products, groups, customers, prices and stock, the sales order export, and status and invoices back, with a verification ladder. Ships a generator for the staging DDL and the OData job files, so the whole integration can be built before the credential exists. Run after `dw-integration-fo-discovery`.
 
 **[dw-integration-bc](skills/dw-integration-bc/SKILL.md)**
 Live "PIM for Business Central connector" demos — expose the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface.
