@@ -72,6 +72,7 @@ skill's commerce, PIM and users recipe references.
 | `get_assortment_ids_by_user` | Takes a user id; a group id answers `[]` | Pass a member's user id | MCP | Accept a group id and expand membership, or say "user id" in the description |
 | `delete_payment_methods` | Deletes payment methods; no tool or admin command deletes a saved card, and a card id fails with the bare invocation error | The cardholder deletes the card on the storefront | storefront | A saved-card delete tool, and a method delete whose name says method |
 | (none) | No tool creates asset categories or BOM lines | `AssetCategorySave`, `ProductItemAdd` | Management API | Save, read and delete tools for both |
+| (none) | No tool creates a user (`AccessUser`) custom field, and no Management API create command was found: `CustomFieldSave` only updates and answers `notFound` for a new field [dw 10.28.12] | The user custom fields admin screen, or the native `AccessUser` columns where the data fits ([`dw-users-permissions`](../../dw-users-permissions/SKILL.md), reference `user-group-operations.md` §17b) | admin UI | A user custom field create tool |
 
 ## Known-broken tools, version-pinned
 

@@ -116,6 +116,20 @@ there stores a number that matches nothing — the call answers `succeeded:1`, t
 `EcomPrices`, and the group's buyers still see the list price, which reads as a price-resolution or cache
 problem. `userGroupId` is the member that matches a user group.
 
+**Leave every scope column the row does not use NULL, never 0.** `PriceUserId` and `PriceUserGroupId`
+are both `nvarchar`, and the stock default price provider reads a stored `0` as a real scope value:
+`PriceUserId = 0` means "user 0 only". A group row written with `PriceUserGroupId` set and
+`PriceUserId = 0` therefore matches nobody. It reads back with the right group and the right amount,
+and every member still sees the list price. Measured: with a 0 in `PriceUserId`, a group member's
+cart line stayed at the list price, and rewriting the same rows with `PriceUserId` NULL put the group
+price on both the PDP and the cart [dw 10.28.12 · swift 2.4]. By the same reasoning, keep
+`PriceProductLanguageId`, `PriceUnitId`, `PriceCountry` and `PriceShopId` NULL unless the row is
+meant to be narrowed by them.
+
+**A group price reaches direct members only.** In the same measurement, a `PriceUserGroupId` row on
+a parent group did not price for users who belonged only to a child group under it. Grant the row
+on the group the buyers are direct members of, or make them direct members of the priced group.
+
 **No catalogue-level price recalculation exists in the tool set.** `force_price_recalculation` takes an
 order id and recomputes that order; called after a catalogue price write it answers the bare invocation
 error. Where a price write has to become visible, the follow-up is the product-index rebuild
@@ -124,7 +138,8 @@ error. Where a price write has to become visible, the follow-up is the product-i
 **Validate on the rendered storefront, never on the row.** Sign in as a member of the group: the PDP and
 cart must show the contract price. Sign in as a non-member or stay anonymous: they see the list price. A
 row-exists assertion passes while the storefront is still on list price, which is exactly the failure
-this section describes. On a variant master, write every group row **per variant id**: a row with an empty
+this section describes. Assert the contract amount itself: a check that only finds a currency
+sign also passes at the list price. On a variant master, write every group row **per variant id**: a row with an empty
 variant id matches every variant and the lowest row wins
 ([`catalog-publishing.md`](../../dw-commerce-catalog/references/catalog-publishing.md) §2.13). (Quantity-tier enforcement, `PriceQuantity > 0` rows, is a separate matter the
 **stock cart ignores**; see

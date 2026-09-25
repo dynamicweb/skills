@@ -159,6 +159,31 @@ creating a quote.
 > endpoints create Dynamicweb records, while the sales-quote path is the one associated with ERP
 > sales documents. Confirm which one a given build should call.
 
+### Add to Cart: a hard-coded page gate and a failing `ToCart`
+
+Two vendor defects stand between a priced build and the basket, and both are silent [dw 10.28.12 · swift 2.4]; the CPQ
+add-in release measured is recorded in the 5.6.4 CHANGELOG entry.
+
+- **The button renders on one page id only.** `CPQ_Items.cshtml` wraps the Add to Cart input in
+  `@if(Pageview.Page.ID == 8592)`, a page id from the vendor's own sample. On any other CPQ page the
+  actions block renders without the button, even with `CPQ_Items_Show_Actions` on. Editing the
+  condition does not hold, because the template is rewritten at each application start (see
+  [Customising without forking the frontend](#customising-without-forking-the-frontend)).
+- **`model/ToCart` does not produce a cart.** Calling the vendor `addToCart()` by hand posts the
+  serialised form to `/cpqapi/model/ToCart?modelversionid=<v>&pageuserid=<id>`. For a signed-in user
+  it answers HTTP 500 with an empty body; with `pageuserid=0` it answers 200 with an empty body.
+  Neither returns a cart id, the basket stays at 0 lines, and the CPQ API log records no `ToCart`
+  entry.
+
+**Carry the build to the basket through the Swift cart service instead**, from `cpq-custom.js`. POST
+to the cart service page with `cartcmd=addmulti` and, for each line of `window._cpqLatestBomItems`,
+`ProductLoopCounter<n>`, `ProductId<n>`, `VariantId<n>` (empty for a master) and `Quantity<n>`. The
+product id is whatever the solution maps each line's `item_no` to in `EcomProducts`, so a BOM item
+with no matching product cannot be added and needs that mapping first. Render the button from
+`cpq-custom.js` too, since the vendor one is absent. Each BOM item becomes one basket line, and the
+stock Swift checkout places the order. Verify with the basket contents and a placed order, not with
+the HTTP status of the add call. Recheck `ToCart` and the page gate on each CPQ release.
+
 ## Selections and client storage
 
 In-progress selections ride in a **cookie**, URI-encoded JSON with a one-day expiry, cleared

@@ -3,6 +3,22 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.6.4]
+
+Fold of three measured learnings (DW 10.28.12, Swift 2.4) plus one observation.
+
+- **`dw-commerce-b2b` contract prices: NULL, never 0, in unused scope columns.** `PriceUserId` and
+  `PriceUserGroupId` are `nvarchar`, and a stored `0` in `PriceUserId` scopes a group row to user 0,
+  so the row never prices. A group price also did not reach users who belong only to a child group of
+  the priced group. The storefront check asserts the contract amount, not a currency sign.
+- **`dw-commerce-cpq` Add to Cart.** The vendor button renders only on page id 8592, and
+  `/cpqapi/model/ToCart` answers 500 for a signed-in user (CPQ add-in 10.24.2). The working route is the
+  Swift cart service with `cartcmd=addmulti`, one line per BOM item, from `cpq-custom.js`.
+- **`dw-users-permissions` user custom fields.** `CustomFieldSave` only updates and answers
+  `notFound` for a new `AccessUser` field; no MCP tool creates one. The gap and the native-column
+  fallback are in §17b, and `dw-extend-mcp-tools` lists it in `tool-surface-gaps.md`.
+- **`dw-extend-mcp-tools`:** on DW 10.28.12 `copy_grid_row` carries the row's paragraphs.
+
 ## [5.6.3]
 
 The `dw` axis of `versions.json` states no platform floor. The `>=10.28.1` floor had no consumer:
