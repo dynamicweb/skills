@@ -87,3 +87,20 @@ Use the entity version discovery measured as populated (`ReleasedProductsV2`, `C
 `SalesOrderLinesV3`, `SalesInvoiceHeadersV4`) exist on current releases; switching is a spec change, and the
 staging columns follow the property names of the version chosen. Always check a property in the environment's
 own `$metadata` before mapping it: the generator refuses a column the metadata does not list.
+
+## Prices onto existing DW tier groups (measured 2026-09-26, heartstream)
+
+When the demo already prices by DW user groups (tier price lists) and F&O carries the same tiers as price-group
+trade agreements (`SalesPriceAgreements.PriceCustomerGroupCode`), let F&O own those rows instead of shadowing them:
+
+- A mapping table `F&O price group -> AccessUserId` (one row per tier), not an external id stamped on the demo's groups.
+- The stage-2 view joins agreement item `<CODE>-<sku>` to the DW product by ProductNumber, and **reuses the existing
+  PriceId** where product, group and quantity match (`OUTER APPLY ... TOP 1 PriceId`), so the first run is an in-place
+  update; a new agreement gets a prefixed id. Prove the match first: count storyline rows, agreements, matched, equal.
+- Upsert keyed on PriceId, never "remove missing rows" (it would delete every other price). `PriceExternalId` names
+  the agreement so the admin shows where a price comes from.
+- Round trip: PATCH the agreement's `Price`, run the price stage + apply, **recycle the app pool** (the storefront price
+  cache is not refreshed by the job: the DB held the new value while the PDP still showed the old one), check the PDP
+  as a member of that tier, revert.
+- Entity GET/PATCH by key in a non-default company needs `?cross-company=true` on the key URL as well; without it the
+  key lookup answers 404 even though a `$filter` read finds the row.
