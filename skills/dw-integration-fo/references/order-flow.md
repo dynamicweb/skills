@@ -7,6 +7,7 @@
 - [The export queue: a state, not a flag](#the-export-queue-a-state-not-a-flag)
 - [Export views](#export-views)
 - [The three export activities](#the-three-export-activities)
+- [Measured run](#measured-run)
 - [Status back](#status-back)
 - [Invoices back](#invoices-back)
 - [Why not the Order provider as the export source](#why-not-the-order-provider-as-the-export-source)
@@ -64,6 +65,16 @@ WHERE o.OrderStateId = cfg.ReadyStateId AND o.OrderComplete = 1 AND ISNULL(o.Ord
 -- Lines: product lines only (type 0 or empty, no parent line), numbered per order, item number in the ERP's form.
 ```
 
+**Never send an empty unit.** Platform order lines usually carry no unit id. An OData destination mapping a NULL
+`SalesUnitSymbol` writes it, and F&O stores the line with **no sales unit** instead of defaulting it from the item
+(measured on a 10.0.48 sandbox). Fall back to the staged released product's unit, then a fixed default:
+
+```sql
+-- SQL. Local installs only.
+COALESCE(NULLIF(l.OrderLineUnitId, N''), NULLIF(rp.SalesUnitSymbol, N''), N'ea') AS SalesUnitSymbol
+-- ... LEFT JOIN dbo.<P>_ReleasedProducts rp ON rp.dataAreaId = cfg.DataAreaId AND rp.ItemNumber = cfg.ItemPrefix + l.OrderLineProductNumber
+```
+
 Keys on the OData destination are the business key the view supplies (`dataAreaId` + `SalesOrderNumber` for
 headers, + `LineNumber` for lines), not the entity key: `SalesOrderLines` is keyed on `InventoryLotId`, which F&O
 mints on insert.
@@ -79,6 +90,22 @@ mints on insert.
 Run 3 only when 1 and 2 both completed; the mark view reads the same queue, so a failed run leaves the orders in
 the queue for the next attempt. A runner script owns that ordering and refuses to run the export against any legal
 entity but the one the integration is for.
+
+## Measured run
+
+On a 10.0.48 unified sandbox, one platform order (one product line) moved into the queue state over MCP
+`set_order_state`, then the three activities: headers, lines and mark sent all *Completed*. F&O answered each
+destination POST with the created row: the header took site, warehouse, payment terms and price group from the
+customer (`DefaultShippingSiteId`, `PaymentTermsName`, `PriceCustomerGroupCode`), status *Backorder*; the line took
+the shipping site and warehouse from the item's default order settings and `LineAmount` = quantity x the sent
+`SalesPrice`. A stage-1 re-read then staged the header and line, and the status view moved the platform order to
+*In ERP*. Prerequisites that made it work first time: the customer's default site and warehouse, and the sales
+order sequence with **Manual = Yes** (`SequenceV2Tables`, the `SalesId` reference).
+
+To rehearse on a storyline order without leaving it changed: after the proof, set the platform order back to its
+state, clear `OrderIntegrationOrderId` and `OrderIsExported` (otherwise the status job moves it again on every
+run) and restore `OrderModified`. The F&O order stays as the proof; exporting the same order again would collide on
+its supplied number.
 
 ## Status back
 
