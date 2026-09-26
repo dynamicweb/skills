@@ -26,7 +26,7 @@ engagement controls:
 | Entity | Pin by |
 |---|---|
 | `ProductCategories`, `ProductCategoryAssignments` | `ProductCategoryHierarchyName eq '<hierarchy>'` |
-| `ProductTranslations` | `startswith(ProductNumber,'<prefix>') and LanguageId eq '<lang>'`, or the list of released item numbers |
+| `ProductTranslations` | `ProductNumber eq '<prefix>*' and LanguageId eq '<lang>'` (F&O OData has no `startswith()`: it answers 400 "The type 'System.String' for the query operator is not Queryable"; `eq` takes a `*` wildcard), or the list of released item numbers |
 | `LegalEntities` | none (it is the connection test) |
 
 ## The read surface
