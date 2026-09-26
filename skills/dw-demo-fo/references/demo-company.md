@@ -92,11 +92,36 @@ so the import needs no UI. Parameters as the environment's `$metadata` declares 
 | `GetExecutionSummaryStatus` | `executionId` | `Unknown`, `NotRun`, `Executing`, `Succeeded`, `PartiallySucceeded`, `Failed`, `Canceled` |
 | `GetExecutionErrors` | `executionId` | the row-level errors (§2d) |
 
-Per demo company: upload the golden package (`GetAzureWriteUrl`, then PUT the zip to that URL), run
-`ImportFromPackage` with `legalEntityId` = the new company's code and an import project whose entity list
-matches the package, and follow it with `Watch-CopyProgress.ps1 -JobId <executionId>`. Then run
-`Test-DemoCompany.ps1`: bank accounts, payment methods and number sequences must be non-zero before the
-profile goes on.
+Measured end to end on a 10.0.48 unified sandbox (a US golden company into a new demo company, all over OData, no
+UI). The run order, and what each step taught:
+
+1. **Ledger and number sequences first, over OData.** `Ledger`, `Number sequence code`, `Number sequence group` and
+   `Number sequence references` are rows in **shared** tables (`DataManagementEntities.IsShared` = Yes). In a package
+   they export every company's rows, and the import would write into the other companies. Write them for the new
+   company instead: `POST /data/Ledgers` with the golden company's chart of accounts, fiscal calendar and currencies
+   (`Name` is not insertable: leave it out), then one `SequenceV2Tables` row per golden sequence (company segment of
+   `Format`/`AnnotatedFormat` swapped, `Next` = `Smallest`) and one `NumberSequencesV2References` row per reference.
+   Measured: 631 of 633 sequences (two test sequences scoped `LegalEntity` are refused, annotated format) and 487
+   references in minutes. Both keys contain the `ScopeType` enum: a GET by key path answers 404 even when the row
+   exists, so check existence with `$filter` (`ScopeValue` + code), not the key. Without a ledger, most
+   configuration entities fail validation.
+2. **Import the package into the new company.** [`Import-GoldenPackage.ps1`](../scripts/Import-GoldenPackage.ps1):
+   `GetAzureWriteUrl`, PUT the zip to the blob URL (`x-ms-blob-type: BlockBlob`), `ImportFromPackage` with
+   `legalEntityId` = the new company, `execute` and `overwrite` true. The script first **re-points golden-company
+   values inside the package**: company-scoped entities still carry the golden code as a value (measured: journal
+   names `VOUCHERSERIESCOMPANYID`, ledger allocation rules `COMPANY`/`FROMCOMPANY`, subledger transfer rule and
+   allocation basis source `LEGALENTITYID`, tracking number groups `NUMBERSEQUENCESCOPEDATAAREA`: 114 values).
+   Copy into legal entity remaps those; a package import does not.
+3. **Poll, never re-send.** `ImportFromPackage` answers only once the package is unpacked into staging; a
+   228-entity package outlived a 180-second client timeout while the server carried on. The script recovers the
+   execution id from `DataManagementExecutionJobDetails` (filter `DefinitionGroupId`) and follows it.
+4. **Read the result.** Measured: 228 entities in 62 minutes, *PartiallySucceeded*, 3 entities in error with 3 row
+   errors, 31,706 rows created. The three: a customer group whose write-off reason lives in a shared table
+   (`Customer write-off reason codes`), Customer parameters (the Sales parameters record already exists), and
+   Inventory parameters (the fallback warehouse was not in the package, by design). None blocks a demo. The bank
+   and payment chain arrived intact; `Repair-CopyGaps.ps1` then found only the company-scoped financial dimension
+   values (§2c) missing.
+5. `Test-DemoCompany.ps1`: bank accounts, payment methods and number sequences non-zero before the profile goes on.
 
 ### 2b. Build the golden company once: Copy into legal entity
 
@@ -238,11 +263,32 @@ every row for filtering.
 
 ### 2e. Export the golden package
 
-When the golden company passes `Test-DemoCompany.ps1` with customers, bank accounts and payment methods
-present, export its configuration: a Data management export project over the same templates (minus the
-global address book), run with `ExportToPackage` (`legalEntityId` = the golden company), and download the zip
-through `GetExportedPackageUrl`. Keep the zip **outside the environment**, beside the golden company's run
-log: a sandbox refresh removes the golden company too, and the package is what rebuilds it.
+When the golden company passes `Test-DemoCompany.ps1` with bank accounts and payment methods present, export its
+configuration with [`Export-GoldenPackage.ps1`](../scripts/Export-GoldenPackage.ps1). Measured on a 10.0.48
+sandbox: `DataManagementDefinitionGroups` and `DataManagementDefinitionGroupDetails` both accept POST, so the export
+project needs no UI.
+
+**The entity list.** Start from the golden company's copy project (its `DataManagementDefinitionGroupDetails`, with
+the levels and sequences the default templates set) and keep only entities with
+`DataManagementEntities.IsShared` = No: the global address book, chart of accounts, financial dimensions, products
+and attributes, currencies, units, users and the number sequence tables are shared, and a shared entity in a
+package writes into every company on import. Drop what the demo seeds itself (customers, released products and
+their satellites, sites, warehouses and locations), drop what failed in the copy with no value to a demo company,
+add the *Cash and bank* chain the copy lacked (`Bank groups`, `Bank transaction type`, `Bank parameters`,
+`Bank accounts`, `Vendor payment method`) and move `Ledger parameters` after `Journal names` in its level (the
+copy failed it on the `Rev Rec` journal name). Measured: 366 copy entities -> 228 in the package.
+
+**Every detail row needs `AutoGenerateMapping = Yes` on POST.** Without it the row has no field mapping
+(`ValidationStatus` No): the export stages 0 rows for it and the execution then sits in *Executing* indefinitely
+(measured: 228 entities, 0 rows, still Executing after 40 minutes). With it the row comes back
+`ValidationStatus` Yes. Measured with the flag: *Succeeded* in 30 minutes, a 351 KB zip. Download it through
+`GetExportedPackageUrl` and keep it **outside the environment** with its `.sha256` and the entity list: a sandbox
+refresh removes the golden company too, and the package is what rebuilds it.
+
+**A one-entity package fills an OData gap.** Where an entity refuses OData POST on a build (measured:
+`ProductGroups`, *The field with ID '0' does not exist in table 'InventProductGroupEntity'*), take that entity's
+manifest node and one exported row from the golden package as the template, write the demo's rows, and import it
+with the same script and a one-entity list.
 
 Done-criteria for step 2: the company opens, has a ledger and currency, bank accounts and payment methods,
 and can create a customer and release a product without an error dialog.
@@ -277,6 +323,15 @@ F&O MCP server's `data_find_entity_type`) for each object type. Measured on a cu
 (`InventoryPolicies` only exposes the item-model-group inventory policies) or for attribute-group membership.
 Plan around that: reuse a stock tenant-wide storage group (`SiteWH` is Site + Warehouse), keep the item model
 groups the seed brings, and log attribute-group membership as a UI step.
+
+Write-side traps measured on the same build: `ProductGroups` refuses POST (use a one-entity package, §2e);
+`Warehouses` needs `WarehouseType` = `Standard` (the entity default is rejected); `ProductCategories` takes
+`ParentProductCategoryName` but refuses `ParentProductCategoryHierarchyName` on insert;
+`ReleasedProductCreationsV2` creates the product master, the release and the en-us translation in one POST, but has
+no price: PATCH `ReleasedProductsV2.SalesPrice` and `ProductDefaultOrderSettings` (sales site and warehouse)
+afterwards; `SalesPriceAgreements` POST writes a price-group or account agreement directly (no journal to post);
+inventory journals (`InventoryCountingJournalHeaders` + `Lines`) can be created but have **no posting action**, so
+seeding on-hand ends with one UI step (*Inventory management > Journal entries > Item counting > Counting > Post*).
 
 ## 4. Seed the demo data
 

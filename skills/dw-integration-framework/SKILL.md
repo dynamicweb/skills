@@ -294,6 +294,7 @@ pitfalls live in [references/custom-provider-authoring.md](references/custom-pro
 ## Next Steps
 
 - **ERP-specific integration?** See [dw-integration-erp](../dw-integration-erp)
+- **Dynamics 365 Finance & Operations over OData?** See [dw-integration-fo](../dw-integration-fo)
 - **Business Central connector?** See [dw-integration-bc](../dw-integration-bc)
 - **Triggering activities from code?** See [dw-extend-providers](../dw-extend-providers)
 - **Custom scheduled trigger?** See [dw-extend-scheduled-tasks](../dw-extend-scheduled-tasks)
