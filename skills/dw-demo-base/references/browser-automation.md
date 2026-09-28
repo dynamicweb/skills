@@ -129,7 +129,7 @@ After a Dynamicweb demo finishes seeding (PIM content, customer-center pages, pa
 
 1. **Resolve the host URL.** From `Dynamicweb.Host.Suite/Properties/launchSettings.json` HTTPS profile (the discover-from-project-files rule — see `references/mcp-setup.md` Step 1). Format: `https://localhost:<port>/`.
 2. **Navigate to the public storefront** (not `/Admin`). Example: `mcp__playwright__browser_navigate url="https://localhost:<port>/<shop-slug>/"`.
-3. **Log in as a seeded buyer.** Submit credentials via the storefront login form, NOT against `/Admin` (that's the admin UI, not the customer journey). Credentials come from the demo's per-demo Claude memory (the discover-from-project-files rule); never hardcode.
+3. **Log in as a seeded buyer.** Submit credentials via the storefront login form, NOT against `/Admin` (that's the admin UI, not the customer journey). Credentials come from the demo's gitignored `notes/credentials.local.md` (the discover-from-project-files rule); never hardcode, and never from a Claude memory file.
 4. **Walk to the target tab** (e.g. account orders, favorites, recurring orders, checkout).
 5. **Screenshot** (pass an absolute `<demo>\notes\qa\` filename so the shot lands with the demo, never in the repo root — see "Where screenshots land" and `SKILL.md` "Artifact hygiene") + **DOM-grep** for the expected entity count. Example: assert at least N order rows visible, or that a specific SKU appears in favorites.
    - **Scroll-sweep before any `fullPage` screenshot or image assertion.** Swift lazy-loads images

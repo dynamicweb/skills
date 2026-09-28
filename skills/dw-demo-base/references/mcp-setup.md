@@ -7,7 +7,7 @@
 - [Step 1b — Generate `.mcp.json` at solution root (bearer placeholder)](#step-1b--generate-mcpjson-at-solution-root-bearer-placeholder)
 - [Step 2 — The two-layer TLS bypass](#step-2--the-two-layer-tls-bypass)
 - [Step 3 — Create the MCP configuration in DW10 admin UI (API Key)](#step-3--create-the-mcp-configuration-in-dw10-admin-ui-api-key)
-- [Step 3b — Paste the bearer into `.mcp.json` and per-demo memory](#step-3b--paste-the-bearer-into-mcpjson-and-per-demo-memory)
+- [Step 3b — Paste the bearer into `.mcp.json` and the credentials file](#step-3b--paste-the-bearer-into-mcpjson-and-the-credentials-file)
 - [Step 3 (headless alternative) — create the token + MCP config without the admin UI](#step-3-headless-alternative--create-the-token--mcp-config-without-the-admin-ui)
 - [Step 3 (Management API alternative): mint a key in one process; rotation stops at mint-and-store](#step-3-management-api-alternative-mint-a-key-in-one-process-rotation-stops-at-mint-and-store)
 - [Autonomous/headless fallback — call `/admin/mcp` directly as JSON-RPC 2.0](#autonomousheadless-fallback--call-adminmcp-directly-as-json-rpc-20)
@@ -23,7 +23,7 @@ Wire MCP for the Backend MCP server — the AppStore app **Truvio Commerce MCP**
 1. Write `.mcp.json` with the discovered HTTPS port (bearer placeholder filled in Step 3b).
 2. Put the two-layer TLS bypass in place (Step 2).
 3. Create the MCP configuration in DW admin UI with **Authentication method = API Key** — DW10 does **not** auto-create one, and the agent drives this itself via the Browser MCP (Playwright). Step 3 is the most-missed step.
-3b. Paste the plaintext API key into `.mcp.json` as the `Authorization: Bearer …` header and save it to per-demo Claude memory.
+3b. Paste the plaintext API key into `.mcp.json` as the `Authorization: Bearer …` header and record it in the gitignored `notes/credentials.local.md` (or 1Password), never in a Claude memory file.
 4. Verification gate.
 
 The verification gate (Step 4) refuses to declare 'setup complete' until BOTH `claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND tool discovery returns > 200 dynamicweb tools.
@@ -104,7 +104,7 @@ The skill's `assets/mcp.json.template` is the parametric source (with literal `<
 }
 ```
 
-> **Do not commit the real key.** `.mcp.json` is project-tracked. Leave `<MCP_API_KEY>` as a literal placeholder in source control. The substituted-in version with the real bearer lives on each developer's machine only; the canonical store is per-demo Claude memory (see Step 6).
+> **Do not commit the real key.** `.mcp.json` is project-tracked. Leave `<MCP_API_KEY>` as a literal placeholder in source control. The substituted-in version with the real bearer lives on each developer's machine only; the canonical store is the gitignored `notes/credentials.local.md` or 1Password (see Step 6).
 
 ---
 
@@ -141,7 +141,7 @@ If `claude mcp list` (run later in Step 4) shows `Failed to connect`, re-verify 
 **The agent drives this step itself via the Browser MCP** — this is a scaffold-phase bootstrap one-click, the sanctioned exception to the build-phase verification-only rule (see `references/surface-priority.md` "Scaffold phase"). Prerequisite: the Browser MCP is installed (Step 5 — machine-level and idempotent; on a first-time machine run Step 5 first). If its `mcp__playwright__browser_*` tools haven't surfaced in this session, restart Claude Code once or use the headless alternative below.
 
 1. `browser_navigate` to `https://localhost:<port>/Admin` and log in with the demo's admin credentials (from conversation state / project files — the discover-from-project-files rule).
-2. Navigate to **Settings → Integration → MCP configurations** (exact menu path may vary by DW10 version — look for "MCP" under Integration).
+2. `browser_navigate` straight to `https://localhost:<port>/Admin/UI/Settings/McpConfigurationList`. In the menu it is the **Integration** group inside the **Settings** tab's own left navigation. The top-level **Integration** tab is a different screen, the Data Integration UI (activities and connections), and carries no MCP link at all; **Apps** (`/Admin/UI/Apps`) is where the add-in is installed, not configured.
 3. **New configuration**, set **Access = Full access**, set **Authentication method = API Key**. Save.
 4. The admin UI generates a plaintext API key and **shows it once** — read it off the page immediately (`browser_snapshot` / DOM-grep; you cannot retrieve the plaintext later, the DB only stores the hash). The prefix is **version-dependent**: on **DW 10.27.4** the MCP API key is prefixed **`mcp.<hex>`** (distinct from the Management API token, which stays `CLAUDE.<hex>`); older builds emitted a `CLAUDE.<hex>`-shaped MCP key too. Whatever prefix the admin UI displays is what you paste in Step 3b — do not assume `CLAUDE.`.
 
@@ -151,7 +151,7 @@ After saving, do **not** rerun `/mcp` in Claude Code yet — there's no bearer i
 
 > **Why not Claude.ai?** That auth method is for the hosted claude.ai web client and uses OAuth + Dynamic Client Registration — its session dies when the host or Claude Code restarts, forcing an interactive `/mcp` re-auth that cannot be scripted around. See the "Why API Key by default" preamble at the top of this file.
 
-## Step 3b — Paste the bearer into `.mcp.json` and per-demo memory
+## Step 3b — Paste the bearer into `.mcp.json` and the credentials file
 
 1. Open `.mcp.json` (created in Step 1b) and replace the literal `<MCP_API_KEY>` with the plaintext key from Step 3:
 
@@ -163,7 +163,9 @@ After saving, do **not** rerun `/mcp` in Claude Code yet — there's no bearer i
 
    **Locally only.** Don't commit this change — the source-controlled `.mcp.json` keeps the `<MCP_API_KEY>` placeholder. See Step 6 for the per-demo storage contract.
 
-2. Save the key to per-demo Claude memory as a `reference` memory (host URL + plaintext key + a one-line how-to-use). See Step 6 for the token-storage contract. The memory is the authoritative copy; if `.mcp.json` is wiped or regenerated, you re-paste from memory, not from chat.
+2. Record the key in the demo's gitignored `notes/credentials.local.md` (host URL + key + a one-line how-to-use), or in 1Password when the user keeps demo secrets there. **Never in a Claude memory file**: memory is not a credential store. See Step 6 for the token-storage contract. The credentials file is the authoritative copy; if `.mcp.json` is wiped or regenerated, re-paste from it, not from chat.
+
+   **When a harness guard blocks the key write, stop.** A session's credential or safety guard can refuse the write of the plaintext key into `.mcp.json` or the credentials file. That refusal is the answer for this session, not an obstacle: **do not retry the same write through another tool** (a shell `Set-Content`, `Out-File`, `echo >`, a script, a different editor tool). Routing around a guard with a shell write is a policy workaround even when the destination is the same local file and even though this file's own snippets use a shell write. The sanctioned path: tell the user the write was blocked, and ask them (`AskUserQuestion`) to paste the key into `.mcp.json` and `notes/credentials.local.md` themselves; the key is still on the confirmation screen, or they create a fresh configuration if it was already read. Then continue at item 3. The same rule holds for every credential write in this file.
 
 3. Run `/mcp` in Claude Code (or open a fresh Claude Code shell) so the client picks up the new bearer. The connection should immediately authenticate against the DW host and `tools/list` returns the full catalog (~260 tools).
 
@@ -188,7 +190,7 @@ written:
 - Management API `McpConfigurationOverview` (`GET /admin/api/McpConfigurationOverview?Id=<id>`) returns
   the plaintext in `model.plaintextApiKey` on the **first read after creation only**. Every later read
   returns an empty string while `model.hasApiKey` stays `true`. A procedure that reads the overview once
-  to test the key and again to store it stores the empty string, and nothing fails: the memory write and
+  to test the key and again to store it stores the empty string, and nothing fails: the credentials-file write and
   the `.mcp.json` write both succeed and leave `Authorization: Bearer ` with no key.
 
 **Create, capture, length-assert, store and verify in one process**, from the single captured value.
@@ -209,7 +211,7 @@ if ([string]::IsNullOrEmpty($key)) { throw "Configuration $id revealed no key (a
 if (-not $ov.model.allowEverything) { Write-Warning "allowEverything did not take on configuration $id; set access in the admin UI (Step 3)." }
 # Prove the captured key authenticates BEFORE writing it anywhere.
 (Invoke-WebRequest -Uri "$base/admin/api/AddinAvailable" -Headers @{ Authorization = "Bearer $key" } -SkipCertificateCheck).StatusCode
-# Now write .mcp.json and the per-demo memory (Step 3b, Step 6) from $key, read each back,
+# Now write .mcp.json and notes/credentials.local.md (Step 3b, Step 6) from $key, read each back,
 # and assert the stored bearer length equals $key.Length.
 ```
 
@@ -335,16 +337,16 @@ This step is idempotent — safe to skip if `claude mcp list` already shows `pla
 
 ## Step 6 — Discover bearer tokens (the discover-from-project-files rule)
 
-A Dynamicweb demo has **two** bearer tokens, both rows in `AccessUserToken`, **issued from two different admin surfaces** — do not conflate them. The Management API bearer comes from **Settings → System → Developer → Api Keys** and is `CLAUDE.<hex>`-shaped (the `CLAUDE.` prefix is visible in the list). The MCP key comes from a *separate* surface, **Settings → Integration → MCP Configurations**, which issues its own `mcp.<hex>` key; its prefix is **version-dependent** — `mcp.<hex>` on DW 10.27.4+ (incl. 10.28.1), `CLAUDE.<hex>` on older builds. Use whatever prefix the admin UI displayed, not an assumed one:
+A Dynamicweb demo has **two** bearer tokens, both rows in `AccessUserToken`, **issued from two different admin surfaces** — do not conflate them. The Management API bearer comes from **Settings → System → Developer → Api Keys** and is `CLAUDE.<hex>`-shaped (the `CLAUDE.` prefix is visible in the list). The MCP key comes from a *separate* surface, **Settings → Integration → MCP Configurations** (`/Admin/UI/Settings/McpConfigurationList`, inside the Settings tab, not the top-level Integration tab), which issues its own `mcp.<hex>` key; its prefix is **version-dependent** — `mcp.<hex>` on DW 10.27.4+ (incl. 10.28.1), `CLAUDE.<hex>` on older builds. Use whatever prefix the admin UI displayed, not an assumed one:
 
 | Token | Issued from | Used for |
 |---|---|---|
-| **MCP API key** | Admin UI → Settings → Integration → MCP configurations → New (Authentication method = API Key). Captured in Step 3 of this file. | `Authorization: Bearer …` header in `.mcp.json` (Step 3b). Validated against `AccessUserTokenHash` by `McpAuthMiddleware`. |
+| **MCP API key** | Admin UI `/Admin/UI/Settings/McpConfigurationList` → New (Authentication method = API Key). Captured in Step 3 of this file. | `Authorization: Bearer …` header in `.mcp.json` (Step 3b). Validated against `AccessUserTokenHash` by `McpAuthMiddleware`. |
 | **Management API token** | Admin UI → Settings → System → Developer → API keys → New. Captured here in Step 6 — the agent drives the admin UI via the Browser MCP and reads the displayed key. | `Authorization: Bearer …` header on `/admin/api/...` calls. Used by Swift's [`../../dw-demo-swift/references/deserialize-flow.md`](../../dw-demo-swift/references/deserialize-flow.md) and [`../../dw-demo-swift/references/integrity-sweep.md`](../../dw-demo-swift/references/integrity-sweep.md), and by PIM admin-API calls. |
 
 These are distinct rows with different validation paths — don't reuse one for the other unless you've verified empirically. The data-model detail (the `McpConfigurationTokenId` binding, why the validation paths differ) is owned by [`../../dw-extend-mcp-tools/references/backend-mcp-server.md`](../../dw-extend-mcp-tools/references/backend-mcp-server.md) §3.
 
-If you don't have a Management API token in conversation state or memory, create one yourself: drive the admin UI via the Browser MCP to **Settings → System → Developer → API keys → New**, and read the displayed key off the page (same scaffold-phase one-click pattern as Step 3). If the browser surface is unavailable in this session, fall back to asking:
+If you don't have a Management API token in conversation state or in `notes/credentials.local.md`, create one yourself: drive the admin UI via the Browser MCP to **Settings → System → Developer → API keys → New**, and read the displayed key off the page (same scaffold-phase one-click pattern as Step 3). If the browser surface is unavailable in this session, fall back to asking:
 
 > "I need the Management API bearer token for this Dynamicweb host. The format is `CLAUDE.<hex>`. You can find it in the admin UI under **Settings → System → Developer → API keys** (create one if none exists). Please paste the token in chat."
 
@@ -353,12 +355,14 @@ If you don't have a Management API token in conversation state or memory, create
 | Location | Allowed? | Why |
 |---|---|---|
 | Conversation state | ✅ Always | Default scope; cleared at session end. |
-| Per-demo Claude memory (`~/.claude/projects/<encoded-cwd-of-demo>/memory/`) | ✅ Canonical for local dev hosts | Survives across sessions; user-machine-only; naturally scoped to one demo (the encoded cwd is the demo solution folder); never shared via git or commits. Save **two** `reference` memories — one for the MCP API key, one for the Management API token — each with the host URL, the token, and a how-to-use note. |
-| Env vars (User or Machine scope, e.g. `DYNAMICWEB_MGMT_API_TOKEN`) | ❌ Never | The tokens are per-demo, but env vars are machine-global — a second demo on the same machine would clobber the first. Use per-demo Claude memory instead, which is the only storage location that gives one slot per demo. |
+| The demo's gitignored `notes/credentials.local.md` | ✅ Canonical for local dev hosts | One file per demo solution, gitignored by the scaffold (`scaffold.md` §2.1), already the single home of the demo's login passwords ([`customisations.md`](customisations.md)). Record **both** tokens there, each with the host URL and a how-to-use note. |
+| 1Password (the user's vault) | ✅ When the user keeps demo secrets there | The user's choice; the agent reads nothing from it and asks the user to paste when needed. |
+| Claude memory files (`~/.claude/projects/<encoded-cwd>/memory/`, any `MEMORY.md`) | ❌ Never | Memory is loaded into every later session's context and is not a credential store. Record a pointer there if useful ("MCP key: see notes/credentials.local.md"), never the value. |
+| Env vars (User or Machine scope, e.g. `DYNAMICWEB_MGMT_API_TOKEN`) | ❌ Never | The tokens are per-demo, but env vars are machine-global — a second demo on the same machine would clobber the first. Use the demo's `notes/credentials.local.md` instead, which gives one slot per demo. |
 | Project-tracked files (`.mcp.json` with substituted bearer, `Files/Serializer.config.json`, csproj, `settings.local.json`, anything inside the demo solution folder that git tracks) | ❌ Never commit | A local-only `.mcp.json` with the real bearer is fine to live on disk — but the source-controlled copy keeps the `<MCP_API_KEY>` placeholder. Don't `git add` after substitution. |
 | Production hosts | ❌ Never persist outside conversation state | Different threat model — out of scope for this skill. |
 
-If a token isn't in conversation state and no memory entry exists, capture again via the appropriate prompt above and save to per-demo Claude memory.
+If a token isn't in conversation state or `notes/credentials.local.md`, capture again via the appropriate prompt above and record it there. A harness guard that blocks that write is handled as in Step 3b: stop and ask the user to paste it, never retry through another tool.
 
 ---
 
@@ -394,7 +398,7 @@ are the two that recur.
 |---|---|
 | `claude mcp list` shows "Failed to connect" | Almost always the TLS bypass: the User-scope `NODE_TLS_REJECT_UNAUTHORIZED=0` env var is missing (project-level config is silently insufficient) — fix per Step 2, then fully restart Claude Code from a fresh shell. Also check: is the `Dynamicweb.Host.Suite` host actually running on the port `.mcp.json` references? |
 | `claude mcp list` shows the server but requests fail `401 Unauthorized` despite a substituted bearer | The bearer in `.mcp.json` is not the EXACT plaintext key the admin UI displayed — check for extra whitespace or a trailing newline introduced when pasting. |
-| `claude mcp list` shows the server but `ToolSearch +dynamicweb` returns 0 / 401 Unauthorized on `/admin/mcp` requests | **Three distinct causes — check in order.** (1) `.mcp.json` still has the literal `<MCP_API_KEY>` placeholder — substitute the plaintext key from the admin UI (Step 3b). (2) No MCP configuration exists on the DW side — admin UI → Settings → Integration → MCP configurations → New, set **Access = Full access**, **Authentication method = API Key**, save, copy the displayed plaintext key (shown once), and paste into `.mcp.json`. (3) Stale bearer (config was deleted/regenerated since the key was last captured) — the configuration row in the admin UI is now linked to a different `AccessUserTokenId`; capture the new key and update `.mcp.json` + per-demo memory. |
+| `claude mcp list` shows the server but `ToolSearch +dynamicweb` returns 0 / 401 Unauthorized on `/admin/mcp` requests | **Three distinct causes — check in order.** (1) `.mcp.json` still has the literal `<MCP_API_KEY>` placeholder — substitute the plaintext key from the admin UI (Step 3b). (2) No MCP configuration exists on the DW side — admin UI `/Admin/UI/Settings/McpConfigurationList` → New, set **Access = Full access**, **Authentication method = API Key**, save, copy the displayed plaintext key (shown once), and paste into `.mcp.json`. (3) Stale bearer (config was deleted/regenerated since the key was last captured) — the configuration row in the admin UI is now linked to a different `AccessUserTokenId`; capture the new key and update `.mcp.json` + `notes/credentials.local.md`. |
 | AppStore install of "Backend MCP" appears to do nothing — no UI confirmation, the MCP configurations menu the app is supposed to add never appears, `/admin/mcp` returns 404 | **Two distinct causes, in order of likelihood.** (1) **Host TFM is net8.** The MCP AddIn loader requires .NET 10 even though the package ships net6/net8 lib binaries. Symptom: install POST returns 200, files drop to `wwwroot/Files/System/AddIns/Installed/<package>.<ver>/lib/` (`Truvio.Commerce.MCP.*` since the rename, `Dynamicweb.MCP.*` on a host installed before it), but AddIn never registers. Fix: pin csproj `<TargetFramework>net10.0</TargetFramework>` and restart the host (verify in startup log: `Dynamicweb is running on .NET 10 or greater`). See [`../../dw-setup-install/references/install-anatomy.md`](../../dw-setup-install/references/install-anatomy.md) §2. (2) **Stuck DB update queue** (or buggy CREATE in update queue). Check `wwwroot/Files/System/Log/EventViewer/*.log` for `Update failed:.*Cannot find the object`. Recovery: `../../dw-setup-upgrade/references/db-update-recovery.md` (Mode A or B depending on triage). |
 | Mid-run MCP call fails with `401 Unauthorized` after a host restart | Should be rare with API-Key auth (the bearer is DB-backed, stateless, and the host revalidates against `AccessUserToken` on every request). If it happens: the admin UI's MCP config was likely deleted/recreated, which generates a new `AccessUserTokenId` and invalidates the old plaintext key. Open the admin UI, confirm the MCP configuration still exists, and capture a fresh key if the link is broken. **Do NOT silently pivot to direct-SQL fallbacks** for create/update operations — that bypasses MCP cache invalidation AND leaves required columns unset (e.g. `EcomDetails.DetailLanguageId` defaulting to empty string, see `dw-demo-pim/references/structural-model.md` §2.10). The MCP-plugin tools (e.g. `import_product_images_from_urls`, `add_product_image`) have NO Management API endpoint backing — there is no plain-HTTP fallback that preserves their column-population guarantees. |
 | Storefront AND `/Admin` both answer 500 after an add-in install, with `An item with the same key has already been added` in the Event Viewer | The package is loaded twice — once from `bin` (csproj `PackageReference`) and once from `Files/System/AddIns/Installed/`. Move the Installed folder out and recycle; upgrade by bumping the `PackageReference`. See "Upgrade a package where it is already referenced" above. |

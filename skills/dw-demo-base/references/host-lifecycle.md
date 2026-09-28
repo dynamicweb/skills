@@ -4,6 +4,8 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 
 **The enforced form is [`../scripts/Restart-DwHost.ps1`](../scripts/Restart-DwHost.ps1)** — use it rather than retyping the recipes below; it encodes the ownership check, the index-build guard, the lock, the durable start, and the readiness poll in one place. The recipes and traps below stay because they are the contract the script implements (and what you fall back on where the script is not available).
 
+**Run the script in the FOREGROUND; it returns on the health probe.** It launches the host through the shell with no inherited handles, and after a Stop it waits (bounded by `-PortReleaseSeconds`, default 30) until the port has no Listen socket before it starts, so an immediate Start after Stop no longer refuses a stale, empty-command-line listener as a foreign owner. Measured on a stand-in host: five consecutive foreground `-Action Restart` calls from an agent shell tool each returned exit 0 in about 10 s. A copy of the script older than this change blocked the foreground caller until the host itself exited; with such a copy, use `run_in_background` and poll `/Admin`.
+
 ## Flush first — a restart is the last resort, not the default
 
 Nearly every "my change doesn't show" symptom is a stale cache with a flush surface, and flushing keeps the warm state a restart throws away. Work the ladder in [cache-invalidation.md](../../dw-data-access/references/cache-invalidation.md) "When a mutation doesn't show up": (1) the **targeted** `CacheInformationRefresh` named in its post-mutation table → (2) the **bulk flush** (`GET /admin/api/GetServiceCaches` → `POST /admin/api/CacheInformationsRefresh {"Ids":[...]}`) — the same substitution hosted installs are required to use for every "restart required" row → (3) restart only when the symptom survives both flushes or the cache is documented as not service-exposed (e.g. `Searching:Queries`). Restarts that ARE owed (AddIn/`Custom.Mcp` deploys, TFM changes, restart-only cache rows) get **batched — one restart per authoring pass** (the MCP-first → SQL-last → one-restart rule), never one per mutation — and verified to have actually cold-started (the `dotnet run` parent/child trap: killing the parent can leave the real host running with its caches intact).
@@ -17,6 +19,8 @@ powershell -Command "Start-Process -FilePath 'dotnet' -ArgumentList 'run','--lau
 ```
 
 Returns PID. After kickoff, poll `/Admin` (or `/admin/api/api.json`) until 200, then proceed. This is a liveness poll only: `api.json` answers 200 with no key or a wrong one, so it proves the host is up, not that the key works.
+
+**This recipe holds a piped caller open.** A `Start-Process` with `-RedirectStandardOutput` hands the host the caller's inheritable handles, including an agent tool's stdout pipe, so the tool call does not return until the HOST exits (measured: a piped caller waited out its child's full lifetime). Run it where nothing reads its output, or use the script, which launches through `cmd.exe /c` with the redirection inside the command line and no `-Redirect*` parameters.
 
 **Do NOT** use plain `dotnet run` via Bash `run_in_background:true` — when the bash subshell ends, dotnet receives SIGHUP and the host dies after the next idle window. We've seen this fail with exit 127 mid-session.
 

@@ -21,10 +21,22 @@
         overrides only this guard, never the ownership check.
       - Lock file (<solution>/notes/host.lock) serializes restarts between
         agents; a lock older than 10 minutes is taken over as stale.
-      - Durable start: Start-Process with stdout/stderr redirected to log
-        files (an unredirected hidden start has proven flaky), launched via
-        `dotnet run` only (the bin/ apphost exe boots a silently degraded
-        host). The PID variable is $hostPid — $pid is read-only in PowerShell.
+      - Durable start: stdout/stderr redirected to log files (an unredirected
+        hidden start has proven flaky), launched via `dotnet run` only (the
+        bin/ apphost exe boots a silently degraded host). The PID variable is
+        $hostPid — $pid is read-only in PowerShell.
+      - Detached start: the host is launched through the shell (cmd.exe does
+        the log redirection), so it inherits NONE of the caller's handles.
+        A Start-Process -RedirectStandardOutput child inherits the caller's
+        stdout pipe, so an agent's foreground shell tool waits for the HOST to
+        exit, not for this script (measured: a piped caller returned after
+        its child's 25 s lifetime instead of at once). With the detached
+        start the script is safe in the foreground and returns on the probe.
+      - Port release: Stop waits (bounded, -PortReleaseSeconds) until no
+        Listen socket remains on the port, not only until the process exits;
+        Start treats a listener whose process is gone, or whose command line
+        is empty, as a host still stopping and re-checks instead of refusing
+        it as a foreign owner. An immediate Start after Stop used to refuse.
       - Readiness = /Admin answering 200/302 within -ReadyTimeoutMinutes,
         polled; never assumed from the process starting.
 
@@ -57,6 +69,10 @@
 .PARAMETER ReadyTimeoutMinutes
     How long to poll /Admin after a start before failing.
 
+.PARAMETER PortReleaseSeconds
+    How long Stop waits for the port's Listen socket to go, and Start waits
+    for a stopping (gone or unreadable) owner to release it. Default 30.
+
 .PARAMETER Force
     Override the index-build-in-flight guard (never the ownership check).
 
@@ -79,6 +95,7 @@ param(
     [string]$LaunchProfile = 'Dynamicweb.Host.Suite',
     [string]$Framework,
     [int]$ReadyTimeoutMinutes = 8,
+    [int]$PortReleaseSeconds = 30,
     [switch]$Force
 )
 
@@ -104,6 +121,27 @@ function Test-IndexBuildInFlight {
         }
     }
     $false
+}
+
+# Every Listen socket on the port with its owner: alive or gone, and its command line.
+function Get-PortListener {
+    foreach ($procId in @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty OwningProcess -Unique)) {
+        $alive = [bool](Get-Process -Id $procId -ErrorAction SilentlyContinue)
+        $cmd = if ($alive) { (Get-CimInstance Win32_Process -Filter "ProcessId=$procId").CommandLine } else { $null }
+        [pscustomobject]@{ Pid = $procId; Alive = $alive; Cmd = "$cmd" }
+    }
+}
+
+# Bounded wait until nothing listens on the port. Returns the listeners still there.
+function Wait-PortReleased {
+    $deadline = (Get-Date).AddSeconds($PortReleaseSeconds)
+    do {
+        $left = @(Get-PortListener)
+        if ($left.Count -eq 0) { return @() }
+        Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $deadline)
+    @(Get-PortListener)
 }
 
 function Stop-OwnedHost {
@@ -132,26 +170,52 @@ function Stop-OwnedHost {
             Start-Sleep -Seconds 3
         }
     }
+    # The process exiting is not the port being free: wait for the Listen socket too.
+    $left = @(Wait-PortReleased)
+    $live = @($left | Where-Object { $_.Alive })
+    if ($live.Count -gt 0) {
+        throw "Port $Port still has a live listener $PortReleaseSeconds s after the stop: pid $($live[0].Pid) ($($live[0].Cmd)). Stop it or rediscover the port before starting."
+    }
+    if ($left.Count -gt 0) { Write-Host "Port $Port lists a listener whose process is gone (pid $($left[0].Pid)); treating the port as released." }
 }
 
 function Start-OwnedHost {
-    $owners = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
-        Select-Object -ExpandProperty OwningProcess -Unique
-    if ($owners) {
-        $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$(@($owners)[0])").CommandLine
-        if ($cmd -like "*$SolutionPath*") { Write-Host "This solution's host already listens on $Port."; return }
-        throw "Port $Port is already owned by: $cmd — NOT this solution. Refusing to start on top of it."
+    $deadline = (Get-Date).AddSeconds($PortReleaseSeconds)
+    while ($true) {
+        $owners = @(Get-PortListener)
+        if ($owners.Count -eq 0) { break }
+        $mine = @($owners | Where-Object { $_.Alive -and $_.Cmd -like "*$SolutionPath*" })
+        if ($mine.Count -gt 0) { Write-Host "This solution's host already listens on $Port."; return }
+        $foreign = @($owners | Where-Object { $_.Alive -and $_.Cmd })
+        if ($foreign.Count -gt 0) {
+            throw "Port $Port is already owned by: $($foreign[0].Cmd) — NOT this solution. Refusing to start on top of it."
+        }
+        # Only gone or unreadable owners left: a host that is still stopping. Wait, then re-check.
+        if ((Get-Date) -ge $deadline) {
+            $stuck = @($owners | Where-Object { $_.Alive })
+            if ($stuck.Count -gt 0) {
+                throw "Port $Port is held by pid $($stuck[0].Pid) whose command line is unreadable, $PortReleaseSeconds s on. Identify it before starting."
+            }
+            Write-Host "Port $Port lists a listener whose process is gone; starting anyway."
+            break
+        }
+        Start-Sleep -Milliseconds 500
     }
     if (-not $PSCmdlet.ShouldProcess("$suiteDir on port $Port", 'start host')) { return }
     $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
     $outLog = Join-Path $LogDirectory "host-out-$ts.log"
     $errLog = Join-Path $LogDirectory "host-err-$ts.log"
-    $dotnetArgs = @('run', '--launch-profile', $LaunchProfile)
-    if ($Framework) { $dotnetArgs += @('--framework', $Framework) }
-    $hostPid = (Start-Process -FilePath 'dotnet' -ArgumentList $dotnetArgs `
-            -WorkingDirectory $suiteDir -WindowStyle Hidden -PassThru `
-            -RedirectStandardOutput $outLog -RedirectStandardError $errLog).Id
-    Write-Host "Started pid $hostPid — logs: $outLog"
+    foreach ($v in $outLog, $errLog, $LaunchProfile, $Framework) {
+        if ("$v" -match '["%^&|<>]') { throw "'$v' carries a character cmd.exe would interpret; use a plain path or profile name." }
+    }
+    $dotnet = "dotnet run --launch-profile `"$LaunchProfile`""
+    if ($Framework) { $dotnet += " --framework `"$Framework`"" }
+    $cmdLine = "`"$dotnet 1> `"$outLog`" 2> `"$errLog`"`""
+    # why: a shell launch (no -Redirect* parameters) hands the child none of this process's
+    # handles, so a caller reading our stdout is not held open for the host's lifetime.
+    $hostPid = (Start-Process -FilePath $env:ComSpec -ArgumentList '/d', '/s', '/c', $cmdLine `
+            -WorkingDirectory $suiteDir -WindowStyle Hidden -PassThru).Id
+    Write-Host "Started launcher pid $hostPid, logs: $outLog"
 
     $deadline = (Get-Date).AddMinutes($ReadyTimeoutMinutes)
     do {
