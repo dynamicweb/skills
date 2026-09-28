@@ -3,6 +3,31 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.1]
+
+Fold of the Dynamics 365 Finance & Operations integration build-log learnings (DW 10.28.11, F&O
+10.0.47 and 10.0.48): the platform-side integration traps and a new F&O reference.
+
+- **`dw-integration-framework` OData activities need an authenticated endpoint to be created.**
+  `create_integration_activity` reads the source schema live, so it answers *Credentials not set
+  for endpoint* or *Unauthorized* until `test_integration_endpoint` returns rows. Building ahead of
+  the credential means writing the job file; `job-file-format.md` has the recipe.
+- **`dw-integration-framework` job-file traps.** An empty `<conditionals />` element drops the
+  whole table mapping with no error. A mapping save on an existing activity validates against the
+  stored schema snapshot, so a column added to a source view later is refused until the activity is
+  recreated. An OData source on a failing credential retries until the request timeout (20 minutes
+  measured) and holds the run queue.
+- **Job-written prices stay stale on the storefront.** An activity that updates `EcomPrices` leaves
+  the product page on the old amount until the application recycles; recorded in
+  `provider-behaviour.md`, the `dw-data-access` cache-invalidation table and the
+  `dw-data-write-effects` refresh table.
+- **`dw-integration-erp` `references/dynamics-fo.md` (new): the F&O side.** Proving the S2S
+  credential outside the platform, prefix filters with `eq` and `*` (F&O rejects `startswith()`),
+  never sending an empty `SalesUnitSymbol`, posting inventory journals over the environment's ERP
+  MCP server and the dialog lock, seeding a legal entity from a template company over a data
+  management package (`AutoGenerateMapping`, shared entities over OData, company codes the import
+  does not remap), and the connector package's service naming defect.
+
 ## [5.8.0]
 
 The Dynamics 365 Finance and Operations integration, discovery to verified run, as two foundational skills wired
