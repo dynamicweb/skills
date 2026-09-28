@@ -161,11 +161,19 @@ through MCP tools instead.
 
 **Flow: endpoint-driven ERP sync (e.g. Business Central OData):**
 1. `save_integration_endpoint` — URL, collection, and inline authentication (OAuth S2S needs
-   client id, tenant id, client secret). `test_integration_endpoint` before going further.
+   client id, tenant id, client secret). `test_integration_endpoint` before going further: it
+   must return rows, not only `succeeded`.
 2. `create_integration_activity` with the OData provider as source (its endpoint parameter
    takes the endpoint id) and Ecom/Dynamicweb/User as destination; map with
-   `save_integration_activity_mapping`.
+   `save_integration_activity_mapping`. The create call reads the source schema from the live
+   endpoint, so it fails with *Credentials not set for endpoint* (no authentication) or
+   *Unauthorized* (a wrong or placeholder secret) until step 1 is green, and no OData activity
+   can be created over MCP before that [dw 10.28.11]. Building ahead of the
+   credential means writing the job file:
+   [references/job-file-format.md](references/job-file-format.md#an-odata-activity-before-its-endpoint-authenticates).
 3. Run once manually and verify, then `schedule_integration_activity` for the recurring sync.
+   Never queue or schedule an activity on an endpoint that has not passed step 1: a failing
+   credential holds the run queue for the whole request timeout (Pitfalls).
 4. Dependent activities (customers before orders, groups before products) must run in
    dependency order — schedule them accordingly.
 
@@ -270,8 +278,22 @@ Activities can be organized in groups (folders). Groups can inherit source/desti
 custom product, order or order-line field is added: on the source side the new column is silently
 dropped, on the destination side mapping it is a hard refusal. Read
 `does not exists in the schema` as a stale snapshot, and re-save the mapping through
-`save_integration_activity_mapping` (which reads the live schema) or patch the snapshot by hand —
+`save_integration_activity_mapping` or patch the snapshot by hand. The re-save does not refresh
+every snapshot: a column added to a SQL view after its activity was created is refused by
+`save_integration_activity_mapping` as unknown, and is accepted once the activity is deleted and
+recreated [dw 10.28.11]. Design source views before creating their activities:
 [references/job-file-format.md](references/job-file-format.md#the-schema-block-is-a-snapshot-not-a-live-read).
+
+**An empty `<conditionals />` element drops the whole table mapping.** A job file carrying one
+loads with no mappings and no error [dw 10.28.11]; omit the element when there are no conditionals
+and read every written job back with `get_integration_activity_mappings`.
+
+**An OData source on a failing credential holds the run queue.** Each run first probes the entity
+and retries with delays growing to 600 s until the activity's request timeout (20 minutes as
+measured) fails the job; nothing else in the queue runs meanwhile [dw 10.28.11]. And
+`test_integration_endpoint` reports only `Unauthorized`, never the identity provider's error code,
+so when the cause is not obvious tell the user the code has to be read from a direct token request
+outside the product.
 
 **`Job succeeded` proves rows were processed, not that the effect you wanted exists.** An export
 that wrote its file to the wrong directory, an import whose unresolvable rows were deleted before
@@ -282,6 +304,8 @@ artefact path, the destination row count, or the rendered page.
 that writes product fields leaves the `ProductService` read-through cache stale even with cache
 clearing enabled — the flush verb and the exact storage type name are in
 [references/provider-behaviour.md](references/provider-behaviour.md#ecomprovider-as-a-destination).
+Prices are the same: a job that updates `EcomPrices` leaves the storefront on the old amount until
+the application recycles [dw 10.28.11].
 
 **Job files are served anonymously.** `.xml` is not on the static-file blocklist, so a job file and
 anything in it — including a SQL-auth connection string — answers an anonymous HTTP GET. Use

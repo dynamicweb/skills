@@ -93,6 +93,16 @@ Map all of them even for an update-only sync. Read a `KeyNotFoundException` from
 "a required price key is missing from the mapping", not as bad data. These are the same identity
 columns that make group-scoped audience pricing work.
 
+**A price written by a job is not the price the storefront shows until the price cache reloads.**
+Measured with a Dynamicweb-provider activity updating `PriceAmount` on existing `EcomPrices` rows:
+the rows held the new amount and the product page kept rendering the old one until the application
+pool recycled, then showed the new amount; the reverse change behaved the same [dw 10.28.11]. The
+job's own cache settings do not reach this cache, and no MCP tool clears it or recycles the
+application, so a price feed ends with a step the user performs: a recycle (or a cache clear the
+user has proven for prices) before anyone judges a price on a page. A scheduled price feed carries
+the same staleness into every run. The per-surface table is
+[`../../dw-data-access/references/cache-invalidation.md`](../../dw-data-access/references/cache-invalidation.md).
+
 **Safety settings for an update-only feed.** `UpdateOnlyExistingProducts` + `UpdateOnlyExistingRecords`
 + `UseStrictPrimaryKeyMatching = True`, with every `RemoveMissing*` / `DeactivateMissingProducts` =
 `False`, gives an inbound activity that cannot create, delete or deactivate a product.
