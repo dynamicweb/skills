@@ -254,3 +254,15 @@ through a different surface (or curl the rendered page) before declaring it done
 confirmed, the SQL fallback is sanctioned; note the cache that needs flushing. (The content-author's view
 of these same save no-ops — framed as paragraph/page save bookkeeping — is in
 [`dw-content-modelling`](../../dw-content-modelling/SKILL.md), reference `modelling-discipline.md`.)
+
+### Add-in defects that misreport the outcome (interim, until the add-in is fixed)
+
+The mirror image of the silent no-ops: the call reports a failure, or succeeds, and the report is
+wrong about what happened. Each row is an add-in defect reported upstream; until a fixed build is
+measured, work around it as stated [dw 10.28.11 · mcp 0.6.0].
+
+| Tool | What you see | What actually happened | Until fixed |
+|---|---|---|---|
+| `wait_for_product_index`, `get_product_index_status`, `place_app_paragraph`, `search_paragraphs`, `get_paragraphs_by_page_id` | The client rejects the result: `Structured content does not match the tool's output schema: ... must match format "date-time"` | The server-side effect landed; a date field in the result is serialized in a form the declared schema rejects, so the client drops the whole result | Treat the error as **"verify independently"**, never as failure and never as success. Index: `get_product_counts`, a `get_products_by_query` count, or the index segment files' timestamps. Paragraphs: render the page and read the paragraph markup. Do not retry a create, which would duplicate it |
+| `place_app_paragraph` with `moduleSystemName: UserManagementFrontend` (item type `Swift-v2_App`) | Saves | The paragraph carries no module settings, and the page then answers 500: `IndexOutOfRangeException` in `PagingHandler.LoadProperties` from the user-management paragraph settings | Do not place this module with the tool. Copy a working sign-in app paragraph (`copy_paragraph`; [`dw-content-modelling`](../../dw-content-modelling/SKILL.md), reference `render-after-write.md`), or configure it in the admin UI; delete a paragraph the tool already placed and re-render the page |
+| `create_data_model_structure` with only a top-level `dataModels` array | Rejected: `At least one folder must be provided` | Server validation requires a folder although the input schema allows folders or top-level data models | Wrap the data models in one folder |

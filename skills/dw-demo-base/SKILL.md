@@ -95,6 +95,19 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 | Feature pack | `layers/<name>` (kind feature) | `<demo-root>\distribution\layers\<name>\` | [`dw-demo-swift/references/pack-activation.md`](../dw-demo-swift/references/pack-activation.md) |
 | Swift design package | local clone of `https://github.com/dynamicweb/Swift` (release tag `v<version>.0` — the upstream Swift product still ships releases) | `<demo-root>\dw-swift\` | [`dw-demo-swift/references/deserialize-flow.md`](../dw-demo-swift/references/deserialize-flow.md) "Design-package deploy" |
 
+## Symptom index: look here before debugging by trial
+
+| You observe | Where the fix lives |
+|---|---|
+| A wizard form does not carry the documented fields, or Step4 never appears | references/scaffold.md §3 (post each served form's own fields; no Step4 means admin recovery) |
+| `/admin` rejects every credential after setup | [`install-anatomy.md`](../dw-setup-install/references/install-anatomy.md) §8 |
+| No MCP link under the top-level Integration tab | references/mcp-setup.md Step 3 (`/Admin/UI/Settings/McpConfigurationList`) |
+| A harness guard blocks writing the MCP key | references/mcp-setup.md Step 3b: stop and ask the user; never retry through another tool |
+| Connected, but 0 tools or 401 | references/mcp-setup.md "Triage table" |
+| `Restart-DwHost.ps1` refuses "already owned by" right after a Stop, or never returns | references/host-lifecycle.md (use the current script) |
+| After a start, every friendly URL 404s while `Default.aspx?ID=` serves an empty shell | references/host-lifecycle.md "After any start" |
+| Storefront, deserialize or cheat-sheet symptoms on a Swift demo | [`dw-demo-swift`](../dw-demo-swift/SKILL.md) "Symptom index" |
+
 ## Where to find things
 
 | If you need to... | Read this reference |
@@ -143,7 +156,7 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 
 | Script | Reads / writes | What it does |
 |---|---|---|
-| [Restart-DwHost.ps1](scripts/Restart-DwHost.ps1) | Writes: starts/stops THIS solution's host process, a lock file, log files | Guarded host lifecycle: port-scoped ownership-verified stop, index-build-in-flight guard, lock with stale takeover, durable redirected start, /Admin readiness poll. `-Port` and `-SolutionPath` are mandatory — no defaults |
+| [Restart-DwHost.ps1](scripts/Restart-DwHost.ps1) | Writes: starts/stops THIS solution's host process, a lock file, log files | Guarded host lifecycle: port-scoped ownership-verified stop that waits for the port to be released, index-build-in-flight guard, lock with stale takeover, detached redirected start (safe in the foreground), /Admin readiness poll. `-Port` and `-SolutionPath` are mandatory — no defaults |
 | [Invoke-DwPiiScan.ps1](scripts/Invoke-DwPiiScan.ps1) | Read-only (optionally writes a report file) | The mechanical half of the PII/vendor sweep: string-column census, person-PII counts, whole-DB term sweep (SQL local-only), rendered-page and download probes by URL. Classes and counts only — never values |
 | [Remove-SwiftVendorBoilerplate.ps1](scripts/Remove-SwiftVendorBoilerplate.ps1) | Dry-run by default; `-Apply` rewrites stock vendor boilerplate in Swift items + module settings, backing originals up | Content-matched debrand of the stock phrases (pii-sweep Rule 2); cookie names untouched by construction; lists the manual-pass remainder. Local installs only |
 | [Test-DwDemoStoryline.ps1](scripts/Test-DwDemoStoryline.ps1) | Read-only (optionally writes a JSON result file) | The consumer self-check, not a gate: every storyline page answers 200 and carries no placeholder copy in its VISIBLE TEXT, and every persona signs in with the session proved to BE that persona. Zero probes is FAIL. Secrets from the environment or a secrets file, masked in every line. Its hermetic Pester suite is [scripts/tests/Test-DwDemoStoryline.Tests.ps1](scripts/tests/Test-DwDemoStoryline.Tests.ps1) |
@@ -287,7 +300,7 @@ Port, DB name, and Management API bearer token vary per project. Read them from 
 | HTTPS port + host URL | `Dynamicweb.Host.Suite/Properties/launchSettings.json` (`applicationUrl`, HTTPS profile) |
 | Database name | `Dynamicweb.Host.Suite/GlobalSettings.Database.config` (`Database=` or `Initial Catalog=`) |
 | **MCP API key** (Authorization header for `/admin/mcp`) | Generated once in the admin UI (Settings → Integration → MCP configurations); full capture + storage contract in `references/mcp-setup.md` Steps 3-3b and 6. |
-| **Management API bearer token** (Authorization header for `/admin/api/...`) | Captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`); storage contract (per-demo Claude memory, never env vars, never committed) is canonical in `references/mcp-setup.md` Step 6. |
+| **Management API bearer token** (Authorization header for `/admin/api/...`) | Captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`); storage contract (the gitignored `notes/credentials.local.md` or 1Password; never a Claude memory file, never env vars, never committed) is canonical in `references/mcp-setup.md` Step 6. |
 
 ## Baseline-drift self-diagnosis rule
 
