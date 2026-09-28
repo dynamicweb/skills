@@ -36,13 +36,39 @@ the copy and the media) can the construction, one part of the work, be done with
 tools, slower and per page:
 
 - For `build_pages`: `save_pages`, `save_grid_rows`, `save_paragraphs` and
-  `set_paragraph_item_fields`, reading back with `get_pages_by_area_id` and
-  `get_paragraphs_by_page_id`.
+  `set_paragraph_item_fields`, in the create order of
+  [dw-swift-page-design](../dw-swift-page-design/SKILL.md) ("The create order") for **every** page,
+  reading back with `get_pages_by_area_id` and `get_paragraphs_by_page_id`.
 - For `apply_brand_color_scheme`: `save_color_schemes`, then `save_areas` with
   `colorSchemeGroupId` and `colorSchemeId`.
 - For `setup_website_chrome`: the chrome the area already has (`get_areas`), and a missing header
-  or footer built with `save_pages` and `save_paragraphs` and wired through `save_areas`.
+  or footer built with `save_pages`, a grid row and `save_paragraphs`, and wired through
+  `save_areas`.
 - For `import_site_media`: `upload_file`.
+
+Three things on this path fail without an error, so each is a rule for every page:
+
+- **`itemType` goes on the `save_pages` create call.** An update that adds it to an existing page
+  mints no item: `itemId` stays empty and every item-field write fails with `Page N has no item
+  type attached` [dw 10.28.11 · mcp 0.6.0-beta]. Recreate such a page with `itemType`.
+- **Every row carries the layout's content container.** Call `get_layout_containers(areaId)`
+  once and pass its `IsDefault` name verbatim (`Grid` on Swift 2) with `itemType: 'Swift-v2_Row'`.
+  `save_grid_rows` accepts any container string, and a row under a name the layout does not
+  render leaves `<main>` empty with no error markup. Header and footer pages render through the
+  same grid, so each needs its own row too, or the `<header>`/`<footer>` element renders empty.
+- **One paragraph per grid column.** A second paragraph in the same column saves, reads back and
+  never renders ([dw-swift-page-blocks](../dw-swift-page-blocks/SKILL.md) gotcha 15); two stacked
+  blocks are two rows.
+
+**Supplied content inherits the limits of the reader that produced it.** A reader that executes no
+JavaScript sees only a page's server-rendered shell: a client-rendered product grid is absent,
+and a sign-in fragment for a price panel reads as a login gate over the whole catalog. So a source
+page that reads as login-gated, empty or product-less is **unconfirmed** until a reader that
+executes JavaScript has rendered it and counted the product tiles or main content nodes. Record
+next to each such finding which reader produced it, and never let an unconfirmed finding set
+scope, such as replacing a public catalog with illustrative products. When this session has no
+JavaScript-executing reader, report the finding as unconfirmed and ask the user to open the page in
+a browser before the scope is decided.
 
 That path replaces the construction only, never a decision, and it carries none of the
 `build_pages` guarantees (plan validation, content filled from the extraction, precondition
@@ -142,7 +168,8 @@ only `SourcePageId` (a REAL id from the extraction — never invent pages) and a
 2. **Extract.** `extract_site_content(sourceUrl, [username/password|bearerToken|apiKey])` →
    page tree, brand, media count, warnings. **Works on ANY website**: Dynamicweb sources via
    `/dwapi`; anything else falls back to generic HTML extraction — the `Warnings` say which
-   mode ran (treat HTML-mode trees with extra scepticism in the final summary). Note the
+   mode ran (treat HTML-mode trees with extra scepticism in the final summary, and a page that
+   reads as login-gated or empty as unconfirmed, as for supplied content above). Note the
    `SourceHost`, and present the `Warnings` up front: an unauthenticated read misses
    unpublished pages, so every count is a floor. (`get_extracted_site(sourceHost)` re-reads a
    prior extraction.)
@@ -151,7 +178,11 @@ only `SourcePageId` (a REAL id from the extraction — never invent pages) and a
    the Swift-v2 master `LayoutTemplate`, `Active: true`, `Published: true`. (`build_pages`
    fail-fasts when Swift 2 isn't installed or the area's design isn't v2, and self-heals the
    publish state — but set it up right from the start.) Read the real design folder name from
-   `get_layouts` if it isn't `Swift-v2`.
+   `get_layouts` if it isn't `Swift-v2`. Set `urlIgnoreForChildren` deliberately on the same
+   call: a new area defaults to `false`, so every page lives at `/<areaUrlName>/<page>` and
+   `/<page>` answers 404; `true` puts child pages at `/<page>`, the usual shape for a single
+   storefront. State the chosen URL shape and derive every internal link, nav target and
+   hand-off URL from it.
 
 4. **Brand & the Master settings item — BEFORE pages.** The website settings live on the item
    identified by the area's `ItemType` + `ItemId` (from `get_areas`; set `ItemType` via

@@ -183,6 +183,13 @@ content silently don't make it — run this as a checklist immediately after eve
    permissions onto a fresh language layer". Both the permission cache and the separately-cached nav
    tree go stale on that write, so the layer keeps serving the old answer until they drop. See
    [dw-users-permissions](../../dw-users-permissions/SKILL.md) (`permission-layers.md`).
+   **The same holds for a `copy_area` second storefront that is not a language layer** (a B2C
+   area copied from a B2B one): the copied customer-centre folder arrived with no permission rows,
+   so the dashboard, orders and addresses served in full to anonymous visitors [dw 10.28.11]. There
+   no `PageMasterPageId` maps the pages, so pair source and copy by tree position, read each gated
+   source page with `get_page_permissions`, write the same rows onto the copy with
+   `set_page_permissions` (the customer centre: `Anonymous` None, `AuthenticatedFrontend` Read),
+   and probe anonymously per area: the pass state is a redirect to that area's own sign-in page.
 3. **Hardcoded page ids in template role-gates miss the clones.** A gate like
    `if (node.PageId == <dashboardId> && !isRole) continue;` stops working on the layer (the clone has
    its own id). Make it master-aware:

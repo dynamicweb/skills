@@ -228,7 +228,7 @@ A product index is required for the Product Catalog app to serve results. The fu
 | Reference | Load it for |
 |---|---|
 | [references/catalog-publishing.md](references/catalog-publishing.md) | Catalog-vs-Channel group trees (the published-to story), the native "Publish to channel" action, channels + feeds, assortments-vs-channels, the pricing traps (tier rows not honored by the stock cart, the canonical price read surface, customer-specific contract prices), and the variant, product-relation, image and shop chains — including the shop `UsageType` trap and the create-vs-update split |
-| [references/listing-and-stock.md](references/listing-and-stock.md) | why a default sort kills search relevance and what to order a group listing with instead, `ProductHidden` (counted by the index, dropped by the entity fetch, unwritable by every API), the `AssetCategories` duplication, what order completion decrements in the two stock tables, and the unscoped-price stock-location sentinel |
+| [references/listing-and-stock.md](references/listing-and-stock.md) | why a default sort kills search relevance and what to order a group listing with instead, `ProductHidden` (counted by the index, dropped by the entity fetch, unwritable by every API), the `AssetCategories` duplication, what order completion decrements in the two stock tables, the unscoped-price stock-location sentinel, the catalog setting that scopes nothing (`IndexQueryConditions`) and the missing `Shop` tag that sends every product card to `ID=0` |
 
 ## Pitfalls
 

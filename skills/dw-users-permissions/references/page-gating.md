@@ -126,6 +126,12 @@ as "blank homepage", not "please sign in".
    has the empty-`SubName` trap below and answers for keys that carry nothing. Most-permissive wins
    across a user's groups, so a user holding one granted group and three denied ones is admitted by
    design; design the group map for that rather than fighting it.
+4. **An area copy carries no gate.** `copy_area` (a second storefront next to the first) and a
+   language-layer copy both arrive with no page permission rows, so every gated folder in the copy,
+   the customer centre first, is public until it is gated again [dw 10.28.11]. Re-gate the copy in
+   the same job as the copy and run the anonymous probe per area; the steps are in
+   [dw-content-modelling](../../dw-content-modelling/SKILL.md) `references/language-layers.md`
+   ("What a full-content AreaCopy does NOT carry", item 2).
 
 ### How to hide a single paragraph from a persona
 
@@ -196,9 +202,11 @@ filters on `PageNavigationTag`.
 ### Write surface — the Permissions panel
 
 Page, grid-row and paragraph grants go through the same surface as every other entity grant, and
-that surface is an admin screen, not an MCP tool: [`grant-mechanics.md`](grant-mechanics.md) §7
+that surface is an admin screen: [`grant-mechanics.md`](grant-mechanics.md) §7
 carries the panel, the `PermissionLevel` numbers (`1` is `None`, `4` is `Read`) and the pointer to
-the scripted form.
+the scripted form. For a **page**, MCP also reads and writes the rows: `get_page_permissions` and
+`set_page_permissions` re-gated a copied customer-centre folder and the anonymous probe then
+redirected to sign-in [dw 10.28.11].
 
 **The READ side has a trap that inverts its answer: the permissions-by-identifier read returns an
 EMPTY result when the sub-name is passed as an empty string.** An empty-string sub-name is not

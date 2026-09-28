@@ -110,7 +110,11 @@ placed in no layout container — every paragraph under it is absent from the re
 page still answers HTTP 200 with no error markup at all. Measured on DW 10.28.x: the same page went
 from 32,669 bytes with the copy missing and zero `ConverterException` to 38,751 bytes with the copy
 present once the row carried `container: 'Grid'` and `itemType: 'Swift-v2_Row'`. Take the container
-name from `get_layout_containers` (its `IsDefault` flag marks it) rather than assuming `Grid`.
+name from `get_layout_containers` (its `IsDefault` flag marks it) rather than assuming `Grid`. A
+wrong name fails the same way as an empty one: `save_grid_rows` accepts any string, and a row under
+a name the layout does not render leaves `<main>` empty with no error [dw 10.28.11 · mcp 0.6.0-beta].
+Header and footer pages are not an exception: the Master renders them through the same grid, so
+each needs its own row with that container, or the `<header>`/`<footer>` element renders empty.
 
 On DW 10.28.x with MCP 0.4.4 the bare `save_paragraphs` create **does** mint the underlying item
 instance — the response carries a populated `itemId` — so nothing has to be cloned first to obtain
