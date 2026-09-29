@@ -3,6 +3,41 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.3]
+
+Fold of the presales build-journal learnings (DW 10.28.11, Swift 2.4.0, MCP add-in 0.6.0-beta):
+layer staging, host lifecycle, the setup wizard and MCP configuration, catalog rebuilds, and symptom
+indexes that route to traps the skills already carried.
+
+- **`dw-demo-swift` layer staging merges manifests.** The per-layer copy loop left only the last
+  layer's manifest on disk, so a Replace ran 2 of 18 entries and reported 0 failed. Staging now goes
+  through the new `scripts/Merge-DwLayerManifests.ps1`, and item-type XMLs copied onto a running
+  host owe a restart before the first run. After a deserialize into a new area, the area culture,
+  shop name and default language are rebound with the currency, and every superseded area is
+  deactivated (an active area with no domain outranks the new one even for `Default.aspx?ID=`).
+- **`dw-demo-base` setup and host lifecycle.** `scaffold.md` §3 posts each served wizard form's own
+  fields (on 10.28.11 Step2 is confirm-only, Step3 needs `action=next`, and the licence gate skips
+  Step4, which routes to admin recovery). `mcp-setup.md` routes to
+  `/Admin/UI/Settings/McpConfigurationList`, keeps the plaintext key in the gitignored
+  `notes/credentials.local.md` or 1Password, and stops for the user when a harness guard blocks the
+  key write. `Restart-DwHost.ps1` waits for the port to be released after Stop and returns to a
+  foreground caller on the health probe.
+- **`dw-demo-base` WebFetch is not a browser.** `browser-automation.md`: a page WebFetch reads as
+  login-gated, empty or product-less is re-checked with Playwright (`browser_navigate`, then
+  `browser_evaluate` counting product tiles) before it is recorded.
+- **`dw-demo-pim` catalog rebuilds on a used host.** A group recreated with an earlier id re-attaches
+  orphaned products, `delete_groups` deletes the products in the group, `create_products` without
+  `neverOutOfStock` lands every product OutOfStock, and the final index count is asserted.
+- **`dw-demo-swift` storefront recipes.** The cheat-sheet's high sort does not keep `/demo` out of a
+  Swift 2 header; it is excluded with a verified show-in-menu write. Product images on a local host
+  are copied to disk and registered with `add_product_image`, never moved through the context as
+  base64. `templates.md` points the discontinued-product redirect at the `Shop` tag precondition.
+- **Symptom indexes** in `dw-demo-base` and `dw-demo-swift` route observed symptoms to the section
+  that owns the fix.
+- **`dw-extend-mcp-tools` MCP add-in 0.6.0-beta defects.** Five tools fail their own date-time output
+  schema, `place_app_paragraph(UserManagementFrontend)` writes no module settings, and
+  `create_data_model_structure` rejects the top-level `dataModels` its schema allows.
+
 ## [5.8.2]
 
 Fold of the build-journal content learnings (DW 10.28.11, Swift 2.4.0, MCP add-in 0.6.0-beta): the

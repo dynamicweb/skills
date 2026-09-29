@@ -240,8 +240,13 @@ The guard goes at the top of the first code block of the PDP entry template,
 `Model.DiscontinuedAction == 1` and `Model.ReplacementProduct?.ProductId` is set, resolve
 `Model.ReplacementProduct.GetProduct()` (`ProductInfoViewModelExtensions`), build
 `replacementModel.GetProductLink(GetPageIdByNavigationTag("Shop"), false)`, run it through
-`Dynamicweb.Frontend.SearchEngineFriendlyURLs.GetFriendlyUrl()` and redirect. Three traps:
+`Dynamicweb.Frontend.SearchEngineFriendlyURLs.GetFriendlyUrl()` and redirect. Four traps:
 
+- **`GetPageIdByNavigationTag("Shop")` needs a page tagged `Shop`.** With none it returns `0`, and the
+  replacement link (like every stock product link) points at `Default.aspx?ID=0`, which answers 200
+  with the homepage. The precondition and its frontend check are in
+  [`listing-and-stock.md`](../../dw-commerce-catalog/references/listing-and-stock.md) "Scoping a
+  listing to one group, and the `Shop` tag every product link needs".
 - **`GetProductLink` returns the INTERNAL relative form** (`Default.aspx?ID=..&GroupID=..&ProductID=..`).
   Inside markup DW rewrites that to the friendly URL, but **a `Location` header is never
   post-processed**, so an unresolved link 404s from the PDP. The `GetFriendlyUrl()` pass is what makes the

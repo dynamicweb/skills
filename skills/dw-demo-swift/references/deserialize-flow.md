@@ -150,17 +150,21 @@ $index = Get-Content "$dist\layers\INDEX.json" -Raw | ConvertFrom-Json
 if (-not $index.gateProven) { throw "INDEX.json has no gateProven marker — main is not gate-proven; do not deserialize." }
 Write-Host "On main $(git -C $dist rev-parse --short HEAD) — record the commit SHA in CUSTOMISATIONS.md (reproducibility stamp)"
 $serializeRoot = "Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/SerializeRoot"
-# Stage BOTH layers' mode trees: base (framework-only, replace/ only) + surface-swift
-# (replace/ + merge/ — all content + UrlPath). The trees are disjoint, so they overlay cleanly.
 $layers = @('base','surface-swift')               # every layer the edition composes, in composition order
+# Trees 1 + 2: the mode YAML with ONE merged <mode>-manifest.json per mode, plus the union
+# predicate config. Never Copy-Item the mode trees layer by layer: every layer ships its own
+# replace-manifest.json / merge-manifest.json at the same path, so the last layer's manifest
+# wins and the run silently covers that layer only. Dry run first (no -Apply), read the
+# per-layer entry counts, then re-run with -Apply. Add -AreaId <local area id> when the content
+# lands in an area whose id differs from the shipped areaId.
+$skill = '<path to the installed dw-demo-swift skill>'
+pwsh -NoProfile -File "$skill/scripts/Merge-DwLayerManifests.ps1" -DistributionRoot $dist `
+  -Layer ($layers -join ',') -SerializeRoot $serializeRoot `
+  -SerializerConfigPath "Dynamicweb.Host.Suite/wwwroot/Files/System/Serializer/Serializer.config.json" -Apply
+if ($LASTEXITCODE -ne 0) { throw 'Layer staging failed its asserts; do not deserialize.' }
 foreach ($layer in $layers) {
-  foreach ($mode in 'replace','merge') {
-    if (Test-Path "$dist\layers\$layer\$mode") {
-      New-Item -ItemType Directory -Path "$serializeRoot/$mode" -Force | Out-Null
-      Copy-Item -Recurse "$dist\layers\$layer\$mode\*" "$serializeRoot/$mode/" -Force
-    }
-  }
-  # Tree 3 — item-type XMLs of EVERY composed layer, BEFORE deserializing.
+  # Tree 3 — item-type XMLs of EVERY composed layer, BEFORE deserializing. A running host
+  # does not pick them up: restart it before the first dry run (step 3 below).
   if (Test-Path "$dist\layers\$layer\itemtypes") {
     Copy-Item "$dist\layers\$layer\itemtypes\*.xml" `
       "Dynamicweb.Host.Suite/wwwroot/Files/System/Items/" -Force
@@ -182,13 +186,20 @@ error anywhere: the compose step reports `conflicts: []` and `silentNoOpLayers: 
 surfaces later as a deserialize failure or a blank storefront region. Run these four steps in order,
 for **every** layer the edition composes (feature layers included), before the first POST:
 
-1. **Mode YAML** — copy `<layer>/replace/` and `<layer>/merge/` into `SerializeRoot/<mode>/`
-   (the loop above). *Assert:* each staged `<mode>/<mode>-manifest.json` names only files that exist.
+1. **Mode YAML** — stage `<layer>/replace/` and `<layer>/merge/` into `SerializeRoot/<mode>/` with
+   the manifests **merged, never copied** ([`Merge-DwLayerManifests.ps1`](../scripts/Merge-DwLayerManifests.ps1),
+   a port of the Foundry edition composer's manifest merge). *Assert:* the staged manifest's entry
+   count per mode equals the sum of the composed layers' own manifest entries (minus replace
+   overrides the script names), each staged manifest names only files that exist, and the first
+   Replace dry run reports that same count. The failure this catches is silent: with a per-layer
+   copy loop, base + `surface-swift` staged one manifest of 2 entries against a config of 18
+   predicates, and the dry run answered 0 failed for the 2 it ran
+   [dw 10.28.11 · mcp 0.6.0].
 2. **`config/`** — stage the layer's predicate config to
    `Files/System/Serializer/Serializer.config.json`. When more than one composed layer ships a
    config, the staged file is the **union** of their `predicates` lists in composition order (a name
    collision across layers is an authoring bug, not something to resolve here), with both exclude
-   maps deep-unioned. *Assert:* `GET /Admin/Api/SerializerSettings` returns `needsSetup: false` and a
+   maps deep-unioned (the staging script's `-SerializerConfigPath` writes exactly this union). *Assert:* `GET /Admin/Api/SerializerSettings` returns `needsSetup: false` and a
    `predicatesSummary` whose replace + merge counts equal the union count — a composed edition that
    still reports `{"needsSetup":true,"configFilePath":""}` has staged no config at all.
 3. **`itemtypes/`** — copy every composed layer's `itemtypes/*.xml` into `Files/System/Items/`.
@@ -197,6 +208,15 @@ for **every** layer the edition composes (feature layers included), before the f
    `ERROR deserializing paragraph <guid> on page <n>: Unable to resolve the item type. The item cannot
    be saved.` — a feature layer's own item type is the usual culprit, because the paragraph that uses
    it travels in the *content* surface while the XML ships with the *feature* layer.
+   **Then restart the host before the first dry run.** DW creates the item-type backed columns and
+   `ItemType_*` tables at host startup from `Files/System/Items/*.xml`, so XMLs copied onto a
+   running host are not there yet. The failure shape is a strict-mode schema-drift list:
+   `Invalid column name '<field>'` for fields a staged XML added to an existing type, and
+   `Invalid object name 'ItemType_<name>'` for a type that is new to the host; one measured run
+   failed 7 entries this way and passed with 0 failed after a restart
+   [dw 10.28.11 · mcp 0.6.0]. Restart with the host-lifecycle script
+   ([`host-lifecycle.md`](../../dw-demo-base/references/host-lifecycle.md)), then *assert* the
+   `ItemType_*` table of every staged type exists before the first POST.
 4. **`templates/`** — copy every composed layer's `templates/**` into `Files/Templates/**`, preserving
    sub-paths. *Assert:* every path under each layer's `templates/` exists under `Files/Templates/`.
    Missing templates do **not** fail the deserialize; they surface afterwards as a blank or erroring
@@ -285,6 +305,45 @@ WHERE AreaId = <area>;  -- then restart the host (Area rows materialise at start
 
 **Local installs only**: on a hosted install, bind them with MCP `save_areas` and confirm each value echoes in `get_area_by_id`, or round-trip the full `GetAreaById` model through `AreaSave`, then restart through the CloudHosting `recycle.txt` control file.
 
+### The currency is not the only value the replace pass resets: rebind the locale too
+
+On a host whose framework rows were curated before the deserialize (another culture, another
+currency, a renamed shop), base + `surface-swift` Replace resets four more values, all silently,
+because `replace` is source-wins (§3) and the surface ships `AreaCulture: en-US` without listing it
+in its `excludeAreaColumns` [dw 10.28.11 · mcp 0.6.0]:
+
+| Value | What the replace pass leaves | Rebind with |
+|---|---|---|
+| `Area.AreaCulture` | the shipped `en-US` | MCP `save_areas` (culture), then read it back; never a partial `AreaSave` |
+| `EcomShops.ShopName` for the area's shop | the baseline's shop name | MCP `save_shops` (a true partial update: id + name) |
+| The default `EcomLanguages` row | the baseline's language set; the curated language id survives as a row but carries the baseline's culture and name, and another language is the default | MCP `save_languages` on the curated language id: culture, name, default flag |
+| `Area.AreaEcomCurrencyId` | the baseline's currency | the SQL above |
+
+Record the curated values **before** the deserialize, rebind all four in the same pass as the
+currency, restart once, and read them back in one query:
+
+```sql
+SELECT AreaID, AreaCulture, AreaEcomCurrencyId, AreaEcomLanguageId, AreaActive, AreaDomain FROM Area;
+SELECT ShopId, ShopName FROM EcomShops;
+SELECT LanguageId, LanguageCulture, LanguageName, LanguageIsDefault FROM EcomLanguages
+WHERE LanguageIsDefault = 1 OR LanguageId = '<curated language id>';
+```
+
+**Local installs only** for the query: on a hosted install read the same values with MCP
+`get_area_by_id`, `get_shops` and `get_languages`. Every value must equal its pre-deserialize value. The alternative, trimming the rows from the staged
+`replace/_sql/` before the run, is the §3 "Composition order" warning; either way decide before the POST.
+
+### A superseded area still wins: deactivate it before trusting `/` or any page id
+
+When the deserialize lands in a NEW area on a host that still carries an earlier storefront area,
+clearing the old area's domain is not enough. With both areas `AreaActive = 1`, the active area with
+no domain outranked the domain-bound new one: `/` **and** an explicit `Default.aspx?ID=<page of the
+new area>` both rendered the old area's header and content [dw 10.28.11 · mcp 0.6.0]. Set
+`AreaActive = 0` on every superseded area (MCP `save_areas`, or SQL on a local install), restart,
+then verify that `/` and one `Default.aspx?ID=<page of the new area>` render the new area: read the
+`data-swift-page-header` id and compare it with the new area's header page. Delete the old area only
+after the new one is complete; deactivation is the reversible step.
+
 **Bind these columns by SQL, not by `AreaSave`.** `AreaSave` treats the posted `Model` as authoritative
 and full-replace, so a **partial** model wipes what it omits. A save that omitted `websiteItem`
 returned HTTP 200 / `ok` and blanked
@@ -368,7 +427,7 @@ no benefit, and the working reference area carries an empty one.
 
 After this flow returns 2xx, **immediately run [`integrity-sweep.md`](integrity-sweep.md)**. The skill refuses to declare deserialize complete until the sweep passes.
 
-**Also bind the area's commerce columns** (§7 "Mandatory consumer obligation") — `AreaEcomCurrencyId` / `AreaEcomLanguageId` explicitly per area + host restart; on DW 10.28+ an unbound area derives its currency from the area culture (en-US → USD), not `CurrencyIsDefault`. `AreaEcomShopId` only after every browsable group is related to the shop (§7), or subgroup product pages render a `dw-error`.
+**Also bind the area's commerce columns** (§7 "Mandatory consumer obligation") — `AreaEcomCurrencyId` / `AreaEcomLanguageId` explicitly per area + host restart; on DW 10.28+ an unbound area derives its currency from the area culture (en-US → USD), not `CurrencyIsDefault`. `AreaEcomShopId` only after every browsable group is related to the shop (§7), or subgroup product pages render a `dw-error`. On a host with curated framework rows, rebind the culture, shop name and default language in the same pass (§7 "rebind the locale too"), and deactivate every superseded area before trusting `/` (§7 "A superseded area still wins").
 
 **Also bind the site root** (§7 "Site root `/` 404s after deserialize") as an explicit post-deserialize step: `AreaDomain` / `AreaFrontpage` are per-environment and excluded from serialization, so `/` 404s until you set them — `UPDATE Area SET AreaDomain = N'localhost', AreaFrontpage = <homePageId> WHERE AreaId = <area>` (SQL is the working path: `AreaSave` accepts `domain` / `hostNames` and no-ops on `AreaDomain`), **then restart the host** (Area rows materialise at startup). The integrity sweep's done-condition includes `/` returning 200.
 

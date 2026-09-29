@@ -51,7 +51,7 @@ PIM-only demos can skip this step entirely — see `dw-demo-pim` for the blank-D
 
 ## Always-on convenience: demo cheat-sheet page
 
-Every Swift demo gets a hidden-from-nav info page at `/<area-url>/demo` for the presenter's side screen: demo logins, key URLs, catalogue-at-a-glance counts. Keep it **customer-safe** (no pitch framing, no internal phase / decision / pitfall IDs) and out of navigation via high `sort`, not `hidden=true`. The canonical four-call MCP build recipe + the full safety rules live in [references/cheat-sheet.md](references/cheat-sheet.md); the `/dynamicweb-cheatsheet` command drives it end-to-end.
+Every Swift demo gets a hidden-from-nav info page at `/<area-url>/demo` for the presenter's side screen: demo logins, key URLs, catalogue-at-a-glance counts. Keep it **customer-safe** (no pitch framing, no internal phase / decision / pitfall IDs) and out of navigation with a verified show-in-menu write: a high `sort` does not hide it from a Swift 2 header, `hidden=true` breaks its URL, and `set_page_menu {showInMenu:false}` unpublishes it. The canonical four-call MCP build recipe + the full safety rules live in [references/cheat-sheet.md](references/cheat-sheet.md); the `/dynamicweb-cheatsheet` command drives it end-to-end.
 
 ## Always-on rule: stock CSR section
 
@@ -67,6 +67,27 @@ Inherited principle from [`../dw-demo-base/SKILL.md` "Demo philosophy"](../dw-de
 - **Product catalogue: deep AND wide — exception case.** Rich product data is welcome on the storefront. PIM owns the modelling depth; Swift just renders it. See `dw-demo-pim` for the modelling recipes.
 
 The demo cheat-sheet page is your reality-check: if its login table or "key URLs" list doesn't fit on one side-screen at presenter zoom, the demo has gone wide.
+
+## Symptom index: look here before debugging by trial
+
+Each row is a trap a build rediscovered by trial although the owning reference already carried it. Match what you observe, then read the owning section.
+
+| You observe | Cause, and where the fix lives |
+|---|---|
+| HTTP 200 with a `ConverterException` block where a new `Swift-v2_Text` should be | Shipped `ButtonData` defaults: blank `FirstButton`/`SecondButton` in the same write. [cheat-sheet.md](references/cheat-sheet.md) "Build recipe" |
+| Lorem or stock copy under a heading you never set | `Swift-v2_Text.Subtitle` ships a default. [paragraphs.md](references/paragraphs.md) "A field you never set" |
+| A new page renders an empty `<main>`, no error | Row saved in a container the layout never renders; Swift 2 uses `Grid`. [`dw-swift-page-blocks`](../dw-swift-page-blocks/SKILL.md) `save_grid_rows` |
+| Wrong mobile header at 390px in Playwright | The header is chosen by user agent: use a device descriptor, not a resize. [mobile-pass.md](references/mobile-pass.md) item 5 |
+| A CSS rule has no effect, no error | Nested `:has()` drops the whole rule. [re-skin.md](references/re-skin.md) "Conditional-collapse CSS" and "CSS that silently never reaches the browser" |
+| Hand-built PLP/PDP renders `RenderGrid` with page id 0, or nothing | Swift's catalog is a fixed page shell. [`dw-swift-migrate-content`](../dw-swift-migrate-content/SKILL.md) "The product catalog" |
+| Product cards link to `Default.aspx?ID=0` and land on the home page | No page carries the `Shop` navigation tag; tag the catalog page and read the tag back ([cheat-sheet.md](references/cheat-sheet.md) build step 1 on tag writes) |
+| PLP/PDP throws once per card on image-less or language-incomplete products | [templates.md](references/templates.md) "`product.AssetCategories` has no null guard"; [`shipped-template-defects.md`](../dw-swift-building/references/shipped-template-defects.md) |
+| A moved page answers 200 at its new URL but is missing from the menu | The nav tree cache ignores a re-parent: one restart. [`render-after-write.md`](../dw-content-modelling/references/render-after-write.md) |
+| The megamenu closes before the pointer reaches it | Hover gap on a `.position-static` item. [header-menu.md](references/header-menu.md) Platform truths 1 and 4 |
+| The `/demo` page shows in the header | A high `sort` hides nothing. [cheat-sheet.md](references/cheat-sheet.md) "Keeping the page out of navigation" |
+| The first Replace dry run counts fewer entries than the staged predicates | Manifests clobbered by a per-layer copy. [deserialize-flow.md](references/deserialize-flow.md) §3 |
+| Deserialize fails `Invalid column name` / `Invalid object name 'ItemType_*'` | Item-type XMLs staged onto a running host: restart. deserialize-flow.md §3 step 3 |
+| `/` or `Default.aspx?ID=<new page>` renders the old area; culture, shop name or default language reverted | deserialize-flow.md §7: deactivate the superseded area; rebind the locale |
 
 ## Where to find things
 
@@ -123,9 +144,11 @@ Every "fake pattern" in a Swift demo (raw SQL probes on `AccessUserGroupRelation
 
 ## Scripts (scripts/)
 
-The mechanical half of the mobile pass. The rules, the why and the Swift 2 trap
-catalogue stay in [references/mobile-pass.md](references/mobile-pass.md); these files are the
-how. They drive a real headless Chromium, so they need Node.js 20+ with `playwright`
+The first three files are the mechanical half of the mobile pass: the rules, the why and the Swift 2
+trap catalogue stay in [references/mobile-pass.md](references/mobile-pass.md), and these files are the
+how. `Merge-DwLayerManifests.ps1` is the staging half of the deserialize flow and needs only
+PowerShell 7 (run it; the rule stays in deserialize-flow.md §3). The three probes drive a real
+headless Chromium, so they need Node.js 20+ with `playwright`
 resolvable from the `scripts/` folder (`npm install playwright && npx playwright install
 chromium` there). A lookup that finds no runner makes the leg **UNRUNNABLE**, reported with
 the failed lookup named — never a silent pass.
@@ -135,10 +158,12 @@ the failed lookup named — never a silent pass.
 | [Test-DwViewportOverflow.ps1](scripts/Test-DwViewportOverflow.ps1) | Read-only (optionally writes a JSON result file) | Runs the probe below over a set of pages at a set of viewports and prints one merged JSON result. Every threshold is a parameter; the defaults are the Swift 2 values (992px desktop breakpoint, 4.5/3.0 contrast, 0.25 overlap, iPhone 12 at 390 + 430 + a 1440 desktop control). A sub-breakpoint viewport with no device descriptor is REFUSED, not measured |
 | [overflow-probe.js](scripts/overflow-probe.js) | Read-only | The generic canvas-fit / legibility / overlap core: `innerWidth === requested` **and** `body.scrollWidth === innerWidth`, the offender named by RIGHT EDGE with out-of-flow elements (a closed off-canvas drawer) reported as set aside, WCAG contrast per text leaf, and line-box text overlap |
 | [nav-affordance-probes.mjs](scripts/nav-affordance-probes.mjs) | Read-only (optionally writes a JSON result + a screenshot) | The four nav-affordance probes (caret DOM, vertical Popper-gap reach, open-state caret, horizontal reach). SKIPs with a reason on a flat nav rather than faking a PASS; dismisses the DW cookie modal first. One home per repo: the Foundry keeps its own harness copy for its edition gate |
+| [Merge-DwLayerManifests.ps1](scripts/Merge-DwLayerManifests.ps1) | Writes (dry run by default, `-Apply`): the `SerializeRoot` mode trees, one merged manifest per mode, optionally the union `Serializer.config.json` | Stages several Distribution layers without the manifest clobber of a per-layer copy, remaps `areaId` on request, and asserts entry counts and manifest-named files. Owning reference: [deserialize-flow.md](references/deserialize-flow.md) §3 |
 
 ```powershell
 pwsh -NoProfile -File scripts/Test-DwViewportOverflow.ps1 -BaseUrl $env:DW_BASE_URL -Path /,/products
 node scripts/nav-affordance-probes.mjs --url $env:DW_BASE_URL --path /swift-2/home --out nav.json
+pwsh -NoProfile -File scripts/Merge-DwLayerManifests.ps1 -DistributionRoot <demo-root>/distribution -Layer base,surface-swift -SerializeRoot <SerializeRoot>
 ```
 
 ## Inherited from dw-demo-base

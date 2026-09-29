@@ -9,6 +9,7 @@
 - [Subfolder conventions for demos](#subfolder-conventions-for-demos)
 - [Branding assets — a shared SVG is not safe to edit in place](#branding-assets--a-shared-svg-is-not-safe-to-edit-in-place)
 - [Generated product imagery — review against the hero, and record the prompt](#generated-product-imagery--review-against-the-hero-and-record-the-prompt)
+- [Product images onto a host: files on disk, never base64 through the context](#product-images-onto-a-host-files-on-disk-never-base64-through-the-context)
 - [`add_product_image` is an ADD, and it validates nothing](#add_product_image-is-an-add-and-it-validates-nothing)
 - [Catalogue imagery is its own brief](#catalogue-imagery-is-its-own-brief)
 - [Video in a PDP media gallery — stock Swift preloads it three times](#video-in-a-pdp-media-gallery--stock-swift-preloads-it-three-times)
@@ -105,6 +106,30 @@ wrong-product or wrong-colourway shot: reusing a different fragrance's can or a 
 passes a sheet review and ships a lie, and upscaling the single existing asset into a fake "second
 angle" invents detail that is not in the photograph. Measure the extraction well before declaring it
 dry (files on disk, assets per master, files attached to no master) rather than assuming it.
+
+## Product images onto a host: files on disk, never base64 through the context
+
+**Never move image bytes through the model context.** `upload_product_images` takes the file as a
+base64 payload, so every image is a tool argument the agent has to emit token by token: one measured
+attempt burned about 70K tokens on a single JPG and still delivered a truncated, unusable file
+[dw 10.28.11 · mcp 0.6.0]. The same rule for page media is in
+[`dw-swift-page-blocks`](../../dw-swift-page-blocks/SKILL.md) (bulk media gotcha).
+
+- **Local host:** download or copy the files straight into
+  `Dynamicweb.Host.Suite/wwwroot/Files/Images/<folder>/` with a shell command, then register each with
+  MCP `add_product_image` (`setAsPrimary: true` on the product's first image), check each path with
+  `list_files` first (the verb accepts a path that does not exist, next section), and rebuild the
+  product index. The same build then loaded 74 images this way with no payload in the context.
+- **Hosted install:** there is no filesystem; upload the folder with the `dw` CLI
+  ([`dw-setup-cli`](../../dw-setup-cli/SKILL.md) "Steps 1 and 2"), then register with
+  `add_product_image` as above.
+- **Images the source already publishes at a URL:** `import_product_images_from_urls` fetches them
+  server-side, also without a payload in the context. It sets no default image, and a product with
+  images but no default takes down the whole PLP, so set one per product
+  ([`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.10).
+
+Verify on the storefront, not on the response: the product read shows the image, and after the index
+rebuild the PLP card renders an `img` for it.
 
 ## `add_product_image` is an ADD, and it validates nothing
 
