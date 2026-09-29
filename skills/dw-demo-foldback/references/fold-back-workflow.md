@@ -156,6 +156,17 @@ lesson's key tokens. If a version of the lesson already exists:
 
 One lesson, one home. Restatements drift independently and become contradictions later.
 
+**The build missed a rule that was already there: record "read X, did not reach Y".** When the
+dedup check finds the lesson already recorded, the miss is a **routing** defect, not a content one,
+and the fold is different. Record which file (and section) the agent read at the failing step and
+where the rule actually lives: *read `scaffold.md` §3, did not reach `setup-checks.md` §1*. The fix
+then goes where the agent was: a symptom-index row, a one-line pointer in the file it did read, or
+a sharper routing sentence in the `SKILL.md`, never a second copy of the rule. A learning with no
+record of the files read at the step cannot tell "rule missing" from "rule not reached": say so in
+the PR and treat it as unclassified instead of adding content by default. The run's per-step
+"Instructions used" record ([`dw-demo-base` `orchestrator.md`](../../dw-demo-base/references/orchestrator.md)
+"Persist progress") is where that evidence comes from.
+
 ### 3. Integrate, don't append
 
 The default move for a fold-back is to **rewrite the existing sentence or section**, not to
