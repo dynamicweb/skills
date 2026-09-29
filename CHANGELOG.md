@@ -3,6 +3,13 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.4]
+
+- **`dw-demo-pim` `canonical-setup-order.md` step 8:** the catalog-rebuild traps (relations that
+  re-attach to a group recreated with an earlier id, `delete_groups` deleting the group's products)
+  now link to `dw-pim-modelling` `structural-model.md` §2.2, where the group types and their
+  relation tables are described.
+
 ## [5.8.3]
 
 Fold of the presales build-journal learnings (DW 10.28.11, Swift 2.4.0, MCP add-in 0.6.0-beta):
