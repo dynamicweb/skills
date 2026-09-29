@@ -322,6 +322,11 @@ GET /dwapi/ecommerce/orders/search?fromDate=2024-01-01&toDate=2024-12-31
 Authorization: Bearer <token>
 ```
 
+Search is scoped to the token's own user unless `RetrieveMode` says otherwise: `useUserId` (the
+default), `useCustomerNumber` (every user on the customer number, the account view), `useImpersonationIds`
+and `useUserAndSecondaryUserIds`. It takes precedence over `ByCustomerNumber`. An account-level
+dashboard that omits it shows one user's orders [dw 10.28.11].
+
 Reorder (adds previous order lines to active cart):
 
 ```http

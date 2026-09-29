@@ -20,7 +20,7 @@ Several stock features answer "is this the same customer?" with an **exact strin
 
 | Feature | Surface | Effect |
 |---|---|---|
-| Account-wide order visibility | Customer Experience Center, `RetrieveListBasedOn = UseCustomerNumber` | Every contact on the account sees the account's orders |
+| Account-wide order visibility | Customer Experience Center, `RetrieveListBasedOn = UseCustomerNumber` | Every contact on the account sees the account's orders (the Swift Overview widgets excepted: they stay self-scoped, see dw-commerce-orders `customer-center-surfaces.md`) |
 | Account-wide delivery addresses | Checkout app setting `IncludeDeliveryAddressesFromUsersWithSameCustomerNumber` | A buyer with no addresses of their own is offered the account's ship-tos |
 | The address book | `UserAddresses` app source `OwnAddressesAndAddressesOfUsersWithSameCustomerNumber` | Same rule, on the address-book page |
 | Account directory scoping | `UserGroups` app `AccountListScope` | Builds a customer-number set from the acting user's profiles and keeps the groups reachable through `GetGroupsByCustomerNumber` |

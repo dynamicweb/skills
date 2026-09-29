@@ -3,6 +3,33 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.2]
+
+Fold of the build-journal content learnings (DW 10.28.11, Swift 2.4.0, MCP add-in 0.6.0-beta): the
+registered-tools create order, catalog wiring, copied-area gates and self-scoped dashboard widgets.
+
+- **`dw-swift-migrate-content` registered-tools fallback follows the page-design create order for
+  every page.** `itemType` goes on the `save_pages` create call, every row (header and footer pages
+  included) carries the layout's content container verbatim, one paragraph per column, and
+  `urlIgnoreForChildren` is set deliberately on the new area. A source page that reads as
+  login-gated or empty through a reader that runs no JavaScript is unconfirmed until rendered.
+- **`dw-content-modelling` `save_pages` update with `itemType` mints no item.** `itemId` stays empty
+  and every `set_page_item_fields` call fails with *has no item type attached*; only a create
+  carrying `itemType` provisions the item. `dw-swift-page-design`: a wrong container name fails like
+  an empty one, and header and footer pages need their own row.
+- **`dw-commerce-catalog` catalog wiring.** `IndexQueryConditions` is not a setting of the catalog
+  paragraph and filters nothing (`QueryConditions` is the lever), and with no page tagged `Shop`
+  every product card links to `Default.aspx?ID=0`, which serves the homepage. Cross-referenced from
+  `dw-search-indexing` and `dw-swift-building`.
+- **A `copy_area` second storefront carries no page permissions.** Its customer centre is public
+  until re-gated; `dw-content-modelling` `language-layers.md` has the re-gate steps and
+  `dw-users-permissions` `page-gating.md` names `get_page_permissions` / `set_page_permissions` as
+  the page surface.
+- **Swift dashboard widgets are self-scoped.** The Overview widgets query
+  `/dwapi/ecommerce/orders/search` without `RetrieveMode`, so an account admin sees only their own
+  orders; `RetrieveMode=useCustomerNumber` for the admin role gives the account view. Recorded in
+  `dw-commerce-orders`, `dw-commerce-b2b` and the `dw-headless-delivery` endpoint reference.
+
 ## [5.8.1]
 
 Fold of the Dynamics 365 Finance & Operations integration build-log learnings (DW 10.28.11, F&O

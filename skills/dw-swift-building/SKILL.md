@@ -83,7 +83,9 @@ Also capture URL portability context:
 ### 2. Fix Navigation Tags
 Ensure the core pages keep the expected tags:
 - `homepage`
-- `shop`
+- `shop` (load-bearing: every Swift product and group link resolves through it, and with no page
+  tagged the cards link to `Default.aspx?ID=0`, which serves the homepage; see
+  dw-commerce-catalog `references/listing-and-stock.md`)
 - `cart`
 - `checkout`
 - `orderconfirmation`
@@ -101,6 +103,9 @@ Patch the existing area with:
 - language
 - currency
 - country
+- URL shape: `urlIgnoreForChildren` (`save_areas`). A new area defaults to `false`, which puts every
+  page at `/<areaUrlName>/<page>`; `true` puts child pages at `/<page>`. Set it deliberately, fetch
+  one child page at the chosen shape, and build every custom link from that shape
 
 **Bind only what `save_areas` exposes.** The tool has no frontpage member of any name, so an instruction
 to bind the site-root page id cannot be followed from this surface and does not need to be: the frontpage

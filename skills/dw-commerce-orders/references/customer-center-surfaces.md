@@ -148,6 +148,7 @@ number, both retrieval modes:
 | Saved carts | Yes |
 | Favourites | Yes |
 | **RMA / returns** | **No** — the app declares no retrieval mode and the list query keys on `EcomOrders.OrderCustomerAccessUserID` |
+| **Swift dashboard widgets** (the Overview page) | **No**: they are not apps; they query the delivery API themselves, see below |
 
 So on a B2B portal every account surface is shared across the customer number **except** returns,
 where a buyer sees only the claims they personally raised. `RetrieveListBasedOn` is accepted into
@@ -155,6 +156,21 @@ the RMA paragraph's settings XML and read by nobody, so setting it produces byte
 responses and reads as a misconfiguration. If shared-account returns are a requirement, that is a
 change order and it belongs in scope, not in the build. Impersonation is still honoured, so a CSR
 impersonating the raiser does see them.
+
+**The Swift dashboard widgets are self-scoped whatever the account setting says.** The order
+widgets on the customer-centre Overview (`Swift-v2_Dashboard_Number` Orders, MonthlySpent, Quotes
+and Carts, `Swift-v2_Dashboard_Chart` MonthlySpending, `Swift-v2_Dashboard_List` Orders and Quotes)
+load their data client-side from `/dwapi/ecommerce/orders/search` with the user's token and no
+`RetrieveMode`, and the endpoint's default is `useUserId` [dw 10.28.11 · swift 2.4.0]. So an account
+admin sees one order and one month of spend, their own, while the Orders app one click away lists the
+whole account. The endpoint already takes `RetrieveMode` (`useUserId`, `useCustomerNumber`,
+`useImpersonationIds`, `useUserAndSecondaryUserIds`; it takes precedence over `ByCustomerNumber`).
+Measured fix: add `RetrieveMode=useCustomerNumber` to the widget request for the account-admin role
+only; the admin's widgets then count every order on the customer number and the buyer's stay
+personal. Carry the change in a template variant or a role branch in a copied template under
+`Files/`, never as an edit of the stock widget file in place, which a Swift upgrade overwrites.
+Assert on the rendered widget fragment for both personas, not
+on the card title.
 
 ## The order list and detail never render the payment method
 

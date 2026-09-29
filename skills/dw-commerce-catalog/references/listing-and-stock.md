@@ -11,6 +11,7 @@ Swift 2.
 - [`AssetCategories` lists every asset twice](#assetcategories-lists-every-asset-twice)
 - [Order completion and the two stock tables](#order-completion-and-the-two-stock-tables)
 - [An unscoped price row carries stock location `0`, not `NULL`](#an-unscoped-price-row-carries-stock-location-0-not-null)
+- [Scoping a listing to one group, and the `Shop` tag every product link needs](#scoping-a-listing-to-one-group-and-the-shop-tag-every-product-link-needs)
 
 ## Any default sort replaces search relevance
 
@@ -113,3 +114,35 @@ MCP price writes put **`0`** into `EcomPrices.PriceStockLocationID` when no stoc
 supplied — not a SQL `NULL`. Any other pipeline writing the same column must match that convention:
 an integration job emitting `NULL` for its unscoped rows produces rows that do not behave like the
 unscoped rows already on the table. Emit `0`.
+
+## Scoping a listing to one group, and the `Shop` tag every product link needs
+
+Two Swift catalog wiring faults render a page that looks right and is wrong, with no error.
+
+**`IndexQueryConditions` is not a setting of the catalog paragraph.** Written as
+`IndexQueryConditions = GroupID=<groupId>`, it was accepted without error and the listing still
+rendered every product the query returned, while the same `?GroupID=<groupId>` on the URL filtered
+correctly [dw 10.28.11 · mcp 0.6.0-beta]. The stored settings of an `eCom_ProductCatalog` paragraph
+carry `IndexQuery` (the `.query` path) and `QueryConditions`, a JSON array of
+`{Name, TypeName, DefaultValue}` parameter defaults; `QueryConditions` is the per-paragraph lever
+(dw-content-modelling `references/render-after-write.md`). Read the
+paragraph with `get_module_settings` first and write only a key it returns. To scope a page to one
+group, use one of:
+
+| Want | Do |
+|---|---|
+| A group listing reached from navigation | link to the `Shop` page with `GroupID=<groupId>`, the shape Swift's own group navigation emits |
+| A fixed page that always shows one group | a `QueryConditions` default for the query's group parameter, or a per-page `.query` whose group arm is a constant, named in that page's `IndexQuery` |
+
+Assert the scope with a count on the rendered page, never with the setting's read-back.
+
+**Every Swift product link resolves through the page tagged `Shop`.** The stock templates build
+product and group URLs with `GetPageIdByNavigationTag("Shop")`: the product card, sliders, search
+dropdown, cart lines, order details and favourites among them. With no page carrying the tag the
+helper returns `0`, every card links to `Default.aspx?ID=0&ProductID=<id>`, and page `0` answers
+**200 with the homepage**, not a 404, so the listing looks finished and every click lands on home
+[dw 10.28.11 · swift 2.4.0]. Treat "a page tagged `Shop` hosts a live catalog paragraph" as a
+precondition of every product link; one such page serves detail mode for products of every group.
+Detect it from the frontend: grep the rendered listing's card links for `ID=0`. `save_pages` may not
+persist `navigationTag`, so assert the rendered link after tagging
+(dw-content-modelling `references/page-paragraph-writes.md`).
