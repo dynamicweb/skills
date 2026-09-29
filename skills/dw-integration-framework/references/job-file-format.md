@@ -6,6 +6,7 @@
 - [Where an activity lives, and what names it](#where-an-activity-lives-and-what-names-it)
 - [Editing a job file: copy, decode, splice, round-trip](#editing-a-job-file-copy-decode-splice-round-trip)
 - [The `<Schema>` block is a snapshot, not a live read](#the-schema-block-is-a-snapshot-not-a-live-read)
+- [An OData activity before its endpoint authenticates](#an-odata-activity-before-its-endpoint-authenticates)
 - [Column elements: which shape belongs to which provider](#column-elements-which-shape-belongs-to-which-provider)
 - [SqlProvider connection nodes](#sqlprovider-connection-nodes)
 - [File destinations: folder, file name, and what neither of them does](#file-destinations-folder-file-name-and-what-neither-of-them-does)
@@ -23,8 +24,8 @@ Reach for the surfaces in this order.
 
 | Surface | Use it for |
 |---|---|
-| MCP `create_integration_activity`, `save_integration_activity_mapping`, `get_integration_provider_schema` | Creating an activity and its mappings. The tools read the **live** provider schema at save time, which is the whole reason to prefer them. |
-| **The job file on disk** (`Files/Files/Integration/jobs/`) | Moving an activity between installs, scripting a family of near-identical activities, and any edit the tools above refuse — chiefly patching a stale `<Schema>` snapshot. It is the only authoring surface on a build where a restart is not available. |
+| MCP `create_integration_activity`, `save_integration_activity_mapping`, `get_integration_provider_schema` | Creating an activity and its mappings. The create call reads the **live** provider schema, which is the whole reason to prefer it, and also why it needs a reachable, authenticated source: an OData activity cannot be created before its endpoint authenticates. A mapping save on an existing activity does not always re-read the source ([below](#the-schema-block-is-a-snapshot-not-a-live-read)). |
+| **The job file on disk** (`Files/Files/Integration/jobs/`) | Moving an activity between installs, scripting a family of near-identical activities, building an OData activity before its credential exists, and any edit the tools above refuse, chiefly patching a stale `<Schema>` snapshot. It is the only authoring surface on a build where a restart is not available. |
 | `SQL` | Nothing. There is no activity table to write; a `sys.tables` sweep for `%Integration%` / `%Job%` returns only `ScheduledTask`, `ScheduledTaskExecution` and `ScheduledTaskFolder`. |
 
 Those two are the whole surface. When neither the tools nor the file reaches the operation, name the
@@ -79,6 +80,11 @@ The recipe that holds:
    one mapping uid is a collision waiting to happen.
 6. A naive `grep` over a job file is a **false clean** — decode first, or the UTF-16 bytes hide
    whatever you were searching for.
+7. **Never write an empty `<conditionals />` element.** The loader drops the whole table mapping
+   it belongs to, with no error and no log line: the activity lists, opens, and has no mappings
+   [dw 10.28.11]. A generator writes the element only when the mapping has at least one
+   conditional. Read every written job back with MCP `get_integration_activity_mappings` and
+   compare the column count per table with what the file carries.
 
 ## The `<Schema>` block is a snapshot, not a live read
 
@@ -98,8 +104,15 @@ usually does exist on the table.
 
 Repair options, best first:
 
-- Re-save the activity through MCP `save_integration_activity_mapping`, which reads the live
-  schema at save time.
+- Re-save the activity through MCP `save_integration_activity_mapping`. This does not refresh
+  every snapshot: on an **existing** activity with a SQL view as source, a column added to the
+  view after the activity was created is refused by the save as unknown (*has no column named*),
+  because the save validates against the stored snapshot [dw 10.28.11]. When the save refuses a
+  column that the source really has, go to the next option.
+- Delete and recreate the activity (MCP `delete_integration_activity`, then
+  `create_integration_activity` and its mappings): the new activity captures the current source,
+  and the same mapping then saves. Design the source views before creating their activities, and
+  recreate after every view change that adds a mapped column.
 - Re-author the job with `CreateMappingAtRuntime` enabled so it re-reads the live table.
 - Patch the `<Schema>` block by hand, adding the `<column>` element in the shape the file already
   uses (below). Assert the column name is present in the schema string before writing the file, so
@@ -113,6 +126,29 @@ the tables in play) keeps the file in the tens of KB, makes the activity's blast
 its own definition, and is regenerable after any DDL change. The exception is an EcomProvider
 **destination** schema: that is the platform's own table catalogue and does not drift, so leave it
 to DW.
+
+## An OData activity before its endpoint authenticates
+
+MCP `create_integration_activity` with the OData provider as source fetches the source schema from
+the endpoint while it creates. With no authentication on the endpoint it answers *Credentials not
+set for endpoint*; with a wrong or placeholder secret, *Unauthorized*. No job file is written in
+either case, so nothing OData-backed can be created over MCP until `test_integration_endpoint`
+returns rows [dw 10.28.11].
+
+When the integration has to be built before the credential arrives, write the job files instead:
+
+- Everything else can exist first: the endpoint collection and its endpoints (URL and query
+  options, no authentication), and the destination side.
+- Generate the file (UTF-16LE with a BOM, one file per activity, under the group folder) with a
+  `<Schema>` scoped to the mapped tables and columns only, the OData side taken from the service's
+  own metadata document (no MCP tool reads a remote service's metadata, so the user supplies that
+  file under `Files/`). The rules above hold: no empty `<conditionals />`, a fresh mapping uid per
+  file.
+- MCP `get_integration_activities` lists a written file immediately. Read each back with
+  `get_integration_activity_mappings` before relying on it.
+- Once the endpoint authenticates, prove it with `test_integration_endpoint`, then run one activity
+  and read its log. A generated snapshot that disagrees with the live service is repaired the way
+  any stale snapshot is ([above](#the-schema-block-is-a-snapshot-not-a-live-read)).
 
 ## Column elements: which shape belongs to which provider
 
@@ -229,6 +265,15 @@ occurrences of `Password=` under the decoded job folder.
 
 - MCP `run_integration_activity` **queues** a run. Poll `get_integration_activity_status`, then read
   `get_integration_activity_logs`; the log is the evidence, never the queued result.
+- **An OData source never fails fast on a bad credential.** Every run starts with a readiness probe
+  (`<entity>?$top=1`) and on failure retries with growing delays (5, 15, 30, 45, 60, 180, 300,
+  600 s) until the activity's request timeout elapses, then fails with *Request has timed out after
+  <n> milliseconds*. With a 20-minute timeout the run occupied the queue for 20 minutes and nothing
+  queued behind it started [dw 10.28.11]. `test_integration_endpoint` green, with rows, comes before
+  the first run, and a chain of activities is never scheduled on an endpoint that has not passed it.
+  Its failure answer is only `Unauthorized`: the identity provider's error code (which says bad
+  secret, wrong tenant or missing consent) is not surfaced by any MCP tool, so ask the user for a
+  direct token request outside the product when the cause is not obvious.
 - A scheduled task binds to one activity through
   `Dynamicweb.DataIntegration.Integration.JobScheduledTaskAddIn`, whose only parameter is
   `Activity`, taking the activity name (the file name).

@@ -15,6 +15,7 @@ description: 'Configure DW10 ERP connectors and data ownership. Triggers: ERP in
 |---|---|
 | The field-level ERP↔PIM ownership split, customer-specific contract prices, what NOT to sync back to the ERP, sync direction as an ERP-side mapping choice, and the missing-mapping "connected but empty" stuck state | [`references/ownership-split.md`](references/ownership-split.md) |
 | Keying a feed so it updates the existing catalogue in place: which column the ERP's natural key maps to, when to decide on source-derived ids, group names as identity strings, the primary-group flag a run clears, and the casing fixes the shipped order-export template needs on 10.28.x | [`references/feed-keying.md`](references/feed-keying.md) |
+| Dynamics 365 Finance & Operations: proving the S2S credential outside the platform, prefix filters (`eq` with `*`, never `startswith()`), sales order lines without a unit, posting journals OData cannot post through the environment's ERP MCP server and the dialog lock, seeding a legal entity from a template company over a data management package, and the connector package's service naming defect | [`references/dynamics-fo.md`](references/dynamics-fo.md) |
 
 ## Integration Approaches
 
@@ -120,6 +121,10 @@ Configure:
 - **Filter** — OData `$filter` expression to scope the data
 
 Then map source fields to DW destination fields in the activity's mapping tab.
+
+For Dynamics 365 Finance & Operations, prove the credential outside the platform before the first
+run, and check which `$filter` functions the ERP's OData accepts: F&O rejects `startswith()`
+([`references/dynamics-fo.md`](references/dynamics-fo.md)).
 
 ## Order Export Pattern
 
