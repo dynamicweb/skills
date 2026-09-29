@@ -97,9 +97,20 @@ rules plus one artifact:
      "slug": "<prospect-slug>",
      "flow": "dw-demo-base",
      "steps": { "setup-checks": "pass", "scaffold": "pass", "mcp-setup": "pending" },
-     "gates_passed": ["setup-checks", "scaffold"]
+     "gates_passed": ["setup-checks", "scaffold"],
+     "instructions_used": {
+       "setup-checks": ["dw-demo-base/references/setup-checks.md §1"],
+       "scaffold": ["dw-demo-base/references/scaffold.md §3"]
+     }
    }
    ```
+
+   **The instructions-used map is the step's "Instructions used:" line.** Record, per step, the skill
+   files and sections actually read before acting (not the ones that exist). A human-readable run
+   journal carries the same thing as an `Instructions used: <file> <section>` line on every step.
+   It is what lets a later fold-back tell a rule that is missing from one that was documented and
+   not reached ([`dw-demo-foldback` `fold-back-workflow.md`](../../dw-demo-foldback/references/fold-back-workflow.md)
+   Step 1b "Dedup check").
 
 This is the **same** `.demo/<slug>/` state the native command set uses — the native `state.json`
 is a superset that adds `phase` and `impact_signed_off`. Running by hand and later adopting the

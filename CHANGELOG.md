@@ -3,6 +3,16 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.5]
+
+- **`dw-demo-foldback` "read X, did not reach Y".** When the dedup check finds the missed lesson
+  already recorded, the fold records which file the agent read at the step and where the rule lives,
+  classifies the miss as routing, and fixes the route (symptom-index row, pointer, `SKILL.md` routing)
+  instead of adding a second copy. A miss with no record of the files read is reported as unclassified.
+- **`dw-demo-base` `orchestrator.md` "Instructions used".** The progress artifact example gains a
+  per-step `instructions_used` map (the files and sections read before acting), the same record a
+  run journal keeps as an `Instructions used:` line on every step.
+
 ## [5.8.4]
 
 - **`dw-demo-pim` `canonical-setup-order.md` step 8:** the catalog-rebuild traps (relations that
