@@ -27,6 +27,8 @@ Fold of the Dynamics 365 Finance & Operations integration build-log learnings (D
   MCP server and the dialog lock, seeding a legal entity from a template company over a data
   management package (`AutoGenerateMapping`, shared entities over OData, company codes the import
   does not remap), and the connector package's service naming defect.
+- **`dw-demo-fo` `demo-company.md`:** seeding on-hand no longer ends with a UI post step; the counting
+  journal is posted over the ERP MCP server and the line points to `dynamics-fo.md`.
 
 ## [5.8.0]
 

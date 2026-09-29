@@ -331,7 +331,9 @@ Write-side traps measured on the same build: `ProductGroups` refuses POST (use a
 no price: PATCH `ReleasedProductsV2.SalesPrice` and `ProductDefaultOrderSettings` (sales site and warehouse)
 afterwards; `SalesPriceAgreements` POST writes a price-group or account agreement directly (no journal to post);
 inventory journals (`InventoryCountingJournalHeaders` + `Lines`) can be created but have **no posting action**, so
-seeding on-hand ends with one UI step (*Inventory management > Journal entries > Item counting > Counting > Post*).
+the journal is posted over the environment's ERP MCP server form tools with the same S2S app identity
+([`dynamics-fo.md` "Posting what OData cannot post"](../../dw-integration-erp/references/dynamics-fo.md#posting-what-odata-cannot-post-the-environments-erp-mcp-server)),
+all in one MCP session: an abandoned post dialog locks the journal.
 
 ## 4. Seed the demo data
 
