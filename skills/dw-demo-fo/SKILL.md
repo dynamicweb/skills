@@ -65,7 +65,7 @@ These are decided; follow them unless the environment owner rules otherwise.
 | 1 | **Profile** | What does this customer's company look like, and what of that is even per-company? | [references/company-profile.md](references/company-profile.md) |
 | 2 | **Company** | Create the legal entity and seed it from the golden company | [references/demo-company.md](references/demo-company.md) §1-2 |
 | 3 | **Shape** | Apply the profile: numbering, dimensions, sites, groups, catalog, spine identifier | [references/demo-company.md](references/demo-company.md) §3 |
-| 4 | **Wiring** | Pin every DW Integration Framework job to this company and nothing else | [references/dw-wiring.md](references/dw-wiring.md) |
+| 4 | **Wiring** | Pin every DW Integration Framework job to this company and nothing else; build the jobs with `dw-integration-fo` | [references/dw-wiring.md](references/dw-wiring.md) |
 | 5 | **Verify / retire** | Round-trip check; a re-runnable seed; dormant, not deleted, at the end | [references/demo-company.md](references/demo-company.md) §5-6 |
 | - | **Sandbox discipline** | Sharing one tenant across demos without breaking anyone else's | [references/shared-sandbox.md](references/shared-sandbox.md) |
 
@@ -78,6 +78,8 @@ These are decided; follow them unless the environment owner rules otherwise.
 | [New-DemoCompany.ps1](scripts/New-DemoCompany.ps1) | Writes one row | Idempotent: GET then POST `LegalEntities`; names the UI fallback when the tenant refuses the create |
 | [Watch-CopyProgress.ps1](scripts/Watch-CopyProgress.ps1) | Read-only | Polls a copy or package execution per entity; on completion prints the row-level errors grouped by message |
 | [Repair-CopyGaps.ps1](scripts/Repair-CopyGaps.ps1) | Writes (dry run unless `-Apply`) | Copies the bank groups, bank accounts, transaction types, company-scoped dimension values and payment methods a copy leaves out, from donor to target, GET before every POST |
+| [Export-GoldenPackage.ps1](scripts/Export-GoldenPackage.ps1) | Writes one export project; reads the golden company | Builds the export project over OData from an entity-list JSON (company-scoped entities only), runs `ExportToPackage`, downloads the zip outside the environment with a `.sha256` |
+| [Import-GoldenPackage.ps1](scripts/Import-GoldenPackage.ps1) | Writes into the target company only (dry run with `-WhatIf`) | Verifies the `.sha256`, builds the import project, re-points golden-company values inside the package to the target, uploads, runs `ImportFromPackage`, follows it and groups the row errors; refuses any target outside `-AllowedTarget` |
 | [Test-DemoCompany.ps1](scripts/Test-DemoCompany.ps1) | Read-only | Company exists; released products, customers, orders, bank accounts, payment methods and number sequences counted **in that company** |
 
 Run them (identity from the `FO_*` environment variables, see the module header):
@@ -86,6 +88,8 @@ Run them (identity from the `FO_*` environment variables, see the module header)
 pwsh -NoProfile -File scripts/Connect-FoDeviceCode.ps1 -TenantId <tenant-id> -ClientId <client-id> -EnvironmentUrl https://<env>.operations.dynamics.com -CachePath <file outside any repo>
 pwsh -NoProfile -File scripts/New-DemoCompany.ps1 -Code ABC -Name '<Legal name>' -CountryRegionId USA -LanguageId en-us -WhatIf
 pwsh -NoProfile -File scripts/Watch-CopyProgress.ps1 -JobId '<execution JobId>'
+pwsh -NoProfile -File scripts/Export-GoldenPackage.ps1 -Golden GOLD -DefinitionGroup ABC-GOLDEN-EXP -EntityList <entity list json> -OutDir <folder outside the environment>
+pwsh -NoProfile -File scripts/Import-GoldenPackage.ps1 -Package <zip> -Target ABC -AllowedTarget ABC -Golden GOLD -DefinitionGroup ABC-GOLDEN-IMP -EntityList <entity list json> -WhatIf
 pwsh -NoProfile -File scripts/Repair-CopyGaps.ps1 -Target ABC -Donor USMF -BankIdPrefix 'USMF '
 pwsh -NoProfile -File scripts/Test-DemoCompany.ps1 -Code ABC
 ```
@@ -101,7 +105,7 @@ Secrets come from the environment (`$env:FO_CLIENT_SECRET`) or a vault, never fr
 | Create the legal entity, build the golden company, seed from its package, repair the measured copy gaps, verify, retire | references/demo-company.md |
 | Point DW jobs at exactly one `dataAreaId`; connect a hosted DW install to F&O | references/dw-wiring.md |
 | Share one sandbox across several customer demos without collisions | references/shared-sandbox.md |
-| Build the jobs themselves (OData provider, endpoints, activities) | [`dw-integration-framework`](../dw-integration-framework/SKILL.md), ownership split in [`dw-integration-erp`](../dw-integration-erp/SKILL.md) |
+| Build the jobs themselves: endpoints with S2S auth, the entity map, staging and stage-2 views, the order export, status and invoices back, the verification ladder | [`dw-integration-fo`](../dw-integration-fo/SKILL.md) (after [`dw-integration-fo-discovery`](../dw-integration-fo-discovery/SKILL.md)); provider mechanics in [`dw-integration-framework`](../dw-integration-framework/SKILL.md), ownership split in [`dw-integration-erp`](../dw-integration-erp/SKILL.md) |
 
 ## Always-on rules
 
@@ -128,6 +132,8 @@ Secrets come from the environment (`$env:FO_CLIENT_SECRET`) or a vault, never fr
 - **`dw-demo-erp`**: the DB-staged mock. Use INSTEAD of this skill when no live ERP tenant is in scope, and
   read its ERP-to-PIM data-shape reference either way.
 - **`dw-demo-hosted`**: the hosted (online-mode) install this skill's wiring phase may target.
+- **`dw-integration-fo`**: the foundational F&O integration build (endpoints, staging, order export,
+  verification) this skill's wiring phase uses; its runner refuses an order export into any company but the demo's.
 - **`dw-integration-bc`**: Business Central, a structurally different mechanism. Do not reuse these recipes.
 - **`dw-demo-pim`** / **`dw-demo-swift`**: the DW side the ERP data lands in.
 
@@ -142,5 +148,8 @@ Secrets come from the environment (`$env:FO_CLIENT_SECRET`) or a vault, never fr
   workflows. It moves configuration, never business data; seed transactions separately.
 - **Products, product attributes, category hierarchies, tracking dimension groups, the chart of accounts and
   fiscal calendars are tenant-wide.** Two demos in one sandbox share them; prefix what the demo creates.
+- **The ledger and the number sequences live in shared tables.** A package that carries them exports every
+  company's rows and its import writes into other companies; write them for the new company over OData first
+  ([references/demo-company.md](references/demo-company.md) §2a), then import the package.
 - **A sandbox refresh, an environment reset or a database copy from production wipes every demo company.**
   Keep the golden package outside the environment and the seed re-runnable.
