@@ -187,17 +187,30 @@ function Invoke-FoApi {
 }
 
 function Get-FoErrorText {
-    <# .SYNOPSIS READ-ONLY. The innermost F&O error message of a caught request error. #>
+    <#
+    .SYNOPSIS
+        READ-ONLY. The innermost F&O error message of a caught request error. Safe under strict mode for every
+        error shape: no response body (a 404 without ErrorDetails), a body that is not JSON, a JSON array or
+        scalar, and an error object without the expected members. Falls back to the body text, then to the
+        exception message.
+    #>
     param([Parameter(Mandatory)]$ErrorRecord)
-    $text = $ErrorRecord.ErrorDetails.Message
-    if (-not $text) { return $ErrorRecord.Exception.Message }
-    $parsed = $text | ConvertFrom-Json -ErrorAction SilentlyContinue
-    if ($parsed -and $parsed.PSObject.Properties['error']) {
-        $e = $parsed.error
-        if ($e.PSObject.Properties['innererror'] -and $e.innererror.PSObject.Properties['message']) { return $e.innererror.message }
-        if ($e.PSObject.Properties['message']) { return $e.message }
+    if ($ErrorRecord -isnot [System.Management.Automation.ErrorRecord]) { return "$ErrorRecord" }
+    $fallback = if ($ErrorRecord.Exception) { $ErrorRecord.Exception.Message } else { "$ErrorRecord" }
+    $text = if ($ErrorRecord.ErrorDetails) { $ErrorRecord.ErrorDetails.Message } else { $null }
+    if (-not $text) { return $fallback }
+    try { $parsed = $text | ConvertFrom-Json -ErrorAction Stop } catch { return $text }
+    if ($parsed -isnot [System.Management.Automation.PSCustomObject]) { return $text }
+    $e = if ($parsed.PSObject.Properties['error']) { $parsed.error } else { $null }
+    if ($e -is [string] -and $e) { return $e }
+    if ($e -is [System.Management.Automation.PSCustomObject]) {
+        $inner = if ($e.PSObject.Properties['innererror']) { $e.innererror } else { $null }
+        if ($inner -is [System.Management.Automation.PSCustomObject] -and $inner.PSObject.Properties['message'] -and $inner.message) {
+            return "$($inner.message)"
+        }
+        if ($e.PSObject.Properties['message'] -and $e.message) { return "$($e.message)" }
     }
-    if ($parsed -and $parsed.PSObject.Properties['Message']) { return $parsed.Message }
+    if ($parsed.PSObject.Properties['Message'] -and $parsed.Message) { return "$($parsed.Message)" }
     $text
 }
 
