@@ -3,6 +3,21 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.6]
+
+- **`dw-demo-fo` `Get-FoErrorText` is safe under strict mode.** A 404 with no response body (no
+  `ErrorDetails`) threw "The property 'Message' cannot be found" inside the caller's catch block, so
+  `Import-GoldenPackage.ps1` stopped before it created a missing import project. Every error shape now
+  falls back to the body text or the exception message. New hermetic suite `tests/Fo.Api.Tests.ps1`.
+- **`dw-demo-pim` `canonical-setup-order.md` step 8: `delete_groups` measured.** It deletes no
+  products, in one group or in two; it leaves the group's product relations and shop relation behind
+  as orphans, and a group recreated with the same id picks them up. Step 10: read `stockStatus` back,
+  since the create response echoes `neverOutOfStock` wrongly.
+- **`dw-demo-swift` `cheat-sheet.md` navigation table.** `save_pages {showInMenu:false}` writes
+  `PageActive`, the same column as `set_page_menu`, and no MCP tool in the 0.6.0 or 0.6.1 add-in
+  source writes `PageShowInLegend`; `PageSave` stays the only call that hides a page and keeps it
+  published.
+
 ## [5.8.5]
 
 - **`dw-demo-foldback` "read X, did not reach Y".** When the dedup check finds the missed lesson
