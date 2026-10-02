@@ -3,6 +3,13 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.7]
+
+- **`dw-render-viewmodels` `viewmodel-traps.md`: the "no picture" fallback hides a null
+  `DefaultImage`.** With `Ecom/Picture/NoPicture` set, an image-less product renders the fallback image
+  and an unguarded template never fails, so a crash reproduction or a sweep proof must blank the
+  fallback for the run. The fallback also covers unguarded templates until they are fixed.
+
 ## [5.8.6]
 
 - **`dw-demo-fo` `Get-FoErrorText` is safe under strict mode.** A 404 with no response body (no

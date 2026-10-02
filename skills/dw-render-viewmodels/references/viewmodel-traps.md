@@ -32,6 +32,22 @@ string imagePath = product?.DefaultImage?.Value ?? string.Empty;
 | `product.ReplacementProduct` | no replacement is configured on a discontinued product | `p?.ReplacementProduct?.…` |
 | `Model.Item` | the paragraph has no item attached | `Model.Item?.GetString("Field")` |
 
+**`DefaultImage` is null only when the ecommerce "no picture" fallback is empty too.** When the
+`Ecom/Picture/NoPicture` setting in `GlobalSettings.Ecom.config` (`Large` and `Large_path`) names an
+image, DW fills `product.DefaultImage` with it for a product with no image and no assets. The page then
+renders that fallback image, and an unguarded template never meets the null. That cuts both ways:
+
+- **Reproducing a crash, or proving a sweep catches one:** an image-less product is not enough. Blank
+  `NoPicture` `Large` and `Large_path` for the run, recycle the app pool, and restore both afterwards.
+  With the fallback set, an unguarded `Swift-v2_ProductMedia.cshtml` rendered a clean PDP for
+  a zero-asset product; with it blank, the same PDP rendered a `NullReferenceException` block at HTTP 200
+  [dw 10.28.12 · swift 2.4].
+- **Running templates that still lack the guard:** setting the global fallback image keeps image-less
+  products from crashing them until the templates are fixed. It hides the data gap, so it does not
+  replace the guard.
+
+Not measured: whether a `Medium` or `Small` fallback alone has the same effect.
+
 Two shipped Swift 2.2 templates dereference `product.DefaultImage.Value` with no guard and are worth
 auditing on any solution running them, because each turns one image-less product into a whole dead
 surface:
