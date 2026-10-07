@@ -212,6 +212,7 @@ A PIM governance dashboard lives or dies on the "click the count, land on the of
 | `Dynamicweb.Application.UI.Dashboard.Widgets.RepositoryCountWidget` | **Yes** — clicking the count opens the filtered product list from the backing query | Per-rule / per-blocker counts |
 | `Dynamicweb.Application.UI.Dashboard.Widgets.RepositoryGridWidget` | **Yes** — each row links to the product | "Offender list" surface — show the exact SKUs that are failing |
 | `Dynamicweb.Application.UI.Dashboard.Widgets.RepositoryListWidget` | **Yes** | Title / hint pairs from a query |
+| `Dynamicweb.Products.UI.Dashboard.Widgets.ProductQueryListWidget` | **Yes, product-aware**: a row click honours the query's edit languages and edit preset, so it can open the side-by-side Multi Edit view | Translation worklists. Hidden from the Add widget picker (`[AddInActive(false)]`); add it with `add_widgets_to_dashboards` by system name, parameters `Query`, `TitleField`, `HintField`, `RightField` [dw 10.29.6]. `RepositoryGridWidget` rows are not product-aware |
 | `Dynamicweb.Application.UI.Dashboard.Widgets.RepositoryFacetWidget` | **Yes** — facet filters are clickable | Catalog-by-category breakdowns |
 | `Dynamicweb.Products.UI.Dashboard.Widgets.LastChangedProductsWidget` | **Yes** | Recent edits |
 | `Dynamicweb.Insights.UI.Dashboard.Widgets.ScalarSqlCountWidget` | **NO — dead end** | Avoid for governance dashboards. It renders a bare number with NO drill-through. Only use when there's no queryable surrogate (e.g. counting rows in a non-product table). |

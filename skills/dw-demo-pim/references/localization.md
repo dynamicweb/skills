@@ -31,6 +31,29 @@ The demo deltas on top of that sequence:
 3. **Translate the hero products' name + short description.** Skip custom-field translation in a first pass; the fallback handles it.
 4. This recipe fits between **Step 3 (languages)** and **Step 4 (manufacturers)** of [`canonical-setup-order.md`](canonical-setup-order.md); the first `EcomLanguage` row is set up there, additional languages follow this doc.
 
+## Translation worklist that opens side by side
+
+A translation dashboard whose rows open the product in the side-by-side language view is native, and
+no widget setting carries it: the query does [dw 10.29.6].
+
+1. **The query**: a translation-gap predicate (with the Completeness feature flag on, a per-language
+   `CompletionRule|<id> < 100` query; see
+   [`../../dw-pim-localization/SKILL.md`](../../dw-pim-localization/SKILL.md) "Per-language completeness"),
+   *Edit screen languages* set to every language to compare (MCP `editScreenLanguageIds`), an edit preset
+   (`editScreenViewPresetId`), and *Open product in edit mode* on.
+2. When those languages resolve to more than one language the product has, a row click opens
+   `/Admin/UI/Products/MultiEdit?...&Type=MultiEditByQuery` with the languages side by side and the edit
+   preset applied. Any product-aware row inherits this from the query.
+3. **The widget**: `Dynamicweb.Products.UI.Dashboard.Widgets.ProductQueryListWidget` renders the query's
+   rows as product list rows, so a click opens Multi Edit. It is `[AddInActive(false)]` and absent from
+   the Add widget picker, but `add_widgets_to_dashboards` with that system name (parameters `Query`,
+   `TitleField`, `HintField`, `RightField`) adds it and it renders. It cannot be re-added from the picker
+   once removed. `RepositoryGridWidget` rows are not product-aware and open the plain editor. A
+   `RepositoryCountWidget` tile opens the query list, whose rows then open Multi Edit.
+
+Validate by clicking a widget row: the URL is `MultiEdit` with one model identifier per configured
+language.
+
 ## Demo philosophy
 
 PIM localization sells the "single product master, multiple market storefronts" story — high-leverage. But:

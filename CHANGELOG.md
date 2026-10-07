@@ -3,6 +3,20 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.9]
+
+- **`dw-demo-pim` `screen-authoring.md`: one layout, one tab per product type.** A tab whose editors the
+  product lacks is not rendered, so one `ProductEditScreen` layout with a tab per category shows each
+  product type its own tab. Unplaced editors go to the `IsCatchAll` group and vanish silently without one;
+  group names must be unique across the layout. Saves renumber `Order`, `ScreenLayoutDelete` cascades,
+  writes apply on the next load.
+- **`dw-demo-pim` `screen-authoring.md`: query list presets render headers but blank cells.** Row data comes
+  from the user's own default `ProductListScreen` preset, not the query's `ListScreenViewPresetId`; give each
+  worklist user a default list preset covering every query column (platform defect, DW 10.29.6).
+- **Translation worklist that opens side by side.** Query edit-screen languages plus *Open product in edit
+  mode* open Multi Edit; the hidden `ProductQueryListWidget` is added by system name and has product-aware
+  rows. Recipe in `dw-demo-pim` `localization.md`, widget row in `dw-pim-completeness` `rules-and-dashboards.md`.
+
 ## [5.8.8]
 
 - **`dw-pim-completeness`: per-language completeness works with the "Completeness feature" flag on.**
