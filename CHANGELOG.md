@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.10]
+
+- **`dw-commerce-catalog` `catalog-publishing.md`: three feed Template-provider context traps.** The
+  `Dynamicweb.Ecommerce.Context:LanguageID` macro in a feed query resolves the default language while option
+  names render in the feed language; a NULL `Double` custom field reaches the template as `0`; the feed
+  context currency reads USD for a EUR feed. Take language, emptiness and currency from the product data.
+- **`dw-integration-framework` Rules: the full-path source rule covers the CSV provider too**, which reads
+  nothing with the folder and file split. `get_integration_activity_logs` answers "No run log found" for an
+  activity inside a group, and `get_scheduled_tasks` lists no sub-tasks.
+- **`dw-extend-scheduled-tasks` `scheduler-rows-and-runs.md`: reading sub-tasks.** `get_scheduled_tasks`
+  lists only the parent level; read the whole tree from `ScheduledTask` on a local install.
+
 ## [5.8.9]
 
 - **`dw-demo-pim` `screen-authoring.md`: one layout, one tab per product type.** A tab whose editors the

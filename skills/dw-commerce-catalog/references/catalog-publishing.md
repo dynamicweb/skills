@@ -98,6 +98,15 @@ The `PermissionLevel.Edit` gate is a Layer C entity check
   - `FeedProviderConfiguration` = XML with parameters: `<Parameters><Parameter Name="Template" Value="Feeds/my-template.cshtml" /><Parameter Name="Content Type" Value="application/json" /></Parameters>` for Template, or `<Parameters><Parameter Name="XSLT Stylesheet" Value="Feeds/my.xslt" /></Parameters>` for XML.
 - **Template path resolution** — `TemplateProvider` expects paths relative to `wwwroot/Files/Templates/Feeds/`. `XMLProvider` expects XSLT in same folder.
 - Feed template example for Razor: `@inherits ViewModelTemplate<Dynamicweb.Ecommerce.ProductCatalog.ProductListViewModel>` + `@Model.Products` iteration. Field values are accessed via `ProductCategories[].Fields[categoryFieldId].Value`.
+- **Three Template-provider context traps** [dw 10.29.6]; take each value from the product data, not
+  the feed context:
+  - **Language**: the `Dynamicweb.Ecommerce.Context:LanguageID` macro in the feed query resolves the
+    default language (ENU for a feed with `languageId=FIN`) while option names render in the feed
+    language. Filter the language in the template, or put the literal language id in the query.
+  - **NULL decimals**: a NULL `Double` custom field reaches the template as `0`. Treat `0` as empty
+    where 0 is not a real value, or a missing price renders as `0.00`.
+  - **Currency**: the feed context currency reads USD with `currencyId=EUR` while the prices are EUR.
+    Take the currency code from the price, not from the context.
 - The `.query` files backing feeds must live at the repository ROOT, not a subfolder — see
   [`index-management.md`](../../dw-search-indexing/references/index-management.md) for the placement rule.
 - **The public feed endpoint is `GET /dwapi/Feeds/GetFeedOutput?id=<feedId>` — the parameter is the bare
