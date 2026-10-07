@@ -116,19 +116,19 @@ When creating language versions (via "Add languages"), you can assign the new la
 
 See [dw-pim-workflow](../dw-pim-workflow) for workflow setup.
 
-## Completeness has no per-language dimension
+## Per-language completeness
 
-**Per-language completeness is not queryable on this platform line.** A completion rule carries a
-language list and the admin panel accepts it, but the appended query expression is built from
-`CompletionRule|<id>`, a single per-product index value that the language list never reaches: a query
-configured for several languages returns exactly the products any one of them returns. A
-translation-progress worklist ("complete in English, incomplete in the target language") therefore
-**cannot** be built from completeness. Model it as an explicit per-language field query instead —
-filter on the translated fields themselves for the target language.
+**Per-language completeness is queryable only with the "Completeness feature" flag on.** With the flag
+off, a query configured for several languages returns exactly the products any one of them returns, so a
+translation worklist has to filter on the translated fields themselves. With the flag on, each index
+document carries its own `CompletionRule|<id>` score in its language, and a query on `LanguageID = <lang>`
+AND `VariantID` empty AND `CompletionRule|<id> < 100` lists that language's gaps [dw 10.29.6].
+Use a rule that lists only the translated copy fields: language-shared fields score from the master and
+read the same in every language.
 
-The measurement and the four-gate chain behind it live in
-[dw-pim-completeness](../dw-pim-completeness/SKILL.md) "Completeness has no per-language dimension";
-this skill keeps no second copy.
+The recipe, the measurement and the four-gate chain live in
+[dw-pim-completeness](../dw-pim-completeness/SKILL.md) "Per-language completeness needs the Completeness
+feature flag"; this skill keeps no second copy.
 
 ## Auto-Translation
 

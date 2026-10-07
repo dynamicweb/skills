@@ -36,22 +36,25 @@ rebuild.
 
 | # | Gate | What must be true, and how it lies |
 |---|---|---|
-| 1 | **Feature flag** | Feature Management lists "Completeness feature" **twice** (one row marked deprecated), which looks like two independent toggles. `Dynamicweb.Products.UI.CompletenessFeature` is `[Obsolete]` but **both classes derive the same persistence key**, so toggling either flips both. There is one flag. See "The flag has two scopes" below before touching it. |
+| 1 | **Feature flag** | Feature Management lists "Completeness feature" **twice** (one row marked deprecated), which looks like two independent toggles. `Dynamicweb.Products.UI.CompletenessFeature` is `[Obsolete]` but **both classes derive the same persistence key**, so toggling either flips both. There is one flag. See "The flag selects the calculation path" below before touching it. |
 | 2 | **Index fields** | `CompletionRule\|<id>` numeric index fields **require the Completeness feature flag ON**, not just `SkipCompletionRules=False`. With the flag off the declared fields never populate, however many full rebuilds run, and completeness is unusable as a query filter term. |
 | 3 | **Index builder** | **`ProductIndexBuilder SkipCompletionRules=False`, and ABSENT means True.** With the flags on, nine rules bound and every index rebuilt clean, the nine `CompletionRule\|<id>` fields appeared in the index **SCHEMA** while **zero** of 488 documents carried a value. **Schema presence is not evidence**: assert document values, never the schema. |
 | 4 | **Read context** | `completeness` is **not a stored product attribute**. It is computed against whatever completion rules the READ CONTEXT selects, so `ProductById` with no rule context reports `0` for a verifiably 100%-complete product, which reads as "the rebuild did not work". |
 | 4b | **Read context, refined** | Opening the product **from a query** supplies that context only if the **query configuration carries `CompletionRules`**. The percentage comes from the query config, not from the group bindings: a query with an empty rule list still shows `N/A`. This is the answer to gate 4 inside the editor. |
 
-**The flag has two scopes, and they pull in opposite directions.** State which path you are on before
-deciding:
+**The flag selects the calculation path.** State which path you are on before deciding:
 
-- **The admin calculation path stays OFF.** The beta calculation path behind the flag is buggy; the
-  stable legacy path runs with the flag off and supports rules, group assignments, API evaluation and the
-  admin UI panels. A "rules don't show" symptom is never fixed by the flag (it is almost always the
-  `reference_category` parent row, step 1 of the next section).
-- **The index term requires the flag ON.** `CompletionRule|<id>` fields only populate with the flag on,
-  so every dashboard, worklist and query that filters on completeness needs it. A demo built on
-  completeness-driven queries cannot run with the flag off.
+- **Flag off: the legacy path.** It supports rules, group assignments, API evaluation and the admin UI
+  panels, but writes no index value and has no per-language dimension. On DW 10.28 the flag-on path was
+  reported as a buggy beta, which is why older builds kept the flag off. A "rules don't show" symptom is
+  never fixed by the flag (it is almost always the `reference_category` parent row, step 1 of the next
+  section).
+- **Flag on: completeness v2.** `CompletionRule|<id>` fields only populate with the flag on, so every
+  dashboard, worklist and query that filters on completeness needs it. The flag-on path was measured
+  correct: per-rule index values matched SQL in every language, and the admin product badge shows a
+  per-language breakdown [dw 10.29.6] (see "Per-language scoring with the flag on" below).
+- The flag persists at `/Globalsettings/Features/Products features/Completeness feature`. Read it back
+  in Feature management after the user sets it.
 - Either way, **do not auto-toggle it**. `FeatureManagementToggle` cascades across both the Ecommerce and
   deprecated `Products.UI` variants and does not reliably land in the intended state. Ask the user to set
   it in the admin UI, and read it back.
@@ -66,12 +69,62 @@ deciding:
   rule therefore **PASSES** it. Hand-writing the obvious-looking shape
   `CompletionRule|<id> >= 0 AND < 100` collapsed a 45-row result to 0.
 
-### Completeness has no per-language dimension
+### Per-language scoring with the flag on
 
-`CompletionLanguages` changes nothing in a query: `ENU+ESU+FRC` returns exactly the same products as
-`ENU` alone. The appended expression is built from `CompletionRule|<id>`, one per-product index value,
-and the language list never reaches it. A translation-gap worklist cannot be built from completeness;
-query the translated fields per language instead.
+**Flag off, there is no per-language dimension.** `CompletionLanguages` changes nothing in a query:
+`ENU+ESU+FRC` returns exactly the same products as `ENU` alone, and no `CompletionRule|<id>` value is
+written. That measurement holds only for the flag-off path.
+
+**Flag on, the score is per index document, and so per language layer.** The product index builder
+calculates each rule for the document's product, variant and language and writes `CompletionRule|<id>`
+on that document [dw 10.29.6]. Fields with `AllowChangesAcrossLanguages` off (the category-field
+default) score from the master, so they read the same in every language. Recipe:
+
+1. Flag on (gate 1), `SkipCompletionRules=false` on the builder (gate 3).
+2. Every target language in the group's `GroupCompletionLanguageIds` and in the shop's languages.
+3. Full rebuild of every index instance.
+4. One query per language: `LanguageID = <lang>` AND `VariantID` empty AND `CompletionRule|<id> < 100`.
+
+Measured with a copy rule (name, short and long description) and ENU plus ESP completion languages: the
+ENU query returned 16 and the ESP query 20, each equal to the SQL count on that language's rows. The
+category rules returned nearly the same count in both languages because shared image and attribute gaps
+dominate them; **a copy-fields-only rule is what separates the languages** in a translation worklist.
+
+In the admin, the product header badge opens the field completion list with one column per completion
+language (hollow dots mark fields inherited from the master), and the badge shows the average of the
+languages.
+
+### What the MCP calculation tools return
+
+`calculate_product_completeness_for_products` does not score per language or per field on a family
+[dw 10.29.6 · mcp 0.6.0-BETA]:
+
+- **One family-aggregate value per master.** A master with variants gets a value over the whole family,
+  not the master row's share of filled fields.
+- **`fieldStatuses` list only the master row**, so a variant-level field filled on the variants reads
+  `hasValue=false` there. Judge variant fields from the variant rows, not from this list.
+- **`languageIds` is ignored**: three languages in, one ENU row per product out. Per-language gaps come
+  from the flag-on index query above, never from this tool.
+
+**A missing-image query cannot use the default-image index fields.** `ImageDefault`, `DefaultImage` and
+`PrimaryImage` were empty on every document after default detail images were attached and the index was
+rebuilt. Only the legacy `ImageSmall` field (`ProductImageSmall`) distinguished the products without an
+image, so keep that column in step with the default image when a worklist depends on it.
+
+### Masters with variants
+
+Measured in the admin, reported upstream as
+[dynamicweb/DynamicWeb#735](https://github.com/dynamicweb/DynamicWeb/issues/735) [dw 10.29.7]:
+
+- **`ProductNumber` keeps a master with variants below 100%.** Combining products as variants stores the
+  master number as an empty string, and the master edit screen has no Number field to fill it. Keep
+  `ProductNumber` out of completion rules; restoring the number by tool is in
+  [dw-pim-modelling structural-model.md](../../dw-pim-modelling/references/structural-model.md).
+- **"Exclude variants" on still counts the variants' Number.** A rule of Number plus two
+  variant-editable category fields scored the master 80%, with Number missing and the category fields
+  not listed; with the option off, 92%.
+- **Variant-editable category fields are checked per variant**, not scored empty on the master, and pass
+  when the variants hold values. The master edit screen does not show those fields.
 
 ## Completeness rules — why they sometimes "don't show"
 
@@ -81,11 +134,11 @@ Rules surface in admin UI in three places: on each product (Data Completeness pa
    Missing the 1a parent row is the #1 cause of "rule is defined and assigned but no panel renders on the product." `Settings → Completeness Rules` list still works and the `ProductCompletenessRulesByProductId` API still returns correct data — that's what makes this so misleading.
 2. **Rule exists** — row in `EcomCompletionRules` with field system names pipe-separated in `EcomCompletionRuleProductFields`. Use the full format `ProductCategory|<CategoryId>|<FieldId>`, not the bare field id. Verify via `get_completion_rules` or direct SQL.
    Direct SQL here is local installs only; on a hosted install `get_completion_rules` is the read.
-3. **Rule assigned to a catalog group** — comma-separated rule IDs in `EcomGroups.GroupCompletionRules` **plus** matching languages in `GroupCompletionLanguageIds`. Assignments to data-model groups (GroupType=2) do nothing; they must be on the catalog groups (GroupType=0) that products actually live in.
+3. **Rule assigned to a catalog group** — comma-separated rule IDs in `EcomGroups.GroupCompletionRules` **plus** matching languages in `GroupCompletionLanguageIds`. Assignments to data-model groups (GroupType=2) do nothing; they must be on the catalog groups (GroupType=0) that products actually live in. `assign_completion_rules_to_groups` persists every request of a batch. **`assign_completion_rules_to_shops` does not** (MCP 0.6.0-BETA): four requests answered `succeeded: 4`, every shop got its languages, and only the last request's rule ids reached `EcomShops.ShopCompletionRules`. Call it once per shop and read each shop back with `get_completion_rule_assignments_for_shops`.
 4. **Query field names match the side you are on — authoring vs index.** The pipe form `ProductCategory|<CategoryId>|<FieldId>` is the **authoring/value** system name: it is what a rule definition and a value write name. The **index** field name for the same category field is `CustomField_<SystemName>`, and that is what an index predicate or a facet names. Using the bare field id matches nothing on either side; using the pipe form in an index predicate matches nothing in Lucene even though SQL sees values. The rule rows in this file are authoring-side, so they carry the pipe form; a `.query` `FieldExpression Field="..."` attribute is index-side and carries `CustomField_<SystemName>` (see [`dw-search-indexing/references/index-management.md`](../../dw-search-indexing/references/index-management.md) "Custom product fields index as `CustomField_<SystemName>`").
 5. **Index flushed *and* rebuilt after any of the above changed**: `wait_for_product_index` with `repositoryName: "Products"` and `indexName: "Products.index"` (the tool default `Products` addresses no index and answers `completed:true` without building), gated on a non-zero `documentCount` from `get_product_index_status`. Without a rebuild, dashboard counts stay stale and queries return 0. **And if you populated the completeness FIELD VALUES on products via MCP `patch_products_safe` (or SQL), you MUST flush `ProductService` + `ProductCategoryFieldValueService` + `ProductCategoryService` via `CacheInformationRefresh` BEFORE the rebuild**: the builder reads those values through the cache and will otherwise index the empty pre-patch state, so the governance widget shows 0 failing even when products genuinely fail. This is the read-through-cache ordering trap: flush the services first, then rebuild, and treat a "0 failing" widget after a bulk patch as this ordering bug, not an index quirk.
 6. **Host restart after rule changes via raw SQL** — `CompletionRuleService` and `ProductCategoryService` cache in `ServiceCache`. MCP `create_or_update_completeness_rules` / `assign_completion_rules_to_groups` invalidate their slice. Direct SQL INSERT does NOT. Restart the host, or save any rule once from admin UI to force a cache reload.
-7. **`Completeness feature` flag** (under Settings → Feature management) is scoped by which path you are on, and it is **never** the fix for "rules don't show" (that is almost always the `reference_category` parent row in step 1). For the **admin calculation path** keep it OFF: the stable legacy path runs with the flag off and supports rules, group assignments, API evaluation and the admin UI panels, while the flag activates a buggy beta calculation path. For **completeness as an index query term** it must be ON, because `CompletionRule|<id>` index fields populate only with the flag on. Both scopes and the rest of the chain are in ["Nothing scores until a four-gate chain is satisfied"](#nothing-scores-until-a-four-gate-chain-is-satisfied). Do not auto-call `FeatureManagementToggle` either way: it cascades across both the Ecommerce and deprecated Products.UI variants and does not reliably land in the intended state. Ask the user to set it in the admin UI and read it back.
+7. **`Completeness feature` flag** (under Settings → Feature management) is scoped by which path you are on, and it is **never** the fix for "rules don't show" (that is almost always the `reference_category` parent row in step 1). The flag-off legacy path supports rules, group assignments, API evaluation and the admin UI panels; it was the stable admin path on DW 10.28, where the flag-on path was reported as a buggy beta. For **completeness as an index query term or per language** it must be ON, because `CompletionRule|<id>` index fields populate only with the flag on; the flag-on path was measured correct [dw 10.29.6]. Both paths and the rest of the chain are in ["Nothing scores until a four-gate chain is satisfied"](#nothing-scores-until-a-four-gate-chain-is-satisfied). Do not auto-call `FeatureManagementToggle` either way: it cascades across both the Ecommerce and deprecated Products.UI variants and does not reliably land in the intended state. Ask the user to set it in the admin UI and read it back.
 
 Quick diagnosis when rules "don't show":
 - No Data Completeness panel on a product but Settings → Completeness Rules shows correct usage counts? → step 1 (parent `EcomProductCategory` row missing).
