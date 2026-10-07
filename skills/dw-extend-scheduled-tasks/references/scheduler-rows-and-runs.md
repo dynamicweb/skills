@@ -110,6 +110,16 @@ defaults:
 | `TaskAddInTypeName` | Assembly-qualified: `Namespace.Type, AssemblyName`. |
 | `TaskAddInSettings` | Repeats the type name **without** the assembly, on the root and on every child: `<Parameters addin="Ns.Type"><Parameter addin="Ns.Type" name="X" value="Y" /></Parameters>`. |
 
+**MCP `get_scheduled_tasks` lists only the parent level** [dw 10.29.6 · mcp 0.6.0-BETA]: a task with a
+`TaskParentId`, such as an Integration activity's schedule placed inside a task group, is absent from
+its answer. Read the whole tree from the table (local installs only):
+
+```sql
+SELECT TaskName, TaskParentId, TaskEnabled, TaskAddInTypeName
+FROM ScheduledTask
+ORDER BY ISNULL(TaskParentId, 0), TaskName;
+```
+
 **The running scheduler does not re-read the table.** A row written or edited by `SQL` — a new task,
 or a schedule change on a task that has run correctly for a week — is invisible until the register
 is refreshed, so `POST /Admin/Api/TaskRun` answers `404 The task with id: N was not found` for a row

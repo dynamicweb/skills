@@ -188,12 +188,19 @@ through MCP tools instead.
 **Rules:**
 - Explicitly set IDs in imported data (ProductID etc.) may contain ONLY letters and digits —
   spaces, commas, dots, or special characters break the import.
-- **Excel provider source path**: splitting the file across "Source folder" (folder path) +
-  "Source file" (file name) — the split the parameter labels suggest — can fail validation
-  with "Excel file '...' does not exist" even when the file is really there. If that happens,
-  put the FULL virtual path (e.g. `/Files/Files/Integration/order_for_customer.xlsx`) in
-  "Source file" and leave "Source folder" empty; re-validate before concluding the file is
-  genuinely missing.
+- **File source path (Excel and CSV providers)**: splitting the file across "Source folder"
+  (folder path) + "Source file" (file name), the split the parameter labels suggest, can fail.
+  The Excel provider fails validation with "Excel file '...' does not exist" even when the file
+  is really there; the CSV provider reads nothing [dw 10.29.6]. Put the FULL virtual path (e.g.
+  `/Files/Files/Integration/order_for_customer.xlsx`) in "Source file" and leave "Source folder"
+  empty; re-validate before concluding the file is genuinely missing.
+- **`get_integration_activity_logs` answers "No run log found" for an activity inside a
+  group** [dw 10.29.6 · mcp 0.6.0-BETA], even after a successful run. That answer is not
+  evidence of a failed run: read the run's log file under `Files/System/Log/DataIntegration/`
+  instead.
+- **`get_scheduled_tasks` lists no sub-tasks** [dw 10.29.6 · mcp 0.6.0-BETA], so a schedule
+  bound to an activity inside a task group does not appear in its answer. See
+  [dw-extend-scheduled-tasks](../dw-extend-scheduled-tasks) for reading the full task tree.
 - Never claim a run succeeded from a queued result: the log is the evidence.
 - `deleteRowsMissingFromSource` and "remove missing" options are destructive — enable only
   when the source is the complete truth for that table.
