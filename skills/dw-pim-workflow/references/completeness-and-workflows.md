@@ -47,7 +47,7 @@ Completion rules define which fields a product must have filled in to be conside
 | `id` | int | 0 = create new |
 | `name` | string | Unique rule name |
 | `description` | string | Optional description |
-| `excludeVariants` | bool | Default `true` -- exclude product variants from rule evaluation |
+| `excludeVariants` | bool | Default `true` -- exclude product variants from rule evaluation. The variants' `ProductNumber` still counts with it on, so keep `ProductNumber` out of rules for families with variants (see dw-pim-completeness "Masters with variants") [dw 10.29.7] |
 | `fieldSystemNames` | string[] | Standard field names (`ProductName`) and category field system names |
 
 ### Field System Names

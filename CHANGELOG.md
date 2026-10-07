@@ -3,6 +3,25 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.8]
+
+- **`dw-pim-completeness`: per-language completeness works with the "Completeness feature" flag on.**
+  The "no per-language dimension" claim is scoped to the flag-off path. Measured on DW 10.29.6, the flag-on
+  index builder writes `CompletionRule|<id>` per index document, scored in that document's language, and a
+  `LanguageID` + empty `VariantID` + `CompletionRule|<id> < 100` query lists one language's gaps. Recipe,
+  copy-fields-only rule, and the admin per-language badge are in `rules-and-dashboards.md`; the "buggy beta"
+  warning is narrowed to DW 10.28. `dw-pim-localization` and `dw-users-permissions` follow.
+- **`dw-pim-completeness`: what `calculate_product_completeness_for_products` returns.** A family-aggregate
+  value per master, `fieldStatuses` for the master row only, and `languageIds` ignored. The default-image
+  index fields are empty on every document; only `ImageSmall` drives a missing-image query.
+- **Masters with variants and `ProductNumber`.** Combine stores the master number as an empty string and the
+  master edit screen has no Number field, so keep `ProductNumber` out of completion rules (DW 10.29.7,
+  dynamicweb/DynamicWeb#735). "Exclude variants" still counts the variants' Number; variant-editable category
+  fields are checked per variant. `dw-pim-modelling` `structural-model.md` adds the combine side effects and
+  two variant-field traps; `dw-pim-workflow` notes `excludeVariants`.
+- **`assign_completion_rules_to_shops` persists only the last request of a batch** (MCP 0.6.0-BETA). Call it
+  once per shop and read the assignment back; row added to `dw-extend-mcp-tools` `tool-surface-gaps.md`.
+
 ## [5.8.7]
 
 - **`dw-render-viewmodels` `viewmodel-traps.md`: the "no picture" fallback hides a null

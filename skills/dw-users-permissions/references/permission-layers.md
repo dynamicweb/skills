@@ -102,8 +102,8 @@ capability tree (Layer B, §3 below) gates *menu visibility*; the entity tree (L
 **Decide BEFORE granting anything.** Two different role matrices follow from the two settings;
 toggling mid-build strands every grant already made.
 
-> **Do not confuse with the Completeness feature flag** (separate flag, also off by default — the
-> buggy beta completeness calculation path). `CapabilityControlFeature` is independent of completeness
+> **Do not confuse with the Completeness feature flag** (separate flag, also off by default: the
+> completeness v2 calculation path). `CapabilityControlFeature` is independent of completeness
 > behavior.
 
 ## 2. Layer A — `UnifiedPermission` (the storage layer)

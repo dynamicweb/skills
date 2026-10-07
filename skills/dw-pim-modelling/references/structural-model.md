@@ -108,6 +108,22 @@ number back on the master row with `patch_products_safe` (`id` and `number`, `va
 then re-read with `get_products_by_ids` and assert the number on the master: that read is the assert,
 not the patch echo. Assert the SKU against the product read rather than a storefront search for it.
 
+**The combine has more side effects**, measured in the admin and over MCP [dw 10.29.7 · mcp 0.6.0-BETA]:
+
+- The blanked master number is stored as an empty string, and the master edit screen has no Number field,
+  so the admin cannot restore it. A master with variants therefore never reaches 100% on a completion
+  rule that lists `ProductNumber` (reported upstream as
+  [dynamicweb/DynamicWeb#735](https://github.com/dynamicweb/DynamicWeb/issues/735)).
+- Each variant's name is overwritten with the master's name.
+- The absorbed products' category-value rows stay behind as orphans.
+- The master edit screen hides variant-editable category fields; edit them on the variants.
+
+**Two more variant-field traps on the same build.** `patch_products_safe` on a variant stores nothing
+when the value equals the master's, so a read of the variant row shows no override. And the
+variant-editable flag depends on the tool: `update_category_fields` with
+`allowChangesAcrossVariants=true` stores 1, while `create_data_model_structure` with the same `true`
+created the field with 0. Read the stored flag back after either call before relying on per-variant values.
+
 **The working sequence on this build:**
 
 1. `save_variant_groups` + `save_variant_options` for the vocabulary, keying each option on the group
