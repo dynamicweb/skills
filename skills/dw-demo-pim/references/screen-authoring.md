@@ -5,7 +5,9 @@
 - [The entity chain](#the-entity-chain)
 - [`ScreenType` is a fully-qualified .NET type name](#screentype-is-a-fully-qualified-net-type-name)
 - [Three column grammars, and only the platform picker lists them](#three-column-grammars-and-only-the-platform-picker-lists-them)
+- [One layout, one tab per product type, and the catch-all group](#one-layout-one-tab-per-product-type-and-the-catch-all-group)
 - [Screen presets: create, audience, default](#screen-presets-create-audience-default)
+- [Query list presets: headers render, cells come from the user's default](#query-list-presets-headers-render-cells-come-from-the-users-default)
 - ["No tab strip" has two causes and one discriminator](#no-tab-strip-has-two-causes-and-one-discriminator)
 - [Grid edit and Bulk update have no Management API surface](#grid-edit-and-bulk-update-have-no-management-api-surface)
 - [Bulk update writes an EMPTY value when the dual list is untouched](#bulk-update-writes-an-empty-value-when-the-dual-list-is-untouched)
@@ -70,7 +72,9 @@ tab from the strip** with no error, no log line and no clue: 4 of 5 configured t
 missing tab's 3 groups and 30 editors are all correct in the database, and deleting, recreating,
 recycling and renaming all change nothing. Tabs that mix in at least one bare product property
 survive and mask the problem. Diagnostic: **if a whole tab is missing from the strip while its rows
-are correct, its editors are all unresolvable. Check the `CategoryFields|` prefix first.**
+are correct, its editors are all unresolvable. Check the `CategoryFields|` prefix first.** The same rule drops a tab whose
+correctly named editors the product simply does not carry, which is what makes per-product-type tabs
+work (next section).
 
 `ScreenPresetSave` has the same hole: it accepts any string in `ConfigurableColumns` and answers
 `status: ok`, so a wrong column name is indistinguishable from a right one until the grid renders
@@ -92,6 +96,26 @@ by `SELECT COUNT(*) FROM ScreenPresetColumns` per preset against the intended co
 the worklist grid rendering the named headers.
 
 **Local installs only** for the `SELECT`: on a hosted install, the rendered worklist grid is the check.
+
+## One layout, one tab per product type, and the catch-all group
+
+`ScreenLayout` exists once per screen type, not per data model, yet one layout can still show each
+product type its own editor [dw 10.29.6]. The edit screen builds every tab and group of the layout and
+then places only the editors the product renders; a tab left with no editors is not rendered. So:
+
+1. One `ProductEditScreen` layout, with **one tab per category**, its editors named
+   `CategoryFields|ProductCategory|<cat>|<field>`. A product shows the general tabs plus its own
+   category's tab; a variant shows only the tabs that hold variant-level fields.
+2. **Always one group flagged `IsCatchAll`.** Editors not placed in any group land there. **With no
+   catch-all group they are dropped from the editor silently**: price, stock and SEO vanish.
+3. **Group names unique across the whole layout.** Groups are identified by name (`screenType|tab|group`)
+   and the catch-all is found by group name across every tab.
+4. Narrow further per worklist with an edit preset on the query; the preset filters the layout's editors
+   (see "No tab strip" below).
+
+Tab, group and editor saves renumber `Order` from 1, so read the order back rather than writing gaps.
+`ScreenLayoutDelete` cascades to tabs, groups and editors. Layout writes apply on the next screen load,
+without a recycle.
 
 ## Screen presets: create, audience, default
 
@@ -117,6 +141,21 @@ so, and the response is the same `status: ok` as a real set. It is idempotent, i
 screen type's default untouched, and it leaves `ScreenPresetAccessUserRelation` untouched
 (the preset stays granted to the user). `ScreenPresetDelete` is not the alternative: it removes the
 preset for everyone.
+
+## Query list presets: headers render, cells come from the user's default
+
+**A query's list preset renders its column headers, but the row cells come from the signed-in user's
+own `ProductListScreen` preset** [dw 10.29.6]. The query's `ListScreenViewPresetId` (set by
+`create_or_update_product_queries` or in Manage query) sets the headers. The row data is mapped earlier
+by `MappingContextHelper.GetMappingContextForScreen`, which reads only the user's temporary or default
+list preset (`GetUserSpecifiedOrDefault`) and ignores the query's. Every cell outside that preset is
+blank: a nine-column worklist preset showed values only for Name, Number and Completeness, with workflow
+state, manufacturer, translated names and every category column empty. This is a platform defect.
+
+**Workaround: give each worklist user a default list preset that covers every column the query presets
+use**, with `ScreenPresetSetAsDefault` on `ProductListScreen`. One `CustomFields|` column maps all custom
+fields, but each `CategoryFields|` column must be listed on its own. Side effect: "All products" shows
+that preset for the user. Read the result on a rendered worklist row, not on the headers.
 
 ## "No tab strip" has two causes and one discriminator
 
