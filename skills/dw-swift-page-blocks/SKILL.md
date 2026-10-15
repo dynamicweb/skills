@@ -209,12 +209,14 @@ auto-correction on this path. A wrong value renders as garbled raw text, overlap
     (`<h2 class="h3 mb-1">…</h2>`, `<p class="mb-0">…</p>`, or the editor's
     `dw-h*`/`dw-paragraph*` classes). NEVER pass a bare unwrapped string to any of these
     fields.
-- **Images are not optional — a blank `Image` is the #1 reason a Swift page looks boring.** A
-  `Poster` with no image is a flat color rectangle; a `Card` with no image is a text box; an
-  empty `Image` paragraph is dead space. Before building, find the real imagery this solution
-  ships (media tools / read an existing paragraph's `Image` value) and assign a fitting file
-  to EVERY hero, card, and editorial image slot. Never leave one blank, and never create an
-  `Image` paragraph you can't fill.
+- **Pick components to match the imagery you have.** A `Poster` with no image is a flat color
+  rectangle; a `Card` with no image is a text box; an empty `Image` paragraph is dead space.
+  Before building, find the imagery this solution ships (media tools / read an existing
+  paragraph's `Image` value) and use only files whose subject fits the section — the site's
+  own brand or product photos are off-topic when the page is about something else. When
+  nothing fits, choose components without image space (`Feature`/icon rows, `Text` in banded
+  rows) instead of an image-led one left blank, never create an `Image` paragraph you can't
+  fill, and tell the user which sections need images.
 - **Image fields** (`Image`) — a media-library file path that exists (e.g.
   `/Files/Images/mcp-wine/hero.jpg`), from an existing paragraph or the media tools, not an
   invented URL.
