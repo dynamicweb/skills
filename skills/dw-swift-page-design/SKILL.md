@@ -152,13 +152,12 @@ You are reproducing a *look*, not necessarily the content.
    component type, variant `Template`, column, and `ColorSchemeId` of each paragraph. Note the
    **rhythm**: the sequence of (layout → scheme → component) down the page. That rhythm IS the
    style.
-2. **Decide clone vs. reconstruct.**
-   - Same content, new copy of the page → `copy_page` (clones grid + paragraphs + scheme refs
-     in one call), then edit field values. Fastest; use when "duplicate this page and change
-     the text".
-   - New content in the same *style* → reconstruct: build fresh rows/paragraphs that mirror
-     the reference's layout+scheme rhythm but carry the new copy. Use when the content
-     differs.
+2. **Reconstruct by default; clone only on an explicit duplicate.**
+   - "Based on page Y", "like page Y", "in the style of Y" → reconstruct: build a **new** page
+     with fresh rows/paragraphs that mirror Y's layout+scheme rhythm and carry the new copy.
+     Y is read-only — never edit, move or remove anything on it.
+   - `copy_page` (clones grid + paragraphs + scheme refs in one call, then edit field values)
+     only when the user explicitly asks to duplicate or copy Y.
 3. **Build** (reconstruct path, in the create order above — blanking the button fields in the same
    `set_paragraph_item_fields` call): `save_pages` → `save_grid_rows` (mirror the reference's
    `DefinitionId` per row, and set `ColorSchemeId` to match its banding) → `save_paragraphs`
@@ -190,7 +189,8 @@ you cannot invent CSS or custom layout the tools don't expose (see the ceiling i
    colour into the other group succeeds and changes nothing on the page, because the area does not
    paint from it.
 3. **Plan, then confirm** — show the section→component map so the user can correct a mis-read
-   before you write (see Confirm before writing, below).
+   before you write (see Confirm before writing, below, for when that is a stop and when it is
+   not).
 4. **Build** in the create order above: `save_pages` → `save_grid_rows` → `save_paragraphs` (real
    variant from `get_paragraph_templates`) → `set_paragraph_item_fields`, blanking the button
    fields in that same call. Use the user's
@@ -270,12 +270,14 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
   `get_paragraph_templates` / `get_row_definitions` actually return — never write a guessed
   name.
 - Blank text fields you aren't using so no placeholder demo copy leaks through.
-- **Assign a real image to every hero, card, and editorial slot.** A Swift page with empty
-  `Image` fields renders as flat color blocks and text walls no matter how good the copy is —
-  imagery is what makes it look designed. Discover the solution's media first (read an
-  existing paragraph's `Image`, or the media tools) and fill every slot; never leave one blank
-  or create an `Image` paragraph you can't fill. (See the image + rich-text contracts in
-  `dw-swift-page-blocks`.)
+- **Use only images whose subject fits the section.** Discover the solution's media first (read
+  an existing paragraph's `Image`, or the media tools) and check what each file depicts. The
+  site's own brand or product photos are off-topic when the page is about something else — an
+  unrelated photo is worse than none. When nothing fits, leave the slot empty and compose the
+  section from components without image space (`Feature`/icon rows, `Text` in banded rows)
+  rather than an image-led variant with a blank `Image`; never create an `Image` paragraph you
+  can't fill. Tell the user which sections need images. (See the image + rich-text contracts
+  in `dw-swift-page-blocks`.)
 - **Write Title/Subtitle/Eyebrow/Text as HTML, never bare strings.** These fields render raw,
   so a plain `Title` becomes tiny unstyled text glued to the next field. Wrap headings as
   `<h2 class="h1 mb-2">…</h2>`, eyebrows as `<p class="text-uppercase small mb-2">…</p>`, body
@@ -300,11 +302,10 @@ A page can clear every contract above and still look amateur. Apply all of these
   style="letter-spacing:.14em;font-size:.8rem;color:#<brand-accent>;">`. On a dark/`primary`
   band use white. `text-secondary` grey on a light band is near-invisible — don't use it for
   eyebrows or sub-headings.
-- **Distinct, on-theme imagery in every slot.** Never reuse the same photo twice on a page,
-  and make each image *mean* its section (a vineyard for "among the vines", a gift box for a
-  gifting band). Verify what a file actually depicts before using it — generic
-  "environment/stock" folders may contain off-theme shots that wreck the narrative. When
-  unsure, prefer the on-brand product/lifestyle set.
+- **Distinct, on-topic imagery — or none.** Never reuse the same photo twice on a page, and
+  make each image *mean* its section. Verify what a file actually depicts before using it —
+  generic "environment/stock" folders and the brand's own product set may both be off-topic
+  for this page. When unsure, leave the slot empty and use an image-free component.
 - **Force a consistent aspect ratio on every image in a grid.** Cards in a row use `.card
   h-100` so the *container* equalises, but raw images of different native ratios still make
   the grid ragged. Append a crop ratio to the image path — `…/red.jpg?r=3/2` — and use the
@@ -345,6 +346,11 @@ reference page, or "from the supplied image"), the section→component plan (row
 layout + component + scheme), and whether it will be published. For Mode B, the
 section→component map IS the thing to confirm — get it right before writing.
 
+When the client gates each write behind its own approval step (as Dynamo does), that approval
+is the confirmation: put the plan in the reply and proceed to the writes — do not stop to ask
+for a go-ahead or for placement. Choose the placement yourself (beside the reference page, or
+under the area root) and state it in the plan.
+
 ## Verify + summary
 
 **Address the page by a measured prefix, not a derived one.** Before the first fetch, confirm the
@@ -368,7 +374,8 @@ look broken/boring, and each maps to a contract in `dw-swift-page-blocks`:
   deliveryFree shipping…") → that field holds a bare string; rewrite it as `<h_ class="h1|h2|
   h3 mb-2">…</h_>`.
 - **A flat color block where a hero should be, or text-only cards** → the `Image` field is
-  blank; assign a real media file.
+  blank; assign a media file that fits the section, or switch to an image-free component and
+  list the section as needing an image.
 - **A USP/feature with no icon** → `Icon` is a CSS class string, not an SVG file path.
 The published page is best inspected by rendering it in a browser (e.g. open its URL) — the
 title-size and missing-image problems are obvious visually but invisible in the stored JSON.
@@ -390,7 +397,7 @@ Then read the structure back (`get_grid_rows_by_page_id` + `get_paragraphs_by_pa
 confirm rows/components/schemes match the plan. If publishing, that is a separate write —
 propose it as its own step. Report: rows + components created, color schemes used per band,
 the render-check result, anything the image asked for that Swift 2 can't express (and what you
-did instead), and any copy/media still needed. Nothing silent.
+did instead), any copy still needed, and which sections need images. Nothing silent.
 
 ## Recovery
 

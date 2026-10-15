@@ -3,6 +3,19 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.11]
+
+- **`dw-swift-page-design` + `dw-swift-page-blocks`: on-topic imagery or none.** Use only images whose
+  subject fits the section; the site's own brand or product photos are off-topic when the page is about
+  something else. When nothing fits, leave the slot empty, compose the section from image-free components
+  (`Feature`/icon rows, `Text` in banded rows), and tell the user which sections need images. Replaces
+  "assign a real image to every slot, never leave one blank", which forced unrelated photos onto pages.
+- **`dw-swift-page-design`: a per-write approval is the confirmation.** When the client gates each write
+  behind its own approval step, put the plan in the reply and proceed; do not stop to ask for a go-ahead
+  or placement.
+- **`dw-swift-page-design` Mode A: "based on page Y" reconstructs.** It builds a new page with Y's section
+  rhythm and never edits or removes anything on Y; `copy_page` is only for an explicit duplicate.
+
 ## [5.8.10]
 
 - **`dw-commerce-catalog` `catalog-publishing.md`: three feed Template-provider context traps.** The
