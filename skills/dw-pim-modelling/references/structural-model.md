@@ -111,9 +111,15 @@ not the patch echo. Assert the SKU against the product read rather than a storef
 **The combine has more side effects**, measured in the admin and over MCP [dw 10.29.7 · mcp 0.6.0-BETA]:
 
 - The blanked master number is stored as an empty string, and the master edit screen has no Number field,
-  so the admin cannot restore it. A master with variants therefore never reaches 100% on a completion
-  rule that lists `ProductNumber` (reported upstream as
-  [dynamicweb/DynamicWeb#735](https://github.com/dynamicweb/DynamicWeb/issues/735)).
+  so the admin cannot restore it. Dynamicweb support calls this by design (2026-10-14): the master's source
+  product is copied onto a variant of its own, so a number on the master would duplicate it. A master with
+  variants therefore never reaches 100% on a completion rule that lists `ProductNumber`; that part is
+  accepted as work item
+  [29782](https://doc.dynamicweb.dev/documentation/fundamentals/dw10release/releasenotes/workItemInfo.html?workitemid=29782)
+  (from [dynamicweb/DynamicWeb#735](https://github.com/dynamicweb/DynamicWeb/issues/735)). Leave
+  `ProductNumber` out of completion rules until it ships.
+- With Number master-only the variants share the master's number. Make Number editable on variants
+  (Settings > Products > Attributes > Product fields) **before** combining when each variant needs its own.
 - Each variant's name is overwritten with the master's name.
 - The absorbed products' category-value rows stay behind as orphans.
 - The master edit screen hides variant-editable category fields; edit them on the variants.
