@@ -3,6 +3,15 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.12]
+
+- **Combine as variants: the empty master number is by design; the completion-rule gap is work item 29782.**
+  Dynamicweb support (2026-10-14, dynamicweb/DynamicWeb#735): the master's source product is copied onto a
+  variant of its own, so the master keeps no number. With Number master-only the variants share the master's
+  number, so make Number editable on variants before combining when they need their own. A completion rule
+  that lists `ProductNumber` still cannot pass on a master with variants until work item 29782 ships; keep it
+  out. `dw-pim-completeness` SKILL.md and `rules-and-dashboards.md`, `dw-pim-modelling` `structural-model.md`.
+
 ## [5.8.11]
 
 - **`dw-swift-page-design` + `dw-swift-page-blocks`: on-topic imagery or none.** Use only images whose

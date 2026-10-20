@@ -114,12 +114,17 @@ image, so keep that column in step with the default image when a worklist depend
 ### Masters with variants
 
 Measured in the admin, reported upstream as
-[dynamicweb/DynamicWeb#735](https://github.com/dynamicweb/DynamicWeb/issues/735) [dw 10.29.7]:
+[dynamicweb/DynamicWeb#735](https://github.com/dynamicweb/DynamicWeb/issues/735) [dw 10.29.7]. Dynamicweb support answered on
+2026-10-14: the empty master number is by design, and the completion-rule part is accepted as work item
+[29782](https://doc.dynamicweb.dev/documentation/fundamentals/dw10release/releasenotes/workItemInfo.html?workitemid=29782):
 
 - **`ProductNumber` keeps a master with variants below 100%.** Combining products as variants stores the
-  master number as an empty string, and the master edit screen has no Number field to fill it. Keep
-  `ProductNumber` out of completion rules; restoring the number by tool is in
+  master number as an empty string, and the master edit screen has no Number field to fill it. This is by
+  design: the master's source product is copied onto a variant of its own and its number goes with it.
+  Keep `ProductNumber` out of completion rules until work item 29782 ships; restoring the number by tool is in
   [dw-pim-modelling structural-model.md](../../dw-pim-modelling/references/structural-model.md).
+- **Variants share the master's number when Number is master-only.** Make Number editable on variants
+  (Settings > Products > Attributes > Product fields) before combining when each variant needs its own.
 - **"Exclude variants" on still counts the variants' Number.** A rule of Number plus two
   variant-editable category fields scored the master 80%, with Number missing and the category fields
   not listed; with the option off, 92%.
