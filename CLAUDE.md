@@ -34,6 +34,11 @@ budgets, body voice, validation, and the PR workflow live in the `dw-skill-autho
 (`.claude/skills/dw-skill-authoring/SKILL.md`). This file carries only what governs *every*
 edit regardless of what you are doing.
 
+**Drafting an issue or a reply on the dynamicweb/DynamicWeb tracker?** Load
+`.claude/skills/dw-feature-request/SKILL.md` first: it holds how the maintainer triages, the
+checklist a request must carry, the shapes that get declined, and the post / reframe / do not post
+review step. It is repo-local like `dw-skill-authoring` and ships in no bundle.
+
 ## Key files
 
 - `.claude-plugin/marketplace.json` — the plugin registry. Defines 6 role bundles (`dynamicweb-setup`, `dynamicweb-frontend`, `dynamicweb-commerce`, `dynamicweb-backend`, `dynamicweb-developer`, `dynamicweb-presales`). Each entry uses `"source": "./"` + `"strict": false` and curates the bundle via a `skills` array of paths into `skills/`. The top level requires `name` (string), `owner` (object), and `plugins` (array); `description`/`version` live under `metadata`.

@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.13]
+
+- **New repo-local skill `dw-feature-request`** (`.claude/skills/`, beside `dw-skill-authoring`; not in a
+  bundle). Load it before drafting an issue or a reply on dynamicweb/DynamicWeb: how the maintainer runs
+  the tracker, an eight-point checklist of what a request must carry (use case, the existing way and its
+  limit, product evidence, the smallest change as parity, platform-consistent shape, scale, precedent,
+  acceptance test), the shapes that get declined with the wording used, and a review step that scores a
+  draft and says post, reframe or do not post. `references/maintainer-patterns.md` holds the evidence from
+  every issue the maintainer replied to (accepted shapes, declined shapes, standing refusals, "already
+  possible" answers, areas under redesign, a worked example). `scripts/find_precedent.py` (READ-ONLY,
+  through `gh`) searches the tracker for precedent and standing refusals before a draft is posted.
+
 ## [5.8.12]
 
 - **Combine as variants: the empty master number is by design; the completion-rule gap is work item 29782.**
