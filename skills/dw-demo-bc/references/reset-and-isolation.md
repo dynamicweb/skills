@@ -9,6 +9,15 @@ back. Use supported ERP and platform operations on owned records. Posted documen
 as evidence or use explicitly authorised reversal workflows; they cannot be removed as if
 they were unposted test drafts.
 
+Give each native opening-inventory posting a durable, company-local seed receipt keyed by seed
+version and item. In one transaction, validate the owned item/location/UOM, post through the native
+journal engine and write its receipt. A replay reads the receipt and preserves subsequent BC
+inventory changes instead of posting the opening quantity again. Prove the first run against
+native item inventory, then repeat unchanged input and assert zero new receipts and unchanged
+quantities. Import reset and journal replay are different operations; restoring a Commerce snapshot
+cannot reset BC inventory. Freeze seed source/packages through the extension contract in
+[`dw-integration-bc`](../../dw-integration-bc/SKILL.md).
+
 | Layer | Restore | Post-reset assertion |
 |---|---|---|
 | Local mock | Generate `--phase reset --apply` in the owned fixture directory | Business data hash equals baseline |

@@ -64,12 +64,26 @@ indexes and re-read the same buyer/UOM. This is a measured host observation, not
 corpus compatibility claim or a promise for older versions whose resolved-price cache may
 still require a recycle. Complete the reverse source/import/buyer test as well. [dw 10.29.8]
 
-For staged XML, discover the provider's logical source path separately from the file-archive
-upload path. An archive path under `/Files/Files/Integration/` was read by the XML provider as
-`/Files/Integration/`; confirm with provider-schema preview before running. Pass `isBase64=false`
-explicitly for text uploads. Publicly served staging holds public MSRP only, never customer
-agreements, addresses or invoices. An empty grouped MCP log listing is not run completion or
-failure; pair the exact activity status with its native log and independently counted rows.
+## Protected staging and run completion
+
+Stage customer agreements, addresses and documents in a folder proven inaccessible to anonymous
+HTTP. `Files/System/Integration/` can be publicly served; its name is not an access boundary.
+On a local install, a scoped `Files/App_Data/<integration>/` folder returned anonymous HTTP404
+and the native XML provider read it with source folder `/App_Data` and source file
+`/App_Data/<integration>/<feed>.xml`. Probe with harmless content, verify that its bytes are not
+served, then confirm the schema preview before copying sensitive feeds. Hosted installs need
+an equivalent operator-managed protected staging path. [dw 10.29.8]
+
+Discover the provider's logical source path separately from the file-archive upload path.
+For public MSRP, an archive path under `/Files/Files/Integration/` was read by the XML provider
+as `/Files/Integration/`. Pass `isBase64=false` explicitly for text uploads. Keep public staging
+limited to public values.
+
+Capture source UTC time and a SHA256 of every staged file. Before running, require the feed
+within its declared freshness budget and compare the staged file hash with the source manifest.
+An empty grouped MCP log listing is not run completion or failure. Pair exact activity status
+with the native log for that queued attempt, verify its success marker and expected affected
+rows, then reconcile stable IDs and buyer values independently.
 
 ## Enable live integration
 

@@ -15,10 +15,14 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   company-pinned read-only probes, a strict evidence verifier, deterministic fixtures and
   hermetic tests. No new live compatibility claim is made in `versions.json`; the new workflows
   still require acceptance against the selected BC environment.
-- Record the first measured native MSRP change/apply/buyer/reset pattern, including existing
-  PriceId updates, explicit text-upload mode, logical XML paths and targeted price/product cache
-  refresh on DW10.29.8. Keep other tiers and full business acceptance pending; no measured
-  compatibility version is advanced.
+- Record measured native MSRP/customer change/apply/buyer/reset and group fallback controls,
+  including existing PriceId updates, additive BC-derived group membership, explicit text upload,
+  protected App_Data staging and targeted cache refresh on DW10.29.8. Explain native BC29
+  price-source inheritance and verified non-interactive activation, computed stock views distinct
+  from physical sources, frozen extension release manifests and durable native seed receipts.
+  Full quantity/UOM/cart, financial and business acceptance remains pending; no measured
+  compatibility version is advanced. Retire stale catalog and fallback claims that MCP cannot
+  write group/customer scopes when its current schema exposes those members.
 
 ## [5.8.12]
 

@@ -18,6 +18,19 @@ The BC ERP plug-in unit also needs its installed permission set, documented as
 `DYNAMICWEBPERMISSION`; verify it against the extension in that environment. A token alone
 does not prove either permission layer.
 
+Assign each role separately in every allowed company and inspect the complete permission grid
+before enabling writers. A blank company scope broadens access beyond the selected company.
+Use the denied object and read/insert/modify/indirect operation to identify a narrower missing
+permission; a successful item read does not establish customer creation, price access or financial
+posting rights. Retain unrelated assignments. Prove the companies allowlist and an explicit
+request to a known excluded company: BC may return HTTP400 with `Internal_DataNotFoundFilter`
+and an access-denied message rather than HTTP403. Record the error body as well as the status.
+
+Keep Admin Center, Automation and unrelated Graph permissions outside an ordinary commerce
+integration unless their specific administration operation is authorised. For a custom extension,
+review its objects and executable permission surface through
+[extension-contracts.md](extension-contracts.md) before assigning a financial role.
+
 ## Read the actual surfaces
 
 | Surface | URL or configuration | Proof |

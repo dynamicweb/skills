@@ -459,19 +459,24 @@ count for `FeedService` drops after the refresh.
 In-product home: [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`, "2.13
 Customer-specific (contract) pricing").
 
-MCP `save_prices` reaches `PriceCustomerGroupId` (its `customerGroupId`, which matches a customer NUMBER)
-and no other scope column. **Surface: Management API `PriceSave`**, as a full-model round trip:
+Prefer MCP `save_prices` when its discovered item schema exposes the intended scope.
+`userGroupId` and `userCustomerNumber` are available; `customerGroupId` is the differently named
+customer-number scope. The canonical scope mapping lives in
+[`dw-commerce-b2b`](../../dw-commerce-b2b/SKILL.md). [mcp 0.4.4]
+
+For a narrower installed MCP server, **surface: Management API `PriceSave`**, as a full-model round trip:
 
 1. Read the whole model: `GET /Admin/Api/PriceById?Id=<priceId>`.
-2. For a group scope, set `userGroupId` to the `AccessUser` group id and leave `groupCustomerNumber` empty.
-   For a customer (whole-account) scope, set `userCustomerNumber` to the account's customer number.
-3. Post the whole model to `POST /Admin/Api/PriceSave`.
+2. For a group scope, set `userGroupId` to the `AccessUser` group ID and leave unrelated scopes empty.
+   For a customer account, set `userCustomerNumber` to that account's customer number.
+3. Post the whole model to `POST /Admin/Api/PriceSave` and read the same price back.
 
-- **Why the higher surfaces do not cover it**: `save_prices` has no member for `PriceUserGroupId` or
-  `PriceUserCustomerNumber`.
+- **Why the higher surface does not cover this fallback**: use it only after the installed MCP
+  `save_prices` schema proves it lacks the required scope member.
 - **Hosted installs included**: this is an API call, not SQL.
-- **The debt it owes**: none for the write. Assert the rendered price signed in as a member of the scope,
-  with an anonymous visitor as the control, never the row.
+- **The debt it owes**: refresh the measured price/product caches and affected indexes through
+  [`dw-data-write-effects`](../../dw-data-write-effects/SKILL.md), then assert the actual member's
+  price and an anonymous control. A stored row alone does not prove eligibility or freshness.
 
 ## Variant combinations and per-variant rows through the Management API
 

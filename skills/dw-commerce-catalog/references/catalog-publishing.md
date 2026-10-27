@@ -165,48 +165,30 @@ Switching surfaces will not fix it; the resolver is the same downstream code pat
 
 ## 2.13 Customer-specific (contract) pricing
 
-Account / contract pricing ("customer-card" prices) is a per-customer `EcomPrices` row. Two gotchas
-make a correct setup look broken:
+Discover the current MCP `save_prices` item schema before writing a scoped price.
+`userGroupId` writes `EcomPrices.PriceUserGroupId` for a direct user-group member and
+`userCustomerNumber` writes `PriceUserCustomerNumber` for an account. `customerGroupId` writes
+`PriceCustomerGroupId`, which matches a customer number despite its group-shaped name.
+Passing a user-group ID there can save successfully while matching no buyer. [mcp 0.4.4]
 
-- **Two different scopes live in two different columns, and MCP `save_prices` can only reach one of
-  them.** `PriceUserGroupId` (Admin API `userGroupId`) scopes a row to an **`AccessUser` group**;
-  `PriceCustomerGroupId` (Admin API `groupCustomerNumber`) matches a customer **NUMBER** string, not a
-  group id. MCP `save_prices`'s `customerGroupId` writes `PriceCustomerGroupId`, so passing a user-group
-  id there stores a number that matches nothing and the resolver falls through to the list price:
-  `save_prices {customerGroupId:"1342"}` answers `succeeded:1`, the row appears in `EcomPrices` with
-  `PriceCustomerGroupId=1342` and `PriceUserGroupId=NULL`, and a member of group 1342 still sees the list
-  price on the PDP.
-- **A GROUP-scoped contract price is `PriceUserGroupId`, and no MCP tool writes it.** `save_prices` does
-  not expose the column at all, so keep that tool for unscoped rows and for customer-number-scoped rows.
-  Measured: setting `PriceUserGroupId` to the `AccessUser` group id, with the customer-number scope left
-  empty, moved the same buyer's PDP from the list 312.00 to the contract 274.56 on that one change. In
-  product, ask the user to set the group scope on the price.
-- **A CUSTOMER-scoped contract price is `PriceUserCustomerNumber`**, matching every user whose
-  `AccessUserCustomerNumber` equals it, i.e. the whole account. `save_prices` cannot set it either. Both
-  scoped writes are out of product:
-  [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "Writing a group- or customer-scoped contract price with `PriceSave`".
-- **Assert the rendered price, not the row.** A row-exists assertion passes while the storefront is still
-  on list price. Sign in as a member of the group and read the price block; an anonymous visitor is the
-  control.
-- **Lowest matching price wins** — not priority. A lower contract amount beats the all-customers list
-  price automatically once it matches; no need to set `PricePriority`.
-- **A row with an empty variant id matches EVERY variant of its master, and lowest wins across all of
-  them.** On a variant master whose variants carry their own list prices, a group-scoped or quantity row
-  written on the master undercuts every variant priced above it: measured, a variant listed at 575 was
-  charged 412, and dealer orders came in below the dealer's own rows. Write group and quantity rows **per
-  variant id** (`save_prices` with `productId` and `variantId`), never on the master with an empty variant
-  id; the tool has no master-only scope. Assert per variant, signed in, in the cart.
+The canonical column map, unused-scope handling, direct-membership rule and member/anonymous
+buyer controls live in [`dw-commerce-b2b`](../../dw-commerce-b2b/SKILL.md), under contract prices.
 
-**Where it renders:** *not* on PLP/PDP (those show the index / default price context regardless of who
-is signed in). The customer price resolves **live in the cart and checkout** (and on any order whose
-customer context carries the customer number). Show it by signing in as the buyer and opening the
-cart, not the catalogue. A per-customer price on the PDP requires a content-layout extension that reads
-the live price for the current user — not the index field.
+**Lowest matching price wins**, rather than a scope priority. A lower applicable account/group
+amount beats the all-customers price. Keep variant rows precise: a row with an empty variant ID
+matches every variant and can undercut their individual terms. Write group/quantity rows per
+variant and assert each actual signed-in cart.
 
-**Cache:** prices are cached in process — a SQL price change needs a cache refresh or **host restart**
-before it resolves. **Verification trap:** MCP `force_price_recalculation` recomputes *without* a
-frontend user price context, so it returns the default price even when customer pricing is correct.
-Verify in the storefront cart as the signed-in user, never via recalc.
+Verify the actual rendered PDP and cart for the intended user. A page may render an index/default
+price context even while the cart resolves the account agreement; inspect that page's model before
+claiming either surface proves the other. `force_price_recalculation` lacks the frontend user's
+price context, so its default result is not evidence that an account price failed. For a stale
+imported value, follow [`dw-data-write-effects`](../../dw-data-write-effects/SKILL.md).
+Quantity/UOM boundaries remain separate from audience scope.
+
+For an older server whose tool schema lacks the required member, use the out-of-product fallback
+in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md)
+"Writing a group- or customer-scoped contract price with `PriceSave`".
 
 ## 2.14 Variants via the Management API (no SQL)
 

@@ -170,7 +170,7 @@ Build the Dynamics 365 Finance & Operations integration end to end on the Integr
 Discover the selected BC environment, published contracts, populated companies, key spine, ownership split and NAV migration gaps before building activities.
 
 **[dw-integration-bc](skills/dw-integration-bc/SKILL.md)**
-Build BC integration on the Integration Framework: S2S, company-qualified entities, XML batch or published OData pages, tier prices, BC-managed ship-to, inventory, live operations, order export, status and invoices. Includes read-only connection probes and a verifier that separates mock rehearsal from live evidence.
+Build BC integration on the Integration Framework: S2S, company-qualified entities, XML batch or published OData pages, tier prices, BC-managed ship-to, inventory, live operations, order export, status and invoices. Includes read-only probes, protected staging, reviewed extension release boundaries, BC-derived group eligibility, computed stock views and a verifier that separates mock rehearsal from live evidence.
 
 **[dw-data-access](skills/dw-data-access/SKILL.md)**
 Choose appropriate data-access patterns and optimize caching.
@@ -208,7 +208,7 @@ ERP integration demo — DB-staged mock or live BC, Integration Framework rules.
 A live Dynamics 365 Finance and Operations demo: one legal entity per customer demo in a shared sandbox, seeded from a golden company's configuration package, shaped from the customer's data model, every DW job pinned to its `dataAreaId`, and retired as dormant rather than deleted. Ships PowerShell for the company create, the copy watch, the measured copy-gap repair and the per-company verification. OData-only. Use after `dw-demo-base`.
 
 **[dw-demo-bc](skills/dw-demo-bc/SKILL.md)**
-Stage a BC demo with isolated companies, a deterministic mock sync/change/reset fixture, an explicit live handoff and preserved PIM connector/tunnel troubleshooting. Use after `dw-demo-base`; reusable integration mechanics live in `dw-integration-bc`.
+Stage a BC demo with isolated companies, durable native opening-stock receipts, a deterministic mock sync/change/reset fixture, an explicit live handoff and preserved PIM connector/tunnel troubleshooting. Use after `dw-demo-base`; reusable integration mechanics live in `dw-integration-bc`.
 
 **[dw-demo-hosted](skills/dw-demo-hosted/SKILL.md)**
 Hosted/cloud installs reached only by URL + Admin API key — building a demo directly on one ([references/online-mode.md](skills/dw-demo-hosted/references/online-mode.md)) and publishing a locally-built demo onto one ([references/publish-to-hosted.md](skills/dw-demo-hosted/references/publish-to-hosted.md)). No scaffold, no SQL; verify by round-trip, not status code. Use after `dw-demo-base`.

@@ -8,7 +8,10 @@ Treat an unconfirmed type or a production environment as read-only.
 Use one or more isolated companies for the demo's selling and fulfilment entities. Provision
 or copy through BC's supported company/environment administration with explicit owner approval;
 record localization, posting setup, UOM, number series, customers, items and opening inventory.
-A new empty company is not a configured business. Do not copy an F&O legal-entity recipe.
+A new empty company is not a configured business. Country-named companies in a sandbox with
+one localisation prove company separation only; they do not validate another country's statutory
+localisation. Verify customer posting groups, payment terms, item posting setup and number series
+before any financial order. Do not copy an F&O legal-entity recipe.
 
 Company copy, environment copy and installed extensions have different scope. Extensions and
 some configuration affect the environment; review neighbouring demos before installing anything.
