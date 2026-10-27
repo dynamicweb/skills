@@ -49,3 +49,10 @@ jobs:
           Write-Host "All shipped PowerShell scripts parse cleanly."
       - name: Verify manifest.json is current
         run: node scripts/build-manifest.mjs --check
+      - name: Test BC offline contracts and fixture reset
+        run: python -m unittest discover -s tests -p "test_bc_*.py" -v
+      - name: Test BC read-only transport
+        shell: pwsh
+        run: |
+          Install-Module Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
+          Invoke-Pester -Path tests/Bc.Api.Tests.ps1 -Output Detailed -CI

@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "5.8.12"
+    "version": "5.9.0"
   },
   "plugins": [
     {
@@ -78,7 +78,9 @@
         "./skills/dw-integration-erp",
         "./skills/dw-data-access",
         "./skills/dw-data-write-effects",
-        "./skills/dw-data-audit-trail"
+        "./skills/dw-data-audit-trail",
+        "./skills/dw-integration-bc-discovery",
+        "./skills/dw-integration-bc"
       ]
     },
     {
@@ -131,7 +133,9 @@
         "./skills/dw-content-modelling",
         "./skills/dw-data-access",
         "./skills/dw-data-write-effects",
-        "./skills/dw-swift-building"
+        "./skills/dw-swift-building",
+        "./skills/dw-integration-bc-discovery",
+        "./skills/dw-demo-bc"
       ]
     }
   ]

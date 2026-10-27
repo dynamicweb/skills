@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "mode": "mock",
+  "tenantId": "00000000-0000-0000-0000-000000000001",
+  "environment": "Sandbox",
+  "measuredAt": "2000-01-01T00:00:00Z",
+  "results": [
+    {
+      "scenario": "products",
+      "companyId": "00000000-0000-0000-0000-000000000011",
+      "passed": false,
+      "assertion": "Replace with the actual source key and independently read platform product.",
+      "proofs": ["proofs/products-source.json", "proofs/products-readback.json"]
+    }
+  ]
+}

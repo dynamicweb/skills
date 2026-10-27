@@ -3,6 +3,19 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.9.0]
+
+- **Business Central skill family:** rebuild `dw-integration-bc` as a foundational Integration
+  Framework workflow covering S2S, company keys, ERP batch/live operations, tier pricing,
+  BC-managed ship-to, location stock, phantom bundles, cross-company fulfilment, credit
+  admission, order export, status and invoices. Add `dw-integration-bc-discovery` for source
+  inventory, ownership and NAV migration gaps, and `dw-demo-bc` for sandbox isolation,
+  labelled mock sync/reset and live handoff. Preserve the former PIM/tunnel recipes there.
+- Register the foundational skills in backend and presales; keep the demo in presales. Add
+  company-pinned read-only probes, a strict evidence verifier, deterministic fixtures and
+  hermetic tests. No new live compatibility claim is made in `versions.json`; the new workflows
+  still require acceptance against the selected BC environment.
+
 ## [5.8.12]
 
 - **Combine as variants: the empty master number is by design; the completion-rule gap is work item 29782.**

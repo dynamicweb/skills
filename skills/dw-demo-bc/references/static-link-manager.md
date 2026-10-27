@@ -4,7 +4,7 @@
 > works during the demo. The generic admin-deeplink mechanism, the full `/admin/api/StaticLink*`
 > endpoint surface, its settings/save shapes, the case-sensitive-parameter gotcha, and the
 > `*Pipeline`-DI-needs-restart pattern are vendor-generic and live in
-> [`addin-lifecycle.md`](../../dw-extend-providers/references/addin-lifecycle.md) §2–§3. This
+> [`addin-lifecycle.md`](../../dw-extend-providers/references/addin-lifecycle.md) §2-§3. This
 > file is the demo-specific "install it or the beat fails" recipe.
 
 ## Why it matters for the BC demo
@@ -52,7 +52,7 @@ ngrok hostname automatically as long as `ForwardedHeaders` is honouring `X-Forwa
 
 A fuller cloud/hosted DW install may already include `StaticLinkManager` out of the box; local
 `dw10-suite` template installs do not. If you're comparing a local host against a hosted one and find
-`StaticLink*` endpoints missing locally, the AppStore page in admin is where to install it — then run
+`StaticLink*` endpoints missing locally, the AppStore page in admin is where to install it  -  then run
 the install + host-restart cycle above.
 
 ## Demo-time troubleshooting
@@ -61,4 +61,4 @@ the install + host-restart cycle above.
 |---|---|
 | BC's "show PIM product page" silent failure; `StaticLinkSave` returns 400 `Unknown command` | AddIn not installed |
 | Same but 500 `TypeInitializationException` | AddIn installed, host not restarted |
-| Save returns 200 but BC's webview shows blank/error | Different layer — inspect what URL BC actually loaded via the ngrok inspector (`127.0.0.1:4040`); could be `ForwardedHeaders` not honouring `X-Forwarded-Host` (see [forwarded-headers.md](forwarded-headers.md)) |
+| Save returns 200 but BC's webview shows blank/error | Different layer  -  inspect what URL BC actually loaded via the ngrok inspector (`127.0.0.1:4040`); could be `ForwardedHeaders` not honouring `X-Forwarded-Host` (see [forwarded-headers.md](forwarded-headers.md)) |

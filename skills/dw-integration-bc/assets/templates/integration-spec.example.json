@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "tenantId": "00000000-0000-0000-0000-000000000001",
+  "environment": "Sandbox",
+  "companyIds": ["00000000-0000-0000-0000-000000000011", "00000000-0000-0000-0000-000000000012"],
+  "requiredScenarios": ["authentication", "products", "customers", "ship_to", "tier_prices", "promotions", "inventory", "fulfilment", "bundles", "credit", "order_export", "status", "invoices", "replay", "isolation"]
+}

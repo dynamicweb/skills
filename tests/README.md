@@ -27,3 +27,14 @@ Two mechanics worth knowing before adding a suite:
   go in the file-level `BeforeAll`.
 
 Requires Pester 5 or later on PowerShell 7.
+
+The BC suites additionally exercise company isolation, paging, retry, acceptance coverage,
+mock/live separation and fixture reset. Run the offline Python suite with Python 3.12+:
+
+```powershell
+python -m unittest discover -s tests -p "test_bc_*.py" -v
+pwsh -NoProfile -Command "Invoke-Pester -Path tests/Bc.Api.Tests.ps1 -Output Detailed"
+```
+
+These checks make no live compatibility claim. BC acceptance still requires source,
+platform and buyer evidence from the selected environment.

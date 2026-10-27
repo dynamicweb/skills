@@ -32,7 +32,8 @@ rule that governs every edit — the one-way foundational/demo boundary — live
 
 Every skill is either **foundational** (vendor-generic platform knowledge — setup, render,
 content, pim, commerce, search, users, extend, integration, data-access, source-explorer) or
-**demo** (the presales chain: `dw-demo-base` and its sisters, plus `dw-integration-bc`).
+**demo** (the presales chain: `dw-demo-base` and its sisters, including `dw-demo-bc`).
+The BC integration and discovery skills are foundational; PIM tunnel recipes live in `dw-demo-bc`.
 
 Settle which one before writing a line: the category decides whether demo/customer content and
 links into `dw-demo-*` are allowed in the file at all. The rule and its three clauses are in
@@ -168,7 +169,7 @@ the pre-existing backlog is drained deliberately.
 - **`dynamo: true`** — the skill is useful to an in-product admin and goes into the manifest.
   Every pim, commerce, content, users, search, render and swift skill is here.
 - **`dynamo: false`** — the skill needs a surface Dynamo does not have, so the builder leaves
-  it out of `manifest.json` entirely: the demo chain, `dw-setup-*`, `dw-integration-bc`
+  it out of `manifest.json` entirely: the demo chain, `dw-setup-*`, `dw-demo-bc`
   (ngrok), `dw-extend-mcp-tools` (builds the MCP project), `dw-source-explorer` (browses
   GitHub). Claude Code still loads these normally through `marketplace.json`.
 
@@ -424,7 +425,7 @@ bundle — either add the target skill to the bundle or route through its SKILL.
 
 The `dynamicweb-presales` bundle has a hard dependency chain — `dw-demo-base` must run before any
 sister skill (`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`,
-`dw-demo-erp`, `dw-demo-fo`, `dw-demo-foldback`, `dw-integration-bc`). Sister skill descriptions carry a
+`dw-demo-erp`, `dw-demo-fo`, `dw-demo-bc`, `dw-demo-foldback`). Sister skill descriptions carry a
 "Use AFTER dw-demo-base" marker; preserve it on any edit.
 
 ## Validation
