@@ -47,6 +47,30 @@ Configure the activity's cache and repository-index steps, then assert the buyer
 availability. Follow [`dw-data-write-effects`](../../dw-data-write-effects/SKILL.md) if storage
 and storefront disagree. A host restart is an environment change subject to that host's rules.
 
+**Existing MSRP rows:** a narrow XML-to-`DynamicwebProvider` activity
+updated `EcomProducts.ProductPrice` by product/variant/language and `EcomPrices.PriceAmount`
+by existing `PriceId`, while retaining other price fields and customer/quantity/UOM rows.
+This is an update-only alternative when the stable destination IDs are already mapped;
+it is not a substitute for resolving the complete identity of newly imported agreements.
+A success log and the product getter showed the new base price while the price getter and
+buyer page retained a cached amount. Verify the stored amount independently. [dw 10.29.8]
+
+On that host, out-of-product Management API `POST /admin/api/CacheInformationRefresh` with
+`{"CacheTypeName":"Dynamicweb.Ecommerce.Prices.PriceService"}` and then
+`{"CacheTypeName":"Dynamicweb.Ecommerce.Products.ProductService"}` returned `status: ok`
+and made the changed price visible in the buyer PDP and cart without recycling. Confirm the
+service names with `GetServiceCaches`, require the acknowledgement, then refresh the actual
+indexes and re-read the same buyer/UOM. This is a measured host observation, not a new
+corpus compatibility claim or a promise for older versions whose resolved-price cache may
+still require a recycle. Complete the reverse source/import/buyer test as well. [dw 10.29.8]
+
+For staged XML, discover the provider's logical source path separately from the file-archive
+upload path. An archive path under `/Files/Files/Integration/` was read by the XML provider as
+`/Files/Integration/`; confirm with provider-schema preview before running. Pass `isBase64=false`
+explicitly for text uploads. Publicly served staging holds public MSRP only, never customer
+agreements, addresses or invoices. An empty grouped MCP log listing is not run completion or
+failure; pair the exact activity status with its native log and independently counted rows.
+
 ## Enable live integration
 
 Copy the saved SOAP endpoint into a separate live request and select **Use in Live Integration**.

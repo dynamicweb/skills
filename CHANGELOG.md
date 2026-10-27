@@ -15,6 +15,10 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   company-pinned read-only probes, a strict evidence verifier, deterministic fixtures and
   hermetic tests. No new live compatibility claim is made in `versions.json`; the new workflows
   still require acceptance against the selected BC environment.
+- Record the first measured native MSRP change/apply/buyer/reset pattern, including existing
+  PriceId updates, explicit text-upload mode, logical XML paths and targeted price/product cache
+  refresh on DW10.29.8. Keep other tiers and full business acceptance pending; no measured
+  compatibility version is advanced.
 
 ## [5.8.12]
 
