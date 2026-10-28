@@ -32,6 +32,12 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   typed customer-center page/mirror setup. Page empty-view proofs and hermetic unit profiles do
   not establish invoice return, payment/partial-document or full business acceptance.
 
+- Preserve exact native completion witnesses across XML fractional-precision loss and make empty
+  read-only result sets explicit. Distinguish XML source settings from destination row-skipping,
+  require guarded native order imports, and retire stale explicit-ID/counter advice. Document
+  strict native posted-document recovery when a persisted receipt remains accepted, without
+  claiming unattended posting, completed invoice return or recurring-order acceptance.
+
 ## [5.8.12]
 
 - **Combine as variants: the empty master number is by design; the completion-rule gap is work item 29782.**

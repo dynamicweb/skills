@@ -4,6 +4,7 @@
 
 - [Admit and export](#admit-and-export)
 - [Financial transaction and posting boundary](#financial-transaction-and-posting-boundary)
+- [Recover a posted document without rewriting its receipt](#recover-a-posted-document-without-rewriting-its-receipt)
 - [Bring status back](#bring-status-back)
 - [Bring invoices back](#bring-invoices-back)
 - [Native persisted invoice import](#native-persisted-invoice-import)
@@ -84,6 +85,21 @@ then reconciles its linked entries. Restrict test resets to owned proof referenc
 applied native correction links. Preserve the financial audit trail; deleting receipt or posted
 ledger rows is not a reset.
 
+## Recover a posted document without rewriting its receipt
+
+A native operator can finish posting after an application-side attempt was held. Reconcile the
+resulting invoice and shipment through the immutable accepted route, customer, source references,
+currency, location and every header/line economic field. Require the complete accepted component
+census, quantities, prices, discounts and totals; hold multiple, partial or extra economic lines.
+A draft-invoice identity is not a promised sales-order GUID, and the posted header may not expose
+the original order GUID. Discover and verify the actual document relations.
+
+A read-only recovery response may then report the native invoice while its persisted request
+receipt still says accepted. Return the recovered document identity and explicitly state whether
+the receipt was updated. Keep the durable receipt and recovered observation distinguishable on
+replay. An existing operator's successful post proves neither the application's unattended posting
+permissions nor a completed Commerce invoice return. Keep those acceptance checks separate.
+
 ## Bring status back
 
 Poll or read confirmed live documents in the same company. Map BC facts to existing platform
@@ -93,8 +109,12 @@ express each state. Preserve fulfilment history after an unposted order disappea
 
 Use update-only mappings for the original order, scoped by company and source identity. Read
 state metadata before changing it and exclude states that send an unintended email. Re-read the
-original financial/address flags and complete hierarchy around the status write. A missing ERP
-row is unknown, not cancellation. Importing an invoice and changing the original status are
+original financial/address flags and complete hierarchy around the status write. A native
+order-service state save can materialise a null top-level `OrderParentOrderId` as an empty string.
+Permit precisely that root-order equivalence when measured; hold a foreign parent or any
+financial/line change. [dw 10.29.8]
+
+A missing ERP row is unknown, not cancellation. Importing an invoice and changing the original status are
 separate platform operations; use a durable replayable checkpoint rather than claiming combined
 atomicity. An unchanged replay keeps keys, counts, amounts and state stable.
 
@@ -130,9 +150,12 @@ not reapplied as Commerce promotions. Reconcile line sums and the complete origi
 Use protected `App_Data` staging and one native transaction. Disable missing-row removal,
 duplicate discard and successful-row persistence on failures. Pin mappings and source path, lock
 the return worker for its owned order, and fail before altering a divergent existing ledger.
-An identical completed ledger replay needs no import. Pin the queued native log and reconcile
-header/line affected counts, stored parent/owner/flags and amounts, then Management API `InvoiceList` (`/admin/api/InvoiceList`) and
-buyer detail. Local-install read-only storage verification is a last rung when actual projections
+An identical completed ledger replay needs no import. Pin the queued native log and its actual
+provider completion markers. The measured `OrderProvider` logs `Finished import to temporary table
+for <table>.` and `Job succeeded.` without the `EcomProvider` affected-row counter strings. Record
+expected counts separately and independently reconcile the exact stored header/line census and
+every parent/owner/flag/amount field. Then check Management API `InvoiceList` (`/admin/api/InvoiceList`)
+and buyer detail. [dw 10.29.8] Local-install read-only storage verification is a last rung when actual projections
 omit those fields; it does not authorise a SQL write or a hosted-store fallback.
 
 Prove the first full invoice before enabling partial invoices, multiple invoices, payment or

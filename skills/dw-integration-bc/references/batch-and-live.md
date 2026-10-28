@@ -1,5 +1,14 @@
 # Batch imports and live operations
 
+## Contents
+
+- [Choose an integration route](#choose-an-integration-route)
+- [Configure the first import](#configure-the-first-import)
+- [Apply and refresh](#apply-and-refresh)
+- [Protected staging and run completion](#protected-staging-and-run-completion)
+- [Native source precision and side-specific settings](#native-source-precision-and-side-specific-settings)
+- [Enable live integration](#enable-live-integration)
+
 ## Choose an integration route
 
 | Route | Read / apply | Appropriate use |
@@ -84,6 +93,21 @@ within its declared freshness budget and compare the staged file hash with the s
 An empty grouped MCP log listing is not run completion or failure. Pair exact activity status
 with the native log for that queued attempt, verify its success marker and expected affected
 rows, then reconcile stable IDs and buyer values independently.
+
+## Native source precision and side-specific settings
+
+Before freezing an outbound order, compare the actual native provider capture with a fresh full
+native read, including original completion time and exact line identities. A timestamp formatted
+with fractional digits can still have lost them earlier in the XML writer. Use the measured
+provider behaviour and exact independent witness from
+[`dw-integration-framework`](../../dw-integration-framework/SKILL.md) and
+[`dw-data-access`](../../dw-data-access/SKILL.md); retain the original verified instant.
+
+Pin the actual XML source path, culture and absence of unintended XSL/delete/archive operations.
+The XML source's echoed `SkipTroublesomeRows=True` is not an import skip policy. Check the actual
+order destination and activity transaction/failure settings, including
+`PersistSuccessfulRows=False` and `asTransaction=True`, before any financial return. Source and destination metadata are
+not interchangeable. [dw 10.29.8]
 
 ## Enable live integration
 
