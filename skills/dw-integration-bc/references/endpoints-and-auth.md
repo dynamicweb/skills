@@ -4,6 +4,14 @@ Collect tenant GUID, environment name and type, company GUIDs, BC version, exten
 application client ID and secret reference. Obtain the secret from the environment or a vault
 into process memory. Keep tokens and endpoint authentication payloads out of evidence files.
 
+## Contents
+
+- [BC identity](#bc-identity)
+- [Installed posting dependencies](#installed-posting-dependencies)
+- [Read the actual surfaces](#read-the-actual-surfaces)
+- [Integration Framework endpoint](#integration-framework-endpoint)
+- [Failure interpretation](#failure-interpretation)
+
 ## BC identity
 
 For unattended reads, use Entra client credentials with scope
@@ -45,6 +53,13 @@ assignment. Reusing that native read role also avoids adding an extension depend
 name its table; a PTE that does reference the table needs the actual installed dependency and
 symbols in a new reviewed build. Continue testing native post and correction, because another
 subscriber can require a different exact operation. Keep direct and indirect permissions distinct.
+
+A first native posting can also require creation of a technical cost-staging row. On a
+measured BC29 path, `TableData 5804 "Avg. Cost Adjmt. Entry Point"` needed explicitly approved
+application R/I/M, without Delete; indirect-only access and a codeunit elevation did not satisfy
+that call chain. Keep financial-ledger writes indirect and company scope narrow. Inspect the
+installed path, approve the exact operation, then repeat application-identity post and rollback
+proof. An existing administrator's successful post does not establish the application's rights.
 
 Source: [Microsoft BC29 E-Document Core read role](https://github.com/microsoft/BCApps/blob/releases/29.0/src/Apps/W1/EDocument/App/Permissions/EDocCoreRead.PermissionSet.al).
 

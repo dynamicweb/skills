@@ -55,6 +55,10 @@ bounded overlap with stable-key upsert; replaying a boundary must not create dup
 Configure the activity's cache and repository-index steps, then assert the buyer's price and
 availability. Follow [`dw-data-write-effects`](../../dw-data-write-effects/SKILL.md) if storage
 and storefront disagree. A host restart is an environment change subject to that host's rules.
+For stock, include the measured [native stock-cache effect](../../dw-data-access/references/recipes-integration.md#refresh-native-stock-after-import)
+after the complete import chain; stored rows, native `get_product_stock` and rendered stock
+are independent checks. A completed job or one fresh base-unit row proves neither the other
+units nor the computed availability view.
 
 **Existing MSRP rows:** a narrow XML-to-`DynamicwebProvider` activity
 updated `EcomProducts.ProductPrice` by product/variant/language and `EcomPrices.PriceAmount`

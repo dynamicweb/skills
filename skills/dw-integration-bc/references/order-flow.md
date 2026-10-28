@@ -3,6 +3,8 @@
 ## Contents
 
 - [Admit and export](#admit-and-export)
+- [Native recurring generation and standing mandates](#native-recurring-generation-and-standing-mandates)
+- [Native Double money ingress](#native-double-money-ingress)
 - [Verify installed extension identity](#verify-installed-extension-identity)
 - [Financial transaction and posting boundary](#financial-transaction-and-posting-boundary)
 - [Recover a posted document without rewriting its receipt](#recover-a-posted-document-without-rewriting-its-receipt)
@@ -53,6 +55,34 @@ not create a second header. Set `OrderIntegrationOrderId` and exported state onl
 ERP acknowledgement. Inspect source-provider side effects: a provider marking an order exported
 while staging is not an ERP receipt. Initial order acceptance, shipment and posting are separate
 states and operations.
+
+## Native recurring generation and standing mandates
+
+A standing subscription mandate binds the account, plant, route, commercial policy and allowed
+attempts. It does not require fresh interactive human approval for every scheduled occurrence.
+Each generated completed native order still needs a fresh full-source-fingerprint release,
+current actor/role/ship-to checks and the same atomic ERP price, credit and stock gate.
+
+For an explicitly authorised one-run rehearsal, preflight the exact native task/template and
+eligible population. Persist an exclusive durable max-one invocation latch **before** native
+generation. Consume it on timeout or an unknown outcome too; reconcile native results instead
+of offering a reset/retry verb. Another generation needs separate authority. This wrapper
+boundary does not replace the generated order's ERP idempotency key. Read back native
+`LastDelivery`, derived `NextDelivery` and the forward schedule after completion; never edit
+template/delivery dates to manufacture success. One bounded run proves no general scheduler
+or all-producer coverage.
+
+## Native Double money ingress
+
+An authoritative native API/XML header total can contain binary `Double` dust. Compare the
+independent raw native reads first. Only a schema-qualified, currency-qualified float field
+may project to its nearest minor unit when the difference is at most
+`min(2 * ulp(value), 1e-9)`; the measured policy covered the two authoritative USD header totals.
+Reject non-finite values, arbitrary strings and actual fractional cents. A return adapter's
+equivalent exception requires an actual authoritative native SQL float on a local-install
+read-only path when higher projections omit that original field, not a cast of untrusted data.
+Preserve raw/projected evidence and bind the projection policy to the source fingerprint. Strict BC/invoice/line minor-unit validation stays unchanged;
+do not introduce general rounding or a broad financial tolerance.
 
 ## Verify installed extension identity
 
@@ -137,9 +167,10 @@ express each state. Preserve fulfilment history after an unposted order disappea
 Use update-only mappings for the original order, scoped by company and source identity. Read
 state metadata before changing it and exclude states that send an unintended email. Re-read the
 original financial/address flags and complete hierarchy around the status write. A native
-order-service state save can materialise a null top-level `OrderParentOrderId` as an empty string.
-Permit precisely that root-order equivalence when measured; hold a foreign parent or any
-financial/line change. [dw 10.29.8]
+order-service save can materialise a null root `OrderParentOrderId` or previously empty
+`OrderReference` as an empty string. Allow only the exact schema-qualified null/empty pair
+measured for those fields, with raw before/after trace. Preserve meaningful references, foreign
+parents and every financial/line field; never apply blanket string normalisation. [dw 10.29.8]
 
 A missing ERP row is unknown, not cancellation. Importing an invoice and changing the original status are
 separate platform operations; use a durable replayable checkpoint rather than claiming combined
@@ -152,6 +183,8 @@ invoices as ledger documents separate from the original order. Persist company p
 invoice GUID as identity; an invoice number alone can collide between companies. Retain number,
 original order link, owner/customer, currency, due date, tax, full amount and each component line.
 Discover the actual order-to-invoice relation; matching customer and amount is insufficient.
+Legacy billing-to-headquarters enrichment follows the immutable decision and full-address
+checks in [entity-map.md](entity-map.md#mapping-rules), not an `Address2` exception.
 
 BC API `salesInvoices(<id>)/pdfDocument` supplies metadata. Follow its content link server-side
 with ERP authentication, then authorise the buyer against the account, original order and company.

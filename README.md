@@ -170,7 +170,7 @@ Build the Dynamics 365 Finance & Operations integration end to end on the Integr
 Discover the selected BC environment, published contracts, populated companies, key spine, ownership split and NAV migration gaps before building activities.
 
 **[dw-integration-bc](skills/dw-integration-bc/SKILL.md)**
-Build BC integration on the Integration Framework: S2S, company-qualified entities, XML batch or published OData pages, tier prices, BC-managed ship-to, inventory, live operations, order export, status and invoices. Includes read-only probes, exact native source witnesses, protected staging, reviewed extension release boundaries, BC-derived group eligibility, computed stock views, guarded native financial boundaries with lock-time expiry and installed contract identity, component invoice return contracts, plus a verifier that separates mock rehearsal from live evidence.
+Build BC integration on the Integration Framework: S2S, company-qualified entities, XML batch or published OData pages, tier prices, BC-managed ship-to, inventory, live operations, order export, status and invoices. Includes read-only probes, exact native source witnesses, protected staging, reviewed extension release boundaries, BC-derived group eligibility, computed stock views, guarded native financial boundaries with lock-time expiry and installed contract identity, schema-qualified native money ingress, standing-mandate recurrence, stock-cache effects and complete component invoice return contracts. Its verifier separates mock/fixture checks from bounded live source, renderer and business evidence.
 
 **[dw-data-access](skills/dw-data-access/SKILL.md)**
 Choose appropriate data-access patterns and optimize caching.

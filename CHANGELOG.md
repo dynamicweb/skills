@@ -3,7 +3,7 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
-## [5.9.0]
+## [5.9.0] (unreleased)
 
 - **Business Central skill family:** rebuild `dw-integration-bc` as a foundational Integration
   Framework workflow covering S2S, company keys, ERP batch/live operations, tier pricing,
@@ -20,7 +20,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   protected App_Data staging and targeted cache refresh on DW10.29.8. Explain native BC29
   price-source inheritance and verified non-interactive activation, computed stock views distinct
   from physical sources, frozen extension release manifests and durable native seed receipts.
-  Full quantity/UOM/cart, financial and business acceptance remains pending; no measured
+  Full posted-UOM, producer and failure-matrix acceptance remains pending; no measured
   compatibility version is advanced. Retire stale catalog and fallback claims that MCP cannot
   write group/customer scopes when its current schema exposes those members.
 
@@ -35,14 +35,23 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 - Preserve exact native completion witnesses across XML fractional-precision loss and make empty
   read-only result sets explicit. Distinguish XML source settings from destination row-skipping,
   require guarded native order imports, and retire stale explicit-ID/counter advice. Document
-  strict native posted-document recovery when a persisted receipt remains accepted, without
-  claiming unattended posting, completed invoice return or recurring-order acceptance.
+  strict native posted-document recovery when a persisted receipt remains accepted; recovery
+  alone establishes no application-posting, invoice-return or recurrence acceptance.
 
 - Recheck short-lived credit-decision expiry after blocking price/stock locks and before native
   header creation and acceptance commit. Require an expired lock waiter to leave no committed
   order/receipt or stock delta. Verify installed extension identity, application/data versions
   and required policy through a read-only probe before business calls; preserve historical
-  release bindings when activating a new worker. No permission or compatibility expansion.
+  release bindings when activating a new worker. This preflight grants no permissions or compatibility.
+
+- Fold measured stock-import cache effects into their foundational owner, correct unqualified
+  physical/computed/UOM stock sums, and require real variant, zero-stock and visual-editor
+  rendering separately from helper fixtures. Document schema-qualified two-ULP native money
+  ingress without relaxing strict financial decimals, durable one-run recurrence with a
+  standing mandate, native delivery read-back, immutable-decision address enrichment and
+  traced nullable-reference equivalence. The approved permissions, bounded recurrence and
+  stock UI path passed; exact alternate-UOM financial approval and wider producer/scheduled
+  coverage remain open. Proposed 5.9.0 stays unreleased; compatibility and human gates do not move.
 
 ## [5.8.12]
 

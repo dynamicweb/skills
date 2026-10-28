@@ -406,19 +406,15 @@ UPDATE EcomProducts SET ProductHidden = 0 WHERE ProductHidden = 1;
 
 ## The two stock tables: asserting the aggregate matches the locations
 
-```sql
--- read-only invariant; snapshot it BEFORE any check that places its own order,
--- or the check fails on its own side effect. SQL because no verb aggregates the two
--- tables against each other; local installs only (a hosted install compares get_product_stock
--- with get_product_stock_by_location per product); owes no flush (read-only).
-SELECT COUNT(*) FROM (
-  SELECT p.ProductId
-  FROM EcomProducts p
-  LEFT JOIN EcomStockUnit su ON su.StockUnitProductId = p.ProductId
-  GROUP BY p.ProductId, p.ProductStock
-  HAVING ISNULL(SUM(su.StockUnitQuantity), 0) <> p.ProductStock
-) d;   -- must be 0
-```
+Use MCP `get_product_stock` and `get_products_by_ids` first. Compare only the exact variant,
+language, base-unit key and reviewed physical locations; exclude computed views and other UOMs.
+Snapshot before an order-generating probe and after authoritative ERP reconciliation.
+
+Where higher projections cannot express the corpus-wide join, SQL is a **read-only,
+local-install-only** last rung with those same explicit filters. An unqualified
+`SUM(StockUnitQuantity)` is invalid. The SELECT owes no flush; the preceding native import
+owes its [stock-cache effect](recipes-integration.md#refresh-native-stock-after-import)
+and native/buyer read-back.
 
 ## Deleting a feed or feed folder that `FeedDelete` leaves in place
 

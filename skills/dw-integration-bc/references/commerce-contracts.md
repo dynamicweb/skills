@@ -125,9 +125,16 @@ using the same item/UOM and availability definition. Retain the physical detail 
 reservations. A separate computed stock location can expose the aggregate to a single-location
 storefront: select that view explicitly and exclude it from physical-stock sums and ERP admission.
 A blank location selection can display the first physical row instead of a total. For indivisible
-units, convert and floor availability per company before aggregation; stock in separate companies
-cannot combine into one whole case. An inaccessible/stale company is unknown, not zero. Revalidate
-the chosen physical source at submission and test the rendered quantity limit. [dw 10.29.8]
+units, convert and floor availability per company before aggregation: use
+`sum(floor(companyAvailableBase / basePerCase))`, not a floor after pooling companies.
+Stock in separate supplying companies cannot combine into one whole case. An inaccessible/stale
+company is unknown, not zero. Revalidate
+the chosen physical source at submission and test the rendered quantity limit. The live
+`ProductViewModel.StockUnits` selection must agree on location, exact variant and selected
+unit across the main label, option badges and native quantity cap. A base `StockLevel` alone
+is insufficient. Treat an absent or ambiguous reviewed row as unknown; do not substitute
+another company's first row. Any approved template copy preserves the shared price/cart model
+and native/editor fallback. See [verification.md](verification.md) for actual rendering proof. [dw 10.29.8]
 
 ## On-account subscriptions
 
@@ -139,8 +146,11 @@ or implement an approved BC extension contract; do not invent a standard credit 
 Request: selling company, bill-to account, currency, total including tax/shipping, recurrence
 attempt ID and intended posting date. Response: allow/hold/reject, reason, decision ID, expiry
 and exposure version/reservation semantics. BC must atomically enforce or recheck the decision
-when accepting the order. The subscription worker calls it on every attempt and retries the same
-idempotency key after a timeout. Test allowed, exceeded, blocked, expired, unavailable and
+when accepting the order. The subscription worker calls it on every generated attempt and
+reconciles the same idempotency key after an ambiguous timeout. Generation itself follows the
+[standing mandate and durable invocation boundary](order-flow.md#native-recurring-generation-and-standing-mandates);
+do not repeat native generation as a financial retry. Test allowed, exceeded, blocked, expired,
+unavailable and
 concurrent attempts. Zero limit means the ERP policy says what it means, not automatically zero credit.
 
 Sources: [BC sales price rules](https://learn.microsoft.com/en-us/dynamics365/business-central/sales-how-record-sales-price-discount-payment-agreements),

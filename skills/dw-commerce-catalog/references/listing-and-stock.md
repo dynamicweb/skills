@@ -93,12 +93,12 @@ completion decrements follows the stock location on the order line:**
 - **A line carrying `OrderLineStockLocationId`** — which is what a per-warehouse storefront requires
   anyway — decrements **both**: the aggregate and the matching `EcomStockUnit` row.
 
-So the safe assumption is **both tables move**, and the invariant worth holding is that for every
-product `SUM(StockUnitQuantity)` equals `ProductStock` — which is what makes whichever number the
-storefront renders the one the catalog published. In-product, check it per product: MCP
-`get_products_by_ids` carries the aggregate and MCP `get_stock_locations` the per-location rows, and
-snapshot both **before** any check that places its own order, or the check fails on its own side
-effect. The corpus-wide version of the same assertion is in
+Snapshot both tables before a check that completes its own order. Compare the product's
+base-unit total only with the reviewed physical locations for that exact variant and base unit;
+exclude computed-view rows. Summing all units or both physical and computed stock double-counts.
+MCP `get_product_stock` returns product/location/unit quantities; `get_stock_locations` returns
+location definitions. Completion can decrement a selected sale-unit row before an ERP refresh,
+so distinguish that pending boundary from a reconciled source baseline. The corpus-wide version of the same assertion is in
 [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md) "The two stock tables".
 
 The practical consequence runs the other way from the drift: **an inbound integration that re-asserts

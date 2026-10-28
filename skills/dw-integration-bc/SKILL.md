@@ -30,9 +30,9 @@ name the admin screen for the operator. The ladder belongs to
 | 0. Discover | Owner-reviewed source map per tenant/environment/company | [`dw-integration-bc-discovery`](../dw-integration-bc-discovery/SKILL.md) |
 | 1. Authenticate | App token and a company-scoped entity read both succeed | [references/endpoints-and-auth.md](references/endpoints-and-auth.md) |
 | 2. Map | Stable keys, ownership and actual ERP surfaces; reviewed extension gaps | [references/entity-map.md](references/entity-map.md), [references/extension-contracts.md](references/extension-contracts.md) |
-| 3. Import | Protected feeds, exact run completion and imported data read back | [references/batch-and-live.md](references/batch-and-live.md) |
+| 3. Import | Protected feeds, native stock-cache effects and independent run/data/render read-back | [references/batch-and-live.md](references/batch-and-live.md) |
 | 4. Govern | Price-source/group isolation, computed stock, bundles and credit proved | [references/commerce-contracts.md](references/commerce-contracts.md) |
-| 5. Round trip | One order exported; line acknowledgement, status and invoices reconciled | [references/order-flow.md](references/order-flow.md) |
+| 5. Round trip | Source-qualified money, mandate/release, line acknowledgement and native invoice return reconciled | [references/order-flow.md](references/order-flow.md) |
 | 6. Verify | Replay, isolation and negative cases pass with evidence | [references/verification.md](references/verification.md) |
 
 The [integration specification](assets/templates/integration-spec.example.json) records

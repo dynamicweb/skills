@@ -50,6 +50,20 @@ invoice page proves configuration and page gates only. Test the same real detail
 owner/account and ungranted CSR, including every query parameter. Report partial-document,
 payment/credit return or concurrency cases as pending until their own evidence exists.
 
+Helper compilation and fixtures do not prove Razor include resolution or live ViewModel rows.
+After an approved stock-rendering exception, render default/each/case as anonymous and two
+separate authorised accounts in each required language. Match native source rows, label,
+visible options, quantity cap and prices. Prove a real variant, an existing natural zero that
+disables quantity/step/Add controls, and native visual-editor fallback without saving. Keep
+these actual proofs distinct from fixture counts. Preserve all existing carts/pointers; wait
+for the actual native update and loading overlay to finish before capturing a settled screen.
+
+A controlled application-identity post, one standing-mandate recurrence and its native invoice
+return can establish those bounded paths. They do not cover every producer, scheduled operation
+or posted alternate UOM. Preserve the existing authority for each financial scope: where an
+exact run requires separate operator approval, record it before execution. Selected cart/UI
+cases cannot substitute for posted financial proof.
+
 ## Version provenance
 
 Capture the target's platform build, MCP build, installed BC extension versions, BC application

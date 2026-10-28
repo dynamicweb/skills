@@ -35,6 +35,14 @@ The blueprint's provider setting resolves the external account ID; a literal BC 
 number is not automatically the platform's numeric user ID. Test the same customer and
 ship-to code in two companies and assert the parent account of each imported address.
 
+A zero native delivery-address ID is not ship-to authority. Enrich a legacy same-as-billing
+case to an ERP headquarters address only when the immutable admission decision records that
+exact policy and evidence. Recheck current account/ship-to masters, actor rights and the posted
+supplying company's customer/ship-to mapping. Compare the complete address, including
+`Address2`; never ignore that line to make a mismatch pass. Preserve the original native
+source and the separately evidenced invoice enrichment, rather than rewriting the source or
+guessing a headquarters from the latest master data.
+
 API `items.inventory` is a company total, not per-location availability or available-to-promise.
 Stock-keeping unit rows do not necessarily exist for every item/location pair. Capture a
 location inventory source that covers the required population, units, reservations and date.
