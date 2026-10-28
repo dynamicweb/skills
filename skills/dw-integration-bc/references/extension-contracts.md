@@ -39,6 +39,10 @@ Prove a successful owned-company call, excluded-company denial, idempotent repla
 before enabling a dependent schedule. For an environment-wide event subscriber, inspect and test
 its effect on neighbouring companies even when the integration API itself is company-qualified.
 Compilation, publication and read-only API success do not establish order, credit or invoice
-acceptance. Use [the business verification ladder](verification.md) for each required operation.
+acceptance. Financial releases additionally require committed receipt reads, canonical immutable
+request/header/line checks, consistent cross-company lock order and failure injection after
+native posting. A suppress-commit option alone does not prove rollback across installed
+subscribers. Use the [financial boundary](order-flow.md#financial-transaction-and-posting-boundary)
+and [business verification ladder](verification.md) for each required operation.
 
 Source: [Microsoft AL development environment](https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/developer/devenv-dev-overview).

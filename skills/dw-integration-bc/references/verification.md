@@ -43,6 +43,12 @@ The verifier checks report structure, coverage, company/environment binding, tim
 existing non-empty proof files. It refuses mock results for live acceptance. It cannot judge
 whether a screenshot or capture proves its assertion; review those contents independently.
 Synthetic fixtures and a successful offline test suite are not live integration acceptance.
+Native financial contract probes also remain distinct from the business path: require an actual
+approved completed Commerce origin, protected fresh full-hierarchy source, committed BC receipt,
+posted component invoice, native platform return and authorised buyer detail. A native empty
+invoice page proves configuration and page gates only. Test the same real detail URL as another
+owner/account and ungranted CSR, including every query parameter. Report partial-document,
+payment/credit return or concurrency cases as pending until their own evidence exists.
 
 ## Version provenance
 

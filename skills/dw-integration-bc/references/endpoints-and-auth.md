@@ -31,6 +31,23 @@ integration unless their specific administration operation is authorised. For a 
 review its objects and executable permission surface through
 [extension-contracts.md](extension-contracts.md) before assigning a financial role.
 
+## Installed posting dependencies
+
+Native sales posting executes installed subscribers as the same application identity. A missing
+read on an installed dependency is not evidence that the integration needs a broad financial
+role. Resolve the exact table, operation, extension version and public native permission set,
+then assign its narrow role separately in each authorised supplying company.
+
+For BC29 E-Document Core, native permission set `6101 "E-Doc. Core - Read"` includes read access to
+`TableData 6121 "E-Document"` and the dependency's execution surface. It is a narrower candidate for
+an E-Document read failure than a broad business/admin role. Verify the installed role before
+assignment. Reusing that native read role also avoids adding an extension dependency merely to
+name its table; a PTE that does reference the table needs the actual installed dependency and
+symbols in a new reviewed build. Continue testing native post and correction, because another
+subscriber can require a different exact operation. Keep direct and indirect permissions distinct.
+
+Source: [Microsoft BC29 E-Document Core read role](https://github.com/microsoft/BCApps/blob/releases/29.0/src/Apps/W1/EDocument/App/Permissions/EDocCoreRead.PermissionSet.al).
+
 ## Read the actual surfaces
 
 | Surface | URL or configuration | Proof |

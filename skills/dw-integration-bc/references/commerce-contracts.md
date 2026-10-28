@@ -6,6 +6,7 @@ connector handshake does not establish them. Record unresolved policy with its o
 ## Contents
 
 - [Tier prices and promotions](#tier-prices-and-promotions)
+- [Sale UOM and eligible price sets](#sale-uom-and-eligible-price-sets)
 - [Native BC price-list construction](#native-bc-price-list-construction)
 - [BC group eligibility in Commerce](#bc-group-eligibility-in-commerce)
 - [Phantom bundles](#phantom-bundles)
@@ -26,6 +27,27 @@ promotions and vouchers. Define stacking once. Preserve price source, original b
 applied discount and final line amount so BC can reconcile the amount accepted by the buyer.
 Prove base, group, customer, quantity boundary, expiry, currency/UOM, promotion and combined
 cases. Round-trip a price change, then restore it and verify the same buyer's PDP and cart.
+
+## Sale UOM and eligible price sets
+
+Keep a reviewed item-specific map from Commerce sale-unit ID to BC unit code. Preserve the
+actual sale quantity, price and unit through cart, normalized order, native invoice and return.
+The item's default unit and its alternate unit aliases are separate facts: one item may map a
+Commerce each to BC PCS while another has explicit EACH and CASE units. A unit code's spelling
+is not a universal conversion factor. Revalidate the source item's native unit definitions.
+
+When the approved map carries explicit alternate aliases, the invoice return inverts that map
+and rejects duplicate/ambiguous or unreviewed BC unit codes. Include the map in the protected
+frozen source inputs; a newly guessed alias must not make an old approved order eligible.
+Default and alternate-unit quantity boundaries need separate source/cart/invoice evidence.
+
+An eligible alternate-UOM list price may exceed the converted default Item.UnitPrice. In an
+approved resolver, determine the matching UOM/customer/group/date/quantity price set first.
+Inject a converted item price only where the agreed fallback policy permits it; applying it as
+an unconditional ceiling can undercharge an explicit case/unit contract. The default-unit item
+price can remain an implicit MSRP offer when that is the measured Commerce/ERP contract.
+Prove both a matching alternate price and its deliberate change before calling the resolver
+correct. A successful box-price proof cannot cover units and cases by arithmetic alone.
 
 ## Native BC price-list construction
 

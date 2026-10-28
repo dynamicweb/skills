@@ -24,6 +24,14 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   compatibility version is advanced. Retire stale catalog and fallback claims that MCP cannot
   write group/customer scopes when its current schema exposes those members.
 
+- Extend the BC family with committed receipt reads, native posting/rollback and correction
+  boundaries, immutable pre/post header/line reconciliation, consistent source/destination locks,
+  narrow installed E-Document read dependencies, item-specific sale-UOM aliases and eligible-price
+  fallback. Explain native InvoiceSave/OrderProvider differences, company-qualified component
+  invoice identities, protected fresh source guards, native counter collision preflight and
+  typed customer-center page/mirror setup. Page empty-view proofs and hermetic unit profiles do
+  not establish invoice return, payment/partial-document or full business acceptance.
+
 ## [5.8.12]
 
 - **Combine as variants: the empty master number is by design; the completion-rule gap is work item 29782.**
