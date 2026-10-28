@@ -38,6 +38,12 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   strict native posted-document recovery when a persisted receipt remains accepted, without
   claiming unattended posting, completed invoice return or recurring-order acceptance.
 
+- Recheck short-lived credit-decision expiry after blocking price/stock locks and before native
+  header creation and acceptance commit. Require an expired lock waiter to leave no committed
+  order/receipt or stock delta. Verify installed extension identity, application/data versions
+  and required policy through a read-only probe before business calls; preserve historical
+  release bindings when activating a new worker. No permission or compatibility expansion.
+
 ## [5.8.12]
 
 - **Combine as variants: the empty master number is by design; the completion-rule gap is work item 29782.**

@@ -3,6 +3,7 @@
 ## Contents
 
 - [Admit and export](#admit-and-export)
+- [Verify installed extension identity](#verify-installed-extension-identity)
 - [Financial transaction and posting boundary](#financial-transaction-and-posting-boundary)
 - [Recover a posted document without rewriting its receipt](#recover-a-posted-document-without-rewriting-its-receipt)
 - [Bring status back](#bring-status-back)
@@ -53,6 +54,22 @@ ERP acknowledgement. Inspect source-provider side effects: a provider marking an
 while staging is not an ERP receipt. Initial order acceptance, shipment and posting are separate
 states and operations.
 
+## Verify installed extension identity
+
+At each worker invocation, before any business call, use a company-scoped read-only contract-info
+operation to verify the executing extension and required admission policy. A local package manifest or endpoint
+name alone does not establish the installed contract. The extension can obtain its own identity
+and versions with [`NavApp.GetCurrentModuleInfo`](https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/developer/methods-auto/navapp/navapp-getcurrentmoduleinfo-method).
+Return application ID, publisher/name, application version, tenant data version and explicit
+required policy capabilities. [`ModuleInfo.DataVersion`](https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/developer/methods-auto/moduleinfo/moduleinfo-data-type)
+can differ from application version while a data upgrade is pending.
+
+Compare the observed identity, versions and required policy with the reviewed active release;
+hold missing, mismatched or unreconciled values before submitting any business operation. Keep
+this probe read-only and exercise wrong-application, wrong-version and missing-policy negatives.
+Preserve earlier immutable source/release bindings as historical evidence when deploying a new
+worker; an active release change does not re-approve an old source snapshot or grant permissions.
+
 ## Financial transaction and posting boundary
 
 Keep customer credit, stock/source locks, request receipt and native order creation within the
@@ -60,6 +77,16 @@ reviewed BC transaction. Use one lock order across submit, post, reset and event
 order cross-company source/destination item locks consistently. Recheck live exposure and
 availability after obtaining the locks. A preceding HTTP credit check cannot reserve exposure
 for concurrent attempts by itself.
+
+Recheck a new admission's decision expiry after acquiring potentially blocking price/stock locks,
+immediately before native header creation, and again before committing the accepted receipt.
+A decision valid at request entry can expire while another customer holds a shared item lock.
+An expired decision must throw within the enclosing transaction so the header, lines,
+reservations, route and receipt all roll back. Exercise a deliberately blocked waiter with a
+short-lived decision and independently prove zero committed order/receipt deltas and unchanged
+stock/open-sales quantities after both attempts finish. A fast single-request expiry test does
+not cover lock-wait expiry. Exact immutable replay of an already committed acceptance recovers
+that recorded result; it creates no new admission or exposure.
 
 Read recovery receipts with an explicit committed isolation policy. An uncommitted receipt can
 briefly report accepted or invoiced while the financial transaction later rolls back. Where
