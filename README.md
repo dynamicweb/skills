@@ -20,7 +20,7 @@ skills/
   dw-swift-page-blocks/     # Swift 2 page-building vocabulary (reference)
   dw-swift-page-design/     # build a Swift 2 page from a reference/mockup
   dw-swift-migrate-v1/      # faithful Swift 1 -> Swift 2 layout port
-  dw-swift-migrate-content/ # rebuild any site's content as modern Swift 2
+  dw-swift-migrate-site/    # migrate any site or webshop to Swift 2 (content + catalog)
   dw-headless-delivery/     # decoupled frontends over the /dwapi/ delivery API
   dw-pim-*/                 # PIM modelling, completeness, workflow, localization
   dw-pim-migrate-dw9/       # migrate a DW9 product catalog into DW10 PIM
@@ -45,8 +45,8 @@ Each bundle is a role-oriented selection of skills. Shared skills (for example
 | Plugin | Audience | Skills included |
 |--------|----------|-----------------|
 | `dynamicweb-setup` | Provisioning Dynamicweb 10 | setup-install, setup-config, setup-upgrade, setup-cli |
-| `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, content-localization, swift-building, swift-page-blocks, swift-page-design, swift-migrate-v1, swift-migrate-content, headless-delivery |
-| `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions, data-access, data-write-effects |
+| `dynamicweb-frontend` | Template & storefront developers | render-razor, render-viewmodels, render-templatetags, content-modelling, content-localization, swift-building, swift-page-blocks, swift-page-design, swift-migrate-v1, swift-migrate-site, headless-delivery |
+| `dynamicweb-commerce` | Commerce & PIM implementers | pim-modelling, pim-completeness, pim-workflow, pim-localization, pim-migrate-dw9, swift-migrate-site, commerce-catalog, commerce-orders, commerce-b2b, search-indexing, users-permissions, data-access, data-write-effects |
 | `dynamicweb-backend` | Backend & platform engineers | extend-csharp-api, extend-providers, extend-scheduled-tasks, extend-mcp-tools, extend-admin-ui, integration-framework, integration-erp, integration-fo-discovery, integration-fo, integration-bc, data-access, data-write-effects, data-audit-trail |
 | `dynamicweb-developer` | Developers building on the platform | setup-install, source-explorer, source-doc-lookup, extend-mcp-tools |
 | `dynamicweb-presales` | Presales & demo engineers | demo-base, demo-pim, demo-swift, demo-headless, demo-hosted, demo-erp, demo-fo, demo-foldback, integration-bc; + the foundational skills the demo skills reference (setup-install, setup-config, setup-upgrade, source-explorer, integration-framework, integration-erp, integration-fo-discovery, integration-fo, extend-csharp-api, extend-mcp-tools, extend-providers, headless-delivery, search-indexing, users-permissions, the pim/commerce/render/content/data-access skills, data-write-effects, swift-building) |
@@ -96,8 +96,8 @@ Build a good-looking Swift 2 page — matching an existing page's style, from a 
 **[dw-swift-migrate-v1](skills/dw-swift-migrate-v1/SKILL.md)**
 Faithful, layout-preserving migration of pages from a Swift 1 solution into Swift 2.
 
-**[dw-swift-migrate-content](skills/dw-swift-migrate-content/SKILL.md)**
-Extract any existing site's content and rebuild it as a standard, modern Swift 2 site.
+**[dw-swift-migrate-site](skills/dw-swift-migrate-site/SKILL.md)**
+The master flow for migrating any existing website or webshop to a Swift 2 site: it collects the URLs and scope up front, then runs survey, scrape, PIM data model, catalog import, content rebuild, catalog tuning, and a screenshot-scored review loop.
 
 **[dw-headless-delivery](skills/dw-headless-delivery/SKILL.md)**
 Build decoupled frontends using the `/dwapi/` delivery API — authentication, content, ecommerce, users, navigation, forms, and query endpoints.
