@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-10-07T10:27:25.432Z",
+  "generatedAt": "2026-10-30T10:23:40.030Z",
   "worksOn": {
     "dw": {
       "ring": "R1",
@@ -75,14 +75,6 @@
       "mcp": "required",
       "description": "Customize an existing Swift 2 site while preserving its page shell.",
       "path": "skills/dw-swift-building/SKILL.md"
-    },
-    {
-      "name": "dw-swift-migrate-content",
-      "type": "flow",
-      "group": "swift",
-      "mcp": "required",
-      "description": "Rebuild an existing website and its content as a modern Swift 2 site.",
-      "path": "skills/dw-swift-migrate-content/SKILL.md"
     },
     {
       "name": "dw-swift-migrate-v1",

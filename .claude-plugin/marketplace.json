@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Claude skills for Dynamicweb 10 — organized by task domain, bundled by role.",
-    "version": "5.8.12"
+    "version": "6.0.0"
   },
   "plugins": [
     {
@@ -36,7 +36,7 @@
         "./skills/dw-swift-page-blocks",
         "./skills/dw-swift-page-design",
         "./skills/dw-swift-migrate-v1",
-        "./skills/dw-swift-migrate-content",
+        "./skills/dw-swift-migrate-site",
         "./skills/dw-headless-delivery",
         "./skills/dw-data-access"
       ]
@@ -52,6 +52,7 @@
         "./skills/dw-pim-workflow",
         "./skills/dw-pim-localization",
         "./skills/dw-pim-migrate-dw9",
+        "./skills/dw-swift-migrate-site",
         "./skills/dw-commerce-catalog",
         "./skills/dw-commerce-orders",
         "./skills/dw-commerce-b2b",

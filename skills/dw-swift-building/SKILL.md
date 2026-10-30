@@ -4,7 +4,7 @@ type: flow
 group: swift
 mcp: required
 dynamo: true
-description: 'Customize an existing Swift 2 site while preserving its page shell. Triggers: rebrand or repurpose Swift, update area settings, navigation, category pages, or item values. Non-triggers: new install -> dw-setup-install; migration -> dw-swift-migrate-content.'
+description: 'Customize an existing Swift 2 site while preserving its page shell. Triggers: rebrand or repurpose Swift, update area settings, navigation, category pages, or item values. Non-triggers: new install -> dw-setup-install; migration -> dw-swift-migrate-site.'
 ---
 
 # Dynamicweb Swift 2 Site Builder
