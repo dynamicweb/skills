@@ -4,7 +4,7 @@ type: flow
 group: demo
 mcp: required
 dynamo: false
-compatibility: Requires PowerShell 7.x; the admin-shell driver also needs Node.js 20+ with Playwright + Chromium
+compatibility: Requires PowerShell 7.x; scripted local builds need Windows, Git, .NET 10 SDK and SQL Server with Windows authentication; the admin-shell driver also needs Node.js 20+ with Playwright + Chromium
 description: 'Set up DW10 demos and build orchestration; baseline loading belongs to sister skills. Use FIRST for local/hosted demos, MCP connection/TLS failures, platform pinning, customisation audits, GSD/native commands, and branded-demo path choice.'
 ---
 
@@ -47,6 +47,12 @@ Every sister demo skill carries the same "how to run me" header and defers to th
 The canonical flow below assumes a **local install** (scaffold + SQL Express on the demo machine). When the engagement instead hands you a **site URL + Admin API bearer key** — a vendor-hosted/cloud install with no machine to scaffold on — the build forks to [`dw-demo-hosted`](../dw-demo-hosted/SKILL.md), which owns the deltas: which canonical steps to skip, the session-start probe (tool availability on hosted installs is **version-dependent** — MCP may or may not be exposed; always probe, never assume), the Management API recipe pack that substitutes for MCP/SQL recipes, and the shared-install discipline. Moving a demo that was built locally onto a hosted install is a **migration, not a deploy** — a separate playbook with its own failure modes, owned by [`dw-demo-hosted/references/publish-to-hosted.md`](../dw-demo-hosted/references/publish-to-hosted.md). The always-on rules (surface priority, guarded writes, customer-context, demo philosophy) apply in both modes.
 
 ## Canonical end-to-end flow
+
+**Scripted local path:** for a customer JSON and one unattended command, run
+[references/scripted-base-build.md](references/scripted-base-build.md). It restores a verified
+release bacpac, stages and brands Swift, rewrites display content, then gates access, indexes and
+served pages. The reference documents the verified public MCP app staging and remaining agent
+work. The manual flow below remains available for other targets and deeper authoring.
 
 Walk every step in order — skip none. Each step's reference contains its own verification gate; the skill **refuses to declare setup complete** until every gate passes.
 
@@ -156,6 +162,18 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 
 | Script | Reads / writes | What it does |
 |---|---|---|
+| [Invoke-DwDemoBaseBuild.ps1](scripts/Invoke-DwDemoBaseBuild.ps1) | Writes: local demo, flow state, journal and report | One resumable customer-config build with explicit apply and gated steps |
+| [Dw.DemoBuild.psm1](scripts/Dw.DemoBuild.psm1) | Reads config; helpers write local generated assets | Config validation, safe asset paths, contrast and parameterized rename planning |
+| [Get-DwDistributionRelease.ps1](scripts/Get-DwDistributionRelease.ps1) | Writes: public checkout, bacpac and receipt | Resolve gate-proven edition and verify release SHA256 |
+| [New-DwDemoHost.ps1](scripts/New-DwDemoHost.ps1) | Writes: pinned Suite scaffold and guardrails | net10 Suite-only host patches, launch profile and ownership guardrails |
+| [Restore-DwEditionDatabase.ps1](scripts/Restore-DwEditionDatabase.ps1) | Writes: new local database and existing user credentials | Import verified bacpac and repair scrubbed first-login state |
+| [Install-DwDemoFiles.ps1](scripts/Install-DwDemoFiles.ps1) | Writes: host Files and database config | Verified Swift release, ordered layer overlays and theme last |
+| [New-DwBrandFiles.ps1](scripts/New-DwBrandFiles.ps1) | Writes: tokens, Style pairs, logo and icons | Generate paired customer styles with measured button contrast |
+| [Set-DwDemoBrandContent.ps1](scripts/Set-DwDemoBrandContent.ps1) | Writes: fresh local display content and neutral PNG tiles | Transactional stable-key rename before first host start |
+| [Start-DwDemoBuildHost.ps1](scripts/Start-DwDemoBuildHost.ps1) | Writes: host process and trial license | Reuse ownership-checked lifecycle and sibling HTTP license helper |
+| [Grant-DwDemoAccess.ps1](scripts/Grant-DwDemoAccess.ps1) | Writes: proven ignored client settings | Prove more than 200 MCP tools before persisting the key |
+| [Build-DwDemoIndex.ps1](scripts/Build-DwDemoIndex.ps1) | Writes: local product/content index instances | Resolve builders, rebuild and assert a populated PLP |
+| [Test-DwDemoBaseBuild.ps1](scripts/Test-DwDemoBaseBuild.ps1) | Reads host; writes ignored evidence | Readiness, persona identities, brand tokens, products and image acceptance |
 | [Restart-DwHost.ps1](scripts/Restart-DwHost.ps1) | Writes: starts/stops THIS solution's host process, a lock file, log files | Guarded host lifecycle: port-scoped ownership-verified stop that waits for the port to be released, index-build-in-flight guard, lock with stale takeover, detached redirected start (safe in the foreground), /Admin readiness poll. `-Port` and `-SolutionPath` are mandatory — no defaults |
 | [Invoke-DwPiiScan.ps1](scripts/Invoke-DwPiiScan.ps1) | Read-only (optionally writes a report file) | The mechanical half of the PII/vendor sweep: string-column census, person-PII counts, whole-DB term sweep (SQL local-only), rendered-page and download probes by URL. Classes and counts only — never values |
 | [Remove-SwiftVendorBoilerplate.ps1](scripts/Remove-SwiftVendorBoilerplate.ps1) | Dry-run by default; `-Apply` rewrites stock vendor boilerplate in Swift items + module settings, backing originals up | Content-matched debrand of the stock phrases (pii-sweep Rule 2); cookie names untouched by construction; lists the manual-pass remainder. Local installs only |

@@ -1,0 +1,25 @@
+{
+  "slug": "truvio-commerce",
+  "customer": {
+    "name": "Truvio Commerce",
+    "legalName": "Truvio Commerce",
+    "tagline": "The Truvio Commerce demo edition, powered by Dynamicweb",
+    "country": "US",
+    "currency": "USD",
+    "language": "en-US"
+  },
+  "installMcpBeforeStart": true,
+  "brand": {
+    "primary": "#400685",
+    "secondary": "#FFAF00",
+    "accent": "#FFAF00",
+    "ink": "#14181D",
+    "background": "#FFFFFF",
+    "fontFamily": "Arial",
+    "radius": "8px",
+    "logo": "distribution/layers/sample-data/files/Images/TruvioCommerce/brand/truvio-logo.svg",
+    "favicon": "distribution/layers/sample-data/files/Images/TruvioCommerce/brand/truvio-symbol.png",
+    "appleTouchIcon": "distribution/layers/sample-data/files/Images/TruvioCommerce/brand/truvio-symbol.png",
+    "metaImage": "distribution/layers/sample-data/files/Images/TruvioCommerce/brand/truvio-og-card.png"
+  }
+}

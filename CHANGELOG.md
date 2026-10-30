@@ -3,6 +3,13 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.9.0]
+
+- Ship the base-build example config as the Truvio Commerce demo edition: the sample-data wordmark, symbol and card, the purple and amber palette, no renames. A customer name that carries the vendor word keeps the edition's display copy and product tiles instead of doubling the name.
+- Strip the theme font import as a whole line in brand generation. The Google Fonts URL contains semicolons, so the old pattern left a fragment that broke the body typography rule and the storefront fell back to the browser serif font. Generation and acceptance now parse the Typography sheet and require the configured body font.
+- Support environment SQL authentication for the base build and generated host, with an exact container-host SQL opt-in and refusal tests.
+- Add a customer JSON driven local Swift base-build command with verified public edition bacpac restore, pinned host and files, paired brand generation, stable-key display rewrites, resumable gated steps, MCP setup and acceptance evidence. Verify public MCP app staging without a host package reference; document and remaining agent work; add hermetic generator and config tests.
+
 ## [5.8.13]
 
 - **Variant prices: the master's variant-less row is the conflict, not a lost price.** Combine as variants
