@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="13" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2026-10-30" time="00:31:28">
+  <environment platform="Microsoft Windows Server 2025 Datacenter Azure Edition|C:\Windows|\Device\Harddisk0\Partition3" nunit-version="2.5.8.0" user="jsj" os-version="10.0.26100" machine-name="DWSALESWEB" user-domain="AADDSDWUSA" cwd="F:\code\_worktrees\dynamicweb-skills-bc" clr-version="10.0.14" />
+  <culture-info current-culture="en-US" current-uiculture="en-US" />
+  <test-suite type="TestFixture" name="Pester" executed="True" result="Success" success="True" time="4.3864" asserts="0" description="Pester">
+    <results>
+      <test-suite type="TestFixture" name="F:\code\_worktrees\dynamicweb-skills-bc\tests\Bc.Api.Tests.ps1" executed="True" result="Success" success="True" time="4.3864" asserts="0" description="F:\code\_worktrees\dynamicweb-skills-bc\tests\Bc.Api.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="BC read-only company and transport contract" executed="True" result="Success" success="True" time="2.7576" asserts="0" description="BC read-only company and transport contract">
+            <results>
+              <test-case description="pins the company and limits a sample without following extra pages" name="BC read-only company and transport contract.pins the company and limits a sample without following extra pages" time="1.2275" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="rejects a company outside the selected allowlist before HTTP" name="BC read-only company and transport contract.rejects a company outside the selected allowlist before HTTP" time="0.13" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="reads every page in a full collection" name="BC read-only company and transport contract.reads every page in a full collection" time="0.1131" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="rejects a foreign host next link without leaking the bearer" name="BC read-only company and transport contract.rejects a foreign host next link without leaking the bearer" time="0.0684" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="rejects next links to another company on the same BC host" name="BC read-only company and transport contract.rejects next links to another company on the same BC host" time="0.1292" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="refuses repeated next links" name="BC read-only company and transport contract.refuses repeated next links" time="0.0556" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="fails on a truncated census instead of returning partial success" name="BC read-only company and transport contract.fails on a truncated census instead of returning partial success" time="0.0562" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="honours Retry-After with bounded retries" name="BC read-only company and transport contract.honours Retry-After with bounded retries" time="0.1626" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="does not retry a permission denial" name="BC read-only company and transport contract.does not retry a permission denial" time="0.061" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="rejects invalid collection JSON" name="BC read-only company and transport contract.rejects invalid collection JSON" time="0.0506" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="returns standard API metadata without exposing authentication" name="BC read-only company and transport contract.returns standard API metadata without exposing authentication" time="0.0688" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="does not retain a previous connection when reinitialization fails" name="BC read-only company and transport contract.does not retain a previous connection when reinitialization fails" time="0.1111" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="acquires an S2S token only when an environment token is absent" name="BC read-only company and transport contract.acquires an S2S token only when an environment token is absent" time="0.4378" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>

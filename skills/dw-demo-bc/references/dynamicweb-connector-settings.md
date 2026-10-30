@@ -10,18 +10,18 @@
 > [`bc-connector-surface.md`](bc-connector-surface.md)
 > "BC default settings". This file is the hands-on correction you run against a live demo host.
 
-## Before correcting — verify against the actual host
+## Before correcting  -  verify against the actual host
 
 The seeded defaults (`indexBuildKey`, `buildName`, `workflowStateId`) are host-unaware guesses. Read
 [`bc-connector-surface.md`](bc-connector-surface.md)
 "BC default settings" for what each field means and how it's typically wrong, then verify each one
 against the host you're demoing on:
 
-- `indexBuildKey` — list `wwwroot/Files/System/Repositories/`; use the real repo name (usually
+- `indexBuildKey`  -  list `wwwroot/Files/System/Repositories/`; use the real repo name (usually
   `Products`, not `ProductsBackend`).
-- `buildName` — `Select-String -Path Products.index -Pattern '<Build Name'` to confirm the named
+- `buildName`  -  `Select-String -Path Products.index -Pattern '<Build Name'` to confirm the named
   build exists.
-- `workflowStateId` — MCP `get_workflow_states`; confirm the "New Product From BC" state's id.
+- `workflowStateId`  -  MCP `get_workflow_states`; confirm the "New Product From BC" state's id.
 
 ## The corrected save
 
@@ -68,15 +68,15 @@ Invoke-RestMethod -Uri "$base/admin/api/BCSettings" -Headers $h | ConvertTo-Json
 ```
 
 The `model` block should match what you sent (modulo the read-only `permissionLevelCurrentUser` field).
-`BCSettingsSave` is upsert, not append — re-running the corrected save is idempotent.
+`BCSettingsSave` is upsert, not append  -  re-running the corrected save is idempotent.
 
-## Workflow state — keep it for the governance demo beat
+## Workflow state  -  keep it for the governance demo beat
 
 `workflowStateId: 1` is the auto-created "New Product From BC" state. **Keep it** when the demo's
 governance dashboard is a centerpiece: every product BC pushes via `BCProductCreate` gets stamped
 with that state, so the "BC just pushed 12 items, all in 'New Product From BC' state" pattern becomes
 a strong demo beat (governance baked into the integration). Zero it (`workflowStateId: 0`) only when
-the demo wants BC pushes to land directly in the active catalog with no state stamp — simpler
+the demo wants BC pushes to land directly in the active catalog with no state stamp  -  simpler
 narrative, less governance theatre.
 
 ## If defaults LOOK right but BC still fails

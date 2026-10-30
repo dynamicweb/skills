@@ -48,8 +48,8 @@ Every skill is one of two kinds, and the boundary is load-bearing:
   source-explorer). Vendor-generic, reusable Dynamicweb 10 platform knowledge. They ship in the
   role bundles that implementers and developers install.
 - **Demo skills** — the presales chain: `dw-demo-base` and its sisters (`dw-demo-pim`,
-  `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-erp`, `dw-demo-fo`, `dw-demo-foldback`) plus
-  the `dw-integration-bc` connector demo. These scaffold live presales demos and carry the
+  `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-erp`, `dw-demo-fo`,
+  `dw-demo-bc`, `dw-demo-foldback`). These scaffold live presales demos and carry the
   demo-only guardrails (the customisations ledger, the read-only `customer-context/` contract,
   the maintainer fold-back).
 

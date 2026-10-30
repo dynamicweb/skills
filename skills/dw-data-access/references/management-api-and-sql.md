@@ -13,6 +13,7 @@ narrow sanctioned SQL cases.
 - [OpenAPI discovery](#openapi-discovery)
 - [Reference-path discovery](#reference-path-discovery)
 - [SQL-direct content seeding — Page / GridRow / Paragraph](#sql-direct-content-seeding--page--gridrow--paragraph)
+- [Exact read-only storage witnesses](#exact-read-only-storage-witnesses)
 
 ## The Management API admin surface
 
@@ -794,3 +795,49 @@ appears but the inner item-type fields are empty, the `ItemType_*` instance row 
 doesn't match `ParagraphItemId`. See [`cache-invalidation.md`](cache-invalidation.md) for the
 post-mutation cache table. Sister required-fields list for `AccessUser` SQL-direct seeding is in
 [dw-commerce-b2b](../../dw-commerce-b2b/SKILL.md) (`dc-scoping.md`).
+
+## Exact read-only storage witnesses
+
+Use this last rung only when the installed MCP and Management API projections omit a required
+persisted field or exact timestamp precision, and a native provider capture cannot resolve the
+ambiguity. This is **local installs only**, scoped to the owned native keys and `SELECT` only.
+A read owes **no cache flush or host restart**. On a hosted install, obtain an equivalent exact
+operator-managed read witness. This fallback authorises no storage write.
+
+### Make an empty result explicit
+
+An empty `FOR JSON PATH` result can reach the command-line client as empty stdout. Treat process
+failure, empty output and malformed JSON as an unresolved read, not proof that no row exists.
+Return an outer object with an explicit array and validate that envelope. For example, SQL with
+`@nativeOrderId` bound by the caller:
+
+```sql
+SELECT JSON_QUERY(COALESCE((
+    SELECT OrderId
+    FROM dbo.EcomOrders
+    WHERE OrderId = @nativeOrderId
+    FOR JSON PATH, INCLUDE_NULL_VALUES
+), '[]')) AS rows
+FOR JSON PATH, WITHOUT_ARRAY_WRAPPER;
+```
+
+Require successful process completion and a parsed `rows` array; prove both the one-row and
+zero-row cases. Bind parameters where supported; otherwise validate the native key against a
+strict allowlist before constructing a literal. A missing output string is never an empty-array
+receipt. [dw 10.29.8]
+
+### Preserve the original completion instant
+
+Discover the actual persisted column type before reconciling an API timestamp with a provider
+export. On the measured `datetime` column, compare the persisted ISO value with the native API's
+full fractional value converted through `datetime2(7)` to `datetime`. This establishes the exact
+storage rounding for that row. Parse and compare the actual XML timestamp too. Where the measured
+XML writer drops fractions, accept its whole-second representation only when its second exactly
+matches the independently verified persisted instant. Retain the persisted instant in the frozen
+source. [dw 10.29.8]
+
+Reject a different second, an unexplained non-zero fraction, a changed column type or a stale
+native capture. A blanket millisecond tolerance, a new current timestamp or re-capturing a changed
+baseline cannot establish the original completion fact. The provider behaviour is described in
+[`dw-integration-framework`](../../dw-integration-framework/SKILL.md), under "XmlProvider and the
+XSLT seam".

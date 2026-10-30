@@ -166,7 +166,7 @@ already know they are there: `AccessUser`, `AccessUserGroup`, `AccessUserAddress
 
 ## OrderProvider
 
-### As a destination: update-capable, insert-incapable
+### As a destination: explicit identifiers are required for creates
 
 The provider builds an `UPDATE ... FROM` a temp table plus an `INSERT` whose column list is
 **exactly the mapped columns**. Nothing mints an id from `EcomNumbers`, so a row it has to create
@@ -182,14 +182,16 @@ The working shape for a job that must create orders:
 
 | Mapping | Column | Key? |
 |---|---|---|
-| Header | a derived order id → `OrderId` | **no** — the key stays the external number, so a re-run updates instead of duplicating |
-| Header | the external number → `OrderIntegrationOrderId` | **yes** |
+| Header | a derived order id → `OrderId` | **no** - the key stays the qualified external key, so a re-run updates instead of duplicating |
+| Header | a company-qualified external key → `OrderIntegrationOrderId` | **yes** |
 | Line | a derived line id → `OrderLineId` | **yes** |
 | Line | the parent order id → `OrderLineOrderId` | no — mapped explicitly, never inferred |
 
-Take the id prefixes from `EcomNumbers` so they never collide with the platform's own, and advance
-those counters immediately after the run. A job that only ever *updates* — keyed on `OrderId` or on
-`OrderIntegrationOrderId` — succeeds first time and never meets any of this.
+Use a dedicated deterministic namespace disjoint from native counter-generated IDs. Qualify the
+external identity by company and document GUID, and each line by its native line identity. Check
+ownership and immutable fields before the first create or replay; a hash-shaped ID alone does
+not establish ownership. Keep native counters out of this import's ID allocation. An update-only
+job must independently verify that each destination row already exists. [dw 10.29.8]
 
 ### As an export source: the switches, and the one that is missing
 
@@ -256,10 +258,12 @@ looks like a per-table bug rather than a per-type one because the tables that co
 are exactly the ones with no datetime column, or whose datetimes are already whole. Only a
 **whole-table checksum** against a baseline reveals it.
 
-Where a restore or mirror is built on this provider, the honest minimum is: run it once to settle
-the values, **re-capture the baselines from the settled state**, and record the one-time sub-second
-change as an enumerated delta. Every subsequent restore is then byte-identical and the idempotency
-proof is real rather than approximate.
+For a disposable, integration-owned restore fixture, a reviewed one-time precision change can be
+enumerated before capturing its reset baseline. For business completion, financial or audit
+timestamps, preserve the original stored value and use a precision-preserving route or an exact
+independent read witness. Re-capturing a changed baseline does not prove preservation of the
+original business fact. See the exact storage-witness recipe in
+[`dw-data-access`](../../dw-data-access/SKILL.md).
 
 ## XmlProvider and the XSLT seam
 
@@ -274,6 +278,23 @@ hand-rewritten payload breaks the claim that the external system owns the data.
 
 The XmlProvider destination block, its schema requirement and the folder/file-name split are in
 [`job-file-format.md`](job-file-format.md#file-destinations-folder-file-name-and-what-neither-of-them-does).
+
+**Source and destination settings are different contracts.** `SkipTroublesomeRows` belongs to
+XML destination writing. `ISource.SaveAsXml` omits it even when the source metadata echoes its
+default `True`; that echo is not a control for skipping rows during an XML-to-order import.
+Inspect the actual source file/folder, XSL, delete/archive and culture settings separately, and
+pin the `OrderProvider` destination's failure policy, including `PersistSuccessfulRows=False`
+and `asTransaction=True`. Preserve the staged file for reconciliation. [dw 10.29.8]
+
+**Mapped DateTime export can lose fractional precision.** The measured XML destination writer
+passes the converted value through `.ToString()` before `DateTime.TryParse`, then formats it as
+`dd-MM-yyyy HH:mm:ss:fff`. The intermediate string can already have lost its fractions, so three
+printed fractional digits do not prove preservation. Compare the actual source XML with an
+independent exact native timestamp witness before freezing an economic source. Preserve the
+original completion instant and hold an unexplained difference. [dw 10.29.8]
+
+The local-install exact timestamp and empty-result witness recipe belongs to
+[`dw-data-access`](../../dw-data-access/SKILL.md), under "Exact read-only storage witnesses".
 
 ## Restores and resets built on activities
 

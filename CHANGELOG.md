@@ -3,6 +3,62 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.9.0] (unreleased)
+
+- **Business Central skill family:** rebuild `dw-integration-bc` as a foundational Integration
+  Framework workflow covering S2S, company keys, ERP batch/live operations, tier pricing,
+  BC-managed ship-to, location stock, phantom bundles, cross-company fulfilment, credit
+  admission, order export, status and invoices. Add `dw-integration-bc-discovery` for source
+  inventory, ownership and NAV migration gaps, and `dw-demo-bc` for sandbox isolation,
+  labelled mock sync/reset and live handoff. Preserve the former PIM/tunnel recipes there.
+- Register the foundational skills in backend and presales; keep the demo in presales. Add
+  company-pinned read-only probes, a strict evidence verifier, deterministic fixtures and
+  hermetic tests. No new live compatibility claim is made in `versions.json`; the new workflows
+  still require acceptance against the selected BC environment.
+- Record measured native MSRP/customer change/apply/buyer/reset and group fallback controls,
+  including existing PriceId updates, additive BC-derived group membership, explicit text upload,
+  protected App_Data staging and targeted cache refresh on DW10.29.8. Explain native BC29
+  price-source inheritance and verified non-interactive activation, computed stock views distinct
+  from physical sources, frozen extension release manifests and durable native seed receipts.
+  Retire stale catalog and fallback claims that MCP cannot write group/customer scopes when
+  its current schema exposes those members.
+- Record the first live sandbox acceptance of the bounded order, posting, invoice-return and
+  replay paths, including one real each/case checkout posted and returned in its selected
+  units, held credit, lock-wait expiry and immutable replay. Document the native null
+  line-parent normalisation on a status save and its replay recovery, the posted alternate
+  UOM proof, and field-level cart-preservation guards. Scheduled or unattended runs, every
+  producer, partial or multiple documents, credit-memo return and non-selected routes stay
+  outside the measured claim; no measured compatibility version is advanced.
+
+- Extend the BC family with committed receipt reads, native posting/rollback and correction
+  boundaries, immutable pre/post header/line reconciliation, consistent source/destination locks,
+  narrow installed E-Document read dependencies, item-specific sale-UOM aliases and eligible-price
+  fallback. Explain native InvoiceSave/OrderProvider differences, company-qualified component
+  invoice identities, protected fresh source guards, native counter collision preflight and
+  typed customer-center page/mirror setup. Page empty-view proofs and hermetic unit profiles do
+  not establish invoice return, payment/partial-document or full business acceptance.
+
+- Preserve exact native completion witnesses across XML fractional-precision loss and make empty
+  read-only result sets explicit. Distinguish XML source settings from destination row-skipping,
+  require guarded native order imports, and retire stale explicit-ID/counter advice. Document
+  strict native posted-document recovery when a persisted receipt remains accepted; recovery
+  alone establishes no application-posting, invoice-return or recurrence acceptance.
+
+- Recheck short-lived credit-decision expiry after blocking price/stock locks and before native
+  header creation and acceptance commit. Require an expired lock waiter to leave no committed
+  order/receipt or stock delta. Verify installed extension identity, application/data versions
+  and required policy through a read-only probe before business calls; preserve historical
+  release bindings when activating a new worker. This preflight grants no permissions or compatibility.
+
+- Fold measured stock-import cache effects into their foundational owner, correct unqualified
+  physical/computed/UOM stock sums, and require real variant, zero-stock and visual-editor
+  rendering separately from helper fixtures. Document schema-qualified two-ULP native money
+  ingress without relaxing strict financial decimals, durable one-run recurrence with a
+  standing mandate, native delivery read-back, immutable-decision address enrichment and
+  traced nullable-reference equivalence. The approved permissions, bounded recurrence and
+  stock UI path passed; exact alternate-UOM financial approval and wider producer/scheduled
+  coverage remain open. Proposed 5.9.0 stays unreleased; compatibility and human gates do not move.
+
 ## [5.8.12]
 
 - **Combine as variants: the empty master number is by design; the completion-rule gap is work item 29782.**

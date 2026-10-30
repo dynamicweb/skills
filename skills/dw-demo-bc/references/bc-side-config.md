@@ -47,13 +47,12 @@ Set:
 
 ### 2. The bearer token
 
-Issue or reuse a Dynamicweb Management API token:
+Resolve a dedicated Truvio Commerce (powered by Dynamicweb) Management API token:
 
-- **Issue dedicated**: in DW admin -> Settings -> Integration -> Management API tokens, create a new
-  token labelled "BC Connector" with full-access permissions. Copy the token string immediately (DW
-  only shows it once).
-- **Reuse existing**: paste the same token from `.claude/settings.local.json -> env.DW_API_TOKEN`.
-  Simpler for a one-off demo; revocation isn't independent.
+- **Issue dedicated**: in the token administration screen create a token labelled "BC Connector"
+  with the permissions the measured connector calls require. Keep it in the approved vault.
+- **Resolve for a session**: load `DW_API_TOKEN` into the process environment from that vault.
+  Keep the token out of project settings, commands, logs and evidence files.
 
 In BC, paste the token into:
 

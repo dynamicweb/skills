@@ -406,19 +406,15 @@ UPDATE EcomProducts SET ProductHidden = 0 WHERE ProductHidden = 1;
 
 ## The two stock tables: asserting the aggregate matches the locations
 
-```sql
--- read-only invariant; snapshot it BEFORE any check that places its own order,
--- or the check fails on its own side effect. SQL because no verb aggregates the two
--- tables against each other; local installs only (a hosted install compares get_product_stock
--- with get_product_stock_by_location per product); owes no flush (read-only).
-SELECT COUNT(*) FROM (
-  SELECT p.ProductId
-  FROM EcomProducts p
-  LEFT JOIN EcomStockUnit su ON su.StockUnitProductId = p.ProductId
-  GROUP BY p.ProductId, p.ProductStock
-  HAVING ISNULL(SUM(su.StockUnitQuantity), 0) <> p.ProductStock
-) d;   -- must be 0
-```
+Use MCP `get_product_stock` and `get_products_by_ids` first. Compare only the exact variant,
+language, base-unit key and reviewed physical locations; exclude computed views and other UOMs.
+Snapshot before an order-generating probe and after authoritative ERP reconciliation.
+
+Where higher projections cannot express the corpus-wide join, SQL is a **read-only,
+local-install-only** last rung with those same explicit filters. An unqualified
+`SUM(StockUnitQuantity)` is invalid. The SELECT owes no flush; the preceding native import
+owes its [stock-cache effect](recipes-integration.md#refresh-native-stock-after-import)
+and native/buyer read-back.
 
 ## Deleting a feed or feed folder that `FeedDelete` leaves in place
 
@@ -459,19 +455,24 @@ count for `FeedService` drops after the refresh.
 In-product home: [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`catalog-publishing.md`, "2.13
 Customer-specific (contract) pricing").
 
-MCP `save_prices` reaches `PriceCustomerGroupId` (its `customerGroupId`, which matches a customer NUMBER)
-and no other scope column. **Surface: Management API `PriceSave`**, as a full-model round trip:
+Prefer MCP `save_prices` when its discovered item schema exposes the intended scope.
+`userGroupId` and `userCustomerNumber` are available; `customerGroupId` is the differently named
+customer-number scope. The canonical scope mapping lives in
+[`dw-commerce-b2b`](../../dw-commerce-b2b/SKILL.md). [mcp 0.4.4]
+
+For a narrower installed MCP server, **surface: Management API `PriceSave`**, as a full-model round trip:
 
 1. Read the whole model: `GET /Admin/Api/PriceById?Id=<priceId>`.
-2. For a group scope, set `userGroupId` to the `AccessUser` group id and leave `groupCustomerNumber` empty.
-   For a customer (whole-account) scope, set `userCustomerNumber` to the account's customer number.
-3. Post the whole model to `POST /Admin/Api/PriceSave`.
+2. For a group scope, set `userGroupId` to the `AccessUser` group ID and leave unrelated scopes empty.
+   For a customer account, set `userCustomerNumber` to that account's customer number.
+3. Post the whole model to `POST /Admin/Api/PriceSave` and read the same price back.
 
-- **Why the higher surfaces do not cover it**: `save_prices` has no member for `PriceUserGroupId` or
-  `PriceUserCustomerNumber`.
+- **Why the higher surface does not cover this fallback**: use it only after the installed MCP
+  `save_prices` schema proves it lacks the required scope member.
 - **Hosted installs included**: this is an API call, not SQL.
-- **The debt it owes**: none for the write. Assert the rendered price signed in as a member of the scope,
-  with an anonymous visitor as the control, never the row.
+- **The debt it owes**: refresh the measured price/product caches and affected indexes through
+  [`dw-data-write-effects`](../../dw-data-write-effects/SKILL.md), then assert the actual member's
+  price and an anonymous control. A stored row alone does not prove eligibility or freshness.
 
 ## Variant combinations and per-variant rows through the Management API
 
