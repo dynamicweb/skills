@@ -131,7 +131,7 @@ Create the data models and groups, then import manufacturers, variant groups and
 products and variants with their group memberships, variant relations and field values, prices,
 and images from CSV files with Data Integration. Let the platform generate product ids and read
 them back for the later files, after checking that no product in the solution already has a
-source product's number or name. [catalog-import.md](references/catalog-import.md) ("Import order" through
+source product's number. [catalog-import.md](references/catalog-import.md) ("Import order" through
 "Proving an import").
 **Checkpoint:** product, variant, price, and image counts in the solution, checked on the frontend
 pages of products nobody has opened yet. When caches hide imported data, tell the user rather
@@ -142,8 +142,10 @@ than working around it.
 First propose the page tree, the color scheme and logo, and which standard Swift 2 component each
 source section becomes. **Checkpoint:** the proposal. Then build: the website with its header and
 footer, the shop page with the product catalog shell when the catalog is in scope, and the
-content pages. Set the navigation tags Swift needs on the shop and service pages, point every
-internal link at the new pages, and check the frontend health of every page.
+content pages. Swift 2 templates find pages by navigation tag: make sure the website has the
+shop page tagged `Shop` and, for a catalog, the service pages tagged `ProductSliderService` and
+`VariantSelectorService` (copy them from an existing Swift 2 website in the solution when
+missing). Point every internal link at the new pages, and check the frontend health of every page.
 [content-rebuild.md](references/content-rebuild.md).
 **Checkpoint:** links to all pages.
 
@@ -169,5 +171,5 @@ costs little more agent work than the subset.
 
 ## Out of scope
 
-Order flows, payment and shipping setup, customer accounts, personal prices, and ERP integration
-are separate work. Unpublished source pages cannot be read and are reported, not rebuilt.
+The cart and checkout pages, order flows, payment and shipping setup, customer accounts, personal
+prices, and ERP integration are separate work. Unpublished source pages cannot be read and are reported, not rebuilt.

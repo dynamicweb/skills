@@ -29,7 +29,9 @@ A prompt that works:
 > of 10, list the five most important issues with a concrete fix for each, and name any
 > regressions since the last round.
 
-Fix the issues, take new screenshots, and run the critic again.
+Fix the issues, take new screenshots, and run the critic again. After each round, state the
+round number and the score in the conversation (for example "Round 3: 7.4/10"), so the user, and
+a goal evaluator that only reads the conversation, can follow the loop.
 
 ## Stop rule
 

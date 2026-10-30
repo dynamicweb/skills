@@ -89,15 +89,17 @@ navigation.
 ## Product ids and numbers
 
 Use the source's item numbers as product numbers, and make sure every product has one. Leave the
-product id out of the product import: the Ecom provider then matches an existing product by
-number, then by name, and otherwise generates a new, unused id.
+product id out of the product import and mark `ProductNumber` as the key column. The Ecom
+provider then updates the existing product with that number and gives a new product a new,
+unused id. Keep the provider's *Use strict primary key matching* on (the default): turned off, a
+row without a matching number falls back to matching an existing product by name.
 
 That matching is what keeps a re-run from duplicating products, and it is also a risk: on a
-solution that already holds other products, a source number or name that exists there updates
-that unrelated product. **Before the first product import, look up every source product number
-and name in the solution.** When any match a product this migration did not create, stop and ask
-the user: import into a solution or shop without those products, or give the migrated product
-numbers a source prefix. Never import over a match.
+solution that already holds other products, a source number that exists there updates that
+unrelated product. **Before the first product import, look up every source product number in the
+solution.** When any match a product this migration did not create, stop and ask the user: import
+into a solution or shop without those products, or give the migrated product numbers a source
+prefix. Never import over a match.
 
 After the product import, look up the id each product number got and write those ids into the
 later files: variant relations, category field values, prices, and images all address products by
@@ -105,7 +107,9 @@ id.
 
 ## Uploading files
 
-Upload CSV files and images in bulk with the dw CLI (`npm install -g @dynamicweb/cli`):
+Upload CSV files and images in bulk with the dw CLI, version 2 (`npm install -g
+@dynamicweb/cli@preview` until it is released as `latest`); version 1 takes the same commands
+below:
 
 - **Authenticate with an API key per command**, never with `dw login`: pass `--host <solution>`
   and `--apiKey "$(cat <key file>)"`, reading the key from the file the user named at intake so
@@ -128,7 +132,8 @@ missing groups* setting off (it defaults on): the groups already exist, and a mi
 would otherwise create a stray group.
 
 - **An activity stores the source file's columns when it is created.** When a CSV gains a column,
-  create a new activity; the old one silently ignores the new column.
+  the activity silently ignores it: update the activity's schema (the admin's *Update schema for
+  source and destination* action) or create a new activity.
 - **A run is queued, not finished.** Wait for the activity's status to complete, then read its log.
 - **Duplicate keys fail the whole job.** A variant family that lists the same option twice, or a
   product listed twice, rejects every row. Deduplicate on the mapped key columns before upload.
@@ -137,7 +142,8 @@ would otherwise create a stray group.
 - **Attach variant groups to master products explicitly** when an import column does not attach
   them, then re-run the variant relations: attaching them rebuilds the combinations.
 - **Imports write straight to the database.** Products, groups, variant groups, and prices the
-  running solution has already cached can keep showing old values until the application restarts.
+  running solution has already cached can keep showing old values. An activity can clear chosen
+  cache services when it runs (its **Cache** tab); otherwise the application needs a restart.
   Restarting affects everyone on the solution, so ask the user; do not work around a stale cache
   with extra writes.
 

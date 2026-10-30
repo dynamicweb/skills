@@ -80,8 +80,10 @@ The other migration tools fall back the same way:
 - **Media:** upload the images to `/Files/Images/<source site>/` (the dw CLI for many files).
 - **Color scheme:** create the scheme group and its schemes from the brand colors, then assign
   the group and scheme to the website.
-- **Header and footer:** use what the website already has; build a missing header or footer as a
-  page with one row and one paragraph per column, and wire it to the website's settings.
+- **Header and footer:** with the migration tools granted, the chrome tool needs no extraction
+  (give it the logo file and the menu links). Without them, use what the website already has, and
+  build a missing header or footer as a page with one row and one paragraph per column, wired to
+  the website's settings.
 
 ## The dividing line
 
@@ -169,9 +171,11 @@ the same way, so every source block is accounted for.
    verification tokens, social handles, ERP settings, and custom head includes. Then:
    - Create and apply the branded color scheme from the captured palette with the migration tool
      built for it. Do not hand-build schemes while that tool is available.
-   - Scaffold the header, footer, mobile chrome, search, sign-in, cart and checkout with the
-     chrome tool, and the product catalog shell when the catalog is in scope. Check its status,
-     wired fields and errors. Do not hand-build the chrome while that tool is available.
+   - Scaffold the header and footer (logo and navigation, desktop and mobile) with the chrome
+     tool, and the product catalog shell when the catalog is in scope. It works without an
+     extraction when given the logo file and the menu links. It creates no search, sign-in, cart
+     or checkout pages. Check its status, wired fields and errors. Do not hand-build the chrome
+     while that tool is available.
 4. **Media.** Import the source media (path-preserving and safe to repeat). Side-list its
    failures. The media import reads the source 6 files at a time like the extraction, so the
    same consent applies; without it, upload the images downloaded in step 2.
