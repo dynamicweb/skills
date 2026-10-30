@@ -71,6 +71,20 @@ Describe 'Scripted build config and rename planning' {
     It 'rejects negative prices before a build can mutate anything' {
         {Read-DwBuildConfig (New-TestConfig @{slug='marine';customer=@{name='Supply'};catalogue=@{products=@(@{id='TCPROD0001';price=-1})}})}|Should -Throw '*non-negative*'
     }
+    It 'keeps the vendor brand only for a customer name that carries the vendor word' {
+        Test-DwBuildVendorKept 'Truvio Commerce'|Should -BeTrue
+        Test-DwBuildVendorKept 'truvio'|Should -BeTrue
+        Test-DwBuildVendorKept 'Northwind Marine Supply'|Should -BeFalse
+        Test-DwBuildVendorKept 'Truvioline Parts'|Should -BeFalse
+    }
+    It 'ships an example config that keeps the edition brand and resolves' {
+        $example=Read-DwBuildConfig (Join-Path (Split-Path $PSScriptRoot) 'skills/dw-demo-base/assets/demo-build.example.json')
+        $example.customer.name|Should -Be 'Truvio Commerce'
+        Test-DwBuildVendorKept $example.customer.name|Should -BeTrue
+        $example.brand.logo|Should -Match '^distribution/layers/sample-data/files/Images/TruvioCommerce/brand/.+\.svg$'
+        [int]$example.personas.Count|Should -Be 0
+        [int]$example.catalogue.products.Count|Should -Be 0
+    }
     It 'chooses readable ink on amber and dark blue' {
         Get-DwBuildInk '#B8860B'|Should -Be '#000000'
         Get-DwBuildInk '#15324F'|Should -Be '#FFFFFF'
@@ -86,7 +100,7 @@ Describe 'Brand generation without network or database' -Skip:(-not $IsWindows) 
         $seed=@{brand=@{name='Default';logo=@{alt='Default'}};css=@{'--td-accent'='#000000';'--td-ink'='#000000'};schemes=@('light','lightgrey1','lightgrey2','dark','darksubtle','primary','secondary'|ForEach-Object {@{Id=$_;Name=$_;BackgroundColor='#FFFFFF';ForegroundColor='#000000';PrimaryButtonColor='#000000';SecondaryButtonColor='#000000';AccentColor=$null}});typography=@{ParagraphFont='Inter';HeadingFont='Inter';ButtonFont='Inter';fontImport=$null};buttons=@{Shape=2;BorderSize=1;PaddingY=0.55;PaddingX=1.4;borderRadius='999px'}}
         $seed|ConvertTo-Json -Depth 20|Set-Content (Join-Path $custom 'brand.tokens.json')
         New-Item -ItemType Directory -Force (Join-Path $theme 'System/Styles/Typography')|Out-Null
-        'body { --dw-font-family: Inter; }'|Set-Content (Join-Path $theme 'System/Styles/Typography/default.css')
+        "/* default */`n/* Imports */`n@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');`n/* Basic types */`nbody, .preview {`n--dw-font-family: Inter;`n}`n/* Headings */`nh1, h2 {`n--dw-font-family: Inter;`n}"|Set-Content (Join-Path $theme 'System/Styles/Typography/default.css')
         $files=Join-Path $script:demo 'Dynamicweb.Host.Suite/wwwroot/Files'
         foreach($dir in 'ColorSchemes','Typography','Buttons'){New-Item -ItemType Directory -Force (Join-Path $files "System/Styles/$dir")|Out-Null}
         New-Item -ItemType Directory -Force (Join-Path $files 'Templates/Designs/Swift-v2/Custom')|Out-Null
@@ -106,6 +120,9 @@ Describe 'Brand generation without network or database' -Skip:(-not $IsWindows) 
         $css=Get-Content -Raw (Join-Path $files 'System/Styles/ColorSchemes/default.css')
         $css|Should -Match '--dw-color-button-primary-contrast: #000000;'
         Get-Content -Raw (Join-Path $files 'Templates/Designs/Swift-v2/Custom/brand.css')|Should -Match ':root:root'
+        $typography=Get-Content -Raw (Join-Path $files 'System/Styles/Typography/default.css')
+        $typography|Should -Not -Match '@import|display=swap'
+        $typography|Should -Match '(?s)body, \.preview \{[^}]*--dw-font-family: Arial;'
         Get-Content -Raw (Join-Path $files 'Images/Brand/logo.svg')|Should -Match 'Marine &amp; Supply'
         $tokens=Get-Content -Raw (Join-Path $files 'Templates/Designs/Swift-v2/Custom/brand.tokens.json')|ConvertFrom-Json
         $tokens.brand.favicon|Should -Be '/Files/Images/marine/favicon.png'
@@ -113,6 +130,22 @@ Describe 'Brand generation without network or database' -Skip:(-not $IsWindows) 
         $first=Get-FileHash (Join-Path $files 'System/Styles/ColorSchemes/default.css')
         & pwsh -NoProfile -File $script:generator -ConfigPath $script:config -DemoRoot $script:demo -Apply
         (Get-FileHash $first.Path).Hash|Should -Be $first.Hash
+    }
+    It 'keeps a configured font import as the first line and still parses' {
+        $root=Join-Path $TestDrive 'imported'
+        Copy-Item (Join-Path $script:demo 'distribution') (Join-Path $root 'distribution') -Recurse
+        foreach($dir in 'System/Styles/ColorSchemes','System/Styles/Typography','System/Styles/Buttons','Templates/Designs/Swift-v2/Custom'){New-Item -ItemType Directory -Force (Join-Path $root "Dynamicweb.Host.Suite/wwwroot/Files/$dir")|Out-Null}
+        $config=New-TestConfig @{slug='marine';customer=@{name='Marine'};brand=@{fontFamily='Source Sans 3';fontImportUrl='https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap'}}
+        & pwsh -NoProfile -File $script:generator -ConfigPath $config -DemoRoot $root -Apply
+        $LASTEXITCODE|Should -Be 0
+        $lines=Get-Content (Join-Path $root 'Dynamicweb.Host.Suite/wwwroot/Files/System/Styles/Typography/default.css')
+        $lines[0]|Should -Be "@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap');"
+        ($lines -join "`n")|Should -Match '(?s)body, \.preview \{[^}]*--dw-font-family: Source Sans 3;'
+        { Test-DwBuildTypographyCss -Css ($lines -join "`n") -Font 'Source Sans 3' }|Should -Not -Throw
+    }
+    It 'rejects a typography sheet with a leftover import fragment or no body font' {
+        { Test-DwBuildTypographyCss -Css "500;600;700&display=swap');`nbody, .preview {`n--dw-font-family: Arial;`n}" -Font 'Arial' }|Should -Throw '*outside a rule*'
+        { Test-DwBuildTypographyCss -Css "h1 {`n--dw-font-family: Arial;`n}" -Font 'Arial' }|Should -Throw '*body font*'
     }
     It 'does not write when previewed' {
         $newRoot=Join-Path $TestDrive 'preview'

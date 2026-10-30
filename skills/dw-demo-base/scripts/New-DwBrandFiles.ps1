@@ -65,8 +65,9 @@ try {
     $ty=@{Id='default';Name=$c.customer.name};foreach($key in $tokens.typography.Keys){if($key -ne 'fontImport'){$ty[$key]=$tokens.typography[$key]}}
     Write-DwBuildJson (Join-Path $styles 'Typography/default.json') $ty
     $tyCss=Get-Content -Raw (Join-Path $p.Distribution 'layers/theme-default/files/System/Styles/Typography/default.css')
-    $tyCss=$tyCss -replace '(?m)^@import[^;]+;',''; $tyCss=$tyCss.Replace('Inter',$b.fontFamily)
+    $tyCss=$tyCss -replace '(?m)^\s*@import\b[^\r\n]*\r?\n?',''; $tyCss=$tyCss.Replace('Inter',$b.fontFamily)
     if($b.fontImportUrl){$tyCss="@import url('$($b.fontImportUrl)');`n"+$tyCss}
+    Test-DwBuildTypographyCss -Css $tyCss -Font $b.fontFamily
     Set-Content (Join-Path $styles 'Typography/default.css') $tyCss -Encoding utf8NoBOM
     $buttons=@{Id='default';Name=$c.customer.name};foreach($key in 'Shape','BorderSize','PaddingY','PaddingX'){$buttons[$key]=$tokens.buttons[$key]}
     Write-DwBuildJson (Join-Path $styles 'Buttons/default.json') $buttons

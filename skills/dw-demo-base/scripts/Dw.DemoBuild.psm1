@@ -205,6 +205,19 @@ function New-DwBuildTile {
     } finally {$brush.Dispose();$font.Dispose();$graphics.Dispose();$bitmap.Dispose()}
 }
 
+function Test-DwBuildVendorKept {
+    param([Parameter(Mandatory)][string]$CustomerName)
+    [bool]($CustomerName -match '(?i)(^|[^A-Za-z])Truvio([^A-Za-z]|$)')
+}
+
+function Test-DwBuildTypographyCss {
+    param([Parameter(Mandatory)][string]$Css,[Parameter(Mandatory)][string]$Font)
+    $sheet=$Css -replace '(?s)/\*.*?\*/','' -replace '(?m)^\s*@import\b[^\r\n]*',''
+    $outside=($sheet -replace '(?s)\{[^{}]*\}','').Trim()
+    if($outside -match ';'){throw "Typography stylesheet has text outside a rule: $($outside.Substring(0,[Math]::Min(80,$outside.Length)))"}
+    if($sheet -notmatch "(?s)body, \.preview \{[^}]*--dw-font-family: $([regex]::Escape($Font));"){throw "Typography stylesheet does not set the body font to $Font."}
+}
+
 function Get-DwBuildTokenHash {
     param([Parameter(Mandatory)][string]$Bearer)
     $parts=$Bearer.Split('.',2)

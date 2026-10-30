@@ -20,7 +20,10 @@ completion rules, workspace and persona relationships. Customer display values a
 before the host starts. No serializer or YAML delivery runs during this command.
 
 Copy [demo-build.example.json](../assets/demo-build.example.json) into your demo's `notes/`
-directory, adjust it, and run the orchestrator from the installed skill directory:
+directory, adjust it, and run the orchestrator from the installed skill directory. As shipped, the
+example keeps the edition's own Truvio Commerce brand: the wordmark, symbol and card from the
+sample-data layer inside the cloned `distribution/`, the purple and amber palette, and no persona or
+catalogue renames. A customer demo changes the name, palette, assets and rename blocks.
 
 ```powershell
 pwsh -NoProfile -File scripts/Invoke-DwDemoBaseBuild.ps1 -ConfigPath $config -DemoRoot $demo -SqlServer $server -Port $port -Apply
@@ -96,7 +99,9 @@ Example of an explicit catalogue edit, keeping the relation key:
 ```
 
 Merge that block into a complete config. An omitted rename keeps the sample catalogue's structure
-and copy, with the vendor company display name replaced. Domain-specific product authoring still
+and copy, with the vendor company display name replaced. A customer name that carries the vendor
+word Truvio keeps the edition's display copy and shipped product tiles unchanged, so the demo
+stays a Truvio Commerce demo instead of doubling the vendor name. Domain-specific product authoring still
 needs a complete map or the agent phase. The command does not invent a credible domain catalogue.
 
 ## Release and file composition
@@ -200,7 +205,8 @@ The product/content index step resolves builders over the Management API, builds
 waits for fresh Lucene segments. Acceptance runs the sibling host-readiness harness, edition critical
 pages and all three persona identity probes. It asserts served brand tokens, stylesheet links, the
 customer name on home, nonzero named PLP products and resolving product images. Visible vendor or
-placeholder text fails. Internal stable keys and asset paths may still contain the original prefix.
+placeholder text fails, except that a demo named for the vendor keeps its vendor text. The served
+Typography sheet must parse and set the configured body font. Internal stable keys and asset paths may still contain the original prefix.
 
 A gate failure is a failure of the whole command, even if a host is running. Inspect the local
 receipts and journal, fix the cause, and resume. The command reports remaining work on failure too.

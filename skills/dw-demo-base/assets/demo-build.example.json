@@ -1,32 +1,25 @@
 {
-  "slug": "northwind-marine",
+  "slug": "truvio-commerce",
   "customer": {
-    "name": "Northwind Marine Supply",
-    "legalName": "Northwind Marine Supply Ltd",
-    "tagline": "Parts for the next voyage",
+    "name": "Truvio Commerce",
+    "legalName": "Truvio Commerce",
+    "tagline": "The Truvio Commerce demo edition, powered by Dynamicweb",
     "country": "US",
     "currency": "USD",
     "language": "en-US"
   },
   "installMcpBeforeStart": true,
   "brand": {
-    "primary": "#15324F",
-    "secondary": "#D9C8A5",
-    "accent": "#D9C8A5",
-    "ink": "#182B3A",
+    "primary": "#400685",
+    "secondary": "#FFAF00",
+    "accent": "#FFAF00",
+    "ink": "#14181D",
     "background": "#FFFFFF",
     "fontFamily": "Arial",
-    "radius": "8px"
-  },
-  "personas": [
-    { "id": 100100, "name": "Northwind Marine Account", "company": "Northwind Marine Supply" },
-    { "id": 100101, "name": "Morgan Buyer", "email": "buyer@example.invalid", "company": "Northwind Marine Supply" },
-    { "id": 100102, "name": "Alex Support", "email": "support@example.invalid", "company": "Northwind Marine Supply" },
-    { "id": 100103, "name": "Casey Account Admin", "email": "admin@example.invalid", "company": "Northwind Marine Supply" }
-  ],
-  "catalogue": {
-    "products": [
-      { "id": "TCPROD0001", "name": "Marine Connector Kit", "number": "NMS-0001", "shortDescription": "A connector kit for marine electrical installations." }
-    ]
+    "radius": "8px",
+    "logo": "distribution/layers/sample-data/files/Images/TruvioCommerce/brand/truvio-logo.svg",
+    "favicon": "distribution/layers/sample-data/files/Images/TruvioCommerce/brand/truvio-symbol.png",
+    "appleTouchIcon": "distribution/layers/sample-data/files/Images/TruvioCommerce/brand/truvio-symbol.png",
+    "metaImage": "distribution/layers/sample-data/files/Images/TruvioCommerce/brand/truvio-og-card.png"
   }
 }

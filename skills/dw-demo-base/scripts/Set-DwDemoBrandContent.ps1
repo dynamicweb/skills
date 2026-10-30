@@ -32,6 +32,7 @@ try {
     $port=([uri]$profile.profiles.'Dynamicweb.Host.Suite'.applicationUrl).Port
     if(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue){throw 'Brand content is pre-start only. Stop the owned host before applying this step.'}
     $plan=Get-DwBuildRenamePlan $c
+    $vendorKept=Test-DwBuildVendorKept $c.customer.name
     $assets=@{};foreach($entry in $c.catalogue.products){if($entry.image){$assets[$entry.id]=Resolve-DwBuildAsset $p.Root $entry.image}}
     if(-not $Apply -or -not $PSCmdlet.ShouldProcess($Database,'Rewrite customer display values in one transaction')){Write-Host "Plan: company/content rewrite plus $($plan.Count) explicit catalogue field updates; stable keys preserved.";exit 0}
     $tiles=Get-DwBuildRows $conn "SELECT ProductId,ProductName,ProductImageSmall FROM EcomProducts WHERE ProductVariantId='' AND ProductId LIKE 'TCPROD%'"
@@ -80,7 +81,7 @@ try {
                 ($table -eq 'EcomOrders' -and $col -match '^Order(Customer|Delivery)(Name|Company)$') -or
                 ($table -eq 'EcomDetails' -and $col -in 'DetailsName','DetailsKeywords','DetailDescription') -or
                 ($table -eq 'EcomOrderLines' -and $col -eq 'OrderLineProductName')
-            if(-not $display){continue}
+            if(-not $display -or $vendorKept){continue}
             foreach($old in 'Truvio Commerce','Truvio') {
                 $sql="UPDATE [$table] SET [$col]=REPLACE(CAST([$col] AS nvarchar(max)),@old,@name) WHERE CAST([$col] AS nvarchar(max)) LIKE @pattern"
                 Update-Content $sql @{old=$old;name=$c.customer.name;pattern="%$old%"} "$table.$col.$old" 0
@@ -137,7 +138,7 @@ try {
             if($url -notlike '/Files/Images/TruvioCommerce/products/*.png'){continue}
             $relative=$url.Substring('/Files/'.Length)
             $svg=Join-Path $p.Distribution ('layers/sample-data/files/'+[IO.Path]::ChangeExtension($relative,'.svg'))
-            if((Test-Path $svg) -and (Get-Content -Raw $svg) -match 'Truvio') {
+            if(-not $vendorKept -and (Test-Path $svg) -and (Get-Content -Raw $svg) -match 'Truvio') {
                 $name=$tile.ProductName.Replace('Truvio Commerce',$c.customer.name).Replace('Truvio',$c.customer.name)
                 $override=@($c.catalogue.products | Where-Object id -eq $tile.ProductId | Select-Object -First 1)
                 if($override.Count -and $override[0].name){$name=$override[0].name}

@@ -44,7 +44,7 @@ try {
     $pages=@(@($r.editionModel.criticalPaths)+@("/$lang/shop","/$lang/cart/","/$lang/customer-center","/$lang/sign-in/sign-in") | Select-Object -Unique)
     if(-not $pages.Count){throw 'Zero critical pages.'}
     $accounts=@($personas | ForEach-Object {@{role=[string]$_.AccessUserID;username=$_.AccessUserUserName;secretKey=[string]$_.AccessUserID;identityPath='/en-us/customer-center';identityContains=$_.AccessUserName}})
-    $story=@{baseUrl=$base;pages=$pages;placeholderRegex='\bTruvio\b|placeholder|lorem ipsum';personas=@{login=@{path='/en-us/sign-in/sign-in';extraFields=@{LoginAction='Login'}};accounts=$accounts}}
+    $story=@{baseUrl=$base;pages=$pages;placeholderRegex=$(if(Test-DwBuildVendorKept $c.customer.name){'placeholder|lorem ipsum'}else{'\bTruvio\b|placeholder|lorem ipsum'});personas=@{login=@{path='/en-us/sign-in/sign-in';extraFields=@{LoginAction='Login'}};accounts=$accounts}}
     $storyPath=Join-Path $p.Notes 'storyline-config.json';Write-DwBuildJson $storyPath $story
     Invoke-DwBuildCommand pwsh @('-NoProfile','-File',(Join-Path $PSScriptRoot 'Test-DwDemoStoryline.ps1'),'-ConfigPath',$storyPath,'-SecretsPath',$secretFile,'-OutFile',(Join-Path $p.Notes 'storyline-proof.json'))
     $homePage=Invoke-WebRequest -Uri "$base/en-us/home" -SkipCertificateCheck -TimeoutSec 120
@@ -55,6 +55,8 @@ try {
     $brand=Invoke-WebRequest -Uri "$base/Files/Templates/Designs/Swift-v2/Custom/brand.css" -SkipCertificateCheck -TimeoutSec 60
     $tokens=Get-Content -Raw (Join-Path $p.Files 'Templates/Designs/Swift-v2/Custom/brand.tokens.json') | ConvertFrom-Json -AsHashtable
     foreach($key in $tokens.css.Keys){if($brand.Content -notmatch [regex]::Escape("${key}: $($tokens.css[$key]);")){throw "Served brand token mismatch: $key"}}
+    $typography=Invoke-WebRequest -Uri "$base/Files/System/Styles/Typography/default.css" -SkipCertificateCheck -TimeoutSec 60
+    Test-DwBuildTypographyCss -Css ([string]$typography.Content) -Font $tokens.typography.ParagraphFont
     $plp=Invoke-WebRequest -Uri "$base/en-us/shop" -SkipCertificateCheck -TimeoutSec 120
     $products=Get-DwBuildRows $conn "SELECT ProductName,ProductImageSmall FROM EcomProducts WHERE ProductVariantId='' AND ProductActive=1 AND ProductId LIKE 'TCPROD%'"
     $shown=@($products | Where-Object {$plp.Content -match [regex]::Escape([Net.WebUtility]::HtmlEncode($_.ProductName)) -or $plp.Content -match [regex]::Escape($_.ProductName)})
