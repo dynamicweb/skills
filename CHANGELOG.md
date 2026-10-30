@@ -12,8 +12,11 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   seven steps with checkpoints: survey, scrape, data model, Data Integration import, content rebuild, catalog tuning,
   and a screenshot-scored critic review loop, with `RUN-STATE.md` so a run resumes in a new session. The content
   rebuild of the retired skill (`extract_site_content`, the per-page layout plan, `build_pages`) lives on as
-  `references/content-rebuild.md`. `dw-swift-migrate-site` is `dynamo: false` (it needs a shell, the dw CLI and a
-  browser), so the manifest no longer carries a site migration skill. The skill is self-contained: it links to no
+  `references/content-rebuild.md`, with two safety rules: the site extraction and media import run only when the
+  source's owner accepts their load (both read 6 requests at a time and skip `robots.txt`), and a product import
+  first checks that no existing product shares a source number or name, because the Ecom provider would update it.
+  Group membership is imported through the product file's `Groups`/`PrimaryGroup` columns.
+  `dw-swift-migrate-site` is `dynamo: false` (it needs a shell, the dw CLI and a browser), so the manifest no longer carries a site migration skill. The skill is self-contained: it links to no
   other skill, carries the page create order, the dw CLI upload rules, the Data Integration activity rules and the
   facet field rule itself, and describes steps in plain language, naming MCP tools only where a call has a trap
   (the restricted migration tool family and the page create order). Registered in `dynamicweb-frontend` and

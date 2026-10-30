@@ -77,7 +77,10 @@ section; the intake only asks for what it does not already record.
 ## Rules for every step
 
 - **Respect the source.** Read `robots.txt` first and keep its crawl delay (one request per second
-  when it states none). When it blocks pages the migration needs, stop and ask.
+  when it states none). When it blocks pages the migration needs, stop and ask. The MCP migration
+  tools that read the source (site extraction and media import) send several requests at a time
+  and do not read `robots.txt`, so use them only when the user confirms the source's owner accepts
+  that load; otherwise build from the files of step 2.
 - **Keep content verbatim.** Names, descriptions, and specifications stay as scraped, also when a
   tool description lists field writing rules. Cleaned values (spelling, units, decimal separators)
   go in separate facet fields; the displayed value stays as scraped. Never invent data.
@@ -93,7 +96,7 @@ section; the intake only asks for what it does not already record.
 
 ## Flow
 
-The scope decides which steps run: a content-only migration runs steps 1, 5, and 7; a catalog
+The scope decides which steps run: a content-only migration runs steps 1, 2, 5, and 7; a catalog
 migration runs all seven.
 
 ### Step 1: Survey
@@ -106,11 +109,13 @@ categories and pages that cover every product shape and page type.
 
 ### Step 2: Scrape
 
-Save listings, product pages, content pages, and images to resumable JSON Lines files in the
-working folder, keeping the raw responses so parsing can rerun without crawling again.
-[catalog-import.md](references/catalog-import.md) ("Scrape into files").
-**Checkpoint:** record counts per file, five sample products, and any field empty in more than
-10% of records.
+Save the content pages and their images, and when the catalog is in scope the listings and
+product pages, to resumable JSON Lines files in the working folder, keeping the raw responses so
+parsing can rerun without crawling again. Step 5 builds from these files whenever the migration
+tools do not read the source. [catalog-import.md](references/catalog-import.md) ("Scrape into
+files").
+**Checkpoint:** record counts per file, five sample products or pages, and any field empty in
+more than 10% of records.
 
 ### Step 3: Data model
 
@@ -123,9 +128,10 @@ anything is created.
 ### Step 4: Import
 
 Create the data models and groups, then import manufacturers, variant groups and options,
-products and variants, group relations, variant relations and field values, prices, and images
-from CSV files with Data Integration. Let the platform generate product ids and read them back for
-the later files. [catalog-import.md](references/catalog-import.md) ("Import order" through
+products and variants with their group memberships, variant relations and field values, prices,
+and images from CSV files with Data Integration. Let the platform generate product ids and read
+them back for the later files, after checking that no product in the solution already has a
+source product's number or name. [catalog-import.md](references/catalog-import.md) ("Import order" through
 "Proving an import").
 **Checkpoint:** product, variant, price, and image counts in the solution, checked on the frontend
 pages of products nobody has opened yet. When caches hide imported data, tell the user rather

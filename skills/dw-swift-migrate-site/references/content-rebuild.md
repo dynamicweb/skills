@@ -45,8 +45,8 @@ scope.
 
 ## Building without the migration tools
 
-Use this path while the grant is missing, and when the flow below says to skip the extraction.
-The scraped content from steps 1 and 2 is the source, and the construction runs on the ordinary
+Use this path while the grant is missing, and when the flow below says not to run the
+extraction. The content scraped in step 2 is the source, and the construction runs on the ordinary
 page tools, one page at a time. It replaces the construction only, never a design decision, and
 none of the page builder's checks run, so read every page back.
 
@@ -150,10 +150,11 @@ the same way, so every source block is accounted for.
    which mode ran (treat HTML-mode trees with extra scepticism). Note the source host and report
    the warnings: an unauthenticated read misses unpublished pages, so every count is a floor. A
    prior extraction can be re-read without crawling again.
-   **Skip the extraction for a non-Dynamicweb source when the scope is a few pages or `robots.txt`
-   states a crawl delay.** HTML mode crawls up to 120 pages, 6 at a time, without reading
-   `robots.txt` [mcp 0.6.1-beta], so it cannot honour a one-page scope or the crawl rule. Build
-   from the pages read in steps 1 and 2 instead, as described in
+   **Run the extraction only when the user confirms the source's owner accepts its load.** Both
+   modes read the source 6 requests at a time without reading `robots.txt`, and HTML mode crawls
+   up to 120 pages [mcp 0.6.1-beta], so it cannot keep the crawl delay, the
+   one-request-per-second default, or a scope of a few pages. That fits a solution the customer
+   owns and has agreed to; for any other source, build from the files of step 2 as described in
    [Building without the migration tools](#building-without-the-migration-tools).
 2. **Target website.** Build into the website agreed at intake. A new website uses the Swift 2
    master layout (read the real design folder name from the solution's layouts if it isn't
@@ -172,7 +173,8 @@ the same way, so every source block is accounted for.
      chrome tool, and the product catalog shell when the catalog is in scope. Check its status,
      wired fields and errors. Do not hand-build the chrome while that tool is available.
 4. **Media.** Import the source media (path-preserving and safe to repeat). Side-list its
-   failures.
+   failures. The media import reads the source 6 files at a time like the extraction, so the
+   same consent applies; without it, upload the images downloaded in step 2.
 5. **Build pages in batches.** For each page, read the extracted page, decide what each block
    wants to be, and write the plan. Build a batch of pages in one call; the result has per-page
    results and says whether more pages remain (folders, system and product pages are excluded).

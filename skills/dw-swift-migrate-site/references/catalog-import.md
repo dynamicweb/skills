@@ -1,7 +1,7 @@
 # Catalog: survey, scrape, data model, import
 
-Steps 1 to 4 of [dw-swift-migrate-site](../SKILL.md) when the scope includes products. The
-pattern: the source is copied into files once, bulk data moves from those files through the dw
+Steps 1 to 4 of [dw-swift-migrate-site](../SKILL.md). Steps 1 and 2 run for every scope; steps
+3 and 4 when the scope includes products. The pattern: the source is copied into files once, bulk data moves from those files through the dw
 CLI and Data Integration, and every write is proven on the frontend.
 
 ## Contents
@@ -33,7 +33,9 @@ per proposed category at the checkpoint.
 
 ## Scrape into files
 
-Write small, resumable scripts in the working folder (any runtime the agent can run):
+This step runs for every scope: content pages and their images always, listings and product
+pages when the catalog is in scope. Write small, resumable scripts in the working folder (any
+runtime the agent can run), keeping the crawl delay:
 
 - Save raw responses as JSON Lines, one record per line, so a stopped crawl continues and parsing
   can be rerun without crawling again
@@ -71,11 +73,14 @@ returns: they can differ from the ids you asked for, and every later file must u
 ones. Then write one CSV per table and import each with its own Data Integration activity:
 
 1. Manufacturers, variant groups, and variant options
-2. Products and variants
-3. Product-group relations
-4. Variant relations and category field values
-5. Prices
-6. Product images (detail rows pointing at the uploaded files)
+2. Products and variants, with their group memberships
+3. Variant relations and category field values
+4. Prices
+5. Product images (detail rows pointing at the uploaded files)
+
+The Ecom provider has no product-group relation table to import into. Group membership goes on
+the product file: a `Groups` column with the product's group ids, comma-separated, and a
+`PrimaryGroup` column with one plain, unquoted group id.
 
 Create products and groups in the solution's **default ecommerce language**, even when the
 website language differs. Rows in another language are invisible to the index and the
@@ -85,8 +90,14 @@ navigation.
 
 Use the source's item numbers as product numbers, and make sure every product has one. Leave the
 product id out of the product import: the Ecom provider then matches an existing product by
-number (or by name when there is no number) and otherwise generates a new, unused id. So an import
-never overwrites an unrelated product, also on a solution shared with other data.
+number, then by name, and otherwise generates a new, unused id.
+
+That matching is what keeps a re-run from duplicating products, and it is also a risk: on a
+solution that already holds other products, a source number or name that exists there updates
+that unrelated product. **Before the first product import, look up every source product number
+and name in the solution.** When any match a product this migration did not create, stop and ask
+the user: import into a solution or shop without those products, or give the migrated product
+numbers a source prefix. Never import over a match.
 
 After the product import, look up the id each product number got and write those ids into the
 later files: variant relations, category field values, prices, and images all address products by
@@ -110,9 +121,11 @@ Upload CSV files and images in bulk with the dw CLI (`npm install -g @dynamicweb
 ## Data Integration activities
 
 One activity per CSV file: the CSV provider as source and the **Ecom provider** as destination
-(it creates missing ids, language rows, groups, and manufacturers). For each activity, read both
+(it creates missing ids, language rows, and manufacturers). For each activity, read both
 providers' schemas, map every column, and mark the natural key (`ProductNumber` for products) as
-the key column. Without a key column, every run inserts duplicates.
+the key column. Without a key column, every run inserts duplicates. Turn the provider's *Create
+missing groups* setting off (it defaults on): the groups already exist, and a mistyped group id
+would otherwise create a stray group.
 
 - **An activity stores the source file's columns when it is created.** When a CSV gains a column,
   create a new activity; the old one silently ignores the new column.
