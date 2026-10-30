@@ -168,9 +168,13 @@ Use update-only mappings for the original order, scoped by company and source id
 state metadata before changing it and exclude states that send an unintended email. Re-read the
 original financial/address flags and complete hierarchy around the status write. A native
 order-service save can materialise a null root `OrderParentOrderId` or previously empty
-`OrderReference` as an empty string. Allow only the exact schema-qualified null/empty pair
-measured for those fields, with raw before/after trace. Preserve meaningful references, foreign
-parents and every financial/line field; never apply blanket string normalisation. [dw 10.29.8]
+`OrderReference` as an empty string, and the same save materialises a null `OrderLineParentLineId`
+on root lines as an empty string. Allow only the exact schema-qualified null/empty pair
+measured for those fields, per line and with raw before/after trace. Preserve meaningful
+references, foreign parents and every financial/line field; never apply blanket string
+normalisation. A byte-strict line comparison that lacks the line-parent pair stops after the
+import and the status save have already succeeded; recover with the existing-ledger replay
+(re-plan, then apply) rather than by editing the ledger or the source. [dw 10.29.8]
 
 A missing ERP row is unknown, not cancellation. Importing an invoice and changing the original status are
 separate platform operations; use a durable replayable checkpoint rather than claiming combined

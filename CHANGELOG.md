@@ -20,9 +20,15 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   protected App_Data staging and targeted cache refresh on DW10.29.8. Explain native BC29
   price-source inheritance and verified non-interactive activation, computed stock views distinct
   from physical sources, frozen extension release manifests and durable native seed receipts.
-  Full posted-UOM, producer and failure-matrix acceptance remains pending; no measured
-  compatibility version is advanced. Retire stale catalog and fallback claims that MCP cannot
-  write group/customer scopes when its current schema exposes those members.
+  Retire stale catalog and fallback claims that MCP cannot write group/customer scopes when
+  its current schema exposes those members.
+- Record the first live sandbox acceptance of the bounded order, posting, invoice-return and
+  replay paths, including one real each/case checkout posted and returned in its selected
+  units, held credit, lock-wait expiry and immutable replay. Document the native null
+  line-parent normalisation on a status save and its replay recovery, the posted alternate
+  UOM proof, and field-level cart-preservation guards. Scheduled or unattended runs, every
+  producer, partial or multiple documents, credit-memo return and non-selected routes stay
+  outside the measured claim; no measured compatibility version is advanced.
 
 - Extend the BC family with committed receipt reads, native posting/rollback and correction
   boundaries, immutable pre/post header/line reconciliation, consistent source/destination locks,
