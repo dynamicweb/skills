@@ -3,6 +3,25 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.8.13]
+
+- **Variant prices: the master's variant-less row is the conflict, not a lost price.** Combine as variants
+  moves the absorbed products' price rows onto the master, scoped to each combination; a variant shows the
+  master price because a variant-less row applies to every variant and the lowest wins. Priority is not the
+  fix: keep no variant-less row below a variant's price. `dw-pim-modelling` `structural-model.md`,
+  `dw-data-access` `recipes-pim.md`.
+- **Variant rows are writable from MCP 0.6.3-BETA.** `patch_products_safe` with `variantId` writes fields
+  that allow variant editing and refuses the others; the "no API writes a variant row" finding is now
+  scoped to older MCP versions. Same files.
+- **`dw-pim-modelling`: a sparse variant matrix strands the shopper.** Swift's selector crosses out
+  missing combinations and cannot jump to an existing one; keep families to options that combine fully.
+- **`dw-search-indexing` `index-management.md`: gate a product build on a moved `lastBuildStarted`**, and
+  purge deleted pages before rebuilding the Content index, which otherwise keeps indexing them.
+- **`dw-swift-page-blocks`: the site container width is the Master field `MediaQueryLimit`;** `SearchField`
+  on a dark scheme is invisible; `ProductComponentSlider` has no title and an empty slider strands its heading.
+- **`dw-extend-mcp-tools` `tool-surface-gaps.md`: `delete_variant_combinations` leaves the combination's
+  price rows behind.**
+
 ## [5.8.12]
 
 - **Combine as variants: the empty master number is by design; the completion-rule gap is work item 29782.**
