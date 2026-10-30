@@ -134,7 +134,11 @@ function Get-DwBuildConnection {
     param([string]$SqlServer,[string]$Database)
     if (-not $SqlServer -or $Database -notmatch '^[a-zA-Z0-9][a-zA-Z0-9_-]{1,100}$') { throw 'Pass a SQL server and a safe database name.' }
     $b = [System.Data.SqlClient.SqlConnectionStringBuilder]::new()
-    $b['Data Source']=$SqlServer; $b['Initial Catalog']=$Database; $b['Integrated Security']=$true; $b['TrustServerCertificate']=$true
+    $b['Data Source']=$SqlServer; $b['Initial Catalog']=$Database; $b['TrustServerCertificate']=$true
+    if ([bool]$env:DW_SQL_USER -ne [bool]$env:DW_SQL_PASSWORD) { throw 'Set both DW_SQL_USER and DW_SQL_PASSWORD, or neither for Windows authentication.' }
+    if ($env:DW_SQL_USER -and $env:DW_SQL_PASSWORD) {
+        $b['User ID']=$env:DW_SQL_USER; $b['Password']=$env:DW_SQL_PASSWORD
+    } else { $b['Integrated Security']=$true }
     Import-Module (Join-Path $PSScriptRoot '../../dw-data-access/scripts/Dw.Sql.Local.psm1') -ErrorAction Stop
     Assert-DwSqlLocal -ConnectionString $b.ConnectionString | Out-Null
     $b.ConnectionString

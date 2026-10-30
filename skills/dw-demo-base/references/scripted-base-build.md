@@ -40,6 +40,8 @@ use `Get-Help` for its named parameters. Write scripts preview unless `-Apply` i
 Install PowerShell 7, Git, a .NET 10 SDK and local SQL Server with Windows authentication once.
 Use [setup-checks.md](setup-checks.md) for installation links and environment diagnosis.
 The SQL account needs database-creation rights. SQL Server Express is sufficient.
+Alternatively, set both `DW_SQL_USER` and `DW_SQL_PASSWORD` for SQL authentication, including
+sqlpackage and the generated host configuration; credentials are never part of the build stamp.
 The command neither installs services nor changes IIS or an existing unowned database.
 
 Put the intended SDK's `dotnet` first on PATH and set `DOTNET_ROOT` when the default executable

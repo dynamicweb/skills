@@ -5,6 +5,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 
 ## [5.9.0]
 
+- Support environment SQL authentication for the base build and generated host, with an exact container-host SQL opt-in and refusal tests.
 - Add a customer JSON driven local Swift base-build command with verified public edition bacpac restore, pinned host and files, paired brand generation, stable-key display rewrites, resumable gated steps, MCP setup and acceptance evidence. Verify public MCP app staging without a host package reference; document and remaining agent work; add hermetic generator and config tests.
 
 ## [5.8.12]

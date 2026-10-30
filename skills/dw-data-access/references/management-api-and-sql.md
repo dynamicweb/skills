@@ -27,6 +27,10 @@ SQL is **local-only** throughout: a hosted install exposes no SQL surface, and n
 nor any shipped script provides a remote SQL path — the blast radius of arbitrary SQL on a cloud
 install (no remediation short of a backup restore) rules it out.
 
+For a container using its own host's SQL, `DW_SQL_CONTAINER_HOST` opts in to exactly one host
+name or IPv4 token, compared without an instance or port suffix; wildcards are refused.
+That host is the install's local SQL server; hosted installs still expose no SQL surface.
+
 ### Admin-endpoint catalog
 
 | Endpoint | Method | Purpose |

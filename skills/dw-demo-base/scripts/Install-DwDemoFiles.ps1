@@ -21,7 +21,7 @@ param([Parameter(Mandatory)][string]$DemoRoot,[Parameter(Mandatory)][string]$Sql
 $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSScriptRoot 'Dw.DemoBuild.psm1') -Force
 try {
-    $p=Get-DwBuildPaths $DemoRoot; $null=Get-DwBuildConnection $SqlServer $Database
+    $p=Get-DwBuildPaths $DemoRoot; $connection=[System.Data.SqlClient.SqlConnectionStringBuilder]::new((Get-DwBuildConnection $SqlServer $Database))
     $r=Get-Content -Raw $p.Release | ConvertFrom-Json
     $contract=Get-Content -Raw (Join-Path $p.Distribution 'layers/base/base.contract.json') | ConvertFrom-Json
     $swift=$contract.deliveryTarget.hostFiles.swiftRelease
@@ -124,6 +124,13 @@ try {
     $xml.Save($settings)
     $db=[xml]'<Globalsettings><System><Database><Type>ms_sqlserver</Type><SQLServer/><Database/><IntegratedSecurity>True</IntegratedSecurity></Database></System></Globalsettings>'
     $db.SelectSingleNode('//SQLServer').InnerText=$SqlServer; $db.SelectSingleNode('/Globalsettings/System/Database/Database').InnerText=$Database
+    if (-not $connection.IntegratedSecurity) {
+        $db.SelectSingleNode('//IntegratedSecurity').InnerText='False'
+        foreach ($entry in @{UserName=$connection.UserID;Password=$connection.Password}.GetEnumerator()) {
+            $node=$db.CreateElement($entry.Key);$node.InnerText=$entry.Value
+            $null=$db.SelectSingleNode('/Globalsettings/System/Database').AppendChild($node)
+        }
+    }
     $db.Save((Join-Path $p.Files 'GlobalSettings.Database.config'))
     Write-DwBuildJson (Join-Path $p.Notes 'files-installed.json') @{layers=$layers;swiftSha256=$swift.sha256;mcpPackage=@{id=$mcp.id;version=$mcp.version;hostPayload=$true;mechanism='AddIns';sha512=$packageHash}}
     Write-Host "Installed verified Files and $($layers.Count) layer overlays."

@@ -166,6 +166,16 @@ Describe 'Offline edition file composition on Windows' -Skip:(-not $IsWindows) {
         [xml]$settings=Get-Content -Raw (Join-Path $files 'GlobalSettings.config')
         $settings.Globalsettings.Ecom.Assortments.UseAssortments|Should -Be 'True'
         $settings.Globalsettings.System.Security.EncryptPassword|Should -Be '1'
+        $priorUser=$env:DW_SQL_USER;$priorPassword=$env:DW_SQL_PASSWORD
+        try {
+            $env:DW_SQL_USER='fixture-user';$env:DW_SQL_PASSWORD='fixture<&value'
+            & pwsh -NoProfile -File $installer -DemoRoot $demo -SqlServer localhost -Database fixture-db -Apply
+            $LASTEXITCODE|Should -Be 0
+            [xml]$databaseSettings=Get-Content -Raw (Join-Path $files 'GlobalSettings.Database.config')
+            $databaseSettings.Globalsettings.System.Database.IntegratedSecurity|Should -Be 'False'
+            $databaseSettings.Globalsettings.System.Database.UserName|Should -Be $env:DW_SQL_USER
+            $databaseSettings.Globalsettings.System.Database.Password|Should -Be $env:DW_SQL_PASSWORD
+        } finally { $env:DW_SQL_USER=$priorUser;$env:DW_SQL_PASSWORD=$priorPassword }
         $bin=Join-Path $hostDir 'bin/Debug/net10.0'
         New-Item -ItemType Directory -Force $bin|Out-Null
         'duplicate fixture'|Set-Content (Join-Path $bin 'Truvio.Commerce.MCP.dll')
