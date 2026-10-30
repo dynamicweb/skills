@@ -172,10 +172,13 @@ the same way, so every source block is accounted for.
    - Create and apply the branded color scheme from the captured palette with the migration tool
      built for it. Do not hand-build schemes while that tool is available.
    - Scaffold the header and footer (logo and navigation, desktop and mobile) with the chrome
-     tool, and the product catalog shell when the catalog is in scope. It works without an
-     extraction when given the logo file and the menu links. It creates no search, sign-in, cart
-     or checkout pages. Check its status, wired fields and errors. Do not hand-build the chrome
-     while that tool is available.
+     tool, and the product catalog shell when the catalog is in scope. For a shop it also adds a
+     mini cart and a search field to the header and creates the cart flow: a cart page, an
+     empty-cart page, anonymous and signed-in checkout pages (information, delivery, payment,
+     receipt), the cart service pages, a search-results page, and a sign-in page. It works
+     without an extraction when given the logo file and the menu links. Payment and shipping
+     methods are not set up, so the checkout cannot complete an order until they are. Check its
+     status, wired fields and errors. Do not hand-build the chrome while that tool is available.
 4. **Media.** Import the source media (path-preserving and safe to repeat). Side-list its
    failures. The media import reads the source 6 files at a time like the extraction, so the
    same consent applies; without it, upload the images downloaded in step 2.
