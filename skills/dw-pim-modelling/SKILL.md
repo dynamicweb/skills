@@ -195,6 +195,17 @@ combinations actually sold, since each is an individually sellable variant with 
 stock/price. State plainly whenever existing combinations will be cleared, so the wipe is
 never a surprise, and report the combination count created vs. the expected matrix size.
 
+**A sparse matrix strands the shopper on the Swift storefront.** When a family has fewer combinations
+than the product of its option counts (a laptop sold in 7 of its 30 CPU × memory × storage
+configurations), Swift's variant selector crosses out the options with no combination for the current
+selection, and clicking one selects only that option instead of jumping to a combination that exists:
+the shopper lands on a selection with no product and no price. Keep a variant family to the options
+that combine fully, and model the other configurations as separate products linked from the family in
+a related-products group ("Other configurations"), or as one combined option group (a single
+"Configuration" group whose options are the sold configurations). Before combining, compare the
+combination count with the product of the option counts, and click through the selector on the
+served PDP when they differ.
+
 When a product has variants, its `ProductId` stays the same and the variant id identifies the specific variant. For multi-axis variants it is the dot-joined variant option ids (e.g. `VO1.VO4`); for single-axis variants it is the bare `VariantOptionId` (e.g. `VO3`). The full 3-table shape (relation tables, per-variant `EcomProducts` rows, unique-`ProductNumber` rule, and MCP/API/SQL surface gotchas) lives in [references/structural-model.md](references/structural-model.md) §2.5 / §2.5a.
 
 ### BOM (Bill of Materials) Products

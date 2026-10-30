@@ -92,15 +92,15 @@ A variant `EcomProducts` row is a copy of the master row with three columns over
 
 Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md) "Re-applying per-variant `ProductNumber` suffixes" and "Writing the per-variant `EcomProducts` row on 10.28.x".
 
-**On 10.28.x no write surface reaches a variant `EcomProducts` row, and the two variant tools each drop
-part of what they promise.** This is the single most expensive thing to discover late, so plan the beat
+**On 10.28.x with an MCP before 0.6.3-BETA no write surface reaches a variant `EcomProducts` row, and the
+two variant tools each drop part of what they promise.** This is the single most expensive thing to discover late, so plan the beat
 around it rather than against it.
 
 | Call | What it does | What it does NOT do |
 |---|---|---|
 | `create_variant_combinations` | Creates the combination rows | Inherits nothing from the master: number empty, active and price NULL, name and descriptions and every custom field empty. The tool's own text says the combination inherits the master row; measured, it does not |
-| `combine_products_as_variants` | Re-parents standalone products as combinations, and the rows come out active | Copies no scalar column onto the combination: the per-product number is empty and the price is the **master's** on every combination. The standalone rows are deleted, so their number and price are **discarded, not moved**. It also blanks the **MASTER** row's number: measured, every master given variants lost its `ProductNumber` (47 of 52 masters kept one; the five variant parents did not) [dw 10.28.10 · mcp 0.4.4], so the family's anchor SKU leaves the catalogue while a search by any other key still finds the product |
-| `patch_products_safe` / `update_products` with `id` + `variantId` | Answers `succeeded: 1` and echoes every requested value | Writes nothing to the variant row. The echo is the request model, never a post-write read |
+| `combine_products_as_variants` | Re-parents standalone products as combinations, and the rows come out active | Copies no scalar column onto the combination: the per-product number is empty. The standalone rows are deleted; their `EcomPrices` rows are **moved** onto the master, scoped to the new combination's variant id (the platform's combine moves prices, assortments and stock units with the product). A combination still shows the **master's** price when the master keeps a variant-less price row below the variant's own: see "Variant prices" below. It also blanks the **MASTER** row's number: measured, every master given variants lost its `ProductNumber` (47 of 52 masters kept one; the five variant parents did not) [dw 10.28.10 · mcp 0.4.4], so the family's anchor SKU leaves the catalogue while a search by any other key still finds the product |
+| `patch_products_safe` / `update_products` with `id` + `variantId` | Answers `succeeded: 1` and echoes every requested value | Writes nothing to the variant row [mcp 0.4.4]. The echo is the request model, never a post-write read. From MCP 0.6.3-BETA `patch_products_safe` writes the variant row for every field that allows variant editing and refuses a field that does not with an error naming it; read the variant back to confirm |
 
 **Snapshot master numbers before `combine_products_as_variants`, and restore them after.** Read each
 master with `get_products_by_ids` and keep a `ProductId`-to-number map. After the combine, write the
@@ -141,7 +141,17 @@ created the field with 0. Read the stored flag back after either call before rel
    price provider — it is the whole of the per-variant differentiation that works.
 4. Read the price rows back with `get_prices_by_product_id`; that read is the assert.
 
-**Per-variant `ProductNumber`, name and stock have no working write surface on 10.28.x.** Plan no
+**Variant prices.** A price row with no variant id applies to **every** variant, and among matching rows
+of equal priority the lowest wins. So a master that keeps its own variant-less row below a variant's
+price shows the master price on that variant, even though the variant's own row is there. Priority is
+not the fix: a higher-priority variant row only hides the conflict, and the master row keeps undercutting
+every variant added later. Where variants are priced differently, give every variant its own row
+(`save_prices` with `productId` and `variantId`), keep no variant-less row below any variant's price,
+and check the PDP of the dearest variant. Where all variants share one price, a single variant-less row
+on the master is enough.
+
+**Per-variant `ProductNumber`, name and stock have no working write surface on 10.28.x with an MCP
+before 0.6.3-BETA** (from 0.6.3-BETA, `patch_products_safe` with `variantId`, above). Plan no
 per-variant SKU beat and promise none; a brief that needs per-variant SKUs on this build needs the
 out-of-product repair path ([`dw-data-access/references/recipes-pim.md`](../../dw-data-access/references/recipes-pim.md))
 and therefore a local install. Where the per-variant rows must carry active, number, unit and stock

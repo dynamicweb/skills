@@ -243,6 +243,11 @@ auto-correction on this path. A wrong value renders as garbled raw text, overlap
     mobile alike. theme-default 1.3.3 block 21 restores a `--dw-container-gutter` on width-4
     containers inside `main`, with a `data-td-full-bleed` attribute as the opt-out for rows
     that really should bleed.
+  - The page container (`3`) is capped site-wide by the **Master** item field `MediaQueryLimit`
+    on the website's master settings: a bare number (`1480`; the template appends `px`). At or above
+    that viewport width the container is 0.8 × the limit, below it the Swift default
+    (`Swift-v2_Master.cshtml`). Measured: `1480` gives 1,152 px of content at a 1,920 px viewport.
+    Set it there for a wider or narrower site; no row setting changes the container width.
   - Row `GapX` / `GapY` → `0` = flush (tiles butt together), `1` = .25rem, `2` = .5rem,
     **`3` = 1rem (default)**, `4` = 2rem, `5` = 3rem, `6` = 6rem.
   - Full-bleed flush image/poster tile grids — the look most brand sites use — are
@@ -413,6 +418,15 @@ small related blocks into one multi-column row instead of a long single-column s
     prefix measured from a page that answers 200, never derived from a name). Verify on the served
     page (`fetch_frontend_page_html`): the anchor's `href` carries `GroupID=`; a field read-back
     proves storage, never the rendered link.
+
+18. **`SearchField` with the "Field" layout on a dark color scheme renders an invisible input.**
+    The input's background is transparent (`rgba(0,0,0,0)`) and its text takes the scheme's dark
+    foreground, so on a dark header the field is dark on dark. Put the search paragraph in a row
+    or column with a light scheme, and check the served header in a screenshot.
+19. **`ProductComponentSlider` prints no title of its own.** A heading needs a separate paragraph
+    above it, and that heading still renders when the slider finds no products, leaving a title
+    over nothing. Confirm the slider returns products on the served page before adding the heading,
+    and remove the heading where the source may be empty.
 
 ## Row layout — settable, and what the row look depends on
 
