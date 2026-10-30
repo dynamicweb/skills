@@ -181,6 +181,15 @@ Any such bootstrap branch added to `Program.cs` during standup (a password-set, 
 
 ## Step 3 (Management API alternative): mint a key in one process; rotation stops at mint-and-store
 
+**Version boundary:** on MCP 0.6.3 and later, do not assume the API exposes the generated key.
+The measured 0.6.3 create flow hands plaintext to a short-lived admin-screen cache, and its
+configuration overview has no plaintext property. For a fresh local install, use the pre-boot
+SQL mint in [scripted-base-build.md](scripted-base-build.md): bearer `<PREFIX>.<secret>` hashes
+as `<PREFIX>.` plus lowercase hex SHA-512 of UTF-8 `<secret>DwSecret`, with a full-access
+configuration linked through `McpConfigurationCredential` before startup. Prove the key with
+initialize and tools/list before attaching it. The first-read API recipe below applies only
+to a version where that property was actually measured; it is not the 0.6.3 route.
+
 When a Management API bearer is already in hand, the MCP configuration and its key can be minted over
 the Management API instead of the admin UI. Two behaviours of that route decide how the procedure is
 written:

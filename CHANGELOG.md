@@ -3,6 +3,10 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [5.9.0]
+
+- Add a customer JSON driven local Swift base-build command with verified public edition bacpac restore, pinned host and files, paired brand generation, stable-key display rewrites, resumable gated steps, MCP setup and acceptance evidence. Verify public MCP app staging without a host package reference; document and remaining agent work; add hermetic generator and config tests.
+
 ## [5.8.12]
 
 - **Combine as variants: the empty master number is by design; the completion-rule gap is work item 29782.**

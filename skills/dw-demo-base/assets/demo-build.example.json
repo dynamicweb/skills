@@ -1,0 +1,32 @@
+{
+  "slug": "northwind-marine",
+  "customer": {
+    "name": "Northwind Marine Supply",
+    "legalName": "Northwind Marine Supply Ltd",
+    "tagline": "Parts for the next voyage",
+    "country": "US",
+    "currency": "USD",
+    "language": "en-US"
+  },
+  "installMcpBeforeStart": true,
+  "brand": {
+    "primary": "#15324F",
+    "secondary": "#D9C8A5",
+    "accent": "#D9C8A5",
+    "ink": "#182B3A",
+    "background": "#FFFFFF",
+    "fontFamily": "Arial",
+    "radius": "8px"
+  },
+  "personas": [
+    { "id": 100100, "name": "Northwind Marine Account", "company": "Northwind Marine Supply" },
+    { "id": 100101, "name": "Morgan Buyer", "email": "buyer@example.invalid", "company": "Northwind Marine Supply" },
+    { "id": 100102, "name": "Alex Support", "email": "support@example.invalid", "company": "Northwind Marine Supply" },
+    { "id": 100103, "name": "Casey Account Admin", "email": "admin@example.invalid", "company": "Northwind Marine Supply" }
+  ],
+  "catalogue": {
+    "products": [
+      { "id": "TCPROD0001", "name": "Marine Connector Kit", "number": "NMS-0001", "shortDescription": "A connector kit for marine electrical installations." }
+    ]
+  }
+}
