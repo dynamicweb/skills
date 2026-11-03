@@ -4,7 +4,7 @@ type: flow
 group: swift
 mcp: required
 dynamo: true
-description: 'Port Swift 1 pages to Swift 2 while preserving layout and structure. Triggers: Swift v1 migration, 1:1 layout port, faithful Swift conversion. Non-triggers: redesign or non-Swift source -> dw-swift-migrate-content; new page -> dw-swift-page-design.'
+description: 'Port Swift 1 pages to Swift 2 while preserving layout and structure. Triggers: Swift v1 migration, 1:1 layout port, faithful Swift conversion. Non-triggers: redesign, non-Swift source or catalog -> dw-swift-migrate-site; new page -> dw-swift-page-design.'
 ---
 
 # Swift 1 → Swift 2 Migration
@@ -62,11 +62,11 @@ Swift 2 are the same grid model** (paragraphs positioned by row + column; the ro
 `DefinitionId` set overlaps almost 1:1), so the original layout can carry over instead of
 being re-imagined.
 
-This is the faithful sibling of [dw-swift-migrate-content](../dw-swift-migrate-content). That
-skill rebuilds ANY source into *standard, modern* Swift 2 and **deliberately re-flows content
+This is the faithful sibling of [dw-swift-migrate-site](../dw-swift-migrate-site). That
+skill migrates ANY source into *standard, modern* Swift 2 and **deliberately re-flows content
 into new compositions (not 1:1)**. Choose by intent:
 - "migrate all the pages/content from this site, make it modern" →
-  [dw-swift-migrate-content](../dw-swift-migrate-content).
+  [dw-swift-migrate-site](../dw-swift-migrate-site).
 - "it's a Swift 1 site, port it and **keep the layout / don't redesign / 1:1**" → THIS skill.
 - a single new page with design intent, no migration source → [dw-swift-page-design](../dw-swift-page-design).
 
@@ -76,7 +76,7 @@ into new compositions (not 1:1)**. Choose by intent:
 
 The MCP server runs against ONE solution (the **target** Swift 2 site); it does **not** read
 the Swift 1 database directly. The Swift 1 source comes in through the same pipeline
-`dw-swift-migrate-content` uses: `extract_site_content(sourceUrl)` reads it over `/dwapi` →
+`dw-swift-migrate-site` uses for its content phase: `extract_site_content(sourceUrl)` reads it over `/dwapi` →
 page tree → `Rows` → `Columns` → `Blocks` (each block has a stable id; each row a
 `LayoutHint`). You then author per-page `Plan`s and `build_pages` writes them. Content can
 neither be lost nor invented — a verbatim ledger enforces it, and a failed plan falls back
