@@ -34,28 +34,34 @@ files"). Check each one before the step that uses it.
 ## Intake: collect every input before any work
 
 A migration starts only when every input below is known. Find each value first in the user's
-messages and in `RUN-STATE.md` in the working folder. Then ask the user for **all** missing values
-in one message, one short question per value, offering the suggested default where the table has
-one. Never guess a URL, a website, or the scope.
+messages and in `RUN-STATE.md` in the working folder. Then ask the user, in one message, the
+questions the request leaves open, one short question each, with the suggested answer where the
+table has one. The defaults are taken without asking and stated in the restatement, where the
+user can change them. Never guess a URL, a website, or the scope.
 
-| Input | What it is | Needed when | Suggested default |
+| Question | What it is | Needed when | Suggested answer |
 |---|---|---|---|
 | Source URL | The site to migrate | Always | — |
-| Target solution | The Dynamicweb solution URL the connected MCP server belongs to | Always | The connected server's host, confirmed by the user |
-| Target website | A new website in the solution, or which existing one | Always | A new website |
+| Target website | A new website in the solution, or which existing one | Always | — |
 | Scope: what | Content pages, the product catalog, or both | Always | Both, when the source sells products |
-| Scope: how much | The whole site, or a first subset of categories and pages proposed after the survey | Always | A subset first, then the rest |
 | Website language | The language of the new website | Always | The source's main language |
 | Currency and VAT | The currency, and whether prices include VAT | Catalog in scope | The source's currency and VAT display |
 | Permission | Confirmation that the user may copy the source's content | Always | — (must be a yes) |
 | Bulk upload | The dw CLI installed, and an API key for the target solution stored in a file the agent can read | Catalog in scope | — |
-| Review rounds | The maximum number of critic rounds in step 7 | Always | 6 |
+
+| Default | Value taken | Needed when |
+|---|---|---|
+| Target solution | The solution the connected MCP server belongs to, named by its host in the restatement | Always |
+| Scope: how much | A first subset of categories and pages, proposed after the survey, then the rest | Always |
+| Review rounds | At most 6 critic rounds in step 7 | Always |
 
 Never ask for the API key's value in the conversation; ask where the file that holds it is.
 
-When the answers are in, restate every value in one short list and wait for the user's go-ahead.
-Write the confirmed values into the `Inputs` section of `RUN-STATE.md`. That confirmation
-authorizes the run up to the first checkpoint; it never replaces a checkpoint.
+When the request answers every question, restate the values and the defaults taken in one short
+list, write them to the `Inputs` section of `RUN-STATE.md`, and start the survey at once: it only
+reads, and the scope checkpoint is the first stop. When you had to ask, restate the same list
+after the answers and wait for the user's go-ahead before writing it. Neither replaces a decision
+checkpoint.
 
 A request for one page or one designed layout is not a migration, and neither is a Swift 1 site
 the user wants kept 1:1. Say so, and use a page-design or Swift 1 port skill when one is
@@ -92,7 +98,12 @@ section; the intake only asks for what it does not already record.
 - **Ask before anything that affects other users of the solution:** restarting the application,
   changing shared templates or indexes, binding a domain. Put custom templates and CSS in new files
   named after the source site. Collect these questions for the next checkpoint where you can.
-- **Stop at every checkpoint**, show the result, and wait for the user's go-ahead.
+- **Every step ends at a checkpoint, of two kinds.** A *decision* (the scope in step 1, the data
+  model in step 3, the website proposal in step 5) is shown and waited on: nothing is created
+  before the go-ahead. A *report* (every other checkpoint) is posted, and the run continues. A
+  report that shows a problem (a count that does not match the file, a field mostly empty, a
+  failed health check, a cache hiding imported data) is a stop too. When the user asks to review
+  every step, every report is a stop.
 
 ## Flow
 
@@ -105,7 +116,7 @@ Read `robots.txt` and the sitemaps, find how listings and pages load their data,
 source platform, its languages, and its VAT display. When the scope is a subset, propose
 categories and pages that cover every product shape and page type.
 [catalog-import.md](references/catalog-import.md) ("Survey") has the detail.
-**Checkpoint:** the proposed scope with product, variant, image, and page counts.
+**Decision checkpoint:** the proposed scope with product, variant, image, and page counts.
 
 ### Step 2: Scrape
 
@@ -114,16 +125,16 @@ product pages, to resumable JSON Lines files in the working folder, keeping the 
 parsing can rerun without crawling again. Step 5 builds from these files whenever the migration
 tools do not read the source. [catalog-import.md](references/catalog-import.md) ("Scrape into
 files").
-**Checkpoint:** record counts per file, five sample products or pages, and any field empty in
-more than 10% of records.
+**Report:** record counts per file, five sample products or pages, and any field empty in more
+than 10% of records.
 
 ### Step 3: Data model
 
 Propose one data model per product category, a category field for every specification, variant
 groups for the specifications that pick a variant, and one clean product group tree.
 [catalog-import.md](references/catalog-import.md) ("Data model").
-**Checkpoint:** the proposal and a table mapping each source specification to its field, before
-anything is created.
+**Decision checkpoint:** the proposal and a table mapping each source specification to its
+field, before anything is created.
 
 ### Step 4: Import
 
@@ -133,20 +144,20 @@ and images from CSV files with Data Integration. Let the platform generate produ
 them back for the later files, after checking that no product in the solution already has a
 source product's number. [catalog-import.md](references/catalog-import.md) ("Import order" through
 "Proving an import").
-**Checkpoint:** product, variant, price, and image counts in the solution, checked on the frontend
-pages of products nobody has opened yet. When caches hide imported data, tell the user rather
-than working around it.
+**Report:** product, variant, price, and image counts in the solution, checked on the frontend
+pages of products nobody has opened yet. When caches hide imported data, stop and tell the user
+rather than working around it.
 
 ### Step 5: Website
 
 First propose the page tree, the color scheme and logo, and which standard Swift 2 component each
-source section becomes. **Checkpoint:** the proposal. Then build: the website with its header and
+source section becomes. **Decision checkpoint:** the proposal. Then build: the website with its header and
 footer, the shop page with the product catalog shell and the cart and checkout pages when the
 catalog is in scope, and the content pages. Swift 2 templates find pages by navigation tag: make
 sure the website has the shop page tagged `Shop` and, for a catalog, the service pages tagged
 `ProductSliderService` and `VariantSelectorService` (copy them from an existing Swift 2 website in
 the solution when missing). Point every internal link at the new pages, and check the frontend
-health of every page. [content-rebuild.md](references/content-rebuild.md). **Checkpoint:** links to
+health of every page. [content-rebuild.md](references/content-rebuild.md). **Report:** links to
 all pages.
 
 ### Step 6: Catalog experience
@@ -154,7 +165,7 @@ all pages.
 Facet on non-analyzed fields, show category facets only where they apply, set a default sort that
 puts core products before accessories, show variant selectors and specifications on product
 pages, and make sure search finds products. [catalog-tuning.md](references/catalog-tuning.md).
-**Checkpoint:** the facets per category with sample values, and links to three filtered listings.
+**Report:** the facets per category with sample values, and links to three filtered listings.
 
 ### Step 7: Review loop
 

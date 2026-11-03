@@ -7,9 +7,13 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 
 - **`dw-swift-migrate-site` replaces `dw-swift-migrate-content` as the master site migration.** One flow moves any
   website or webshop into a Swift 2 site: content pages, and when in scope the product catalog as a PIM data model
-  with imported products. It opens with an intake that collects the source URL, target solution and website, scope,
-  language, currency and VAT, and permission to copy, and asks the user for every missing value before any work. Then
-  seven steps with checkpoints: survey, scrape, data model, Data Integration import, content rebuild, catalog tuning,
+  with imported products. It opens with an intake that asks, in one message, only what the request leaves open
+  (source URL, new or existing website, content and/or catalog, language, currency and VAT, permission to copy, and
+  for a catalog where the API key file is), takes the connected solution, a subset-first scope and six review rounds
+  as stated defaults, and starts the survey at once when the request answered everything. Then seven steps, each
+  ending at a checkpoint of one of two kinds: a decision the agent waits on (the scope, the data model, the website
+  proposal) or a report it posts and continues past, unless the report shows a problem or the user asked to review
+  every step: survey, scrape, data model, Data Integration import, content rebuild, catalog tuning,
   and a screenshot-scored critic review loop, with `RUN-STATE.md` so a run resumes in a new session. The content
   rebuild of the retired skill (`extract_site_content`, the per-page layout plan, `build_pages`) lives on as
   `references/content-rebuild.md`, with two safety rules: the site extraction and media import run only when the
