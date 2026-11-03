@@ -97,7 +97,7 @@ Build a good-looking Swift 2 page — matching an existing page's style, from a 
 Faithful, layout-preserving migration of pages from a Swift 1 solution into Swift 2.
 
 **[dw-swift-migrate-site](skills/dw-swift-migrate-site/SKILL.md)**
-The master flow for migrating any existing website or webshop to a Swift 2 site: it collects the URLs and scope up front, then runs survey, scrape, PIM data model, catalog import, content rebuild, catalog tuning, and a screenshot-scored review loop.
+Give it the address of an existing website or webshop and it rebuilds the site on Swift 2: the content pages, and when in scope the product catalog as a PIM data model with imported products. It asks only what the request leaves open, then runs survey, scrape, data model, catalog import, content rebuild, catalog tuning, and a screenshot-scored review loop, stopping at three decisions (the scope, the data model, the website proposal) and reporting the rest. An improved version of the source, never a copy.
 
 **[dw-headless-delivery](skills/dw-headless-delivery/SKILL.md)**
 Build decoupled frontends using the `/dwapi/` delivery API — authentication, content, ecommerce, users, navigation, forms, and query endpoints.
