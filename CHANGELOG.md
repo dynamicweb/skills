@@ -5,6 +5,11 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 
 ## [6.0.0]
 
+- **`dw-swift-migrate-v1` is renamed `dw-swift-upgrade`.** The skill is unchanged: a faithful, layout-preserving
+  port of a Swift 1 site's pages into Swift 2. The new name says what it is for, upgrading a Swift 1 site as it
+  is, and leaves "migrate" to `dw-swift-migrate-site`, which rebuilds any site as an improved Swift 2 site. The
+  old name no longer resolves; routing in `dw-swift-migrate-site`, `dw-swift-page-design` and `dw-swift-page-blocks`,
+  the README and both bundles use the new name.
 - **`dw-swift-migrate-site` replaces `dw-swift-migrate-content` as the master site migration.** One flow moves any
   website or webshop into a Swift 2 site: content pages, and when in scope the product catalog as a PIM data model
   with imported products. It opens with an intake that asks, in one message, only what the request leaves open
