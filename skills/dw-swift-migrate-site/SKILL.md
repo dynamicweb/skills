@@ -4,7 +4,7 @@ type: flow
 group: swift
 mcp: required
 dynamo: false
-description: 'Migrate any existing website or webshop to a Truvio Commerce Swift 2 site: content, PIM catalog import, and a review loop. Triggers: migrate, convert, or replatform a site to Dynamicweb or Swift 2. Faithful Swift 1 layout port -> dw-swift-migrate-v1.'
+description: 'Migrate any existing website or webshop to a Truvio Commerce Swift 2 site: content, PIM catalog import, and a review loop. Triggers: migrate, convert, or replatform a site to Dynamicweb or Swift 2. Swift 1 site kept as it is -> dw-swift-upgrade.'
 ---
 
 # Site migration to Swift 2
@@ -64,7 +64,7 @@ after the answers and wait for the user's go-ahead before writing it. Neither re
 checkpoint.
 
 A request for one page or one designed layout is not a migration, and neither is a Swift 1 site
-the user wants kept 1:1. Say so, and use a page-design or Swift 1 port skill when one is
+the user wants kept 1:1. Say so, and use a page-design or Swift 1 upgrade skill when one is
 installed.
 
 ## Run state

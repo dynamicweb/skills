@@ -4,7 +4,7 @@ type: flow
 group: swift
 mcp: required
 dynamo: true
-description: 'Design and build one Swift 2 page from a screenshot, mockup, URL, or brief. Triggers: recreate a page look, campaign page, landing page. Non-triggers: whole-site rebuild -> dw-swift-migrate-site; faithful Swift 1 port -> dw-swift-migrate-v1.'
+description: 'Design and build one Swift 2 page from a screenshot, mockup, URL, or brief. Triggers: recreate a page look, campaign page, landing page. Non-triggers: whole-site rebuild -> dw-swift-migrate-site; faithful Swift 1 port -> dw-swift-upgrade.'
 ---
 
 # Swift 2 Page Design
@@ -31,7 +31,7 @@ skill is the *catalog*.
 This is for authoring ONE page (or a small handful) with design intent — modeled on a
 reference page or an image. It is NOT a site import: migrating *all* the pages/content from a
 URL is [dw-swift-migrate-site](../dw-swift-migrate-site) (modern re-design) or
-[dw-swift-migrate-v1](../dw-swift-migrate-v1) (faithful Swift 1 port); a plain page with no
+[dw-swift-upgrade](../dw-swift-upgrade) (faithful Swift 1 port); a plain page with no
 design concern needs nothing beyond the ordinary page/paragraph tools.
 
 ## Before you write — snap to THIS solution (skipping this is what produces broken pages)
@@ -414,5 +414,5 @@ did instead), any copy still needed, and which sections need images. Nothing sil
 Custom CSS/JS, bespoke layouts the grid can't express, per-column spacing/offsets (not
 settable — see the ceiling in `dw-swift-page-blocks`), product-list/detail design (PIM-driven),
 and whole-site import ([dw-swift-migrate-site](../dw-swift-migrate-site) /
-[dw-swift-migrate-v1](../dw-swift-migrate-v1)). When the design needs something past the
+[dw-swift-upgrade](../dw-swift-upgrade)). When the design needs something past the
 ceiling, say so and offer the closest Swift 2 composition instead of pretending.

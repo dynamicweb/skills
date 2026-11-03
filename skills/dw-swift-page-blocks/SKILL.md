@@ -22,7 +22,7 @@ product, are never a step in this skill, and are owned by
 Reference for the Swift 2 page-building vocabulary — the row layouts, paragraph component
 types, color schemes, and the MCP tools that compose them. Load this whenever you are about to
 **design** or **migrate** a Swift 2 page; [dw-swift-page-design](../dw-swift-page-design) and
-[dw-swift-migrate-v1](../dw-swift-migrate-v1) both build on it. It is reference, not an
+[dw-swift-upgrade](../dw-swift-upgrade) both build on it. It is reference, not an
 action — those flow skills drive the actual writes.
 
 **Row mechanics live in `dw-swift-building`.** What `GridRowCopy` carries from a donor row, the

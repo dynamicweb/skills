@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-10-30T10:23:40.030Z",
+  "generatedAt": "2026-11-03T13:16:52.552Z",
   "worksOn": {
     "dw": {
       "ring": "R1",
@@ -77,20 +77,20 @@
       "path": "skills/dw-swift-building/SKILL.md"
     },
     {
-      "name": "dw-swift-migrate-v1",
-      "type": "flow",
-      "group": "swift",
-      "mcp": "required",
-      "description": "Port Swift 1 pages to Swift 2 while preserving layout and structure.",
-      "path": "skills/dw-swift-migrate-v1/SKILL.md"
-    },
-    {
       "name": "dw-swift-page-design",
       "type": "flow",
       "group": "swift",
       "mcp": "required",
       "description": "Design and build one Swift 2 page from a screenshot, mockup, URL, or brief.",
       "path": "skills/dw-swift-page-design/SKILL.md"
+    },
+    {
+      "name": "dw-swift-upgrade",
+      "type": "flow",
+      "group": "swift",
+      "mcp": "required",
+      "description": "Upgrade a Swift 1 site to Swift 2 as it is: a faithful port of its pages with layout and structure preserved.",
+      "path": "skills/dw-swift-upgrade/SKILL.md"
     },
     {
       "name": "dw-commerce-b2b",

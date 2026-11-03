@@ -1,13 +1,13 @@
 ---
-name: dw-swift-migrate-v1
+name: dw-swift-upgrade
 type: flow
 group: swift
 mcp: required
 dynamo: true
-description: 'Port Swift 1 pages to Swift 2 while preserving layout and structure. Triggers: Swift v1 migration, 1:1 layout port, faithful Swift conversion. Non-triggers: redesign, non-Swift source or catalog -> dw-swift-migrate-site; new page -> dw-swift-page-design.'
+description: 'Upgrade a Swift 1 site to Swift 2 as it is: a faithful port of its pages with layout and structure preserved. Triggers: upgrade Swift 1 to Swift 2, Swift v1 migration, 1:1 layout port, faithful Swift conversion. Non-triggers: redesign, non-Swift source or catalog -> dw-swift-migrate-site; new page -> dw-swift-page-design.'
 ---
 
-# Swift 1 → Swift 2 Migration
+# Swift 1 → Swift 2 upgrade
 
 ## Tool availability: call `tools/list` before planning
 
