@@ -22,6 +22,7 @@ and repository side.
 - [An `Analyzed="false"` field facets as ONE term](#an-analyzedfalse-field-facets-as-one-term)
 - [The Files index: `StartFolder` is the library, and keywords live in the file](#the-files-index-startfolder-is-the-library-and-keywords-live-in-the-file)
 - [Restored index files are not served until a Full build runs](#restored-index-files-are-not-served-until-a-full-build-runs)
+- [Deleted pages stay in the Content index until they are purged](#deleted-pages-stay-in-the-content-index-until-they-are-purged)
 - [Recovery recipe: Rebuild Products index](#recovery-recipe-rebuild-products-index)
 
 ## Repositories, Indexes, and Queries — file-based
@@ -49,7 +50,7 @@ and repository side.
 
   Then run a full rebuild: `build_product_index` followed by `wait_for_product_index`, with `indexName` `Products.index`. **Symptom check:** `numHits must be > 0` on the PLP/PDP always means the index holds **zero documents**, whatever the build reported. A schema the extender never populated is one way to get there; a build that ran before the content landed is the other, and the preconditions below separate them. Check the document count first, then the schema. The data on disk is the diagnostic: a healthy Products index segment is ~270 KB at 30 docs; 53 bytes means the schema accepted zero documents.
 - MCP `create_or_update_product_queries` saves `.query` XML but leaves `<Source Repository="" Item="" />` empty, and no MCP tool writes a `.query` file (`list_files` and `read_file` reach only `/Files/System/Styles`, `/Files/Templates` and `/Files/Images`), so the element stays empty until it is filled out of product before the index build: [`recipes-search.md`](../../dw-data-access/references/recipes-search.md) "Filling an empty query `Source` element".
-- **Name the repository, then prove the build drained and the index holds documents.** Five
+- **Name the repository, then prove the build drained and the index holds documents.** Six
   preconditions sit behind an empty product listing, all silent when absent, and the build call
   reports success through every one of them. In order, alongside the primary-instance rule:
   1. **Pass BOTH `repositoryName` AND `indexName` — each default addresses nothing.**
@@ -98,6 +99,16 @@ and repository side.
      `Files/System/Indexes/<repo>/…` carrying only `segments.gen` / `segments_N` of a few dozen
      bytes, with no payload files. Compare the build's last successful timestamp against the
      deserialize and fail when the build predates it.
+  6. **Assert that `lastBuildStarted` moved, not that the call answered.** Read
+     `get_product_index_status` (both names) before the build and again after
+     `wait_for_product_index`. Measured [mcp 0.6.4-BETA]: a full product build that threw before its
+     cleanup left a stale entry in the platform's build tracker, which is keyed by index file name only,
+     so `ProductsBackend/Products.index` and `ProductsFrontend/Products.index` share it. Every later
+     `build_product_index` for either then answered *queued* and `wait_for_product_index` answered
+     `completed: true` within seconds, while `lastBuildStarted` and `lastBuildCompleted` never changed
+     and nothing was logged, until the application recycled. Unchanged timestamps mean nothing ran:
+     build from the admin (Settings > Repositories > the index > Build), which tracks builds per
+     repository and instance, or recycle the application, then build again.
 
 - Rebuild the index after ANY product/group/channel mutation.
 
@@ -431,6 +442,14 @@ and on a storefront listing that returns products. A scheduled build that ships 
 it for you. The measured fix ran the build on the Management API; that form is in
 [dw-data-access](../../dw-data-access/SKILL.md) `recipes-search.md` §"Re-running an index build on the
 Management API".
+
+## Deleted pages stay in the Content index until they are purged
+
+Deleting a page moves it to the recycle bin, and the Content index builder still indexes it: rebuild
+after rebuild, a site search keeps listing pages the website no longer shows. List them with
+`get_deleted_pages`, remove each for good with `purge_deleted_page` (irreversible; confirm with the
+user first), then rebuild the Content index and search for one of the purged titles to confirm it is
+gone. Restoring a page instead (`restore_page`) brings it back to the site and keeps it in the index.
 
 ## Recovery recipe: Rebuild Products index
 

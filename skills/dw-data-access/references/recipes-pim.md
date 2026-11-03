@@ -111,10 +111,15 @@ re-send stacks duplicates.
 
 ## Writing the per-variant `EcomProducts` row on 10.28.x
 
-On DW 10.28.x no API writes a variant product row. `create_variant_combinations` creates the rows and
-inherits nothing from the master; `combine_products_as_variants` produces active rows but copies no scalar
-column, substituting the master price and leaving the number empty while deleting the standalone rows that
-held the real values; and `patch_products_safe`, `update_products` and `ProductSave` (with `Id` and
+From MCP 0.6.3-BETA, `patch_products_safe` with `id` and `variantId` writes the variant row: every field
+that allows variant editing is stored and reads back on the variant, and a field that does not is refused
+with an error naming it. Use it first, read the variant back, and keep the SQL path below for older MCP
+versions and for fields whose variant editing stays off.
+
+On DW 10.28.x with an MCP before 0.6.3-BETA no API writes a variant product row. `create_variant_combinations`
+creates the rows and inherits nothing from the master; `combine_products_as_variants` produces active rows but
+copies no scalar column, leaving the number empty while deleting the standalone rows (their price rows move onto
+the master scoped to the combination, but a cheaper variant-less master row wins on every variant); and `patch_products_safe`, `update_products` and `ProductSave` (with `Id` and
 `VariantId`) each answer success and leave the row untouched. Per-variant **price** has a working
 in-product surface (`save_prices` with `productId` and `variantId`); per-variant number, name, unit,
 active and stock do not.
