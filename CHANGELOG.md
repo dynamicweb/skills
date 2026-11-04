@@ -3,6 +3,28 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.1.0]
+
+- **`dw-demo-base` gains a scripted local base build: one command scaffolds a running, unbranded Swift 2 base from
+  the public release bacpac.** `scripts/Invoke-DwDemoBaseBuild.ps1`, driven by a customer JSON that needs only a slug
+  and a name, runs resumable gated steps: preflight (with the template, sqlpackage and dev-certificate cheap fixes),
+  Distribution release resolution with the bacpac SHA256 checked against `layers/INDEX.json`, a net10 Suite-only
+  scaffold pinned to the gate-proven platform, restore with first-login credential repair, the verified Swift
+  release Files and ordered edition overlays with the public MCP app staged in AddIns (never a PackageReference),
+  access keys, start and trial licence, access proof (more than 200 MCP tools before the key is written to
+  `.mcp.json`), index rebuild, acceptance and provenance stamps. Environment SQL authentication and the
+  container-host opt-in are supported. Reference: `references/scripted-base-build.md`.
+- **The command applies no branding.** Palette, typography and button Style pairs, logo and icons, storefront
+  copy, persona and catalogue renames are the next agent step on the running base, with `dw-demo-swift` and its
+  brand guidance as they stand. A config carrying a `brand`, `storefront`, `personas` or `catalogue` block is
+  refused with that pointer; the build report, console summary and `CUSTOMISATIONS.md` stamp say `branded: false`
+  and name the step. Acceptance checks the unbranded base: readiness, critical pages, three persona identities,
+  the edition's `default` Style sheets linked and served, named PLP products and resolving images.
+- **API and MCP keys are minted over SQL before the first start** (`New-DwDemoAccessKeys.ps1`), because MCP 0.6.3
+  never reveals a created key: `AccessUserTokenHash` is the prefix plus lowercase hex SHA-512 of `<secret>DwSecret`,
+  and a full-access `McpConfiguration` bound through `McpConfigurationCredential` must exist at startup.
+  `references/mcp-setup.md` records the version boundary.
+
 ## [6.0.0]
 
 - **`dw-swift-migrate-v1` is renamed `dw-swift-upgrade`.** The skill is unchanged: a faithful, layout-preserving

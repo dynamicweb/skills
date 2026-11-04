@@ -6,24 +6,29 @@
 - [Machine prerequisites](#machine-prerequisites)
 - [Customer configuration](#customer-configuration)
 - [Release and file composition](#release-and-file-composition)
-- [Database writes and stable keys](#database-writes-and-stable-keys)
+- [Database writes](#database-writes)
 - [Headless access choice](#headless-access-choice)
 - [Resume and evidence](#resume-and-evidence)
 - [Acceptance](#acceptance)
+- [Next step: branding](#next-step-branding)
 - [Remaining person and agent work](#remaining-person-and-agent-work)
 
 ## Scope and command
 
-This path builds a local Windows Truvio Commerce (powered by Dynamicweb) Swift 2 demo from a
-public release bacpac. It restores the edition's existing catalogue, variants, PIM data models,
-completion rules, workspace and persona relationships. Customer display values are rewritten
-before the host starts. No serializer or YAML delivery runs during this command.
+This path scaffolds a running, unbranded local Windows Truvio Commerce (powered by Dynamicweb)
+Swift 2 base from a public release bacpac. It restores the edition's catalogue, variants, PIM data
+models, completion rules, workspace and persona relationships as shipped, and proves the base
+serves them. No serializer or YAML delivery runs during this command.
+
+**The command applies no customer branding.** The base keeps the edition's own Truvio Commerce
+brand, copy and product tiles. Branding is the next agent step, after the command passes: run
+`dw-demo-swift` and its brand guidance on the running base (see [Next step: branding](#next-step-branding)).
+This split keeps the script to the deterministic part and leaves branding to the skills' current
+knowledge rather than to a frozen token generator.
 
 Copy [demo-build.example.json](../assets/demo-build.example.json) into your demo's `notes/`
-directory, adjust it, and run the orchestrator from the installed skill directory. As shipped, the
-example keeps the edition's own Truvio Commerce brand: the wordmark, symbol and card from the
-sample-data layer inside the cloned `distribution/`, the purple and amber palette, and no persona or
-catalogue renames. A customer demo changes the name, palette, assets and rename blocks.
+directory, set the slug and customer name, and run the orchestrator from the installed skill
+directory.
 
 ```powershell
 pwsh -NoProfile -File scripts/Invoke-DwDemoBaseBuild.ps1 -ConfigPath $config -DemoRoot $demo -SqlServer $server -Port $port -Apply
@@ -34,8 +39,8 @@ are values the caller supplies, not machine defaults. An optional `-Database` ch
 database name; otherwise it is derived from the slug. Omit `-Apply`, or use `-WhatIf`, to list
 the steps with no writes. A nonzero exit means NOT READY. Do not infer success from files existing.
 
-The order is preflight, release, scaffold, restore, files, brand files, brand content, start and
-license, access, index, acceptance, stamps and report. Every step script can also run separately;
+The order is preflight, release, scaffold, restore, files, access keys, start and license,
+access, index, acceptance, and stamps and report. Every step script can also run separately;
 use `Get-Help` for its named parameters. Write scripts preview unless `-Apply` is present.
 
 ## Machine prerequisites
@@ -63,46 +68,15 @@ before the build; this first path supports the edition's US, USD and en-US data.
 
 | Key | Meaning |
 |---|---|
-| `slug` | Lowercase letters, digits and hyphens, 2-48 characters, starting with a letter |
-| `customer.name` | Required display name, up to 120 characters |
-| `customer.legalName`, `tagline` | Briefing metadata retained in the config; copy selectors choose where prose lands |
+| `slug` | Lowercase letters, digits and hyphens, 2-48 characters, starting with a letter; names the database and flow state |
+| `customer.name` | Required display name, up to 120 characters; recorded for the branding step, not written into the site |
 | `customer.country`, `currency`, `language` | Optional; US, USD, en-US respectively |
 | `edition` | Optional `swift-demo`; other editions are refused |
 | `installMcpBeforeStart` | Optional boolean, default true; stages the public app in AddIns before boot. False is for separate step-script/AppStore workflows |
-| `brand.primary`, `secondary`, `accent`, `ink`, `background` | Six-digit hex colours, with neutral defaults |
-| `brand.fontFamily`, `fontImportUrl`, `radius` | Font family, optional HTTPS CSS import, px/rem radius |
-| `brand.schemes` | Optional object keyed by the seven fixed scheme ids; each overrides the colour model fields |
-| `brand.logo` | Optional SVG source path relative to DemoRoot, copied to `Files/Images/Brand/logo.svg` |
-| `brand.favicon`, `appleTouchIcon`, `metaImage` | Optional source files copied beneath `Files/Images/<slug>/` |
-| `storefront.hero`, `about`, `footer`, `contact` | Optional objects with `paragraphHeader` and `title`, `subtitle` or `text` values, selecting existing Swift Text paragraphs |
-| `personas[]` | Existing integer `id`, optional `name`, `email`, `company`, `address`, `zip`, `city`, `country`, `phone` |
-| `catalogue.groups[]` | Stable `id`, optional `name` and `description` |
-| `catalogue.products[]` | Stable `id`, optional `name`, `number`, `shortDescription`, `longDescription`, numeric `price`, raster `image` path |
-| `catalogue.variantGroups[]`, `variantOptions[]` | Stable `id` and display `name` |
-| `catalogue.categoryFields[]` | Stable `id` and supported display `name` or `label` |
 
-Asset paths stay inside DemoRoot. Files in `customer-context/` are read and copied, never edited.
-Absolute source paths, traversal outside the root and junction/symlink assets are refused.
-A missing logo becomes an escaped customer wordmark. Missing icons and meta image become neutral
-customer PNGs. No remote image discovery is performed. Raster generation uses Windows System.Drawing.
-
-Example of an explicit catalogue edit, keeping the relation key:
-
-```json
-{
-  "catalogue": {
-    "products": [
-      { "id": "TCPROD0001", "name": "Marine Connector Kit", "number": "NMS-0001" }
-    ]
-  }
-}
-```
-
-Merge that block into a complete config. An omitted rename keeps the sample catalogue's structure
-and copy, with the vendor company display name replaced. A customer name that carries the vendor
-word Truvio keeps the edition's display copy and shipped product tiles unchanged, so the demo
-stays a Truvio Commerce demo instead of doubling the vendor name. Domain-specific product authoring still
-needs a complete map or the agent phase. The command does not invent a credible domain catalogue.
+A `brand`, `storefront`, `personas` or `catalogue` block is refused with a pointer to
+`dw-demo-swift`: palette, logo, copy, persona and catalogue renames are branding, done on the
+running base after the command, not in it.
 
 ## Release and file composition
 
@@ -117,19 +91,14 @@ The Swift Files release comes from the base contract's public asset URL with its
 Disk overlays follow base, non-sample additions, surfaces, sample additions, the sample-data toggle,
 and themes last. Later files win. Required GlobalSettings from the base contract are applied after
 the overlay. `GlobalSettings.Database.config` points at the new local integrated-auth database.
+The theme layer's `default` Style group (ColorSchemes, Typography and Buttons) is served as shipped.
 
-Brand generation rewrites the brand slot and the default ColorSchemes, Typography and Buttons
-JSON/CSS pairs together. Seven scheme ids stay fixed. Button foreground is black or white, selected
-by WCAG relative luminance and the larger contrast ratio. This explicitly chooses the shipped
-`default` Style group: a later theme restage must be followed by brand generation again.
-
-## Database writes and stable keys
+## Database writes
 
 SQL is local installs only. The API is unavailable before the host's first startup, so the fresh
-restore is the sanctioned local-install rung. Every rewrite happens while the host is stopped;
-first startup pays the cache refresh. The content rewrite uses one transaction and asserts row
-counts. Display values are parameterized, and the rename translator selects identifiers from a
-closed map. No caller-supplied SQL runs.
+restore is the sanctioned local-install rung. Every write happens while the host is stopped;
+first startup pays the cache refresh. Values are parameterized and no caller-supplied SQL runs.
+The command writes two things: restored credentials and the access keys.
 
 The existing administrator and three personas receive password hashes from the published first-login
 contract, lowercase hex SHA-512 of UTF-8 password plus `DwSecret`. Set `DW_ADMIN_PASSWORD`,
@@ -138,16 +107,8 @@ them. Otherwise random secrets are generated once into ignored local files. To f
 demo convention from [scaffold.md](scaffold.md), supply that administrator password through the
 environment. No password literal ships in a script. The admin login is `Admin`.
 
-`TC*` primary keys, customer numbers and persona usernames remain intact. Product display-number
-changes also update variant numbers and historical line numbers. Product `price` changes the
-master's list price only; customer, contract, quantity and variant price ladders remain the sample
-scenario and need an explicit agent review. The PIM shop and workspace's generated index-field
-binding are renamed together, using an ASCII customer shop name to make that binding deterministic.
-This is a base PIM setup, not a replacement for the canonical PIM authoring order.
-
-Vendor-labelled primary PNG tiles are identified through their shipped source SVG and replaced on
-the host by neutral PNGs carrying the product's current name. A supplied raster image takes priority.
-Supplementary images and documents still require the agent's asset review.
+`TC*` primary keys, customer numbers, persona usernames and every display value stay as the
+edition shipped them. The branding step renames display values later, keyed by those stable keys.
 
 ## Headless access choice
 
@@ -165,7 +126,7 @@ Settings > AppStore > Available apps with the individual step scripts; the compl
 requires the app. No PackageReference escape hatch is used. The proof report records the exact
 package version and whether this arrangement passed the live handshake.
 
-The brand-content step provisions both API credentials before the first host start, on the
+The access-keys step provisions both API credentials before the first host start, on the
 owned fresh local database. For bearer `<PREFIX>.<secret>`, `AccessUserTokenHash` stores
 `<PREFIX>.` plus lowercase hex SHA-512 of UTF-8 `<secret>DwSecret`. This uses the same salt
 convention as the published first-login password contract. Set `DW_API_KEY_SECRET` and
@@ -203,21 +164,32 @@ the shipped template and appends public version/hash provenance. License expiry 
 
 The product/content index step resolves builders over the Management API, builds instances and
 waits for fresh Lucene segments. Acceptance runs the sibling host-readiness harness, edition critical
-pages and all three persona identity probes. It asserts served brand tokens, stylesheet links, the
-customer name on home, nonzero named PLP products and resolving product images. Visible vendor or
-placeholder text fails, except that a demo named for the vendor keeps its vendor text. The served
-Typography sheet must parse and set the configured body font. Internal stable keys and asset paths may still contain the original prefix.
+pages and all three persona identity probes. It asserts the edition's `default` ColorSchemes,
+Buttons and Typography sheets are linked from home and served, nonzero named PLP products and
+resolving product images. Placeholder text fails. The edition's Truvio Commerce text is expected
+on an unbranded base and does not fail; customer name, palette and copy are not checked here,
+because the command does not apply them.
 
 A gate failure is a failure of the whole command, even if a host is running. Inspect the local
 receipts and journal, fix the cause, and resume. The command reports remaining work on failure too.
+
+## Next step: branding
+
+A passing build reports `branded: false` and names the next step in `notes/build-report.json`, the
+console summary and the `CUSTOMISATIONS.md` stamp. Brand the running base for the customer with
+`dw-demo-swift`: rebrand, header and footer, palette and typography Style pairs, logo and icons,
+storefront copy, and, where the story needs it, persona and catalogue display names keyed by the
+stable `TC*` keys. Use its brand guidance as it stands when you run it; it supersedes anything this
+command once generated. The MCP key the build wrote to `.mcp.json` is the surface for that work.
 
 ## Remaining person and agent work
 
 - Install PowerShell 7, Git, the .NET 10 SDK and SQL Server once; links live in setup checks.
 - Sign into Claude Code and install the complete public presales skills bundle once.
 - Open a fresh agent shell to inherit the User-scope TLS setting and load the local MCP entry.
+- Brand the base with `dw-demo-swift` (the next step above).
 - Supply design sign-off and fine-tune copy, credible domain catalogue, price ladders, supplementary
-  assets, localization and the PIM narrative after the scripted base.
+  assets, localization and the PIM narrative after branding.
 - Use `dw-demo-hosted` for a hosted URL/key target; this command has no hosted mode.
 - Use Settings > AppStore > Available apps for a separate manual installation workflow.
 

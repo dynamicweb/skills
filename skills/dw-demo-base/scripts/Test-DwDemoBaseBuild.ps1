@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-READ-ONLY. Proves served pages, customer branding, personas, products, images and MCP readiness.
+READ-ONLY. Proves the unbranded base: served pages, edition styles, personas, products, images and MCP readiness.
 .DESCRIPTION
 Owning reference: ../references/scripted-base-build.md. Writes ignored evidence reports only.
-Zero pages, zero product images or zero persona probes fail. Visible vendor text fails; stable
-internal TC keys in URLs and CSS identifiers remain valid and are never treated as display copy.
+Zero pages, zero product images or zero persona probes fail. Placeholder text fails. The base
+keeps the edition's own Truvio Commerce brand; customer branding is the dw-demo-swift step after it.
 .PARAMETER ConfigPath
 Customer JSON used for the build.
 .PARAMETER DemoRoot
@@ -44,19 +44,16 @@ try {
     $pages=@(@($r.editionModel.criticalPaths)+@("/$lang/shop","/$lang/cart/","/$lang/customer-center","/$lang/sign-in/sign-in") | Select-Object -Unique)
     if(-not $pages.Count){throw 'Zero critical pages.'}
     $accounts=@($personas | ForEach-Object {@{role=[string]$_.AccessUserID;username=$_.AccessUserUserName;secretKey=[string]$_.AccessUserID;identityPath='/en-us/customer-center';identityContains=$_.AccessUserName}})
-    $story=@{baseUrl=$base;pages=$pages;placeholderRegex=$(if(Test-DwBuildVendorKept $c.customer.name){'placeholder|lorem ipsum'}else{'\bTruvio\b|placeholder|lorem ipsum'});personas=@{login=@{path='/en-us/sign-in/sign-in';extraFields=@{LoginAction='Login'}};accounts=$accounts}}
+    $story=@{baseUrl=$base;pages=$pages;placeholderRegex='placeholder|lorem ipsum';personas=@{login=@{path='/en-us/sign-in/sign-in';extraFields=@{LoginAction='Login'}};accounts=$accounts}}
     $storyPath=Join-Path $p.Notes 'storyline-config.json';Write-DwBuildJson $storyPath $story
     Invoke-DwBuildCommand pwsh @('-NoProfile','-File',(Join-Path $PSScriptRoot 'Test-DwDemoStoryline.ps1'),'-ConfigPath',$storyPath,'-SecretsPath',$secretFile,'-OutFile',(Join-Path $p.Notes 'storyline-proof.json'))
     $homePage=Invoke-WebRequest -Uri "$base/en-us/home" -SkipCertificateCheck -TimeoutSec 120
-    if([Net.WebUtility]::HtmlDecode([string]$homePage.Content) -notmatch [regex]::Escape($c.customer.name)){throw 'Home does not contain customer name.'}
-    foreach($sheet in 'ColorSchemes/default.css','Buttons/default.css','Typography/default.css','Custom/default_custom.css','Custom/brand.css'){
+    # The edition's own Style group must be linked and served; no customer tokens exist yet.
+    foreach($sheet in 'ColorSchemes/default.css','Buttons/default.css','Typography/default.css'){
         if($homePage.Content -notmatch [regex]::Escape($sheet)){throw "Home did not link $sheet."}
+        $served=Invoke-WebRequest -Uri "$base/Files/System/Styles/$sheet" -SkipCertificateCheck -TimeoutSec 60
+        if($served.StatusCode -ne 200 -or -not ([string]$served.Content).Trim()){throw "Edition stylesheet $sheet is not served."}
     }
-    $brand=Invoke-WebRequest -Uri "$base/Files/Templates/Designs/Swift-v2/Custom/brand.css" -SkipCertificateCheck -TimeoutSec 60
-    $tokens=Get-Content -Raw (Join-Path $p.Files 'Templates/Designs/Swift-v2/Custom/brand.tokens.json') | ConvertFrom-Json -AsHashtable
-    foreach($key in $tokens.css.Keys){if($brand.Content -notmatch [regex]::Escape("${key}: $($tokens.css[$key]);")){throw "Served brand token mismatch: $key"}}
-    $typography=Invoke-WebRequest -Uri "$base/Files/System/Styles/Typography/default.css" -SkipCertificateCheck -TimeoutSec 60
-    Test-DwBuildTypographyCss -Css ([string]$typography.Content) -Font $tokens.typography.ParagraphFont
     $plp=Invoke-WebRequest -Uri "$base/en-us/shop" -SkipCertificateCheck -TimeoutSec 120
     $products=Get-DwBuildRows $conn "SELECT ProductName,ProductImageSmall FROM EcomProducts WHERE ProductVariantId='' AND ProductActive=1 AND ProductId LIKE 'TCPROD%'"
     $shown=@($products | Where-Object {$plp.Content -match [regex]::Escape([Net.WebUtility]::HtmlEncode($_.ProductName)) -or $plp.Content -match [regex]::Escape($_.ProductName)})
@@ -69,7 +66,7 @@ try {
         $images++
     }
     if(-not $images){throw 'Zero images probed.'}
-    Write-DwBuildJson (Join-Path $p.Notes 'acceptance.json') @{status='PASS';pages=$pages.Count;personas=3;namedProducts=$shown.Count;imageProbes=$images;brandTokens=$tokens.css.Count;pim=$pim[0]}
-    Write-Host "PASS: $($pages.Count) pages, three personas, $($shown.Count) named products, $images images, brand tokens and MCP readiness."
+    Write-DwBuildJson (Join-Path $p.Notes 'acceptance.json') @{status='PASS';pages=$pages.Count;personas=3;namedProducts=$shown.Count;imageProbes=$images;branded=$false;pim=$pim[0]}
+    Write-Host "PASS: $($pages.Count) pages, three personas, $($shown.Count) named products, $images images, edition styles and MCP readiness. Branding is next: dw-demo-swift."
     exit 0
 }catch{Write-Error $_ -ErrorAction Continue;exit 1}

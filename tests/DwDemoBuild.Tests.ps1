@@ -1,7 +1,7 @@
 BeforeAll {
     $repo=Split-Path $PSScriptRoot
     $script:module=Join-Path $repo 'skills/dw-demo-base/scripts/Dw.DemoBuild.psm1'
-    $script:generator=Join-Path $repo 'skills/dw-demo-base/scripts/New-DwBrandFiles.ps1'
+    $script:orchestrator=Join-Path $repo 'skills/dw-demo-base/scripts/Invoke-DwDemoBaseBuild.ps1'
     Import-Module $script:module -Force
     function New-TestConfig {
         param([hashtable]$Value)
@@ -11,7 +11,7 @@ BeforeAll {
     }
 }
 
-Describe 'Scripted build config and rename planning' {
+Describe 'Scripted base build config and helpers' {
     It 'bounds a stalled native command and stops only its child tree' {
         {Invoke-DwBuildCommand pwsh @('-NoProfile','-Command','Start-Sleep -Seconds 15') -TimeoutSeconds 1}|Should -Throw '*exceeded*'
     }
@@ -37,123 +37,37 @@ Describe 'Scripted build config and rename planning' {
         (Read-DwBuildConfig $file).edition|Should -Be 'swift-demo'
         (Read-DwBuildConfig $file).installMcpBeforeStart|Should -BeTrue
     }
-    It 'rejects unknown keys and unsafe CSS' {
+    It 'rejects unknown keys' {
         {Read-DwBuildConfig (New-TestConfig @{slug='marine';customer=@{name='Supply'};typo=$true})}|Should -Throw '*Unknown*'
-        {Read-DwBuildConfig (New-TestConfig @{slug='marine';customer=@{name='Supply'};brand=@{primary='red;display:none'}})}|Should -Throw '*hex*'
-        {Read-DwBuildConfig (New-TestConfig @{slug='marine';customer=@{name='Supply'};brand=@{schemes=@{typo=@{BackgroundColor='#FFFFFF'}}}})}|Should -Throw '*scheme id*'
+        {Read-DwBuildConfig (New-TestConfig @{slug='marine';customer=@{name='Supply';tagline='x'}})}|Should -Throw '*Unknown*customer.tagline*'
+    }
+    It 'refuses branding blocks and points at dw-demo-swift' {
+        foreach($block in @(@{brand=@{primary='#000000'}},@{storefront=@{}},@{personas=@()},@{catalogue=@{}})){
+            $value=@{slug='marine';customer=@{name='Supply'}}+$block
+            {Read-DwBuildConfig (New-TestConfig $value)}|Should -Throw '*dw-demo-swift*'
+        }
     }
     It 'rejects unsupported localization instead of pretending to apply it' {
         {Read-DwBuildConfig (New-TestConfig @{slug='marine';customer=@{name='Supply';currency='EUR'}})}|Should -Throw '*localization*'
     }
-    It 'refuses assets escaping the demo root' {
-        {Resolve-DwBuildAsset $TestDrive '../secret.svg'}|Should -Throw '*escapes*'
-    }
-    It 'binds hostile product text as a value and preserves the stable id' {
-        $value="O'Brien'); DROP TABLE Area;--"
-        $c=Read-DwBuildConfig (New-TestConfig @{slug='marine';customer=@{name='Supply'};catalogue=@{products=@(@{id='TCPROD0001';name=$value})}})
-        $plan=Get-DwBuildRenamePlan $c
-        $plan.Count|Should -Be 1
-        $plan[0].sql|Should -Not -Match 'DROP TABLE'
-        $plan[0].parameters.value|Should -Be $value
-        $plan[0].parameters.id|Should -Be 'TCPROD0001'
-        $plan[0].sql|Should -Match "ProductVariantId=''"
-    }
-    It 'rejects keys outside the stable catalogue families' {
-        {Read-DwBuildConfig (New-TestConfig @{slug='marine';customer=@{name='Supply'};catalogue=@{groups=@(@{id='SHOP1';name='Wrong'})}})}|Should -Throw '*stable key*'
-    }
-    It 'targets category label translations, never nonexistent schema columns' {
-        $c=Read-DwBuildConfig (New-TestConfig @{slug='marine';customer=@{name='Supply'};catalogue=@{categoryFields=@(@{id='tcMaterialClass';label='Marine material'})}})
-        $plan=Get-DwBuildRenamePlan $c
-        $plan[0].table|Should -Be 'EcomProductCategoryFieldTranslation'
-        $plan[0].column|Should -Be 'FieldTranslationFieldLabel'
-        $plan[0].sql|Should -Match "FieldTranslationLanguageId='ENU'"
-    }
-    It 'rejects negative prices before a build can mutate anything' {
-        {Read-DwBuildConfig (New-TestConfig @{slug='marine';customer=@{name='Supply'};catalogue=@{products=@(@{id='TCPROD0001';price=-1})}})}|Should -Throw '*non-negative*'
-    }
-    It 'keeps the vendor brand only for a customer name that carries the vendor word' {
-        Test-DwBuildVendorKept 'Truvio Commerce'|Should -BeTrue
-        Test-DwBuildVendorKept 'truvio'|Should -BeTrue
-        Test-DwBuildVendorKept 'Northwind Marine Supply'|Should -BeFalse
-        Test-DwBuildVendorKept 'Truvioline Parts'|Should -BeFalse
-    }
-    It 'ships an example config that keeps the edition brand and resolves' {
+    It 'ships a minimal example config that resolves' {
         $example=Read-DwBuildConfig (Join-Path (Split-Path $PSScriptRoot) 'skills/dw-demo-base/assets/demo-build.example.json')
         $example.customer.name|Should -Be 'Truvio Commerce'
-        Test-DwBuildVendorKept $example.customer.name|Should -BeTrue
-        $example.brand.logo|Should -Match '^distribution/layers/sample-data/files/Images/TruvioCommerce/brand/.+\.svg$'
-        [int]$example.personas.Count|Should -Be 0
-        [int]$example.catalogue.products.Count|Should -Be 0
+        @($example.Keys|Sort-Object)|Should -Be @('customer','edition','installMcpBeforeStart','slug')
     }
-    It 'chooses readable ink on amber and dark blue' {
-        Get-DwBuildInk '#B8860B'|Should -Be '#000000'
-        Get-DwBuildInk '#15324F'|Should -Be '#FFFFFF'
-    }
-}
-
-Describe 'Brand generation without network or database' -Skip:(-not $IsWindows) {
-    BeforeAll {
-        $script:demo=Join-Path $TestDrive 'demo'
-        $theme=Join-Path $script:demo 'distribution/layers/theme-default/files'
-        $custom=Join-Path $theme 'Templates/Designs/Swift-v2/Custom'
-        New-Item -ItemType Directory -Force $custom|Out-Null
-        $seed=@{brand=@{name='Default';logo=@{alt='Default'}};css=@{'--td-accent'='#000000';'--td-ink'='#000000'};schemes=@('light','lightgrey1','lightgrey2','dark','darksubtle','primary','secondary'|ForEach-Object {@{Id=$_;Name=$_;BackgroundColor='#FFFFFF';ForegroundColor='#000000';PrimaryButtonColor='#000000';SecondaryButtonColor='#000000';AccentColor=$null}});typography=@{ParagraphFont='Inter';HeadingFont='Inter';ButtonFont='Inter';fontImport=$null};buttons=@{Shape=2;BorderSize=1;PaddingY=0.55;PaddingX=1.4;borderRadius='999px'}}
-        $seed|ConvertTo-Json -Depth 20|Set-Content (Join-Path $custom 'brand.tokens.json')
-        New-Item -ItemType Directory -Force (Join-Path $theme 'System/Styles/Typography')|Out-Null
-        "/* default */`n/* Imports */`n@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');`n/* Basic types */`nbody, .preview {`n--dw-font-family: Inter;`n}`n/* Headings */`nh1, h2 {`n--dw-font-family: Inter;`n}"|Set-Content (Join-Path $theme 'System/Styles/Typography/default.css')
-        $files=Join-Path $script:demo 'Dynamicweb.Host.Suite/wwwroot/Files'
-        foreach($dir in 'ColorSchemes','Typography','Buttons'){New-Item -ItemType Directory -Force (Join-Path $files "System/Styles/$dir")|Out-Null}
-        New-Item -ItemType Directory -Force (Join-Path $files 'Templates/Designs/Swift-v2/Custom')|Out-Null
-        $script:config=New-TestConfig @{slug='marine';customer=@{name='Marine & Supply'};brand=@{primary='#B8860B';radius='12px'}}
-    }
-    It 'writes both halves of all pairs, fixed scheme ids, tokens and escaped logo' {
-        & pwsh -NoProfile -File $script:generator -ConfigPath $script:config -DemoRoot $script:demo -Apply
-        $LASTEXITCODE|Should -Be 0
-        $files=Join-Path $script:demo 'Dynamicweb.Host.Suite/wwwroot/Files'
-        foreach($dir in 'ColorSchemes','Typography','Buttons'){
-            Test-Path (Join-Path $files "System/Styles/$dir/default.json")|Should -BeTrue
-            Test-Path (Join-Path $files "System/Styles/$dir/default.css")|Should -BeTrue
+    It 'ships no branding helpers' {
+        foreach($name in 'Get-DwBuildInk','Get-DwBuildRenamePlan','New-DwBuildTile','Test-DwBuildVendorKept','Test-DwBuildTypographyCss','Resolve-DwBuildAsset'){
+            Get-Command $name -ErrorAction SilentlyContinue|Should -BeNullOrEmpty
         }
-        $model=Get-Content -Raw (Join-Path $files 'System/Styles/ColorSchemes/default.json')|ConvertFrom-Json
-        $model.Schemes.Count|Should -Be 7
-        $model.Schemes.Id|Should -Contain 'darksubtle'
-        $css=Get-Content -Raw (Join-Path $files 'System/Styles/ColorSchemes/default.css')
-        $css|Should -Match '--dw-color-button-primary-contrast: #000000;'
-        Get-Content -Raw (Join-Path $files 'Templates/Designs/Swift-v2/Custom/brand.css')|Should -Match ':root:root'
-        $typography=Get-Content -Raw (Join-Path $files 'System/Styles/Typography/default.css')
-        $typography|Should -Not -Match '@import|display=swap'
-        $typography|Should -Match '(?s)body, \.preview \{[^}]*--dw-font-family: Arial;'
-        Get-Content -Raw (Join-Path $files 'Images/Brand/logo.svg')|Should -Match 'Marine &amp; Supply'
-        $tokens=Get-Content -Raw (Join-Path $files 'Templates/Designs/Swift-v2/Custom/brand.tokens.json')|ConvertFrom-Json
-        $tokens.brand.favicon|Should -Be '/Files/Images/marine/favicon.png'
-        [IO.File]::ReadAllBytes((Join-Path $files 'Images/marine/favicon.png'))[0]|Should -Be 137
-        $first=Get-FileHash (Join-Path $files 'System/Styles/ColorSchemes/default.css')
-        & pwsh -NoProfile -File $script:generator -ConfigPath $script:config -DemoRoot $script:demo -Apply
-        (Get-FileHash $first.Path).Hash|Should -Be $first.Hash
     }
-    It 'keeps a configured font import as the first line and still parses' {
-        $root=Join-Path $TestDrive 'imported'
-        Copy-Item (Join-Path $script:demo 'distribution') (Join-Path $root 'distribution') -Recurse
-        foreach($dir in 'System/Styles/ColorSchemes','System/Styles/Typography','System/Styles/Buttons','Templates/Designs/Swift-v2/Custom'){New-Item -ItemType Directory -Force (Join-Path $root "Dynamicweb.Host.Suite/wwwroot/Files/$dir")|Out-Null}
-        $config=New-TestConfig @{slug='marine';customer=@{name='Marine'};brand=@{fontFamily='Source Sans 3';fontImportUrl='https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap'}}
-        & pwsh -NoProfile -File $script:generator -ConfigPath $config -DemoRoot $root -Apply
+    It 'plans the scaffold steps with key minting before first start and no brand step' {
+        $config=New-TestConfig @{slug='marine';customer=@{name='Marine Supply'}}
+        $plan=& pwsh -NoProfile -File $script:orchestrator -ConfigPath $config -DemoRoot (Join-Path $TestDrive 'plan') -SqlServer localhost -Port 44471 6>&1
         $LASTEXITCODE|Should -Be 0
-        $lines=Get-Content (Join-Path $root 'Dynamicweb.Host.Suite/wwwroot/Files/System/Styles/Typography/default.css')
-        $lines[0]|Should -Be "@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap');"
-        ($lines -join "`n")|Should -Match '(?s)body, \.preview \{[^}]*--dw-font-family: Source Sans 3;'
-        { Test-DwBuildTypographyCss -Css ($lines -join "`n") -Font 'Source Sans 3' }|Should -Not -Throw
-    }
-    It 'rejects a typography sheet with a leftover import fragment or no body font' {
-        { Test-DwBuildTypographyCss -Css "500;600;700&display=swap');`nbody, .preview {`n--dw-font-family: Arial;`n}" -Font 'Arial' }|Should -Throw '*outside a rule*'
-        { Test-DwBuildTypographyCss -Css "h1 {`n--dw-font-family: Arial;`n}" -Font 'Arial' }|Should -Throw '*body font*'
-    }
-    It 'does not write when previewed' {
-        $newRoot=Join-Path $TestDrive 'preview'
-        New-Item -ItemType Directory -Force (Join-Path $newRoot 'distribution/layers/theme-default/files/Templates/Designs/Swift-v2/Custom')|Out-Null
-        Copy-Item (Join-Path $script:demo 'distribution/layers/theme-default/files/Templates/Designs/Swift-v2/Custom/brand.tokens.json') (Join-Path $newRoot 'distribution/layers/theme-default/files/Templates/Designs/Swift-v2/Custom/brand.tokens.json')
-        & pwsh -NoProfile -File $script:generator -ConfigPath $script:config -DemoRoot $newRoot -WhatIf
-        $LASTEXITCODE|Should -Be 0
-        Test-Path (Join-Path $newRoot 'Dynamicweb.Host.Suite')|Should -BeFalse
+        $steps=@($plan|ForEach-Object {"$_"}|Where-Object {$_ -like 'Plan: *'}|ForEach-Object {$_.Substring(6)})
+        $steps|Should -Be @('preflight','release','scaffold','restore','files','access-keys','start-license','access','index','test','stamps')
+        ($plan -join "`n")|Should -Match 'dw-demo-swift'
+        Test-Path (Join-Path $TestDrive 'plan')|Should -BeFalse
     }
 }
 

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-WRITES: a resumable local Swift demo from one customer JSON, plus gates, receipts and journal.
+WRITES: a resumable, unbranded local Swift base from one customer JSON, plus gates, receipts and journal.
 .DESCRIPTION
 Owning reference: ../references/scripted-base-build.md. Windows local-install only; never touches
 IIS or an existing unowned database. Dry run by default; -Apply authorizes the complete chain.
@@ -29,6 +29,7 @@ $limitations=@(
     'Install PowerShell 7, .NET 10 SDK, Git and SQL Server once; service installation is outside this command.',
     'Sign into Claude Code and install the complete public presales skills bundle once.',
     'A fresh agent shell is needed to inherit the User-scope TLS environment setting.',
+    'Next agent step: brand the base for the customer with dw-demo-swift (rebrand, header and footer, palette, logo and copy); this command applies no customer branding.',
     'Human design sign-off, domain modelling, localization beyond US/USD/en-US and final customer fine-tuning remain the agent phase.',
     'Hosted targets use dw-demo-hosted; this command only provisions a local Windows install.'
 )
@@ -37,7 +38,7 @@ try {
     if(-not $Database){$Database='demo-'+$c.slug}
     $null=Get-DwBuildConnection $SqlServer $Database
     $steps=[ordered]@{
-        preflight=$null;release='Get-DwDistributionRelease.ps1';scaffold='New-DwDemoHost.ps1';restore='Restore-DwEditionDatabase.ps1';files='Install-DwDemoFiles.ps1';'brand-files'='New-DwBrandFiles.ps1';'brand-content'='Set-DwDemoBrandContent.ps1';'start-license'='Start-DwDemoBuildHost.ps1';access='Grant-DwDemoAccess.ps1';index='Build-DwDemoIndex.ps1';test='Test-DwDemoBaseBuild.ps1';stamps=$null
+        preflight=$null;release='Get-DwDistributionRelease.ps1';scaffold='New-DwDemoHost.ps1';restore='Restore-DwEditionDatabase.ps1';files='Install-DwDemoFiles.ps1';'access-keys'='New-DwDemoAccessKeys.ps1';'start-license'='Start-DwDemoBuildHost.ps1';access='Grant-DwDemoAccess.ps1';index='Build-DwDemoIndex.ps1';test='Test-DwDemoBaseBuild.ps1';stamps=$null
     }
     if(-not $Apply -or -not $PSCmdlet.ShouldProcess($p.Root,'Build local demo through all gated steps')){foreach($step in $steps.Keys){Write-Host "Plan: $step"};$limitations|ForEach-Object{Write-Host "Remaining: $_"};exit 0}
     $statePath=Join-Path $p.Root ".demo/$($c.slug)/flow-state.json"
@@ -80,16 +81,16 @@ try {
                 if(-not $c.installMcpBeforeStart){throw 'The complete unattended chain needs installMcpBeforeStart=true (the default). Use the step scripts for a separate AppStore installation.'}
             } elseif($step -eq 'stamps'){
                 $r=Get-Content -Raw $p.Release|ConvertFrom-Json
-                $stamp=@('','## Scripted base build provenance',"- Distribution commit: $($r.commit)","- DW: $($r.dwVersion)","- Swift: $($r.swiftTag)","- Edition: $($r.edition), $($r.bacpac.editionVersion)","- Bacpac SHA256: $($r.bacpac.sha256)",'- Credentials: notes/credentials.local.md (ignored).','- Palette writes default Style group; re-staging the theme requires re-running brand generation.',("- License expiry: "+(Get-Content -Raw (Join-Path $p.Notes 'license-proof.json')|ConvertFrom-Json).expiry))
+                $stamp=@('','## Scripted base build provenance',"- Distribution commit: $($r.commit)","- DW: $($r.dwVersion)","- Swift: $($r.swiftTag)","- Edition: $($r.edition), $($r.bacpac.editionVersion)","- Bacpac SHA256: $($r.bacpac.sha256)",'- Credentials: notes/credentials.local.md (ignored).','- Branding: not applied; the base carries the edition brand until the dw-demo-swift branding pass.',("- License expiry: "+(Get-Content -Raw (Join-Path $p.Notes 'license-proof.json')|ConvertFrom-Json).expiry))
                 foreach($app in $r.apps){$stamp+="- App pin: $($app.id) $($app.version)"}
                 $ledger=Join-Path $p.Root 'CUSTOMISATIONS.md'
                 if((Get-Content -Raw $ledger) -notmatch '## Scripted base build provenance'){Add-Content $ledger $stamp -Encoding utf8NoBOM}
-                Write-DwBuildJson (Join-Path $p.Notes 'build-report.json') @{outcome='PASS';baseUrl="https://localhost:$Port";remaining=$limitations;timings=$state.timings;release=$r}
+                Write-DwBuildJson (Join-Path $p.Notes 'build-report.json') @{outcome='PASS';baseUrl="https://localhost:$Port";branded=$false;nextStep='dw-demo-swift: brand the base for the customer';remaining=$limitations;timings=$state.timings;release=$r}
             } else {
                 $args=@('-NoProfile','-File',(Join-Path $PSScriptRoot $steps[$step]),'-DemoRoot',$p.Root)
-                if($step -in 'scaffold','brand-files','brand-content','test'){$args+=@('-ConfigPath',$ConfigPath)}
+                if($step -in 'scaffold','test'){$args+=@('-ConfigPath',$ConfigPath)}
                 if($step -in 'scaffold','start-license'){$args+=@('-Port',"$Port")}
-                if($step -in 'restore','files','brand-content'){$args+=@('-SqlServer',$SqlServer,'-Database',$Database)}
+                if($step -in 'restore','files','access-keys'){$args+=@('-SqlServer',$SqlServer,'-Database',$Database)}
                 if($step -ne 'test'){$args+='-Apply'}
                 Invoke-DwBuildCommand pwsh $args
             }

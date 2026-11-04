@@ -26,7 +26,7 @@ try {
     $secretFile=Join-Path $p.Notes 'build-secrets.local.json';$secrets=Get-Content -Raw $secretFile | ConvertFrom-Json -AsHashtable
     $auth=Invoke-RestMethod -Uri "$base/Admin/TokenAuthentication/authenticate" -Method Post -ContentType 'application/json' -Body (@{Username='Admin';Password=$secrets['2']} | ConvertTo-Json) -SkipCertificateCheck -TimeoutSec 60
     if(-not $auth.token){throw 'Admin token authentication failed; inspect the license and restored admin state.'}
-    if(-not $secrets.apiToken -or -not $secrets.mcpToken){throw 'Run brand-content while the host is stopped to provision the local credentials.'}
+    if(-not $secrets.apiToken -or -not $secrets.mcpToken){throw 'Run access-keys while the host is stopped to provision the local credentials.'}
     $headers=@{Authorization="Bearer $($secrets.apiToken)"}
     function Invoke-AccessApi([string]$Path) {
         Invoke-RestMethod -Uri "$base/admin/api/$Path" -Headers $headers -SkipCertificateCheck -TimeoutSec 120
