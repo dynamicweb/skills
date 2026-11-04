@@ -1,0 +1,10 @@
+{
+  "slug": "truvio-commerce",
+  "customer": {
+    "name": "Truvio Commerce",
+    "country": "US",
+    "currency": "USD",
+    "language": "en-US"
+  },
+  "installMcpBeforeStart": true
+}

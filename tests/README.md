@@ -27,3 +27,8 @@ Two mechanics worth knowing before adding a suite:
   go in the file-level `BeforeAll`.
 
 Requires Pester 5 or later on PowerShell 7.
+
+`DwDemoBuild.Tests.ps1` also covers configuration, native-command boundaries, scaffold patches and
+edition file composition. Its raster-generator and local file-installer groups run on Windows;
+they use System.Drawing and the local SQL connection-string guard, with no SQL connection, SDK,
+host or network request.

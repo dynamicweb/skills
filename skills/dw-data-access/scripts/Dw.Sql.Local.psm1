@@ -78,17 +78,22 @@ function Assert-DwSqlLocal {
     #>
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string]$ConnectionString)
-    $m = [regex]::Match($ConnectionString, '(?i)\b(?:server|data source|addr|address|network address)\s*=\s*([^;]+)')
-    if (-not $m.Success) {
+    $parsed = [System.Data.SqlClient.SqlConnectionStringBuilder]::new($ConnectionString)
+    if (-not $parsed.DataSource) {
         throw 'Connection string names no Server / Data Source — refusing to run SQL against an unknown host.'
     }
-    $server = $m.Groups[1].Value.Trim()
+    $server = $parsed.DataSource.Trim()
     # Strip a named-instance and a port suffix before comparing; `(localdb)\x`
     # keeps its prefix, which is matched on its own below.
     $bare = ($server -split ',')[0].Trim()
     $host_ = ($bare -split '\\')[0].Trim()
     $isLocal = ($script:LocalServerTokens | Where-Object { $_ -and $_ -eq $host_ }).Count -gt 0
     if (-not $isLocal -and $bare -match '(?i)^\(localdb\)') { $isLocal = $true }
+    # A container may explicitly vouch for exactly its own host; never a pattern or instance.
+    $containerHost = $env:DW_SQL_CONTAINER_HOST
+    if ($containerHost -and $containerHost -match '^[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?$' -and
+        [uri]::CheckHostName($containerHost) -in @([UriHostNameType]::Dns,[UriHostNameType]::IPv4) -and
+        $host_ -eq $containerHost) { $isLocal = $true }
     if (-not $isLocal) {
         throw ("Refusing to run SQL against '$server': SQL is LOCAL INSTALLS ONLY. " +
             "A hosted install has no SQL surface — use the Management API (rung 2) instead.")
