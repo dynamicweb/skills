@@ -3,6 +3,10 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.1.2]
+
+- **`dw-data-access` documents the provider-level Data Integration schema.** A table created after `Files/Files/Integration/Schemas/<id>/schema.xml` was written is "not found" by every activity and the MCP mapping tools. The repair is `SchemaUpdate` on both sides; a hand patch is a checked, backed-up fallback.
+
 ## [6.1.0]
 
 - **`dw-demo-base` gains a scripted local base build: one command scaffolds a running, unbranded Swift 2 base from

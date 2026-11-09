@@ -125,6 +125,29 @@ poll `get_integration_activity_status` and read `get_integration_activity_logs`
 processed, not that the artefact you expected exists** — an export that wrote its file to the wrong
 directory logs exactly the same success line.
 
+## A table created after the provider schema was saved is "not found"
+
+**Surface: Management API, with a bearer key** (an admin cookie gets 401 on `/Admin/Api`). Data
+Integration reads each provider's schema from a persisted file,
+`Files/Files/Integration/Schemas/<base64 of the id>/schema.xml`, and prefers it over the live database.
+So a whole table created later, for example by an app installed after that file was written, does not
+exist for any activity or for the MCP mapping tools. This is the same staleness as a job's `<Schema>`
+block, one level up, and re-saving a job does not touch it.
+
+Check the file date against when the table arrived, then refresh both sides before building on the
+table. `Ids` must not be empty:
+
+```
+POST /Admin/Api/SchemaUpdate
+{ "ActivityName": "<activity>", "Ids": ["Source|DynamicwebProvider", "Destination|DynamicwebProvider"] }
+```
+
+Patching `schema.xml` by hand is the fallback for a host where no API key is available, local or
+file-system access only. Back up the folder first, append only the missing table definitions, and
+compare every appended column with the database before writing. Never replace the file wholesale.
+Measured on two hosts whose schema files predated an app's tables: every one of the app's tables was
+hidden until the refresh or the checked append. Each install's file is its own, so check each host.
+
 ## Bind an activity to a scheduled task
 
 A scheduled task binds to one activity through
