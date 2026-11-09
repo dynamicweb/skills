@@ -26,6 +26,34 @@ listing page or embed structured data (`application/ld+json`, a hydration blob) 
 page; reading those is faster and more accurate than parsing HTML. Note the source platform, its
 languages, and whether listed prices include VAT.
 
+**When the source runs on Dynamicweb, read its data, not its HTML.** Its pages give it away:
+image URLs through `/Admin/Public/GetImage.ashx`, links like `Default.aspx?ID=`, media under
+`/Files/Images/`. In that order:
+
+1. **Its delivery API, the default.** A Dynamicweb solution serves its whole site as JSON under
+   `/dwapi`, and describes its own routes at `/dwapi/api.json` (Swagger UI at `/dwapi/docs`):
+   read that file first and use its routes as they are.
+   - `GET /dwapi/content/areas`: the websites with their ids
+   - `GET /dwapi/content/pages?AreaId=` and `GET /dwapi/content/paragraphs?PageId=`: the page tree
+     and every paragraph's item fields, so content pages need no HTML parsing either
+   - `GET /dwapi/ecommerce/groups` (`ParentId`, `ShopId`): the group tree with the real group ids
+   - `GET /dwapi/ecommerce/products/export` and `GET /dwapi/ecommerce/products/search`
+     (`GroupId`, paging): products with their category fields, prices, and media in bulk;
+     `GET /dwapi/ecommerce/products/{id}` for one product with all field settings
+   - `GET /dwapi/ecommerce/products/{id}/related`: the source's own product relations
+
+   Keep the source's ids and numbers, take image paths from the media fields and download the
+   originals once, and keep the crawl delay between requests. This replaces most of the scrape: a
+   catalog in the thousands comes over in a few hundred requests instead of one request per
+   product page.
+2. **A database backup or export.** Ask the user at the scope checkpoint whether one can be had;
+   with it the catalog moves with its groups, prices, translations, and images intact through the
+   `dw-pim-migrate-dw9` skill.
+3. **The HTML crawl** below, only when neither is available.
+
+A full HTML crawl at one request per second costs hours for a catalog in the thousands and still
+has to rebuild ids, product types, and language rows from page markup.
+
 When the intake scope is a subset, propose categories that together cover every product shape
 the full catalog has: simple products, products with one variant dimension (sizes), products
 with several, and products with rich specifications. Report product, variant, and image counts
@@ -45,6 +73,23 @@ runtime the agent can run), keeping the crawl delay:
 
 At the checkpoint, report record counts per file, five sample products, and every field that is
 empty in more than 10% of records. Those gaps decide what the data model can promise.
+
+Profile the values too, not only the gaps, and show the profile before anything is imported. A
+script that prints value counts per field finds in minutes what otherwise surfaces on the live
+shop. Report every anomaly with its count, a proposed fix, and the effect on the shop ("a
+placeholder tag on a large share of products: map it to empty, so the facet starts with real
+values"), and keep proposing improvements whenever the data shows one, not only when asked:
+
+- **A field set only for a minority**, where the source treats everything else as an unstated
+  default: a value taken from a few special listings (a target group, a segment) usually means the
+  rest belongs to the main one. Agree the default value with the user; a facet that offers only
+  the minority values reads as broken.
+- **Placeholder values**: one image file shared by many products (a "no image" picture), a tag
+  used as an editorial to-do marker, a brand or series value that really means "none". Decide per
+  case: map to empty, keep out of facets, or leave the product inactive until it gets real data.
+- **Internal codes** among the specifications: stock flags, campaign markers, and codes whose
+  meaning is not what the word says. Mark which fields are customer-facing; the rest
+  stay in the specification list or the PIM and never feed generated text.
 
 ## Data model
 
@@ -85,6 +130,12 @@ the product file: a `Groups` column with the product's group ids, comma-separate
 Create products and groups in the solution's **default ecommerce language**, even when the
 website language differs. Rows in another language are invisible to the index and the
 navigation.
+
+When the website runs in a second ecommerce language, its product rows need the commerce values
+too, not only translated texts: the frontend reads `ProductPrice`, `ProductNeverOutOfStock` and
+stock from the row of the website's language. A language row imported with names and
+descriptions only renders every add-to-cart button disabled, and a price-range facet built on the
+product price puts every product in its lowest band. Import those columns for every language.
 
 ## Product ids and numbers
 
@@ -146,6 +197,22 @@ would otherwise create a stray group.
   cache services when it runs (its **Cache** tab); otherwise the application needs a restart.
   Restarting affects everyone on the solution, so ask the user; do not work around a stale cache
   with extra writes.
+- **Know which caches the Ecom provider leaves stale.** After a run it clears only the product,
+  category, and variant caches. Prices are loaded into memory at application start, and product
+  relations are held in their own in-memory cache that is not cleared even by a full ecommerce
+  cache clear: imported prices show as 0 and imported relations stay invisible on products the
+  solution has already touched (a page view or an index build counts). Set the activity's
+  **Cache** tab for these services where it offers them; otherwise plan for a restart.
+- **Plan one restart, not one per discovery.** Run every import first (products, languages,
+  fields, prices, images, relations), then ask the user for a single restart, then prove the
+  imports. Each cache found by surprise mid-run costs the user another restart.
+- **Relations import without their sort order.** The bulk insert writes only the four key columns
+  of a relation (product, related product, relation group, related variant); a sort-order column
+  in the file is ignored. Rank relations by the order you write them, or save them through the
+  MCP relation tool when the order matters.
+- **Copying an activity's settings through MCP returns protected values as `***`.** Replace them
+  with the real value (for *Use strict primary key matching*, `True`) before creating the new
+  activity, or the create fails or silently changes the matching.
 
 ## Proving an import
 

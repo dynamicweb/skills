@@ -9,6 +9,8 @@ custom, read over `/dwapi`) or any other site.
 
 - [Check the migration tools first](#check-the-migration-tools-first)
 - [Building without the migration tools](#building-without-the-migration-tools)
+- [The brand comes from the source](#the-brand-comes-from-the-source)
+- [Layout traps that only show on the live page](#layout-traps-that-only-show-on-the-live-page)
 - [The dividing line](#the-dividing-line)
 - [Scope of this phase](#scope-of-this-phase)
 - [The per-page contract: a content-free layout plan](#the-per-page-contract-a-content-free-layout-plan)
@@ -84,6 +86,41 @@ The other migration tools fall back the same way:
   (give it the logo file and the menu links). Without them, use what the website already has, and
   build a missing header or footer as a page with one row and one paragraph per column, wired to
   the website's settings.
+
+## The brand comes from the source
+
+Take the look from the source before building the first page, not after the user calls the
+result generic. In a browser on the source's front page, read the computed styles of `body`,
+the headings, the navigation links, and a primary button: font families and weights, text and
+link colors, button fill, text color, corner radius and letter case, and the background colors of
+the larger sections (ranked by the area they cover). Then create, in one pass: the typography
+(the source's heading and body faces from Google Fonts), the color schemes (white, one or two of
+the source's tinted section backgrounds as light bands, the brand color as the dark band and
+primary button), and a button style with the source's shape and case. Keep text on the brand
+color at 4.5:1 contrast; darken the band slightly rather than changing the brand hue. Improving
+the layout is the job; replacing the brand's fonts and colors is not.
+
+Then build every page against its source page, not from a blank canvas: open the source page
+beside the new one at the first build, keep its sections, imagery, and order of importance, and
+improve it with what Swift 2 does better (fuller-width imagery, real product sliders and
+category tiles, facets, phone layout). The review loop in step 7 then polishes; it does not
+discover what the source looked like.
+
+## Layout traps that only show on the live page
+
+- **Keep the column gap of multi-column rows at 3 or below.** The row's gap applies to the
+  stacked grid on phones as well: a gap of 5 or 6 (3rem and up) pushes the page wider than the
+  screen. Measure every page at phone width (document width equals viewport width).
+- **Two-column poster tiles on phones are narrow.** Long button labels and bold titles overflow
+  them; use short labels ("See all"), a smaller heading level, or the row's mobile layout
+  `12,12,12,12` to stack the tiles.
+- **Use the fixed 2-column definitions for image beside text.** The flexible definitions size
+  columns to their content, and a lazy-loaded image column collapses to nothing.
+- **Moving paragraphs between columns:** place the paragraph that leaves a column before the one
+  that enters it. Placing into an occupied column detaches the paragraph that was there.
+- **Image beside short text:** crop portrait photos to 4:5 (bias the crop to the top third) and
+  give the row a narrower container, so a short paragraph does not sit beside a photo twice its
+  height. Never crop a landscape photo that carries its own text; use it whole.
 
 ## The dividing line
 
