@@ -89,7 +89,10 @@ section; the intake only asks for what it does not already record.
   that load; otherwise build from the files of step 2.
 - **Keep content verbatim.** Names, descriptions, and specifications stay as scraped, also when a
   tool description lists field writing rules. Cleaned values (spelling, units, decimal separators)
-  go in separate facet fields; the displayed value stays as scraped. Never invent data.
+  go in separate facet fields; the displayed value stays as scraped. Never invent data. When the
+  user asks for new or translated product texts, follow
+  [generated-text.md](references/generated-text.md): field policy, fact files, a reviewed sample
+  before the full run, and a content checker.
 - **Bulk data never passes through the conversation or subagents.** Scripts write files, the dw
   CLI uploads them, and Data Integration activities import them.
 - **Read back every write.** A success response or a row count is not proof; for catalog data,
@@ -113,8 +116,9 @@ migration runs all seven.
 ### Step 1: Survey
 
 Read `robots.txt` and the sitemaps, find how listings and pages load their data, and note the
-source platform, its languages, and its VAT display. When the scope is a subset, propose
-categories and pages that cover every product shape and page type.
+source platform, its languages, and its VAT display. A source that runs on Dynamicweb is read
+through its delivery API (`/dwapi`) or a database export, not crawled page by page. When the
+scope is a subset, propose categories and pages that cover every product shape and page type.
 [catalog-import.md](references/catalog-import.md) ("Survey") has the detail.
 **Decision checkpoint:** the proposed scope with product, variant, image, and page counts.
 
@@ -125,8 +129,9 @@ product pages, to resumable JSON Lines files in the working folder, keeping the 
 parsing can rerun without crawling again. Step 5 builds from these files whenever the migration
 tools do not read the source. [catalog-import.md](references/catalog-import.md) ("Scrape into
 files").
-**Report:** record counts per file, five sample products or pages, and any field empty in more
-than 10% of records.
+**Report:** record counts per file, five sample products or pages, any field empty in more than
+10% of records, and a value profile per field (minority-only fields with an unstated default,
+placeholder images and tags, internal codes). The user settles each before the import.
 
 ### Step 3: Data model
 
@@ -146,12 +151,16 @@ source product's number. [catalog-import.md](references/catalog-import.md) ("Imp
 "Proving an import").
 **Report:** product, variant, price, and image counts in the solution, checked on the frontend
 pages of products nobody has opened yet. When caches hide imported data, stop and tell the user
-rather than working around it.
+rather than working around it. Run every import first and ask for one restart before proving
+them; prices and product relations are cached in memory and stay hidden until then
+([catalog-import.md](references/catalog-import.md), "Data Integration activities").
 
 ### Step 5: Website
 
-First propose the page tree, the color scheme and logo, and which standard Swift 2 component each
-source section becomes. **Decision checkpoint:** the proposal. Then build: the website with its header and
+First read the source's fonts, colors, and button style and set the typography, color schemes,
+and button style from them ([content-rebuild.md](references/content-rebuild.md), "The brand comes
+from the source"). Then propose the page tree, the color scheme and logo, and which standard
+Swift 2 component each source section becomes. **Decision checkpoint:** the proposal. Then build: the website with its header and
 footer, the shop page with the product catalog shell and the cart and checkout pages when the
 catalog is in scope, and the content pages. Swift 2 templates find pages by navigation tag: make
 sure the website has the shop page tagged `Shop` and, for a catalog, the service pages tagged

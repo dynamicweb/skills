@@ -3,6 +3,30 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.1.1]
+
+- **`dw-swift-migrate-site` reads a Dynamicweb source through its delivery API instead of crawling it.** The source
+  describes its own routes at `/dwapi/api.json`; the reference lists the ones a migration needs (areas, pages and
+  paragraphs, groups, `products/export` and `products/search`, a product's `related`). A database export
+  (`dw-pim-migrate-dw9`) is the second choice and the HTML crawl the last, because it costs hours for a catalog in
+  the thousands and still has to rebuild ids, types and language rows.
+- **The scrape report profiles values, not only gaps.** Minority-only fields with an unstated default, placeholder
+  images and tags, and internal codes are settled with the user
+  before the import, each anomaly reported with a proposed fix.
+- **Data Integration traps from a full catalog run:** second-language rows need `ProductPrice` and
+  `ProductNeverOutOfStock` (else add-to-cart renders disabled and price-range facets read 0); the Ecom provider clears
+  only product, category and variant caches, so prices and product relations stay hidden until a restart (plan one,
+  after all imports); relations import without their sort order; copied activity settings come back as `***`.
+- **The brand comes from the source.** Step 5 starts by reading the source's computed fonts, colors and button style
+  into typography, color schemes and a button style, and every page is built against its source page and improved
+  with Swift 2's components, not designed from a blank canvas. New layout traps: a multi-column row gap above 3 overflows on
+  phones, flexible 2-column definitions collapse lazy image columns, paragraph moves detach the occupant, narrow poster
+  tiles need short labels.
+- **New reference `generated-text.md`** for requested enrichment or translation: a field policy (internal codes never
+  reach the writer, not even as an explanation), script-built fact files with the product's main image for a
+  vision-capable writer, a 20-30 product sample reviewed by a human
+  before the full run, and a content checker (internal words, numbers absent from the facts, repeated openings).
+
 ## [6.1.0]
 
 - **`dw-demo-base` gains a scripted local base build: one command scaffolds a running, unbranded Swift 2 base from
