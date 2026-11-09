@@ -3,6 +3,10 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.1.3]
+
+- **`dw-integration-erp` gains a handover gate for connector packages.** Provenance from a clean versioned release with a recorded SHA-256, required contents present, target version compared, no secrets.
+
 ## [6.1.0]
 
 - **`dw-demo-base` gains a scripted local base build: one command scaffolds a running, unbranded Swift 2 base from

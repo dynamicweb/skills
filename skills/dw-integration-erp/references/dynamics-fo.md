@@ -7,6 +7,7 @@
 - [Sales order lines: never send an empty unit](#sales-order-lines-never-send-an-empty-unit)
 - [Posting what OData cannot post: the environment's ERP MCP server](#posting-what-odata-cannot-post-the-environments-erp-mcp-server)
 - [A legal entity from a template company over a data management package](#a-legal-entity-from-a-template-company-over-a-data-management-package)
+- [Before a connector package leaves your hands](#before-a-connector-package-leaves-your-hands)
 - [The F&O connector package: the service and its group share a name](#the-fo-connector-package-the-service-and-its-group-share-a-name)
 
 > What a Dynamics 365 Finance & Operations (F&O) environment does that the Truvio Commerce (powered
@@ -112,6 +113,24 @@ entities, about 31,700 rows.
   remaps these; a package import does not. Rewrite the template code to the target code in those
   fields of each entity file, in a copy of the package, before the upload, and assert that no
   template-code value remains in a company-valued field.
+
+## Before a connector package leaves your hands
+
+A package handed to whoever installs it costs a round trip per defect, and the installer cannot see
+what is wrong with it. Run these before the handover, and stop on any failure:
+
+1. **Provenance.** Take it from a clean, versioned release, and record that version and the archive's
+   SHA-256 with the handover. A zip found in a chat, a mail or another project is not a source: it may
+   be a fork of one customer's implementation. Compare the model's objects with the release and treat
+   any object the release does not have, or any other customer's name or prefix, as a failure. When no
+   clean release exists, build one from the unmodified model first.
+2. **Contents.** Open the archive and confirm that everything the chosen install route needs is there.
+   For a model install that is the `.axmodel` export; for a deployment that is the deployable package.
+3. **Target version.** Compare the application version the package was built on with the target
+   environment's. When they differ, build on the target version and keep the compiler output, since
+   a failed service compile otherwise surfaces only as a 500 from the endpoint.
+4. **No secrets.** Nothing in the archive or the message carries an app registration secret or an
+   environment credential.
 
 ## The F&O connector package: the service and its group share a name
 
