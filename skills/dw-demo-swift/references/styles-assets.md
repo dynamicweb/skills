@@ -233,6 +233,12 @@ landing assets in a folder that already exists). Measured on one build: mobile P
 FCP 3.4s → 2.4s, Speed Index 3.4s → 2.4s, third-party font requests 2 → 0. `preconnect` alone saves only
 the DNS/TLS portion and leaves the serialisation intact.
 
+- **Remove the whole `@import` statement, never up to the first semicolon.** A font URL contains
+  semicolons (`family=Inter:wght@400;700`), so a pattern such as `@import[^;]*;` stops inside it and
+  leaves a fragment in front of the next rule. The browser then discards that rule, which is the body
+  rule: body text and navigation fall to serif while headings keep their font. The token values are
+  still in the sheet text, so a text check passes. Remove by whole line, then prove it in the browser
+  as the theme gate in `dw-demo-base/references/visual-qa.md` says.
 - **Regeneration caveat — this is a hand-edit of generated output.** Opening and saving the theme in admin
   restores the `@import`, exactly like the palette hand-edit above. Re-check the served Typography sheet
   after any design save, and record the edit in the demo ledger.
