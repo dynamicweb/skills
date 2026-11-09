@@ -150,6 +150,9 @@ cover it, and the scope is stated in `worksOn` beside the app.
 
 ## In-process C#: Service API vs the Database class
 
+The table applies to **compiled code**. A Razor template never calls the `Database` class, for any
+table: use `Services.*`, which needs no build or restart there.
+
 | Use case | Approach |
 |----------|----------|
 | Reading/writing Ecommerce, Content, User data | **Service API** — handles caching, notification firing, type safety |

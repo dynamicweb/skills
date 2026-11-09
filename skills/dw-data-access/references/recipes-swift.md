@@ -197,7 +197,7 @@ $Root = "<solution>\Dynamicweb.Host.Suite\wwwroot\Files"
 $Slug = "<area-url-slug>"   # a hardcoded area prefix to scan for
 
 # 1. Raw DB access in Razor (use Services.* per render-razor.md)
-gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'Database\.(CreateDataReader|ExecuteScalar|ExecuteReader|ExecuteNonQuery)'
+gci "$Root\Templates" -Recurse -File -Include '*.cshtml','*.cs' | Select-String '\bDatabase\.(Create|Execute)\w*|\bSql(Connection|Command)\b|\bCommandBuilder\b'
 # 2. Substring scans on URL/query (use page-id helpers + Pageview.User)
 gci "$Root\Templates\Designs\Swift-v2" -Recurse -Filter '*.cshtml' | Select-String 'PathAndQuery\.IndexOf|QueryString\.ToString|Url\.AbsoluteUri\.Contains'
 # 3. Hard-coded area prefixes
