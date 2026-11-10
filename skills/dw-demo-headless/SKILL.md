@@ -37,10 +37,10 @@ specific topic.
 ## How to run me
 
 This skill holds domain knowledge, not build sequencing. An **orchestrator** owns the phase
-order: GSD injects this skill into its agents (via the `agent_skills` block), or the native
-`/demo:*` command set invokes it; **standalone**, the skill's own lightweight harness guards its
+order: the native
+`/demo:*` command set invokes this skill; **standalone**, the skill's own lightweight harness guards its
 documented order (gate every step, persist progress to `.demo/<slug>/flow-state.json`). The
-orchestrator abstraction (GSD primary, native command set, and the standalone harness) is owned by
+orchestrator abstraction (native command set and the standalone harness) is owned by
 [`../dw-demo-base/references/orchestrator.md`](../dw-demo-base/references/orchestrator.md).
 
 ## Headless vs Swift — pick the right demo flow

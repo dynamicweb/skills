@@ -15,5 +15,3 @@ Read-only. Do not change any state.
    - **Next command**: derive from phase — `scaffold`→`/demo:impact`, `impact`→`/demo:build`
      (only if signed off, else `/demo:impact` to sign off), `build`→`/demo:build` for the fix
      pass or polish freeform, `polish`→done.
-3. If a GSD `.planning/` directory is present, note that the build can also be driven through the
-   `/gsd-*` flow.

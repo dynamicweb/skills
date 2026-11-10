@@ -5,7 +5,7 @@ group: demo
 mcp: required
 dynamo: false
 compatibility: Requires PowerShell 7.x; scripted local builds need Windows, Git, .NET 10 SDK and SQL Server with Windows authentication; the admin-shell driver also needs Node.js 20+ with Playwright + Chromium
-description: 'Set up DW10 demos and build orchestration; baseline loading belongs to sister skills. Use FIRST for local/hosted demos, MCP connection/TLS failures, platform pinning, customisation audits, GSD/native commands, and branded-demo path choice.'
+description: 'Set up DW10 demos and build orchestration; baseline loading belongs to sister skills. Use FIRST for local/hosted demos, MCP connection/TLS failures, platform pinning, customisation audits, the native /demo:* commands, and branded-demo path choice.'
 ---
 
 # Dynamicweb Demo Base Skill
@@ -30,15 +30,13 @@ This SKILL.md is a nav layer only. Each step of the canonical flow links to a `r
 This skill holds **domain knowledge**, not build sequencing. The thing that sequences the
 phases and holds the gates is the **orchestrator**, and it is swappable:
 
-- **Under GSD** — GSD injects this skill into its agents and owns the phase order (register it
-  via the `agent_skills` block in `assets/agent_skills.config.json`).
 - **Under the native command set** — the `/demo:*` slash commands (scaffolded into the demo
   project) invoke this skill and hold the one human gate.
-- **Standalone** — no GSD, no `/demo:*` commands: the skill's own **lightweight harness** guards
+- **Standalone** — no `/demo:*` commands: the skill's own **lightweight harness** guards
   the canonical flow below (walk it in order, gate every step, persist progress to
   `.demo/<slug>/flow-state.json`, refuse to declare done before a gate passes).
 
-The orchestrator abstraction (modes, GSD detection / deference, `--standalone`, the strictness
+The orchestrator abstraction (modes, the strictness
 gradient, acceptance criteria) is owned by [references/orchestrator.md](references/orchestrator.md).
 Every sister demo skill carries the same "how to run me" header and defers to that reference.
 
@@ -119,7 +117,7 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 
 | If you need to... | Read this reference |
 |---|---|
-| How a demo build is **driven** — GSD vs the native `/demo:*` commands, `--standalone`, the strictness gradient, acceptance criteria | references/orchestrator.md |
+| How a demo build is **driven** — the native `/demo:*` commands, the standalone harness, the strictness gradient, acceptance criteria | references/orchestrator.md |
 | **Brand a demo to a customer**: the three paths (YAML brand layer first, deserialize-then-tools, tools only), the measured cost of each, ordered steps with a check per step, and the traps. Read it BEFORE the first brand write | **references/branded-demo-paths.md** |
 | Verify a fresh machine is build-ready (incl. the MSDTC check behind AreaCopy `TransactionException`s) | references/setup-checks.md |
 | **Audit a restored or copied database for orphaned shop/group relation rows** before trusting any group-tree inventory | references/setup-checks.md §2b |

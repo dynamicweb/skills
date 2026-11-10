@@ -3,6 +3,19 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.2.2]
+
+- **Removed: the GSD orchestrator.** The demo skills no longer name GSD as a way to drive a build.
+  `dw-demo-base/references/orchestrator.md` now describes the native `/demo:*` command set and the
+  standalone in-skill harness, and says a dispatcher or another agent framework that drives a build
+  follows the same phases, gate and acceptance criteria. The sections on GSD detection and deference,
+  the `agent_skills` registration and the GSD reuse mapping are gone, with the GSD column of the
+  strictness table. `assets/agent_skills.config.json` is deleted. The `/demo:scaffold`, `/demo:impact`
+  and `/demo:build` templates lose their "Detect GSD and defer" step and the `--standalone` flag, which
+  only existed to override that step; `/demo:status` and `ROADMAP.template.md` lose their GSD lines.
+  The "How to run me" header of `dw-demo-base`, `dw-demo-erp`, `dw-demo-headless`, `dw-demo-pim`,
+  `dw-demo-swift` and `dw-integration-bc`, the README and the presales bundle description follow.
+  A demo project scaffolded earlier keeps its own copy of the old command files until they are copied again.
 ## [6.2.0]
 
 - **Removed: the Dynamics 365 Finance & Operations skills leave this repo.** `dw-integration-fo-discovery`,
