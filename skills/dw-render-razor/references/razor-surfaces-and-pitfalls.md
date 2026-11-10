@@ -19,6 +19,12 @@ Every "fake pattern" in a Swift template (raw SQL probes, hard-coded area prefix
 didn't know was there. When in doubt, search the DW10 source for the canonical surface before writing
 SQL or parsing URLs.
 
+**SQL in Razor is never warranted**: no `Database.*`, no `SqlConnection`, no `CommandBuilder` in a
+template, for any table, read or write. A requirement of no compile, no deploy or no restart does not
+justify it, because `Services.*` and `Pageview.*` are callable from Razor with none of those. Data no
+service reaches belongs behind a compiled service in an add-in, or in item types or custom fields a
+service does reach. An existing template that contains SQL is a defect to fix, never a pattern to copy.
+
 ### Products
 
 - **Get product**: `Services.Products.GetProductById(productId, variantId, true)` (the `true` =

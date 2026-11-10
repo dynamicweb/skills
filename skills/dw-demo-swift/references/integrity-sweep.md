@@ -10,12 +10,12 @@
 - [Check 4: Template-reference walk (defense-in-depth)](#check-4-template-reference-walk-defense-in-depth)
 - [Check 5: BuildIndex (by the `.index` Build Name) + wait for a fresh successful build](#check-5-buildindex-by-the-index-build-name--wait-for-a-fresh-successful-build)
 - [Check 6: Icon set populated under `Files/Images/Icons/` (Pitfall: blank-blue-button storefront)](#check-6-icon-set-populated-under-filesimagesicons-pitfall-blank-blue-button-storefront)
-- [Check 7: Raw SQL in paragraph templates (DW10 discipline)](#check-7-raw-sql-in-paragraph-templates-dw10-discipline)
+- [Check 7: Raw SQL in templates (DW10 discipline)](#check-7-raw-sql-in-templates-dw10-discipline)
 - [Check 8: Style assets staged + emitted (the theme gate)](#check-8-style-assets-staged--emitted-the-theme-gate)
 - [Check 9: The storefront catalogue renders products](#check-9-the-storefront-catalogue-renders-products)
 - [Sweep complete](#sweep-complete)
 
-> Mandatory post-deserialize integrity sweep. Eight sequential checks. Run after [`deserialize-flow.md`](deserialize-flow.md) returns 2xx. The skill refuses to declare deserialize complete until ALL eight pass. Strict-mode Serializer is the first line of defence — this sweep is the second, catching DW10-specific failures strict mode does not detect.
+> Mandatory post-deserialize integrity sweep. Nine sequential checks. Run after [`deserialize-flow.md`](deserialize-flow.md) returns 2xx. The skill refuses to declare deserialize complete until ALL nine pass. Strict-mode Serializer is the first line of defence — this sweep is the second, catching DW10-specific failures strict mode does not detect.
 
 ## Prerequisites
 
@@ -240,27 +240,39 @@ No host restart required — `ReadFile` reads on every render.
 
 **Pitfall:** if the deserialize used a non-Swift baseline (e.g. a customer-flavoured baseline with a curated icon subset), do NOT blanket-copy the generic Swift icon set — start from the baseline's own asset set and merge in any missing files individually. Audit the result with `git status` so the demo's `CUSTOMISATIONS.md` can record the asset-source provenance.
 
-## Check 7: Raw SQL in paragraph templates (DW10 discipline)
+## Check 7: Raw SQL in templates (DW10 discipline)
 
-**What is verified:** No paragraph template under `Templates\Designs\Swift-v2\Paragraph\` reaches around the DW10 service layer with raw `Database.*` calls. Raw `Database.CreateDataReader` / `ExecuteScalar` / `ExecuteReader` / `ExecuteNonQuery` in a `.cshtml` is a known hot-path maintenance trap — it fails silently on DW10 schema renames and routinely leaks pricing / permissions / cross-tenant data because the SQL bypasses the per-context scoping the `Services.*` APIs apply.
+**What is verified:** No template anywhere under `Files\Templates\` reaches the database itself. **SQL in Razor is never warranted**, for any table, read or write, parameterised or not, and a custom table is no exception. Raw database access in a `.cshtml` is a known hot-path maintenance trap: it fails silently on DW10 schema renames and routinely leaks pricing, permissions or cross-tenant data because the SQL bypasses the per-context scoping the `Services.*` APIs apply. Writes also bypass cache invalidation and notification subscribers.
+
+**A no-restart constraint does not change this.** `Services.*` and `Pageview.*` are callable from Razor with no build, no deploy and no restart, so "no C#, no restart" is a reason to use them, not a reason to write SQL. Data that no service reaches moves behind a compiled service in an add-in (plan the one restart) or into item types or custom fields that a service does reach.
+
+**When it runs:** after every deserialize with the rest of this sweep, **and again on the final templates of every build increment that added or changed a template**. A deserialize never authors a customer template, so a sweep run only at deserialize passes before the risk exists. An increment is not complete until this check passes.
 
 **Probe:**
 
 ```powershell
-$Root = "Dynamicweb.Host.Suite\wwwroot"
-$hits = Get-ChildItem -Path "$Root\Templates\Designs\Swift-v2\Paragraph" -Recurse -Filter '*.cshtml' `
-  | Select-String -Pattern 'Database\.(CreateDataReader|ExecuteScalar|ExecuteReader|ExecuteNonQuery)'
+$Root = "Dynamicweb.Host.Suite\wwwroot\Files\Templates"
+if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
+    throw "Templates root not found: $Root. A scan of a missing folder proves nothing."
+}
+$pattern = '\bDatabase\.(Create|Execute)\w*|\bSql(Connection|Command)\b|\bCommandBuilder\b'
+$hits = Get-ChildItem -LiteralPath $Root -Recurse -File -Include '*.cshtml','*.cs' |
+    Select-String -Pattern $pattern
 if ($hits) {
-    Write-Host "Raw DB access in paragraph templates:"
+    Write-Host "Raw DB access in templates:"
     $hits | ForEach-Object { Write-Host "  $($_.Path):$($_.LineNumber)  $($_.Line.Trim())" }
     throw "Replace each hit with the appropriate Services.* API. See the canonical-surfaces table in SKILL.md."
 }
 ```
 
+The stock Swift templates return zero hits, so every hit is authored by the build. `CommandBuilder` is in the pattern on purpose: parameterising SQL makes it injection-safe, and it is still SQL in a template.
+
+**Hosted installs:** read the same tree with the MCP tools `list_files` and `read_file` and apply the same pattern.
+
 **Why this matters:** the storefront still renders during the failure mode — the affected paragraph swallows its SQL error and emits empty content, the page returns 200, and the bug only surfaces when the customer notices missing data on demo day.
 
 **Recovery:** for each hit, identify the canonical `Services.*` / `Pageview.*` surface and replace the
-raw SQL with it (e.g. `SELECT FROM AccessUserGroupRelation` → `Pageview.User.GetGroups()`;
+raw SQL with it, whatever the table (e.g. `SELECT FROM AccessUserGroupRelation` → `Pageview.User.GetGroups()`;
 `SELECT FROM EcomPrices` → `Services.Prices.GetByProductId(...)`; per-customer `EcomOrders` →
 `Services.Orders.GetCustomerOrdersByType(...)`; `EcomProducts` → `Services.Products.GetProductById(...)`;
 URL-substring → `GetPageIdByNavigationTag(...)`). The full substitution table and the surface

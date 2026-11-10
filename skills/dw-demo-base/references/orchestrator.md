@@ -313,6 +313,16 @@ Two fixes that look right and are not:
   to ask.
   A permission flag cannot repair a brief that never granted the authority.
 
+**A brief does not prescribe a pattern a skill forbids, and an earlier increment is not precedent.**
+Each brief tends to cite the last one, so one unsafe shortcut written as "the proven pattern" becomes
+the specification of every increment after it, with nobody having decided that. A constraint in a
+brief (no build, no restart) states a budget, never an implementation: name the outcome and let the
+skills choose the surface. When a brief lists proven patterns, each must pass the skills' rules on
+its own, and an executor that finds a brief or prior increment contradicting a skill follows the
+skill and says so in its report. Raw SQL in Razor is the measured case: a no-restart budget became
+"read it with `Database`", then a listed pattern, then a specified page, though the service layer
+was callable from Razor throughout (`dw-demo-swift/references/integrity-sweep.md` Check 7).
+
 The preamble belongs in the **template the dispatcher renders**, so every launched brief carries
 it by construction. Per-brief boilerplate is exactly the thing that is missing on the brief that
 needs it.
@@ -368,7 +378,8 @@ native single pass produced it. Per phase:
 - **Customer build** — every demo moment from the signed-off analysis is reachable in the live
   UI; personas log in (floor of 2: one buyer, one CSR); customer-specific pricing resolves in
   the cart; the re-skin reads as the customer's brand; the `CUSTOMISATIONS.md` ledger accounts
-  for every custom-code row.
+  for every custom-code row; the raw-SQL template scan (`dw-demo-swift/references/integrity-sweep.md`
+  Check 7) passed on the final templates of every increment that added or changed one.
 - **Polish** — no broken links on the storyline path; no placeholder/lorem content on visited
   pages; the demo runs end-to-end in one pass without a dead end; the mechanical visual-QA gate
   passes on every demo-critical page (see `references/visual-qa.md` "Definition of done") **and**
