@@ -118,6 +118,9 @@ Repair options, best first:
   uses (below). Assert the column name is present in the schema string before writing the file, so
   the failure cannot silently return.
 
+A **whole table** missing is a different file: the provider-level schema under
+`Files/Files/Integration/Schemas/`. Its repair is in `dw-data-access`, `recipes-integration.md`.
+
 **Always author a `<Schema>` for a SqlProvider job, scoped to the tables the activity touches.**
 With no `<Schema>`, the provider introspects the whole database on first run and persists that
 snapshot into the job file — a multi-megabyte document listing every table, which then becomes the

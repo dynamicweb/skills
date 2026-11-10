@@ -1,22 +1,23 @@
 # Out-of-product recipes: Integration
 
-This reference holds the out-of-product recipes for the Integration Framework: an activity on
-10.28.x is a **file on disk**, not a database row, so moving, copying and validating one is file
-work on the host, not a tool call. The in-product skill for this area
+This reference covers Integration Framework activity files and native post-import cache effects.
+An activity on 10.28.x is a **file on disk**, not a database row, so moving, copying and validating
+one is file work on the host, not a tool call. The in-product skill for this area
 ([dw-integration-framework](../../dw-integration-framework/SKILL.md)) is `dynamo: true` and carries
 no instruction on those surfaces, so it keeps a one-line pointer here instead of the recipe.
 
 Every recipe names its surface in the repo convention: MCP tools `snake_case` in backticks,
 Management API commands `PascalCase` in backticks with the route on first use in this file, and
-`SQL` labelled as such. There is **no** `SQL` recipe in this file and there cannot be one: a
-`sys.tables` sweep for `%Integration%` / `%Job%` returns only `ScheduledTask`,
-`ScheduledTaskExecution` and `ScheduledTaskFolder`. There is no activity table to write.
+`SQL` labelled as such. There is no SQL activity-storage recipe: a `sys.tables` sweep for
+`%Integration%` / `%Job%` returns only scheduler tables. Do not invent an activity table.
+The stock verification below permits a local read-only storage comparison, never a SQL write.
 
 ## Contents
 
 - [Copy an integration activity between installs](#copy-an-integration-activity-between-installs)
 - [Validate a job file before running it](#validate-a-job-file-before-running-it)
 - [Bind an activity to a scheduled task](#bind-an-activity-to-a-scheduled-task)
+- [Refresh native stock after import](#refresh-native-stock-after-import)
 
 ## Copy an integration activity between installs
 
@@ -125,6 +126,29 @@ poll `get_integration_activity_status` and read `get_integration_activity_logs`
 processed, not that the artefact you expected exists** — an export that wrote its file to the wrong
 directory logs exactly the same success line.
 
+## A table created after the provider schema was saved is "not found"
+
+**Surface: Management API, with a bearer key** (an admin cookie gets 401 on `/Admin/Api`). Data
+Integration reads each provider's schema from a persisted file,
+`Files/Files/Integration/Schemas/<base64 of the id>/schema.xml`, and prefers it over the live database.
+So a whole table created later, for example by an app installed after that file was written, does not
+exist for any activity or for the MCP mapping tools. This is the same staleness as a job's `<Schema>`
+block, one level up, and re-saving a job does not touch it.
+
+Check the file date against when the table arrived, then refresh both sides before building on the
+table. `Ids` must not be empty:
+
+```
+POST /Admin/Api/SchemaUpdate
+{ "ActivityName": "<activity>", "Ids": ["Source|DynamicwebProvider", "Destination|DynamicwebProvider"] }
+```
+
+Patching `schema.xml` by hand is the fallback for a host where no API key is available, local or
+file-system access only. Back up the folder first, append only the missing table definitions, and
+compare every appended column with the database before writing. Never replace the file wholesale.
+Measured on two hosts whose schema files predated an app's tables: every one of the app's tables was
+hidden until the refresh or the checked append. Each install's file is its own, so check each host.
+
 ## Bind an activity to a scheduled task
 
 A scheduled task binds to one activity through
@@ -133,3 +157,32 @@ only parameter is `Activity`, taking the activity name (the file name). The row 
 register flush and the paged verification read are in
 [`recipes-extend.md`](recipes-extend.md) §"Register a scheduled task by `SQL`", and the script that
 enforces them is [`../scripts/Register-DwScheduledTask.ps1`](../scripts/Register-DwScheduledTask.ps1).
+
+## Refresh native stock after import
+
+Native stock imports into `EcomStockUnit` can leave the `StockUnitService` read-through cache
+partly stale even when every activity succeeds and the committed rows are correct. On the
+measured path, product/base-unit reads could be fresh while alternate units and the
+computed availability row retained older amounts. Import completion is not cache completion. [dw 10.29.8]
+
+**Surface: Management API.** Discover the actual storage type with `GetServiceCaches`, then
+call `POST /admin/api/CacheInformationRefresh` with
+`{"CacheTypeName":"Dynamicweb.Ecommerce.Stocks.StockUnitService"}` after the complete stock
+import chain. Put this invalidation in the normal import lifecycle. The native command can
+acknowledge with `status: ok` and no query-style `successful` member; interpret its installed
+command contract and independently read back before deciding whether a retry is warranted.
+Do not repeat a successful refresh because a wrapper expected the wrong response shape.
+
+**Surface: MCP.** Re-read `get_product_stock` for the exact product/variant, then compare every
+location/unit row with the authoritative source and the buyer's rendered stock, option badge
+and quantity cap. `get_stock_locations` describes locations, not product quantities. If MCP
+and Management getters share the stale cache and cannot expose committed storage, a **SQL
+read-only comparison on a local install only** can establish the stored side. That SELECT owes
+no flush; the preceding integration write owes the native invalidation above. It authorises
+neither a SQL mutation nor a hosted-storage shortcut. Use the cache table in
+[cache-invalidation.md](cache-invalidation.md#post-mutation-cache-table).
+
+One StockUnitService refresh restored both native rows and live ViewModel rendering on that
+path; ProductService refresh and a host recycle were unnecessary. Inspect those separately
+only if actual reads still diverge. Preserve source and cart snapshots around UI checks:
+native order completion can decrement a selected unit's stock before the next ERP import.

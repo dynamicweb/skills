@@ -168,8 +168,9 @@ The recipe:
 
 1. One user group per commercial model. **Membership in the group is the only switch** — that is
    what makes the pattern demonstrable as configuration rather than code.
-2. Per product, a PAIR of rows on that `PriceUserGroupId`, written through Admin API `PriceSave`
-   (MCP `save_prices` cannot reach `PriceUserGroupId`, above): `PriceIsInformative = 0` carrying
+2. Per product, a PAIR of rows on that `PriceUserGroupId`, using the out-of-product full-model
+   price recipe in [`dw-data-access`](../../dw-data-access/SKILL.md) when the installed MCP schema
+   omits the informative flag: `PriceIsInformative = 0` carrying
    the contract/NET amount, and `PriceIsInformative = 1` carrying the list/MSRP amount.
 3. **The audience that sees list pricing is configured by having NO price rows**, not by a rule.
 4. Switch `ShowInformativePrice` on for the PDP and PLP price paragraphs — a shipped item field
