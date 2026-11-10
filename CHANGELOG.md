@@ -3,6 +3,10 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.1.2]
+
+- **`dw-demo-swift` warns that a font URL contains semicolons,** so stripping an `@import` up to the first `;` leaves a fragment that makes the browser discard the body rule. The `dw-demo-base` theme gate now reads the configured body font from the browser.
+
 ## [6.1.1]
 
 - **SQL in Razor is never warranted, and the gate now proves it.** The integrity sweep's raw-SQL check looked in
