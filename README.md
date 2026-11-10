@@ -181,7 +181,7 @@ Consult the live Dynamicweb documentation as the source of truth before answerin
 ### Demos (Presales)
 
 **[dw-demo-base](skills/dw-demo-base/SKILL.md)**
-Foundation skill for all demos. Scaffolds the dw10-suite host (pinning `Dynamicweb.Suite` to the Distribution's gate-proven platform version when the scaffold validates Distribution content), wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first. Also owns the **orchestrator abstraction** ([references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md)) — how a build is driven, GSD primary or the native `/demo:*` command set. Hosted/cloud installs (building on one, publishing a local demo onto one) route to `dw-demo-hosted`. Owns the **branded-demo path choice** ([references/branded-demo-paths.md](skills/dw-demo-base/references/branded-demo-paths.md)): YAML brand layer first (the measured default), deserialize-then-tools, or tools only, with the conditions under which the tool path is right. Owns the **visual-QA design gate** ([references/visual-qa.md](skills/dw-demo-base/references/visual-qa.md)) — the mechanical definition-of-done (overflow, section-gap, image-band-height, PLP row-content detectors) plus a human taste sign-off, armed from the first gate run. The **product-query verb surface** lives in dw-search-indexing — [query-authoring.md](skills/dw-search-indexing/references/query-authoring.md) (which read verb is authoritative, the restart-free query-cache flush, `QueryMove`/`QueryCopy` order of operations) and [query-expressions.md](skills/dw-search-indexing/references/query-expressions.md) (expression `Path` semantics, operator reality, sorting, result paging, and the three ways a build verb answers 200 and builds nothing).
+Foundation skill for all demos. Scaffolds the dw10-suite host (pinning `Dynamicweb.Suite` to the Distribution's gate-proven platform version when the scaffold validates Distribution content), wires the Backend MCP and two-layer localhost TLS bypass, installs Playwright MCP, and drops the customisations and customer-context guardrails. Use this first. Also owns the **orchestrator abstraction** ([references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md)) — how a build is driven: the native `/demo:*` command set or the standalone harness. Hosted/cloud installs (building on one, publishing a local demo onto one) route to `dw-demo-hosted`. Owns the **branded-demo path choice** ([references/branded-demo-paths.md](skills/dw-demo-base/references/branded-demo-paths.md)): YAML brand layer first (the measured default), deserialize-then-tools, or tools only, with the conditions under which the tool path is right. Owns the **visual-QA design gate** ([references/visual-qa.md](skills/dw-demo-base/references/visual-qa.md)) — the mechanical definition-of-done (overflow, section-gap, image-band-height, PLP row-content detectors) plus a human taste sign-off, armed from the first gate run. The **product-query verb surface** lives in dw-search-indexing — [query-authoring.md](skills/dw-search-indexing/references/query-authoring.md) (which read verb is authoritative, the restart-free query-cache flush, `QueryMove`/`QueryCopy` order of operations) and [query-expressions.md](skills/dw-search-indexing/references/query-expressions.md) (expression `Path` semantics, operator reality, sorting, result paging, and the three ways a build verb answers 200 and builds nothing).
 
 **[dw-demo-pim](skills/dw-demo-pim/SKILL.md)**
 PIM modelling from a blank DB — product data built from scratch via MCP. Use after `dw-demo-base`.
@@ -210,13 +210,12 @@ per-demo. The sister demo skills
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
 The demo skills hold domain knowledge and carry no build sequencing — that is owned by a
-swappable **orchestrator**: **GSD** (primary; its pipeline injects the skills into fresh-context
-agents via the `agent_skills` block) or the **native `/demo:*` command set** (scaffolded into the
-demo project, it detects GSD and defers unless run `--standalone`). With neither present, the floor
+swappable **orchestrator**: the **native `/demo:*` command set** (scaffolded into the
+demo project). Without it, the floor
 is a **lightweight in-skill harness** — each skill guards its own canonical flow (ordering + a gate
 per step + a resumable `.demo/<slug>/flow-state.json` artifact) so a fully standalone run is still
-not run blind. All three read the same SKILL.md files. The abstraction — running modes,
-detection/deference, the `agent_skills` keystone, the strictness gradient, and shared acceptance
+not run blind. Both read the same SKILL.md files. The abstraction — running modes,
+the strictness gradient, and shared acceptance
 criteria — lives in
 [dw-demo-base/references/orchestrator.md](skills/dw-demo-base/references/orchestrator.md).
 
