@@ -3,6 +3,15 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.2.3]
+
+- **`dw-integration-bc` returns to its text from before 6.2.0.** 6.2.0 put four reference files back to an
+  older text and removed `references/bc-connector-surface.md`. That also dropped edits other maintainers
+  had made since: the pointers to `dw-extend-providers` (`addin-lifecycle.md`), `dw-integration-erp`
+  (`ownership-split.md`) and `dw-source-explorer` (`assembly-introspection.md`), and the connector surface
+  file with its routing row. `bc-connector-surface.md`, `bc-side-config.md`, `connector-endpoints.md`,
+  `dynamicweb-connector-settings.md`, `static-link-manager.md` and the two routing rows in `SKILL.md` are
+  back as they were in 6.1.4.
 ## [6.2.2]
 
 - **Removed: the GSD orchestrator.** The demo skills no longer name GSD as a way to drive a build.
