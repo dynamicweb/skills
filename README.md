@@ -160,12 +160,6 @@ Understand Dynamicweb 10 Integration Framework architecture and patterns.
 **[dw-integration-erp](skills/dw-integration-erp/SKILL.md)**
 Configure ERP connectors and data ownership.
 
-**[dw-integration-fo-discovery](skills/dw-integration-fo-discovery/SKILL.md)**
-Discover the data model a Dynamics 365 Finance & Operations (or AX 2009/2012) environment actually runs on, from outside, before integration mapping.
-
-**[dw-integration-fo](skills/dw-integration-fo/SKILL.md)**
-Build the Dynamics 365 Finance & Operations integration end to end on the Integration Framework: S2S endpoints, the F&O entity map, OData-to-staging activities, stage-2 SQL views into products, groups, customers, prices and stock, the sales order export, and status and invoices back, with a verification ladder. Ships a generator for the staging DDL and the OData job files, so the whole integration can be built before the credential exists. Run after `dw-integration-fo-discovery`.
-
 **[dw-integration-bc](skills/dw-integration-bc/SKILL.md)**
 Live "PIM for Business Central connector" demos — expose the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface.
 
@@ -201,9 +195,6 @@ Headless delivery demo — Frontend API setup, a decoupled frontend against the 
 **[dw-demo-erp](skills/dw-demo-erp/SKILL.md)**
 ERP integration demo — DB-staged mock or live BC, Integration Framework rules. Use after `dw-demo-base`.
 
-**[dw-demo-fo](skills/dw-demo-fo/SKILL.md)**
-A live Dynamics 365 Finance and Operations demo: one legal entity per customer demo in a shared sandbox, seeded from a golden company's configuration package, shaped from the customer's data model, every DW job pinned to its `dataAreaId`, and retired as dormant rather than deleted. Ships PowerShell for the company create, the copy watch, the measured copy-gap repair and the per-company verification. OData-only. Use after `dw-demo-base`.
-
 **[dw-demo-hosted](skills/dw-demo-hosted/SKILL.md)**
 Hosted/cloud installs reached only by URL + Admin API key — building a demo directly on one ([references/online-mode.md](skills/dw-demo-hosted/references/online-mode.md)) and publishing a locally-built demo onto one ([references/publish-to-hosted.md](skills/dw-demo-hosted/references/publish-to-hosted.md)). No scaffold, no SQL; verify by round-trip, not status code. Use after `dw-demo-base`.
 
@@ -215,7 +206,7 @@ Fold a demo-build learning back into this repo as a sanitized, atomic PR — rou
 The **presales demo chain** has a hard order. `dw-demo-base` must run **first** — it scaffolds
 the host, wires MCP + the TLS bypass, and captures the demo's versions + downloads its artifacts
 per-demo. The sister demo skills
-(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-erp`, `dw-demo-fo`, `dw-demo-foldback`, and the `dw-integration-bc` connector demo)
+(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-erp`, `dw-demo-foldback`, and the `dw-integration-bc` connector demo)
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
 The demo skills hold domain knowledge and carry no build sequencing — that is owned by a
