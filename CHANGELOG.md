@@ -3,6 +3,14 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.2.4]
+
+- **Authoring rule: the skills describe the platform, not the systems around it.** `CLAUDE.md` gains a
+  "Scope" section: Dynamicweb 10 and what ships with it are in scope; how another system (an ERP, a
+  tunnel, a hosting provider) works or is configured is not, beyond the one line saying what Dynamicweb
+  needs from it; an outside tool is named by kind, not by product, except the tools the skills run on.
+  The rule governs what is added; existing text is changed by its author or with the author's agreement.
+  `dw-demo-foldback` applies it when routing a lesson.
 ## [6.2.3]
 
 - **`dw-integration-bc` returns to its text from before 6.2.0.** 6.2.0 put four reference files back to an

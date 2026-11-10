@@ -70,6 +70,28 @@ The dependency direction is **one-way and enforced**:
 Decide which category a file is in before editing it; that decides whether demo/customer content
 and demo-skill links are allowed there at all.
 
+## Scope: the platform, not the systems around it
+
+These skills describe Dynamicweb 10 and what ships with it. They do not describe another system.
+
+- **In scope.** The platform itself and the products delivered with it: the Business Central
+  plugin, the blueprints, the Serializer and the Distribution.
+- **Out of scope.** How another system works, is configured or is queried: Business Central,
+  Finance & Operations, any other ERP, a tunnel or proxy product, a hosting provider. A skill
+  states what Dynamicweb needs from that system (a public HTTPS URL, a credential, an OData
+  endpoint that accepts a given filter) and stops there. The steps on the other side belong to
+  that system's own documentation, or to a skill maintained outside this repo.
+- **Outside tools.** Name the kind of tool, not the product: "a password manager", "a reverse
+  proxy". The exceptions are the tools the skills run on: Claude Code, Codex, MCP, and Playwright
+  for browser checks.
+
+The test for a new paragraph: would it still be true if the other system were swapped for a
+different one? If yes, it is platform knowledge and belongs here. If it only holds for one ERP or
+one product, it does not.
+
+This rule governs what is added. Text already in the repo is changed by its author, or with the
+author's agreement.
+
 ## Product naming (the Truvio Commerce rebrand)
 
 The product is **Truvio Commerce (powered by Dynamicweb)**. In skill prose, use that full form on first
