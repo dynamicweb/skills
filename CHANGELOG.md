@@ -3,6 +3,20 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.2.0]
+
+- **Removed: the Dynamics 365 Finance & Operations skills leave this repo.** `dw-integration-fo-discovery`,
+  `dw-integration-fo` and `dw-demo-fo` are removed, with `dw-integration-erp/references/dynamics-fo.md` and
+  the `Fo.Api` test suite. They were in no bundle. This repo keeps the skills that teach the Integration
+  Framework in a generic way (`dw-integration-framework`, `dw-integration-erp`, `dw-demo-erp`,
+  `dw-data-access`); skills for one specific ERP are maintained outside it. `dw-integration-erp` keeps the
+  generic half of the lesson: prove the credential outside the platform and check which `$filter` functions
+  the ERP's OData accepts.
+- **`dw-integration-bc` goes back to its connector and tunnel scope.** `references/bc-connector-surface.md`
+  is removed, and `bc-side-config.md`, `connector-endpoints.md`, `dynamicweb-connector-settings.md` and
+  `static-link-manager.md` return to their text from before the 2026-06-29 split, with the later tables of
+  contents kept. `SKILL.md`, `tunnel.md` and `forwarded-headers.md` are unchanged apart from the row that
+  pointed at the removed file. The skill stays in the `dynamicweb-presales` bundle.
 ## [6.1.4]
 
 - **`dw-data-access` documents the provider-level Data Integration schema.** A table created after `Files/Files/Integration/Schemas/<id>/schema.xml` was written is "not found" by every activity and the MCP mapping tools. The repair is `SchemaUpdate` on both sides; a hand patch is a checked, backed-up fallback.
