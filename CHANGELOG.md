@@ -3,6 +3,17 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.1.1]
+
+- **SQL in Razor is never warranted, and the gate now proves it.** The integrity sweep's raw-SQL check looked in
+  `wwwroot\Templates`, which does not exist (templates are under `wwwroot\Files\Templates`), so it could never
+  report a hit. It now fails on a missing root, scans the whole `Templates` tree, also catches `Database.Create*`,
+  `Database.Execute*`, `SqlConnection`, `SqlCommand` and `CommandBuilder`, and runs on every increment that touches
+  a template, not only after a deserialize. `dw-render-razor`, `dw-data-access` and `dw-swift-building` state that
+  no table is an exception and that a no-restart constraint does not justify SQL, because `Services.*` is callable
+  from Razor without a build. `dw-demo-base` tells brief authors that a constraint is a budget, not an
+  implementation, and that an earlier increment is not precedent.
+
 ## [6.1.0]
 
 - **`dw-demo-base` gains a scripted local base build: one command scaffolds a running, unbranded Swift 2 base from

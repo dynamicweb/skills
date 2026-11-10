@@ -680,8 +680,8 @@ Verify a Swift build's templates against the canonical surfaces before declaring
 In product, read the templates under `Templates/Designs/Swift-v2/` with `list_files` and `read_file`.
 Each hit is a candidate finding; a clean run = green light.
 
-1. Raw DB access in Razor (`Database.CreateDataReader`, `ExecuteScalar`, `ExecuteReader`,
-   `ExecuteNonQuery`): use `Services.*`.
+1. Raw DB access in Razor (any `Database.Create*` or `Database.Execute*`, `SqlConnection`, `SqlCommand`,
+   `CommandBuilder`), across all of `Templates/`, for any table: use `Services.*`.
 2. Substring scans on the URL or query (`PathAndQuery.IndexOf`, `QueryString.ToString`,
    `Url.AbsoluteUri.Contains`): use page-id helpers and `Pageview.User`.
 3. Hard-coded area URL prefixes (`/<area-url-slug>/`).
