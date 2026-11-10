@@ -3,6 +3,16 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.2.1]
+
+- **Removed: the tunnel and forwarded-headers recipes leave `dw-integration-bc`.** `references/tunnel.md`
+  (an ngrok recipe) and `references/forwarded-headers.md` (ASP.NET Core `ForwardedHeaders` in `Program.cs`)
+  are deleted. Neither is Dynamicweb platform knowledge. The skill now states the requirement instead: the
+  host answers on a public HTTPS URL and sees that public scheme and host name; how a local host is published
+  is outside the skill. Mentions in `bc-side-config.md`, `static-link-manager.md`, `dw-demo-erp`,
+  `dw-demo-base`, the README and the authoring skill are reworded to match.
+- **A password manager, not one product.** `dw-demo-base` (`SKILL.md`, `mcp-setup.md`, `customisations.md`)
+  names "a password manager" where it named 1Password. The storage contract is unchanged.
 ## [6.2.0]
 
 - **Removed: the Dynamics 365 Finance & Operations skills leave this repo.** `dw-integration-fo-discovery`,

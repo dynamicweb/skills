@@ -27,8 +27,8 @@ The model is intentionally one-direction (BC → PIM). The PIM → BC enrichment
 | Constraint | DB-staged mock (this file) | Live BC ([`dw-integration-bc`](../../dw-integration-bc/SKILL.md)) |
 |---|---|---|
 | Demo handed off to a partner with no BC credentials | **Yes** (only viable option) | No |
-| Demo laptop has no internet | **Yes** | No (ngrok needs internet) |
-| Customisation budget tight (customisations ledger) | **Yes** — built-in add-ins and shipped providers only, zero custom code | Live adds `ForwardedHeaders` + AppStore connector configuration |
+| Demo laptop has no internet | **Yes** | No (BC has to reach the host over the internet) |
+| Customisation budget tight (customisations ledger) | **Yes** — built-in add-ins and shipped providers only, zero custom code | Live adds AppStore connector configuration, and whatever publishes the host |
 | Customer asks "does this really sync with BC?" | No (it's a model) | **Yes** |
 
 Choose one and stick with it. Mixing flavors forces the audience to track two integration models in parallel.

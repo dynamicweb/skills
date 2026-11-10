@@ -47,7 +47,7 @@ These trigger shapes route here:
 - "Which fields does the ERP own vs PIM?" -- [references/erp-data-shape.md](references/erp-data-shape.md).
 - "How should I plan the ERP beats before I start building?" -- the scenarios-first habit; read [references/scenarios-first-planning.md](references/scenarios-first-planning.md).
 
-If the trigger is "expose the host to a real BC tenant via ngrok / set up the AppStore PIM-for-BC connector / debug `/admin/api/BC*` calls" -- that belongs in `dw-integration-bc`, not here. PIM modelling (variants, BOM, completeness rules, dashboards) belongs in `dw-demo-pim`. Frontend / customer center / re-skin belongs in `dw-demo-swift`.
+If the trigger is "connect a real BC tenant / set up the AppStore PIM-for-BC connector / debug `/admin/api/BC*` calls" -- that belongs in `dw-integration-bc`, not here. PIM modelling (variants, BOM, completeness rules, dashboards) belongs in `dw-demo-pim`. Frontend / customer center / re-skin belongs in `dw-demo-swift`.
 
 ## Always-on rule: ERP is a source/target in the Integration Framework, NOT a channel or feed
 
@@ -80,7 +80,7 @@ The flavors demonstrate DIFFERENT demo beats: the one-direction mock shows "the 
 | Run the sync in BOTH directions on camera with no custom code: four shipped-provider activities, the order-state flip, the document-number writeback, and a reset that does not re-arm the export | references/two-way-mock.md |
 | Look up which DW10 fields the ERP typically writes vs reads from PIM (the generic shape), and why a derived fact belongs in the feed | references/erp-data-shape.md |
 | Plan ERP beats BEFORE the build (the `<demo>-Scenarios.xlsx` pattern) | references/scenarios-first-planning.md |
-| Run the live-BC path (ngrok + ForwardedHeaders + AppStore connector + `/admin/api/BC*`) | [`../dw-integration-bc/SKILL.md`](../dw-integration-bc/SKILL.md) |
+| Run the live-BC path (AppStore connector + `/admin/api/BC*`) | [`../dw-integration-bc/SKILL.md`](../dw-integration-bc/SKILL.md) |
 
 ## Inherited from dw-demo-base
 
@@ -100,7 +100,7 @@ This skill assumes `dw-demo-base` ran first. Four rules apply at all times and a
 - **`dw-demo-base`** -- foundation skill (Use FIRST). Owns setup, MCP connection, per-demo artifact download, customisations ledger, customer-context contract.
 - **`dw-demo-pim`** -- PIM modelling (variants, BOM, channels, completeness rules, dashboards). The ERP integrates AGAINST a modelled PIM; you usually want the PIM model in place before wiring the ERP.
 - **`dw-demo-swift`** -- Swift frontend, customer center, re-skin. Order beats that flow PIM -> Swift -> ERP live in Swift's customer center playbook.
-- **`dw-integration-bc`** -- live BC via ngrok + AppStore PIM-for-BC connector. Use INSTEAD OF this skill's mock-delta flow when a real BC tenant is in scope.
+- **`dw-integration-bc`** -- live BC through the AppStore PIM-for-BC connector. Use INSTEAD OF this skill's mock-delta flow when a real BC tenant is in scope.
 
 A sibling skill that runs without `dw-demo-base`'s outputs (no `.mcp.json`, no `CUSTOMISATIONS.md`) silently no-ops or produces broken artefacts.
 

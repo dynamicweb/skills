@@ -169,7 +169,7 @@ the pre-existing backlog is drained deliberately.
   Every pim, commerce, content, users, search, render and swift skill is here.
 - **`dynamo: false`** — the skill needs a surface Dynamo does not have, so the builder leaves
   it out of `manifest.json` entirely: the demo chain, `dw-setup-*`, `dw-integration-bc`
-  (ngrok), `dw-extend-mcp-tools` (builds the MCP project), `dw-source-explorer` (browses
+  (a live ERP tenant), `dw-extend-mcp-tools` (builds the MCP project), `dw-source-explorer` (browses
   GitHub). Claude Code still loads these normally through `marketplace.json`.
 
 **The marker paragraph's text depends on the `dynamo` value, not only on `mcp:`.** A

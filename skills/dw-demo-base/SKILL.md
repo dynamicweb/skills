@@ -290,7 +290,7 @@ When in doubt: every login / channel / locale / customer-center section must jus
 - **`dw-demo-pim`** -- PIM modelling, structural mental model (shops vs channels, GroupType, repositories, variants, BOM, channels + feeds, assets, product categories), MCP/API/SQL/filesystem decision matrix. **Use AFTER** `dw-demo-base`.
 - **`dw-demo-swift`** -- Swift frontend (templates, paragraph types, B2B customer-center scaffolding, baseline deserialize). **Use AFTER** `dw-demo-base`.
 - **`dw-demo-erp`** -- ERP integration (source/target rule, DB-staged mock, scenarios-first planning). **Use AFTER** `dw-demo-base`.
-- **`dw-integration-bc`** -- live BC connector via ngrok + AppStore connector. **Use AFTER** `dw-demo-base`.
+- **`dw-integration-bc`** -- live BC through the AppStore connector. **Use AFTER** `dw-demo-base`.
 - **`dw-demo-hosted`** -- hosted/cloud installs reached only by URL + Admin API key: building directly on one, and publishing a locally-built demo onto one. **Use AFTER** `dw-demo-base`.
 - **`dw-demo-foldback`** -- folding a demo-build learning back into the skills repo as a sanitized, atomic PR. **Use AFTER** `dw-demo-base`.
 
@@ -318,7 +318,7 @@ Port, DB name, and Management API bearer token vary per project. Read them from 
 | HTTPS port + host URL | `Dynamicweb.Host.Suite/Properties/launchSettings.json` (`applicationUrl`, HTTPS profile) |
 | Database name | `Dynamicweb.Host.Suite/GlobalSettings.Database.config` (`Database=` or `Initial Catalog=`) |
 | **MCP API key** (Authorization header for `/admin/mcp`) | Generated once in the admin UI (Settings → Integration → MCP configurations); full capture + storage contract in `references/mcp-setup.md` Steps 3-3b and 6. |
-| **Management API bearer token** (Authorization header for `/admin/api/...`) | Captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`); storage contract (the gitignored `notes/credentials.local.md` or 1Password; never a Claude memory file, never env vars, never committed) is canonical in `references/mcp-setup.md` Step 6. |
+| **Management API bearer token** (Authorization header for `/admin/api/...`) | Captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`); storage contract (the gitignored `notes/credentials.local.md` or a password manager; never a Claude memory file, never env vars, never committed) is canonical in `references/mcp-setup.md` Step 6. |
 
 ## Baseline-drift self-diagnosis rule
 

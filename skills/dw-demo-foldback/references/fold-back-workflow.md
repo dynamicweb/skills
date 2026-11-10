@@ -483,7 +483,7 @@ $DYNAMICWEB_SKILLS_REPO/
     ├── dw-demo-pim/                 ← demo
     ├── dw-demo-swift/               ← demo
     ├── dw-demo-erp/                 ← demo
-    ├── dw-integration-bc/           ← demo: live BC connector via ngrok
+    ├── dw-integration-bc/           ← demo: live BC connector
     ├── dw-render-*/                 ← foundational (platform truths fold up here)
     ├── dw-pim-*/  dw-commerce-*/    ← foundational
     ├── dw-extend-*/ dw-integration-*/  ← foundational

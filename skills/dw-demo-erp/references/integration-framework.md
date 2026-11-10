@@ -81,7 +81,7 @@ You don't see the framework as "an Activity row in a UI grid" in this flavor -- 
 - Job-file format, provider behaviour and the surface ladder for activities: [`../../dw-integration-framework/SKILL.md`](../../dw-integration-framework/SKILL.md).
 - Generic ERP data shape (which fields ERP writes vs reads): [erp-data-shape.md](erp-data-shape.md).
 - Scenarios-first planning to scope an ERP integration before building: [scenarios-first-planning.md](scenarios-first-planning.md).
-- Live flavor (ngrok + AppStore connector + `/admin/api/BC*`): [`../dw-integration-bc/SKILL.md`](../../dw-integration-bc/SKILL.md).
+- Live flavor (AppStore connector + `/admin/api/BC*`): [`../dw-integration-bc/SKILL.md`](../../dw-integration-bc/SKILL.md).
 - Channel-vs-shop pedagogy beat (ShopType enum, why ShopType=3 is feeds not ERPs): [`../dw-demo-pim/references/structural-model.md`](../../dw-demo-pim/references/structural-model.md) §2.1.
 
 
