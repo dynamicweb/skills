@@ -37,7 +37,7 @@ Three of those four fields are typically wrong:
 Build the corrected payload after verifying each field against your project's actual state:
 
 ```powershell
-$base = "https://localhost:31873"   # local URL is fine for setup; the public URL is not needed yet
+$base = "https://localhost:31873"   # local URL is fine for setup; tunnel not required yet
 $token = (Get-Content ".\.claude\settings.local.json" | ConvertFrom-Json).env.DW_API_TOKEN
 $h = @{ "Authorization" = "Bearer $token"; "Accept" = "application/json"; "Content-Type" = "application/json" }
 

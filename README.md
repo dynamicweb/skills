@@ -161,7 +161,7 @@ Understand Dynamicweb 10 Integration Framework architecture and patterns.
 Configure ERP connectors and data ownership.
 
 **[dw-integration-bc](skills/dw-integration-bc/SKILL.md)**
-Live "PIM for Business Central connector" demos — a real BC tenant calls the connector's `/admin/api/BC*` surface on a publicly reachable host.
+Live "PIM for Business Central connector" demos — expose the local DW host publicly via ngrok so a real BC tenant can call the connector's `/admin/api/BC*` surface.
 
 **[dw-data-access](skills/dw-data-access/SKILL.md)**
 Choose appropriate data-access patterns and optimize caching.
@@ -234,7 +234,7 @@ manifest, `dynamo: false` leaves it out entirely. The flag is visibility, never 
 execute, and it runs anywhere an MCP client runs: Claude Code, Dynamo, any other agent. No skill
 is Dynamo-only, and no skill tells a client to stop because it is not Dynamo. Dynamo runs inside a Dynamicweb install with
 MCP tools and read/write access under `Files/`; it has no shell, SQL, git, browser, or csproj.
-A skill whose steps need one of those (the demo chain, local install/upgrade, a live ERP tenant, MCP tool
+A skill whose steps need one of those (the demo chain, local install/upgrade, ngrok, MCP tool
 authoring, source browsing) is `dynamo: false`, because offering it to an in-product admin is
 noise they cannot act on. The axis is orthogonal to `mcp:` — a demo scaffold is `mcp: required`
 yet `dynamo: false`, and `dw-render-razor` is `mcp: none` yet `dynamo: true`.

@@ -6,7 +6,7 @@
 
 DW10's "static link" capability is a generic admin-deeplink mechanism: register a tokenised URL that opens a specific admin object (Product, Group, etc.) without requiring the consumer to authenticate as a DW user. Multiple consumers use it: the BC connector for its embedded webview, future commerce integrations, BI tools that link back into the PIM. So Dynamicweb ships it as a standalone AppStore package (`StaticLinkManager`), not bundled into any single connector.
 
-Practical consequence for BC connector demos: even after you install **PIM for Business Central connector** and the rest of the chain works (public URL, BCSettings), the "show PIM product page" beat in BC will fail until **StaticLinkManager is also installed**.
+Practical consequence for BC connector demos: even after you install **PIM for Business Central connector** and the rest of the chain works (tunnel, ForwardedHeaders, BCSettings), the "show PIM product page" beat in BC will fail until **StaticLinkManager is also installed**.
 
 ## Detection -- three failure shapes, three fixes
 
@@ -79,7 +79,7 @@ For most demos the defaults are fine -- links never expire (`0`), and the system
 }
 ```
 
-The `slug` is a 64-hex-char opaque token. BC composes the embedded webview URL by joining the slug with the DW admin host -- the exact pattern depends on the BC connector version, but it's typically `https://<dw-host>/admin/sl/<slug>` or similar. `<dw-host>` is the host name the request arrived with, so a slug generated through the public URL carries the public host name.
+The `slug` is a 64-hex-char opaque token. BC composes the embedded webview URL by joining the slug with the DW admin host -- the exact pattern depends on the BC connector version, but it's typically `https://<dw-host>/admin/sl/<slug>` or similar. With `ForwardedHeaders` wired (see [forwarded-headers.md](forwarded-headers.md)), `<dw-host>` resolves to the public ngrok hostname automatically when the slug is generated through the tunnel.
 
 ## Why the cloud demo "just works"
 
@@ -93,6 +93,6 @@ If you're comparing your local install against the cloud and discovering missing
 |---|---|
 | BC's "show PIM product page" silent failure; `/admin/api/StaticLinkSave` returns 400 Unknown command | AddIn not installed |
 | Same as above but 500 with `TypeInitializationException` | AddIn installed, host not restarted |
-| Save returns 200 but BC's webview shows blank / error | Different layer -- check what URL BC actually loaded; a host behind a proxy that does not see the public host name builds the link on its internal one |
+| Save returns 200 but BC's webview shows blank / error | Different layer -- check what URL BC actually loaded (ngrok inspector at `127.0.0.1:4040`); could be `ForwardedHeaders` not honouring `X-Forwarded-Host` (see [forwarded-headers.md](forwarded-headers.md)) |
 | `StaticLinkByArgumentAndType` returns 500 with `Enum.Parse` failure | Lowercase parameter names; use `?Type=...&Argument=...` (PascalCase) |
 | Save returns 400 `{"Type":["Invalid link type specified."]}` | The `Type` value isn't a recognised link-type enum. Currently only `Product` is documented in the wild; other values may need confirmation against the DW source |

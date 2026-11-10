@@ -12,7 +12,7 @@
 - [Bidirectional vs unidirectional flows](#bidirectional-vs-unidirectional-flows)
 - [Token rotation](#token-rotation)
 
-> Configure the **Business Central** side of the integration -- the BC tenant that calls the host's public URL. Loaded from `~/.claude/skills/dw-integration-bc/SKILL.md` "Where to find things" table.
+> Configure the **Business Central** side of the integration -- the BC tenant that's calling our public ngrok URL. Loaded from `~/.claude/skills/dw-integration-bc/SKILL.md` "Where to find things" table.
 
 ## Scope
 
@@ -23,7 +23,7 @@ This reference covers what BC needs configured to talk to a Dynamicweb host. It 
 - A BC environment (Cloud SaaS, on-prem, or sandbox) with admin rights.
 - The "Dynamicweb PIM Connector" extension installed in BC. Available in the BC AppStore (Microsoft AppSource) -- search for "Dynamicweb". This is the BC-side counterpart to the dynamicweb-side "PIM for Business Central connector" AppStore app.
 - The dynamicweb-side app installed and `BCSettings` corrected (see [dynamicweb-connector-settings.md](dynamicweb-connector-settings.md)).
-- Dynamicweb host running and reachable from the BC tenant at a public HTTPS URL (a prerequisite this skill does not cover).
+- Dynamicweb host running; tunnel up at the reserved domain (see [tunnel.md](tunnel.md)).
 
 ## Two configuration values BC needs
 
@@ -33,7 +33,7 @@ In BC, navigate to: **Setup -> Dynamicweb PIM Setup** (or "PIM Connection Setup"
 
 Set:
 
-- **PIM URL**: `https://<public-host>` -- the host's public URL, NOT `localhost`. Trailing slash optional (BC trims it).
+- **PIM URL**: `https://<your-reserved>.ngrok.app` -- the ngrok-exposed URL, NOT `localhost`. Trailing slash optional (BC trims it).
 - **API path**: usually defaulted to `/admin/api/` -- leave as-is unless your DW host serves the management API at a non-standard path.
 
 ### 2. The bearer token
@@ -53,11 +53,11 @@ The BC connector extension typically exposes a **Test Connection** button on the
 
 | Result | Meaning | Fix |
 |---|---|---|
-| "Connected -- PIM v2 (PIM:true, Ecom:true)" | Public URL and token both working | None, you're done |
+| "Connected -- PIM v2 (PIM:true, Ecom:true)" | Public URL + token + ngrok tunnel + ForwardedHeaders all working | None, you're done |
 | "Connection failed: 401 Unauthorized" | Token is wrong, expired, or BC is sending it in a non-Bearer format | Re-issue token; double-check BC's auth-header format setting |
 | "Connection failed: 400 Unknown query" | URL is reaching DW but BC is hitting a non-existent endpoint | Check the BC extension's expected endpoint version vs what's installed on the Dynamicweb side |
-| "Connection failed: timeout / DNS error" | The public URL does not reach the host, or BC's outbound HTTP is blocked | Request the public URL from outside the network; check the BC tenant's outbound firewall |
-| "HTML received instead of JSON" | Something in front of the host answered instead of it (an interstitial or sign-in page), or the Host header routes to a non-API page | Look at the request as the host received it and compare the Host header with the public URL |
+| "Connection failed: timeout / DNS error" | ngrok tunnel down, or BC's outbound HTTP is blocked | `ngrok config check` + retry tunnel; check BC tenant outbound firewall |
+| "HTML received instead of JSON" | ngrok interstitial fired (free tier) OR Host header issue routing to a non-API page | Confirm paid plan is in use; inspect via `127.0.0.1:4040` to see what BC's request looks like |
 
 Test Connection ultimately calls `GET /admin/api/BCLicense` under the hood. If it succeeds, the entire chain is verified end-to-end.
 
@@ -77,7 +77,7 @@ Map BC's standard item fields (No., Description, Unit Cost, Item Category, etc.)
 
 ### Diagnostic pattern when sync sits idle
 
-If BC says "Connected" but no product data ever appears, watch the requests the host receives (its request log, or whatever sits in front of it) while BC is running. Categorise the calls:
+If BC says "Connected" but no product data ever appears, watch the ngrok inspector at `127.0.0.1:4040` while BC is running. Categorise the calls:
 
 | Calls you see | What it means |
 |---|---|
@@ -96,13 +96,13 @@ Trigger the first sync from BC -- typically a **Sync All** or **Initial Load** b
 3. For each id BC doesn't yet know about, BC pushes via `POST /admin/api/BCProductCreate` (or pulls via `GET /admin/api/BCProductById?id=...` to populate BC fields, depending on direction of sync).
 4. Optionally `POST /admin/api/BCBuildIndex` to refresh the Products index after the bulk operation.
 
-Watch the host's request log -- every BC request shows there with its status.
+Watch the ngrok inspector at `127.0.0.1:4040` -- you'll see every BC request fly by, with status, latency, and response shape.
 
 ## Demo narrative
 
 Three crisp beats once everything is up:
 
-1. **"This is a real BC tenant"** -- show the BC web client, the Dynamicweb PIM Setup page with the public URL filled in.
+1. **"This is a real BC tenant"** -- show the BC web client, the Dynamicweb PIM Setup page with the ngrok URL filled in.
 2. **"Click Test Connection"** -- the green checkmark, response shows `PIM:true, Ecom:true` from a real running PIM instance.
 3. **"Push an item from BC"** -- create or modify an item in BC, watch it appear in the Dynamicweb admin UI within seconds. Switch to the dashboard, point out the "New Product From BC" workflow state -- governance baked into the integration.
 
@@ -120,4 +120,4 @@ The dynamicweb-side endpoints support both directions transparently -- the API s
 
 ## Token rotation
 
-When the demo is over, revoke the BC's Dynamicweb token in DW admin -> Settings -> Integration -> Management API tokens. The BC tenant's stored token becomes invalid; subsequent calls return 401. This is the right cleanup for shared-account demos -- prevents stale credentials lingering in BC tenants.
+When the demo is over and the reserved domain is no longer needed, revoke the BC's Dynamicweb token in DW admin -> Settings -> Integration -> Management API tokens. The BC tenant's stored token becomes invalid; subsequent calls return 401. This is the right cleanup for shared-account demos -- prevents stale credentials lingering in BC tenants.

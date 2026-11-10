@@ -4,7 +4,7 @@ type: flow
 group: integration
 mcp: required
 dynamo: false
-description: 'Connect live Business Central to a DW10 PIM demo through the PIM for Business Central connector. Triggers: BC* unknown query/command, green Test Connection but no products, StaticLinkManager, connector defaults. Use AFTER dw-demo-base.'
+description: 'Connect live Business Central to a DW10 PIM demo via ngrok and the connector. Triggers: BC* unknown query/command, green Test Connection but no products, StaticLinkManager, connector defaults. Use AFTER dw-demo-base.'
 ---
 
 # Dynamicweb PIM for Business Central Connector skill
@@ -18,9 +18,7 @@ serializer carries bulk, id-preserving loads. Direct SQL is local-install only a
 these steps; guessed HTTP calls and file edits substitute for nothing. Ladder:
 [`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance".
 
-Connect a real Business Central tenant to a Dynamicweb host through the **PIM for Business Central connector** AppStore app. Covers the pieces that have to line up on the platform side: the connector's endpoints, its settings (the AppStore app's defaults are usually wrong), the BC-side configuration values, and the `StaticLinkManager` AddIn.
-
-**Prerequisite, not covered here: a public HTTPS URL.** The BC tenant calls the host over the internet, so the host must answer on a public HTTPS address and must see that public scheme and host name on each request, because the connector hands absolute URLs back to BC. A hosted install has this already. How a local host is published (a reverse proxy, a tunnel) is infrastructure outside this skill.
+Expose the local Dynamicweb host as a stable public HTTPS URL so a real Business Central tenant can connect through the **PIM for Business Central connector** AppStore app. Covers the four pieces that have to line up: ngrok tunnel, ASP.NET Core `ForwardedHeaders`, BC connector settings (the AppStore app's defaults are usually wrong), and the BC-side configuration values.
 
 This SKILL.md is a nav layer. Each topic links to a `references/<topic>.md` that owns the verbatim recipe.
 
@@ -39,6 +37,7 @@ These trigger shapes route here:
 
 - "Connect BC to the local Dynamicweb host" / "give BC a real URL during the demo" -- the canonical use case.
 - After installing the **PIM for Business Central connector** AppStore app and asking "what endpoints did this expose" -- the connector publishes 11 queries + 4 commands under `/admin/api/BC*`.
+- "Expose `https://localhost:31873` publicly with a stable URL" -- ngrok recipe applies more broadly than just BC, but the BC connector is the most demanding consumer because it expects absolute URLs to round-trip cleanly (hence `ForwardedHeaders`).
 - The first BC call returns 400 with `{"successful":false,"message":"Unknown query: 'X'"}` -- naming-convention question, see [references/connector-endpoints.md](references/connector-endpoints.md).
 - The BC connector errors with "index build key not found" (or a similar settings-shaped failure) -- the AppStore app's `BCSetupUpdateProvider` populates defaults that don't match what's actually in your project. See [references/dynamicweb-connector-settings.md](references/dynamicweb-connector-settings.md).
 - "BC connects (green Test Connection) but no products appear" -- the canonical missing-column-mappings stuck state. BC's connector polls `BCLicense` / `BCSettings` / `BCProductFields` / `BCProductCountByLastModified` indefinitely without ever calling `BCProductIdsByLastModified`. See [references/bc-side-config.md](references/bc-side-config.md) "Field mapping setup -- REQUIRED, not optional".
@@ -52,6 +51,8 @@ Each reference is owned end-to-end by a single topic; cross-references between t
 
 | If you need to... | Read this reference |
 |---|---|
+| Bring the public tunnel up against the HTTP launch profile | references/tunnel.md |
+| Wire `ForwardedHeaders` in `Program.cs` so DW emits public URLs | references/forwarded-headers.md |
 | Look up the exact `/admin/api/BC*` endpoint names + call convention | references/connector-endpoints.md |
 | Fix the AppStore connector's wrong defaults (`indexBuildKey` / `buildName` / `workflowStateId`) | references/dynamicweb-connector-settings.md |
 | Configure the **Business Central** side (URL + bearer token + first sync) | references/bc-side-config.md |
@@ -67,6 +68,8 @@ This skill assumes `dw-demo-base` ran first. Four rules apply at all times and a
 | The customer-context read-only contract | [dw-demo-base/references/customer-context.md](../dw-demo-base/references/customer-context.md) |
 | The customisations-ledger preflight | [dw-demo-base/references/customisations.md](../dw-demo-base/references/customisations.md) |
 | The baseline-drift self-diagnosis rule | [dw-demo-base/SKILL.md "Self-diagnosis rule"](../dw-demo-base/SKILL.md) |
+
+**Customisations note**: `Program.cs` edits to add `ForwardedHeaders` middleware ARE customisations and need a row in `CUSTOMISATIONS.md`. The recipe in [references/forwarded-headers.md](references/forwarded-headers.md) calls this out and provides the exact ledger entry to write.
 
 ## Sister skills
 

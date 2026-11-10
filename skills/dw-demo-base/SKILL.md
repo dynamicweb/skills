@@ -290,7 +290,7 @@ When in doubt: every login / channel / locale / customer-center section must jus
 - **`dw-demo-pim`** -- PIM modelling, structural mental model (shops vs channels, GroupType, repositories, variants, BOM, channels + feeds, assets, product categories), MCP/API/SQL/filesystem decision matrix. **Use AFTER** `dw-demo-base`.
 - **`dw-demo-swift`** -- Swift frontend (templates, paragraph types, B2B customer-center scaffolding, baseline deserialize). **Use AFTER** `dw-demo-base`.
 - **`dw-demo-erp`** -- ERP integration (source/target rule, DB-staged mock, scenarios-first planning). **Use AFTER** `dw-demo-base`.
-- **`dw-integration-bc`** -- live BC through the AppStore connector. **Use AFTER** `dw-demo-base`.
+- **`dw-integration-bc`** -- live BC connector via ngrok + AppStore connector. **Use AFTER** `dw-demo-base`.
 - **`dw-demo-hosted`** -- hosted/cloud installs reached only by URL + Admin API key: building directly on one, and publishing a locally-built demo onto one. **Use AFTER** `dw-demo-base`.
 - **`dw-demo-foldback`** -- folding a demo-build learning back into the skills repo as a sanitized, atomic PR. **Use AFTER** `dw-demo-base`.
 
