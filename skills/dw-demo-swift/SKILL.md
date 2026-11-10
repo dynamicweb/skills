@@ -126,7 +126,7 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 
 ## DW10 canonical surfaces — use X, not Y
 
-Every "fake pattern" in a Swift demo (raw SQL probes on `AccessUserGroupRelation`, hard-coded area prefixes, master-template `WriteLiteral` redirects, `EcomOrders` SQL chains in Razor) is a workaround for a surface the demo author didn't know was there. When in doubt, search a local clone of the DW10 source (location per machine — ask/discover, never hardcode) for the canonical surface before writing SQL or parsing URLs. Loaded on every demo build; cross-references the escalation ladder in [`references/re-skin.md`](references/re-skin.md).
+Every "fake pattern" in a Swift demo (raw SQL probes on `AccessUserGroupRelation`, hard-coded area prefixes, master-template `WriteLiteral` redirects, `EcomOrders` SQL chains in Razor) is a workaround for a surface the demo author didn't know was there. When in doubt, search a local clone of the DW10 source (location per machine — ask/discover, never hardcode) for the canonical surface before writing SQL or parsing URLs. **SQL in Razor is never warranted, and a no-restart or no-build budget does not change that**: `Services.*` is callable from Razor with neither. [`references/integrity-sweep.md`](references/integrity-sweep.md) Check 7 enforces it on every increment that touches a template. Loaded on every demo build; cross-references the escalation ladder in [`references/re-skin.md`](references/re-skin.md).
 
 | Surface you're about to hand-roll | Use instead — owned by |
 |---|---|
