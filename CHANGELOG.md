@@ -3,6 +3,14 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.1.3]
+
+- **Scoped contract prices: the skills now agree that MCP `save_prices` writes them.** `dw-commerce-catalog` (`catalog-publishing.md`) and `dw-data-access` (`recipes-commerce.md`) still said no MCP tool reaches `PriceUserGroupId` or `PriceUserCustomerNumber`, while `dw-commerce-b2b` (`dc-scoping.md`) already documented `userGroupId` and `userCustomerNumber`. Discover the tool schema first; Admin API `PriceSave` is the fallback for a server whose schema lacks the member, and that fallback owes a cache refresh.
+- **A stock import can leave `StockUnitService` stale** (`dw-data-access`, `recipes-integration.md` "Refresh native stock after import"; rows in `cache-invalidation.md`, pointers in `dw-data-access` and `dw-data-write-effects`): the rows are right while alternate units and the computed availability row still read old amounts. Refresh the cache after the whole import chain and read back.
+- **The stock invariant no longer double-counts** (`dw-commerce-catalog` `listing-and-stock.md`, `dw-data-access` `recipes-commerce.md`): compare the base unit over the reviewed physical locations only, never an unqualified `SUM(StockUnitQuantity)`. `get_product_stock` returns quantities; `get_stock_locations` returns location definitions.
+- **Exact read-only storage witnesses** (`dw-data-access`, `management-api-and-sql.md`): an empty `FOR JSON PATH` result is not proof of no row, so return an explicit array; reconcile a timestamp against the real column type instead of a blanket tolerance.
+- **Provider behaviour** (`dw-integration-framework`, `provider-behaviour.md`): `OrderProvider` creates need explicit ids from a namespace disjoint from the native counters; a re-captured baseline does not prove a business timestamp was preserved; `SkipTroublesomeRows` does nothing on an XML source; the XML destination writer can drop fractional seconds.
+
 ## [6.1.2]
 
 - **`dw-demo-swift` warns that a font URL contains semicolons,** so stripping an `@import` up to the first `;` leaves a fragment that makes the browser discard the body rule. The `dw-demo-base` theme gate now reads the configured body font from the browser.
