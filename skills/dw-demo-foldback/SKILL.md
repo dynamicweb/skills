@@ -23,6 +23,11 @@ repo makes this a maintainer flow; without it the workflow is identical and land
 
 1. **Route the learning** — foundational skill or demo skill? This decides everything downstream,
    because the two categories have different content rules.
+   **Platform knowledge only:** a lesson about how Dynamicweb behaves folds into the skill that
+   owns the topic. A lesson about how another system behaves (an ERP's API, a tunnel, a hosting
+   panel) does not fold into this repo: reduce it to the one line Dynamicweb needs from that
+   system, or leave it in the demo's own notes. The rule is "Scope: the platform, not the systems
+   around it" in the repo's `CLAUDE.md`.
 2. **Sanitize before drafting** — strip customer/engagement specifics, personal names, and
    session-relative time markers. A learning that needs the customer's name to make sense is
    demo-specific and is not folded up.
