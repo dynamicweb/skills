@@ -16,6 +16,12 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
   The "How to run me" header of `dw-demo-base`, `dw-demo-erp`, `dw-demo-headless`, `dw-demo-pim`,
   `dw-demo-swift` and `dw-integration-bc`, the README and the presales bundle description follow.
   A demo project scaffolded earlier keeps its own copy of the old command files until they are copied again.
+## [6.2.1]
+
+- **`dw-demo-base` names a password manager, not one product.** Where the skill, `mcp-setup.md` and
+  `customisations.md` said to keep demo secrets in 1Password, they now say a password manager. The
+  rule itself is unchanged: a secret lives in the gitignored `notes/credentials.local.md` or a password
+  manager, never in a memory file or the repo.
 ## [6.2.0]
 
 - **Removed: the Dynamics 365 Finance & Operations skills leave this repo.** `dw-integration-fo-discovery`,

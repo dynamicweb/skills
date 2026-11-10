@@ -65,7 +65,7 @@ Walk every step in order — skip none. Each step's reference contains its own v
    Install the user-scope Browser MCP first (`@playwright/mcp`, machine-level and idempotent — its tools are the scaffold's action surface on the admin UI), write `.mcp.json`, apply both TLS-bypass layers, then drive the admin UI via the Browser MCP to create the MCP configuration and capture the shown-once API key (Authentication method = API Key; Claude.ai OAuth is fallback-only; headless code recipe when the UI is unreachable, ask the user only as last resort). The MCP verification gate: `claude mcp list` shows `Connected` AND `ToolSearch +dynamicweb` returns >200 tools.
 
 4. **Drop the guardrail artefacts** -> `references/customisations.md` + `references/customer-context.md`
-   Stage `<demo>\CUSTOMISATIONS.md` (the customisation ledger) and ensure the `<demo>\customer-context\` read-only contract is wired into the per-demo `CLAUDE.md`. The audit recipe in `references/customisations.md` (§7) produces paste-ready end-of-phase audit content. When running **without GSD**, also copy the native orchestrator commands from `assets/commands/demo/` into the demo project's `.claude/commands/demo/` so `/demo:scaffold|impact|build|status` are available (see [references/orchestrator.md](references/orchestrator.md)).
+   Stage `<demo>\CUSTOMISATIONS.md` (the customisation ledger) and ensure the `<demo>\customer-context\` read-only contract is wired into the per-demo `CLAUDE.md`. The audit recipe in `references/customisations.md` (§7) produces paste-ready end-of-phase audit content. Also copy the native orchestrator commands from `assets/commands/demo/` into the demo project's `.claude/commands/demo/` so `/demo:scaffold|impact|build|status` are available (see [references/orchestrator.md](references/orchestrator.md)).
 
 ## Baseline data — explicit non-step
 
@@ -316,7 +316,7 @@ Port, DB name, and Management API bearer token vary per project. Read them from 
 | HTTPS port + host URL | `Dynamicweb.Host.Suite/Properties/launchSettings.json` (`applicationUrl`, HTTPS profile) |
 | Database name | `Dynamicweb.Host.Suite/GlobalSettings.Database.config` (`Database=` or `Initial Catalog=`) |
 | **MCP API key** (Authorization header for `/admin/mcp`) | Generated once in the admin UI (Settings → Integration → MCP configurations); full capture + storage contract in `references/mcp-setup.md` Steps 3-3b and 6. |
-| **Management API bearer token** (Authorization header for `/admin/api/...`) | Captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`); storage contract (the gitignored `notes/credentials.local.md` or 1Password; never a Claude memory file, never env vars, never committed) is canonical in `references/mcp-setup.md` Step 6. |
+| **Management API bearer token** (Authorization header for `/admin/api/...`) | Captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`); storage contract (the gitignored `notes/credentials.local.md` or a password manager; never a Claude memory file, never env vars, never committed) is canonical in `references/mcp-setup.md` Step 6. |
 
 ## Baseline-drift self-diagnosis rule
 

@@ -23,7 +23,7 @@ Wire MCP for the Backend MCP server — the AppStore app **Truvio Commerce MCP**
 1. Write `.mcp.json` with the discovered HTTPS port (bearer placeholder filled in Step 3b).
 2. Put the two-layer TLS bypass in place (Step 2).
 3. Create the MCP configuration in DW admin UI with **Authentication method = API Key** — DW10 does **not** auto-create one, and the agent drives this itself via the Browser MCP (Playwright). Step 3 is the most-missed step.
-3b. Paste the plaintext API key into `.mcp.json` as the `Authorization: Bearer …` header and record it in the gitignored `notes/credentials.local.md` (or 1Password), never in a Claude memory file.
+3b. Paste the plaintext API key into `.mcp.json` as the `Authorization: Bearer …` header and record it in the gitignored `notes/credentials.local.md` (or a password manager), never in a Claude memory file.
 4. Verification gate.
 
 The verification gate (Step 4) refuses to declare 'setup complete' until BOTH `claude mcp list` shows `dynamicweb-commerce-mcp ✓ Connected` AND tool discovery returns > 200 dynamicweb tools.
@@ -104,7 +104,7 @@ The skill's `assets/mcp.json.template` is the parametric source (with literal `<
 }
 ```
 
-> **Do not commit the real key.** `.mcp.json` is project-tracked. Leave `<MCP_API_KEY>` as a literal placeholder in source control. The substituted-in version with the real bearer lives on each developer's machine only; the canonical store is the gitignored `notes/credentials.local.md` or 1Password (see Step 6).
+> **Do not commit the real key.** `.mcp.json` is project-tracked. Leave `<MCP_API_KEY>` as a literal placeholder in source control. The substituted-in version with the real bearer lives on each developer's machine only; the canonical store is the gitignored `notes/credentials.local.md` or a password manager (see Step 6).
 
 ---
 
@@ -163,7 +163,7 @@ After saving, do **not** rerun `/mcp` in Claude Code yet — there's no bearer i
 
    **Locally only.** Don't commit this change — the source-controlled `.mcp.json` keeps the `<MCP_API_KEY>` placeholder. See Step 6 for the per-demo storage contract.
 
-2. Record the key in the demo's gitignored `notes/credentials.local.md` (host URL + key + a one-line how-to-use), or in 1Password when the user keeps demo secrets there. **Never in a Claude memory file**: memory is not a credential store. See Step 6 for the token-storage contract. The credentials file is the authoritative copy; if `.mcp.json` is wiped or regenerated, re-paste from it, not from chat.
+2. Record the key in the demo's gitignored `notes/credentials.local.md` (host URL + key + a one-line how-to-use), or in a password manager when the user keeps demo secrets there. **Never in a Claude memory file**: memory is not a credential store. See Step 6 for the token-storage contract. The credentials file is the authoritative copy; if `.mcp.json` is wiped or regenerated, re-paste from it, not from chat.
 
    **When a harness guard blocks the key write, stop.** A session's credential or safety guard can refuse the write of the plaintext key into `.mcp.json` or the credentials file. That refusal is the answer for this session, not an obstacle: **do not retry the same write through another tool** (a shell `Set-Content`, `Out-File`, `echo >`, a script, a different editor tool). Routing around a guard with a shell write is a policy workaround even when the destination is the same local file and even though this file's own snippets use a shell write. The sanctioned path: tell the user the write was blocked, and ask them (`AskUserQuestion`) to paste the key into `.mcp.json` and `notes/credentials.local.md` themselves; the key is still on the confirmation screen, or they create a fresh configuration if it was already read. Then continue at item 3. The same rule holds for every credential write in this file.
 
@@ -365,7 +365,7 @@ If you don't have a Management API token in conversation state or in `notes/cred
 |---|---|---|
 | Conversation state | ✅ Always | Default scope; cleared at session end. |
 | The demo's gitignored `notes/credentials.local.md` | ✅ Canonical for local dev hosts | One file per demo solution, gitignored by the scaffold (`scaffold.md` §2.1), already the single home of the demo's login passwords ([`customisations.md`](customisations.md)). Record **both** tokens there, each with the host URL and a how-to-use note. |
-| 1Password (the user's vault) | ✅ When the user keeps demo secrets there | The user's choice; the agent reads nothing from it and asks the user to paste when needed. |
+| A password manager (the user's vault) | ✅ When the user keeps demo secrets there | The user's choice; the agent reads nothing from it and asks the user to paste when needed. |
 | Claude memory files (`~/.claude/projects/<encoded-cwd>/memory/`, any `MEMORY.md`) | ❌ Never | Memory is loaded into every later session's context and is not a credential store. Record a pointer there if useful ("MCP key: see notes/credentials.local.md"), never the value. |
 | Env vars (User or Machine scope, e.g. `DYNAMICWEB_MGMT_API_TOKEN`) | ❌ Never | The tokens are per-demo, but env vars are machine-global — a second demo on the same machine would clobber the first. Use the demo's `notes/credentials.local.md` instead, which gives one slot per demo. |
 | Project-tracked files (`.mcp.json` with substituted bearer, `Files/Serializer.config.json`, csproj, `settings.local.json`, anything inside the demo solution folder that git tracks) | ❌ Never commit | A local-only `.mcp.json` with the real bearer is fine to live on disk — but the source-controlled copy keeps the `<MCP_API_KEY>` placeholder. Don't `git add` after substitution. |
