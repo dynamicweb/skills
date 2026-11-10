@@ -3,6 +3,9 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.1.4]
+
+- **`dw-data-access` documents the provider-level Data Integration schema.** A table created after `Files/Files/Integration/Schemas/<id>/schema.xml` was written is "not found" by every activity and the MCP mapping tools. The repair is `SchemaUpdate` on both sides; a hand patch is a checked, backed-up fallback.
 ## [6.1.3]
 
 - **Scoped contract prices: the skills now agree that MCP `save_prices` writes them.** `dw-commerce-catalog` (`catalog-publishing.md`) and `dw-data-access` (`recipes-commerce.md`) still said no MCP tool reaches `PriceUserGroupId` or `PriceUserCustomerNumber`, while `dw-commerce-b2b` (`dc-scoping.md`) already documented `userGroupId` and `userCustomerNumber`. Discover the tool schema first; Admin API `PriceSave` is the fallback for a server whose schema lacks the member, and that fallback owes a cache refresh.
