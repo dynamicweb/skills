@@ -318,7 +318,7 @@ Port, DB name, and Management API bearer token vary per project. Read them from 
 | HTTPS port + host URL | `Dynamicweb.Host.Suite/Properties/launchSettings.json` (`applicationUrl`, HTTPS profile) |
 | Database name | `Dynamicweb.Host.Suite/GlobalSettings.Database.config` (`Database=` or `Initial Catalog=`) |
 | **MCP API key** (Authorization header for `/admin/mcp`) | Generated once in the admin UI (Settings → Integration → MCP configurations); full capture + storage contract in `references/mcp-setup.md` Steps 3-3b and 6. |
-| **Management API bearer token** (Authorization header for `/admin/api/...`) | Captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`); storage contract (the gitignored `notes/credentials.local.md` or 1Password; never a Claude memory file, never env vars, never committed) is canonical in `references/mcp-setup.md` Step 6. |
+| **Management API bearer token** (Authorization header for `/admin/api/...`) | Captured via `AskUserQuestion` from chat (format `CLAUDE.<hex>`); storage contract (the gitignored `notes/credentials.local.md` or a password manager; never a Claude memory file, never env vars, never committed) is canonical in `references/mcp-setup.md` Step 6. |
 
 ## Baseline-drift self-diagnosis rule
 
