@@ -45,6 +45,7 @@ param(
 )
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Ledger.Core.ps1')
+. (Join-Path $PSScriptRoot 'Ledger.Observations.ps1')
 . (Join-Path $PSScriptRoot 'Ledger.Sql.ps1')
 . (Join-Path $PSScriptRoot 'Pim.Fields.ps1')
 . (Join-Path $PSScriptRoot 'Pim.Queries.ps1')

@@ -33,6 +33,7 @@ The initial snapshot is a candidate until measured on its exact baseline. A diag
 - [Build and lock schema](assets/build.schema.json)
 - [Report schema](assets/report.schema.json)
 - [Target capabilities schema](assets/target-capabilities.schema.json)
+- [Coverage map schema](assets/coverage.schema.json) and [handler allowlist](assets/handlers.json)
 - [Release snapshots](assets/releases/): each directory contains its manifest.
 
 Distribution and Serializer are platform scope. Concrete layer carriage belongs to Distribution; foundational skills never link back into this demo skill.
@@ -49,11 +50,13 @@ Follow [the release process](references/release-process.md) for additions/remova
 | [Compare-DwLedgerRelease.ps1](scripts/Compare-DwLedgerRelease.ps1) | Reads snapshots/evidence; writes proposed delta | Release comparison skeleton; never marks a feature measured |
 | [Ledger.Core.ps1](scripts/Ledger.Core.ps1) | Definitions only | Schema, digest, safe paths, selection and assertions |
 | [Ledger.Transport.ps1](scripts/Ledger.Transport.ps1) | Reads MCP/Admin when called | Discovery and observations using the shared API transport |
+| [Ledger.Observations.ps1](scripts/Ledger.Observations.ps1) | Reads collections/local XML when called | Tokens, filtered counts, authenticated API projection and scoped files |
 | [Ledger.Sql.ps1](scripts/Ledger.Sql.ps1) | Local SELECT when called | Integrated-authentication reads without display truncation |
 | [Ledger.Execute.ps1](scripts/Ledger.Execute.ps1) | Reads selected binding | Fixed handlers; missing implementation fails visibly |
 | [Pim.Fields.ps1](scripts/Pim.Fields.ps1) | Local reads when called | Declared attribute checks and token validation |
 | [Pim.Queries.ps1](scripts/Pim.Queries.ps1) | Local SQL/files when called | Migrated family/widget checks |
 | [Ledger.Tests.ps1](scripts/tests/Ledger.Tests.ps1) | Isolated fixtures | Red controls, selection, missing probes and schema checks |
+| [Observations.Tests.ps1](scripts/tests/Observations.Tests.ps1) | Isolated fixtures | Filter, token, XML, path and authenticated-query controls |
 
 Run from a clean checkout at the build lock's commit:
 

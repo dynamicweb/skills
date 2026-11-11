@@ -27,6 +27,8 @@ jobs:
         run: |
           pip install pyyaml
           python scripts/validate-skills.py
+      - name: Test ledger validation controls
+        run: python -m unittest discover -s scripts/tests -p test_validate_ledger.py
       - name: Parse shipped PowerShell scripts
         shell: pwsh
         run: |

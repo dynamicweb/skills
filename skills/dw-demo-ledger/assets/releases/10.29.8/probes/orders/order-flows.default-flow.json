@@ -16,13 +16,19 @@
     {
       "id": "mcp",
       "surface": "mcp",
-      "status": "planned",
+      "status": "implemented",
       "handler": "mcp-count",
       "operation": "get_order_flows",
       "arguments": {
         "orderType": "Order"
       },
-      "reason": "mcp-count cannot filter on the default flag; a projection handler is not implemented."
+      "projection": {
+        "filter": {
+          "field": "isDefault",
+          "op": "equals",
+          "value": true
+        }
+      }
     },
     {
       "id": "local-sql",

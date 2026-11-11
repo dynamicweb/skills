@@ -41,20 +41,19 @@ function Read-LedgerMcp {
     }
     $data=if($raw.structuredContent){$raw.structuredContent|ConvertTo-Json -Depth 80|ConvertFrom-Json -AsHashtable}else{($raw.content.text -join "`n")|ConvertFrom-Json -AsHashtable}
     if(-not $data.ContainsKey('data')){throw 'MCP observation has no data envelope.'}
-    if($data.ContainsKey('totalPages') -and $data.totalPages -gt 1){throw 'This binding does not establish complete paged enumeration.'}
-    if($data.ContainsKey('count') -and $data.count -ne @($data.data).Count){throw 'MCP count disagrees with returned rows.'}
-    if($data.ContainsKey('total') -and $data.total -ne @($data.data).Count){throw 'MCP enumeration is incomplete.'}
+    $null=ConvertTo-LedgerRows $data
     $script:LedgerMcpCache[$key]=$data
     return $data
 }
 function Assert-LedgerFields {
     param([object[]]$Rows,[string[]]$Fields)
-    foreach($row in $Rows){foreach($field in $Fields){if(-not $row.ContainsKey($field)){throw 'Required observation field is missing.'}}}
+    foreach($row in $Rows){foreach($field in $Fields){if(-not $row.ContainsKey($field)){throw [InvalidOperationException]::new('Required observation field is missing.')}}}
 }
 function Get-LedgerMcpObservation {
-    param($Binding,$Check)
+    param($Binding,$Check,$Build)
     $args=@{}; if($Binding.arguments){$args=$Binding.arguments.Clone()}
     if($Binding.handler -eq 'mcp-files-count'){$args=@{path=$Binding.arguments.path}}
+    $args=Expand-LedgerArguments $args $Build
     $result=Read-LedgerMcp -Operation $Binding.operation -Arguments $args
     $rows=@($result.data);$value=0;$offenders=@();$complete=$true
     switch($Binding.handler){
@@ -68,7 +67,7 @@ function Get-LedgerMcpObservation {
             }}
             $value=@($files|Where-Object {$_.name -like $Binding.arguments.filter}).Count
         }
-        'mcp-count' {$value=$rows.Count}
+        'mcp-count' {return Measure-LedgerRows $rows $Binding.projection}
         'mcp-workspace-count' {Assert-LedgerFields $rows @('levels');$value=@($rows|Where-Object {@($_.levels).Count -gt 0}).Count}
         'mcp-workspace-empty' {Assert-LedgerFields $rows @('levels','id');$offenders=@($rows|Where-Object {@($_.levels).Count -eq 0}|ForEach-Object {$_.id})}
         'mcp-workspace-completeness' {Assert-LedgerFields $rows @('levels');$levels=@($rows|ForEach-Object {$_.levels});Assert-LedgerFields $levels @('useCompleteness');$value=@($levels|Where-Object {$_.useCompleteness -eq $true}).Count}

@@ -156,6 +156,45 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "projection": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "rowsPath": {
+                "type": "string",
+                "minLength": 1
+              },
+              "filter": {
+                "type": "object",
+                "required": [
+                  "field",
+                  "op",
+                  "value"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_.]*$"
+                  },
+                  "op": {
+                    "enum": [
+                      "equals",
+                      "contains"
+                    ]
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
           }
         },
         "required": [

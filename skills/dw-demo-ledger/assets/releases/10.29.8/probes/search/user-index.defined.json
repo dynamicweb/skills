@@ -16,10 +16,13 @@
     {
       "id": "file-files-system-repositories-index",
       "surface": "file",
-      "status": "planned",
-      "handler": "index-xml",
-      "path": "Files/System/Repositories/*/*.index",
-      "reason": "Repository definitions are XML files under Files/System/Repositories; an XML projection handler is not implemented and MCP file access to this folder is not granted by default."
+      "status": "implemented",
+      "handler": "xml-count",
+      "path": "System/Repositories/*/*.index",
+      "localOnly": true,
+      "arguments": {
+        "xpath": "/Index/Builds[substring-before(@Type, ',') = 'Dynamicweb.UserManagement.Indexing.UserIndexBuilder']"
+      }
     }
   ],
   "sources": [

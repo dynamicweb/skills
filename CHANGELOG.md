@@ -6,6 +6,7 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 ## [6.3.0]
 
 - Add `dw-demo-ledger`: release-pinned platform function and check contracts, explicit build locks and evidence states. MCP-first bindings preserve proof requirements across local and hosted targets; SQL remains optional and local-only.
+- Integrate 299 candidate functions across 14 areas with per-area coverage maps. Validate schemas and cross-file references, allowlisted handlers and local-only SQL. Add typed argument substitution, filtered MCP counts, scoped file/XML reads and authenticated Admin query counts.
 
 ## [6.2.4]
 

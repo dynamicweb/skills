@@ -17,14 +17,14 @@ function Invoke-LedgerCheck {
     if($Profile.expectations.ContainsKey($Check.id)){foreach($k in $Profile.expectations[$Check.id].Keys){$assertion[$k]=$Profile.expectations[$Check.id][$k]}}
     $row.expected=$assertion
     try {
+        $registry=Read-LedgerJson (Join-Path $PSScriptRoot '../assets/handlers.json')
+        if(-not $registry.ContainsKey($binding.handler) -or $binding.surface -notin $registry[$binding.handler]){throw 'Handler/surface is not allowlisted.'}
         if($binding.surface -eq 'mcp') {
-            $observation=Get-LedgerMcpObservation -Binding $binding -Check $Check
-        } elseif($binding.surface -eq 'file' -and $binding.handler -eq 'files-count') {
-            $folder=Resolve-LedgerPath -Root $FilesPath -Relative $binding.arguments.folder
-            if(-not(Test-Path -LiteralPath $folder -PathType Container)){throw 'Required file folder is unavailable.'}
-            $dirs=@($folder);if($binding.arguments.includeSubfolders){$dirs+=@(Get-ChildItem -LiteralPath $folder -Directory -ErrorAction Stop|ForEach-Object FullName)}
-            $count=0;foreach($dir in $dirs){$count+=@(Get-ChildItem -LiteralPath $dir -Filter $binding.arguments.filter -File -ErrorAction Stop).Count}
-            $observation=@{value=$count;scanned=$count;complete=$true;offenders=@()}
+            $observation=Get-LedgerMcpObservation -Binding $binding -Check $Check -Build $Build
+        } elseif($binding.surface -eq 'file') {
+            $observation=Get-LedgerFileObservation -Binding $binding -FilesPath $FilesPath
+        } elseif($binding.surface -eq 'admin-api') {
+            $observation=Get-LedgerAdminObservation -Binding $binding -Build $Build -Capabilities $Capabilities
         } elseif($binding.surface -eq 'sql') {
             if(-not $Database){throw 'Local SQL requires Database.'}
             switch($binding.handler) {
@@ -49,6 +49,7 @@ function Invoke-LedgerCheck {
     } catch {
         Write-Verbose $_.ScriptStackTrace
         if($_.Exception -is [UnauthorizedAccessException]){$row.result='UNVERIFIED';$row.reason='Binding is not authorised for the required scope.'}
+        elseif($_.Exception -is [InvalidOperationException]){$row.result='UNVERIFIED';$row.reason='Required input, field, path or complete enumeration is unavailable.'}
         else {$row.result='ERROR';$row.reason='Binding execution failed. Check handler, grants, scope and target schema; no exception body is persisted.'}
     }
     return $row

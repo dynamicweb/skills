@@ -1,0 +1,23 @@
+{
+  "mcp-count": ["mcp"],
+  "mcp-files-count": ["mcp"],
+  "mcp-workspace-count": ["mcp"],
+  "mcp-workspace-empty": ["mcp"],
+  "mcp-workspace-completeness": ["mcp"],
+  "mcp-workflow-states": ["mcp"],
+  "mcp-workflow-transitions": ["mcp"],
+  "mcp-completion-rules": ["mcp"],
+  "mcp-dashboard-count": ["mcp"],
+  "mcp-field-types": ["mcp"],
+  "mcp-field-text-share": ["mcp"],
+  "mcp-multiselect": ["mcp"],
+  "admin-query-count": ["admin-api"],
+  "settings-value": ["file"],
+  "xml-count": ["file"],
+  "files-count": ["file"],
+  "sql-scalar": ["sql"],
+  "sql-offenders": ["sql"],
+  "pim-attributes": ["sql"],
+  "pim-families": ["sql"],
+  "pim-widget-queries": ["sql"]
+}

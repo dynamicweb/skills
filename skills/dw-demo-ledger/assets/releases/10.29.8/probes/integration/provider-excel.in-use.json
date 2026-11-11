@@ -25,10 +25,15 @@
     {
       "id": "file-content",
       "surface": "file",
-      "status": "planned",
-      "handler": "file-content",
-      "path": "Files/Integration/jobs/**/*.xml",
-      "reason": "No reserved handler reads job file content (provider type in the Source/Destination node)."
+      "status": "implemented",
+      "handler": "xml-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "Files/Integration/jobs",
+        "filter": "*.xml",
+        "includeSubfolders": true,
+        "xpath": "/job[source/@type='Dynamicweb.DataIntegration.Providers.ExcelProvider.ExcelProvider' or destination/@type='Dynamicweb.DataIntegration.Providers.ExcelProvider.ExcelProvider']"
+      }
     }
   ],
   "sources": [

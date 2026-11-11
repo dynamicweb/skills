@@ -3,6 +3,7 @@
   "dwVersion": "10.29.8",
   "status": "candidate",
   "functionsGlob": "functions/*.json",
+  "coverageGlob": "coverage/*.json",
   "checkSchema": "../../check.schema.json",
   "ledgerSchema": "../../ledger.schema.json",
   "components": [],
