@@ -1,0 +1,321 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lock": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "manifest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "checkIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]*$"
+          }
+        }
+      },
+      "required": [
+        "commit",
+        "manifest",
+        "digest",
+        "checkIds"
+      ],
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": "object",
+      "properties": {
+        "baseline": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "matches": {
+          "type": "boolean"
+        },
+        "diagnostic": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "baseline",
+        "observed",
+        "matches",
+        "diagnostic"
+      ],
+      "additionalProperties": false
+    },
+    "result": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "ERROR",
+        "UNVERIFIED",
+        "UNSUPPORTED",
+        "DISABLED",
+        "NOT-APPLICABLE"
+      ]
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": 1
+        },
+        "dwVersion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "discoveredAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mcp": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "tools": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "available",
+            "tools"
+          ],
+          "additionalProperties": false
+        },
+        "adminApi": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "authenticated": {
+              "type": "boolean"
+            },
+            "queries": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "available",
+            "authenticated",
+            "queries"
+          ],
+          "additionalProperties": false
+        },
+        "dwapi": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "available"
+          ],
+          "additionalProperties": false
+        },
+        "file": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "local": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "available",
+            "local"
+          ],
+          "additionalProperties": false
+        },
+        "sql": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "boolean"
+            },
+            "localOnly": {
+              "const": true
+            }
+          },
+          "required": [
+            "available",
+            "localOnly"
+          ],
+          "additionalProperties": false
+        },
+        "facts": {
+          "type": "object"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "dwVersion",
+        "discoveredAt",
+        "mcp",
+        "adminApi",
+        "dwapi",
+        "file",
+        "sql",
+        "facts",
+        "errors"
+      ],
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]*$"
+          },
+          "functionId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]*$"
+          },
+          "result": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "ERROR",
+              "UNVERIFIED",
+              "UNSUPPORTED",
+              "DISABLED",
+              "NOT-APPLICABLE"
+            ]
+          },
+          "surface": {
+            "enum": [
+              "mcp",
+              "admin-api",
+              "dwapi",
+              "file",
+              "sql",
+              null
+            ]
+          },
+          "binding": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "type": "string",
+            "minLength": 1
+          },
+          "proves": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string"
+          },
+          "measured": {},
+          "expected": {},
+          "offenders": {
+            "type": "array",
+            "items": {}
+          },
+          "scanned": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "functionId",
+          "result",
+          "surface",
+          "binding",
+          "level",
+          "proves",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "generatedAt",
+    "slug",
+    "lock",
+    "compatibility",
+    "result",
+    "counts",
+    "capabilities",
+    "checks",
+    "errors"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

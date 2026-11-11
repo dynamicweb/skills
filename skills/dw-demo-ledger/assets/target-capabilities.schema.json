@@ -1,0 +1,130 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "dwVersion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "discoveredAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mcp": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "available",
+        "tools"
+      ],
+      "additionalProperties": false
+    },
+    "adminApi": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "authenticated": {
+          "type": "boolean"
+        },
+        "queries": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "available",
+        "authenticated",
+        "queries"
+      ],
+      "additionalProperties": false
+    },
+    "dwapi": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "available"
+      ],
+      "additionalProperties": false
+    },
+    "file": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "local": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "available",
+        "local"
+      ],
+      "additionalProperties": false
+    },
+    "sql": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "localOnly": {
+          "const": true
+        }
+      },
+      "required": [
+        "available",
+        "localOnly"
+      ],
+      "additionalProperties": false
+    },
+    "facts": {
+      "type": "object"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "dwVersion",
+    "discoveredAt",
+    "mcp",
+    "adminApi",
+    "dwapi",
+    "file",
+    "sql",
+    "facts",
+    "errors"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
