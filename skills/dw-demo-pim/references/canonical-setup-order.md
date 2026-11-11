@@ -22,6 +22,8 @@ So: **capture a SKU-to-ProductId map from the `create_products` response and mak
 
 ## 0. Setup-order variants
 
+**Before either variant: write the build file.** [`feature-registry.md`](feature-registry.md) lists every PIM feature a build applies and the only grounds for leaving one out. Put `pim-build.json` in the solution folder first (families, attributes with their kind and unit, rulings), then build to it. The steps below say how; that file says what.
+
 Two shapes — pick before you start. Storefront-first is the legacy full order (§1 below). PIM-first is a leaner order; it drops the `ShopType=1` SHOP1 + catalog-group tree and routes everything through `SHOP-DATA` (ShopType=4) + Dynamic Workspaces + Channels (ShopType=3).
 
 ### Decision matrix

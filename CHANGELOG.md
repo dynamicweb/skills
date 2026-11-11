@@ -3,6 +3,19 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.3.0]
+
+- **`dw-demo-pim` gains a feature registry.** `references/feature-registry.md` lists 35 PIM features a demo
+  build applies, in five clusters (model, structure, assets, governance, publishing). Per feature: the
+  product data it needs, when it applies, the only grounds on which a build may leave it out, and the
+  proof that it is applied, each one a measured number or a list of offenders. A build now starts by
+  writing `pim-build.json`: its product families, every attribute with a kind (measure, choice,
+  multi-choice, flag, date, count and so on) and a ruling for each feature it leaves out. Fourteen
+  features have no ground and cannot be left out. The file also carries the unit mechanics: a measure is
+  a Decimal with a unit group and a preset unit, the unit never goes in the label, a missing unit group
+  has no MCP tool, and `update_category_fields` attaches it. It records that one active assortment
+  switches access control on for every visitor, so the anonymous range is built before anything is
+  activated. `SKILL.md` and `canonical-setup-order.md` point at it.
 ## [6.2.4]
 
 - **Authoring rule: the skills describe the platform, not the systems around it.** `CLAUDE.md` gains a

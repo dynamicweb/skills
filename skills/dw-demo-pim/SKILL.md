@@ -41,6 +41,7 @@ This SKILL.md is an orchestrator only. Each topic links to a `references/<topic>
 Trigger shapes, one per thematic reference (the "Where to find things" table below is the router):
 
 - Choosing the right access surface (MCP / Management API / SQL / filesystem) for a task.
+- Deciding what a PIM build must contain and which features a build may leave out (the feature registry, the build file, units on measures).
 - Modelling PIM data structures (shops vs channels vs data structures, GroupType, repositories+indexes, variants, BOM, channels+feeds, assets, product categories).
 - Choosing and executing a setup order — Storefront-first vs PIM-first.
 - Diagnosing "completeness rule doesn't show", building governance dashboards, recovering from missing seed rows or stale indexes (incl. GUID-collision errors in the Products -> Shared queries tree).
@@ -62,6 +63,7 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 |---|---|
 | Which rung of the action ladder a given PIM task belongs on, and the per-project reference paths | references/access-surfaces.md |
 | Understand the structural model (incl. §2.3a native "Publish to channel" action, §2.5a single-axis variants, §2.11 Pricing / `PriceQuantity>0` cart gotcha, §2.12 Dynamic Workspaces) | references/structural-model.md |
+| Know what a PIM build must contain: the feature registry, the build file (`pim-build.json`: families, attributes with their kind, rulings), units on measures, and the proof per feature | **references/feature-registry.md** (read before the setup order) |
 | Pick the right setup-order variant — Storefront-first or **PIM-first** (no `ShopType=1` shop, Dynamic Workspaces + workflow-driven) | references/canonical-setup-order.md (§0 decision matrix at top) |
 | Diagnose "rules don't show", build dashboards, recover from missing seed rows or stale indexes | references/governance.md |
 | Author the PIM editor surface: `ScreenLayout` / `ScreenType` / `ScreenPreset` / `ConfigurableColumns`, the "no tab strip" discriminator, grid edit and Bulk update | **references/screen-authoring.md** |
