@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "pim.integration.ruling.product-count",
+  "functionId": "pim.integration",
+  "intent": {
+    "proves": "Data Integration activity for the product load: product-count satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "le",
+    "value": 100
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT ProductId) FROM EcomProducts"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#integration/product-count"
+    }
+  ]
+}

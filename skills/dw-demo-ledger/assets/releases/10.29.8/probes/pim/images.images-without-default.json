@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.images.images-without-default",
+  "functionId": "pim.images",
+  "intent": {
+    "proves": "Product images with a default: images-without-default satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-images-without-default",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-images-without-default",
+      "operation": "get_product_images",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1 AND ISNULL(p.ProductVariantId, N'') = N''{inScope} AND EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailProductId = p.ProductId AND d.DetailType = 0 AND ISNULL(d.DetailVariantId, N'') = N'') AND NOT EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailProductId = p.ProductId AND d.DetailType = 0 AND d.DetailIsDefault = 1)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#images/images-without-default"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "id": "pim.dashboards.widget-queries",
+  "functionId": "pim.dashboards",
+  "intent": {
+    "proves": "PIM dashboard with query-backed widgets: widget-queries satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "widget-queries"
+  },
+  "bindings": [
+    {
+      "id": "mcp-widget-queries",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-widget-queries",
+      "operation": "get_dashboard_widgets",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-widget-queries",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#dashboards/widget-queries"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+<#
+.SYNOPSIS
+READ-ONLY. Execute a selected check through fixed observation handlers.
+.DESCRIPTION
+PowerShell 7. Owning reference: ../references/contract.md. No dynamic code evaluation. Missing implementations are errors; insufficient observations remain unverified. Legacy PIM SQL assertions preserve their original scope.
+.EXAMPLE
+. ./Ledger.Execute.ps1
+#>
+#Requires -Version 7.0
+function Invoke-LedgerCheck {
+    param($Check,$Build,$Capabilities,$Profile,[string[]]$Surfaces,[string]$SqlServer,[string]$Database,[string]$FilesPath)
+    $row=New-LedgerRow $Check
+    $binding=Select-LedgerBinding -Check $Check -Capabilities $Capabilities -Surfaces $Surfaces
+    if(-not $binding){return $row}
+    $row.surface=$binding.surface;$row.binding=$binding.id
+    $assertion=@{};foreach($k in $Check.assertion.Keys){$assertion[$k]=$Check.assertion[$k]}
+    if($Profile.expectations.ContainsKey($Check.id)){foreach($k in $Profile.expectations[$Check.id].Keys){$assertion[$k]=$Profile.expectations[$Check.id][$k]}}
+    $row.expected=$assertion
+    try {
+        if($binding.surface -eq 'mcp') {
+            $observation=Get-LedgerMcpObservation -Binding $binding -Check $Check
+        } elseif($binding.surface -eq 'file' -and $binding.handler -eq 'files-count') {
+            $folder=Resolve-LedgerPath -Root $FilesPath -Relative $binding.arguments.folder
+            if(-not(Test-Path -LiteralPath $folder -PathType Container)){throw 'Required file folder is unavailable.'}
+            $dirs=@($folder);if($binding.arguments.includeSubfolders){$dirs+=@(Get-ChildItem -LiteralPath $folder -Directory -ErrorAction Stop|ForEach-Object FullName)}
+            $count=0;foreach($dir in $dirs){$count+=@(Get-ChildItem -LiteralPath $dir -Filter $binding.arguments.filter -File -ErrorAction Stop).Count}
+            $observation=@{value=$count;scanned=$count;complete=$true;offenders=@()}
+        } elseif($binding.surface -eq 'sql') {
+            if(-not $Database){throw 'Local SQL requires Database.'}
+            switch($binding.handler) {
+                'sql-scalar' {$n=Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.query $Build);$observation=@{value=$n;complete=$true;scanned=$null;offenders=@()}}
+                'sql-offenders' {$off=@(Invoke-Sqlcmd-Rows -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.query $Build));$observation=@{value=$off.Count;complete=$true;scanned=$null;offenders=$off}}
+                {$_ -in @('pim-attributes','pim-families','pim-widget-queries')} {
+                    $legacy=@{id=$Check.id;kind=$assertion.kind;proves=$Check.intent.proves;aspect=$assertion.aspect;minScanned=$assertion.minimumSubjects;minFamilies=$assertion.minimumSubjects}
+                    $stored=@{};if($binding.handler -eq 'pim-attributes') {
+                        if(-not $script:LedgerStoredFields){$script:LedgerStoredFields=Get-PimStoredField -Server $SqlServer -Database $Database}
+                        $stored=$script:LedgerStoredFields
+                    }
+                    $r=Invoke-PimFeatureCheck -Check $legacy -Build $Build -Server $SqlServer -Database $Database -FilesPath $FilesPath -Stored $stored
+                    $row.result=$r.result;$row.measured=$r.measured;$row.expected=$r.expected;$row.offenders=@($r.offenders);$row.reason='Local domain assertion evaluated.'
+                    return $row
+                }
+                default {throw 'No registered SQL observation handler.'}
+            }
+        } else {throw 'No registered observation handler for this binding.'}
+        $row.result=Test-LedgerAssertion -Assertion $assertion -Observation $observation
+        $row.measured=$observation.value;$row.scanned=$observation.scanned;$row.offenders=@($observation.offenders|Select-Object -First 25)
+        $row.reason=if($observation.complete){'Equivalent observation evaluated.'}else{'Observation omits required fields or completeness evidence.'}
+    } catch {
+        Write-Verbose $_.ScriptStackTrace
+        if($_.Exception -is [UnauthorizedAccessException]){$row.result='UNVERIFIED';$row.reason='Binding is not authorised for the required scope.'}
+        else {$row.result='ERROR';$row.reason='Binding execution failed. Check handler, grants, scope and target schema; no exception body is persisted.'}
+    }
+    return $row
+}

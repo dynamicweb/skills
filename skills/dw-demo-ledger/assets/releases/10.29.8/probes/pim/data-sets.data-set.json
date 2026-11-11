@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.data-sets.data-set",
+  "functionId": "pim.data-sets",
+  "intent": {
+    "proves": "Data sets with inherited default values: data-set satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-data-set",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-data-set",
+      "operation": "get_datasets",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT GroupId) FROM EcomGroups WHERE GroupType = 3"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#data-sets/data-set"
+    }
+  ]
+}

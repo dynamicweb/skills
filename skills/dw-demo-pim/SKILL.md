@@ -9,6 +9,8 @@ description: 'Build DW10 PIM demos from a blank database. Triggers: variants/BOM
 
 # Dynamicweb PIM Demo Skill
 
+For release-pinned PIM coverage, breadth profiles and equivalent read-only verification bindings, use [dw-demo-ledger](../dw-demo-ledger/SKILL.md). Declare the build scope before applying its profile.
+
 ## MCP preflight
 
 This skill drives the Dynamicweb MCP server — its steps are tool calls. Before starting,

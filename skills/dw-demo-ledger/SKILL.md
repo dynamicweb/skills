@@ -4,7 +4,7 @@ type: flow
 group: demo
 mcp: optional
 dynamo: false
-compatibility: Requires PowerShell 7.x
+compatibility: Requires PowerShell 7.x and Git
 description: 'Select and check a release-pinned DW10 function ledger. Triggers: platform coverage, equivalent MCP/API probes, edition check locks, release capability changes. Use AFTER dw-demo-base.'
 ---
 
@@ -36,3 +36,29 @@ The initial snapshot is a candidate until measured on its exact baseline. A diag
 - [Release snapshots](assets/releases/): each directory contains its manifest.
 
 Distribution and Serializer are platform scope. Concrete layer carriage belongs to Distribution; foundational skills never link back into this demo skill.
+
+## Release and layer changes
+
+Follow [the release process](references/release-process.md) for additions/removals and [the layer contract](references/adding-a-layer.md) for Distribution carriage and edition locks. The [PIM breadth profile](assets/profiles/pim-breadth.json) preserves the migrated thresholds.
+
+## Scripts (scripts/)
+
+| Script | Reads / writes | What it does |
+|---|---|---|
+| [Invoke-DwLedgerChecks.ps1](scripts/Invoke-DwLedgerChecks.ps1) | Reads target; writes local report | Schema/lock verification, discovery, binding selection and evidence |
+| [Compare-DwLedgerRelease.ps1](scripts/Compare-DwLedgerRelease.ps1) | Reads snapshots/evidence; writes proposed delta | Release comparison skeleton; never marks a feature measured |
+| [Ledger.Core.ps1](scripts/Ledger.Core.ps1) | Definitions only | Schema, digest, safe paths, selection and assertions |
+| [Ledger.Transport.ps1](scripts/Ledger.Transport.ps1) | Reads MCP/Admin when called | Discovery and observations using the shared API transport |
+| [Ledger.Sql.ps1](scripts/Ledger.Sql.ps1) | Local SELECT when called | Integrated-authentication reads without display truncation |
+| [Ledger.Execute.ps1](scripts/Ledger.Execute.ps1) | Reads selected binding | Fixed handlers; missing implementation fails visibly |
+| [Pim.Fields.ps1](scripts/Pim.Fields.ps1) | Local reads when called | Declared attribute checks and token validation |
+| [Pim.Queries.ps1](scripts/Pim.Queries.ps1) | Local SQL/files when called | Migrated family/widget checks |
+| [Ledger.Tests.ps1](scripts/tests/Ledger.Tests.ps1) | Isolated fixtures | Red controls, selection, missing probes and schema checks |
+
+Run from a clean checkout at the build lock's commit:
+
+```powershell
+pwsh -NoProfile -File scripts/Invoke-DwLedgerChecks.ps1 -Manifest $manifest -BuildFile $build -OutFile $report
+```
+
+Set DW_BASE_URL and DW_MCP_TOKEN or DW_API_TOKEN in the process environment. No credential belongs in a build declaration. Supply SqlServer explicitly only for a local target. DiagnosticVersionMismatch permits investigation of another baseline or uncommitted runner, but cannot produce aggregate PASS.

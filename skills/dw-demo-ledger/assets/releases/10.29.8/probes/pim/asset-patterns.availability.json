@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "pim.asset-patterns.availability",
+  "functionId": "pim.asset-patterns",
+  "intent": {
+    "proves": "Image filename patterns is supported on the selected baseline.",
+    "level": "supported",
+    "scope": "exact baseline and required feature/provider conditions"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "availability-pending",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "capability-evidence",
+      "reason": "Baseline and read-only oracle not measured. Do not infer support from newer documentation."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#omissions"
+    }
+  ]
+}

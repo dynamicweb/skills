@@ -74,7 +74,24 @@
       "required": [
         "kind"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scalar"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "op",
+              "value"
+            ]
+          }
+        }
+      ]
     },
     "bindings": {
       "type": "array",

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "pim.identifiers.number-duplicates",
+  "functionId": "pim.identifiers",
+  "intent": {
+    "proves": "Product numbers: number-duplicates satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-number-duplicates",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-number-duplicates",
+      "operation": "get_products",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 CAST(p.ProductNumber AS nvarchar(100)) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND ISNULL(p.ProductNumber, N'') <> N''{inScope} GROUP BY p.ProductNumber HAVING COUNT(*) > 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#identifiers/number-duplicates"
+    }
+  ]
+}

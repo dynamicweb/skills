@@ -1,0 +1,386 @@
+{
+  "schema": 1,
+  "id": "pim-breadth",
+  "expectations": {
+    "pim.data-models.families-have-models": {
+      "minimumSubjects": 2
+    },
+    "pim.data-models.folder": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.data-models.products-without-model": {
+      "op": "eq",
+      "value": 0
+    },
+    "pim.data-sets.data-set": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.data-sets.defaults": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.field-types.declared-typing": {
+      "minimumSubjects": 12
+    },
+    "pim.field-types.type-spread": {
+      "op": "ge",
+      "value": 7
+    },
+    "pim.field-types.text-share": {
+      "op": "le",
+      "value": 40
+    },
+    "pim.field-types.declared-have-values": {
+      "minimumSubjects": 12
+    },
+    "pim.field-units.declared-units": {
+      "minimumSubjects": 3
+    },
+    "pim.field-units.groups-in-use": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.field-units.groups-valid": {},
+    "pim.field-units.unit-in-label": {},
+    "pim.unit-rules-per-language.rules": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.unit-rules-per-language.ruling.one-language": {
+      "op": "le",
+      "value": 1
+    },
+    "pim.list-fields.declared-options": {
+      "minimumSubjects": 3
+    },
+    "pim.list-fields.multi-select": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.list-fields.values-resolve": {},
+    "pim.field-rules.declared-required": {
+      "minimumSubjects": 2
+    },
+    "pim.field-validation.pattern": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.field-scope.declared-scope": {
+      "minimumSubjects": 2
+    },
+    "pim.field-scope.ruling.one-language-no-variant": {
+      "op": "eq",
+      "value": 0
+    },
+    "pim.computed-fields.provider-field": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.field-display-groups.groups": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.field-display-groups.unnamed-groups": {},
+    "pim.field-display-groups.ruling.no-shop-no-feed": {
+      "op": "eq",
+      "value": 0
+    },
+    "pim.identifiers.number-missing": {
+      "op": "eq",
+      "value": 0
+    },
+    "pim.identifiers.number-duplicates": {},
+    "pim.gtin.ean-share": {
+      "op": "ge",
+      "value": 50
+    },
+    "pim.manufacturers.manufacturers": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.manufacturers.product-share": {
+      "op": "ge",
+      "value": 80
+    },
+    "pim.sales-units.units": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.sales-units.product-units": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.variants.groups-with-options": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.variants.masters": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.variants.inactive-variants": {
+      "op": "eq",
+      "value": 0
+    },
+    "pim.variants.variant-numbers": {
+      "op": "eq",
+      "value": 0
+    },
+    "pim.bom.bom-products": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.bom.lines-resolve": {},
+    "pim.product-relations.relation-groups": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.product-relations.relations": {
+      "op": "ge",
+      "value": 10
+    },
+    "pim.product-relations.relations-resolve": {},
+    "pim.dynamic-relations.groups": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.dynamic-relations.relations": {
+      "op": "ge",
+      "value": 5
+    },
+    "pim.images.image-share": {
+      "op": "ge",
+      "value": 90
+    },
+    "pim.images.images-without-default": {
+      "op": "eq",
+      "value": 0
+    },
+    "pim.documents.document-categories": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.documents.products-with-documents": {
+      "op": "ge",
+      "value": 10
+    },
+    "pim.documents.category-names": {},
+    "pim.completeness-rules.rules": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.completeness-rules.models-without-rule": {},
+    "pim.workflow.states": {
+      "op": "ge",
+      "value": 3
+    },
+    "pim.workflow.transitions": {
+      "op": "ge",
+      "value": 3
+    },
+    "pim.workflow.attached": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.workflow.states-in-use": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.workflow.notification": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.product-queries.shared-queries": {
+      "op": "ge",
+      "value": 5
+    },
+    "pim.dashboards.dashboard": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.dashboards.widget-queries": {},
+    "pim.workspaces.workspaces": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.workspaces.empty-workspaces": {},
+    "pim.workspaces.completeness-level": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.email-notifications.notifications": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.field-permissions.field-permissions": {
+      "op": "ge",
+      "value": 2
+    },
+    "pim.screen-layouts.layout": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.screen-layouts.preset": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.screen-layouts.ruling.max-fields": {
+      "op": "le",
+      "value": 25
+    },
+    "pim.channels.channels-with-products": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.channels.shared-groups": {},
+    "pim.channels.empty-channels": {},
+    "pim.feeds.feeds": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.feeds.feeds-incomplete": {},
+    "pim.feeds.template-content-type": {},
+    "pim.assortments.active": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.assortments.permissions": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.assortments.built": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.assortments.anonymous-range": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.auto-assign.rules": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.auto-assign.ruling.product-count": {
+      "op": "le",
+      "value": 250
+    },
+    "pim.languages.translated-products": {
+      "op": "ge",
+      "value": 20
+    },
+    "pim.languages.text-differs": {
+      "op": "ge",
+      "value": 80
+    },
+    "pim.languages.label-translations": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.languages.option-translations": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.languages.ruling.one-language": {
+      "op": "le",
+      "value": 1
+    },
+    "pim.integration.activities": {
+      "op": "ge",
+      "value": 1
+    },
+    "pim.integration.ruling.product-count": {
+      "op": "le",
+      "value": 250
+    }
+  },
+  "proofs": {
+    "pim.data-models.families-have-models": "every declared family has a GroupType 2 data model on its category with at least one product, and at least two families are declared",
+    "pim.data-models.folder": "the DataStructure shop carries at least one data-model folder",
+    "pim.data-models.products-without-model": "no active product sits outside every data model",
+    "pim.data-sets.data-set": "at least one GroupType 3 data set exists",
+    "pim.data-sets.defaults": "at least one default value is stored on a data model or data set",
+    "pim.field-types.declared-typing": "every declared attribute is stored on a field type that fits its kind, and at least 12 attributes are declared",
+    "pim.field-types.type-spread": "the category fields use at least 7 distinct field types (the five text lengths count as one)",
+    "pim.field-types.text-share": "at most 40 percent of the category fields are plain text",
+    "pim.field-types.declared-have-values": "every declared category attribute has a value on at least one product",
+    "pim.field-units.declared-units": "every declared measure has a unit group and a preset unit on its field, and at least 3 measures are declared",
+    "pim.field-units.groups-in-use": "fields use at least 2 different unit groups (two quantities)",
+    "pim.field-units.groups-valid": "every unit group in use has a base unit that is one of its own units",
+    "pim.field-units.unit-in-label": "no category field label carries a unit in brackets",
+    "pim.unit-rules-per-language.rules": "at least one field shows a different unit for a language, and the unit resolves",
+    "pim.unit-rules-per-language.ruling.one-language": "product rows exist in at most one language",
+    "pim.list-fields.declared-options": "every declared choice field has at least 2 options, and at least 3 choice attributes are declared",
+    "pim.list-fields.multi-select": "at least one list field is a multi select (checkbox list or multi-select list)",
+    "pim.list-fields.values-resolve": "every value stored on a list field is one of the field's option values",
+    "pim.field-rules.declared-required": "every attribute declared required is marked required on its field, and at least 2 are declared",
+    "pim.field-validation.pattern": "at least one field carries a validation pattern",
+    "pim.field-scope.declared-scope": "every attribute declared per language or per variant allows that difference on its field, and at least 2 are declared",
+    "pim.field-scope.ruling.one-language-no-variant": "no second language and no variant row exists",
+    "pim.computed-fields.provider-field": "at least one field is built on a field type with a provider",
+    "pim.field-display-groups.groups": "at least 2 named display groups each hold 2 or more fields",
+    "pim.field-display-groups.unnamed-groups": "every display group has a name (on the group, or a translation in the default language keyed by its id or its system name)",
+    "pim.field-display-groups.ruling.no-shop-no-feed": "no storefront shop and no feed exists",
+    "pim.identifiers.number-missing": "every active product and variant has a number (a master with variants is exempt: the platform blanks it)",
+    "pim.identifiers.number-duplicates": "no product number is used twice",
+    "pim.gtin.ean-share": "at least 50 percent of the active products carry a GTIN on ProductEAN",
+    "pim.manufacturers.manufacturers": "at least 2 manufacturers exist",
+    "pim.manufacturers.product-share": "at least 80 percent of the active products name a manufacturer that exists",
+    "pim.sales-units.units": "at least 2 units exist",
+    "pim.sales-units.product-units": "at least 2 product unit rows exist (a product with its units and quantities)",
+    "pim.variants.groups-with-options": "at least one variant group has 2 or more options",
+    "pim.variants.masters": "at least 2 products have variant rows",
+    "pim.variants.inactive-variants": "no variant row was left with a NULL active flag",
+    "pim.variants.variant-numbers": "every variant row has its own number",
+    "pim.bom.bom-products": "at least one product of type BOM has 2 or more component lines",
+    "pim.bom.lines-resolve": "every BOM line names a component product or a group that exists",
+    "pim.product-relations.relation-groups": "at least 2 relation groups exist (two kinds of relation)",
+    "pim.product-relations.relations": "at least 10 relations exist",
+    "pim.product-relations.relations-resolve": "every relation names two products and a relation group that exist",
+    "pim.dynamic-relations.groups": "at least one dynamic relation group exists",
+    "pim.dynamic-relations.relations": "at least 5 dynamic relations exist",
+    "pim.images.image-share": "at least 90 percent of the active products have an image",
+    "pim.images.images-without-default": "no product has images and no default image",
+    "pim.documents.document-categories": "at least 2 asset categories that accept pdf each hold at least one asset",
+    "pim.documents.products-with-documents": "at least 10 products carry a document",
+    "pim.documents.category-names": "every asset category in use has a name in the default language",
+    "pim.completeness-rules.rules": "at least 2 completeness rules each list 3 or more fields",
+    "pim.completeness-rules.models-without-rule": "every data model that holds products has a completeness rule assigned",
+    "pim.workflow.states": "one workflow has at least 3 states",
+    "pim.workflow.transitions": "at least 3 transitions connect states that exist",
+    "pim.workflow.attached": "the workflow is attached to at least one group",
+    "pim.workflow.states-in-use": "products stand in at least 2 different states",
+    "pim.workflow.notification": "at least one state sends a notification that has recipients",
+    "pim.product-queries.shared-queries": "at least 5 saved product queries exist in the shared query folder",
+    "pim.dashboards.dashboard": "at least one Products dashboard has 4 or more widgets",
+    "pim.dashboards.widget-queries": "every widget on a Products dashboard that names a query names one that exists",
+    "pim.workspaces.workspaces": "at least 2 workspaces each have a level",
+    "pim.workspaces.empty-workspaces": "no workspace was saved with zero levels",
+    "pim.workspaces.completeness-level": "at least one workspace level shows completeness",
+    "pim.email-notifications.notifications": "at least one PIM notification has a recipient",
+    "pim.field-permissions.field-permissions": "at least 2 field permissions are stored",
+    "pim.screen-layouts.layout": "at least one active screen layout has a tab",
+    "pim.screen-layouts.preset": "at least one list preset has 3 or more columns",
+    "pim.screen-layouts.ruling.max-fields": "the largest attribute category has at most 25 fields",
+    "pim.channels.channels-with-products": "at least one channel has a group that holds products",
+    "pim.channels.shared-groups": "no group is shared between two shops or channels",
+    "pim.channels.empty-channels": "no channel is empty",
+    "pim.feeds.feeds": "at least one feed has a provider",
+    "pim.feeds.feeds-incomplete": "every feed has a provider, a language and a product source (query, channel, shop or groups)",
+    "pim.feeds.template-content-type": "every template feed states a content type",
+    "pim.assortments.active": "at least one active assortment has a group, product or shop relation",
+    "pim.assortments.permissions": "at least one assortment is granted to a user or group that exists",
+    "pim.assortments.built": "the assortments were built (assortment items exist)",
+    "pim.assortments.anonymous-range": "an active, built assortment is open to anonymous visitors, so the public range did not go blank when assortments were switched on",
+    "pim.auto-assign.rules": "at least one active assignment rule is a query rule or has a mapping",
+    "pim.auto-assign.ruling.product-count": "the catalogue holds at most 250 products",
+    "pim.languages.translated-products": "at least 20 products have a row in a second language",
+    "pim.languages.text-differs": "at least 80 percent of the translated rows carry a long description that differs from the default language",
+    "pim.languages.label-translations": "field labels are translated into a language that has product rows",
+    "pim.languages.option-translations": "list option names are translated into a language that has product rows",
+    "pim.languages.ruling.one-language": "product rows exist in at most one language",
+    "pim.integration.activities": "at least one Data Integration activity is stored",
+    "pim.integration.ruling.product-count": "the catalogue holds at most 250 products"
+  }
+}

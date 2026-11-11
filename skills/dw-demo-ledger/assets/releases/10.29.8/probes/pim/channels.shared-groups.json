@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "pim.channels.shared-groups",
+  "functionId": "pim.channels",
+  "intent": {
+    "proves": "Channels with their own group tree: shared-groups satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-shared-groups",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-shared-groups",
+      "operation": "get_shops",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(r.ShopGroupGroupId AS nvarchar(50)) FROM EcomShopGroupRelation r JOIN EcomShops s ON s.ShopId = r.ShopGroupShopId AND s.ShopType IN (1, 3) GROUP BY r.ShopGroupGroupId HAVING COUNT(DISTINCT r.ShopGroupShopId) > 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#channels/shared-groups"
+    }
+  ]
+}

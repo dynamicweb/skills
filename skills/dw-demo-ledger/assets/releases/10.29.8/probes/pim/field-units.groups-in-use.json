@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.field-units.groups-in-use",
+  "functionId": "pim.field-units",
+  "intent": {
+    "proves": "Units on measures: groups-in-use satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-groups-in-use",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-groups-in-use",
+      "operation": "ProductCategoryFieldsByCategoryId",
+      "reason": "Needs authenticated full-payload and scope parity measurement; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT x.g) FROM (SELECT FieldValueConversionGroupId g FROM EcomProductCategoryField WHERE ISNULL(FieldValueConversionGroupId, 0) <> 0 AND FieldCategoryId <> N'reference_category' UNION SELECT ProductFieldValueConversionGroupId FROM EcomProductField WHERE ISNULL(ProductFieldValueConversionGroupId, 0) <> 0) x"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-units/groups-in-use"
+    }
+  ]
+}
