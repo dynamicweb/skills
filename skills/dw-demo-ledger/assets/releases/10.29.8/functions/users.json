@@ -1,0 +1,544 @@
+{
+  "schema": 1,
+  "area": "users",
+  "functions": [
+    {
+      "id": "users.user-accounts",
+      "area": "users",
+      "name": "User accounts",
+      "description": "Registered frontend users (default user type) that can sign in, with active state, validity dates and username.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/user-accounts.active-frontend-users.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.no-signed-in-persona",
+          "when": "The demo has no signed-in storefront or backend persona other than the installation administrator."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+        }
+      ]
+    },
+    {
+      "id": "users.user-groups",
+      "area": "users",
+      "name": "User groups and membership",
+      "description": "Nested user groups used for permissions, shared settings and B2B scoping, with users as members.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/user-groups.exists.json",
+        "probes/users/user-groups.membership.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html"
+        }
+      ]
+    },
+    {
+      "id": "users.accounts",
+      "area": "users",
+      "name": "Customer accounts",
+      "description": "Accounts: groups that represent a customer company, linked to their buyers by a shared customer number, optionally owning company addresses. Needs the Feature Management toggle 'Enable user account functionality' (User Accounts category); its flag key is unverified, so it is not declared under requires.",
+      "skill": "dw-commerce-b2b",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/accounts.exists.json",
+        "probes/users/accounts.member-customer-number.json",
+        "probes/users/accounts.account-addresses.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.b2c-only",
+          "when": "The demo storefront is B2C only, with no buyer acting for a customer company."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html"
+        }
+      ]
+    },
+    {
+      "id": "users.shared-customer-number",
+      "area": "users",
+      "name": "Company sharing by customer number",
+      "description": "Several buyers share one customer number so that addresses, orders and favourites are shared across the company in the frontend apps.",
+      "skill": "dw-commerce-b2b",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/shared-customer-number.shared-buyers.json",
+        "probes/users/shared-customer-number.shared-address-source.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.b2c-only",
+          "when": "The demo storefront is B2C only, with no buyer acting for a customer company."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html"
+        }
+      ]
+    },
+    {
+      "id": "users.addresses",
+      "area": "users",
+      "name": "User addresses",
+      "description": "Additional addresses per user (billing, shipping or both, with a default), beside the address stored on the user.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/addresses.additional-addresses.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.no-signed-in-persona",
+          "when": "The demo has no signed-in storefront persona."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+        }
+      ]
+    },
+    {
+      "id": "users.custom-fields",
+      "area": "users",
+      "name": "Custom user and address fields",
+      "description": "Custom fields on users and on user addresses, for values from a CRM or ERP or local address formats.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/custom-fields.user-fields.json",
+        "probes/users/custom-fields.address-fields.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.no-user-attributes",
+          "when": "The demo story stores nothing on users beyond the standard fields."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/customuserfields.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/customaddressfields.html"
+        }
+      ]
+    },
+    {
+      "id": "users.user-group-types",
+      "area": "users",
+      "name": "Custom user and group types",
+      "description": "Custom user and group types (for example Manager or Business Account) with parent restrictions, stored as XML under Files/System/UserTypes.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/user-group-types.defined.json",
+        "probes/users/user-group-types.in-use.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.default-types-suffice",
+          "when": "The demo uses only the system user types and plain groups."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/user-and-grouptypes.html"
+        }
+      ]
+    },
+    {
+      "id": "users.backend-roles",
+      "area": "users",
+      "name": "Backend roles and area permissions",
+      "description": "Non-administrator backend users who sign in through Allow backend login and work under group permissions on admin areas (Section grants), shops, languages, product groups and product attributes.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/backend-roles.section-grants.json",
+        "probes/users/backend-roles.backend-editors.json",
+        "probes/users/backend-roles.shop-scoped-grants.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.admin-only-backend",
+          "when": "The demo shows the backend only as the administrator, with no role-based persona."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html"
+        }
+      ]
+    },
+    {
+      "id": "users.ui-permissions",
+      "area": "users",
+      "name": "UI permissions (Capability Control)",
+      "description": "UI-only permissions (DW 10.21+) that hide admin areas or navigation tree sections for selected groups without changing what they are authorised to do.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "flag",
+          "id": "CapabilityControlFeature",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/users/ui-permissions.limitations.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.admin-only-backend",
+          "when": "The demo shows the backend only as the administrator."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html"
+        }
+      ]
+    },
+    {
+      "id": "users.customer-profiles",
+      "area": "users",
+      "name": "Login users and customer profiles",
+      "description": "One login user signs in once and switches between customer profiles that share its username but carry their own customer number, addresses and prices.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/customer-profiles.login-with-profiles.json",
+        "probes/users/customer-profiles.profile-selector.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.no-multi-customer-buyer",
+          "when": "No persona in the demo buys for more than one customer."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+        }
+      ]
+    },
+    {
+      "id": "users.dynamic-groups",
+      "area": "users",
+      "name": "Dynamic groups from a segment search",
+      "description": "Groups or accounts whose members come from a segment search query, recalculated by the Calculate user segment search results scheduled task.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/dynamic-groups.query-bound.json",
+        "probes/users/dynamic-groups.calculation-task.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.static-membership",
+          "when": "All group membership in the demo is assigned directly."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/segment-search.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/dynamic-segments.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html"
+        }
+      ]
+    },
+    {
+      "id": "users.frontend-sign-in",
+      "area": "users",
+      "name": "Storefront sign-in",
+      "description": "A sign-in page with the Users - Authentication app (or the older Extranet app); anonymous visitors denied a page are redirected to it.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/frontend-sign-in.app-placed.json",
+        "probes/users/frontend-sign-in.persona-signs-in.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.no-signed-in-persona",
+          "when": "The demo has no signed-in storefront persona."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/index.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-login.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/extranet.html"
+        }
+      ]
+    },
+    {
+      "id": "users.self-registration",
+      "area": "users",
+      "name": "Self-registration",
+      "description": "Visitors create their own user from the storefront (Users - Create user app), optionally activated by email and placed in an account by customer number or email domain.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/self-registration.app-placed.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.invite-only",
+          "when": "Demo users are created by the administrator or by integration only."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-create.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html"
+        }
+      ]
+    },
+    {
+      "id": "users.account-self-service",
+      "area": "users",
+      "name": "Account self-service",
+      "description": "Signed-in users edit their profile, change their password, recover a forgotten password and manage their addresses from the storefront.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/account-self-service.password-recovery.json",
+        "probes/users/account-self-service.profile-apps.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.no-signed-in-persona",
+          "when": "The demo has no signed-in storefront persona."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/index.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/extranet.html"
+        }
+      ]
+    },
+    {
+      "id": "users.login-security",
+      "area": "users",
+      "name": "Login types and password policy",
+      "description": "Solution login type (normal, one-time code, magic link, MFA), per-user override, password complexity and expiry, and login attempt limitations.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/login-security.login-type.json",
+        "probes/users/login-security.password-policy.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.default-login",
+          "when": "The demo uses normal username and password sign-in with default password rules."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/frontendlogin.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/passwordsecurity.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/advancedconfiguration.html"
+        }
+      ]
+    },
+    {
+      "id": "users.external-login",
+      "area": "users",
+      "name": "External login providers",
+      "description": "Sign-in through an external identity service (Azure AD B2C, GitHub, Google, Microsoft Entra, Entra External ID, Okta) for backend, frontend or both.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "external identity tenant and client registration supplied at runtime",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/users/external-login.provider-active.json",
+        "probes/users/external-login.linked-users.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.local-credentials",
+          "when": "The demo signs in with local credentials only."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/external-login-providers.html"
+        }
+      ]
+    },
+    {
+      "id": "users.login-activity",
+      "area": "users",
+      "name": "Login activity log",
+      "description": "Audit log of frontend and backend sign-ins, failures, logouts and lockouts, with per-user widgets and a retention clean-up task.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/users/login-activity.events.json",
+        "probes/users/login-activity.retention-task.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.no-signed-in-persona",
+          "when": "Nobody signs in during the demo."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/login-activity.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-login-log.html"
+        }
+      ]
+    },
+    {
+      "id": "users.geolocation",
+      "area": "users",
+      "name": "User and group geolocation",
+      "description": "Latitude and longitude on users and groups, calculated from the address through Google Maps or set by hand, for maps and distance logic (for example a dealer locator).",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "Google Maps credentials (only for the Update geolocation action)",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/users/geolocation.coordinates.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "users.na.no-map",
+          "when": "The demo shows no map or distance-based selection."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/geolocation.html"
+        }
+      ]
+    }
+  ]
+}

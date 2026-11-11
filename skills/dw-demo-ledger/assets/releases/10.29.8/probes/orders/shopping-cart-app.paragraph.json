@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "id": "orders.shopping-cart-app.paragraph",
+  "functionId": "orders.shopping-cart-app",
+  "intent": {
+    "proves": "At least one paragraph runs the Shopping Cart app.",
+    "level": "configured",
+    "scope": "all paragraphs of all areas, module system name eCom_CartV2"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "search_paragraphs",
+      "arguments": {
+        "moduleSystemName": "eCom_CartV2"
+      }
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Paragraph WHERE ParagraphModuleSystemName = N'eCom_CartV2'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/shoppingcart.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html"
+    }
+  ]
+}

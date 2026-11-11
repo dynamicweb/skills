@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "serializer.serialize.manifest",
+  "functionId": "serializer.serialize",
+  "intent": {
+    "proves": "A replace-mode manifest has been written.",
+    "level": "applied",
+    "scope": "Files/System/Serializer/SerializeRoot/replace"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "System\\Serializer\\SerializeRoot\\replace",
+        "filter": "replace-manifest.json",
+        "includeSubfolders": false
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-base/references/serializer-reference.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/concepts.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/link-resolution.md"
+    }
+  ]
+}

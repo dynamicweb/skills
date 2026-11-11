@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "id": "commerce.price-matrix.prices-resolve",
+  "functionId": "commerce.price-matrix",
+  "intent": {
+    "proves": "Every price matrix entry points at an existing product.",
+    "level": "stored-integrity",
+    "scope": "all EcomPrices rows; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT p.PriceId + N' -> ' + ISNULL(p.PriceProductId, N'') FROM EcomPrices p WHERE NOT EXISTS (SELECT 1 FROM EcomProducts x WHERE x.ProductId = p.PriceProductId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "admin.scheduled-tasks.scheduler-not-disabled",
+  "functionId": "admin.scheduled-tasks",
+  "intent": {
+    "proves": "The Scheduled task settings switch that stops every task on the solution is off.",
+    "level": "configured",
+    "scope": "solution-wide setting"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-globalsettings-key",
+      "surface": "file",
+      "status": "planned",
+      "handler": "globalsettings-key",
+      "path": "GlobalSettings.config",
+      "reason": "The GlobalSettings key behind Scheduled task settings is unverified; no key is named until read from the baseline."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduled-task-settings.html"
+    }
+  ]
+}

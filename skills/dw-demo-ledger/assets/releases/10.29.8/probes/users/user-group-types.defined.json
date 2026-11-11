@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "users.user-group-types.defined",
+  "functionId": "users.user-group-types",
+  "intent": {
+    "proves": "At least one custom user or group type definition file exists.",
+    "level": "configured",
+    "scope": "XML files under Files/System/UserTypes"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-files-system-usertypes-xml",
+      "surface": "file",
+      "status": "planned",
+      "handler": "files-count",
+      "path": "Files/System/UserTypes/*.xml",
+      "reason": "files-count is a reserved handler that is not implemented yet; MCP list_files access to Files/System is not granted by default."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/user-and-grouptypes.html"
+    }
+  ]
+}

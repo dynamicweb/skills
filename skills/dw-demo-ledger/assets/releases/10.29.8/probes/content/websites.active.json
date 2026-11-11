@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "content.websites.active",
+  "functionId": "content.websites",
+  "intent": {
+    "proves": "At least one website is active, published and not in the recycle bin.",
+    "level": "configured",
+    "scope": "all websites; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-areas",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_areas",
+      "arguments": {},
+      "reason": "get_areas returns inactive and unpublished websites too; mcp-count has no field filter, so a projection on Active/Published is required before this binding is equivalent."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Area WHERE AreaActive = 1 AND AreaPublished = 1 AND AreaDeleted = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html"
+    }
+  ]
+}

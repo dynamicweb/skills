@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.commerce-products-api.products-served",
+  "functionId": "delivery.commerce-products-api",
+  "intent": {
+    "proves": "GET /dwapi/ecommerce/products/search returns products for a group in the build currency, country and language.",
+    "level": "behavioural",
+    "scope": "the build productScope group; anonymous unless a persona is named"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-count",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-count",
+      "operation": "GET /dwapi/ecommerce/products/search",
+      "reason": "No dwapi handler is implemented; a scalar HTTP binding needs a measured response projection (contract.md), endpoint presence alone does not qualify."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html"
+    }
+  ]
+}

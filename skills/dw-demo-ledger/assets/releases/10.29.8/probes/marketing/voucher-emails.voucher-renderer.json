@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "id": "marketing.voucher-emails.voucher-renderer",
+  "functionId": "marketing.voucher-emails",
+  "intent": {
+    "proves": "At least one email page carries the voucher renderer app.",
+    "level": "configured",
+    "scope": "all email content pages"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-paragraphs-by-page-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_paragraphs_by_page_id",
+      "arguments": {},
+      "reason": "Handler not reserved: needs one call per subject (iterate ids from the list tool) and a client-side predicate. The voucher renderer app system name is not verified for 10.29.8."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Paragraph WHERE ParagraphModuleSystemName LIKE N'%Voucher%'",
+      "reason": "Paragraph module system name for the voucher renderer (ContextVoucherRenderer in the assembly) not verified."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.Ecommerce 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

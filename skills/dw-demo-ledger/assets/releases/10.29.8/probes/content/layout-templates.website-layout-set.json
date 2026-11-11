@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "content.layout-templates.website-layout-set",
+  "functionId": "content.layout-templates",
+  "intent": {
+    "proves": "No active website lacks a layout template.",
+    "level": "configured",
+    "scope": "active, non-deleted websites; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-areas",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-offenders",
+      "operation": "get_areas",
+      "arguments": {},
+      "reason": "Needs a field-level offender handler over get_areas rows; not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 CAST(AreaId AS nvarchar(20)) + N' ' + ISNULL(AreaName, N'') FROM Area WHERE AreaActive = 1 AND AreaDeleted = 0 AND ISNULL(AreaLayout, N'') = N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html"
+    }
+  ]
+}

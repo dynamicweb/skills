@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "search.file-index.defined",
+  "functionId": "search.file-index",
+  "intent": {
+    "proves": "At least one index uses the file index builder.",
+    "level": "configured",
+    "scope": "index definitions in every repository"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-files-system-repositories-index",
+      "surface": "file",
+      "status": "planned",
+      "handler": "index-xml",
+      "path": "Files/System/Repositories/*/*.index",
+      "reason": "Repository definitions are XML files under Files/System/Repositories; an XML projection handler is not implemented and MCP file access to this folder is not granted by default."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "id": "marketing.recipients.preview",
+  "functionId": "marketing.recipients",
+  "intent": {
+    "proves": "The recipient preview of a named email resolves at least one recipient.",
+    "level": "behavioural",
+    "scope": "one email named by the build"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-email-campaign-recipient-preview",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_email_campaign_recipient_preview",
+      "arguments": {},
+      "reason": "Needs an email id from the build; build input for marketing subjects is not in the build schema yet."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.Core 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

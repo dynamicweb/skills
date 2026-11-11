@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "integration.provider-excel.in-use",
+  "functionId": "integration.provider-excel",
+  "intent": {
+    "proves": "At least one activity uses the Excel provider as source or destination.",
+    "level": "applied",
+    "scope": "all activities; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-integration-activities",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_integration_activities",
+      "arguments": {},
+      "reason": "Handler not reserved: needs a field-predicate projection over the tool's rows; mcp-count counts rows only. Predicate: sourceProvider or destinationProvider label is Excel; exact label strings not measured."
+    },
+    {
+      "id": "file-content",
+      "surface": "file",
+      "status": "planned",
+      "handler": "file-content",
+      "path": "Files/Integration/jobs/**/*.xml",
+      "reason": "No reserved handler reads job file content (provider type in the Source/Destination node)."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/excel-provider.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/index.html"
+    }
+  ]
+}

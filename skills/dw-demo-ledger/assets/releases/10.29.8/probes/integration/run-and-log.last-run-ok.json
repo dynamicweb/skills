@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "integration.run-and-log.last-run-ok",
+  "functionId": "integration.run-and-log",
+  "intent": {
+    "proves": "No activity's last run failed or completed with errors.",
+    "level": "behavioural",
+    "scope": "all activities that have run"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-integration-activities",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_integration_activities",
+      "arguments": {},
+      "reason": "Handler not reserved: needs a field-predicate projection over the tool's rows; mcp-count counts rows only. Predicate: lastRunStatus in Failed, CompletedWithError."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Integration/Tools (IntegrationActivityTools.cs, IntegrationEndpointTools.cs, IntegrationMappingTools.cs, IntegrationProviderTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-integration-framework/SKILL.md"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "content.friendly-urls.enabled",
+  "functionId": "content.friendly-urls",
+  "intent": {
+    "proves": "The solution URL type is set to friendly paths.",
+    "level": "configured",
+    "scope": "solution-wide URL settings"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-settings",
+      "surface": "file",
+      "status": "planned",
+      "handler": "settings-read",
+      "localOnly": true,
+      "path": "GlobalSettings.config",
+      "reason": "GlobalSettings key names for this setting are not verified on 10.29.8 and no reserved settings-read handler exists."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/customized-urls.html"
+    }
+  ]
+}

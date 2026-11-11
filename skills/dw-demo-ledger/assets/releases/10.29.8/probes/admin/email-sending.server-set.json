@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "admin.email-sending.server-set",
+  "functionId": "admin.email-sending",
+  "intent": {
+    "proves": "/Globalsettings/System/MailServer/Server is set.",
+    "level": "configured",
+    "scope": "Files/GlobalSettings.config"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-globalsettings-key",
+      "surface": "file",
+      "status": "planned",
+      "handler": "globalsettings-key",
+      "path": "GlobalSettings.config",
+      "reason": "No reserved handler parses GlobalSettings.config."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/smtp.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/solutionsettings.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/SKILL.md"
+    }
+  ]
+}

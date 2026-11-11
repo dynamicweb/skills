@@ -1,0 +1,694 @@
+{
+  "schema": 1,
+  "area": "orders",
+  "retrieved": "2026-11-11",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "title": "Order Management",
+      "sectionHash": "sha256:0e6a461f911419a7c0c781223d8eff29162bdef9908903bcb482deae35440bfd"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html",
+      "title": "Orders",
+      "sectionHash": "sha256:b6440f03891e34ef75ad2d6fa1f0501bca9760f6c8043773ac33132b093f874a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/carts.html",
+      "title": "Carts",
+      "sectionHash": "sha256:5a2485caacdf87179e8c3e602008e1ec3df42abaeb66d0943aed74557431a65d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/incomplete-orders.html",
+      "title": "Incomplete orders",
+      "sectionHash": "sha256:c10b159a543dff9ac86852785e22475cbb374b6359282c2951a82d7b28a2fab6"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/quotes.html",
+      "title": "Quotes",
+      "sectionHash": "sha256:84a852e38b90c77344e5b7457a9cd1bc806a256caabfe6f36ecbee34df4f2eed"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/subscriptions.html",
+      "title": "Subscriptions",
+      "sectionHash": "sha256:9db892f888c689d08e8d07c468d035f9d88c910a7f07f57983c76d1c7598707c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/rma.html",
+      "title": "RMA",
+      "sectionHash": "sha256:40fba4369e80ecc45cef21022847babbeedcc47e0ccaeabf270f5cd5d4de864a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/ledgers.html",
+      "title": "Ledgers",
+      "sectionHash": "sha256:e528e607745007376902b78201472c2a547c798cfb02e25c83b3538dbf709864"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/index.html",
+      "title": "Order Management",
+      "sectionHash": "sha256:b7920ccfba1de78f7325baa5c40ce0215f0394cb202d8fd9bef26bd3b70c473d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/payment.html",
+      "title": "Payment",
+      "sectionHash": "sha256:8676d11fcf5da90e6d86aa02c7c63e349d5bfa95a30b41372119502bb6861a5e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html",
+      "title": "Shipping",
+      "sectionHash": "sha256:3dbbe809de2c1ff72ec3002f6110e6b326db98f2a405ee289fa3df2697ecd666"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/orderfields.html",
+      "title": "Order fields",
+      "sectionHash": "sha256:4222b0571a32072d3b702e286608d40c3ab2000f69f3a8061458207815e9837e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/orderlinefields.html",
+      "title": "Order line fields",
+      "sectionHash": "sha256:045ba83dd1da1a94fc83b3604e82e01e02417cc5549087c6d3f28abf58cabf66"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/orderflows.html",
+      "title": "Order flows",
+      "sectionHash": "sha256:be9fb0f9f639a7301b8f767971c99ccc61c6dc83b277839af7bc6ac1a89d96f7"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/cartflows.html",
+      "title": "Cart flows",
+      "sectionHash": "sha256:d8d82a7b06093a9290df6677b2fc0e53f32895e4af27f9526c974601343bdd1b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/quoteflows.html",
+      "title": "Quote Flows",
+      "sectionHash": "sha256:af54656405d654c1ebefdb024688a68b241e46a3aa7af548457f970d3ff3cd10"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/ledgerflows.html",
+      "title": "Ledger flows",
+      "sectionHash": "sha256:ce6e80fc64ce159bbeb3e7da9dbf818f50bc68207034eea8cc5bb91832ab8628"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/ledgertypes.html",
+      "title": "Ledger types",
+      "sectionHash": "sha256:81ac231f1b6a9653ae69e2bc1f8e543bca3c9f5b58838a996d87d04339c3364c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/ordercontexts.html",
+      "title": "Order contexts",
+      "sectionHash": "sha256:508cd8d021fbf8328ace4c6f5dbfd673b7b65aa65ec39c7ab3f9b53dc24b0655"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/track-trace.html",
+      "title": "Track & Trace",
+      "sectionHash": "sha256:903c0bede8f66feff878a7a9c7516447aa7313057be2ac4e29d0fc9246527d1c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/addressvalidation.html",
+      "title": "Address validation",
+      "sectionHash": "sha256:0b994fa23e6975a32ecc92a47419190568bb4affb8fda30ec59dd68c201eb43a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/validationgroups.html",
+      "title": "Validation groups",
+      "sectionHash": "sha256:54962e8e4760fa06d31be91ebaa1593991fccbbf9b128134b9fa1888e977b60c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/rma/index.html",
+      "title": "RMAs",
+      "sectionHash": "sha256:005f22bfbea0a54e218911ed397ecba50ae52d977fd21bdd24dbf225ea3be458"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/shoppingcart.html",
+      "title": "Shopping cart",
+      "sectionHash": "sha256:576de32b8159f448ea615f9963b3ce069b2d9d2e0c8929f6831545711ff8d909"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/auto-numbering.html",
+      "title": "Auto-numbering",
+      "sectionHash": "sha256:2764c04dd0bc2e00583936295d359f8c93f490f58d04cc11bf5eddd559445127"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/taxsettings.html",
+      "title": "Tax settings",
+      "sectionHash": "sha256:6ee23e1191cd13ebd00dad0f6f9d9e9c22731f1e2d6208013e02d56c4ed3ec51"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/avalara-avatax.html",
+      "title": "Avalara AvaTax",
+      "sectionHash": "sha256:c7044b61d012f16ab93d98237cf6dd19f098f912584c86c8bfcbfecb48f5b1d0"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/vertex.html",
+      "title": "Vertex Tax Provider",
+      "sectionHash": "sha256:39df40cba020aee4f401ed206ebdb60e59200049127d491a0fa76a55227f9fc3"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/vat-taxes.html",
+      "title": "VAT & Taxes",
+      "sectionHash": "sha256:5805cd86fcca0c29aa74a27531b6e9a0feacc9c2513e143537190eeac07a04e5"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/vatgroups.html",
+      "title": "VAT groups",
+      "sectionHash": "sha256:b523343d91beae15d7f4504a49789139d293f2fe9edd67eb103821b0d62b2e49"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/vat-groups.html",
+      "title": "VAT groups",
+      "sectionHash": "sha256:b75525f5c9d8e3fe27e84d922cba3cee67ff8e8f6f16a2c571b1915cb85207d1"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/shoppingcart.html",
+      "title": "Shopping Cart",
+      "sectionHash": "sha256:81e9b60f92128d82769617629826c518c4ee9444122ff26213ce6650b420b8eb"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center.html",
+      "title": "Customer Experience Center",
+      "sectionHash": "sha256:db9f0e91287bdd4b74ec431d555c3bf7346731b4fe2e969b1147293727f02e19"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-center.html",
+      "title": "Customer Center",
+      "sectionHash": "sha256:b4089e93d5804d9b2d5f73c08b476cc84ac0ce27c27b1a2a1b2739f3fbb95751"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/integration-customer-center.html",
+      "title": "Integration Customer Center",
+      "sectionHash": "sha256:e6c71149a99141c3b8a12eb0ef5836600666860c45885bced43818a0254c2ce7"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-rma.html",
+      "title": "Customer Experience Center - RMA",
+      "sectionHash": "sha256:56637a87a54ce1d978d1339ec7cec802cddc184e7f7e37811fd3822fb622d144"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-favorites.html",
+      "title": "Customer Experience Center - Favorites",
+      "sectionHash": "sha256:b20c9dd84a862da909e0712b81d076a63480f667488752f27c606aa0ea8adb79"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-savedcards.html",
+      "title": "Customer Experience Center - Saved Cards",
+      "sectionHash": "sha256:6f0fb9a42cf6b655c64cf6b9750925626e448cbe45fc2b6ef83b9b64a06ec85e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/favoritelists.html",
+      "title": "Favorite Lists",
+      "sectionHash": "sha256:7c2fec4ba7207e16ef13c3816b863d5a76def9f23fed5f6acdd501b6a44b926b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/payment-card-expiration-notification.html",
+      "title": "Payment Card Expiration Notification",
+      "sectionHash": "sha256:eee0a8659098cb877c975e3951811c4a7e98ab1214bc822ec2621051f4f90e60"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html",
+      "title": "Abandoned Cart Emails",
+      "sectionHash": "sha256:509b0d91341f917862f0ed4dd2bbf2413c38972e0894fc101d0a528e8be8f989"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Order management lists are filtered by the user's shop read permissions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "excluded": {
+        "reason": "Backend permission filtering is owned by the users-permissions area."
+      }
+    },
+    {
+      "claim": "A cart is converted to an order when checkout completes in the Shopping Cart app.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.completed-orders"
+    },
+    {
+      "claim": "Multiple named carts and cart flows pass carts between customer and business before checkout.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.named-carts"
+    },
+    {
+      "claim": "A cart can be checked out to a quote that staff edit and the customer accepts or rejects.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.quotes"
+    },
+    {
+      "claim": "Orders come from checkout, subscriptions, quote conversion or external import.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.completed-orders"
+    },
+    {
+      "claim": "Order fields and order line fields extend the standard fields.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.order-fields"
+    },
+    {
+      "claim": "Subscription base orders generate orders at intervals.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.subscriptions"
+    },
+    {
+      "claim": "Incomplete orders are kept out of the Orders list until payment is confirmed.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.order-processing"
+    },
+    {
+      "claim": "Orders are processed by moving them through order flow states.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.order-flows"
+    },
+    {
+      "claim": "Payment can be captured from the back office for providers that support it; capture states are tracked.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.order-processing"
+    },
+    {
+      "claim": "Shipping uses fee rules or a carrier provider.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.shipping-fees"
+    },
+    {
+      "claim": "A shipped state with track and trace sends a tracking email.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.track-and-trace"
+    },
+    {
+      "claim": "Cancel, delete and refund are available when the payment provider supports them.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.order-processing"
+    },
+    {
+      "claim": "Fulfilled orders are returned through RMA, optionally with a replacement order.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.rma"
+    },
+    {
+      "claim": "Ledger entries record invoices, credit memos and payments tied to orders.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html",
+      "functionId": "orders.ledgers"
+    },
+    {
+      "claim": "The Orders list supports search, filters, columns and saved views.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html",
+      "excluded": {
+        "reason": "Back-office list presentation (columns, views, sorting) is generic screen behaviour, not a commerce outcome."
+      }
+    },
+    {
+      "claim": "Row actions: capture, change flow and state, shipping documents, receipt, register RMA, edit, cancel, delete.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html",
+      "functionId": "orders.order-processing"
+    },
+    {
+      "claim": "Order details show overview, payment details, information, recurring and custom fields tabs.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html",
+      "functionId": "orders.order-processing"
+    },
+    {
+      "claim": "Order lines are added by search or SKU, as fixed lines or order discounts, in the Order lines widget.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html",
+      "functionId": "orders.order-processing"
+    },
+    {
+      "claim": "Editing an order changes currency, channel, PO number, voucher, addresses, methods, comments, track and trace and other fields.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html",
+      "functionId": "orders.order-processing"
+    },
+    {
+      "claim": "Selected orders export to Excel, optionally with an export template.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html",
+      "functionId": "orders.order-export"
+    },
+    {
+      "claim": "The Carts list shows open carts with state, customer, lines and price.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/carts.html",
+      "functionId": "orders.cart-flows"
+    },
+    {
+      "claim": "Carts can be edited, moved through cart flow states, viewed as frontend receipt or deleted.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/carts.html",
+      "functionId": "orders.cart-flows"
+    },
+    {
+      "claim": "Incomplete orders show an age indicator (in payment, delayed, stuck).",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/incomplete-orders.html",
+      "functionId": "orders.order-processing"
+    },
+    {
+      "claim": "Incomplete orders complete automatically if payment is later confirmed; they can be edited, viewed or deleted.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/incomplete-orders.html",
+      "functionId": "orders.order-processing"
+    },
+    {
+      "claim": "Quotes are listed and moved through quote flow states; they can be edited or deleted.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/quotes.html",
+      "functionId": "orders.quotes"
+    },
+    {
+      "claim": "Subscriptions list base orders; previous and future deliveries, cancel recurring, edit, delete and new subscription.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/subscriptions.html",
+      "functionId": "orders.subscriptions"
+    },
+    {
+      "claim": "A base order holds start date, end date, interval and interval unit and is usually created from frontend.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/subscriptions.html",
+      "functionId": "orders.subscriptions"
+    },
+    {
+      "claim": "RMAs are Return, Defective or Exchange, created from an order or the customer center.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/rma.html",
+      "functionId": "orders.rma"
+    },
+    {
+      "claim": "RMAs move through states and are closed; closed or deleted RMAs are read-only.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/rma.html",
+      "functionId": "orders.rma"
+    },
+    {
+      "claim": "A replacement order (refund, replace with different or same product) is created at the end of the RMA flow.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/rma.html",
+      "functionId": "orders.rma"
+    },
+    {
+      "claim": "Ledger entries are listed per ledger type and moved through ledger flows.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/ledgers.html",
+      "functionId": "orders.ledgers"
+    },
+    {
+      "claim": "Ledger entries are imported from an external system and shown in the Customer Experience Center.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/ledgers.html",
+      "functionId": "orders.ledgers"
+    },
+    {
+      "claim": "Order management settings group payment, shipping, stock state, fields, flows, contexts, track and trace and validation.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/index.html",
+      "functionId": "orders.order-flows"
+    },
+    {
+      "claim": "Payment methods have name, active state, description, countries, provider, fees and frontend groups.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/payment.html",
+      "functionId": "orders.payment-methods"
+    },
+    {
+      "claim": "Checkout handlers keep card data on the provider's page (PCI scope).",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/payment.html",
+      "functionId": "orders.payment-providers"
+    },
+    {
+      "claim": "Payment fees are fixed or percentage above a total, per country or region.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/payment.html",
+      "functionId": "orders.payment-fees"
+    },
+    {
+      "claim": "Payment methods are active for selected delivery countries or all countries.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/payment.html",
+      "functionId": "orders.method-countries"
+    },
+    {
+      "claim": "Business Central code, terms code and terms map a payment method to the ERP.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/payment.html",
+      "excluded": {
+        "reason": "Live ERP integration features are owned by the integration area (dw-integration-erp)."
+      }
+    },
+    {
+      "claim": "Shipping methods have name, active state, description, provider, fees, availability and Business Central fields.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html",
+      "functionId": "orders.shipping-methods"
+    },
+    {
+      "claim": "A shipping provider app integrates a carrier such as GLS or Shipmondo.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html",
+      "functionId": "orders.shipping-providers"
+    },
+    {
+      "claim": "Default fee, no fee above an amount and eligibility for free shipping discounts.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html",
+      "functionId": "orders.free-shipping"
+    },
+    {
+      "claim": "Fee rules by date, fee type, weight, volume, user, group, customer number, shop, product, group, total, context, country, region, currency and zip.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html",
+      "functionId": "orders.shipping-fees"
+    },
+    {
+      "claim": "Shipping methods are available for selected countries and regions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html",
+      "functionId": "orders.method-countries"
+    },
+    {
+      "claim": "Shipping methods are limited by frontend groups, products and groups (inclusive or exclusive) and weight limits.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html",
+      "functionId": "orders.shipping-methods"
+    },
+    {
+      "claim": "Business Central agent and service codes map a shipping method to the ERP.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html",
+      "excluded": {
+        "reason": "Live ERP integration features are owned by the integration area (dw-integration-erp)."
+      }
+    },
+    {
+      "claim": "Order fields are custom order fields with a system name, template tag and type.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/orderfields.html",
+      "functionId": "orders.order-fields"
+    },
+    {
+      "claim": "Order line fields are custom order line fields with a maximum length.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/orderlinefields.html",
+      "functionId": "orders.order-line-fields"
+    },
+    {
+      "claim": "Order flows hold order states; one flow can be default and several flows serve multi-channel setups.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/orderflows.html",
+      "functionId": "orders.order-flows"
+    },
+    {
+      "claim": "Order states have name, description, colour and default flag.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/orderflows.html",
+      "functionId": "orders.order-flows"
+    },
+    {
+      "claim": "Order states send notification emails to billing, shipping, an order field address or others.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/orderflows.html",
+      "functionId": "orders.state-notifications"
+    },
+    {
+      "claim": "Cart flows hold cart states with notifications for carts prepared over time.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/cartflows.html",
+      "functionId": "orders.cart-flows"
+    },
+    {
+      "claim": "Quote flows hold quote states with allow order, allow edit, notifications and state rules.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/quoteflows.html",
+      "functionId": "orders.quotes"
+    },
+    {
+      "claim": "Ledger flows hold ledger entry states with notifications.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/ledgerflows.html",
+      "functionId": "orders.ledgers"
+    },
+    {
+      "claim": "Ledger types (invoice, payment, credit memo) are imported or created manually.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/ledgertypes.html",
+      "functionId": "orders.ledgers"
+    },
+    {
+      "claim": "Order contexts give several carts on one website, optionally per shop.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/ordercontexts.html",
+      "functionId": "orders.order-contexts"
+    },
+    {
+      "claim": "Track and trace schemes are URLs with parameters filled per order.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/track-trace.html",
+      "functionId": "orders.track-and-trace"
+    },
+    {
+      "claim": "Address validators per country validate checkout and user addresses; no provider ships for DW10.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/addressvalidation.html",
+      "functionId": "orders.address-validation"
+    },
+    {
+      "claim": "Validation groups with field rules are selected on the Shopping Cart app.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/validationgroups.html",
+      "functionId": "orders.checkout-validation"
+    },
+    {
+      "claim": "Validation operators include required, contains, equals, numeric, length, range, email, gift card, voucher and regex.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/validationgroups.html",
+      "functionId": "orders.checkout-validation"
+    },
+    {
+      "claim": "RMA settings define states, translatable events and email notifications.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/rma/index.html",
+      "functionId": "orders.rma-notifications"
+    },
+    {
+      "claim": "RMA states have a default for new RMAs and an active-for selector.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/rma/index.html",
+      "functionId": "orders.rma"
+    },
+    {
+      "claim": "Cart settings: recalculate at login, auto-select single methods, skip zero payment, address loop, copy billing to delivery.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/shoppingcart.html",
+      "functionId": "orders.cart-settings"
+    },
+    {
+      "claim": "Cart settings: order step validation, grouped discount lines, cart isolation, reorder recalculation, keep empty carts and zero lines.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/shoppingcart.html",
+      "functionId": "orders.cart-settings"
+    },
+    {
+      "claim": "Cart session timeout and days a cart is saved.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/shoppingcart.html",
+      "functionId": "orders.cart-settings"
+    },
+    {
+      "claim": "Anonymous cart on login: keep, replace or merge.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/shoppingcart.html",
+      "functionId": "orders.cart-settings"
+    },
+    {
+      "claim": "Saved for later valid time.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/shoppingcart.html",
+      "functionId": "orders.cart-settings"
+    },
+    {
+      "claim": "Product reservation at add to cart or checkout.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/shoppingcart.html",
+      "functionId": "commerce.product-reservation"
+    },
+    {
+      "claim": "Allow different context dates sets OrderTime explicitly for testing.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/shoppingcart.html",
+      "functionId": "orders.cart-settings"
+    },
+    {
+      "claim": "Auto-numbering schemes with prefix and postfix assign ids to orders and other objects.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/auto-numbering.html",
+      "functionId": "orders.order-numbering"
+    },
+    {
+      "claim": "Tax settings with a provider per country; the flat rate provider applies a percent or fixed amount to products.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/taxsettings.html",
+      "functionId": "orders.tax-providers"
+    },
+    {
+      "claim": "A custom TaxProvider class serves advanced needs.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/taxsettings.html",
+      "functionId": "orders.tax-providers"
+    },
+    {
+      "claim": "Avalara AvaTax calculates US sales tax with commit, catalogue, exemption, debug and test options.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/avalara-avatax.html",
+      "functionId": "orders.tax-providers"
+    },
+    {
+      "claim": "Vertex calculates US sales tax, validates addresses and supports tax documents.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/vertex.html",
+      "functionId": "orders.tax-providers"
+    },
+    {
+      "claim": "VAT is system VAT, country VAT or VAT groups, most specific first, on the billing country.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/vat-taxes.html",
+      "functionId": "orders.country-vat"
+    },
+    {
+      "claim": "Reverse charge for VAT is available.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/vat-taxes.html",
+      "functionId": "orders.reverse-charge"
+    },
+    {
+      "claim": "A VAT group added to a product for a country overrides the country VAT rate.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/vatgroups.html",
+      "functionId": "orders.vat-groups"
+    },
+    {
+      "claim": "VAT groups have a name, native name, optional VAT provider and country rates with reverse charge.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/vat-groups.html",
+      "functionId": "orders.vat-groups"
+    },
+    {
+      "claim": "The Shopping Cart app keeps the cart, guides checkout through address, delivery, payment and receipt, and sends confirmation emails.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/shoppingcart.html",
+      "functionId": "orders.shopping-cart-app"
+    },
+    {
+      "claim": "The Customer Experience Center shows orders, quotes, carts, ledgers and subscriptions to logged-in users.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center.html",
+      "functionId": "orders.customer-experience-center"
+    },
+    {
+      "claim": "Customers reorder a previous order or accept a quote in the Customer Experience Center.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center.html",
+      "functionId": "orders.customer-experience-center"
+    },
+    {
+      "claim": "Users with impersonation relations see their customers' orders.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center.html",
+      "duplicateOf": "swift.impersonation"
+    },
+    {
+      "claim": "The older Customer Center app is replaced by Customer Experience Center apps.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-center.html",
+      "functionId": "orders.customer-experience-center"
+    },
+    {
+      "claim": "The Integration Customer Center shows orders, invoices and credits live from the ERP.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/integration-customer-center.html",
+      "duplicateOf": "integration.customer-center"
+    },
+    {
+      "claim": "The Customer Experience Center RMA app lists the user's RMAs.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-rma.html",
+      "functionId": "orders.rma"
+    },
+    {
+      "claim": "The Customer Experience Center Favorites app lets users create, manage and delete favourite lists.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-favorites.html",
+      "functionId": "orders.favorite-lists"
+    },
+    {
+      "claim": "The Customer Experience Center Saved Cards app lists, renames and deletes saved cards.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-savedcards.html",
+      "functionId": "orders.saved-cards"
+    },
+    {
+      "claim": "Favourite lists belong to a user or group, can be published, public or default, copied and filled by SKU.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/favoritelists.html",
+      "functionId": "orders.favorite-lists"
+    },
+    {
+      "claim": "The Payment Card Expiration Notification task emails users about expiring saved cards.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/payment-card-expiration-notification.html",
+      "functionId": "orders.saved-cards"
+    },
+    {
+      "claim": "Abandoned cart emails are sent through an email campaign.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html",
+      "duplicateOf": "marketing.abandoned-cart"
+    }
+  ],
+  "gaps": [
+    {
+      "claim": "Refund from the back office (full or partial) has no check; capture is checked through OrderCaptureAmount only.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html"
+    },
+    {
+      "claim": "Shipping documents generation depends on the carrier provider and has no check.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html"
+    },
+    {
+      "claim": "Saved for later lists (EcomSavedForLater) have no frontend app identified in the manual and no function beyond the valid-time setting.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/shoppingcart.html"
+    },
+    {
+      "claim": "Quote flow state rules (allowed transitions) are not checked; quotes.convertible covers only AllowOrder.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/quoteflows.html"
+    },
+    {
+      "claim": "Order export template presets for Excel (OrderDataModel export templates) are not checked.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html"
+    }
+  ]
+}

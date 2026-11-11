@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "distribution.release-compatibility.app-floors",
+  "functionId": "distribution.release-compatibility",
+  "intent": {
+    "proves": "Every required app is installed at or above its compat floor.",
+    "level": "supported",
+    "scope": "compat.apps of base.contract.json in the locked commit"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-installed-apps",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-installed-apps",
+      "reason": "Installed app versions are not read by a verified query."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:README.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:CONTRIBUTING.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/INDEX.json"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:versions/spine.json"
+    }
+  ]
+}

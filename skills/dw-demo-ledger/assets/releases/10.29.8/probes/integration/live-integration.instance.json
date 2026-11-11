@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "id": "integration.live-integration.instance",
+  "functionId": "integration.live-integration",
+  "intent": {
+    "proves": "At least one live integration settings file exists.",
+    "level": "configured",
+    "scope": "Files/System/LiveIntegration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "System\\LiveIntegration",
+        "filter": "*.Setup.xml",
+        "includeSubfolders": false
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/DataIntegration.LiveIntegration Configuration/SettingsFileHandler.cs (settings file /Files/System/LiveIntegration/{instance}.Setup.xml)"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/erp-plug-in-units/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.DataIntegration 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

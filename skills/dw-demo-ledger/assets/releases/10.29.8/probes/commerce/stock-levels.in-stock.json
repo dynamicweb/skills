@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "commerce.stock-levels.in-stock",
+  "functionId": "commerce.stock-levels",
+  "intent": {
+    "proves": "At least one active product has stock above zero or is never out of stock.",
+    "level": "applied",
+    "scope": "all active product rows"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_product_stock",
+      "reason": "get_product_stock reads at most 100 named products; no whole-host stock enumeration tool."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomProducts WHERE ProductActive = 1 AND (ProductStock > 0 OR ProductNeverOutOfStock = 1)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/stock.html"
+    }
+  ]
+}

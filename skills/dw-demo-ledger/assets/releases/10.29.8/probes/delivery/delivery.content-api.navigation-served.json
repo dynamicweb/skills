@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "delivery.content-api.navigation-served",
+  "functionId": "delivery.content-api",
+  "intent": {
+    "proves": "The navigation tree of a website is delivered with at least one node.",
+    "level": "behavioural",
+    "scope": "each website named by the build"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-navigation-structure",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_navigation_structure",
+      "arguments": {
+        "areaId": "{areaId}"
+      },
+      "reason": "Needs an areaId input; the contract defines no token substitution for MCP arguments yet."
+    },
+    {
+      "id": "dwapi-count",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-count",
+      "operation": "GET /dwapi/frontend/navigations/{areaId}",
+      "reason": "No dwapi handler is implemented; a scalar HTTP binding needs a measured response projection (contract.md), endpoint presence alone does not qualify."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Core/ToolNames.cs and tool classes (HEAD, read 2026-11-11)"
+    }
+  ]
+}

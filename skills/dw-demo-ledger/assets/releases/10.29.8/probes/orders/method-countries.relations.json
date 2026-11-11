@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "orders.method-countries.relations",
+  "functionId": "orders.method-countries",
+  "intent": {
+    "proves": "At least one payment or shipping method is restricted to a country.",
+    "level": "configured",
+    "scope": "all method country relations"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomMethodCountryRelation"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/payment.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html"
+    }
+  ]
+}

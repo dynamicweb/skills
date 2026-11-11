@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "commerce.vouchers.linked",
+  "functionId": "commerce.vouchers",
+  "intent": {
+    "proves": "At least one active voucher list with codes is linked to an active discount.",
+    "level": "applied",
+    "scope": "active voucher lists and discounts of both engines"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomVoucherLists v WHERE v.VoucherListActive = 1 AND EXISTS (SELECT 1 FROM EcomVouchers c WHERE c.VoucherListId = v.VoucherListId) AND EXISTS (SELECT 1 FROM EcomDiscount d WHERE d.DiscountVoucherListId = v.VoucherListId AND d.DiscountActive = 1)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/vouchers.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/voucherrenderer.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

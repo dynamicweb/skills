@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "delivery.content-api.website-exists",
+  "functionId": "delivery.content-api",
+  "intent": {
+    "proves": "At least one active website (area) exists for the content endpoints to serve.",
+    "level": "configured",
+    "scope": "all areas on the solution; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-areas",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_areas",
+      "arguments": {}
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM Area WHERE AreaActive = 1",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Core/ToolNames.cs and tool classes (HEAD, read 2026-11-11)"
+    }
+  ]
+}

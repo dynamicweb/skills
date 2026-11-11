@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "assets.cdn.configured",
+  "functionId": "assets.cdn",
+  "intent": {
+    "proves": "CDN replacement is enabled with an https host.",
+    "level": "configured",
+    "scope": "solution-wide CDN settings"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-settings",
+      "surface": "file",
+      "status": "planned",
+      "handler": "settings-read",
+      "localOnly": true,
+      "path": "GlobalSettings.config",
+      "reason": "GlobalSettings key names for this setting are not verified on 10.29.8 and no reserved settings-read handler exists."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Area has CDN columns, but the documented setting is global; equivalence is unmeasured."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/cdn.html"
+    }
+  ]
+}

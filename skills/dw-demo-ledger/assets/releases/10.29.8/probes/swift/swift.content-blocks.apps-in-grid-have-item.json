@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "swift.content-blocks.apps-in-grid-have-item",
+  "functionId": "swift.content-blocks",
+  "intent": {
+    "proves": "No live app paragraph sits in a grid row without an item type (it would render nothing in a Swift column).",
+    "level": "stored-integrity",
+    "scope": "non-deleted paragraphs placed in grid rows"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "sql-offenders",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "query": "SELECT ParagraphID FROM Paragraph WHERE ParagraphDeleted = 0 AND ParagraphGridRowId > 0 AND ParagraphModuleSystemName <> '' AND (ParagraphItemType IS NULL OR ParagraphItemType = '')",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-swift-page-blocks/SKILL.md"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/references/paragraphs.md and dw-data-access/references/recipes-content.md (Page, Paragraph and GridRow columns)"
+    }
+  ]
+}

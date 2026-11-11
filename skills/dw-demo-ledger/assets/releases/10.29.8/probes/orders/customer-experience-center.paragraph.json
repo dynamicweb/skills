@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "id": "orders.customer-experience-center.paragraph",
+  "functionId": "orders.customer-experience-center",
+  "intent": {
+    "proves": "At least one paragraph runs the Customer Experience Center app.",
+    "level": "configured",
+    "scope": "all paragraphs, module system name eCom_CustomerExperienceCenter"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "search_paragraphs",
+      "arguments": {
+        "moduleSystemName": "eCom_CustomerExperienceCenter"
+      }
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Paragraph WHERE ParagraphModuleSystemName = N'eCom_CustomerExperienceCenter' AND ISNULL(ParagraphDeleted, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-center.html"
+    }
+  ]
+}

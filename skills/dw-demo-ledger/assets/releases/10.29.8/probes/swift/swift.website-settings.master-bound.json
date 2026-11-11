@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "id": "swift.website-settings.master-bound",
+  "functionId": "swift.website-settings",
+  "intent": {
+    "proves": "Every active website carries the Swift master settings item (website settings tabs).",
+    "level": "configured",
+    "scope": "active areas"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-area-by-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-attributes",
+      "operation": "get_area_by_id",
+      "arguments": {
+        "areaId": "{areaId}"
+      },
+      "reason": "Needs an areaId input; the contract defines no token substitution for MCP arguments yet. Also needs an item-type projection."
+    },
+    {
+      "id": "sql-offenders",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-offenders",
+      "query": "SELECT AreaID FROM Area WHERE AreaActive = 1",
+      "localOnly": true,
+      "reason": "The area item type column is not verified in the DW source; the SELECT lacks the predicate and must not run."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/swift-configuration.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/architecture.html"
+    }
+  ]
+}

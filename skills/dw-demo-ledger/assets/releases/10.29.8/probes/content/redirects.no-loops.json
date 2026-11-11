@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "content.redirects.no-loops",
+  "functionId": "content.redirects",
+  "intent": {
+    "proves": "No active redirect points at itself, forms a two-step loop, or is a global catch-all.",
+    "level": "stored-integrity",
+    "scope": "active redirect rows; exact string comparison without URL normalisation"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "admin-api",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-offenders",
+      "operation": "UrlPath list",
+      "reason": "Admin query name for redirects not verified; no MCP tool reads redirects."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 u.UrlPathPath + N' -> ' + u.UrlPathRedirect FROM UrlPath u WHERE u.UrlPathActive = 1 AND (u.UrlPathRedirect = u.UrlPathPath OR u.UrlPathPath IN (N'*', N'/*') OR EXISTS (SELECT 1 FROM UrlPath v WHERE v.UrlPathActive = 1 AND v.UrlPathPath = u.UrlPathRedirect AND v.UrlPathRedirect = u.UrlPathPath))"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/redirects.html"
+    }
+  ]
+}

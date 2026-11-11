@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "users.login-activity.events",
+  "functionId": "users.login-activity",
+  "intent": {
+    "proves": "At least one successful sign-in is recorded in the login audit log.",
+    "level": "applied",
+    "scope": "AccessUserLoginLog rows"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUserLoginLog WHERE AccessUserLoginLogSuccess = 1",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/login-activity.html"
+    }
+  ]
+}

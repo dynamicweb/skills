@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "id": "orders.shipping-methods.active",
+  "functionId": "orders.shipping-methods",
+  "intent": {
+    "proves": "At least one shipping method is active.",
+    "level": "configured",
+    "scope": "all shipping methods"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_shipping_methods",
+      "arguments": {
+        "onlyActive": true
+      }
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT ShippingId) FROM EcomShippings WHERE ShippingActive = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html"
+    }
+  ]
+}

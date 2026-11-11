@@ -1,0 +1,469 @@
+{
+  "schema": 1,
+  "area": "search",
+  "functions": [
+    {
+      "id": "search.repositories",
+      "area": "search",
+      "name": "Search repositories",
+      "description": "Repositories under Settings > System > Repositories holding indexes, queries, facets and tasks.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/repositories.exists.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/index.html"
+        }
+      ]
+    },
+    {
+      "id": "search.product-index",
+      "area": "search",
+      "name": "Product index",
+      "description": "A product index built by ProductIndexBuilder with a build configuration, at least two Lucene instances behind a balancer, and the ProductIndexSchemaExtender fields.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/product-index.built.json",
+        "probes/search/product-index.two-instances.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.no-storefront-catalog",
+          "when": "The demo shows no product list or search on a storefront or headless frontend."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html"
+        }
+      ]
+    },
+    {
+      "id": "search.index-fields",
+      "area": "search",
+      "name": "Index fields beyond the schema extender",
+      "description": "Manually added simple, summary or grouping fields (for example an un-analysed name for sorting and facets, a free-text summary field, or price bands).",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/index-fields.manual-field.json",
+        "probes/search/index-fields.declared-populated.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.no-storefront-catalog",
+          "when": "The demo shows no product list or search."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/productsearch.html"
+        }
+      ]
+    },
+    {
+      "id": "search.analyzers-boosting",
+      "area": "search",
+      "name": "Analyzers, boosting and stop words",
+      "description": "Custom field types with a non-standard analyzer, boost values that rank matches on chosen fields higher, and a stopwords.txt override.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/analyzers-boosting.boosted-field.json",
+        "probes/search/analyzers-boosting.custom-analyzer.json",
+        "probes/search/analyzers-boosting.stopwords.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.default-relevance",
+          "when": "The demo does not show search relevance or ranking."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+        }
+      ]
+    },
+    {
+      "id": "search.index-queries",
+      "area": "search",
+      "name": "Repository index queries",
+      "description": "Queries on an index with parameters, expressions and expression groups (AND, OR, negate), test values (constant, macro, parameter, term, code) and optional sorting.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/index-queries.exists.json",
+        "probes/search/index-queries.no-constant-macros.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/queries/index.html"
+        }
+      ]
+    },
+    {
+      "id": "search.free-text-search",
+      "area": "search",
+      "name": "Free-text product search",
+      "description": "A repository query with a free-text search parameter bound by Contains or ContainsExtended to analysed fields (for example a summary field), so a storefront search term returns matching products. The catalog app that publishes the query is commerce.product-catalog-app.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/free-text-search.free-text-parameter.json",
+        "probes/search/free-text-search.term-returns-products.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.no-storefront-catalog",
+          "when": "The demo shows no product list or search."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/productsearch.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html"
+        }
+      ]
+    },
+    {
+      "id": "search.facets",
+      "area": "search",
+      "name": "Facets",
+      "description": "Facet groups on a query with field, list or term facets bound to query parameters, rendered by the product catalog app.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/facets.groups.json",
+        "probes/search/facets.catalog-wired.json",
+        "probes/search/facets.not-analyzed.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.no-storefront-catalog",
+          "when": "The demo shows no product list."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/facets.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/productsearch.html"
+        }
+      ]
+    },
+    {
+      "id": "search.conditional-facets",
+      "area": "search",
+      "name": "Conditional facets",
+      "description": "Facets shown only when another query parameter has a value or a specific value.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/conditional-facets.configured.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.flat-facets",
+          "when": "Every facet in the demo applies to every product list."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/facets.html"
+        }
+      ]
+    },
+    {
+      "id": "search.group-facet-overrides",
+      "area": "search",
+      "name": "Facet overrides per product group",
+      "description": "Per product group overrides of the facet set (order, disabled facets) on top of the facet group.",
+      "skill": "dw-search-indexing",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/group-facet-overrides.exists.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.flat-facets",
+          "when": "Every category shows the same facets."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/MCP/blob/main/Products/Tools/GroupFacetTools.cs"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/MCP/blob/main/Products/Models/GroupFacetModels.cs"
+        }
+      ]
+    },
+    {
+      "id": "search.scheduled-index-build",
+      "area": "search",
+      "name": "Scheduled index builds",
+      "description": "A scheduled task with the Build repository index add-in runs an Update build, optionally a Full build at an alternate time, so API and SQL writes and deletions reach the index.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/scheduled-index-build.task.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.static-catalog",
+          "when": "No product, user or content write happens after the build, so the index is rebuilt once at the end of the build."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-repository-index.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/tasks.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html"
+        }
+      ]
+    },
+    {
+      "id": "search.auto-build-on-save",
+      "area": "search",
+      "name": "Index rebuild on product save",
+      "description": "A channel set to rebuild a product index when a product is saved in PIM. It does not fire for products written through the Management API or MCP and does not remove deleted products.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/auto-build-on-save.channel.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.no-pim-editing",
+          "when": "The demo does not edit products in PIM in front of the audience."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html"
+        }
+      ]
+    },
+    {
+      "id": "search.content-index",
+      "area": "search",
+      "name": "Content search",
+      "description": "A content index (ContentIndexBuilder, full builds only) over pages, paragraphs and item fields for site search.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/content-index.defined.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.no-site-search",
+          "when": "The demo has no content or site search."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/index.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+        }
+      ]
+    },
+    {
+      "id": "search.user-index",
+      "area": "search",
+      "name": "User index",
+      "description": "A user index (UserIndexBuilder) used for user queries, email recipient selection and impersonation lists, optionally rebuilt when a user is saved.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/user-index.defined.json",
+        "probes/search/user-index.auto-build.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.no-user-queries",
+          "when": "The demo uses no user query, recipient list or index-backed impersonation list."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/userindexes.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/queries.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/advancedconfiguration.html"
+        }
+      ]
+    },
+    {
+      "id": "search.file-index",
+      "area": "search",
+      "name": "File index",
+      "description": "A file index (FileIndexBuilder, FileIndexSchemaExtender) over file metadata for document or asset search.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/file-index.defined.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.no-file-search",
+          "when": "The demo has no document or file search."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+        }
+      ]
+    },
+    {
+      "id": "search.sql-index",
+      "area": "search",
+      "name": "SQL index",
+      "description": "A custom index filled by SqlIndexBuilder from a SQL query, for non-standard data.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/sql-index.defined.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.standard-indexes",
+          "when": "The demo needs only product, content, user or file indexes."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+        }
+      ]
+    },
+    {
+      "id": "search.query-publisher",
+      "area": "search",
+      "name": "Query publisher",
+      "description": "The Query publisher app renders the results of any index query (products, users, files) on a page from stored index fields.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/search/query-publisher.app-placed.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "search.na.no-index-list-page",
+          "when": "No page publishes index results outside the product catalog app."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/querypublisher.html"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "search.group-facet-overrides.exists",
+  "functionId": "search.group-facet-overrides",
+  "intent": {
+    "proves": "At least one product group has a facet override.",
+    "level": "configured",
+    "scope": "every group facet override"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-group-facets",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_group_facets",
+      "arguments": {}
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Products/Tools/GroupFacetTools.cs"
+    }
+  ]
+}

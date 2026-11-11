@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "id": "orders.favorite-lists.paragraph",
+  "functionId": "orders.favorite-lists",
+  "intent": {
+    "proves": "At least one paragraph runs the Customer Experience Center Favorites app.",
+    "level": "configured",
+    "scope": "all paragraphs, module system name eCom_CustomerExperienceCenterFavorites"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "search_paragraphs",
+      "arguments": {
+        "moduleSystemName": "eCom_CustomerExperienceCenterFavorites"
+      }
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Paragraph WHERE ParagraphModuleSystemName = N'eCom_CustomerExperienceCenterFavorites' AND ISNULL(ParagraphDeleted, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/favoritelists.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-favorites.html"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "id": "users.user-accounts.active-frontend-users",
+  "functionId": "users.user-accounts",
+  "intent": {
+    "proves": "At least one active, non-service user of the default user type has a username.",
+    "level": "applied",
+    "scope": "all AccessUser rows of user type Default (5); service accounts excluded; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-search-users",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "search_users",
+      "arguments": {
+        "activeFilter": "Active"
+      },
+      "reason": "search_users returns a paged envelope; mcp-count must read the total, not the page length, and the tool's filters cannot express this predicate. Handler projection pending."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE AccessUserType = 5 AND AccessUserActive = 1 AND ISNULL(AccessUserUserName,'') <> '' AND ISNULL(AccessUserIsServiceAccount,0) = 0",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+    }
+  ]
+}

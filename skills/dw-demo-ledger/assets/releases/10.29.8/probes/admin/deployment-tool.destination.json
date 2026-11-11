@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "admin.deployment-tool.destination",
+  "functionId": "admin.deployment-tool",
+  "intent": {
+    "proves": "At least one deployment destination is configured.",
+    "level": "configured",
+    "scope": "deployment destinations"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-deployment-destinations",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-deployment-destinations",
+      "reason": "The destination list query is unverified."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/deployment.html"
+    }
+  ]
+}

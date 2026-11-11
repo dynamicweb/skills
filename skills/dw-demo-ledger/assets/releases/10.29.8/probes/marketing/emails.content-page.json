@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "marketing.emails.content-page",
+  "functionId": "marketing.emails",
+  "intent": {
+    "proves": "Every email (not a template) points at a content page.",
+    "level": "configured",
+    "scope": "all emails excluding templates"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-email-campaigns",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_email_campaigns",
+      "arguments": {},
+      "reason": "Handler not reserved: needs a field-predicate projection over the tool's rows; mcp-count counts rows only. Predicate: pageId = 0."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(EmailId AS nvarchar(20)) + N' ' + ISNULL(EmailName, N'') FROM EmailMarketingEmail WHERE ISNULL(EmailIsTemplate, 0) = 0 AND ISNULL(EmailPageId, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}
