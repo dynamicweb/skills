@@ -61,8 +61,8 @@ try {
     $relativeManifest=[IO.Path]::GetRelativePath((Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path,$manifestPath).Replace('\','/')
     if($build.lock.manifest -ne $relativeManifest){throw 'Manifest path differs from lock.'}
     $repoRoot=(Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-    $runnerCommit=(& git -C $repoRoot rev-parse HEAD 2>$null | Select-Object -First 1)
-    if($LASTEXITCODE -ne 0){throw 'Cannot establish runner commit.'}
+    $runnerCommit=(& git -C $repoRoot rev-parse --verify HEAD 2>$null)
+    if($LASTEXITCODE -ne 0 -or $runnerCommit -notmatch '^[a-f0-9]{40}$'){throw 'Cannot establish runner commit.'}
     $runnerDirty=@(& git -C $repoRoot status --porcelain -- skills/dw-demo-ledger).Count -gt 0
     $runnerMatches=$runnerCommit -eq $build.lock.commit -and -not $runnerDirty
     if(-not $runnerMatches -and -not $DiagnosticVersionMismatch){throw 'Runner commit or working tree does not match the lock.'}
