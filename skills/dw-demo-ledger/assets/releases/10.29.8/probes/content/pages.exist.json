@@ -16,10 +16,11 @@
     {
       "id": "mcp-search-pages",
       "surface": "mcp",
-      "status": "implemented",
+      "status": "planned",
       "handler": "mcp-count",
       "operation": "search_pages",
-      "arguments": {}
+      "arguments": {},
+      "reason": "Search enumeration is not proven complete: observed search_pages returned 500 versus 502 stored pages, and cart paragraph search returned 15 versus 36 stored paragraphs. Complete scope traversal and deleted-row parity are required."
     },
     {
       "id": "local-sql",

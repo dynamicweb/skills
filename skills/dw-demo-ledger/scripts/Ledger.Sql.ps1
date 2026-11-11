@@ -15,7 +15,10 @@ function Assert-LedgerLocalServer {
 }
 function Assert-LedgerSelect {
     param([string]$Query)
-    if ($Query -notmatch '^\s*SELECT\b' -or $Query -match '(?i)\b(insert|update|delete|merge|drop|alter|truncate|exec|execute|into|openrowset|opendatasource|openquery|xp_\w+)\b|;|--|/\*') {throw 'Only a single local SELECT observation is allowed.'}
+    # Quoted data such as the redirect pattern N'/*' is not a SQL comment.
+    # Strip only well-formed string literals before inspecting executable tokens.
+    $code=[regex]::Replace($Query,"'(?:''|[^'])*'","''")
+    if ($code -notmatch '^\s*SELECT\b' -or $code -match '(?i)\b(insert|update|delete|merge|drop|alter|truncate|exec|execute|into|openrowset|opendatasource|openquery|xp_\w+)\b|;|--|/\*') {throw 'Only a single local SELECT observation is allowed.'}
 }
 function Invoke-Sqlcmd-Rows {
     param([string]$Server,[string]$Database,[string]$Query)

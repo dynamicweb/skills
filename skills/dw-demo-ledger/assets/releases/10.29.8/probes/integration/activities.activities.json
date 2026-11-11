@@ -24,14 +24,15 @@
     {
       "id": "local-files",
       "surface": "file",
-      "status": "implemented",
+      "status": "planned",
       "handler": "files-count",
       "localOnly": true,
       "arguments": {
         "folder": "Files\\Integration\\jobs",
         "filter": "*.xml",
         "includeSubfolders": true
-      }
+      },
+      "reason": "Local job-file count and activity inventory differ (38 versus 43). File scope/root/format parity is not established; this file count cannot stand for all activities."
     }
   ],
   "sources": [

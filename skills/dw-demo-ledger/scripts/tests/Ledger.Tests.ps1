@@ -90,6 +90,9 @@ Describe 'Read safety and lock integrity' {
         {Assert-LedgerSelect 'SELECT 1; DELETE FROM Test'} | Should -Throw
         {Assert-LedgerSelect 'SELECT * INTO other FROM Test'} | Should -Throw
         {Assert-LedgerSelect 'SELECT COUNT(*) FROM Test'} | Should -Not -Throw
+        {Assert-LedgerSelect "SELECT N'/*', N'update', N'a'';b'"} | Should -Not -Throw
+        {Assert-LedgerSelect "SELECT N'data'; DELETE FROM Test"} | Should -Throw
+        {Assert-LedgerSelect "SELECT 1 /* comment */"} | Should -Throw
     }
     It 'rejects token injection and path traversal' {
         {Expand-PimSql "SELECT N'{lang}'" @{defaultLanguage="x';--"}} | Should -Throw

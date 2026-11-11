@@ -16,12 +16,13 @@
     {
       "id": "mcp-count",
       "surface": "mcp",
-      "status": "implemented",
+      "status": "planned",
       "handler": "mcp-count",
       "operation": "get_order_states",
       "arguments": {
         "orderType": "Order"
-      }
+      },
+      "reason": "Observed MCP Order states count differs from nondeleted stored states (17 versus 16). Virtual/deleted state scope must be reconciled."
     },
     {
       "id": "local-sql",

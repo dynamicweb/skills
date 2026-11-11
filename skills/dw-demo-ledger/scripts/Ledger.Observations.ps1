@@ -74,6 +74,7 @@ function ConvertTo-LedgerRows {
 function Get-LedgerLocalFiles {
     param($Binding,[string]$FilesPath)
     if(-not $FilesPath -or -not(Test-Path -LiteralPath $FilesPath -PathType Container)){throw [InvalidOperationException]::new('Files root is unavailable.')}
+    if((Get-Item -LiteralPath $FilesPath).Attributes -band [IO.FileAttributes]::ReparsePoint){throw [InvalidOperationException]::new('Linked Files root cannot establish local scope.')}
     if($Binding.path){
         $relative=$Binding.path.Replace('\','/')
         if($relative.StartsWith('/Files/')){$relative=$relative.Substring(7)}
@@ -83,9 +84,12 @@ function Get-LedgerLocalFiles {
         for($i=0;$i -lt $parts.Count;$i++){
             $next=@(foreach($dir in $dirs){
                 Get-ChildItem -LiteralPath $dir -ErrorAction Stop | Where-Object {
-                    $_.Name -like $parts[$i] -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -and
+                    $_.Name -like $parts[$i] -and
                     ($_.PSIsContainer -eq ($i -lt $parts.Count-1))
-                } | ForEach-Object FullName
+                } | ForEach-Object {
+                    if($_.Attributes -band [IO.FileAttributes]::ReparsePoint){throw [InvalidOperationException]::new('Linked file scope is unavailable.')}
+                    $_.FullName
+                }
             })
             $dirs=$next
         }
@@ -97,13 +101,17 @@ function Get-LedgerLocalFiles {
     # Reject links in every directory component, not only the leaf.
     $cursor=Get-Item -LiteralPath $folder
     while($cursor.FullName -ne [IO.Path]::GetFullPath($FilesPath).TrimEnd('/','\')){
-        if($cursor.Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Linked folder cannot establish local scope.'}
+        if($cursor.Attributes -band [IO.FileAttributes]::ReparsePoint){throw [InvalidOperationException]::new('Linked folder cannot establish local scope.')}
         $cursor=$cursor.Parent
         if(-not $cursor){throw 'Folder is outside the Files root.'}
     }
     $dirs=@($folder)
-    if($Binding.arguments.includeSubfolders){$dirs+=@(Get-ChildItem -LiteralPath $folder -Directory -ErrorAction Stop | Where-Object {-not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint)} | ForEach-Object FullName)}
-    return ,@(foreach($dir in $dirs){Get-ChildItem -LiteralPath $dir -Filter $Binding.arguments.filter -File -ErrorAction Stop | Where-Object {-not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint)} | ForEach-Object FullName})
+    if($Binding.arguments.includeSubfolders){$dirs+=@(Get-ChildItem -LiteralPath $folder -Directory -ErrorAction Stop | ForEach-Object {
+        if($_.Attributes -band [IO.FileAttributes]::ReparsePoint){throw [InvalidOperationException]::new('Linked folder scope is unavailable.')};$_.FullName
+    })}
+    return ,@(foreach($dir in $dirs){Get-ChildItem -LiteralPath $dir -Filter $Binding.arguments.filter -File -ErrorAction Stop | ForEach-Object {
+        if($_.Attributes -band [IO.FileAttributes]::ReparsePoint){throw [InvalidOperationException]::new('Linked file scope is unavailable.')};$_.FullName
+    }})
 }
 function Read-LedgerXml {
     param([string]$Path)

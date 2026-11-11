@@ -16,10 +16,11 @@
     {
       "id": "mcp-categories",
       "surface": "mcp",
-      "status": "implemented",
+      "status": "planned",
       "handler": "mcp-count",
       "operation": "get_unique_log_event_categories",
-      "arguments": {}
+      "arguments": {},
+      "reason": "Observed MCP counts event categories, not event rows (7 versus 271 locally). A category count is not an equivalent event count."
     },
     {
       "id": "local-sql",

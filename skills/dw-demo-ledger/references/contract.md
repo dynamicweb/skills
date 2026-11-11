@@ -37,6 +37,8 @@ MCP and Admin arguments support `{areaId}`, `{lang}` and `{pimShop}` from build 
 
 MCP comes first when it meets the observation contract, then Management API. Files and /dwapi prove only their specific claims. Local SQL is the optional last binding. A binding unavailable before observation can fall back to another equivalent one. A valid failing observation stays FAIL. A runtime error is recorded, not hidden by retrying different semantics.
 
+A measured scope mismatch with another binding requires investigation and a planned binding until equivalence is established. Category counts cannot stand for event counts; capped search results cannot stand for complete page or paragraph enumeration. Preserve the differing observations in the proof record instead of adjusting thresholds to make them agree.
+
 ## Build and lock
 
 Builds match assets/build.schema.json: schema, slug, lock and functions are required. The lock carries full git commit, manifest path, snapshot digest and explicit checkIds. The digest is SHA256 of sorted release-relative path and SHA256 lines for every file in the snapshot, including manifest, function files, probes and evidence. Paths use forward slashes; digest input uses UTF-8 and LF, with one line `path:sha256hex` per file. Both content changes and file additions change it. Exclude no authored snapshot files.

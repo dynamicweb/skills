@@ -16,10 +16,11 @@
     {
       "id": "mcp-get-group-facets",
       "surface": "mcp",
-      "status": "implemented",
+      "status": "planned",
       "handler": "mcp-count",
       "operation": "get_group_facets",
-      "arguments": {}
+      "arguments": {},
+      "reason": "The discovered tool requires groupId. Full coverage needs group enumeration and per-group reads; an empty-argument row count is not equivalent."
     }
   ],
   "sources": [
