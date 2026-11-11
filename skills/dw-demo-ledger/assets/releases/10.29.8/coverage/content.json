@@ -1,0 +1,1228 @@
+{
+  "schema": 1,
+  "area": "content",
+  "retrieved": "2026-11-11",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "title": "Content",
+      "sectionHash": "sha256:466108e5760a0f9a8436dd93cc9669fffe03f4cb0622069036e155dd45cb1011"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "title": "Websites",
+      "sectionHash": "sha256:4e4972d6ff926726464e89ff0dee17985ac1950480643dc04ae09226c101f3aa"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "title": "Pages",
+      "sectionHash": "sha256:bb3e6844f843fc9b492e0fb3f346aebf461d851d3e32d99d37332624f819ef25"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/paragraphs.html",
+      "title": "Paragraphs",
+      "sectionHash": "sha256:88ad57fd1ecc345fe4b8db508fa04a7fd547727dcf8376f644d6403cf7c9870e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/rows.html",
+      "title": "Rows",
+      "sectionHash": "sha256:3fab67411b64abe0ecf9c3ab7bb57e1704fc7d4c1ab5d5adedd2f477bc9583bd"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/contentpresets.html",
+      "title": "Presets",
+      "sectionHash": "sha256:0bd10780d2f25fc459103011a88d2ae7cfdd0aaa14c9f28db4c888e95365bf6a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/url-provider.html",
+      "title": "URL Providers",
+      "sectionHash": "sha256:d44049550c50df60fc640ce8af9d540a34c6f2779afed154822b63bf89414551"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "title": "Apps",
+      "sectionHash": "sha256:641864c70deb7fe4c9cf38c2e9d374a120818207caa5855d029ac57f5f797817"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/item-publisher.html",
+      "title": "Item Publisher",
+      "sectionHash": "sha256:a709c2a239ed329ff2b781bda326aae9b6d2c314e11bbe2256ec19900c7456b9"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/file-publishing.html",
+      "title": "File Publishing",
+      "sectionHash": "sha256:e1d0218a20a1e25c4477917d562221efc93184023bbfb3391ebe7097f2c479f3"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html",
+      "title": "Forms for Editors",
+      "sectionHash": "sha256:e3031fcb724172624491e1f68b94b5195aa2bfdb50c08b579958cdb3cee32ef4"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors-viewmodel.html",
+      "title": "Forms for editors - ViewModel",
+      "sectionHash": "sha256:44358d91261d1eaa9c11f622c7eac137023b9030a22b70bfd9b1efd25c8fe74a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html",
+      "title": "App settings",
+      "sectionHash": "sha256:b3ae4b43b4238723aa7b8074bb4eba2afd42cecbd7332ad3fccccde888c8a76a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/index.html",
+      "title": "Content",
+      "sectionHash": "sha256:578dd366827533436624358a8165e2db40845370f8267646a9cf26ac9d2072ec"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "title": "Item Types",
+      "sectionHash": "sha256:6b17c4daa88543386156e51b885e841051c4626d69264ec45fb46241a310810a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/field-types.html",
+      "title": "Field types",
+      "sectionHash": "sha256:25ad168c243e5630f3d2581c8907f90a39bcfc85ae00273f6328f8b19437a354"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/Grid.html",
+      "title": "Grid",
+      "sectionHash": "sha256:57c649d396a69abe4a58f8f4cc67add366e3a6563e8a460a56bf4504e55ca64b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/interfacesettings.html",
+      "title": "Interface settings",
+      "sectionHash": "sha256:79874b501cc0305c45eb93c2b49b26e17b3655b885171108e1861a3726c712f2"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/languagemanagement.html",
+      "title": "Language Management",
+      "sectionHash": "sha256:b82ecda1cbc1ae917b2fe1642f1a5a4b4cd1b89ad876289af0e6f80f14525865"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/index.html",
+      "title": "Styles",
+      "sectionHash": "sha256:c505242e41442b32a28b6b2916409177722bd27abcc62e9fa2be7fcdf3814892"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/color-schemes.html",
+      "title": "Color Schemes",
+      "sectionHash": "sha256:13a7c1b407ca95206751da347df59516e11c64bd3a976bced37eded6194ae565"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/typography.html",
+      "title": "Typography",
+      "sectionHash": "sha256:db0e31a6affcc6c0a327592fb43bdb43bc2be301dc386454e3805d9680e8d524"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/button-styles.html",
+      "title": "Buttons",
+      "sectionHash": "sha256:0487783fa53fbabf9a443eecf0474d1999ddb07d81709f4fbda77c094f531956"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/fonts.html",
+      "title": "Fonts",
+      "sectionHash": "sha256:2470f3ef5f9bbb061e999d232555924c549ba9e3f857097b2e041e54f7ed66b9"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/translations/index.html",
+      "title": "Translations",
+      "sectionHash": "sha256:4b39bc7653028b2e8183c3634e05de53eb69478b78e14a4c6555806b68505f5d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/translation-services.html",
+      "title": "Online Translation Service",
+      "sectionHash": "sha256:d6c0e8ded0e814def9b4f804fc69aa8c2f4eafa3b77fe958c24f26d67f9f10fd"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/customized-urls.html",
+      "title": "Friendly URLs",
+      "sectionHash": "sha256:3965d257715053c71034a0c8437c4df7fdc33341ffd8f7c16279525a144ef1af"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/redirects.html",
+      "title": "Redirects",
+      "sectionHash": "sha256:62628383035827336eb45eda236319b083d60384cdab819ed091bcb29def917f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "title": "Permissions",
+      "sectionHash": "sha256:6fe3afd12ed6c12973adedc648879c6f253a5bdcdae19db48fee8aa3052c6013"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/context-order-render.html",
+      "title": "Context Order Renderer",
+      "sectionHash": "sha256:3a9dcc7bce69e14ab1d5bbc472a421c617dbaf861e64ca58818914f96f4a8e3a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center.html",
+      "title": "Customer Experience Center",
+      "sectionHash": "sha256:08b02ceda3b3eda050541da04b339926e6fa9384fb44258786ea8cebae018904"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-favorites.html",
+      "title": "Customer Experience Center - Favorites",
+      "sectionHash": "sha256:8ef92585a2ac98932e1b65fd6e5d2d3cb37ce04bf3ffa829fd21e5d61c428b2d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-loyaltypoints.html",
+      "title": "Customer Experience Center - Loyalty Points",
+      "sectionHash": "sha256:d2ebef42fc340ee14784ac0a307b934ac24e53dac9a9417c77eb68ae06b61cd8"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/data-portability.html",
+      "title": "Data Portability",
+      "sectionHash": "sha256:75bd96fd506d5d6ed42888fbaf4e1cbb603462af75a0bba025b8587215f99043"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/extranet.html",
+      "title": "Extranet",
+      "sectionHash": "sha256:eae2e9572925efdf8e8441cfe6444cb24038127b65581dd794405fa65275e41f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/integration-customer-center.html",
+      "title": "Integration Customer Center",
+      "sectionHash": "sha256:e443c8db206219ca1efc2814fde28a59a6d3a68631050a2b73d1c4014d01069b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/loyalty-points.html",
+      "title": "Loyalty Points",
+      "sectionHash": "sha256:927991ebe5b8b3ec62bbbec083dc329b934b1f76e208e93d1611b00743930f8f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog.html",
+      "title": "Product Catalog",
+      "sectionHash": "sha256:820cef8a60c35faa630d94c63beb04d2bc7d1d0fb095352cbfa8be528676de1d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog-viewmodel.html",
+      "title": "Product Catalog for ViewModel",
+      "sectionHash": "sha256:809a87d57a5f050731c04810e3c9e2e0c2437806e63066bcc17622195bfae669"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/querypublisher.html",
+      "title": "Query Publisher",
+      "sectionHash": "sha256:9ca2eb911bbc4d27e2ba78c9a2874a618cf1b1da602e3a3c7fd5f71f8baa986b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/shoppingcart.html",
+      "title": "Shopping Cart",
+      "sectionHash": "sha256:4874a69392c218cdc14a28d73dda4a6eae2e25066719a78d2905bab85a444c33"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/showlist.html",
+      "title": "Show list",
+      "sectionHash": "sha256:e8b5b0fa4ded3189157a72f7bbc3f50ad01cb1cddf161b7af50fea5b47dde5b4"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/voucherrenderer.html",
+      "title": "Voucher Renderer",
+      "sectionHash": "sha256:4f55e350d348478c1c98a4e4057e8635e0e36c0c02990ae0a5c9eb0374828e59"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/index.html",
+      "title": "Users",
+      "sectionHash": "sha256:9019da46e66e2e7ddefcbc1994475b68ef820630eb35d75402d8ba4eaba8517d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/richtext-editor.html",
+      "title": "Richtext editor",
+      "sectionHash": "sha256:f757517529f6dd15f4d437e48af504cd8946eafcb65f8675d054656bcfdfcb0e"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "A content tree creates and maintains the content structure; a workspace shows the selected page's content.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.pages"
+    },
+    {
+      "claim": "Editors create new emails in the content area.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "excluded": {
+        "reason": "Email marketing content; owned by the marketing area."
+      }
+    },
+    {
+      "claim": "The Visual Editor gives WYSIWYG editing of rows, columns and paragraphs on grid-based designs.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.grid-rows"
+    },
+    {
+      "claim": "List view gives a non-WYSIWYG overview and adds rows with + New row.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.grid-rows"
+    },
+    {
+      "claim": "New rows and paragraphs can start from a saved preset.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.presets"
+    },
+    {
+      "claim": "Editor tools on rows and columns differ by permission level.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "excluded": {
+        "reason": "User account, login or backend access feature; owned by the users area (dw-users-permissions)."
+      }
+    },
+    {
+      "claim": "Every solution starts with a default website; pages are placed under websites.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.websites"
+    },
+    {
+      "claim": "Language layers are structural copies of a master website for translated versions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.language-layers"
+    },
+    {
+      "claim": "Language layer behaviour is tuned in the language management settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.language-layers"
+    },
+    {
+      "claim": "Language layers are used for identical but translated versions of a website.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.content-translation"
+    },
+    {
+      "claim": "Pages define the content structure and act as containers for paragraph or item content.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.pages"
+    },
+    {
+      "claim": "Pages are often paired with an item type for extra content or settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.item-pages"
+    },
+    {
+      "claim": "Rows build the grid on grid-based designs and are absent on non-grid designs.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.grid-rows"
+    },
+    {
+      "claim": "Paragraphs are content containers and anchors for paragraph apps.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.paragraphs"
+    },
+    {
+      "claim": "Paragraphs can be paired with item types; most modern solutions build content this way.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.paragraphs"
+    },
+    {
+      "claim": "Item types define fields and settings controlling where items can be used and what they can be used as.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Apps attach to paragraphs to render catalogs, carts, forms, query results, customer center and login.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.paragraph-apps"
+    },
+    {
+      "claim": "Recycle bins hold deleted pages, grid rows and paragraphs for restore or permanent delete, without automatic expiry.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.recycle-bin"
+    },
+    {
+      "claim": "A website recycle bin restores or permanently deletes websites.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
+      "functionId": "content.recycle-bin"
+    },
+    {
+      "claim": "Create websites from the websites list.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.websites"
+    },
+    {
+      "claim": "Create language layers by copying a website.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.language-layers"
+    },
+    {
+      "claim": "Deactivate or delete a website depending on permission level.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.websites"
+    },
+    {
+      "claim": "General tab: name, regional setting and published checkbox.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.websites"
+    },
+    {
+      "claim": "General tab shows fields of an item type extending website settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Domain and URL tab: list of domains the website receives.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.website-domains"
+    },
+    {
+      "claim": "Primary domain forces a 301 redirect from the other domains.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.website-domains"
+    },
+    {
+      "claim": "Lock pages to domain blocks access to other websites' pages from this website's domains.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.website-domains"
+    },
+    {
+      "claim": "A 404 page is used when a URL cannot resolve on the website's domains.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.website-domains"
+    },
+    {
+      "claim": "URL section: website URL slug, Use in URL, Do not include URL in subpage URLs.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.friendly-urls"
+    },
+    {
+      "claim": "Redirect first page to '/' avoids duplicate content with the Location and page name URL type.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.friendly-urls"
+    },
+    {
+      "claim": "Layout tab: default page template for standard pages and per item page or paragraph type.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.layout-templates"
+    },
+    {
+      "claim": "Layout tab: color scheme group, typography and button style for the website.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.design-styles"
+    },
+    {
+      "claim": "Advanced tab: item types extending website and page properties.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Advanced tab: Workflow setting chooses drafts or saved versions when content is edited.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.versioning"
+    },
+    {
+      "claim": "Advanced tab: security setting allows HTTP and HTTPS, forces SSL or un-forces SSL with a 301.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "excluded": {
+        "reason": "Solution security or hosting setting; owned by the setup/configuration area (dw-setup-config)."
+      }
+    },
+    {
+      "claim": "Advanced tab: a login template puts the whole website behind login.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "excluded": {
+        "reason": "User account, login or backend access feature; owned by the users area (dw-users-permissions)."
+      }
+    },
+    {
+      "claim": "Robots.txt: allow or disallow the sitemap, include products in sitemap.xml, and set robots.txt content.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.robots-sitemap"
+    },
+    {
+      "claim": "Robots.txt content is virtual and served by the 404 handler unless a physical file exists.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.robots-sitemap"
+    },
+    {
+      "claim": "Ecommerce tab: default channel, language, currency, country and stock location for the website.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "functionId": "content.website-ecommerce-context"
+    },
+    {
+      "claim": "Ecommerce tab: prices with VAT and reverse charge for VAT.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "Pages are created and managed from the content tree plus-button and context menu.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.pages"
+    },
+    {
+      "claim": "General tab holds the page title or the fields of the page item type.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.item-pages"
+    },
+    {
+      "claim": "Layout tab selects the page layout and can inherit it to subpages.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.layout-templates"
+    },
+    {
+      "claim": "Layout tab sets a custom HTTP content-type for the page, for example for feeds.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "excluded": {
+        "reason": "Feed or response header use; no content outcome in this area and no verified stored column. Recorded for the feeds owner."
+      }
+    },
+    {
+      "claim": "Layout tab assigns the page to a content tree section.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "excluded": {
+        "reason": "Backend editor presentation preference with no stored content or frontend outcome a demo can select or prove."
+      }
+    },
+    {
+      "claim": "SEO tab: meta title, description, keywords, noindex, nofollow, canonical and share image.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.page-seo"
+    },
+    {
+      "claim": "SEO tab: 404 for detected robots based on user agent.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.page-seo"
+    },
+    {
+      "claim": "SEO tab: Use in URL with illegal characters listed.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.page-seo"
+    },
+    {
+      "claim": "SEO tab: Do not include URL in subpage URLs, and an exact URL for the page.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.page-seo"
+    },
+    {
+      "claim": "SEO tab: select and configure a URL provider.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.url-provider"
+    },
+    {
+      "claim": "Publication tab: publish state Published, Hide in menu, Unpublished.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.page-publication"
+    },
+    {
+      "claim": "Publication tab: publication period from/to.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.page-publication"
+    },
+    {
+      "claim": "Publication tab: clickable, breadcrumb, last update, show in sitemap flags available to templates.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.navigation"
+    },
+    {
+      "claim": "Publication tab: Show in searches reflected in the content index as PageAllowSearch.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "excluded": {
+        "reason": "Query and index publishing; owned by the search area (dw-search-indexing)."
+      }
+    },
+    {
+      "claim": "Publication tab: hide for mobile, tablet and desktop.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "excluded": {
+        "reason": "Documented as legacy on the page itself."
+      }
+    },
+    {
+      "claim": "Publication tab: shortcut to another page.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.navigation"
+    },
+    {
+      "claim": "Advanced tab: navigation tag available to frontend templates.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.navigation"
+    },
+    {
+      "claim": "Advanced tab: show this page in frontend for all users or only users with access.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.page-permissions"
+    },
+    {
+      "claim": "Advanced tab: login template.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "excluded": {
+        "reason": "User account, login or backend access feature; owned by the users area (dw-users-permissions)."
+      }
+    },
+    {
+      "claim": "Advanced tab: HTTPS override of the website setting.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "excluded": {
+        "reason": "Solution security or hosting setting; owned by the setup/configuration area (dw-setup-config)."
+      }
+    },
+    {
+      "claim": "Advanced tab: lock language versions of the page.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.language-layers"
+    },
+    {
+      "claim": "Advanced tab: list sub pages in a list view instead of the tree.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "excluded": {
+        "reason": "Backend editor presentation preference with no stored content or frontend outcome a demo can select or prove."
+      }
+    },
+    {
+      "claim": "Advanced tab: change the page item type.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.item-pages"
+    },
+    {
+      "claim": "Ecommerce tab: Ecommerce navigation adds product groups and products as navigation nodes.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html",
+      "functionId": "content.navigation"
+    },
+    {
+      "claim": "Paragraphs contain content and anchor paragraph apps; their order structures the page.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/paragraphs.html",
+      "functionId": "content.paragraphs"
+    },
+    {
+      "claim": "Content tab: standard paragraph fields or the item type's fields.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/paragraphs.html",
+      "functionId": "content.paragraphs"
+    },
+    {
+      "claim": "Publication tab: publication period and accessibility settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/paragraphs.html",
+      "functionId": "content.paragraphs"
+    },
+    {
+      "claim": "Advanced tab: lock language versions of a paragraph on a master website.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/paragraphs.html",
+      "functionId": "content.language-layers"
+    },
+    {
+      "claim": "Advanced tab: the item type (content type) of the paragraph; changing it loses field data.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/paragraphs.html",
+      "functionId": "content.paragraphs"
+    },
+    {
+      "claim": "Layout section: override the paragraph template, or move it to another content placeholder.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/paragraphs.html",
+      "functionId": "content.layout-templates"
+    },
+    {
+      "claim": "App tab attaches an app; only on item paragraphs that allow module attachment.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/paragraphs.html",
+      "functionId": "content.paragraph-apps"
+    },
+    {
+      "claim": "Rows define the grid where paragraphs are placed in columns.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/rows.html",
+      "functionId": "content.grid-rows"
+    },
+    {
+      "claim": "Row settings: publication period and accessibility checkboxes.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/rows.html",
+      "functionId": "content.grid-rows"
+    },
+    {
+      "claim": "Additional row settings come from an item type applied to the row type.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/rows.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Presets are predefined pages, rows or paragraphs selectable when creating content.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/contentpresets.html",
+      "functionId": "content.presets"
+    },
+    {
+      "claim": "Admins save presets with name, description, image and category.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/contentpresets.html",
+      "functionId": "content.presets"
+    },
+    {
+      "claim": "A preset containing item types restricted from an area is not offered there.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/contentpresets.html",
+      "functionId": "content.item-restrictions"
+    },
+    {
+      "claim": "Presets are listed by category in the Presets section of the content tree.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/contentpresets.html",
+      "functionId": "content.presets"
+    },
+    {
+      "claim": "A URL provider add-in generates URLs for content under a page and is set in the SEO tab.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/url-provider.html",
+      "functionId": "content.url-provider"
+    },
+    {
+      "claim": "The Ecommerce URL provider takes shop, language, included content and tree or root paths.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/url-provider.html",
+      "functionId": "content.url-provider"
+    },
+    {
+      "claim": "Saving updates the URL index; ?showurlindex=true shows it.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/url-provider.html",
+      "functionId": "content.url-provider"
+    },
+    {
+      "claim": "Paragraph app: Context Order Renderer.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "Paragraph app: Customer Experience Center apps.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "Paragraph app: Data Portability.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "User account, login or backend access feature; owned by the users area (dw-users-permissions)."
+      }
+    },
+    {
+      "claim": "Paragraph app: Extranet.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "User account, login or backend access feature; owned by the users area (dw-users-permissions)."
+      }
+    },
+    {
+      "claim": "Paragraph app: File Publishing.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "functionId": "content.paragraph-apps"
+    },
+    {
+      "claim": "Paragraph app: Forms for Editors.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Paragraph app: Integration Customer Center.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "Paragraph app: Item Publisher.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "functionId": "content.paragraph-apps"
+    },
+    {
+      "claim": "Paragraph app: Loyalty points.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "Paragraph app: Product Catalog apps.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "Paragraph app: Query Publisher.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "Query and index publishing; owned by the search area (dw-search-indexing)."
+      }
+    },
+    {
+      "claim": "Paragraph app: Shopping Cart.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "Paragraph app: Show List.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "Paragraph app: User management apps.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "User account, login or backend access feature; owned by the users area (dw-users-permissions)."
+      }
+    },
+    {
+      "claim": "Paragraph app: Voucher Renderer.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "The Item Publisher app publishes items to frontend.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/item-publisher.html",
+      "functionId": "content.paragraph-apps"
+    },
+    {
+      "claim": "The File Publishing app publishes a folder's contents to frontend with sorting and folder icon settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/file-publishing.html",
+      "functionId": "content.paragraph-apps"
+    },
+    {
+      "claim": "Create forms and view form submits.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Form submits are viewable in the backend.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html",
+      "functionId": "content.form-submissions"
+    },
+    {
+      "claim": "Publish forms to frontend through a paragraph app.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Fields can be required, active or hidden in the receipt.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "After submit: redirect to a page or show a confirmation template and text.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "User receipt emails and administrator notification emails.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Max submits limits how often a form can be submitted.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "A path for uploaded files, and creating users on submit with group membership.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "The ViewModel app shows a confirmation or redirects after submit.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors-viewmodel.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Sends a notification email and a receipt email.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors-viewmodel.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Limits submissions, accepts files and signs visitors up into a user group.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors-viewmodel.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Blocks spam with hidden checks and optionally hCaptcha.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors-viewmodel.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "App settings are reusable configurations shared by paragraphs of the same app.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Only the Forms for Editors - ViewModel app uses App settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Headless setting: a paragraph to view submissions online for Delivery API form submits.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html",
+      "excluded": {
+        "reason": "Delivery API endpoint behaviour; owned by the headless area (dw-headless-delivery)."
+      }
+    },
+    {
+      "claim": "When submitting: redirect to a page or use a confirmation template; the browser is redirected after save.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "E-Mail: notification subject, sender, reply-to, single recipient, CC, BCC and template mode.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Receipt: receipt email to the form's email field with template mode.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Max submits per page with redirect or template when reached.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Upload path for file fields, defaulting to Files/System/FormUploads/<form name>.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "User management: create a user on submit and add it to groups.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html",
+      "functionId": "content.forms"
+    },
+    {
+      "claim": "Content settings: styles, item types, grid, interface settings, rich text editor, language management, app settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/index.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Item types create custom page types, paragraph types and settings for websites, pages and rows.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Item type settings: name, system name, description, category and icon.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Item type roles: page, paragraph, grid row, website and page property extension.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Item naming: field for title, or a title pattern from field system names.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Advanced: allow module attachment.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.paragraph-apps"
+    },
+    {
+      "claim": "Advanced: allow color schemes on items of this type.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.design-styles"
+    },
+    {
+      "claim": "Advanced: default view in page.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "excluded": {
+        "reason": "Backend editor presentation preference with no stored content or frontend outcome a demo can select or prove."
+      }
+    },
+    {
+      "claim": "Advanced: inherit fields from another item type, set only at creation.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Fields: name, system name, type, field group and position.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Fields: default value and exclusion from content indexes.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Fields: required and regular-expression validation with an error message.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Field groups with conditions for when a group shows.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Restrictions: allowed websites, parent types, tree sections, parents, child types and children; new types are allowed nowhere by default.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-restrictions"
+    },
+    {
+      "claim": "Tools: refresh item type settings and schema; meta and schema check lists fields missing from the schema.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Item field types: text, link, select box, number and date, list, HTML5 inputs, color and geolocation fields.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/field-types.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Row definitions are created as a RowDefinitions.json file or in Settings > Grid.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/Grid.html",
+      "functionId": "content.row-definitions"
+    },
+    {
+      "claim": "Each row definition needs a row template file.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/Grid.html",
+      "functionId": "content.row-definitions"
+    },
+    {
+      "claim": "An item type can be connected to a row for extra configuration.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/Grid.html",
+      "functionId": "content.item-types"
+    },
+    {
+      "claim": "Row features (spacing, width, desktop and mobile layout) with defaults that affect only new rows.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/Grid.html",
+      "functionId": "content.row-definitions"
+    },
+    {
+      "claim": "Row features only take effect in frontend when the row template uses them.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/Grid.html",
+      "functionId": "content.row-definitions"
+    },
+    {
+      "claim": "Default publish mode for new pages: hidden in menu, published or unpublished.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/interfacesettings.html",
+      "functionId": "content.page-publication"
+    },
+    {
+      "claim": "Show list view for visual editor pages.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/interfacesettings.html",
+      "excluded": {
+        "reason": "Backend editor presentation preference with no stored content or frontend outcome a demo can select or prove."
+      }
+    },
+    {
+      "claim": "Enable paragraph header field on item paragraphs.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/interfacesettings.html",
+      "excluded": {
+        "reason": "Backend editor presentation preference with no stored content or frontend outcome a demo can select or prove."
+      }
+    },
+    {
+      "claim": "Google Fonts API key used by the Google Font item type.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/interfacesettings.html",
+      "functionId": "content.design-styles"
+    },
+    {
+      "claim": "Google Maps API key and client id for geolocation of address data.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/interfacesettings.html",
+      "excluded": {
+        "reason": "User account, login or backend access feature; owned by the users area (dw-users-permissions)."
+      }
+    },
+    {
+      "claim": "Number of suggested colors in a color swatch field.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/interfacesettings.html",
+      "excluded": {
+        "reason": "Backend editor presentation preference with no stored content or frontend outcome a demo can select or prove."
+      }
+    },
+    {
+      "claim": "Unpublish new paragraphs, rows and pages created on layers from the master.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/languagemanagement.html",
+      "functionId": "content.language-layers"
+    },
+    {
+      "claim": "Allow paragraph operations on language versions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/languagemanagement.html",
+      "functionId": "content.language-layers"
+    },
+    {
+      "claim": "Copy master changes to language versions when values are the same (pages, paragraphs).",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/languagemanagement.html",
+      "functionId": "content.language-layers"
+    },
+    {
+      "claim": "Compare paragraphs as text, ignoring formatting.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/languagemanagement.html",
+      "functionId": "content.language-layers"
+    },
+    {
+      "claim": "Make published state of language versions independent of the master.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/languagemanagement.html",
+      "functionId": "content.language-layers"
+    },
+    {
+      "claim": "Styles: color schemes, fonts, typography and button styles, connected to a website in its layout tab.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/index.html",
+      "functionId": "content.design-styles"
+    },
+    {
+      "claim": "Styles are managed from the Visual Editor styles slide-over.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/index.html",
+      "functionId": "content.design-styles"
+    },
+    {
+      "claim": "Color schemes are defined in Settings > Content > Styles.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/color-schemes.html",
+      "functionId": "content.design-styles"
+    },
+    {
+      "claim": "Typography are defined in Settings > Content > Styles.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/typography.html",
+      "functionId": "content.design-styles"
+    },
+    {
+      "claim": "Button styles are defined in Settings > Content > Styles.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/button-styles.html",
+      "functionId": "content.design-styles"
+    },
+    {
+      "claim": "Custom fonts are defined in Settings > Content > Styles.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/fonts.html",
+      "functionId": "content.design-styles"
+    },
+    {
+      "claim": "@Translate keys resolve from translations.xml per design, with a shared file as fallback.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/translations/index.html",
+      "functionId": "content.template-translations"
+    },
+    {
+      "claim": "Translations are edited per website language in the Translations tool.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/translations/index.html",
+      "functionId": "content.template-translations"
+    },
+    {
+      "claim": "Online translation providers (Google Cloud Translation, DeepL) for products, under a separate licence.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/translation-services.html",
+      "duplicateOf": "pim.machine-translation"
+    },
+    {
+      "claim": "URL type paths or querystring, redirect non-friendly URLs, place all pages in root.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/customized-urls.html",
+      "functionId": "content.friendly-urls"
+    },
+    {
+      "claim": "Language layer root names, unique URL structure per website, grouping by master website.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/customized-urls.html",
+      "functionId": "content.friendly-urls"
+    },
+    {
+      "claim": "Normalize latin characters and custom normalization mappings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/customized-urls.html",
+      "functionId": "content.friendly-urls"
+    },
+    {
+      "claim": "Replace internal links in content with friendly URLs.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/customized-urls.html",
+      "functionId": "content.friendly-urls"
+    },
+    {
+      "claim": "Canonical link in meta for regular pages.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/customized-urls.html",
+      "functionId": "content.page-seo"
+    },
+    {
+      "claim": "Ecommerce canonical and 404 for products not in valid group, shop or language.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/customized-urls.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "High volume product URLs and product URL pattern.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/customized-urls.html",
+      "excluded": {
+        "reason": "Commerce app or setting; owned by the commerce areas (dw-commerce-catalog, dw-commerce-orders, dw-commerce-b2b), not content."
+      }
+    },
+    {
+      "claim": "Redirects add virtual paths leading to pages, paths or external links.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/redirects.html",
+      "functionId": "content.redirects"
+    },
+    {
+      "claim": "Redirects are permanent 301s, only for GET, not for static files or /files/, after page matching.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/redirects.html",
+      "functionId": "content.redirects"
+    },
+    {
+      "claim": "Encoded and decoded URLs, with or without query string, are matched.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/redirects.html",
+      "functionId": "content.redirects"
+    },
+    {
+      "claim": "Redirects count visits and can be scoped to a website.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/redirects.html",
+      "functionId": "content.redirects"
+    },
+    {
+      "claim": "Redirects created in the UI with path, target, website and active toggle.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/redirects.html",
+      "functionId": "content.redirects"
+    },
+    {
+      "claim": "Wildcard redirects, more specific paths overriding generic ones.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/redirects.html",
+      "functionId": "content.redirects"
+    },
+    {
+      "claim": "Avoid global catch-alls and redirect loops.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/redirects.html",
+      "functionId": "content.redirects"
+    },
+    {
+      "claim": "OnNoRedirect notification fires on every 404.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/redirects.html",
+      "excluded": {
+        "reason": "Developer extensibility (notification subscriber); owned by dw-extend-providers."
+      }
+    },
+    {
+      "claim": "Explicit permissions on content override role defaults, for example denying Anonymous on a members' area.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "content.page-permissions"
+    },
+    {
+      "claim": "With several groups, the highest explicit level wins.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "content.page-permissions"
+    },
+    {
+      "claim": "Area and navigation tree section permissions are UI-only.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "excluded": {
+        "reason": "User account, login or backend access feature; owned by the users area (dw-users-permissions)."
+      }
+    },
+    {
+      "claim": "Product, attribute and ecommerce language permissions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "excluded": {
+        "reason": "Owned by the PIM and users areas (pim.field-permissions, dw-users-permissions)."
+      }
+    },
+    {
+      "claim": "Content manager, PIM manager and commerce manager role setup examples.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "excluded": {
+        "reason": "User account, login or backend access feature; owned by the users area (dw-users-permissions)."
+      }
+    }
+  ],
+  "gaps": [
+    {
+      "claim": "Interface settings: Disable standard page and Disable standard paragraph on the solution.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/interfacesettings.html",
+      "note": "A content-model choice a demo may want enforced; no function yet because the stored setting key is unverified."
+    },
+    {
+      "claim": "Rich text editor configurations stored as JSON under /Files/System/Editor and applied to rich text item fields and product Editor fields.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/richtext-editor.html",
+      "note": "No function defined; candidate for a later snapshot with a file-count check."
+    },
+    {
+      "claim": "Item field-value presets (get_item_presets) and content comments (get_comments) exist as MCP tools but are not described on the manual pages reviewed.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/contentpresets.html",
+      "note": "Not a manual claim; recorded so the next author decides whether they are separate functions."
+    },
+    {
+      "claim": "Content apps whose own pages were not read in this census (the per-app commerce and user pages) are excluded at the apps index level only.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
+      "note": "Their detailed claims belong to the owning areas' coverage files."
+    }
+  ]
+}

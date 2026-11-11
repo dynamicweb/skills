@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.screen-layouts.layout",
+  "functionId": "pim.screen-layouts",
+  "intent": {
+    "proves": "Product edit screen layout and list presets: layout satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-layout",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-layout",
+      "operation": "ScreenLayoutsAll",
+      "reason": "Needs authenticated full-payload and scope parity measurement; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM ScreenLayout l WHERE l.ScreenLayoutActive = 1 AND EXISTS (SELECT 1 FROM ScreenLayoutTab t WHERE t.ScreenLayoutTabScreenLayoutId = l.ScreenLayoutId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#screen-layouts/layout"
+    }
+  ]
+}

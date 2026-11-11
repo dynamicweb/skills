@@ -1,0 +1,282 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]*$"
+    },
+    "functionId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]*$"
+    },
+    "intent": {
+      "type": "object",
+      "properties": {
+        "proves": {
+          "type": "string",
+          "minLength": 1
+        },
+        "level": {
+          "enum": [
+            "supported",
+            "configured",
+            "applied",
+            "behavioural",
+            "stored-integrity"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "proves",
+        "level",
+        "scope"
+      ],
+      "additionalProperties": false
+    },
+    "assertion": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "scalar",
+            "offenders",
+            "attributes",
+            "families",
+            "widget-queries"
+          ]
+        },
+        "op": {
+          "enum": [
+            "eq",
+            "ge",
+            "le"
+          ]
+        },
+        "value": {
+          "type": "number"
+        },
+        "aspect": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minimumSubjects": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "scalar"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "op",
+              "value"
+            ]
+          }
+        }
+      ]
+    },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]*$"
+          },
+          "surface": {
+            "enum": [
+              "mcp",
+              "admin-api",
+              "dwapi",
+              "file",
+              "sql"
+            ]
+          },
+          "status": {
+            "enum": [
+              "implemented",
+              "planned"
+            ]
+          },
+          "handler": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arguments": {
+            "type": "object"
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "localOnly": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requiredTools": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "requiredPaths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "projection": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "rowsPath": {
+                "type": "string",
+                "minLength": 1
+              },
+              "filter": {
+                "type": "object",
+                "required": [
+                  "field",
+                  "op",
+                  "value"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_.]*$"
+                  },
+                  "op": {
+                    "enum": [
+                      "equals",
+                      "contains"
+                    ]
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "id",
+          "surface",
+          "status",
+          "handler"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "surface": {
+                  "const": "sql"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "localOnly"
+              ],
+              "properties": {
+                "localOnly": {
+                  "const": true
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "planned"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "reason"
+              ]
+            }
+          }
+        ]
+      },
+      "minItems": 1
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "docs",
+              "source",
+              "release",
+              "migration",
+              "measurement"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind",
+          "ref"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "functionId",
+    "intent",
+    "assertion",
+    "bindings"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

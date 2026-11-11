@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "admin.audit-trail.rows",
+  "functionId": "admin.audit-trail",
+  "intent": {
+    "proves": "The audit log holds at least one row.",
+    "level": "applied",
+    "scope": "every audit row; rows from Management API writes are not expected"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-audit-types",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_unique_audit_types",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Audit"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/audit.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-data-audit-trail/SKILL.md"
+    }
+  ]
+}

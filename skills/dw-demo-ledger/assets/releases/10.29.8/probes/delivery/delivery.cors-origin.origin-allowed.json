@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.cors-origin.origin-allowed",
+  "functionId": "delivery.cors-origin",
+  "intent": {
+    "proves": "A preflight from the frontend origin is answered with that origin allowed, with credentials when cookies are exchanged.",
+    "level": "behavioural",
+    "scope": "the frontend origin named by the build"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-preflight",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-preflight",
+      "operation": "OPTIONS /dwapi/content/areas with an Origin header",
+      "reason": "No handler sends a CORS preflight; the administration setting that lists allowed origins is not verified."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/external-login.html"
+    }
+  ]
+}

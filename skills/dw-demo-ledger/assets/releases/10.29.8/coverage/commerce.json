@@ -1,0 +1,725 @@
+{
+  "schema": 1,
+  "area": "commerce",
+  "retrieved": "2026-11-11",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/index.html",
+      "title": "Commerce",
+      "sectionHash": "sha256:535ada3c5fb158dc9e6db59a01442da6ed6d493b8af8fc2c0dd41cfbf55b7683"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/index.html",
+      "title": "Promotions",
+      "sectionHash": "sha256:317260310743ac4fe42dae09ecc807956a7da4b099abad161a659c0bd5b65626"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "title": "Discounts",
+      "sectionHash": "sha256:d4c09d16434c415bc2c0bc42017198550af0b0f8b5cf4187a655e1bcb91227f0"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/3for2.html",
+      "title": "Example - 3 for 2 discount guide",
+      "sectionHash": "sha256:c15074017166af521703a8125d82d784712abf2ea23eb5813fef07d95dac4510"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/coupon-discounts.html",
+      "title": "Example - Coupon Discounts",
+      "sectionHash": "sha256:8792c7301d8d5f3f039f80490a0058021b090be1ed9dd0aa88ffd5d1aa201f55"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/free-shipping-discount.html",
+      "title": "Example - Free shipping",
+      "sectionHash": "sha256:1a1fa6d1eff93236c7d4e25a5912c52486f5195db5c19620cf3c4103ea2cd397"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/loyalty-discounts.html",
+      "title": "Example - Loyalty Discounts",
+      "sectionHash": "sha256:bd8c6e5a0c01b5846229c248a69b1ff497bf4a9bc01429abe86b7d24f7113ae8"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/newdiscount.html",
+      "title": "New Discount Experience",
+      "sectionHash": "sha256:708b39c9147c5e1a41d3a1ee92033301a77488caf052945d888700a1247587c2"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/discountorderexecution.html",
+      "title": "Example of Discount Execution Order",
+      "sectionHash": "sha256:1a740f64b97139ceb3bd2a86aac77b49f1d5fd619b31bf3ab8ad483cf6ef1999"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/quantitybaseddiscounts.html",
+      "title": "Example of Quantity Based Discounts",
+      "sectionHash": "sha256:927fcd1f3e8cb30bfda4c1e468fdf76789f78b22562d5ed96890fb3710208dba"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/skipdiscountedproductsorderlines.html",
+      "title": "Examples of Discount Logic with \"Skip Discounted Products / Order Lines\"",
+      "sectionHash": "sha256:06bf763beaf33c6873accade08eb04047fb9dc10de0b23f6a779a80578c48af5"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/coupondiscountt.html",
+      "title": "Example of Coupon Discount",
+      "sectionHash": "sha256:eab0fa4abfe7078ffdc4eb70858a434cf36b69109183446c9ebf8f07993d9903"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/discount2_3for2.html",
+      "title": "Example - 3 for 2 discount guide",
+      "sectionHash": "sha256:6864578377f1e686f172628daecb62e5fa14a482d90a09f94655925fa9f5f6a4"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/freeshippingdiscount.html",
+      "title": "Example of Free Shipping",
+      "sectionHash": "sha256:4f3c6a93883b47ee473f8b9d4ebe0a08d6784a2a43216cf129375278d87742d6"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/vouchers.html",
+      "title": "Vouchers",
+      "sectionHash": "sha256:93110ff844ee15d7191a35f138c302cda6dbbb7eab4d26e5986625b5e0deb127"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/giftcards.html",
+      "title": "Gift cards",
+      "sectionHash": "sha256:4d618103927869ac12e64e6d5f909589e0ae394761c9fa8947633228e9306740"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/loyaltypoints.html",
+      "title": "Loyalty points",
+      "sectionHash": "sha256:314c57d4d3f83426f9d2565439942c45df428f891c2b1b0fb45beb420616bd1b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "title": "Prices",
+      "sectionHash": "sha256:fb8e366086187ed103c4fee4350fafa3c3b883dc17cf0a33a30fed90c82da10d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/stock.html",
+      "title": "Stock & units",
+      "sectionHash": "sha256:6f4ef540e36ecdec1421ae0169b0db8a0b01ebad199332b1c0bc092d68cc6a89"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/customerassortments.html",
+      "title": "Customer Assortments",
+      "sectionHash": "sha256:5490ee09dad702402914f1785cd11c6b11ef7071bbc275b235407935bcec75a6"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/currencies.html",
+      "title": "Currencies",
+      "sectionHash": "sha256:5a6a45d9b718182f32263575e7561fdf6b9c10844654a2fee79a19396a51a87d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/relations/product-units.html",
+      "title": "Units",
+      "sectionHash": "sha256:5082e8685a97ebc066a1f4ebb642dc6dbd2db34e2bc856dc9e8df43dd5f6f08b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/index.html",
+      "title": "Product Catalog",
+      "sectionHash": "sha256:5e4e66adeb4f7b2d6bf0d2bf53256f507c5ab18d01b400fbb046de5aeece49c1"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/stocklocations.html",
+      "title": "Stock locations",
+      "sectionHash": "sha256:5398ab63826315ed47a41df3e534de8667e207c01c028a8acec956aecc08035f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/stocklocationcategories.html",
+      "title": "Stock location categories",
+      "sectionHash": "sha256:0b1045cca186566753ab2c88638f56785950855fb4733621b64a26684930a519"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/stockstate.html",
+      "title": "Stock States",
+      "sectionHash": "sha256:8952bdff7721d2bb3ccbeed3442f9d27d4c83942c7495d89c31575898c9f4734"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/index.html",
+      "title": "Advanced configuration",
+      "sectionHash": "sha256:62851b922122e72fd85f6a41f40247e2fcdd8f17ed6e74b765d033a7186903b0"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/prices.html",
+      "title": "Prices",
+      "sectionHash": "sha256:808cf4c35ceaab2b7cf8b2e068849399c55ad7102a47a68bfd419f144435bcb4"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/orderdiscounts.html",
+      "title": "Order discounts",
+      "sectionHash": "sha256:8b70be2fce06b4657dc688700fe534baa0f83c97a97627549d3197436023e80f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/giftcards.html",
+      "title": "Gift cards",
+      "sectionHash": "sha256:fb4238b4f7a64dedd2c8582683f1ea120e78cfa77cf85a4f9cb4136c0389fc01"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/loyaltypoints.html",
+      "title": "Loyalty points",
+      "sectionHash": "sha256:847d1b02d4227541646d838abdf189d560a9727883c22541ff7d0bc96fbbb30d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/erp-prices.html",
+      "title": "Rounding and Prices with ERP Integrations",
+      "sectionHash": "sha256:2ee9175db6a87afdfe24b16d0368e1884695a82d577040e5e3e74621a7b2462e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog.html",
+      "title": "Product Catalog",
+      "sectionHash": "sha256:700441975608ae1c03d894fad253fbe7e7c3afda841b2c9194ce8ba31217133b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog-viewmodel.html",
+      "title": "Product Catalog for ViewModel",
+      "sectionHash": "sha256:e41e7ce6ddb1dff82d2db9b77117e1f22b86b60de2a2a07616a7f031956a2547"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/apps/appssettings/product-catalog-settings.html",
+      "title": "Product Catalog (eCom)",
+      "sectionHash": "sha256:364fba6abf1d75360cbcfdf5bec18b5ef452495431407765d2b5923d7992de84"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/voucherrenderer.html",
+      "title": "Voucher Renderer",
+      "sectionHash": "sha256:ca3237eef69883b3a755377db7ef9e6af129062a2772680988437c2cddbf0de1"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/loyalty-points.html",
+      "title": "Loyalty Points",
+      "sectionHash": "sha256:670332e769bf8c3eafdf658e6e194e17f150aa403d0b7cf7e71b0a4616bc3974"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-loyaltypoints.html",
+      "title": "Customer Experience Center - Loyalty Points",
+      "sectionHash": "sha256:2a051edf53270818afa36cfe2b2b19ca2d0cda50e7e368c74b527683fd8951b4"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html",
+      "title": "Voucher Emails",
+      "sectionHash": "sha256:3b0e486f459f34c8b329fca23857713c1ed430fe1645def8642ca8812dfde00d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html",
+      "title": "Back-in-Stock Notifications",
+      "sectionHash": "sha256:c103a67b8ab4ec9b63117383cb9f12126152f0a71fbc4e6693868817e24a7d21"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-assortments.html",
+      "title": "Build Ecommerce Assortment Items",
+      "sectionHash": "sha256:d39284b353783013e5d083547b1e1189c8a3dd883874841d24987912e64898d2"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "A dashboard shows daily orders, average order value and conversion rate.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/index.html",
+      "excluded": {
+        "reason": "Commerce dashboard metrics are owned by the insights/dashboards area."
+      }
+    },
+    {
+      "claim": "An assortments section creates product collections for frontend.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/index.html",
+      "duplicateOf": "pim.assortments"
+    },
+    {
+      "claim": "A promotions section holds discounts, voucher codes and loyalty points.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/index.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "Discounts reduce the selling price of products or orders.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/index.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "New Discount Experience bundles rewards and conditions in one discount.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/index.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "Vouchers are unique single-use codes that trigger a discount at checkout.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/index.html",
+      "functionId": "commerce.vouchers"
+    },
+    {
+      "claim": "Loyalty points are awarded by rewards and rules and spent on products or as a cash discount.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/index.html",
+      "functionId": "commerce.loyalty-rewards"
+    },
+    {
+      "claim": "Gift cards generate a code when sold that pays during checkout; the list shows remaining balances.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/index.html",
+      "functionId": "commerce.gift-cards"
+    },
+    {
+      "claim": "Every product has a default price in the default currency, converted at the currency rate.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.default-price"
+    },
+    {
+      "claim": "The price matrix holds multiple price entries per product scoped by currency, country, customer, quantity and date.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.price-matrix"
+    },
+    {
+      "claim": "Explicit prices per currency override conversion from the default currency.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.currency-prices"
+    },
+    {
+      "claim": "A price entry is either with or without VAT; VAT is back-calculated per country.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.price-matrix"
+    },
+    {
+      "claim": "Informative prices show RRP or before prices and are never applied to an order.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.informative-prices"
+    },
+    {
+      "claim": "A discount percentage on a price entry reduces it; discount-only entries discount the lowest matching price.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.price-discount-lines"
+    },
+    {
+      "claim": "Allow order line discounts and allow order discounts per price entry control discount participation.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.price-matrix"
+    },
+    {
+      "claim": "Priority on price entries makes the highest-priority price win over a lower price.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.price-priority"
+    },
+    {
+      "claim": "Quantity thresholds create tiered prices, optionally across all variants (Any variants).",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.quantity-prices"
+    },
+    {
+      "claim": "Valid from and valid to dates create time-limited prices.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.time-limited-prices"
+    },
+    {
+      "claim": "Prices can target a single user.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.customer-prices"
+    },
+    {
+      "claim": "Prices can target a user group for tiered B2B pricing.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.customer-prices"
+    },
+    {
+      "claim": "Prices can target an ERP customer number or group customer number.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.customer-prices"
+    },
+    {
+      "claim": "Prices can be restricted to a variant.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.market-prices"
+    },
+    {
+      "claim": "Prices can differ per unit of measure.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.unit-prices"
+    },
+    {
+      "claim": "Prices can differ per stock location.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.market-prices"
+    },
+    {
+      "claim": "Prices can be restricted to a language.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.market-prices"
+    },
+    {
+      "claim": "Prices can be restricted to a country for market-specific pricing.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.market-prices"
+    },
+    {
+      "claim": "Prices can be restricted to a shop (sales channel).",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.market-prices"
+    },
+    {
+      "claim": "Price resolution filters entries by context, applies priority, then picks the lowest effective price, else the default price.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html",
+      "functionId": "commerce.price-matrix"
+    },
+    {
+      "claim": "Product stock is an absolute value on the stock field, decremented on sale.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/stock.html",
+      "functionId": "commerce.stock-levels"
+    },
+    {
+      "claim": "The stock matrix holds stock per variant, unit and stock location with dimensions, never out of stock and expected delivery.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/stock.html",
+      "functionId": "commerce.stock-matrix"
+    },
+    {
+      "claim": "Product units define how many base units a unit contains; the first is the base unit.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/stock.html",
+      "duplicateOf": "pim.sales-units"
+    },
+    {
+      "claim": "Product reservation reserves stock at add to cart or at checkout for a number of minutes.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/stock.html",
+      "functionId": "commerce.product-reservation"
+    },
+    {
+      "claim": "Unit types (box, pallet, pair) are defined under settings and priced through the price matrix.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/relations/product-units.html",
+      "duplicateOf": "pim.sales-units"
+    },
+    {
+      "claim": "Customer assortments limit logged-in users to a subset of products; assortments are enabled in channel settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/customerassortments.html",
+      "duplicateOf": "pim.assortments"
+    },
+    {
+      "claim": "Assortments contain channels, groups and products (with exclusions) and are granted to users and groups.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/customerassortments.html",
+      "duplicateOf": "pim.assortments"
+    },
+    {
+      "claim": "An anonymous assortment applies to visitors who are not logged in.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/customerassortments.html",
+      "duplicateOf": "pim.assortments"
+    },
+    {
+      "claim": "Assortments are rebuilt by the Build Ecommerce Assortment Items scheduled task or a manual rebuild.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/customerassortments.html",
+      "duplicateOf": "pim.assortments"
+    },
+    {
+      "claim": "The Build Ecommerce Assortment Items task rebuilds assortments flagged AssortmentRebuildRequired.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-assortments.html",
+      "duplicateOf": "pim.assortments"
+    },
+    {
+      "claim": "Currencies have a rate against exactly one default currency.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/currencies.html",
+      "functionId": "commerce.currencies"
+    },
+    {
+      "claim": "Currency regional info, code, symbol and positive and negative patterns control formatting.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/currencies.html",
+      "functionId": "commerce.currencies"
+    },
+    {
+      "claim": "Rounding settings on a currency adjust displayed prices.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/currencies.html",
+      "functionId": "commerce.currency-rounding"
+    },
+    {
+      "claim": "Stock locations are warehouses or stores, optionally categorised and linked to a user.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/stocklocations.html",
+      "functionId": "commerce.stock-locations"
+    },
+    {
+      "claim": "Stock location categories classify locations (click and collect, warehouse) for frontend filtering.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/stocklocationcategories.html",
+      "functionId": "commerce.stock-locations"
+    },
+    {
+      "claim": "Product catalog settings group tax settings, Vertex, stock locations and categories.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/index.html",
+      "functionId": "commerce.stock-locations"
+    },
+    {
+      "claim": "Stock states label stock levels with text, delivery time and icon and are tied to channels.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/stockstate.html",
+      "functionId": "commerce.stock-states"
+    },
+    {
+      "claim": "Advanced configuration holds prices, shopping cart, loyalty, gift card and auto-numbering settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/index.html",
+      "functionId": "commerce.price-settings"
+    },
+    {
+      "claim": "System VAT, use VAT group as system VAT and prices stored with VAT are global price settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/prices.html",
+      "functionId": "commerce.price-settings"
+    },
+    {
+      "claim": "Rounding mode is round only displayed price, round order line total or round unit price.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/prices.html",
+      "functionId": "commerce.price-settings"
+    },
+    {
+      "claim": "Fees can be calculated on the total including shipping; negative order totals can be allowed.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/prices.html",
+      "functionId": "commerce.price-settings"
+    },
+    {
+      "claim": "Calculate VAT on the delivery country instead of the billing country.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/prices.html",
+      "functionId": "orders.country-vat"
+    },
+    {
+      "claim": "Discount behaviour is aggregated, highest or lowest; discounts can apply before taxes, round and split per quantity.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/orderdiscounts.html",
+      "functionId": "commerce.price-settings"
+    },
+    {
+      "claim": "ERP rounding discrepancies are handled by choosing the matching rounding method.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/erp-prices.html",
+      "functionId": "commerce.price-settings"
+    },
+    {
+      "claim": "Gift card expiration period and VAT on gift cards are configurable.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/giftcards.html",
+      "functionId": "commerce.gift-cards"
+    },
+    {
+      "claim": "Loyalty points expiration period and no points on point-paid products are configurable; a scheduled task redeems expired points.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/loyaltypoints.html",
+      "functionId": "commerce.loyalty-rewards"
+    },
+    {
+      "claim": "Eight discount types: amount, percentage, product, free shipping, loyalty points, amount from field, custom amount, custom percentage.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "Percentage discounts apply to all, the cheapest or the most expensive product and can be capped per currency.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "Free shipping discounts set shipping fees to zero.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "Loyalty points discounts convert points to an order discount at a set value.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.loyalty-spend"
+    },
+    {
+      "claim": "Custom amount and percentage discounts are assigned from frontend by impersonating users with the setdiscount command.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "Campaign name, image, colour and dates are available to frontend designers.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "Conditions restrict a discount by user, user group, customer number, total price, shop, language, products, groups, exclusions, country, shipping, payment and quantity.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "A discount with no conditions applies to all orders or products.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "An order field value triggers a reusable coupon discount.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.coupon-codes"
+    },
+    {
+      "claim": "A voucher list triggers a discount from single-use codes.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.vouchers"
+    },
+    {
+      "claim": "Priority, stop further processing, free shipping for eligible methods, usage per customer and validation reasons tune discounts.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "A discount extender provider customises discount logic.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "A 3 for 2 discount is a 100 percent order discount on the cheapest product with a quantity condition.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/3for2.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "A coupon discount triggers on a fixed code in an order field above a total.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/coupon-discounts.html",
+      "functionId": "commerce.coupon-codes"
+    },
+    {
+      "claim": "Free shipping above a total is a free shipping discount with a total price condition.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/free-shipping-discount.html",
+      "functionId": "commerce.discounts"
+    },
+    {
+      "claim": "Loyalty discounts need one discount per currency on multi-currency solutions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/loyalty-discounts.html",
+      "functionId": "commerce.loyalty-spend"
+    },
+    {
+      "claim": "New Discount Experience must be activated in Feature Management.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/newdiscount.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "A discount has rewards (cart amount, cart percentage, free shipping, product, product amount, product percentage) and conditions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/newdiscount.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "Conditions include cart total, country, currency, customer number, date time, language, payment, product, product group, shipping, shop, user, user group and voucher.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/newdiscount.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "Product rewards apply before order rewards, by discount priority, with optional stop additional discounts.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/newdiscount.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "Execution order and skip discounted products or order lines are worked examples.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/discountorderexecution.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "Quantity based discounts use one discount per threshold with priority and stop additional discounts.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/quantitybaseddiscounts.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "Skip discounted products or order lines excludes already discounted lines from order rewards.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/skipdiscountedproductsorderlines.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "A coupon in New Discount Experience is a voucher condition.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/coupondiscountt.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "3 for 2 in New Discount Experience uses a product percentage reward on the cheapest product.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/discount2_3for2.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "Free shipping in New Discount Experience is a free shipping reward with a cart total condition.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/freeshippingdiscount.html",
+      "functionId": "commerce.discounts-v2"
+    },
+    {
+      "claim": "Voucher lists hold single-use codes, generated (8 characters) or entered (up to 16).",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/vouchers.html",
+      "functionId": "commerce.vouchers"
+    },
+    {
+      "claim": "A voucher list links to one discount.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/vouchers.html",
+      "functionId": "commerce.vouchers"
+    },
+    {
+      "claim": "Vouchers are distributed by email to users or groups, as CSV, or through the Voucher Renderer app.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/vouchers.html",
+      "functionId": "commerce.vouchers"
+    },
+    {
+      "claim": "The Voucher Renderer app renders a code from a voucher list, typically in an email.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/voucherrenderer.html",
+      "functionId": "commerce.vouchers"
+    },
+    {
+      "claim": "Voucher emails to newsletter sign-ups are set up as an email campaign.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html",
+      "duplicateOf": "marketing.voucher-emails"
+    },
+    {
+      "claim": "Gift cards are a product type that generates a code with a balance when sold.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/giftcards.html",
+      "functionId": "commerce.gift-cards"
+    },
+    {
+      "claim": "A gift card code pays all or part of an order in the same currency and keeps the remaining balance.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/giftcards.html",
+      "functionId": "commerce.gift-cards"
+    },
+    {
+      "claim": "Gift cards expire (default two years) and can be cancelled.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/giftcards.html",
+      "functionId": "commerce.gift-cards"
+    },
+    {
+      "claim": "Loyalty rewards award fixed or percentage points, per currency, with a rounding rule.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/loyaltypoints.html",
+      "functionId": "commerce.loyalty-rewards"
+    },
+    {
+      "claim": "Reward rules trigger a reward on date, shop, product, group, user, group, customer number, country, language, total, quantity, shipping, payment, order field or voucher.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/loyaltypoints.html",
+      "functionId": "commerce.loyalty-rewards"
+    },
+    {
+      "claim": "Points are spent on point-priced products or through a loyalty points discount.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/loyaltypoints.html",
+      "functionId": "commerce.loyalty-spend"
+    },
+    {
+      "claim": "Customers see balance and history in the Customer Experience Center Loyalty Points app.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/loyaltypoints.html",
+      "functionId": "commerce.loyalty-spend"
+    },
+    {
+      "claim": "The Customer Experience Center Loyalty Points app lists point transactions, total and expiry.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-loyaltypoints.html",
+      "functionId": "commerce.loyalty-spend"
+    },
+    {
+      "claim": "The older Loyalty points app renders point transactions with list and detail templates.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/loyalty-points.html",
+      "functionId": "commerce.loyalty-spend"
+    },
+    {
+      "claim": "The Product Catalog for ViewModel app publishes a product subset with list, details, feed and compare templates.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog-viewmodel.html",
+      "functionId": "commerce.product-catalog-app"
+    },
+    {
+      "claim": "Facets in the product list let the user filter products.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog-viewmodel.html",
+      "duplicateOf": "search.facets"
+    },
+    {
+      "claim": "The older Product Catalog app renders with template tags and is slower.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog.html",
+      "functionId": "commerce.product-catalog-app"
+    },
+    {
+      "claim": "Product Catalog app settings control inactive product and variant display and group caching.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/apps/appssettings/product-catalog-settings.html",
+      "functionId": "commerce.product-catalog-app"
+    },
+    {
+      "claim": "Back-in-stock notifications let customers sign up and receive a scheduled email.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html",
+      "duplicateOf": "marketing.back-in-stock"
+    }
+  ],
+  "gaps": [
+    {
+      "claim": "Group customer number on price entries (distinct from customer number) is stored in PriceCustomerGroupId; its frontend matching rule is not separately checked.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html"
+    },
+    {
+      "claim": "Per-price Allow order line discounts and Allow order discounts flags have no dedicated check; covered only as part of commerce.price-matrix.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html"
+    },
+    {
+      "claim": "Order line discount stacking behaviour (aggregated, highest, lowest) needs a behavioural cart check; the settings check is planned only.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/orderdiscounts.html"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "users.accounts.member-customer-number",
+  "functionId": "users.accounts",
+  "intent": {
+    "proves": "Every active direct member of an account carries the account's customer number, which the frontend relies on.",
+    "level": "applied",
+    "scope": "direct members of account groups; complete enumeration; at least one member must be enumerated"
+  },
+  "assertion": {
+    "kind": "offenders",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-users-by-group-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_users_by_group_id",
+      "arguments": {},
+      "reason": "The tool answers one subject id at a time; a whole-host count needs a per-subject enumeration handler that is not implemented."
+    },
+    {
+      "id": "sql-offenders",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "query": "SELECT u.AccessUserId, g.AccessUserId AS AccountId FROM AccessUserGroupRelation r JOIN AccessUser g ON g.AccessUserId = r.AccessUserGroupRelationGroupId JOIN AccessUser u ON u.AccessUserId = r.AccessUserGroupRelationUserId WHERE g.AccessUserType = 2 AND g.AccessUserUserAndGroupType = 'SystemAccount' AND u.AccessUserType <> 2 AND u.AccessUserActive = 1 AND ISNULL(u.AccessUserCustomerNumber,'') <> ISNULL(g.AccessUserCustomerNumber,'')",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html"
+    }
+  ]
+}

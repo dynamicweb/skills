@@ -1,0 +1,489 @@
+{
+  "schema": 1,
+  "area": "delivery",
+  "retrieved": "2026-11-11",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/headless/index.html",
+      "title": "Headless"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html",
+      "title": "Access & Authentication"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/external-login.html",
+      "title": "External login providers"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/users.html",
+      "title": "User management"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html",
+      "title": "Content management"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/forms.html",
+      "title": "Forms"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "title": "Commerce"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/query.html",
+      "title": "Query"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/webapi/delivery/index.html",
+      "title": "Delivery API"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/index.html",
+      "title": "Designs"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/layouts.html",
+      "title": "Layouts and master templates"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/navigation.html",
+      "title": "Navigation"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/styling.html",
+      "title": "Styling: colors, fonts, and buttons"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/assets.html",
+      "title": "Assets and frontend build"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/image-handler.html",
+      "title": "Image Handler"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/paragraphs.html",
+      "title": "Paragraphs and paragraph templates"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/grid-rows.html",
+      "title": "Grid rows and row templates"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/item-types.html",
+      "title": "Item types in templates"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/extending/extensibilitypoints/viewmodels.html",
+      "title": "Extending ViewModels"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/apps/product-catalog-viewmodel.html",
+      "title": "Product Catalog for ViewModel"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/feeds.html",
+      "title": "Feeds"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/api-keys.html",
+      "title": "API Keys"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/fundamentals/dw9upgrade/convertingtemplates.html",
+      "title": "Converting Razor (& Swift) Templates"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "All content and commerce data is delivered through /dwapi/ as JSON ViewModels to a decoupled frontend",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/index.html",
+      "functionId": "delivery.content-api"
+    },
+    {
+      "claim": "A page, for example an item-typed BlogPost page, is retrieved by id from /dwapi/content/pages/{id}",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/index.html",
+      "functionId": "delivery.content-api"
+    },
+    {
+      "claim": "The frontend app keeps URLs, logins, carts, language, currency, delivery country and impersonation state itself",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/index.html",
+      "functionId": "delivery.content-api"
+    },
+    {
+      "claim": "Hosting options and frontend frameworks for the decoupled app",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/index.html",
+      "excluded": {
+        "reason": "Guidance on hosting and tooling, not a platform function with an acceptance criterion."
+      }
+    },
+    {
+      "claim": "Username and password authenticate returns a JWT via GET or POST /dwapi/users/authenticate",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html",
+      "functionId": "delivery.jwt-authentication"
+    },
+    {
+      "claim": "Default JWT expiry is 1800 seconds and can be set per authenticate call",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html",
+      "functionId": "delivery.jwt-authentication"
+    },
+    {
+      "claim": "A JWT is refreshed before expiry with /dwapi/users/authenticate/refresh",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html",
+      "functionId": "delivery.jwt-authentication"
+    },
+    {
+      "claim": "Authenticated requests change prices, content, discounts and assortments; users, order history and favorites always need authentication",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html",
+      "functionId": "delivery.jwt-authentication"
+    },
+    {
+      "claim": "POST /dwapi/users/token exchanges a Dynamicweb.Extranet cookie for a JWT, lifetime up to 86400 seconds, 403 above the maximum",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html",
+      "functionId": "delivery.cookie-token-exchange"
+    },
+    {
+      "claim": "GET /dwapi/users/impersonatees lists users the token may impersonate; /dwapi/users/impersonate issues their token",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html",
+      "functionId": "delivery.impersonation-api"
+    },
+    {
+      "claim": "External login provider configured active for frontend with callback URL and an email claim",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/external-login.html",
+      "duplicateOf": "users.external-login"
+    },
+    {
+      "claim": "External login completes with an Extranet cookie that is exchanged for a JWT in a headless frontend",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/external-login.html",
+      "duplicateOf": "delivery.cookie-token-exchange"
+    },
+    {
+      "claim": "Cross-domain token exchange needs CORS with credentials and a SameSite policy, or the popup pattern",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/external-login.html",
+      "functionId": "delivery.cors-origin"
+    },
+    {
+      "claim": "External login callbacks are logged to the security log under ExternalAuthentication",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/external-login.html",
+      "excluded": {
+        "reason": "Diagnostic logging owned by the users and security area."
+      }
+    },
+    {
+      "claim": "Create user over /dwapi/users/create",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/users.html",
+      "functionId": "delivery.users-api"
+    },
+    {
+      "claim": "Password recovery for a user who is not logged in and password change for the current user",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/users.html",
+      "functionId": "delivery.users-api"
+    },
+    {
+      "claim": "Address management for the current user",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/users.html",
+      "functionId": "delivery.users-api"
+    },
+    {
+      "claim": "Update user information, PATCH partial and PUT full replace",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/users.html",
+      "functionId": "delivery.users-api"
+    },
+    {
+      "claim": "Customer profiles: list and switch profiles that share one user name",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/users.html",
+      "functionId": "delivery.users-api"
+    },
+    {
+      "claim": "Areas endpoint returns a website with its items",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html",
+      "functionId": "delivery.content-api"
+    },
+    {
+      "claim": "GridRows endpoint returns the rows of a page for a device",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html",
+      "functionId": "delivery.content-api"
+    },
+    {
+      "claim": "Navigation endpoint returns the tree for an area with ExpandMode, StartLevel, StopLevel and hidden or folder pages",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html",
+      "functionId": "delivery.content-api"
+    },
+    {
+      "claim": "Pages endpoint returns page metadata by id or URL",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html",
+      "functionId": "delivery.content-api"
+    },
+    {
+      "claim": "PageViews endpoint returns a full page with paragraphs and items",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html",
+      "functionId": "delivery.content-api"
+    },
+    {
+      "claim": "Paragraphs endpoint returns the paragraphs of a page",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html",
+      "functionId": "delivery.content-api"
+    },
+    {
+      "claim": "Translations endpoint returns design translations by design, area or culture",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html",
+      "functionId": "delivery.content-api"
+    },
+    {
+      "claim": "Get all forms and a form by id",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/forms.html",
+      "functionId": "delivery.forms-api"
+    },
+    {
+      "claim": "Submit a form with its form token",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/forms.html",
+      "functionId": "delivery.forms-api"
+    },
+    {
+      "claim": "Commerce endpoints take CurrencyCode, CountryCode and LanguageId context, plus OrderDate, StockLocationId and ShopId",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "functionId": "delivery.commerce-products-api"
+    },
+    {
+      "claim": "Logged-in user context changes prices, discounts and assortment-scoped products",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "functionId": "delivery.commerce-products-api"
+    },
+    {
+      "claim": "Products by group id, by query and repository name, or by product ids",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "functionId": "delivery.commerce-products-api"
+    },
+    {
+      "claim": "Single product and variant by id with FilledProperties and PriceSettings.FilledProperties",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "functionId": "delivery.commerce-products-api"
+    },
+    {
+      "claim": "Macros are unavailable in headless queries; use custom parameters",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "functionId": "delivery.query-api"
+    },
+    {
+      "claim": "Carts created for anonymous users, the current user or an impersonated user",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "functionId": "delivery.cart-checkout-api"
+    },
+    {
+      "claim": "Carts on behalf of an impersonated user",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "duplicateOf": "delivery.impersonation-api"
+    },
+    {
+      "claim": "Add products to cart by product number, order line type, fixed lines and custom prices",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "functionId": "delivery.cart-checkout-api"
+    },
+    {
+      "claim": "Update quantity, set shipping method, set payment method and complete the order",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "functionId": "delivery.cart-checkout-api"
+    },
+    {
+      "claim": "On-screen receipt from GET /dwapi/ecommerce/orders/{secret}; a completed cart is read as an order",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "functionId": "delivery.cart-checkout-api"
+    },
+    {
+      "claim": "Headless completion sends no confirmation mail; the Order Emails scheduled task sends it on its next run",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html",
+      "functionId": "delivery.order-email-task"
+    },
+    {
+      "claim": "GET /dwapi/query returns results for a repository query",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/query.html",
+      "functionId": "delivery.query-api"
+    },
+    {
+      "claim": "Query results support paging and sorting",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/query.html",
+      "functionId": "delivery.query-api"
+    },
+    {
+      "claim": "Query results include facet groups",
+      "url": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/query.html",
+      "functionId": "delivery.query-api"
+    },
+    {
+      "claim": "Swagger documentation at /dwapi/docs and a Postman collection",
+      "url": "https://doc.dynamicweb.dev/webapi/delivery/index.html",
+      "excluded": {
+        "reason": "Developer tooling for exploring the API; no demo outcome."
+      }
+    },
+    {
+      "claim": "A design folder under Files/Templates/Designs is connected to a website",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/index.html",
+      "duplicateOf": "content.layout-templates"
+    },
+    {
+      "claim": "Layouts and master templates wrap page content; a page gets its layout from the page, item type or website",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/layouts.html",
+      "duplicateOf": "content.layout-templates"
+    },
+    {
+      "claim": "Layout-specific folders and partials",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/layouts.html",
+      "functionId": "delivery.item-type-templates"
+    },
+    {
+      "claim": "Layout preview in the administration",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/layouts.html",
+      "excluded": {
+        "reason": "Editor convenience in the administration, not a frontend outcome."
+      }
+    },
+    {
+      "claim": "Navigation rendered from NavigationSettings and NavigationTreeNodes, with secondary navigations, root nodes and expand mode",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/navigation.html",
+      "duplicateOf": "content.navigation"
+    },
+    {
+      "claim": "Administrators manage colors, fonts and buttons that generate CSS files and variables loaded by the design",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/styling.html",
+      "duplicateOf": "content.design-styles"
+    },
+    {
+      "claim": "Color schemes applied to rows and paragraphs by data attribute",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/styling.html",
+      "duplicateOf": "content.design-styles"
+    },
+    {
+      "claim": "Button styles generate CSS consumed by the design",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/styling.html",
+      "duplicateOf": "content.design-styles"
+    },
+    {
+      "claim": "Assets, CSS and JavaScript added to pages, build pipeline, fonts and asset deployment",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/assets.html",
+      "excluded": {
+        "reason": "Frontend build practice; file deployment is owned by dw-setup-cli, not a ledger function."
+      }
+    },
+    {
+      "claim": "GetImage parameters: size, crop modes, missing and alternative images, formats",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/image-handler.html",
+      "duplicateOf": "assets.image-handler"
+    },
+    {
+      "claim": "Razor helpers ToGetImage, ToBackgroundStyle, focal points, ToSrcSet and ToSizesVW for responsive images",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/designs/image-handler.html",
+      "duplicateOf": "assets.image-handler"
+    },
+    {
+      "claim": "Paragraph template chosen per item type from the design Paragraph folder",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/paragraphs.html",
+      "functionId": "delivery.item-type-templates"
+    },
+    {
+      "claim": "Paragraphs in placeholders and grids",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/paragraphs.html",
+      "functionId": "delivery.item-type-templates"
+    },
+    {
+      "claim": "Apps (modules) attached to paragraphs, such as the Product Catalog",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/paragraphs.html",
+      "duplicateOf": "content.paragraph-apps"
+    },
+    {
+      "claim": "Row definitions, row settings and column widths of a grid",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/grid-rows.html",
+      "duplicateOf": "content.row-definitions"
+    },
+    {
+      "claim": "Row templates render a grid row from its definition",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/grid-rows.html",
+      "functionId": "delivery.item-type-templates"
+    },
+    {
+      "claim": "Rendering a grid from another page",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/grid-rows.html",
+      "functionId": "delivery.item-type-templates"
+    },
+    {
+      "claim": "Item type definitions stored as XML",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/item-types.html",
+      "duplicateOf": "content.item-types"
+    },
+    {
+      "claim": "Paragraph templates and page layouts chosen per item type",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/item-types.html",
+      "functionId": "delivery.item-type-templates"
+    },
+    {
+      "claim": "Item fields read in templates are not HTML-encoded",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/item-types.html",
+      "functionId": "delivery.viewmodel-templates"
+    },
+    {
+      "claim": "Extending ViewModels by subclassing or extension methods, including item-based ViewModels",
+      "url": "https://doc.dynamicweb.dev/documentation/extending/extensibilitypoints/viewmodels.html",
+      "excluded": {
+        "reason": "Custom C# extension code owned by dw-extend-csharp-api; a demo uses it only through a project that ships code."
+      }
+    },
+    {
+      "claim": "Product Catalog for ViewModel app: index, spell check, display, list, details and compare templates",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/apps/product-catalog-viewmodel.html",
+      "duplicateOf": "commerce.product-catalog-app"
+    },
+    {
+      "claim": "Feed template loaded when feed=true is in the URL on a catalogue page",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/apps/product-catalog-viewmodel.html",
+      "functionId": "delivery.feed-publication"
+    },
+    {
+      "claim": "Price, discount, before price and quantity price rendering in ProductViewModel templates",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/apps/product-catalog-viewmodel.html",
+      "functionId": "delivery.viewmodel-templates"
+    },
+    {
+      "claim": "Rendering a matrix field",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/content/apps/product-catalog-viewmodel.html",
+      "excluded": {
+        "reason": "Matrix fields are out of this snapshot."
+      }
+    },
+    {
+      "claim": "Feed general settings, query, provider and mapping",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/feeds.html",
+      "duplicateOf": "pim.feeds"
+    },
+    {
+      "claim": "Template, XML, JSON, CSV and Excel feed providers with options and attribute selectors",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/feeds.html",
+      "duplicateOf": "pim.feeds"
+    },
+    {
+      "claim": "Feed details show an API Url per language, currency, channel and user",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/feeds.html",
+      "functionId": "delivery.feed-publication"
+    },
+    {
+      "claim": "API keys generated in the backend with an optional expiry, shown once",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/api-keys.html",
+      "functionId": "delivery.service-authentication"
+    },
+    {
+      "claim": "Converting .NET Framework Razor helpers to .NET Core methods, with an AI agent option",
+      "url": "https://doc.dynamicweb.dev/documentation/fundamentals/dw9upgrade/convertingtemplates.html",
+      "excluded": {
+        "reason": "DW9 to DW10 upgrade task owned by dw-setup-upgrade."
+      }
+    }
+  ],
+  "gaps": [
+    "TemplateTags: no DW10 developer documentation page was found; delivery.templatetags-templates rests on the skill only and stays candidate.",
+    "Service authorization: /dwapi/serviceauth/token is in the skill but not on the delivery documentation pages read; delivery.service-authentication stays candidate until the live /dwapi/api.json confirms it.",
+    "CORS: the administration setting that lists allowed origins was not located in the manual; delivery.cors-origin is candidate.",
+    "Favorites, loyalty points, internationalisation and order search endpoints are in the skill endpoint reference but not on the delivery documentation pages read; no functions here. Order search RetrieveMode belongs with commerce orders.",
+    "Referenced, not redefined: commerce.product-catalog-app, pim.feeds, content.layout-templates, content.navigation, content.forms, content.design-styles, assets.image-handler, swift.impersonation, users.external-login, orders.payment-methods, orders.shipping-methods, search.index-queries."
+  ]
+}

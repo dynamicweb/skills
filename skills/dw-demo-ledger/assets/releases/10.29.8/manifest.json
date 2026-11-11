@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "dwVersion": "10.29.8",
+  "status": "candidate",
+  "functionsGlob": "functions/*.json",
+  "coverageGlob": "coverage/*.json",
+  "checkSchema": "../../check.schema.json",
+  "ledgerSchema": "../../ledger.schema.json",
+  "components": [],
+  "coverage": {
+    "status": "incomplete",
+    "note": "Entries and bindings require baseline-specific measurement; availability is not inferred from newer hosts."
+  }
+}

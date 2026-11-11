@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "pim.field-display-groups.unnamed-groups",
+  "functionId": "pim.field-display-groups",
+  "intent": {
+    "proves": "Field display groups: unnamed-groups satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "admin-unnamed-groups",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-unnamed-groups",
+      "operation": "FieldDisplayGroupTranslationsByIds",
+      "reason": "Needs authenticated full-payload and scope parity measurement; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(g.FieldDisplayGroupId AS nvarchar(20)) + N' ' + ISNULL(g.FieldDisplayGroupSystemName, N'') FROM EcomFieldDisplayGroups g WHERE NOT (ISNULL(g.FieldDisplayGroupName, N'') <> N'' OR EXISTS (SELECT 1 FROM EcomFieldDisplayGroupTranslation t WHERE (t.FieldDisplayGroupTranslationGroupId = g.FieldDisplayGroupId OR t.FieldDisplayGroupTranslationGroupSystemName = g.FieldDisplayGroupSystemName) AND t.FieldDisplayGroupTranslationLanguageId = N'{lang}' AND ISNULL(t.FieldDisplayGroupTranslationText, N'') <> N''))"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-display-groups/unnamed-groups"
+    }
+  ]
+}

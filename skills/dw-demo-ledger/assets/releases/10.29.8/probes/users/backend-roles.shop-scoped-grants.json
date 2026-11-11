@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.backend-roles.shop-scoped-grants",
+  "functionId": "users.backend-roles",
+  "intent": {
+    "proves": "At least one user group holds a Read-or-higher grant on a shop, limiting order-management data to permitted shops.",
+    "level": "configured",
+    "scope": "UnifiedPermission rows with PermissionName Shop and a group principal"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-permissionsbyquery",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "PermissionsByQuery",
+      "arguments": {},
+      "reason": "Admin permission read verb named in dw-data-access recipes; response projection not measured."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM UnifiedPermission WHERE PermissionName = 'Shop' AND PermissionLevel >= 4 AND PermissionUserId NOT IN ('Anonymous','AuthenticatedFrontend','Administrator')",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html"
+    }
+  ]
+}

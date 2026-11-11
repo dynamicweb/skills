@@ -159,6 +159,8 @@ Claude controls the `Dynamicweb.Host.Suite` host process autonomously — start,
 
 ## Scripts (scripts/)
 
+For release-pinned function coverage and equivalent read-only check bindings, use [dw-demo-ledger](../dw-demo-ledger/SKILL.md) after the base is established.
+
 | Script | Reads / writes | What it does |
 |---|---|---|
 | [Invoke-DwDemoBaseBuild.ps1](scripts/Invoke-DwDemoBaseBuild.ps1) | Writes: local demo, flow state, journal and report | One resumable customer-config build with explicit apply and gated steps |

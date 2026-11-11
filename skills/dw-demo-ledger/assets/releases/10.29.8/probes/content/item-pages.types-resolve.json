@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "content.item-pages.types-resolve",
+  "functionId": "content.item-pages",
+  "intent": {
+    "proves": "No page or paragraph in any website uses an item type that can no longer be resolved.",
+    "level": "stored-integrity",
+    "scope": "every website; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-find-unresolvable-item-pages",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count-per-area",
+      "operation": "find_unresolvable_item_pages",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Resolution needs item type metadata, which is not a single SQL source."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/AreaTools.cs"
+    }
+  ]
+}

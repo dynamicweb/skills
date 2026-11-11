@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "id": "marketing.send.sent",
+  "functionId": "marketing.send",
+  "intent": {
+    "proves": "At least one email has recipients with a sent time.",
+    "level": "behavioural",
+    "scope": "all emails; recipients joined through the message id or the original message id"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-email-campaigns",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_email_campaigns",
+      "arguments": {},
+      "reason": "Handler not reserved: needs a field-predicate projection over the tool's rows; mcp-count counts rows only. Predicate: isSent = true."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT e.EmailId) FROM EmailMarketingEmail e INNER JOIN EmailRecipient r ON (r.RecipientMessageId = e.EmailMessageId OR r.RecipientMessageId = e.EmailOriginalMessageId) WHERE r.RecipientSentTime IS NOT NULL"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/references/dashboard-seeding.md (email statistics and flow schema)"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "id": "orders.order-processing.progressed",
+  "functionId": "orders.order-processing",
+  "intent": {
+    "proves": "At least one completed order has moved past its flow's default state.",
+    "level": "behavioural",
+    "scope": "completed orders excluding quotes, ledger entries and subscription base orders"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "search_orders",
+      "reason": "search_orders takes a request object and pages; a complete-enumeration handler with this filter is not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomOrders o WHERE o.OrderComplete = 1 AND ISNULL(o.OrderDeleted, 0) = 0 AND ISNULL(o.OrderIsQuote, 0) = 0 AND ISNULL(o.OrderIsLedgerEntry, 0) = 0 AND ISNULL(o.OrderIsRecurringOrderTemplate, 0) = 0 AND EXISTS (SELECT 1 FROM EcomOrderStates s WHERE s.OrderStateId = o.OrderStateId AND ISNULL(s.OrderStateIsDefault, 0) = 0)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/incomplete-orders.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/carts.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

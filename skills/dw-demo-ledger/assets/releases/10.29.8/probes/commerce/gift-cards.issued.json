@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "commerce.gift-cards.issued",
+  "functionId": "commerce.gift-cards",
+  "intent": {
+    "proves": "At least one gift card has been issued.",
+    "level": "applied",
+    "scope": "all gift cards"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query-count",
+      "operation": "GiftCardsAll",
+      "reason": "Admin query named in the skills; authenticated payload projection not measured."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomGiftCard"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/giftcards.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/giftcards.html"
+    }
+  ]
+}

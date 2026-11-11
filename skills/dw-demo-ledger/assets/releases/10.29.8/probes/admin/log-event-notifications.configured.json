@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "admin.log-event-notifications.configured",
+  "functionId": "admin.log-event-notifications",
+  "intent": {
+    "proves": "At least one event notification is configured.",
+    "level": "configured",
+    "scope": "every notification configuration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-log-event-notifications",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_log_event_notifications",
+      "arguments": {}
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/notifications.html"
+    }
+  ]
+}

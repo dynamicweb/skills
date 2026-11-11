@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.user-groups.membership",
+  "functionId": "users.user-groups",
+  "intent": {
+    "proves": "At least one user group has at least one active user as a direct member.",
+    "level": "applied",
+    "scope": "direct AccessUserGroupRelation rows from active non-group users to groups; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-user-count-by-group-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_user_count_by_group_id",
+      "arguments": {},
+      "reason": "The tool answers one subject id at a time; a whole-host count needs a per-subject enumeration handler that is not implemented."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(DISTINCT r.AccessUserGroupRelationGroupId) FROM AccessUserGroupRelation r JOIN AccessUser g ON g.AccessUserId = r.AccessUserGroupRelationGroupId JOIN AccessUser u ON u.AccessUserId = r.AccessUserGroupRelationUserId WHERE g.AccessUserType = 2 AND u.AccessUserType <> 2 AND u.AccessUserActive = 1",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html"
+    }
+  ]
+}

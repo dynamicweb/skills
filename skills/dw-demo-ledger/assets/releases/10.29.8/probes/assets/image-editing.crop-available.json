@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "assets.image-editing.crop-available",
+  "functionId": "assets.image-editing",
+  "intent": {
+    "proves": "Cropping an image in the Assets area produces a generated image.",
+    "level": "behavioural",
+    "scope": "one non-SVG image"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "image crop command",
+      "reason": "UI flow; no read-only observation of a crop result is defined. Needs a measured fixture."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html"
+    }
+  ]
+}

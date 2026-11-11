@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "marketing.unsubscribe.clears-permission",
+  "functionId": "marketing.unsubscribe",
+  "intent": {
+    "proves": "Every Dynamicweb Users email clears email permission on unsubscribe.",
+    "level": "configured",
+    "scope": "emails whose recipient provider is Dynamicweb Users"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-email-campaign-recipients",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_email_campaign_recipients",
+      "arguments": {},
+      "reason": "Handler not reserved: needs one call per subject (iterate ids from the list tool) and a client-side predicate. Predicate: isAccessUserProvider and not unsubscribeEmailAllowed."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "marketing.flows.flows-in-folder",
+  "functionId": "marketing.flows",
+  "intent": {
+    "proves": "Every flow sits in a flow folder, so the folder list shows it.",
+    "level": "stored-integrity",
+    "scope": "all flows"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(EmailMarketingFlowId AS nvarchar(20)) + N' ' + ISNULL(EmailMarketingFlowName, N'') FROM EmailMarketingFlow WHERE ISNULL(EmailMarketingFlowFolderId, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/references/dashboard-seeding.md (email statistics and flow schema)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

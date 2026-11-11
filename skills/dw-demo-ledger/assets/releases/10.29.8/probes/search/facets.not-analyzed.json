@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "search.facets.not-analyzed",
+  "functionId": "search.facets",
+  "intent": {
+    "proves": "No facet reads an analysed index field.",
+    "level": "stored-integrity",
+    "scope": "every facet joined to its index field definition"
+  },
+  "assertion": {
+    "kind": "offenders",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-index-facets",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_index_facets",
+      "arguments": {},
+      "reason": "Needs a join of facet Field to get_index_fields Analyzed; not implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/facets.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+    }
+  ]
+}

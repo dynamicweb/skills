@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "id": "distribution.base-layer.countries",
+  "functionId": "distribution.base-layer",
+  "intent": {
+    "proves": "The 96 countries every edition pins are present.",
+    "level": "applied",
+    "scope": "EcomCountries rows"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 96
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-countries",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_countries",
+      "arguments": {},
+      "reason": "Whether get_countries returns one row per country or per language is unverified."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomCountries"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:README.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/base/base.contract.json"
+    }
+  ]
+}

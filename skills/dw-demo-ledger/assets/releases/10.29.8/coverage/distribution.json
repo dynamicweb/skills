@@ -1,0 +1,156 @@
+{
+  "schema": 1,
+  "area": "distribution",
+  "retrieved": "2026-11-11",
+  "sources": [
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/README.md",
+      "title": "Truvio Commerce Distribution README"
+    },
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md",
+      "title": "Layers and editions catalog"
+    },
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/CONTRIBUTING.md",
+      "title": "Distribution contributing and merge gate"
+    },
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/layers/INDEX.json",
+      "title": "Layer index"
+    },
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/layers/base/base.contract.json",
+      "title": "Base contract"
+    },
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/editions/edition.schema.json",
+      "title": "Edition schema"
+    },
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/versions/spine.json",
+      "title": "Version spine"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "A layer is one versioned unit: layer.json plus replace and merge mode trees and an optional files overlay",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/README.md",
+      "functionId": "distribution.base-layer"
+    },
+    {
+      "claim": "Layer kinds base, feature, surface, sample-data, theme with the kind as directory prefix",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md",
+      "functionId": "distribution.edition-composition"
+    },
+    {
+      "claim": "Base is framework-only: framework SQL and base.contract.json, zero catalogue, zero content",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md",
+      "functionId": "distribution.base-layer"
+    },
+    {
+      "claim": "Additions bind only to the base contract, never to each other",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/README.md",
+      "functionId": "distribution.edition-composition"
+    },
+    {
+      "claim": "Editions compose from, add, surfaces, sampleData, themes",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/README.md",
+      "functionId": "distribution.edition-composition"
+    },
+    {
+      "claim": "Five editions: base-only, base-swift, swift-demo, headless-demo, dap-portal",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md",
+      "functionId": "distribution.edition-composition"
+    },
+    {
+      "claim": "expectedCounts and criticalPaths per edition",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md",
+      "functionId": "distribution.edition-composition"
+    },
+    {
+      "claim": "Feature layers (reordering, pricing, subscription orders, BOM configurator, B2B comms, gallery zoom) with fixture probes",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md",
+      "excluded": {
+        "reason": "Each feature layer's outcome (quick order, contract pricing, subscriptions, kits, dealer mails, gallery zoom) belongs to the commerce and content area authors; the layer carriage itself is edition-composition."
+      }
+    },
+    {
+      "claim": "Surface layers swift, headless, dap-portal",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md",
+      "functionId": "distribution.edition-composition"
+    },
+    {
+      "claim": "One sample-data layer on the sampleData toggle with personas and catalogue",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md",
+      "functionId": "distribution.sample-data"
+    },
+    {
+      "claim": "theme-default with the brand slot",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md",
+      "functionId": "distribution.theme-layer"
+    },
+    {
+      "claim": "gateProven in layers/INDEX.json is the only record of which editions are proven",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/README.md",
+      "functionId": "distribution.release-compatibility"
+    },
+    {
+      "claim": "Pin origin/main; main is the version; tags are provenance only",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/README.md",
+      "functionId": "distribution.release-compatibility"
+    },
+    {
+      "claim": "Retired layer names resolve to their successor, never silence",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md",
+      "functionId": "distribution.release-compatibility"
+    },
+    {
+      "claim": "Version floors rise only when a consumer depends on the fix",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/CONTRIBUTING.md",
+      "functionId": "distribution.release-compatibility"
+    },
+    {
+      "claim": "base.contract.json compat: DW ring and min, Swift tag, required Serializer and optional MCP floors",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/layers/base/base.contract.json",
+      "functionId": "distribution.release-compatibility"
+    },
+    {
+      "claim": "Proof key provenTree: per-layer tree hash checked by CI",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/CONTRIBUTING.md",
+      "functionId": "distribution.artifact-verification"
+    },
+    {
+      "claim": "Bacpac release assets registered with sha256, gated after restore, scrub-checked",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/CONTRIBUTING.md",
+      "functionId": "distribution.artifact-verification"
+    },
+    {
+      "claim": "Restoring a bacpac: verify sha256, import onto a new database, set the administrator password",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/CONTRIBUTING.md",
+      "functionId": "distribution.artifact-verification"
+    },
+    {
+      "claim": "Every edition delivers onto a blank DW10 database from the stock setup wizard",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/layers/base/base.contract.json",
+      "functionId": "distribution.base-layer"
+    },
+    {
+      "claim": "Collision checks between layers at activation",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/layers/base/base.contract.json",
+      "excluded": {
+        "reason": "Layer-authoring gate run before merge, not a property of a delivered host."
+      }
+    },
+    {
+      "claim": "Rolling latest-only Swift support",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/README.md",
+      "functionId": "distribution.release-compatibility"
+    }
+  ],
+  "gaps": [
+    "edition-composition, release-compatibility and artifact-verification need runtime inputs read from the locked Distribution commit (edition tables, floors, hashes); contract.md defines no tokens for them, so every binding is planned.",
+    "The gateProven record names DW 10.29.8 while versions/spine.json current still reads 10.29.7 at the commit read; the ledger cites gateProven as the authority, as the README says.",
+    "Feature-layer fixture probes (cart-price, sku-validation, checkout-recurring, bom-cart-lines) are not migrated into this ledger."
+  ]
+}

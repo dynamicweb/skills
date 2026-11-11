@@ -1578,6 +1578,10 @@ def main() -> int:
     check_versions_file()
     check_skill_versions_blocks()
     check_version_stamps()
+    # The ledger uses draft-7 schemas plus cross-file ownership and coverage rules.
+    # PowerShell 7 supplies Test-Json, as in the shipped runner and this repo's CI.
+    from validate_ledger import validate_ledgers
+    errors.extend(validate_ledgers(SKILLS_DIR.parent))
 
     for w in warnings:
         print(f"WARN  {w}")

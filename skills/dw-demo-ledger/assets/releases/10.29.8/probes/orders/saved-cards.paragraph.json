@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "orders.saved-cards.paragraph",
+  "functionId": "orders.saved-cards",
+  "intent": {
+    "proves": "At least one paragraph runs the Customer Experience Center Saved Cards app.",
+    "level": "configured",
+    "scope": "all paragraphs, module system name eCom_CustomerExperienceCenterSavedCards"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "search_paragraphs",
+      "arguments": {
+        "moduleSystemName": "eCom_CustomerExperienceCenterSavedCards"
+      },
+      "reason": "Search enumeration is not proven complete: observed search_pages returned 500 versus 502 stored pages, and cart paragraph search returned 15 versus 36 stored paragraphs. Complete scope traversal and deleted-row parity are required."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Paragraph WHERE ParagraphModuleSystemName = N'eCom_CustomerExperienceCenterSavedCards' AND ISNULL(ParagraphDeleted, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-savedcards.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/payment-card-expiration-notification.html"
+    }
+  ]
+}

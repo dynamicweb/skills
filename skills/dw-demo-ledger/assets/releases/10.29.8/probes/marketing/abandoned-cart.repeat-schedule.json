@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "marketing.abandoned-cart.repeat-schedule",
+  "functionId": "marketing.abandoned-cart",
+  "intent": {
+    "proves": "The abandoned cart email is scheduled to repeat.",
+    "level": "configured",
+    "scope": "emails using the abandoned cart provider"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-email-campaigns",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_email_campaigns",
+      "arguments": {},
+      "reason": "Handler not reserved: needs a field-predicate projection over the tool's rows; mcp-count counts rows only. Predicate: isScheduled and scheduledRepeatInterval > 0, joined to the provider check."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.Ecommerce 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

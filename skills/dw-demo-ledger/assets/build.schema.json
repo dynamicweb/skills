@@ -1,0 +1,96 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "slug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lock": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "manifest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "checkIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]*$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "commit",
+        "manifest",
+        "digest",
+        "checkIds"
+      ],
+      "additionalProperties": false
+    },
+    "functions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9.-]*$"
+      }
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "defaultLanguage": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pimShop": {
+      "type": "string",
+      "minLength": 1
+    },
+    "families": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "attributes": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "productScope": {
+      "type": "object"
+    },
+    "rulings": {
+      "type": "object"
+    },
+    "expected": {
+      "type": "object"
+    },
+    "areaId": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "schema",
+    "slug",
+    "lock",
+    "functions"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

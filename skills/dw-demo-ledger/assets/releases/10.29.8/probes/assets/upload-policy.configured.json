@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "assets.upload-policy.configured",
+  "functionId": "assets.upload-policy",
+  "intent": {
+    "proves": "An allowed or disallowed extension list is set.",
+    "level": "configured",
+    "scope": "solution-wide file manager settings"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-settings",
+      "surface": "file",
+      "status": "planned",
+      "handler": "settings-read",
+      "localOnly": true,
+      "path": "GlobalSettings.config",
+      "reason": "GlobalSettings key names for this setting are not verified on 10.29.8 and no reserved settings-read handler exists."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/assets/filemanager.html"
+    }
+  ]
+}

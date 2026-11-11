@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "orders.payment-providers.handler",
+  "functionId": "orders.payment-providers",
+  "intent": {
+    "proves": "At least one active payment method has a checkout handler.",
+    "level": "configured",
+    "scope": "all payment methods"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_payment_methods",
+      "arguments": {
+        "onlyActive": true
+      },
+      "reason": "The payment method projection is not proven to carry the checkout handler; handler not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT PaymentId) FROM EcomPayments WHERE PaymentActive = 1 AND ISNULL(PaymentCheckoutSystemName, N'') <> N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/payment.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html"
+    }
+  ]
+}

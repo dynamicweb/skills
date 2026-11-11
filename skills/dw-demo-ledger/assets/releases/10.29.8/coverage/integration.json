@@ -1,0 +1,784 @@
+{
+  "schema": 1,
+  "area": "integration",
+  "retrieved": "2026-11-11",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/integration-customer-center.html",
+      "title": "Integration Customer Center",
+      "sectionHash": "c3520f633a72f05f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/architecture/architecture.html",
+      "title": "Architecture",
+      "sectionHash": "694d6258abb76b0b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/authentications.html",
+      "title": "Authentications",
+      "sectionHash": "924389d11db2a726"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/endpoint-collections.html",
+      "title": "Endpoint collections",
+      "sectionHash": "dc06aa9583dda892"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/index.html",
+      "title": "Connections",
+      "sectionHash": "f935a2343940b877"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/erp-plug-in-units/index.html",
+      "title": "DynamicWeb ERP plug-in unit integration",
+      "sectionHash": "06337f2ef0edace5"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/dynamicwebPIM-BCConnector-Use-guide.html",
+      "title": "How to use the DynamicWeb PIM connector for Business Central",
+      "sectionHash": "12c7664523c5bdbd"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/dynamicwebPIM-BCConnector.html",
+      "title": "DynamicWeb PIM for Business Central Connector",
+      "sectionHash": "d89f82ebe2db6954"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/index.html",
+      "title": "DynamicWeb PIM connector for Business Central",
+      "sectionHash": "8ef55cb2ecb7d06b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/bc-odata-default-api.html",
+      "title": "Business Central OData default API blueprint",
+      "sectionHash": "d4211a73eed72850"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/bc-odata-v4-blueprint.html",
+      "title": "Business Central OData v4 blueprint",
+      "sectionHash": "955e0a1ebd277684"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/index.html",
+      "title": "Blueprints",
+      "sectionHash": "ba4ae4b5d05171e3"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/erp-prices.html",
+      "title": "Rounding and Prices with ERP Integrations",
+      "sectionHash": "9bc2a47dd6e62913"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/index.html",
+      "title": "Integration guides",
+      "sectionHash": "c844ca9884dbde8e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html",
+      "title": "Live integration with Business Central Plug-in unit",
+      "sectionHash": "83e1ff7ed50a2c62"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/index.html",
+      "title": "Plug-in unit integration in DW10",
+      "sectionHash": "cc71c38fe68f81d8"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/s2s-guide.html",
+      "title": "S2S setup guide",
+      "sectionHash": "3ce9d0406949e153"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/index.html",
+      "title": "OAuth 2.0 User impersonation",
+      "sectionHash": "5a5455dcfbbbbef6"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/oauth-userimp-bc.html",
+      "title": "Business Central OAuth User impersonation setup guide",
+      "sectionHash": "0d63d67541b93656"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/oauth-userimp-crm.html",
+      "title": "Dynamics CRM OAuth User impersonation setup guide",
+      "sectionHash": "fa4e904aca669673"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/oauth-userimp-fo.html",
+      "title": "Finance and Operations OAuth User impersonation setup guide",
+      "sectionHash": "2f37c55e5ead066d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/index.html",
+      "title": "Integration",
+      "sectionHash": "36433715f0659b8d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "title": "Integration activities",
+      "sectionHash": "ed9b0d00e3e79dc7"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/blueprints.html",
+      "title": "Integration blueprints",
+      "sectionHash": "f9d69241ca48c2b1"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/index.html",
+      "title": "Setup",
+      "sectionHash": "a80a49ece429bc3b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "title": "Live integration",
+      "sectionHash": "34dd60cf758785d0"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/csv-provider.html",
+      "title": "CSV Provider",
+      "sectionHash": "df00d7a3cf8b782d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/dynamicweb-provider.html",
+      "title": "Dynamicweb provider",
+      "sectionHash": "38655f9c8064d076"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/ecom-provider.html",
+      "title": "Ecom provider",
+      "sectionHash": "9e6c82953f3dc794"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/excel-provider.html",
+      "title": "Excel Provider",
+      "sectionHash": "ef9850dd8e45312f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/index.html",
+      "title": "Integration providers",
+      "sectionHash": "ccdbc115dbcced31"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/odata-provider.html",
+      "title": "OData provider",
+      "sectionHash": "df424db6660627b0"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/order-provider.html",
+      "title": "Order provider",
+      "sectionHash": "937a8343be22c19d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/sql-provider.html",
+      "title": "SQL provider",
+      "sectionHash": "6bfcd3dd1c41740d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/user-provider.html",
+      "title": "User provider",
+      "sectionHash": "be6489f14798bbc5"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/xml-provider.html",
+      "title": "XML provider",
+      "sectionHash": "28309442fbf84e9f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/index.html",
+      "title": "Integration",
+      "sectionHash": "b26506d192509011"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/scheduledtasks.html",
+      "title": "Scheduled tasks",
+      "sectionHash": "0f5cfaf280303c2d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/schemamanagement.html",
+      "title": "Schemas",
+      "sectionHash": "6fee785d9a06ed82"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "The Integration area covers live and scheduled integration activities, tools and architecture",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/index.html",
+      "excluded": {
+        "reason": "Section index, no selectable outcome"
+      }
+    },
+    {
+      "claim": "The framework is pull-based: Dynamicweb requests, the web service responds, Dynamicweb persists",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/architecture/architecture.html",
+      "excluded": {
+        "reason": "Architecture description, no selectable outcome"
+      }
+    },
+    {
+      "claim": "Cloud ERP integration through SOAP plug-in unit services or OData services via endpoint collections, OAuth required for SaaS",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/architecture/architecture.html",
+      "functionId": "integration.endpoints"
+    },
+    {
+      "claim": "On-prem integration through a plug-in unit, the Dynamicweb connector service and a scheduled task",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/architecture/architecture.html",
+      "functionId": "integration.plugin-unit-import"
+    },
+    {
+      "claim": "A live integration may render ERP data directly in the frontend",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/architecture/architecture.html",
+      "functionId": "integration.live-integration"
+    },
+    {
+      "claim": "OData integration with standard APIs or custom OData V4 pages, read through endpoint metadata",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/architecture/architecture.html",
+      "functionId": "integration.provider-odata"
+    },
+    {
+      "claim": "Plug-in units for F&O, AX 2012, NAV and Business Central expose XML saved by a scheduled task and imported by an activity",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/architecture/architecture.html",
+      "functionId": "integration.plugin-unit-import"
+    },
+    {
+      "claim": "Connections area manages endpoint collections, requests and authentications",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/index.html",
+      "functionId": "integration.endpoints"
+    },
+    {
+      "claim": "Endpoint collection groups requests sharing an authentication",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/endpoint-collections.html",
+      "functionId": "integration.endpoints"
+    },
+    {
+      "claim": "Request with URL, query parameters, authentication, headers and body",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/endpoint-collections.html",
+      "functionId": "integration.endpoints"
+    },
+    {
+      "claim": "Connects to a standard Dynamicweb codeunit service forces POST, SOAP headers and body",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/endpoint-collections.html",
+      "functionId": "integration.endpoints"
+    },
+    {
+      "claim": "Query parameters such as $filter and $top",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/endpoint-collections.html",
+      "functionId": "integration.endpoints"
+    },
+    {
+      "claim": "A request inherits the collection authentication or has its own",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/endpoint-collections.html",
+      "functionId": "integration.authentications"
+    },
+    {
+      "claim": "Test a request, inspect and save the response, save as a new request",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/endpoint-collections.html",
+      "functionId": "integration.endpoints"
+    },
+    {
+      "claim": "Authentication methods: OAuth 2.0 S2S, OAuth 2.0 user impersonation, bearer token, basic, NTLM",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/authentications.html",
+      "functionId": "integration.authentications"
+    },
+    {
+      "claim": "S2S setup: Entra app registration, redirect URIs, API permissions",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/s2s-guide.html",
+      "excluded": {
+        "reason": "ERP or identity-provider side configuration, outside the Dynamicweb platform"
+      }
+    },
+    {
+      "claim": "S2S: add the application in Business Central, F&O or CRM and grant consent",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/s2s-guide.html",
+      "excluded": {
+        "reason": "ERP-side configuration, outside the Dynamicweb platform"
+      }
+    },
+    {
+      "claim": "Add the S2S credentials to an endpoint collection or a request in Dynamicweb",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/s2s-guide.html",
+      "functionId": "integration.authentications"
+    },
+    {
+      "claim": "OAuth 2.0 user impersonation setup guides for BC, F&O and CRM",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/index.html",
+      "functionId": "integration.authentications"
+    },
+    {
+      "claim": "User impersonation: Entra registration, manifest, API permission, client secret, platform configuration",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/oauth-userimp-bc.html",
+      "excluded": {
+        "reason": "ERP or identity-provider side configuration, outside the Dynamicweb platform"
+      }
+    },
+    {
+      "claim": "User impersonation: add the authentication in Dynamicweb (BC)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/oauth-userimp-bc.html",
+      "functionId": "integration.authentications"
+    },
+    {
+      "claim": "User impersonation: add the authentication in Dynamicweb (CRM)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/oauth-userimp-crm.html",
+      "functionId": "integration.authentications"
+    },
+    {
+      "claim": "User impersonation: add the authentication in Dynamicweb (F&O)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/oauth-userimp-fo.html",
+      "functionId": "integration.authentications"
+    },
+    {
+      "claim": "Plug-in units installed on the ERP expose web services; XML requested via an endpoint request and a scheduled task add-in, mapped by an activity",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/erp-plug-in-units/index.html",
+      "functionId": "integration.plugin-unit-import"
+    },
+    {
+      "claim": "Install the BC plug-in unit from AppSource and copy the SOAP URL",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html",
+      "excluded": {
+        "reason": "ERP-side installation, outside the Dynamicweb platform"
+      }
+    },
+    {
+      "claim": "Plug-in unit request in an endpoint collection with the standard Dynamicweb ERP service flag, tested with a request body",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html",
+      "functionId": "integration.endpoints"
+    },
+    {
+      "claim": "Local XML file in Assets as the activity source; XML provider source with create mappings at runtime",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html",
+      "functionId": "integration.provider-xml"
+    },
+    {
+      "claim": "Import data with custom request scheduled task add-in with a preconfigured endpoint and optional request XML",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html",
+      "functionId": "integration.plugin-unit-import"
+    },
+    {
+      "claim": "Live integration request with Use in Live Integration and a live instance with shop and enable flag",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html",
+      "functionId": "integration.live-integration"
+    },
+    {
+      "claim": "Plug-in unit integration guides index",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/index.html",
+      "excluded": {
+        "reason": "Section index, no selectable outcome"
+      }
+    },
+    {
+      "claim": "Integration guides index",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/index.html",
+      "excluded": {
+        "reason": "Section index, no selectable outcome"
+      }
+    },
+    {
+      "claim": "Activities consist of a source and a destination provider, custom or from a blueprint",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.activities"
+    },
+    {
+      "claim": "IDs set during import must use letters and digits only",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.table-mappings"
+    },
+    {
+      "claim": "Activity groups and subgroups inherit source and destination providers",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.activities"
+    },
+    {
+      "claim": "General tab: name, group, create mappings at runtime",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.table-mappings"
+    },
+    {
+      "claim": "Source and destination tabs select and configure providers",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.activities"
+    },
+    {
+      "claim": "Notification tab: sender, recipients, template, only on failure",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.activity-notifications"
+    },
+    {
+      "claim": "Cache tab: cache services cleared on run",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.post-run-refresh"
+    },
+    {
+      "claim": "Repository index tab: indexes rebuilt on run",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.post-run-refresh"
+    },
+    {
+      "claim": "Activity info widget and edit",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.activities"
+    },
+    {
+      "claim": "Scheduling widget: begin, refresh every, unit; schedule stored as a scheduled task; active, end time, don't run if last job failed",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.scheduled-runs"
+    },
+    {
+      "claim": "Table mappings with same-as-source destination tables",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.table-mappings"
+    },
+    {
+      "claim": "Key columns per table mapping, defaults to the table key",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.table-mappings"
+    },
+    {
+      "claim": "Conditionals with fourteen operators, condition groups AND/OR, code values",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.conditionals"
+    },
+    {
+      "claim": "OR condition groups are not implemented for the OData source",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.conditionals"
+    },
+    {
+      "claim": "Column mappings, multiple column mappings, don't update record",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.table-mappings"
+    },
+    {
+      "claim": "Number format culture on a column mapping",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.column-scripting"
+    },
+    {
+      "claim": "Null handling: default, constant, skip row",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.column-scripting"
+    },
+    {
+      "claim": "Scripting: append, constant, new GUID, prepend, current time, substring, invert, @Code with row data",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.column-scripting"
+    },
+    {
+      "claim": "Appending several source columns into one destination column",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.column-scripting"
+    },
+    {
+      "claim": "Custom destination tables and columns for file destinations",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.provider-xml"
+    },
+    {
+      "claim": "Run now and cancel",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.run-and-log"
+    },
+    {
+      "claim": "Activity log files: lastrun, lastrunresult and timestamped log",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.run-and-log"
+    },
+    {
+      "claim": "Activities are XML files under Files/Integration/Jobs and can be copied between solutions; groups are folders",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.activities"
+    },
+    {
+      "claim": "Table schema errors list and update schema for source and destination",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.schema-management"
+    },
+    {
+      "claim": "Context-sensitive values @Request, @Session, @Page, @User, @Paragraph, @ProductID",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.conditionals"
+    },
+    {
+      "claim": "Blueprints are packages of pre-configured activities installed from Apps",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/blueprints.html",
+      "functionId": "integration.blueprints"
+    },
+    {
+      "claim": "Blueprint activities need manual configuration such as endpoint, shop or user group",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/blueprints.html",
+      "functionId": "integration.blueprints"
+    },
+    {
+      "claim": "Blueprints for Business Central OData default API and OData V4 are starting points, not plug-and-play",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/index.html",
+      "functionId": "integration.blueprints"
+    },
+    {
+      "claim": "BC OData default API blueprint: import order, endpoint, mappings for countries, currencies, employees, customers, contacts, vendors, locations, categories, items, variants, units",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/bc-odata-default-api.html",
+      "functionId": "integration.blueprints"
+    },
+    {
+      "claim": "BC OData default API blueprint: exports of countries, currencies, users, manufacturers, locations, groups, products, variants, units and orders",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/bc-odata-default-api.html",
+      "functionId": "integration.blueprints"
+    },
+    {
+      "claim": "BC OData V4 blueprint: exposing V4 pages in BC",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/bc-odata-v4-blueprint.html",
+      "excluded": {
+        "reason": "ERP-side configuration, outside the Dynamicweb platform"
+      }
+    },
+    {
+      "claim": "BC OData V4 blueprint: endpoints in Dynamicweb and import/export activities for master data, stock, BOM, orders, prices and discounts",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/bc-odata-v4-blueprint.html",
+      "functionId": "integration.blueprints"
+    },
+    {
+      "claim": "BC OData V4 blueprint price and discount import activities",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/bc-odata-v4-blueprint.html",
+      "functionId": "integration.blueprints"
+    },
+    {
+      "claim": "Setup section index",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/index.html",
+      "excluded": {
+        "reason": "Section index, no selectable outcome"
+      }
+    },
+    {
+      "claim": "Live integration shows live prices and stock and lets the remote system calculate orders, discounts and shipping",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-integration"
+    },
+    {
+      "claim": "Live integration requires existing batch integration of products and users",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-integration"
+    },
+    {
+      "claim": "Install the Dynamicweb.Ecommerce.DynamicwebLiveIntegration package from Apps",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-integration"
+    },
+    {
+      "claim": "General tab: enable, label, connect to web service or endpoints, security key, timeouts, ping interval, shop, website, ERP currency, number culture, connection status tag, instance id, settings file",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-integration"
+    },
+    {
+      "claim": "Multiple endpoints routed by user, order or shop field",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-integration"
+    },
+    {
+      "claim": "Products tab: live prices, lazy load, custom fields, cache level, product number, unit prices, retry, variants, batch size",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-prices"
+    },
+    {
+      "claim": "Live product loading on Swift does not support stock amounts",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-prices"
+    },
+    {
+      "claim": "Orders tab: cart communication type, queue orders, custom fields, parts lines, order XML copy, product number, discount texts, ERP discounts and shipping, fixed line type, shipping item, states after export, cache, ledger",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-cart-orders"
+    },
+    {
+      "claim": "Users tab: anonymous live product info, anonymous cart and orders, ERP discounts for anonymous, anonymous key",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-cart-orders"
+    },
+    {
+      "claim": "Notifications tab: recipients, groups, template, subject, sender, frequency",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-integration"
+    },
+    {
+      "claim": "Logs tab: size, keep files, general, connection, response, request/response content, order creation logging",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html",
+      "functionId": "integration.live-integration"
+    },
+    {
+      "claim": "Integration Customer Center lists orders, invoices and credits from the remote system with details and PDFs",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/integration-customer-center.html",
+      "functionId": "integration.customer-center"
+    },
+    {
+      "claim": "Integration providers move data between Dynamicweb and external sources, paired as source and destination",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/index.html",
+      "functionId": "integration.activities"
+    },
+    {
+      "claim": "Dynamicweb provider: whole database, relations by hand",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/dynamicweb-provider.html",
+      "functionId": "integration.provider-dynamicweb-ecom"
+    },
+    {
+      "claim": "Dynamicweb provider destination options: insert only new, update only existing, deactivate missing products, remove missing rows variants, delete incoming rows",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/dynamicweb-provider.html",
+      "functionId": "integration.provider-dynamicweb-ecom"
+    },
+    {
+      "claim": "Ecom provider generates missing ids and relations, three times the memory",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/ecom-provider.html",
+      "functionId": "integration.provider-dynamicweb-ecom"
+    },
+    {
+      "claim": "Ecom provider source: id or name for groups, manufacturers, variant groups, related products; language and shop filters",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/ecom-provider.html",
+      "functionId": "integration.provider-dynamicweb-ecom"
+    },
+    {
+      "claim": "Ecom provider used to load products into PIM",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/ecom-provider.html",
+      "duplicateOf": "pim.integration"
+    },
+    {
+      "claim": "CSV provider source: header row, folder or file, delete or archive, delimiters, decimal separator, skip troublesome rows",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/csv-provider.html",
+      "functionId": "integration.provider-csv"
+    },
+    {
+      "claim": "CSV provider destination",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/csv-provider.html",
+      "functionId": "integration.provider-csv"
+    },
+    {
+      "claim": "Excel provider source file or folder, one table per sheet, archive or delete, renamed-file recovery",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/excel-provider.html",
+      "functionId": "integration.provider-excel"
+    },
+    {
+      "claim": "Excel provider destination, one sheet per table",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/excel-provider.html",
+      "functionId": "integration.provider-excel"
+    },
+    {
+      "claim": "XML provider tables/item/column format with config and isNull",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/xml-provider.html",
+      "functionId": "integration.provider-xml"
+    },
+    {
+      "claim": "XML provider source file or folder",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/xml-provider.html",
+      "functionId": "integration.provider-xml"
+    },
+    {
+      "claim": "OData provider source with single or multi entity endpoints",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/odata-provider.html",
+      "functionId": "integration.provider-odata"
+    },
+    {
+      "claim": "OData import modes: delta replication, first page, full replication; delta modifier fields",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/odata-provider.html",
+      "functionId": "integration.provider-odata"
+    },
+    {
+      "claim": "OData export uses key columns to POST or PATCH",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html",
+      "functionId": "integration.provider-odata"
+    },
+    {
+      "claim": "SQL provider source and destination with server, credentials, integrated security or connection string; views",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/sql-provider.html",
+      "functionId": "integration.provider-sql"
+    },
+    {
+      "claim": "SQL provider destination remove missing rows options and temporary tables",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/sql-provider.html",
+      "functionId": "integration.provider-sql"
+    },
+    {
+      "claim": "User provider source: group, changed since last export, after a date",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/user-provider.html",
+      "functionId": "integration.provider-user"
+    },
+    {
+      "claim": "User provider destination: user key field, auto match order, remove or deactivate missing users, generate and encrypt passwords",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/user-provider.html",
+      "functionId": "integration.provider-user"
+    },
+    {
+      "claim": "Orders exported by the Order provider are marked exported (OrderIsExported)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/order-provider.html",
+      "duplicateOf": "orders.order-export"
+    },
+    {
+      "claim": "Order provider source: not yet exported, without external id, completed only, state after export, state and shop filters",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/order-provider.html",
+      "functionId": "integration.provider-order"
+    },
+    {
+      "claim": "Order provider destination: remove missing lines, discard duplicates, partial imports",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/order-provider.html",
+      "functionId": "integration.provider-order"
+    },
+    {
+      "claim": "Order provider tables EcomOrders and EcomOrderLines with external user, shipping and payment code resolution",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/order-provider.html",
+      "functionId": "integration.provider-order"
+    },
+    {
+      "claim": "Integration settings: scheduled tasks and schemas",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/index.html",
+      "excluded": {
+        "reason": "Section index, no selectable outcome"
+      }
+    },
+    {
+      "claim": "Scheduled tasks node runs integration activities at intervals",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/scheduledtasks.html",
+      "functionId": "integration.scheduled-runs"
+    },
+    {
+      "claim": "Schema management feature: convert schemas to central files shared by activities",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/schemamanagement.html",
+      "functionId": "integration.schema-management"
+    },
+    {
+      "claim": "PIM connector for Business Central synchronises item data and fields both ways, from within BC",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/index.html",
+      "functionId": "integration.pim-bc-connector"
+    },
+    {
+      "claim": "Connector requires BC 26 or later and Dynamicweb 10.17 with the connector apps",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/index.html",
+      "functionId": "integration.pim-bc-connector"
+    },
+    {
+      "claim": "Generate an API key in Dynamicweb for the connector",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/dynamicwebPIM-BCConnector.html",
+      "functionId": "integration.pim-bc-connector"
+    },
+    {
+      "claim": "BC-side wizard: base language, description handling, language mapping, item template, item filters",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/dynamicwebPIM-BCConnector.html",
+      "excluded": {
+        "reason": "ERP-side configuration, outside the Dynamicweb platform"
+      }
+    },
+    {
+      "claim": "BC-side use guide: overview page, field mapping, create products both ways, PIM view on the item card, StaticLinkManager",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/dynamicwebPIM-BCConnector-Use-guide.html",
+      "excluded": {
+        "reason": "ERP-side configuration and use, outside the Dynamicweb platform"
+      }
+    },
+    {
+      "claim": "Rounding methods (display, line total, unit price), prices with VAT and discount rounding per quantity to match the ERP",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/erp-prices.html",
+      "duplicateOf": "commerce.price-settings"
+    },
+    {
+      "claim": "Scheduled tasks are also available from Settings > System",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/scheduledtasks.html",
+      "duplicateOf": "admin.scheduled-tasks"
+    }
+  ],
+  "gaps": [
+    "Dynamicweb connector service for on-prem plug-in units has no Dynamicweb-side observable state beyond the live integration web service URL.",
+    "Excel provider check counts *.xlsx only; .xls and .xlsm files are not counted by the implemented file binding."
+  ]
+}

@@ -1,0 +1,241 @@
+{
+  "schema": 1,
+  "area": "serializer",
+  "functions": [
+    {
+      "id": "serializer.engine",
+      "area": "serializer",
+      "name": "Serializer engine installed with a valid config",
+      "description": "The Truvio.Commerce.Serializer package on the host at or above the floor the layers declare, with Files/System/Serializer/Serializer.config.json staged; a config the loader rejects makes every Serializer call fail, the read-only settings read included.",
+      "skill": "dw-demo-base",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Truvio.Commerce.Serializer",
+          "expected": {
+            "min": "1.0.8-beta"
+          }
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/serializer/engine.config-staged.json",
+        "probes/serializer/engine.settings-valid.json",
+        "probes/serializer/engine.engine-floor.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-serializer-use",
+          "when": "the build neither deserializes a Distribution edition nor serializes its own work"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "skills/dw-demo-base/references/serializer-reference.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/getting-started.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/configuration.md"
+        }
+      ]
+    },
+    {
+      "id": "serializer.serialize",
+      "area": "serializer",
+      "name": "Serialize (export) to replace and merge trees",
+      "description": "Serialize writes the configured content and SqlTable predicates of one mode as YAML under SerializeRoot/<mode>/ with a mode manifest, an ownership header per document and a link sweep that fails on orphaned page references; an inline Scope only narrows a predicate.",
+      "skill": "dw-demo-base",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Truvio.Commerce.Serializer",
+          "expected": {
+            "min": "1.0.8-beta"
+          }
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/serializer/serialize.manifest.json",
+        "probes/serializer/serialize.link-sweep.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "consume-only",
+          "when": "the build only deserializes layers and never serializes its own work"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "skills/dw-demo-base/references/serializer-reference.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/concepts.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/link-resolution.md"
+        }
+      ]
+    },
+    {
+      "id": "serializer.deserialize",
+      "area": "serializer",
+      "name": "Deserialize (import) in Replace then Merge mode",
+      "description": "Deserialize applies the mode manifest under SerializeRoot: Replace is source-wins, Merge is destination-wins field-level fill. Always send Mode; an empty body runs a live Replace. A dry run gates on failed == 0 and the entry count; a Merge of a table without a primary key can delete host rows.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Truvio.Commerce.Serializer",
+          "expected": {
+            "min": "1.0.8-beta"
+          }
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/serializer/deserialize.dry-run-replace.json",
+        "probes/serializer/deserialize.dry-run-merge.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-serializer-use",
+          "when": "the build deserializes nothing (for example a PIM demo from a blank database)"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "skills/dw-demo-base/references/serializer-reference.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/concepts.md"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-demo-swift/references/deserialize-flow.md"
+        }
+      ]
+    },
+    {
+      "id": "serializer.identity-resolution",
+      "area": "serializer",
+      "name": "GUID identity across environments",
+      "description": "Pages and paragraphs are matched by PageUniqueId and ParagraphUniqueId, SqlTable rows by primary key or a resolved match key; numeric ids differ per environment and internal links are rewritten.",
+      "skill": "dw-demo-base",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/serializer/identity-resolution.page-guid-present.json",
+        "probes/serializer/identity-resolution.page-guid-unique.json",
+        "probes/serializer/identity-resolution.paragraph-guid-unique.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/concepts.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/sql-tables.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/link-resolution.md"
+        }
+      ]
+    },
+    {
+      "id": "serializer.strict-mode",
+      "area": "serializer",
+      "name": "Strict mode",
+      "description": "Warnings escalate to a failed run (HTTP 400 naming the entry) under strict mode, the default for API and CLI callers; request parameter overrides config, config overrides the entry-point default. A strict 400 can still describe no defect (dry-run area creation, known grid rows).",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Truvio.Commerce.Serializer",
+          "expected": {
+            "min": "1.0.8-beta"
+          }
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/serializer/strict-mode.last-run-clean.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-serializer-use",
+          "when": "the build deserializes nothing"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "skills/dw-demo-base/references/serializer-reference.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/strict-mode.md"
+        }
+      ]
+    },
+    {
+      "id": "serializer.package-transfer",
+      "area": "serializer",
+      "name": "Package download and unzip",
+      "description": "PackageDownload returns a page-package zip; Upload plus PackageUnzip stages a mode tree or package zip into SerializeRoot/<mode>/ on a host whose files cannot be copied directly. A rejected zip changes nothing.",
+      "skill": "dw-demo-base",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Truvio.Commerce.Serializer",
+          "expected": {
+            "min": "1.0.8-beta"
+          }
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/serializer/package-transfer.staged.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "direct-file-access",
+          "when": "the mode trees reach the host by direct file copy"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "skills/dw-demo-base/references/serializer-reference.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/cicd.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Serializer:docs/permissions.md"
+        }
+      ]
+    }
+  ]
+}

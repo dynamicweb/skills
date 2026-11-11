@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "id": "marketing.consent-gating.email-requires-consent",
+  "functionId": "marketing.consent-gating",
+  "intent": {
+    "proves": "At least one email requires consent to an activity.",
+    "level": "configured",
+    "scope": "emails whose recipient provider is Dynamicweb Users"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-email-campaign-recipients",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_email_campaign_recipients",
+      "arguments": {},
+      "reason": "Handler not reserved: needs one call per subject (iterate ids from the list tool) and a client-side predicate. Predicate: emailAllowedConsentActivity not empty."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.Core 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

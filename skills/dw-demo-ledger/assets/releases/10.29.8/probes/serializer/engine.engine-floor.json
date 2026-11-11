@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "serializer.engine.engine-floor",
+  "functionId": "serializer.engine",
+  "intent": {
+    "proves": "The installed engine version is at or above the base contract's Truvio.Commerce.Serializer floor.",
+    "level": "supported",
+    "scope": "installed package version against compat.apps of the locked Distribution commit"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-installed-apps",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-installed-apps",
+      "reason": "The installed app version read is unverified on the baseline."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-base/references/serializer-reference.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/getting-started.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/configuration.md"
+    }
+  ]
+}

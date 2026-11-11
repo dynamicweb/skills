@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "integration.endpoints.collections",
+  "functionId": "integration.endpoints",
+  "intent": {
+    "proves": "At least one endpoint collection exists.",
+    "level": "configured",
+    "scope": "all endpoint collections"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EndpointCollection"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/endpoint-collections.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Integration/Tools (IntegrationActivityTools.cs, IntegrationEndpointTools.cs, IntegrationMappingTools.cs, IntegrationProviderTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.DataIntegration 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

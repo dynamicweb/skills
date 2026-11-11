@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "admin.health-checks.content-clean",
+  "functionId": "admin.health-checks",
+  "intent": {
+    "proves": "The Content data health provider reports no check in Error.",
+    "level": "stored-integrity",
+    "scope": "every check of the Content data provider; a partially contained database makes this provider fail with HTTP 500"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-health-failing",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-health-failing",
+      "operation": "run_health_checks",
+      "reason": "Same handler as ecommerce-clean, not built."
+    },
+    {
+      "id": "admin-api-admin-health-failing",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-health-failing",
+      "operation": "HealthProviderChecksByProviderName",
+      "reason": "Payload projection not measured on the baseline."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/health.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/references/tracking-insights.md"
+    }
+  ]
+}

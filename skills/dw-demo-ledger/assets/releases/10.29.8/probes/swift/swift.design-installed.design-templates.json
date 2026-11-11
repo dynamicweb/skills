@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "swift.design-installed.design-templates",
+  "functionId": "swift.design-installed",
+  "intent": {
+    "proves": "The Swift-v2 design folder carries its page templates.",
+    "level": "supported",
+    "scope": "Files/Templates/Designs/Swift-v2; a renamed design folder needs a profile override"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-count",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "path": "Templates/Designs/Swift-v2/*.cshtml"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/architecture.html"
+    }
+  ]
+}

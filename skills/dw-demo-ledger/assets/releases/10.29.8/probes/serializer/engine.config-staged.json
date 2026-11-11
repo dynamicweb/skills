@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "id": "serializer.engine.config-staged",
+  "functionId": "serializer.engine",
+  "intent": {
+    "proves": "Serializer.config.json is staged where the engine reads it.",
+    "level": "configured",
+    "scope": "Files/System/Serializer, top level"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-files-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-files-count",
+      "operation": "list_files",
+      "arguments": {
+        "path": "/Files/System/Serializer"
+      },
+      "reason": "System/Serializer is outside the MCP file allowlist measured so far."
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "System\\Serializer",
+        "filter": "Serializer.config.json",
+        "includeSubfolders": false
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-base/references/serializer-reference.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/getting-started.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/configuration.md"
+    }
+  ]
+}

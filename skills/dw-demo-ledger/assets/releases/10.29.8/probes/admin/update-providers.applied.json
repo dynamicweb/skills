@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "admin.update-providers.applied",
+  "functionId": "admin.update-providers",
+  "intent": {
+    "proves": "Updates from the build's own update provider are recorded as applied.",
+    "level": "applied",
+    "scope": "rows of Updates whose UpdateProviderName is a provider in the build's customAssemblies input"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "sql-sql-scalar",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM Updates WHERE UpdateProviderName = N'<provider>'",
+      "localOnly": true,
+      "reason": "Needs the provider name as a runtime token, which contract.md does not define; the built-in provider naming is unverified, so no name pattern is guessed."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-extend-providers/SKILL.md"
+    }
+  ]
+}

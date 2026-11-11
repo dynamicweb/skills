@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "search.conditional-facets.configured",
+  "functionId": "search.conditional-facets",
+  "intent": {
+    "proves": "At least one facet is shown conditionally.",
+    "level": "configured",
+    "scope": "every facet in every facet group"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-index-facets",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_index_facets",
+      "arguments": {},
+      "reason": "Needs a filter on IndexFacetModel.VisibilityStatus; mcp-count has no filter."
+    },
+    {
+      "id": "file-files-system-repositories-facets",
+      "surface": "file",
+      "status": "planned",
+      "handler": "index-xml",
+      "path": "Files/System/Repositories/*/*.facets",
+      "reason": "Repository definitions are XML files under Files/System/Repositories; an XML projection handler is not implemented and MCP file access to this folder is not granted by default."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/facets.html"
+    }
+  ]
+}
