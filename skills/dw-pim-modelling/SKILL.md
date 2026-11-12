@@ -81,6 +81,10 @@ Common field types for category fields:
 | Link | URL or page reference |
 | Relation | Reference to another product (for accessories, related parts) |
 
+### Matrix fields (10.29+)
+
+Behind a feature flag; the platform creates the `Matrix_<field>` column category itself and no MCP tool writes cells. Recipe and checks: `dw-demo-ledger` `references/matrix-fields.md`. Its negative control also fails when the stored cells are already wrong, by design.
+
 ### System Names
 
 Every field has a **system name** (e.g., `ElecWattage`, `ClothFabric`) — this is the key used to read/write the field value in API calls, templates, and integration mappings. System names cannot be changed after creation without data migration.

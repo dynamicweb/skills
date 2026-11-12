@@ -123,6 +123,7 @@ telling the whole story.
 | [install.md](references/install.md) | The two packages, their dependencies, what the update providers create and when, and how to verify an install |
 | [model-and-inputs.md](references/model-and-inputs.md) | Model/version/group/input schema, all 17 input types with their internal tokens, `InputSettings`, model variables, and every `ModelVersionSetting` key |
 | [rules-and-lookups.md](references/rules-and-lookups.md) | Measured tuple conditions, rejected forms/operators, actions, BOM/price rules and `dw_sql` Lookup Lists |
+| [json-for-humans.md](references/json-for-humans.md) | Which admin field holds which JSON shape, explaining a rule in plain language, and ten checks for mistakes nothing reports |
 | [pages-and-runtime.md](references/pages-and-runtime.md) | The 18 item types, page assembly, themes, the `/cpqapi/` surface, and the request cycle |
 | [cards-and-erp.md](references/cards-and-erp.md) | Cards, card items, BOM lines, templates, revisions, the Dynamicweb order link, and the ERP boundary in full |
 | [engine-characterization.md](references/engine-characterization.md) | Source evidence, seven admin/runtime constraints, MCP access, and the unexecuted truth-table and handoff test plan |

@@ -558,6 +558,7 @@ In-product home: [dw-commerce-catalog](../../dw-commerce-catalog/SKILL.md) (`cat
 |---|---|---|
 | Category create/update | `POST /Admin/Api/DynamicRelationGroupCategorySave` `{Model:{Id:"", Name, TabName, SortOrder}}` | `Id: ""` is the create signal |
 | Group create/update | `POST /Admin/Api/DynamicRelationGroupSave` `{Model:{Id:"", Name, CategoryId, SortOrder}}` | Works |
+| Calculation configuration create/update | `POST /Admin/Api/DynamicRelationCalculationConfigurationSave` `{Model:{Id:"", DynamicRelationGroupCategoryId, Method:"SumByProduct", ...}}` | `Method` is the string name (`TotalSum` / `SumByProduct`); the enum integer answers 500. The summed field must be a standard field and `GroupIds` the target's product groups (in-product reference) |
 | Relation read by source | `GET /Admin/Api/DynamicProductRelationsByProductAndGroup?ProductId=<source>&DynamicRelationGroupId=<group>` | Source-only; `totalCount 1` is the assert after a service-layer create |
 | Deletes | `DynamicProductRelationDelete` / `DynamicRelationGroupDelete` / `DynamicRelationGroupCategoryDelete` with `Ids[]` | Work normally |
 | Calculate | `POST /Admin/Api/DynamicRelationCalculationConfigurationCalculate {Ids:["<configId>"]}` | Never trust the response; assert the rows |
@@ -568,10 +569,9 @@ assert what it generated:
 
 ```sql
 -- read-only; SQL because no verb or tool counts the generated calculations; owes no flush.
--- local installs only: a hosted install checks the rendered "Calculation result(s)" panel on a product
--- in the configured category.
-SELECT COUNT(*) FROM EcomDynamicRelationCalculations;
-SELECT IsActive FROM EcomDynamicRelationCalculationConfigurations WHERE Method = 1;   -- TotalSum: must be 0
+-- local installs only: a hosted install reads the calculation result list on the product overview
+-- screen's relation-category tab.
+SELECT COUNT(*) FROM EcomDynamicRelationCalculations;   -- 0 after a Calculate: the configuration sums a non-standard field
 ```
 
 - **Why the higher surfaces do not cover it**: no registered MCP tool creates a dynamic relation, and the

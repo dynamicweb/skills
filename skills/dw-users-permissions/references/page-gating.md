@@ -235,6 +235,10 @@ GET /Files/Images/<folder>/<asset>.png   with no cookies  -> 200, image/png, val
 **Treat anything under `/Files` as public.** Never put a screenshot carrying a credential, a token or a
 customer's data behind a page gate and call it protected, and state the exposure in the run notes rather
 than implying the gate covers it. Page-level gating protects the narrative, not the assets.
+**A product assortment does not protect file bytes either**: it scopes products, not the documents under
+`/Files` that they link to. Before claiming a document is private, request its direct URL anonymously and
+as a wrong identity and require that no file bytes come back; a sign-in page answering HTTP 200 is not
+the document.
 
 ## 16. Customer-number suffix as a role flag (presentation gate)
 

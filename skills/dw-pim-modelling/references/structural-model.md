@@ -99,7 +99,7 @@ around it rather than against it.
 | Call | What it does | What it does NOT do |
 |---|---|---|
 | `create_variant_combinations` | Creates the combination rows | Inherits nothing from the master: number empty, active and price NULL, name and descriptions and every custom field empty. The tool's own text says the combination inherits the master row; measured, it does not |
-| `combine_products_as_variants` | Re-parents standalone products as combinations, and the rows come out active | Copies no scalar column onto the combination: the per-product number is empty. The standalone rows are deleted; their `EcomPrices` rows are **moved** onto the master, scoped to the new combination's variant id (the platform's combine moves prices, assortments and stock units with the product). A combination still shows the **master's** price when the master keeps a variant-less price row below the variant's own: see "Variant prices" below. It also blanks the **MASTER** row's number: measured, every master given variants lost its `ProductNumber` (47 of 52 masters kept one; the five variant parents did not) [dw 10.28.10 · mcp 0.4.4], so the family's anchor SKU leaves the catalogue while a search by any other key still finds the product |
+| `combine_products_as_variants` | Re-parents standalone products as combinations, and the rows come out active | Does not keep the combined product's own scalar values: the per-product number is empty, and the master's global custom field columns are copied onto every combination row, replacing each product's own values (eight colour variants all read the master's colour) [dw 10.29.8 · mcp 0.6.0-BETA]. The standalone rows are deleted; their `EcomPrices` rows are **moved** onto the master, scoped to the new combination's variant id (the platform's combine moves prices, assortments and stock units with the product). A combination still shows the **master's** price when the master keeps a variant-less price row below the variant's own: see "Variant prices" below. It also blanks the **MASTER** row's number: measured, every master given variants lost its `ProductNumber` (47 of 52 masters kept one; the five variant parents did not) [dw 10.28.10 · mcp 0.4.4], so the family's anchor SKU leaves the catalogue while a search by any other key still finds the product |
 | `patch_products_safe` / `update_products` with `id` + `variantId` | Answers `succeeded: 1` and echoes every requested value | Writes nothing to the variant row [mcp 0.4.4]. The echo is the request model, never a post-write read. From MCP 0.6.3-BETA `patch_products_safe` writes the variant row for every field that allows variant editing and refuses a field that does not with an error naming it; read the variant back to confirm |
 
 **Snapshot master numbers before `combine_products_as_variants`, and restore them after.** Read each
@@ -107,6 +107,12 @@ master with `get_products_by_ids` and keep a `ProductId`-to-number map. After th
 number back on the master row with `patch_products_safe` (`id` and `number`, `variantId` left empty),
 then re-read with `get_products_by_ids` and assert the number on the master: that read is the assert,
 not the patch echo. Assert the SKU against the product read rather than a storefront search for it.
+
+**Snapshot each combined product's global custom fields as well, and restore them after.** The combine
+overwrites them with the master's values on every variant row. Keep the values from the pre-combine
+`get_products_by_ids` read or from the load file, write each variant's own values back
+(`patch_products_safe` with `id` and `variantId`, on fields that allow variant editing), then read back
+every variant's custom fields, not only its number and name.
 
 **The combine has more side effects**, measured in the admin and over MCP [dw 10.29.7 · mcp 0.6.0-BETA]:
 
@@ -123,6 +129,12 @@ not the patch echo. Assert the SKU against the product read rather than a storef
 - Each variant's name is overwritten with the master's name.
 - The absorbed products' category-value rows stay behind as orphans.
 - The master edit screen hides variant-editable category fields; edit them on the variants.
+
+**`save_product_relations` keys a relation without its variant scope.** It replaces by product, related
+product and related variant, so two saves of the same related product with `variantOptionIds` `[A]` and
+then `[B]` leave only `[B]` [dw 10.29.8 · mcp 0.6.0-BETA]. Merge the scopes per master and related
+product first and send one call carrying the union; send an empty list when every variant applies. Read
+the stored scope back with `get_product_relations`.
 
 **Two more variant-field traps on the same build.** `patch_products_safe` on a variant stores nothing
 when the value equals the master's, so a read of the variant row shows no override. And the
@@ -381,7 +393,7 @@ without erroring:
 | Level source | What renders | Why |
 |---|---|---|
 | **Analysed string field** (free text: a name field such as `ManufacturerName`, a supplier name, a description-shaped field) | Plausible-looking nodes that are **lower-cased word fragments**. One 358-product query produced **129 nodes summing to 419**: `"Hot-Shot"` appeared as both `hot (12)` and `shot (12)`, `"J Lube"` as `j (3)` and `lube (1)`, plus junk nodes `o (1)`, `z (3)`, `plus (3)`. | The level enumerates analysed Lucene **terms**, not stored values. Every node drills to real rows, so nothing errors and no count contradicts itself. |
-| **Numeric / id-typed field** (`ProductWorkflowStateId` and similar) | Nodes that open onto **zero rows**. | The value is indexed numerically and the node label is matched as a string, so the label never matches a row. |
+| **Numeric field** (`WorkflowState`, an `Int32` index field, and similar) | Nodes with **correct counts** that each open onto **zero rows**. | The drill passes the node **value** as an untyped string. The Lucene provider takes the numeric range type from the value's CLR type, so a string value never matches a numeric field. A platform defect, reported to Dynamicweb [dw 10.29.8]. |
 | **Non-analysed string field**: an **ID** field (`ManufacturerID`), a `DATAMODEL_*` key, or a category field (`ProductCategory\|<cat>\|<field>`, indexed as keywords) | Correct nodes with exact casing that sum to the query total. | Keyword-indexed, so the enumerated term is the stored value. |
 
 **Use the ID field, not the name field, and let DW resolve the display name.** Swapping the same level
@@ -430,7 +442,7 @@ Out of product: [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.m
 - "Show me products by **brand**": 1 level, `LevelType=ProductField`, `SourceField=ManufacturerID`.
 - "Show me products by **hazard class / spec attribute**": 1 level, `LevelType=ProductField`, `SourceField=ProductCategory|<cat>|<field>` (category fields are keyword-indexed and safe).
 - "Products by spec attribute" — 2 levels, both `LevelType=DataModelKey`, drilling category → sub-category.
-- A **workflow-state** tree is NOT one of them: `ProductWorkflowStateId` is the numeric failure mode above, and it is not populated as an index field either, so the clause is silently dropped wherever it is used as a filter. Group by state on a string-valued state field, or use the catalog tree with a state column.
+- A **workflow-state** tree is NOT one of them: `WorkflowState` is an index field (`System.Int32`, source `ProductWorkflowStateId`) and hits the numeric failure mode above, so every state node opens empty. The field itself filters correctly in a **typed** query: `WorkflowState` Equal 2 with a `System.Int32` constant returned the products, and the same constant typed `System.String` returned 0 [dw 10.29.8]. Build one shared query per state with a typed `Int32` constant and put keyword-indexed levels inside it.
 
 **Probing a workspace: `ProductsByDynamicStructureLevel` requires `Path` and returns `0` without it — for
 every query, on a healthy workspace.** The command does not error on the missing parameter; it answers

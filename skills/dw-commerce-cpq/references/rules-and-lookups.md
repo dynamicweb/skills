@@ -456,6 +456,15 @@ the runtime discriminators are `options`, `dw_sql`, `dw_user`, `number_list`, `o
 > **`odata` and `BC Lookup` query Business Central.** With no connector configured they return an
 > empty option list and no error. For catalogue-driven options, `dw_sql` is the one you want.
 
+> **A `dw_sql` source on a `radiobox`, `select` or `checkbox` input loses its selection before BOM
+> evaluation.** The options are rebuilt after the answers are bound and the rebuilt options are not
+> selected, so the input's `bom_item` never adds its line: the chosen product is missing from the BOM
+> and the price, with no error. Type `lookup` and manually defined options work. A vendor fix is
+> pending. Until then use type `lookup` for a catalogue-driven input that carries a `bom_item`, or
+> keep the input type and add the line with one BOM rule per product conditioned on the answer
+> (generate them). Assert the BOM line for the chosen product in the model response, and remove the
+> per-product rules once the selection holds, checking that valid build totals do not change.
+
 `InputDataParameters` holds the configuration. A complete example reading products, with a
 placeholder that makes this lookup depend on another input:
 
