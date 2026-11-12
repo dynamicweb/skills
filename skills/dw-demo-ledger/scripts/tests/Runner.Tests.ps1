@@ -44,6 +44,10 @@ BeforeAll {
     function Get-Row($Run,[string]$Id){return @($Run.report.checks|Where-Object {$_.id -eq $Id})[0]}
     function Restore-Fixture {$null=& git -C $fixture.repo checkout -q -- . 2>&1;$null=& git -C $fixture.repo clean -fdq 2>&1}
 }
+AfterAll {
+    # Git object files are read-only, and the TestDrive cleanup does not remove those.
+    if($fixture){Remove-Item -LiteralPath $fixture.repo -Recurse -Force -ErrorAction SilentlyContinue}
+}
 Describe 'A clean locked run against the stub' {
     AfterEach {if($site){Stop-LedgerStubSite $site;$script:site=$null}}
     It 'passes when the flag, the app, the setting and the delivery read are all established' {
