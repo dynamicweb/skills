@@ -102,6 +102,21 @@ Describe 'Matrix evidence is exact and has red controls' {
         (Get-PimMatrixObservation -Aspect cells -Build @{expected=@{matrix=$m}} -Server '.' -Database 'fixture').value | Should -Be 0
         Should -Invoke Invoke-Sqlcmd-Rows -Times 1 -Exactly
     }
+    It 'projects complete SQL JSON into the <aspect> observation' -TestCases @(@{aspect='columns'},@{aspect='parent-marker'},@{aspect='cells'},@{aspect='negative-control'}) {
+        param($aspect)
+        $script:sqlFixture=New-MatrixFixture
+        Mock Invoke-Sqlcmd-Rows {
+            param($Server,$Database,$Query)
+            Assert-LedgerSelect $Query
+            $data=if($Query -match 'FROM EcomProductCategory WHERE'){$script:sqlFixture.observation.categories}
+                elseif($Query -match 'EcomProductCategoryField f'){$script:sqlFixture.observation.columns}
+                elseif($Query -match "FieldValueFieldCategoryId=N'food'"){$script:sqlFixture.observation.subjects[0].parents}
+                else{$script:sqlFixture.observation.subjects[0].cells}
+            return ConvertTo-Json -InputObject @($data) -Depth 30 -Compress
+        }
+        $o=Get-PimMatrixObservation -Aspect $aspect -Build @{expected=@{matrix=$script:sqlFixture.matrix}} -Server '.' -Database 'fixture'
+        Test-LedgerAssertion @{kind='scalar';op='eq';value=1} $o | Should -Be PASS
+    }
 }
 Describe 'New capability reads never manufacture a pass' {
     It 'rejects a concurrent upgrade or an unavailable final version' {
