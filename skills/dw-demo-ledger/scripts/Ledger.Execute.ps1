@@ -8,10 +8,13 @@ PowerShell 7. Owning reference: ../references/contract.md. No dynamic code evalu
 #>
 #Requires -Version 7.0
 function Invoke-LedgerCheck {
-    param($Check,$Build,$Capabilities,$Profile,[string[]]$Surfaces,[string]$SqlServer,[string]$Database,[string]$FilesPath)
+    param($Check,$Build,$Capabilities,$Profile,[string[]]$Surfaces,[string]$SqlServer,[string]$Database,[string]$FilesPath,[string[]]$Refused=@())
     $row=New-LedgerRow $Check
-    $binding=Select-LedgerBinding -Check $Check -Capabilities $Capabilities -Surfaces $Surfaces
-    if(-not $binding){return $row}
+    $binding=Select-LedgerBinding -Check $Check -Capabilities $Capabilities -Surfaces $Surfaces -Exclude $Refused
+    if(-not $binding){
+        if($Refused.Count){$row.reason='Binding is not authorised for the required scope and no other equivalent binding is available: '+($Refused -join ', ')}
+        return $row
+    }
     $row.surface=$binding.surface;$row.binding=$binding.id
     $assertion=@{};foreach($k in $Check.assertion.Keys){$assertion[$k]=$Check.assertion[$k]}
     if($Profile.expectations.ContainsKey($Check.id)){foreach($k in $Profile.expectations[$Check.id].Keys){$assertion[$k]=$Profile.expectations[$Check.id][$k]}}
@@ -47,9 +50,14 @@ function Invoke-LedgerCheck {
         $row.result=Test-LedgerAssertion -Assertion $assertion -Observation $observation
         $row.measured=$observation.value;$row.scanned=$observation.scanned;$row.offenders=@($observation.offenders|Select-Object -First 25)
         $row.reason=if($observation.complete){'Equivalent observation evaluated.'}else{'Observation omits required fields or completeness evidence.'}
+        if($Refused.Count){$row.reason+=' Refused before observation: '+($Refused -join ', ')+'.'}
     } catch {
         Write-Verbose $_.ScriptStackTrace
-        if($_.Exception -is [UnauthorizedAccessException]){$row.result='UNVERIFIED';$row.reason='Binding is not authorised for the required scope.'}
+        if($_.Exception -is [UnauthorizedAccessException]){
+            # A refusal returns no observation: the binding was unavailable, so the next equivalent binding may run.
+            # A completed observation, valid or failing, never reaches this branch and is never retried.
+            return Invoke-LedgerCheck $Check $Build $Capabilities $Profile $Surfaces $SqlServer $Database $FilesPath (@($Refused)+$binding.id)
+        }
         elseif($_.Exception -is [InvalidOperationException]){$row.result='UNVERIFIED';$row.reason='Required input, field, path or complete enumeration is unavailable.'}
         else {$row.result='ERROR';$row.reason='Binding execution failed. Check handler, grants, scope and target schema; no exception body is persisted.'}
     }

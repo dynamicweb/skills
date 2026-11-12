@@ -150,7 +150,12 @@
       "checks": [
         "probes/commerce/price-discount-lines.discount-lines.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "release",
@@ -222,7 +227,12 @@
       "checks": [
         "probes/commerce/price-priority.prioritised.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "release",
@@ -512,7 +522,12 @@
       "checks": [
         "probes/commerce/product-reservation.enabled.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "release",
@@ -591,7 +606,12 @@
       "checks": [
         "probes/commerce/coupon-codes.field-triggered.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "release",
@@ -616,7 +636,12 @@
         "probes/commerce/vouchers.lists.json",
         "probes/commerce/vouchers.linked.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "release",
@@ -640,7 +665,12 @@
       "checks": [
         "probes/commerce/gift-cards.issued.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "release",
@@ -665,7 +695,12 @@
         "probes/commerce/loyalty-rewards.rewards.json",
         "probes/commerce/loyalty-rewards.ruled.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "release",
@@ -693,6 +728,10 @@
         {
           "id": "earn-only",
           "when": "the loyalty story only shows points earned"
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
         }
       ],
       "sources": [
@@ -703,6 +742,93 @@
         {
           "kind": "source",
           "ref": "evidence/admission.json#commerce.loyalty-spend"
+        }
+      ]
+    },
+    {
+      "id": "commerce.lead-times",
+      "area": "commerce",
+      "name": "Expected delivery per product and stock location",
+      "description": "An expected delivery date per product (EcomProducts.ProductExpectedDelivery) or per product and stock location (EcomStockUnit.StockUnitExpectedDelivery). A lead time in days or a text such as 3-4 weeks is not a platform field; a build carries it as a declared custom field.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/lead-times.stored.json",
+        "probes/commerce/lead-times.rendered.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.lead-times"
+        },
+        {
+          "kind": "measurement",
+          "ref": "https://github.com/dynamicweb/skills/issues/210"
+        }
+      ]
+    },
+    {
+      "id": "commerce.product-reviews",
+      "area": "commerce",
+      "name": "Product ratings and reviews",
+      "description": "Customer reviews with a rating per product, stored as comments with item type ecomProduct (Comment.CommentRating) and shown on list and detail pages.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/product-reviews.rated-comments.json",
+        "probes/commerce/product-reviews.rendered.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.product-reviews"
+        },
+        {
+          "kind": "measurement",
+          "ref": "https://github.com/dynamicweb/skills/issues/212"
+        }
+      ]
+    },
+    {
+      "id": "commerce.product-compare",
+      "area": "commerce",
+      "name": "Product comparison",
+      "description": "Compare selected products side by side through the Product Catalog app's Compare template (compare=true with product numbers in the URL). The Swift 2 design ships no compare template; a build adds one.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/product-compare.template.json",
+        "probes/commerce/product-compare.compare-view.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.product-compare"
+        },
+        {
+          "kind": "measurement",
+          "ref": "https://github.com/dynamicweb/skills/issues/212"
         }
       ]
     }

@@ -35,7 +35,7 @@ MCP and Admin arguments support `{areaId}`, `{lang}` and `{pimShop}` from build 
 
 `settings-value` reads exactly one local XML file and a literal `arguments.key` such as `/Globalsettings/Settings/Auditing/EnableAuditing`, comparing it with `arguments.equals`. It emits 1 for a match, 0 for a mismatch, never the raw value. Missing keys are UNVERIFIED (no inferred default); duplicate keys are ERROR. Unmeasured setting keys stay planned. `xml-count` takes a local file `path` pattern or folder/filter plus a reviewed `arguments.xpath`, and counts matching nodes across all matching files. It supports job provider/schedule/conditional nodes and repository/index definitions without executing a job or building an index. XML external entities and DTDs are prohibited. The exact selector and binding need evidence before promotion.
 
-MCP comes first when it meets the observation contract, then Management API. Files and /dwapi prove only their specific claims. Local SQL is the optional last binding. A binding unavailable before observation can fall back to another equivalent one. A valid failing observation stays FAIL. A runtime error is recorded, not hidden by retrying different semantics.
+MCP comes first when it meets the observation contract, then Management API. Files and /dwapi prove only their specific claims. Local SQL is the optional last binding. A binding unavailable before observation can fall back to another equivalent one. An authorisation refusal (for example an MCP file read outside the add-in's read allowlist) returns no observation, so the runner tries the next implemented binding and names the refused one in the reason. A valid failing observation stays FAIL. A runtime error is recorded, not hidden by retrying different semantics.
 
 A measured scope mismatch with another binding requires investigation and a planned binding until equivalence is established. Category counts cannot stand for event counts; capped search results cannot stand for complete page or paragraph enumeration. Preserve the differing observations in the proof record instead of adjusting thresholds to make them agree.
 
@@ -49,9 +49,11 @@ Repository validation uses PowerShell 7 `Test-Json` for the same draft-7 schemas
 
 The optional profile path resolves beneath the skill's assets directory and contains `{schema:1, id, expectations:{checkId:{...assertion overrides...}}}`. The build carries defaultLanguage, pimShop, families, attributes and productScope when those checks need them. No SQL connection or tokens belong in a build file. Connection parameters/environment are runtime input only.
 
-Requires predicates have kind (flag/app/licence/capability), id, expected and optional probe. A runner must establish them from target facts; absence means UNVERIFIED, never an assumption of enabled. A false flag is DISABLED; a known incompatible component is UNSUPPORTED. No requires is inferred from a feature's name.
+Requires predicates have kind (flag/app/licence/capability), id, expected and optional probe. A runner must establish them from target facts; absence means UNVERIFIED, never an assumption of enabled. A requirement gates every check of its function, so put on a function only what all of its checks need; a precondition of one action belongs in the description or that check's planned reason. A false flag is DISABLED; a known incompatible component is UNSUPPORTED. No requires is inferred from a feature's name.
 
 Rulings map function ids to `{applies:false, rule, evidence}`. A NOT-APPLICABLE ruling must name an allowed reason and carry evidence; where that reason has a probe, it must pass. A missing binding, licence or declaration is not a ruling. Runtime verification may be stricter than structural JSON validation.
+
+Grounds are per function. Optional configuration functions that a reproduced catalogue may simply not use (coupons, vouchers, gift cards, loyalty, order and order line fields, payment fees, track and trace and similar) carry the ground `catalogue-does-not-use`; its evidence names the source pages or census items reviewed. Core functions never carry it. A function without a fitting ground is declared and measured, or left out of the build.
 
 ## Discovery and reports
 

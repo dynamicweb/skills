@@ -8976,5 +8976,143 @@
         "released": true
       }
     }
+  ],
+  "corrections": [
+    {
+      "candidateId": "issue:210#pim.document-scope",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "pim.document-scope",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:212#pim.document-metadata",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "pim.document-metadata",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:212#pim.asset-alt-text",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "pim.asset-alt-text",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:212#pim.product-videos",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "pim.product-videos",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:210#pim.offset-units",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "pim.offset-units",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:210#pim.unit-display-format",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "pim.unit-display-format",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:212#pim.relation-attributes",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "pim.relation-attributes",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:212#pim.structured-features",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "pim.structured-features",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:210#commerce.price-on-request",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "commerce.price-on-request",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:210#commerce.configured-products",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "commerce.configured-products",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:210#commerce.lead-times",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "commerce.lead-times",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:212#commerce.product-reviews",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "commerce.product-reviews",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:212#commerce.product-compare",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "commerce.product-compare",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:212#orders.product-delivery-options",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "orders.product-delivery-options",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "reason": "Brand-build documentation shows the capability; reviewed against the 10.29.8 schema and public package metadata. Not counted as a release addition."
+    },
+    {
+      "candidateId": "issue:210#pim.matrix-fields",
+      "kind": "inventory-correction",
+      "disposition": "mapped",
+      "functionId": "pim.matrix-fields",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "reason": "Already admitted in revision 2 from the release scan; absent from 10.28.15 (admission exclusion)."
+    },
+    {
+      "candidateId": "issue:212#pim.box-contents",
+      "kind": "inventory-correction",
+      "disposition": "mapped",
+      "functionId": "pim.product-relations",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "reason": "No separate platform carrier. Box contents that are products are one more relation group kind (pim.product-relations, one group per kind); contents that are not products are a declared list or long-text attribute (pim.field-types, pim.list-fields)."
+    },
+    {
+      "candidateId": "issue:212#swift.product-compare",
+      "kind": "inventory-correction",
+      "disposition": "mapped",
+      "functionId": "commerce.product-compare",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "reason": "The carrier is the Product Catalog app's Compare template (platform), not Swift; Swift 2 ships no compare template."
+    }
   ]
 }

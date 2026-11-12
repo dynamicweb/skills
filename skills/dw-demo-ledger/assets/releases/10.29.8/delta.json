@@ -3,7 +3,7 @@
   "status": "reviewed",
   "before": "10.28.15",
   "after": "10.29.8",
-  "revision": 2,
+  "revision": 3,
   "rawScanDigest": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c",
   "review": "delta-review.json",
   "added": [
@@ -585,6 +585,269 @@
   "limitations": [
     "This is a candidate ledger revision, not a measured platform release.",
     "Seventeen newly declared behaviours have planned bindings and remain UNVERIFIED.",
-    "The matrix comparator has synthetic red controls; target flag-on and altered-cell proof belong to the demo build session."
+    "The matrix comparator has synthetic red controls; target flag-on and altered-cell proof belong to the demo build session.",
+    "Revision 3 inventory corrections are candidates: implemented SQL reads have fixture red controls only, and every new behavioural binding is planned."
+  ],
+  "corrections": [
+    {
+      "id": "pim.document-scope",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/210"
+      ],
+      "evidence": [
+        "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomDetails.DetailLanguageId, DetailsGroupId"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": true,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "pim.document-metadata",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/212"
+      ],
+      "evidence": [
+        "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomDetails.DetailVersion",
+        "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomDetails.DetailShowInHistory, DetailValidFrom, DetailValidTo"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": true,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "pim.asset-alt-text",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/212"
+      ],
+      "evidence": [
+        "https://github.com/dynamicweb/MCP/blob/main/TOOLS.md",
+        "https://github.com/dynamicweb/MCP/blob/main/TOOLS.md (add_product_image: name is alt text or caption)"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": true,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "pim.product-videos",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/212"
+      ],
+      "evidence": [
+        "https://github.com/dynamicweb/MCP/blob/main/TOOLS.md",
+        "https://github.com/dynamicweb/MCP/blob/main/TOOLS.md (upload_product_videos, import_product_videos_from_urls)"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": true,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "pim.offset-units",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/210"
+      ],
+      "evidence": [
+        "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomFieldValueConversion"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": false,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "pim.unit-display-format",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/210"
+      ],
+      "evidence": [
+        "https://github.com/dynamicweb/MCP/blob/main/Products/Models/ProductFieldUpdateModel.cs"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": false,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "pim.relation-attributes",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/212"
+      ],
+      "evidence": [
+        "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomProductsRelated"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": false,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "pim.structured-features",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/212"
+      ],
+      "evidence": [],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": false,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "commerce.price-on-request",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/210"
+      ],
+      "evidence": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.29.8/dynamicweb.ecommerce.10.29.8.nupkg"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": false,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "commerce.configured-products",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/210"
+      ],
+      "evidence": [
+        "skills/dw-commerce-cpq/SKILL.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": false,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "commerce.lead-times",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/210"
+      ],
+      "evidence": [
+        "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomProducts.ProductExpectedDelivery, dbo.EcomStockUnit.StockUnitExpectedDelivery"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": true,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "commerce.product-reviews",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/212"
+      ],
+      "evidence": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.29.8/dynamicweb.ecommerce.10.29.8.nupkg (product deletion removes Comment rows with CommentItemType 'ecomProduct')"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": true,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "commerce.product-compare",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/212"
+      ],
+      "evidence": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.29.8/dynamicweb.ecommerce.10.29.8.nupkg (CompareTemplate)",
+        "skills/dw-commerce-catalog/SKILL.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": true,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "orders.product-delivery-options",
+      "change": "inventory-correction",
+      "sources": [
+        "https://github.com/dynamicweb/skills/issues/212"
+      ],
+      "evidence": [
+        "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomShippings.ShippingProductIds, ShippingProductGroupIds, ShippingProductFilterMode"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": true,
+      "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    }
+  ],
+  "mapped": [
+    {
+      "proposed": "pim.matrix-fields",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "duplicateOf": "pim.matrix-fields",
+      "reason": "Already admitted in revision 2 from the release scan; absent from 10.28.15 (admission exclusion)."
+    },
+    {
+      "proposed": "pim.box-contents",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "duplicateOf": "pim.product-relations",
+      "reason": "No separate platform carrier. Box contents that are products are one more relation group kind (pim.product-relations, one group per kind); contents that are not products are a declared list or long-text attribute (pim.field-types, pim.list-fields)."
+    },
+    {
+      "proposed": "swift.product-compare",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "commerce.product-compare",
+      "reason": "The carrier is the Product Catalog app's Compare template (platform), not Swift; Swift 2 ships no compare template."
+    }
+  ],
+  "checkCorrections": [
+    {
+      "checkId": "pim.images.images-without-default",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Counted every DetailType 0 row as an image, so a product with only a PDF document was an offender. Both EXISTS clauses now require an image file extension."
+    },
+    {
+      "checkId": "pim.images.image-share",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Same defect as images-without-default: a document counted as an image. Restricted to image file extensions."
+    },
+    {
+      "checkId": "pim.field-types.type-spread",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Counted category fields only; a model that puts shared typed attributes on global fields failed. Global custom fields (ProductFieldIsStandard = 0) are now counted with category fields; the profile threshold is unchanged."
+    },
+    {
+      "checkId": "commerce.stock-levels.in-stock",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Read only the product stock figure; stock kept per location does not roll up into it. A stock unit of the same product and variant above zero now counts."
+    },
+    {
+      "checkId": "content.item-types.table-health",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "note": "Counted every returned row; the 0.6.x add-in returns all item types, healthy ones included, so a healthy host failed eq 0. Split in two filtered counts: existsInSchema false here, existsInMeta false in table-health-metadata."
+    },
+    {
+      "checkId": "pim.unit-rules-per-language.rules",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Stated as configured: a stored rule did not change the unit a feed printed in the ruled language. The behaviour is the new rendered check."
+    },
+    {
+      "checkId": "search.product-index.built",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Binding stays planned; the reason now records the measured read and the handler it needs."
+    },
+    {
+      "checkId": "integration.run-and-log.has-run",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Planned binding moved to the status tool; the log tool misses completed runs."
+    },
+    {
+      "checkId": "integration.run-and-log.last-run-ok",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Planned binding moved to the status tool; the log tool misses completed runs."
+    }
   ]
 }

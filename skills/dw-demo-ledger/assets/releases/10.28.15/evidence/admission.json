@@ -42,5 +42,153 @@
   "withheldBindings": [
     "admin.marketing-insights.sessions/sql",
     "admin.marketing-insights.single-session-table/sql"
+  ],
+  "revision": 2,
+  "corrections": [
+    {
+      "id": "pim.document-scope",
+      "change": "inventory-correction",
+      "evidence": [
+        "column:dbo.EcomDetails.DetailLanguageId absent from the reviewed A/B schema differences in 10.29.8 delta-review.json, so present in 10.28.15",
+        "user-string:DetailLanguageId in https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+      ]
+    },
+    {
+      "id": "pim.document-metadata",
+      "change": "inventory-correction",
+      "evidence": [
+        "column:dbo.EcomDetails.DetailVersion absent from the reviewed A/B schema differences in 10.29.8 delta-review.json, so present in 10.28.15",
+        "user-string:DetailVersion and DetailShowInHistory in https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+      ]
+    },
+    {
+      "id": "pim.asset-alt-text",
+      "change": "inventory-correction",
+      "evidence": [
+        "column:dbo.EcomDetails.DetailsName absent from the reviewed A/B schema differences in 10.29.8 delta-review.json, so present in 10.28.15",
+        "user-string:DetailsName in https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+      ]
+    },
+    {
+      "id": "pim.product-videos",
+      "change": "inventory-correction",
+      "evidence": [
+        "EcomDetails.DetailType and DetailValue are unchanged between A and B (absent from the reviewed A/B schema differences in 10.29.8 delta-review.json, so present in 10.28.15)"
+      ]
+    },
+    {
+      "id": "commerce.lead-times",
+      "change": "inventory-correction",
+      "evidence": [
+        "columns:dbo.EcomProducts.ProductExpectedDelivery, dbo.EcomStockUnit.StockUnitExpectedDelivery absent from the reviewed A/B schema differences in 10.29.8 delta-review.json, so present in 10.28.15",
+        "user-string:ProductExpectedDelivery and StockUnitExpectedDelivery in https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+      ]
+    },
+    {
+      "id": "commerce.product-reviews",
+      "change": "inventory-correction",
+      "evidence": [
+        "columns:dbo.Comment.CommentRating, CommentItemType absent from the reviewed A/B schema differences in 10.29.8 delta-review.json, so present in 10.28.15",
+        "user-string:CommentRating in https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg",
+        "user-string:CommentItemType in https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+      ]
+    },
+    {
+      "id": "commerce.product-compare",
+      "change": "inventory-correction",
+      "evidence": [
+        "user-string:CompareTemplate in https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+      ]
+    },
+    {
+      "id": "orders.product-delivery-options",
+      "change": "inventory-correction",
+      "evidence": [
+        "columns:dbo.EcomShippings.ShippingProductIds, ShippingProductGroupIds, ShippingProductFilterMode absent from the reviewed A/B schema differences in 10.29.8 delta-review.json, so present in 10.28.15",
+        "user-string:ShippingProductIds and ShippingProductFilterMode in https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+      ]
+    }
+  ],
+  "correctionsNotAdmitted": [
+    {
+      "id": "pim.offset-units",
+      "reason": "No platform carrier is established in A package bytes or A schema; the 10.29.8 entry is planned only."
+    },
+    {
+      "id": "pim.unit-display-format",
+      "reason": "No platform carrier is established in A package bytes or A schema; the 10.29.8 entry is planned only."
+    },
+    {
+      "id": "pim.relation-attributes",
+      "reason": "No platform carrier is established in A package bytes or A schema; the 10.29.8 entry is planned only."
+    },
+    {
+      "id": "pim.structured-features",
+      "reason": "No platform carrier is established in A package bytes or A schema; the 10.29.8 entry is planned only."
+    },
+    {
+      "id": "commerce.price-on-request",
+      "reason": "No platform carrier is established in A package bytes or A schema; the 10.29.8 entry is planned only."
+    },
+    {
+      "id": "commerce.configured-products",
+      "reason": "No platform carrier is established in A package bytes or A schema; the 10.29.8 entry is planned only."
+    }
+  ],
+  "checkCorrections": [
+    {
+      "checkId": "pim.images.images-without-default",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Counted every DetailType 0 row as an image, so a product with only a PDF document was an offender. Both EXISTS clauses now require an image file extension."
+    },
+    {
+      "checkId": "pim.images.image-share",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Same defect as images-without-default: a document counted as an image. Restricted to image file extensions."
+    },
+    {
+      "checkId": "pim.field-types.type-spread",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Counted category fields only; a model that puts shared typed attributes on global fields failed. Global custom fields (ProductFieldIsStandard = 0) are now counted with category fields; the profile threshold is unchanged."
+    },
+    {
+      "checkId": "commerce.stock-levels.in-stock",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Read only the product stock figure; stock kept per location does not roll up into it. A stock unit of the same product and variant above zero now counts."
+    },
+    {
+      "checkId": "content.item-types.table-health",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/212",
+      "note": "Counted every returned row; the 0.6.x add-in returns all item types, healthy ones included, so a healthy host failed eq 0. Split in two filtered counts: existsInSchema false here, existsInMeta false in table-health-metadata."
+    },
+    {
+      "checkId": "pim.unit-rules-per-language.rules",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Stated as configured: a stored rule did not change the unit a feed printed in the ruled language. The behaviour is the new rendered check."
+    },
+    {
+      "checkId": "search.product-index.built",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Binding stays planned; the reason now records the measured read and the handler it needs."
+    },
+    {
+      "checkId": "integration.run-and-log.has-run",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Planned binding moved to the status tool; the log tool misses completed runs."
+    },
+    {
+      "checkId": "integration.run-and-log.last-run-ok",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/210",
+      "note": "Planned binding moved to the status tool; the log tool misses completed runs."
+    }
   ]
 }

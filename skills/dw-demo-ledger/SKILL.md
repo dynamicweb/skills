@@ -66,6 +66,7 @@ For [dw 10.29.8] matrix fields, follow [the matrix contract](references/matrix-f
 | [Pim.Queries.ps1](scripts/Pim.Queries.ps1) | Local SQL/files when called | Migrated family/widget checks |
 | [Ledger.Tests.ps1](scripts/tests/Ledger.Tests.ps1) | Isolated fixtures | Red controls, selection, missing probes and schema checks |
 | [Observations.Tests.ps1](scripts/tests/Observations.Tests.ps1) | Isolated fixtures | Filter, token, XML, path and authenticated-query controls |
+| [Corrections.Tests.ps1](scripts/tests/Corrections.Tests.ps1) | Inline SQL fixtures in tempdb (optional local server) | Green and red controls for corrected and newly inventoried checks, refusal fallback |
 
 Run from a clean checkout at the build lock's commit:
 

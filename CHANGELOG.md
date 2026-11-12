@@ -3,6 +3,13 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.5.0]
+
+- `dw-demo-ledger` 10.29.8 revision 3: fold two brand builds (#210, #212) into the inventory as corrections, not release additions. 14 new functions (documents per language, document versions, image alt text, product videos, expected delivery, product reviews, product compare, delivery options per product, and planned-only entries for price on request, configured products, offset units, unit display format, relation values and feature blocks); box contents and matrix fields map to existing functions. Eight of them are admitted to 10.28.15 revision 2 from its package bytes and schema.
+- Check corrections: images and image share count image files only, type spread counts global custom fields, in-stock accepts stock units, item type table health counts mismatches (split into two filtered checks), declared typing accepts `range`, declared values count inherited data set defaults, stored coordinates no longer wait on a map credential, unit rules are stated as configured with a planned rendered check, and the index and integration planned bindings name the reads measured on 10.29.8.
+- The runner falls back to the next equivalent binding after an authorisation refusal. Optional configuration functions gain the `catalogue-does-not-use` ground. New fixture-backed SQL red controls.
+- `matrix-fields.md`: building a matrix on 10.29.8 (toggle command, platform-created matrix category, list presentation, no MCP cell writer).
+
 ## [6.4.0]
 
 - Add a general release scanner using public package metadata, feature-class ancestry, milestone work items and local schema evidence. Preserve raw unreviewed output before candidate review.

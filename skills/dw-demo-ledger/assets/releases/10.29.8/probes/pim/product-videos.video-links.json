@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "pim.product-videos.video-links",
+  "functionId": "pim.product-videos",
+  "intent": {
+    "proves": "At least one active product carries a link to a hosted video.",
+    "level": "applied",
+    "scope": "active products of the declared product scope, every language; complete SQL enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Link details (DetailType 1) also hold spec sheet and other links; a video link is not distinguishable without a declared video asset category in the build, which build.schema.json does not carry yet."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    }
+  ]
+}

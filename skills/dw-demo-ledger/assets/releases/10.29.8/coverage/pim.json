@@ -7,6 +7,14 @@
       "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
       "title": "10.29 release candidate scan, reviewed after raw preservation",
       "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
+    },
+    {
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "title": "Brand-build ledger gaps and check findings (vacuum components, food ingredients)"
+    },
+    {
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "title": "Brand-build ledger gaps and check findings (outdoor power equipment)"
     }
   ],
   "claims": [
@@ -29,6 +37,56 @@
       "claim": "Released addition: pim.matrix-fields. Evidence and measurement limits are in delta-review.json.",
       "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
       "functionId": "pim.matrix-fields"
+    },
+    {
+      "claim": "Brand-build inventory correction: Documents per language or market.",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "functionId": "pim.document-scope"
+    },
+    {
+      "claim": "Brand-build inventory correction: Document metadata: version and history.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.document-metadata"
+    },
+    {
+      "claim": "Brand-build inventory correction: Image alt text per language.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.asset-alt-text"
+    },
+    {
+      "claim": "Brand-build inventory correction: Product videos.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.product-videos"
+    },
+    {
+      "claim": "Brand-build inventory correction: Units with an offset conversion (temperature).",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "functionId": "pim.offset-units"
+    },
+    {
+      "claim": "Brand-build inventory correction: Secondary unit and fraction display.",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "functionId": "pim.unit-display-format"
+    },
+    {
+      "claim": "Brand-build inventory correction: Relations with attribute values.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.relation-attributes"
+    },
+    {
+      "claim": "Brand-build inventory correction: Structured feature blocks.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.structured-features"
+    },
+    {
+      "claim": "Proposed as pim.matrix-fields: Already admitted in revision 2 from the release scan; absent from 10.28.15 (admission exclusion).",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "duplicateOf": "pim.matrix-fields"
+    },
+    {
+      "claim": "Proposed as pim.box-contents: No separate platform carrier. Box contents that are products are one more relation group kind (pim.product-relations, one group per kind); contents that are not products are a declared list or long-text attribute (pim.field-types, pim.list-fields).",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "duplicateOf": "pim.product-relations"
     }
   ],
   "gaps": [

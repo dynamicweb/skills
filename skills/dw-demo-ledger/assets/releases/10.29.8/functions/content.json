@@ -479,6 +479,7 @@
       "checks": [
         "probes/content/item-types.defined.json",
         "probes/content/item-types.table-health.json",
+        "probes/content/item-types.table-health-metadata.json",
         "probes/content/item-types.field-health.json"
       ],
       "notApplicable": [],

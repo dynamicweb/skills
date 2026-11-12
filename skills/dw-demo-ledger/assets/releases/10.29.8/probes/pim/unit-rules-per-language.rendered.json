@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "pim.unit-rules-per-language.rendered",
+  "functionId": "pim.unit-rules-per-language",
+  "intent": {
+    "proves": "A ruled measure reads in the rule's unit through a feed or the product API in the ruled language.",
+    "level": "behavioural",
+    "scope": "one declared ruled measure per ruled language"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-feed",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-feed-value",
+      "reason": "No delivery or feed read handler is implemented. A measured 10.29.8 feed printed the preset unit in a language with stored rules, so the stored-rule count does not stand for this claim."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}

@@ -12,13 +12,13 @@
   },
   "bindings": [
     {
-      "id": "mcp-get-integration-activities",
+      "id": "mcp-get-integration-activity-status",
       "surface": "mcp",
       "status": "planned",
       "handler": "mcp-count",
-      "operation": "get_integration_activities",
+      "operation": "get_integration_activity_status",
       "arguments": {},
-      "reason": "Handler not reserved: needs a field-predicate projection over the tool's rows; mcp-count counts rows only. Predicate: lastRunStatus in Failed, CompletedWithError."
+      "reason": "Per-activity status read (lastRunStatus, lastSuccessfulRun) measured on 10.29.8; needs a handler that enumerates activities and reads each status. Not get_integration_activity_logs: it reported no run log for a completed run. Predicate: lastRunStatus in Failed, CompletedWithError."
     }
   ],
   "sources": [
@@ -33,6 +33,10 @@
     {
       "kind": "source",
       "ref": "skills/dw-integration-framework/SKILL.md"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
     }
   ]
 }

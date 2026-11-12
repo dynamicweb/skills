@@ -74,7 +74,7 @@
       "id": "pim.field-types",
       "area": "pim",
       "name": "Typed fields: every attribute on the field type that fits its value",
-      "description": "The product data registry (pim-build.json attributes[]): every attribute with its kind. measure and decimal are Decimal, count is Integer, choice and multi-choice are List, flag is Checkbox, date is Date, text and code are Text, long-text is Long text, rich-text is Editor, link is Link, file is File.",
+      "description": "The product data registry (pim-build.json attributes[]): every attribute with its kind. measure and decimal are Decimal, count is Integer, choice and multi-choice are List, flag is Checkbox, date is Date, text and code are Text, long-text is Long text, rich-text is Editor, link is Link, file is File, range is Range.",
       "skill": "dw-demo-pim",
       "status": "candidate",
       "requires": [],
@@ -152,7 +152,8 @@
         "productScope"
       ],
       "checks": [
-        "probes/pim/unit-rules-per-language.rules.json"
+        "probes/pim/unit-rules-per-language.rules.json",
+        "probes/pim/unit-rules-per-language.rendered.json"
       ],
       "notApplicable": [
         {
@@ -1477,6 +1478,130 @@
         {
           "kind": "source",
           "ref": "evidence/admission.json#pim.range-fields"
+        }
+      ]
+    },
+    {
+      "id": "pim.document-scope",
+      "area": "pim",
+      "name": "Documents per language or market",
+      "description": "A product document that applies to one language or market only: the asset row carries a language (EcomDetails.DetailLanguageId), and another language of the same product shows a different file in the same asset category (for example a manual per unit system).",
+      "skill": "dw-pim-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/document-scope.language-assets.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.document-scope"
+        },
+        {
+          "kind": "measurement",
+          "ref": "https://github.com/dynamicweb/skills/issues/210"
+        }
+      ]
+    },
+    {
+      "id": "pim.document-metadata",
+      "area": "pim",
+      "name": "Document metadata: version and history",
+      "description": "Per document asset: a version label (EcomDetails.DetailVersion), validity dates and whether older versions are shown in history. The publication type is the asset category (pim.documents); the language of a document is pim.document-scope.",
+      "skill": "dw-pim-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/document-metadata.versioned.json",
+        "probes/pim/document-metadata.history.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.document-metadata"
+        },
+        {
+          "kind": "measurement",
+          "ref": "https://github.com/dynamicweb/skills/issues/212"
+        }
+      ]
+    },
+    {
+      "id": "pim.asset-alt-text",
+      "area": "pim",
+      "name": "Image alt text per language",
+      "description": "Alt text (caption) per product image, stored as the asset name (EcomDetails.DetailsName, the name the MCP image tools describe as alt text or caption); a language-specific asset row carries the translated text.",
+      "skill": "dw-pim-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/asset-alt-text.images-with-alt.json",
+        "probes/pim/asset-alt-text.missing-alt.json",
+        "probes/pim/asset-alt-text.translated.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.asset-alt-text"
+        },
+        {
+          "kind": "measurement",
+          "ref": "https://github.com/dynamicweb/skills/issues/212"
+        }
+      ]
+    },
+    {
+      "id": "pim.product-videos",
+      "area": "pim",
+      "name": "Product videos",
+      "description": "Video assets next to images and documents: a file detail with a video extension (mp4, m4v, mov, webm, mkv, ogv, avi, the formats the MCP video tools accept) or a link detail in a LinkSelector asset category.",
+      "skill": "dw-pim-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/product-videos.video-files.json",
+        "probes/pim/product-videos.video-links.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.product-videos"
+        },
+        {
+          "kind": "measurement",
+          "ref": "https://github.com/dynamicweb/skills/issues/212"
         }
       ]
     }

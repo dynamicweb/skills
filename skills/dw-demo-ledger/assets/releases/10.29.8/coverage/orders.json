@@ -207,6 +207,10 @@
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html",
       "title": "Abandoned Cart Emails",
       "sectionHash": "sha256:509b0d91341f917862f0ed4dd2bbf2413c38972e0894fc101d0a528e8be8f989"
+    },
+    {
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "title": "Brand-build ledger gaps and check findings (outdoor power equipment)"
     }
   ],
   "claims": [
@@ -667,6 +671,11 @@
       "claim": "Abandoned cart emails are sent through an email campaign.",
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html",
       "duplicateOf": "marketing.abandoned-cart"
+    },
+    {
+      "claim": "Brand-build inventory correction: Delivery options per product.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "orders.product-delivery-options"
     }
   ],
   "gaps": [

@@ -204,6 +204,10 @@
         {
           "id": "direct-file-access",
           "when": "the mode trees reach the host by direct file copy"
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
         }
       ],
       "sources": [

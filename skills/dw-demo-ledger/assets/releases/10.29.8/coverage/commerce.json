@@ -207,6 +207,14 @@
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-assortments.html",
       "title": "Build Ecommerce Assortment Items",
       "sectionHash": "sha256:d39284b353783013e5d083547b1e1189c8a3dd883874841d24987912e64898d2"
+    },
+    {
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "title": "Brand-build ledger gaps and check findings (vacuum components, food ingredients)"
+    },
+    {
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "title": "Brand-build ledger gaps and check findings (outdoor power equipment)"
     }
   ],
   "claims": [
@@ -706,6 +714,36 @@
       "claim": "Back-in-stock notifications let customers sign up and receive a scheduled email.",
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html",
       "duplicateOf": "marketing.back-in-stock"
+    },
+    {
+      "claim": "Brand-build inventory correction: Price on request.",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "functionId": "commerce.price-on-request"
+    },
+    {
+      "claim": "Brand-build inventory correction: Configured products with rule-based pricing.",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "functionId": "commerce.configured-products"
+    },
+    {
+      "claim": "Brand-build inventory correction: Expected delivery per product and stock location.",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "functionId": "commerce.lead-times"
+    },
+    {
+      "claim": "Brand-build inventory correction: Product ratings and reviews.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "commerce.product-reviews"
+    },
+    {
+      "claim": "Brand-build inventory correction: Product comparison.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "commerce.product-compare"
+    },
+    {
+      "claim": "Proposed as swift.product-compare: The carrier is the Product Catalog app's Compare template (platform), not Swift; Swift 2 ships no compare template.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "commerce.product-compare"
     }
   ],
   "gaps": [

@@ -34,6 +34,7 @@
   ],
   "coverage": {
     "status": "incomplete",
-    "note": "Earlier-release candidate test inventory admitted from A package metadata and A schema only. Removed B-only login activity; matrix is absent. Retained candidates make no availability claim until measured on A. Optional absent tracking-table bindings are withheld."
-  }
+    "note": "Earlier-release candidate test inventory admitted from A package metadata and A schema only. Removed B-only login activity; matrix is absent. Retained candidates make no availability claim until measured on A. Optional absent tracking-table bindings are withheld. Revision 2 admits the brand-build inventory corrections whose carriers are in A package bytes and A schema, with the same check corrections as 10.29.8 revision 3."
+  },
+  "revision": 2
 }

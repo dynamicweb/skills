@@ -3,9 +3,9 @@
   "id": "commerce.stock-levels.in-stock",
   "functionId": "commerce.stock-levels",
   "intent": {
-    "proves": "At least one active product has stock above zero or is never out of stock.",
+    "proves": "At least one active product row has stock above zero, on the product or in one of its stock units, or is never out of stock.",
     "level": "applied",
-    "scope": "all active product rows"
+    "scope": "All active product rows and their own stock units (same product and variant)."
   },
   "assertion": {
     "kind": "scalar",
@@ -27,13 +27,17 @@
       "status": "implemented",
       "handler": "sql-scalar",
       "localOnly": true,
-      "query": "SELECT COUNT(*) FROM EcomProducts WHERE ProductActive = 1 AND (ProductStock > 0 OR ProductNeverOutOfStock = 1)"
+      "query": "SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductActive = 1 AND (p.ProductStock > 0 OR p.ProductNeverOutOfStock = 1 OR EXISTS (SELECT 1 FROM EcomStockUnit s WHERE s.StockUnitProductId = p.ProductId AND ISNULL(s.StockUnitVariantId, N'') = ISNULL(p.ProductVariantId, N'') AND (s.StockUnitQuantity > 0 OR s.StockUnitNeverOutOfStock = 1)))"
     }
   ],
   "sources": [
     {
       "kind": "docs",
       "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/stock.html"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
     }
   ]
 }

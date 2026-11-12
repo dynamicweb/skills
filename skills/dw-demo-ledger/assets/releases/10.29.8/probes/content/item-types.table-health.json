@@ -3,9 +3,9 @@
   "id": "content.item-types.table-health",
   "functionId": "content.item-types",
   "intent": {
-    "proves": "No item type table lacks metadata and no item type lacks its table.",
+    "proves": "No item type definition lacks its database table.",
     "level": "stored-integrity",
-    "scope": "every item type and item type table; complete enumeration"
+    "scope": "every item type returned by the table health read; complete enumeration"
   },
   "assertion": {
     "kind": "scalar",
@@ -19,7 +19,14 @@
       "status": "implemented",
       "handler": "mcp-count",
       "operation": "get_item_type_table_health",
-      "arguments": {}
+      "arguments": {},
+      "projection": {
+        "filter": {
+          "field": "existsInSchema",
+          "op": "equals",
+          "value": false
+        }
+      }
     },
     {
       "id": "local-sql",
@@ -38,6 +45,14 @@
     {
       "kind": "source",
       "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/ItemTypeHealthTools.cs"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/TOOLS.md (get_item_type_table_health)"
     }
   ]
 }
