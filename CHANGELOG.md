@@ -3,6 +3,11 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.6.0]
+
+- Add the app-backed CPQ ledger area to the 10.29.8 snapshot at revision 4, following the merged brand-gap revision. Inventory the accepted function/check intents with exact vendor app predicates, optional profile grounds and per-area coverage.
+- Keep every CPQ binding planned. Structural reads prefer MCP and authenticated Admin queries; SQL remains local-only. Behavioral checks require complete, fresh, independently bound evidence. No compiler, live handler, platform release addition or compatibility measurement is claimed.
+
 ## [6.5.1]
 
 - Correct `dw-commerce-cpq` conditions, operators, input references, version ownership and local quote claims against the pinned vendor profile and Studio 0.7.0 source. Separate vendor model duplication from Studio version copy and keep custom metadata outside vendor settings.

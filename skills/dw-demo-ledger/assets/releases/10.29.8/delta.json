@@ -3,7 +3,7 @@
   "status": "reviewed",
   "before": "10.28.15",
   "after": "10.29.8",
-  "revision": 3,
+  "revision": 4,
   "rawScanDigest": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c",
   "review": "delta-review.json",
   "added": [
@@ -772,6 +772,300 @@
       "runtimeStatus": "requires-target-measurement",
       "admittedTo10.28.15": true,
       "note": "Not a platform addition between 10.28.15 and 10.29.8: a capability the inventory missed, found by a brand build."
+    },
+    {
+      "id": "cpq.installation",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.model-versions",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.inputs",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.lookups",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.conditions",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.input-rules",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.constraints",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.bom",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.routing",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.pricing",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.persistence",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.revisions",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.cart",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.quotes",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.documents",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.page",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.studio-models",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.diagrams",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.visualization",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.erp",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "cpq.spec-build",
+      "change": "inventory-correction",
+      "evidence": [
+        "cpq-area-contract",
+        "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
+      ],
+      "sources": [
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
     }
   ],
   "mapped": [

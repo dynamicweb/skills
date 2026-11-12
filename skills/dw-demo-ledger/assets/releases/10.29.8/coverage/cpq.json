@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "area": "cpq",
+  "retrieved": "2026-11-12",
+  "sources": [
+    {
+      "url": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
+      "title": "Recorded vendor profile and unexecuted CPQ characterization plan"
+    },
+    {
+      "url": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md",
+      "title": "Studio 0.7.0 implementation and access contract"
+    },
+    {
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "title": "Proposed CPQ area acceptance contract"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Planned acceptance: CPQ installation and restart. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.installation"
+    },
+    {
+      "claim": "Planned acceptance: Version ownership and isolation. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.model-versions"
+    },
+    {
+      "claim": "Planned acceptance: Declared inputs and input types. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.inputs"
+    },
+    {
+      "claim": "Planned acceptance: Scoped catalogue lookups. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.lookups"
+    },
+    {
+      "claim": "Planned acceptance: Condition dialect and runtime truth tables. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.conditions"
+    },
+    {
+      "claim": "Planned acceptance: Input rule loading and effects. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.input-rules"
+    },
+    {
+      "claim": "Planned acceptance: Constraint transitions and invalid submissions. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.constraints"
+    },
+    {
+      "claim": "Planned acceptance: Generated bill of materials. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.bom"
+    },
+    {
+      "claim": "Planned acceptance: Optional routing operations. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.routing"
+    },
+    {
+      "claim": "Planned acceptance: Configured pricing and persisted totals. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.pricing"
+    },
+    {
+      "claim": "Planned acceptance: Saved configuration roundtrip. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.persistence"
+    },
+    {
+      "claim": "Planned acceptance: Isolated configuration revisions. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.revisions"
+    },
+    {
+      "claim": "Planned acceptance: Configured cart handoff. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.cart"
+    },
+    {
+      "claim": "Planned acceptance: Local quote handoff and ownership. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.quotes"
+    },
+    {
+      "claim": "Planned acceptance: Local configured document output. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.documents"
+    },
+    {
+      "claim": "Planned acceptance: Page version binding and rendering. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.page"
+    },
+    {
+      "claim": "Planned acceptance: Studio authoring and version roundtrip. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.studio-models"
+    },
+    {
+      "claim": "Planned acceptance: Studio dependency diagrams. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.diagrams"
+    },
+    {
+      "claim": "Planned acceptance: Optional configured visualization. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.visualization"
+    },
+    {
+      "claim": "Planned acceptance: Declared ERP boundary. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.erp"
+    },
+    {
+      "claim": "Planned acceptance: Repeatable spec compilation and apply. Candidate check intents, not proof that the runtime currently meets them.",
+      "url": "skills/dw-demo-ledger/references/cpq-area.md",
+      "functionId": "cpq.spec-build"
+    }
+  ],
+  "gaps": [
+    "All CPQ bindings are planned; no structured MCP/Admin/SQL reader, loaded-identity observer or behavior-receipt consumer is implemented.",
+    "The exact vendor/Studio combination on DW 10.29.8 still requires installation, engine truth tables, package hashes and end-to-end measurement. No 10.28.15 admission is made.",
+    "Resolve exact compatible MCP/MCP host/OpenXml dependencies and any required licence fact from the installed product; unknown required facts stay UNVERIFIED. Studio tools remain Dynamo-only.",
+    "The neutral spec contracts do not implement a compiler, behavior producer, feature-cpq layer or cpq-demo edition. Known option/cart/quote failures remain release blockers until measured fixes exist.",
+    "Routing, CPQ visualization and ERP profiles are optional and independently proven. External execution consumers keep their own commands and machine setup outside foundational skill content."
+  ]
+}

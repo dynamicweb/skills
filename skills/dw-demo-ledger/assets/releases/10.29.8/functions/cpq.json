@@ -1,0 +1,997 @@
+{
+  "schema": 1,
+  "area": "cpq",
+  "functions": [
+    {
+      "id": "cpq.installation",
+      "area": "cpq",
+      "name": "CPQ installation and restart",
+      "description": "Proposed acceptance contract over Loaded vendor/Studio assemblies, vendor update providers, CPQ* schema, item definitions, design files. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "Truvio.Commerce.CpqStudio",
+          "expected": "0.7.0"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/installation.loaded.json",
+        "probes/cpq/installation.schema.json",
+        "probes/cpq/installation.restart.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.model-versions",
+      "area": "cpq",
+      "name": "Version ownership and isolation",
+      "description": "Proposed acceptance contract over CPQModel, CPQModelVersion, version-owned groups/rules/outputs. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/model-versions.integrity.json",
+        "probes/cpq/model-versions.isolation.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.inputs",
+      "area": "cpq",
+      "name": "Declared inputs and input types",
+      "description": "Proposed acceptance contract over CPQGroup, CPQInput, options, defaults and InputSettings. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/inputs.declaration.json",
+        "probes/cpq/inputs.types.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.lookups",
+      "area": "cpq",
+      "name": "Scoped catalogue lookups",
+      "description": "Proposed acceptance contract over InputDataSource, InputDataParameters, catalogue records; model/lookup and full model call. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/lookups.scope.json",
+        "probes/cpq/lookups.results.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.conditions",
+      "area": "cpq",
+      "name": "Condition dialect and runtime truth tables",
+      "description": "Proposed acceptance contract over Condition JSON on groups and all rule families. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/conditions.dialect.json",
+        "probes/cpq/conditions.truth-table.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.input-rules",
+      "area": "cpq",
+      "name": "Input rule loading and effects",
+      "description": "Proposed acceptance contract over CPQInputRule, rule groups, conditions/actions/else. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/input-rules.loader.json",
+        "probes/cpq/input-rules.effects.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.constraints",
+      "area": "cpq",
+      "name": "Constraint transitions and invalid submissions",
+      "description": "Proposed acceptance contract over Input bounds, allowed options, rules, result completeness. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/constraints.transitions.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.bom",
+      "area": "cpq",
+      "name": "Generated bill of materials",
+      "description": "Proposed acceptance contract over CPQBOMRule, option bom_items, group gates, catalogue anchors. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/bom.references.json",
+        "probes/cpq/bom.results.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.routing",
+      "area": "cpq",
+      "name": "Optional routing operations",
+      "description": "Proposed acceptance contract over CPQRouteRule, version rates, route lines/totals. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/routing.results.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "routing-not-declared",
+          "when": "The locked spec explicitly declares no routing; applicable routing must be proven in its own profile."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.pricing",
+      "area": "cpq",
+      "name": "Configured pricing and persisted totals",
+      "description": "Proposed acceptance contract over CPQPriceRule, version pricing settings, platform price service. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/pricing.scope.json",
+        "probes/cpq/pricing.results.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.persistence",
+      "area": "cpq",
+      "name": "Saved configuration roundtrip",
+      "description": "Proposed acceptance contract over CPQCard, CPQCardItem.ClientInputsJson, result JSON, CPQCardItemBomLines, CPQConfiguration. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/persistence.roundtrip.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.revisions",
+      "area": "cpq",
+      "name": "Isolated configuration revisions",
+      "description": "Proposed acceptance contract over Cards, card items and exploded lines. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/revisions.isolated-copy.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.cart",
+      "area": "cpq",
+      "name": "Configured cart handoff",
+      "description": "Proposed acceptance contract over Chosen CPQ/Swift handoff, DW cart and order lines, card linkage. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/cart.handoff.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.quotes",
+      "area": "cpq",
+      "name": "Local quote handoff and ownership",
+      "description": "Proposed acceptance contract over Chosen local quote path, DW quote/order lines, card DWCartInfo and ItemLineNo. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/quotes.handoff.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.documents",
+      "area": "cpq",
+      "name": "Local configured document output",
+      "description": "Proposed acceptance contract over CPQOutputRule, CPQOutputAction, OpenXml dependency. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/documents.output.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.page",
+      "area": "cpq",
+      "name": "Page version binding and rendering",
+      "description": "Proposed acceptance contract over CPQ_Page, CPQ paragraphs/rows, navigation tags, explicit theme. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/page.binding.json",
+        "probes/cpq/page.render.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.studio-models",
+      "area": "cpq",
+      "name": "Studio authoring and version roundtrip",
+      "description": "Proposed acceptance contract over Studio model checks, version copy, rename, BOM grid and history. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "Truvio.Commerce.CpqStudio",
+          "expected": "0.7.0"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/studio-models.roundtrip.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.diagrams",
+      "area": "cpq",
+      "name": "Studio dependency diagrams",
+      "description": "Proposed acceptance contract over Studio diagram endpoint and rule dependency graph. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "Truvio.Commerce.CpqStudio",
+          "expected": "0.7.0"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/diagrams.dependencies.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.visualization",
+      "area": "cpq",
+      "name": "Optional configured visualization",
+      "description": "Proposed acceptance contract over Declared CPQ_Visual model/assets and option mappings. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/visualization.selection.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "visualization-not-declared",
+          "when": "The locked spec declares no CPQ_Visual or 3D output; ordinary option images are covered by the page proof."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.erp",
+      "area": "cpq",
+      "name": "Declared ERP boundary",
+      "description": "Proposed acceptance contract over CPQConnector, version DataConnectionId/company, Integration Framework. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/erp.requirements.json",
+        "probes/cpq/erp.boundary.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "erp-not-declared",
+          "when": "The locked spec declares erp none and no ERP operation is requested; local cart and quote obligations remain required."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    },
+    {
+      "id": "cpq.spec-build",
+      "area": "cpq",
+      "name": "Repeatable spec compilation and apply",
+      "description": "Proposed acceptance contract over Versioned spec, compiler, identity map and apply receipt. App-backed CPQ function; no new DW release capability or live measurement is claimed.",
+      "skill": "dw-commerce-cpq",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "CPQ_Admin",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "DW_CPQ_API",
+          "expected": "10.24.2"
+        },
+        {
+          "kind": "app",
+          "id": "Truvio.Commerce.CpqStudio",
+          "expected": "0.7.0"
+        }
+      ],
+      "inputs": [
+        "modelKey",
+        "modelVersionId",
+        "cpqSpec",
+        "cpqPackageLock",
+        "cpqBehavior"
+      ],
+      "checks": [
+        "probes/cpq/spec-build.reproducible.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+        },
+        {
+          "kind": "source",
+          "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        },
+        {
+          "kind": "docs",
+          "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+        }
+      ]
+    }
+  ]
+}
