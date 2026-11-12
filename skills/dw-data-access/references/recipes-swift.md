@@ -58,6 +58,8 @@ missing row item. The update posts to `POST /Admin/Api/GridRowSave?Query.Type=Gr
 build's `save_grid_rows` model lacks a member (one host's model carried only `active`,
 `backgroundImage`, `colorSchemeId`, `container`, `definitionId`, `id`, `itemType`, `pageId` and `sort`,
 and rows it created came back with `GridRowItemId` NULL), these verbs are the route for that member.
+From MCP 0.6.5 `save_grid_rows` carries `mobileLayout` and `mobileSortColumns` itself
+[dw 10.29.8 · mcp 0.6.5-BETA].
 
 Use these before SQL for every member they carry. Row activation, container width and the spacing
 tokens are all on the verb, so a SQL `UPDATE GridRow` for any of them is a rung too low and buys a

@@ -320,7 +320,9 @@ any other key name answers `{"status":"invalid","message":"No items selected"}`,
 reads as a selection problem. With the shape correct the command still returns `{"status":"ok"}` and
 leaves `ParagraphShowParagraph = 1`. And **MCP `save_paragraphs` does not write `active` either**: the
 response body echoes `active: true` back at you, with a minimal model and with a full model alike
-(inert, not destructive: header, itemType, sort and column all survive). The paragraph-level
+(inert, not destructive: header, itemType, sort and column all survive). That is the behaviour before
+MCP 0.6.5; from 0.6.5 `active: false` is stored on a paragraph not bound to a grid row and refused on a
+grid-bound one [dw 10.29.8 · mcp 0.6.5-BETA], so a grid paragraph still needs the motions here. The paragraph-level
 `hideForPhones` / `hideForTablets` / `hideForDesktops` trio does write through `save_paragraphs`.
 
 **Where a paragraph is the SOLE occupant of its row, deactivate the ROW instead.**

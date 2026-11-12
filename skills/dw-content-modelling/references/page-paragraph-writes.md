@@ -128,9 +128,11 @@ worth knowing when authoring content programmatically (validated DW 10.25.x):
   undocumented and worth recording, because a schema mistake is reported as a domain error: the shape
   is `{"setActive":<bool>,"ids":["<id>", ...]}` where `ids` is a `List<string>`, so **numeric ids 500**
   and **any other key name answers `{"status":"invalid","message":"No items selected"}`** rather than
-  naming the field. MCP `save_paragraphs` does not map `active` either: `active: false` answers
-  `active: true` and leaves `ParagraphShowParagraph = 1`, while the `hideFor*` flags in the same call do
-  apply [dw 10.29.8]. Hide a paragraph in this order:
+  naming the field. Before MCP 0.6.5 `save_paragraphs` does not map `active` either: `active: false`
+  answers `active: true` and leaves `ParagraphShowParagraph = 1`, while the `hideFor*` flags in the same
+  call do apply [dw 10.29.8]. From 0.6.5 it stores `active: false` on a paragraph that is not bound to a
+  grid row and refuses it on a grid-bound one [dw 10.29.8 · mcp 0.6.5-BETA], so the order below still
+  holds for every paragraph in a grid. Hide a paragraph in this order:
   1. **`GridRow.GridRowActive = 0`** when the paragraph is the sole occupant of its row. It removes the
      whole band rather than its contents, so no empty padded `<section>` is left behind, and it is one
      UPDATE to reverse.

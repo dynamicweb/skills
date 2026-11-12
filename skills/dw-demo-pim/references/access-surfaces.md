@@ -32,6 +32,20 @@ templates and index definitions live as XML/cshtml/xslt files under
 file from a Swift reference installation is a file operation, and it needs the matching `BuildIndex`
 on rung 2 before the change is visible.
 
+## PIM writes with no MCP tool: the route that worked
+
+Measured on three blank builds [dw 10.29.8]; still without an MCP tool on [dw 10.29.8 · mcp 0.6.5-BETA]. The Management API accepted the site's MCP bearer. **A wrong property name on these verbs answers `ok` and stores 0**, so read every write back.
+
+| Feature | Route | Notes |
+|---|---|---|
+| Computed field | `FieldTypeSave` creates the field type with its provider, then `create_product_fields` with the new type id | `FieldTypeSave` drops the provider parameters, so the expression is written afterwards (SQL on the field type row, local installs only, then a recycle). A Concat expression is a JSON object keyed by language id. |
+| Asset category | `AssetCategorySave` | Creates the category; the builds named it per language by SQL. |
+| Parts-list (BOM) line | `ProductItemAdd` | Not exercised in these builds, which wrote `EcomProductItems` by SQL and recycled. The verb is in [`recipes-pim.md`](../../dw-data-access/references/recipes-pim.md). |
+| Field label and category-name translation | `ProductCategoryFieldTranslationSave` | Not exercised in these builds (SQL was used). The verb is in [`translation-mechanics.md`](../../dw-pim-localization/references/translation-mechanics.md). Option names go over MCP with `set_option_translations`. |
+| Workspace | `DynamicStructureSave`, then one `DynamicStructureLevelSave` per level | Two commands; a `Levels` array on the first is dropped ([`structural-model.md`](../../dw-pim-modelling/references/structural-model.md) §2.12). |
+| Screen layout | `ScreenLayoutTabSave` with `ScreenLayoutId`, `ScreenLayoutGroupSave` with `TabId`, `ScreenLayoutEditorSave` with `GroupId` | The parent key is the property that silently stores 0 when misnamed. Shapes: [`screen-authoring.md`](screen-authoring.md). |
+| Unit group, validation pattern, workflow row with its notifications and group attachment, field permissions, shop language relation | No verb measured | SQL on a local install, then a recycle; the admin screen on a hosted one. |
+
 ## Management API + OpenAPI discovery + per-project reference paths
 
 The Management API admin-endpoint catalog (BuildIndex, IndexStatus, CacheInformationRefresh, GetServiceCaches, FeatureManagementToggle, CompletionSettingsSourceById), the runtime OpenAPI-discovery probe, and the per-project discovery table (host URL/port, SQL Server, DB name, API token) are vendor-generic platform facts — see [`management-api-and-sql.md`](../../dw-data-access/references/management-api-and-sql.md).
