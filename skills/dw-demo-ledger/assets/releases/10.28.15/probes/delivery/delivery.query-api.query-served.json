@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.query-api.query-served",
+  "functionId": "delivery.query-api",
+  "intent": {
+    "proves": "GET /dwapi/query with a repository and query name returns results with paging and facet groups.",
+    "level": "behavioural",
+    "scope": "the query named by the build, anonymous"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-count",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-count",
+      "operation": "GET /dwapi/query?RepositoryName=&QueryName=",
+      "reason": "No dwapi handler is implemented; a scalar HTTP binding needs a measured response projection (contract.md), endpoint presence alone does not qualify."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/query.html"
+    }
+  ]
+}

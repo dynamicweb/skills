@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.custom-fields.user-fields",
+  "functionId": "users.custom-fields",
+  "intent": {
+    "proves": "At least one custom user field is defined.",
+    "level": "configured",
+    "scope": "CustomField rows for table AccessUser"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-customfieldsall",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "CustomFieldsAll",
+      "arguments": {},
+      "reason": "Management API query name not verified for user custom fields; no MCP read tool exists. No MCP read tool exposes this observation (checked against the MCP ToolNames catalogue)."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM CustomField WHERE CustomFieldTableName = 'AccessUser'",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/customuserfields.html"
+    }
+  ]
+}

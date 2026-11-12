@@ -464,6 +464,58 @@
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/querypublisher.html"
         }
       ]
+    },
+    {
+      "id": "search.asset-metadata-fields",
+      "area": "search",
+      "name": "Asset metadata query fields",
+      "description": "Use asset category groups and asset metadata in query expressions.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/search/asset-metadata-fields.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#search.asset-metadata-fields"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "search.variant-index-representatives",
+      "area": "search",
+      "name": "Variant index representatives",
+      "description": "Expose master variant kind and expanded group representative fields in the product index.",
+      "skill": "dw-search-indexing",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/search/variant-index-representatives.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#search.variant-index-representatives"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
     }
   ]
 }

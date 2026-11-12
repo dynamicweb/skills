@@ -1,0 +1,823 @@
+{
+  "schema": 1,
+  "area": "integration",
+  "functions": [
+    {
+      "id": "integration.activities",
+      "area": "integration",
+      "name": "Integration activities",
+      "description": "Activities pairing a source and a destination provider, created custom or from a blueprint, optionally grouped with inherited providers, stored as job XML files under Files/Integration/jobs.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/activities.activities.json",
+        "probes/integration/activities.providers-installed.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-integration",
+          "when": "the demo scope has no data integration beat"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.activities"
+        }
+      ]
+    },
+    {
+      "id": "integration.table-mappings",
+      "area": "integration",
+      "name": "Table and column mappings with key columns",
+      "description": "Table mappings from source to destination tables with column mappings (manual, multiple, or created at runtime) and key columns deciding insert versus update.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/table-mappings.mapped.json",
+        "probes/integration/table-mappings.key-columns.json",
+        "probes/integration/table-mappings.no-empty-conditionals.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-integration",
+          "when": "the demo scope has no data integration beat"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.table-mappings"
+        }
+      ]
+    },
+    {
+      "id": "integration.conditionals",
+      "area": "integration",
+      "name": "Mapping conditionals",
+      "description": "Row filters on a table mapping (equals, contains, in, begins with, comparisons and their negations), grouped with AND or OR, with code or context-sensitive values.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/conditionals.conditionals.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "full-table-sync",
+          "when": "every mapped source row is imported or exported"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.conditionals"
+        }
+      ]
+    },
+    {
+      "id": "integration.column-scripting",
+      "area": "integration",
+      "name": "Column scripting and null handling",
+      "description": "Column transforms (append, prepend, constant, substring, new GUID, current time, invert, @Code), appending columns, number format culture, don't-update-record and null handling (default, constant, skip row).",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/column-scripting.scripting.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "plain-mapping",
+          "when": "every column is mapped one to one"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.column-scripting"
+        }
+      ]
+    },
+    {
+      "id": "integration.run-and-log",
+      "area": "integration",
+      "name": "Run an activity and read its log",
+      "description": "Run now or cancel from the activity, with a log per run under the data integration log folder and a last-run status.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/run-and-log.last-run-ok.json",
+        "probes/integration/run-and-log.has-run.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-integration",
+          "when": "the demo scope has no data integration beat"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.run-and-log"
+        }
+      ]
+    },
+    {
+      "id": "integration.scheduled-runs",
+      "area": "integration",
+      "name": "Scheduled activity runs",
+      "description": "A schedule on an activity (begin, interval, unit, end, active, skip after failure) stored as a scheduled task running the activity.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/scheduled-runs.schedules.json",
+        "probes/integration/scheduled-runs.schedules-not-failing.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "on-demand-only",
+          "when": "the demo runs activities by hand only"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.scheduled-runs"
+        }
+      ]
+    },
+    {
+      "id": "integration.activity-notifications",
+      "area": "integration",
+      "name": "Activity email notifications",
+      "description": "Sender, recipients and template for a mail after an activity run, optionally only on failure.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/activity-notifications.notification.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-notification-beat",
+          "when": "the demo does not show run notifications"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.activity-notifications"
+        }
+      ]
+    },
+    {
+      "id": "integration.post-run-refresh",
+      "area": "integration",
+      "name": "Cache clearing and index rebuild after a run",
+      "description": "Cache services cleared and repository indexes rebuilt after an activity run, so imported data shows without a stale cache or index.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/post-run-refresh.refresh-configured.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-product-import",
+          "when": "no activity writes catalogue data"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.post-run-refresh"
+        }
+      ]
+    },
+    {
+      "id": "integration.schema-management",
+      "area": "integration",
+      "name": "Centralized schema management",
+      "description": "Feature-managed central schema files under Files/Integration/Schemas shared across activities instead of a schema snapshot in every job file; table schema error list and update.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "flag",
+          "id": "Feature Management: Schema Management (storage key unverified)",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/integration/schema-management.schemas.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "per-job-schemas",
+          "when": "activities keep their own schema snapshot"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.schema-management"
+        }
+      ]
+    },
+    {
+      "id": "integration.blueprints",
+      "area": "integration",
+      "name": "Integration blueprints",
+      "description": "Blueprint app packages installing a pre-configured activity group (for example Business Central OData default API or OData V4) that is then configured manually.",
+      "skill": "dw-integration-erp",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "integration blueprint package (name per blueprint; unverified)",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/integration/blueprints.blueprint-group.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "custom-activities",
+          "when": "the integration is built from custom activities"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.blueprints"
+        }
+      ]
+    },
+    {
+      "id": "integration.endpoints",
+      "area": "integration",
+      "name": "Endpoint collections and requests",
+      "description": "Endpoint collections grouping requests (URL, query parameters, headers, body, standard Dynamicweb codeunit service flag) that share authentication, tested from the request screen.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/endpoints.endpoints.json",
+        "probes/integration/endpoints.collections.json",
+        "probes/integration/endpoints.test-returns-rows.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "file-based-only",
+          "when": "every activity reads or writes files or SQL only"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.endpoints"
+        }
+      ]
+    },
+    {
+      "id": "integration.authentications",
+      "area": "integration",
+      "name": "Endpoint authentications",
+      "description": "Authentication on a collection or a request: OAuth 2.0 service-to-service, OAuth 2.0 user impersonation, bearer token, basic or NTLM.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/authentications.authentications.json",
+        "probes/integration/authentications.endpoints-authenticated.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "file-based-only",
+          "when": "every activity reads or writes files or SQL only"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.authentications"
+        }
+      ]
+    },
+    {
+      "id": "integration.provider-csv",
+      "area": "integration",
+      "name": "CSV provider",
+      "description": "CSV import from a file or folder (delimiters, header row, decimal separator, archive or delete source) and CSV export.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/provider-csv.in-use.json",
+        "probes/integration/provider-csv.source-file.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "not-csv",
+          "when": "no data in the demo moves as CSV"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.provider-csv"
+        }
+      ]
+    },
+    {
+      "id": "integration.provider-xml",
+      "area": "integration",
+      "name": "XML provider",
+      "description": "XML import from a file or folder in the Dynamicweb tables/item/column format (optional XSLT) and XML export with custom destination tables and columns.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/provider-xml.in-use.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "not-xml",
+          "when": "no data in the demo moves as XML"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.provider-xml"
+        }
+      ]
+    },
+    {
+      "id": "integration.provider-excel",
+      "area": "integration",
+      "name": "Excel provider",
+      "description": "XLS, XLSX or XLSM import from a file or folder with one table per sheet, and export with one sheet per table.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/provider-excel.in-use.json",
+        "probes/integration/provider-excel.source-file.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "not-excel",
+          "when": "no data in the demo moves as a spreadsheet"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.provider-excel"
+        }
+      ]
+    },
+    {
+      "id": "integration.provider-odata",
+      "area": "integration",
+      "name": "OData provider",
+      "description": "OData import from a single- or multi-entity endpoint in delta replication, first page or full replication mode, and OData export with key columns deciding POST or PATCH.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/provider-odata.in-use.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-odata-system",
+          "when": "the remote system exposes no OData API"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.provider-odata"
+        }
+      ]
+    },
+    {
+      "id": "integration.provider-sql",
+      "area": "integration",
+      "name": "SQL provider",
+      "description": "Import and export against a Microsoft SQL Server database or view, with integrated security or a connection string.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/provider-sql.in-use.json",
+        "probes/integration/provider-sql.no-sql-auth-in-jobs.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-sql-source",
+          "when": "no external database is part of the demo"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.provider-sql"
+        }
+      ]
+    },
+    {
+      "id": "integration.provider-dynamicweb-ecom",
+      "area": "integration",
+      "name": "Dynamicweb and Ecom providers",
+      "description": "The Dynamicweb provider (whole database, relations mapped by hand, insert/update/deactivate/remove-missing options) and its Ecom derivative (auto-created ids, groups and relations, names instead of ids on export).",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/provider-dynamicweb-ecom.in-use.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-database-import",
+          "when": "no activity reads or writes the Dynamicweb database tables directly"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.provider-dynamicweb-ecom"
+        }
+      ]
+    },
+    {
+      "id": "integration.provider-user",
+      "area": "integration",
+      "name": "User provider",
+      "description": "User, address and group import with a user key field, remove or deactivate missing users, password generation and encryption; export of users changed since the last export.",
+      "skill": "dw-integration-framework",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/provider-user.in-use.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-customer-sync",
+          "when": "customers are not synchronised with a remote system"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.provider-user"
+        }
+      ]
+    },
+    {
+      "id": "integration.provider-order",
+      "area": "integration",
+      "name": "Order provider (order transfer to and from the ERP)",
+      "description": "Order provider export of not-yet-exported, complete orders (by state or shop) with a state set after export, and order import keyed on order and line ids; ledger entries kept out of the export.",
+      "skill": "dw-integration-erp",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/integration/provider-order.in-use.json",
+        "probes/integration/provider-order.ledger-not-exported-back.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-order-transfer",
+          "when": "orders stay in Dynamicweb in the demo"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.provider-order"
+        }
+      ]
+    },
+    {
+      "id": "integration.live-integration",
+      "area": "integration",
+      "name": "Live integration connection",
+      "description": "A live integration instance (connector web service or endpoints, shop, website, ERP currency, timeouts, connection status tag, error notifications and logs) talking to a plug-in unit on the remote system.",
+      "skill": "dw-integration-erp",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Dynamicweb.Ecommerce.DynamicwebLiveIntegration",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/integration/live-integration.instance.json",
+        "probes/integration/live-integration.enabled.json",
+        "probes/integration/live-integration.live-endpoint.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "batch-only",
+          "when": "the demo uses batch integration only, no real-time lookups"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.live-integration"
+        }
+      ]
+    },
+    {
+      "id": "integration.live-prices",
+      "area": "integration",
+      "name": "Live prices and product information",
+      "description": "Customer-specific prices (and product information) looked up from the remote system when a product is rendered, with lazy loading, cache level, variant and batch options.",
+      "skill": "dw-integration-erp",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Dynamicweb.Ecommerce.DynamicwebLiveIntegration",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/integration/live-prices.enabled.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "synced-prices",
+          "when": "prices are imported in batch"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.live-prices"
+        }
+      ]
+    },
+    {
+      "id": "integration.live-cart-orders",
+      "area": "integration",
+      "name": "ERP cart calculation and order creation",
+      "description": "Cart communication (none, cart only, full, only on order complete) so the remote system calculates carts, discounts and shipping and creates the order, with queueing when offline and order states after export.",
+      "skill": "dw-integration-erp",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Dynamicweb.Ecommerce.DynamicwebLiveIntegration",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/integration/live-cart-orders.cart-communication.json",
+        "probes/integration/live-cart-orders.remote-order-ids.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "dw-calculates-cart",
+          "when": "Dynamicweb calculates carts and orders are exported in batch"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.live-cart-orders"
+        }
+      ]
+    },
+    {
+      "id": "integration.customer-center",
+      "area": "integration",
+      "name": "Integration Customer Center",
+      "description": "Frontend app listing a signed-in customer's orders, invoices and credits from the remote system in real time, with details and PDF download.",
+      "skill": "dw-integration-erp",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Dynamicweb.Ecommerce.DynamicwebLiveIntegration",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/integration/customer-center.app-placed.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-erp-history",
+          "when": "the demo does not show ERP order history to the customer"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.customer-center"
+        }
+      ]
+    },
+    {
+      "id": "integration.plugin-unit-import",
+      "area": "integration",
+      "name": "Plug-in unit batch import",
+      "description": "A scheduled task with the Import data with custom request add-in calling a plug-in unit endpoint, saving the XML response and running an XML-to-Dynamicweb activity with runtime mappings.",
+      "skill": "dw-integration-erp",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Import data with custom request add-in (package name unverified)",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/integration/plugin-unit-import.custom-request-task.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "odata-integration",
+          "when": "the remote system is integrated through OData, not a plug-in unit"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.plugin-unit-import"
+        }
+      ]
+    },
+    {
+      "id": "integration.pim-bc-connector",
+      "area": "integration",
+      "name": "PIM connector for Business Central",
+      "description": "The PIM for Business Central connector apps on the Dynamicweb side and an API key used by the Business Central extension to synchronise item data both ways.",
+      "skill": "dw-integration-bc",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "PIM for Business Central connector",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/integration/pim-bc-connector.api-key.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-bc-pim-sync",
+          "when": "the demo does not show Business Central item sync"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#integration.pim-bc-connector"
+        }
+      ]
+    }
+  ]
+}

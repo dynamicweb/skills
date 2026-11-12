@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "search.facets.catalog-wired",
+  "functionId": "search.facets",
+  "intent": {
+    "proves": "At least one visible Product Catalog app renders a facet group.",
+    "level": "configured",
+    "scope": "active eCom_ProductCatalog paragraphs on active pages with a FacetGroups setting"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM Paragraph p JOIN Page g ON g.PageId = p.ParagraphPageId WHERE p.ParagraphDeleted = 0 AND p.ParagraphShowParagraph = 1 AND g.PageDeleted = 0 AND g.PageActive = 1 AND p.ParagraphModuleSystemName = 'eCom_ProductCatalog' AND p.ParagraphModuleSettings LIKE '%<FacetGroups>/Files/%'",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/facets.html"
+    }
+  ]
+}

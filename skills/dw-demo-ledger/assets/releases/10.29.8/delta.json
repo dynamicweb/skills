@@ -1,0 +1,590 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "before": "10.28.15",
+  "after": "10.29.8",
+  "revision": 2,
+  "rawScanDigest": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c",
+  "review": "delta-review.json",
+  "added": [
+    {
+      "id": "admin.database-index-health",
+      "change": "added",
+      "evidence": [
+        "type:Dynamicweb.Updates.HealthProviders.IndexHealthProvider",
+        "type:Dynamicweb.Updates.IndexUpdate",
+        "work-item:28825"
+      ],
+      "sources": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.core/10.29.8/dynamicweb.core.10.29.8.nupkg",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "admin.page-performance-tracking",
+      "change": "added",
+      "evidence": [
+        "column:dbo.TrackingView.TrackingViewExecutionTime",
+        "work-item:28808"
+      ],
+      "sources": [
+        "INFORMATION_SCHEMA.COLUMNS and KEY_COLUMN_USAGE",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "assets.file-transfer-api",
+      "change": "added",
+      "evidence": [
+        "work-item:28952"
+      ],
+      "sources": [
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "content.item-field-search",
+      "change": "added",
+      "evidence": [
+        "work-item:28900"
+      ],
+      "sources": [
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "content.open-graph-fallback",
+      "change": "added",
+      "evidence": [
+        "work-item:28896"
+      ],
+      "sources": [
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "content.url-index-backup",
+      "change": "added",
+      "evidence": [
+        "type:Dynamicweb.Frontend.UrlHandling.UrlIndexBuilder",
+        "type:Dynamicweb.Notifications.Standard+Frontend+OnBuildUrlIndexArgs",
+        "work-item:9659"
+      ],
+      "sources": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.29.8/dynamicweb.10.29.8.nupkg",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "delivery.purchased-products-api",
+      "change": "added",
+      "evidence": [
+        "enum:Dynamicweb.Ecommerce.Orders.PurchasedProductsOrderBy.CompletedDate",
+        "enum:Dynamicweb.Ecommerce.Orders.PurchasedProductsOrderBy.Quantity",
+        "enum:Dynamicweb.Ecommerce.Orders.PurchasedProductsOrderByDirection.Ascending",
+        "enum:Dynamicweb.Ecommerce.Orders.PurchasedProductsOrderByDirection.Descending",
+        "type:Dynamicweb.Ecommerce.Orders.PurchasedProductAggregate",
+        "type:Dynamicweb.Ecommerce.Orders.PurchasedProductsFilter",
+        "type:Dynamicweb.Ecommerce.Orders.PurchasedProductsOrderBy",
+        "type:Dynamicweb.Ecommerce.Orders.PurchasedProductsOrderByDirection",
+        "type:Dynamicweb.Ecommerce.Orders.PurchasedProductsResult",
+        "type:Dynamicweb.Ecommerce.ProductCatalog.PurchasedProductListViewModel",
+        "type:Dynamicweb.Ecommerce.ProductCatalog.PurchasedProductViewModel",
+        "work-item:28368"
+      ],
+      "sources": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.29.8/dynamicweb.ecommerce.10.29.8.nupkg",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "delivery.response-field-selection",
+      "change": "added",
+      "evidence": [
+        "type:Dynamicweb.Rendering.ViewModelPropertyFilter",
+        "type:Dynamicweb.Rendering.ViewModelPropertyFilterExtensions",
+        "work-item:28809"
+      ],
+      "sources": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.core/10.29.8/dynamicweb.core.10.29.8.nupkg",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "integration.activity-variables",
+      "change": "added",
+      "evidence": [
+        "work-item:28503"
+      ],
+      "sources": [
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "integration.excel-title-row",
+      "change": "added",
+      "evidence": [
+        "work-item:28554"
+      ],
+      "sources": [
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "integration.source-file-retention",
+      "change": "added",
+      "evidence": [
+        "work-item:28541"
+      ],
+      "sources": [
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "pim.attribute-translation-state",
+      "change": "added",
+      "evidence": [
+        "work-item:16009",
+        "work-item:26602",
+        "work-item:26603",
+        "work-item:26604"
+      ],
+      "sources": [
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "pim.import-key-detection",
+      "change": "added",
+      "evidence": [
+        "work-item:28249"
+      ],
+      "sources": [
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "pim.json-feeds",
+      "change": "added",
+      "evidence": [
+        "type:Dynamicweb.Ecommerce.Feeds.JSONProvider",
+        "work-item:28597"
+      ],
+      "sources": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.29.8/dynamicweb.ecommerce.10.29.8.nupkg",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "pim.matrix-fields",
+      "change": "added",
+      "evidence": [
+        "column:dbo.EcomProductCategoryField.FieldMatrixAttributeGroupId",
+        "column:dbo.EcomProductCategoryFieldValue.FieldValueReferenceCategoryId",
+        "column:dbo.EcomProductField.ProductFieldMatrixAttributeGroupId",
+        "enum:Dynamicweb.Ecommerce.Products.Categories.CategoryType.MatrixFields",
+        "flag:Dynamicweb.Ecommerce.Products.MatrixFieldTypeFeature",
+        "primary-key:dbo.EcomProductCategoryFieldValue",
+        "type:Dynamicweb.Ecommerce.ProductCatalog.MatrixCellViewModel",
+        "type:Dynamicweb.Ecommerce.ProductCatalog.MatrixCellViewModelExtensions",
+        "type:Dynamicweb.Ecommerce.ProductCatalog.MatrixColumnViewModel",
+        "type:Dynamicweb.Ecommerce.ProductCatalog.MatrixRowViewModel",
+        "type:Dynamicweb.Ecommerce.ProductCatalog.MatrixViewModel",
+        "type:Dynamicweb.Ecommerce.Products.Categories.MatrixFieldCellData",
+        "type:Dynamicweb.Ecommerce.Products.Categories.MatrixFieldRowData",
+        "type:Dynamicweb.Ecommerce.Products.Categories.MatrixFieldValue",
+        "type:Dynamicweb.Ecommerce.Products.FieldValueConversions.MatrixCellConversionService",
+        "type:Dynamicweb.Ecommerce.Products.MatrixFieldTypeFeature",
+        "type:Dynamicweb.Ecommerce.Products.MatrixFieldTypeFeatureExtensions",
+        "type:Dynamicweb.Ecommerce.Products.MatrixHelper",
+        "work-item:27707",
+        "work-item:27713",
+        "work-item:27768",
+        "work-item:27772",
+        "work-item:27877",
+        "work-item:28260",
+        "work-item:28296",
+        "work-item:28559"
+      ],
+      "sources": [
+        "INFORMATION_SCHEMA.COLUMNS and KEY_COLUMN_USAGE",
+        "Package metadata FeatureBase ancestry",
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.29.8/dynamicweb.ecommerce.10.29.8.nupkg",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "search.asset-metadata-fields",
+      "change": "added",
+      "evidence": [
+        "type:Dynamicweb.Ecommerce.Indexing.ValueMappers.AssetCategoryGroupIDsValueMapper",
+        "work-item:28402",
+        "work-item:28404"
+      ],
+      "sources": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.29.8/dynamicweb.ecommerce.10.29.8.nupkg",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "search.variant-index-representatives",
+      "change": "added",
+      "evidence": [
+        "work-item:28392"
+      ],
+      "sources": [
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "users.backend-self-service",
+      "change": "added",
+      "evidence": [
+        "work-item:28891"
+      ],
+      "sources": [
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan."
+    },
+    {
+      "id": "users.login-activity",
+      "change": "added",
+      "evidence": [
+        "column:dbo.AccessUser.AccessUserLastLoginBackendOn",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogAuthMethod",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogEventType",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogExternalProviderName",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogFailedReason",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogId",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogIpAddress",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogOrigin",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogSessionId",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogSuccess",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogTimestamp",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogUserAgent",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogUserId",
+        "column:dbo.AccessUserLoginLog.AccessUserLoginLogUsername",
+        "enum:Dynamicweb.Security.UserManagement.LoginLogAuthMethod.Angel",
+        "enum:Dynamicweb.Security.UserManagement.LoginLogAuthMethod.External",
+        "enum:Dynamicweb.Security.UserManagement.LoginLogAuthMethod.MagicLink",
+        "enum:Dynamicweb.Security.UserManagement.LoginLogAuthMethod.Mfa",
+        "enum:Dynamicweb.Security.UserManagement.LoginLogAuthMethod.Password",
+        "enum:Dynamicweb.Security.UserManagement.LoginLogEventType.Lockout",
+        "enum:Dynamicweb.Security.UserManagement.LoginLogEventType.Login",
+        "enum:Dynamicweb.Security.UserManagement.LoginLogEventType.Logout",
+        "enum:Dynamicweb.Security.UserManagement.LoginLogOrigin.Backend",
+        "enum:Dynamicweb.Security.UserManagement.LoginLogOrigin.Frontend",
+        "primary-key:dbo.AccessUserLoginLog",
+        "type:Dynamicweb.Security.UserManagement.LoginLogAuthMethod",
+        "type:Dynamicweb.Security.UserManagement.LoginLogEntry",
+        "type:Dynamicweb.Security.UserManagement.LoginLogEventType",
+        "type:Dynamicweb.Security.UserManagement.LoginLogFilter",
+        "type:Dynamicweb.Security.UserManagement.LoginLogOrigin",
+        "type:Dynamicweb.Security.UserManagement.LoginLogService",
+        "type:Dynamicweb.Security.UserManagement.ScheduledTaskAddIns.LoginLogCleanupScheduledTaskAddIn",
+        "work-item:28776"
+      ],
+      "sources": [
+        "INFORMATION_SCHEMA.COLUMNS and KEY_COLUMN_USAGE",
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.core/10.29.8/dynamicweb.core.10.29.8.nupkg",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Already present in the original B census; excluded from A based on A package evidence."
+    }
+  ],
+  "removed": [],
+  "changed": [
+    {
+      "id": "admin.license",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28998"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "admin.scheduled-tasks",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28762"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "assets.file-archive",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28579"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "commerce.time-limited-prices",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28700"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "content.forms",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28197"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "content.page-seo",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28811",
+        "work-item:28868"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "delivery.cart-checkout-api",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28386"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "integration.live-cart-orders",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28875"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "integration.provider-odata",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:24365"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "integration.scheduled-runs",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:29000"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "orders.payment-methods",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28874"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.assortments",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:27979"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.bulk-update",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28703",
+        "work-item:28890",
+        "work-item:28918"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.computed-fields",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:26497"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.data-models",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28753"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.dynamic-relations",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:25306"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.feeds",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28721",
+        "work-item:28819"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.field-display-groups",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:26610",
+        "work-item:26611"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.field-permissions",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:24343",
+        "work-item:28196"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.field-scope",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:5963"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.field-units",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28390",
+        "work-item:28419"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.field-validation",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28592"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.list-fields",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:27440"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.product-queries",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28408",
+        "work-item:28418",
+        "work-item:28500"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.range-fields",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:27806",
+        "work-item:27811"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.screen-layouts",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:27880",
+        "work-item:28342"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.variants",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:26512",
+        "work-item:27157",
+        "work-item:27158",
+        "work-item:27159",
+        "work-item:27350",
+        "work-item:27857",
+        "work-item:29076"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "users.login-security",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28889"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "users.user-groups",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28631",
+        "work-item:28771"
+      ],
+      "note": "Existing function retained; original checks do not imply proof of this new behaviour."
+    }
+  ],
+  "limitations": [
+    "This is a candidate ledger revision, not a measured platform release.",
+    "Seventeen newly declared behaviours have planned bindings and remain UNVERIFIED.",
+    "The matrix comparator has synthetic red controls; target flag-on and altered-cell proof belong to the demo build session."
+  ]
+}

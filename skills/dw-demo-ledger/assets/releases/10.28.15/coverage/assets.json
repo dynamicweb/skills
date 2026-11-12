@@ -1,0 +1,304 @@
+{
+  "schema": 1,
+  "area": "assets",
+  "retrieved": "2026-11-12",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "title": "Assets",
+      "sectionHash": "sha256:78ec6a2d532ea2a19862d8e5fd8815bff0309476c2f535035a8d3e9bf579526c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/assets/index.html",
+      "title": "Assets",
+      "sectionHash": "sha256:db50345faa784d6a2a1a8f12685345794001d2043936297c190a47c72a0a7d12"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/assets/filemanager.html",
+      "title": "File manager",
+      "sectionHash": "sha256:690f29c05edfcfbb99b6fc3c9fb97722d121cdbf98afc6621d773b4b55cf47c7"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html",
+      "title": "Image handler",
+      "sectionHash": "sha256:5f6f366c2ba813b7ebceff95923038e02bfbd55dae0bed36a905cf61628328a2"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/image-and-browser-caching.html",
+      "title": "Understanding image and browser caches",
+      "sectionHash": "sha256:15158de852735131ff70942a33ffe2f2bcb42ff2a9bcb9f4bfcb9f5973db1133"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/cdn.html",
+      "title": "CDN",
+      "sectionHash": "sha256:036e36dfd558d894a5dde74e354abf305e9273a7ce90cae62c7607c41ac74eab"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-missing-digital-assets.html",
+      "title": "Cleanup missing digital assets",
+      "sectionHash": "sha256:78b155ba0b38ee6fc7bca2889033ab51b14f3687f40d5c8b1f1d0bf7ce6e598d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/digital-assets-checkin.html",
+      "title": "Digital assets checkin on products",
+      "sectionHash": "sha256:0b17096855004ebfbafd8d484ea514fa50b89a65273f927a0393645dc4fc5c71"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/assets-images.html",
+      "title": "Assets & Images",
+      "sectionHash": "sha256:6b94190bf4a0790462598e8f401a21b4ec92f11c9d731a0a4eb90e9bacd758b4"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/assets.html",
+      "title": "Assets",
+      "sectionHash": "sha256:f18c0f4bc6ce014061bab4f5e9d0ad88a5daa978667c35ad13cb32afd88cc539"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/assets/index.html",
+      "title": "Assets",
+      "sectionHash": "sha256:23939ad7e042e9f6845c4a5a212e281a0fc53d59002165e1fda77123dd85dd79"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/assets/assetcategories.html",
+      "title": "Asset categories",
+      "sectionHash": "sha256:5624991b2c3ae60095e067c38c5b0f737c719cc5d8e095278f89cf24e0eba63e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/assets/imageoptions.html",
+      "title": "Image Options",
+      "sectionHash": "sha256:a1265ba77cded0545ea27aeb405c6a93d5bbf7bcfa78a49a3ab477bae9b7825d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/file-publishing.html",
+      "title": "File Publishing",
+      "sectionHash": "sha256:e1d0218a20a1e25c4477917d562221efc93184023bbfb3391ebe7097f2c479f3"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "The Assets area manages images, documents, audio, spreadsheets and templates.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "functionId": "assets.file-archive"
+    },
+    {
+      "claim": "Tree sections Media, System and Design.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "functionId": "assets.file-archive"
+    },
+    {
+      "claim": "Section and folder permissions; Read, Create, Edit and Delete enable specific file actions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "functionId": "assets.folder-permissions"
+    },
+    {
+      "claim": "Upload one or more files by drag and drop or file selection.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "functionId": "assets.file-archive"
+    },
+    {
+      "claim": "Allowed upload extensions are controlled in the file manager settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "functionId": "assets.upload-policy"
+    },
+    {
+      "claim": "Recursive search with go to file location.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "functionId": "assets.file-archive"
+    },
+    {
+      "claim": "New file, new subfolder, rename, copy, move, delete and bulk actions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "functionId": "assets.file-archive"
+    },
+    {
+      "claim": "Download a file, a selection or a folder as zip.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "functionId": "assets.file-archive"
+    },
+    {
+      "claim": "Edit text-based files in the built-in editor.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "functionId": "assets.file-archive"
+    },
+    {
+      "claim": "Image overview with preview and crop; SVG not croppable; crop creates a generated image.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "functionId": "assets.image-editing"
+    },
+    {
+      "claim": "Assets settings contain the file manager settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/assets/index.html",
+      "functionId": "assets.upload-policy"
+    },
+    {
+      "claim": "Allowed and disallowed extensions for upload.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/assets/filemanager.html",
+      "functionId": "assets.upload-policy"
+    },
+    {
+      "claim": "Disallow upload in image editor.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/assets/filemanager.html",
+      "functionId": "assets.upload-policy"
+    },
+    {
+      "claim": "GetImage.ashx resizes, crops and converts images on the fly.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html",
+      "functionId": "assets.image-handler"
+    },
+    {
+      "claim": "Send 404 header with an alternative image, with an identifying response header.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html",
+      "functionId": "assets.image-handler-settings"
+    },
+    {
+      "claim": "Cache-control max-age for image responses, default 7 days.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html",
+      "functionId": "assets.image-handler-settings"
+    },
+    {
+      "claim": "Default WebP quality, lossless at -1, and JPEG fallback for browsers without WebP.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html",
+      "functionId": "assets.image-handler-settings"
+    },
+    {
+      "claim": "Pluggable converter, size, attributes, editor, PDF converter and PDF renderer providers with fallback to the first available one.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html",
+      "functionId": "assets.image-handler-settings"
+    },
+    {
+      "claim": "Metadata provider reads embedded EXIF and IPTC metadata.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html",
+      "functionId": "assets.image-handler-settings"
+    },
+    {
+      "claim": "Image validation in Security settings restricts accepted image parameters.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html",
+      "excluded": {
+        "reason": "Solution security or hosting setting; owned by the setup/configuration area (dw-setup-config)."
+      }
+    },
+    {
+      "claim": "Generated variants are cached in /Files/Cache.net/Images and regenerated when the original is newer.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/image-and-browser-caching.html",
+      "functionId": "assets.image-handler"
+    },
+    {
+      "claim": "Browsers and CDNs reuse cached images by URL; ETags answer not modified; rename to publish changes immediately.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/image-and-browser-caching.html",
+      "functionId": "assets.image-handler"
+    },
+    {
+      "claim": "CDN host for /Files and a CDN host for GetImage requests, replacing src attributes.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/cdn.html",
+      "functionId": "assets.cdn"
+    },
+    {
+      "claim": "The CDN setting is global and requires an https:// host, otherwise replacement is silently disabled.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/cdn.html",
+      "functionId": "assets.cdn"
+    },
+    {
+      "claim": "Verify by inspecting src and href attributes and the network tab.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/cdn.html",
+      "functionId": "assets.cdn"
+    },
+    {
+      "claim": "The add-in removes asset references whose file no longer exists in a folder, optionally including subfolders.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-missing-digital-assets.html",
+      "functionId": "assets.missing-asset-cleanup"
+    },
+    {
+      "claim": "Digital assets check-in assigns files to products by asset category search patterns, in file or folder mode.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/digital-assets-checkin.html",
+      "duplicateOf": "pim.asset-auto-checkin"
+    },
+    {
+      "claim": "Partial runs, start folder, selected categories, tokens, wildcards, regular expressions, language versions and primary images.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/digital-assets-checkin.html",
+      "duplicateOf": "pim.asset-auto-checkin"
+    },
+    {
+      "claim": "Image patterns on channels use the same tokens plus {GroupID}.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/digital-assets-checkin.html",
+      "duplicateOf": "pim.asset-patterns"
+    },
+    {
+      "claim": "Asset categories group product assets and control inheritance to variants and language versions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/assets-images.html",
+      "duplicateOf": "pim.documents"
+    },
+    {
+      "claim": "Automatic check-in compiles patterns per product and assigns matched files.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/assets-images.html",
+      "duplicateOf": "pim.asset-auto-checkin"
+    },
+    {
+      "claim": "Image patterns resolve images from a folder at display time per channel.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/assets-images.html",
+      "duplicateOf": "pim.asset-patterns"
+    },
+    {
+      "claim": "Primary image resolution order between asset categories and image patterns.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/assets-images.html",
+      "duplicateOf": "pim.images"
+    },
+    {
+      "claim": "A cleanup task removes references to deleted files.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/assets-images.html",
+      "functionId": "assets.missing-asset-cleanup"
+    },
+    {
+      "claim": "Assign assets to products from the product list or the product details screen, with a primary image.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/assets.html",
+      "duplicateOf": "pim.images"
+    },
+    {
+      "claim": "Product asset settings: asset categories and image options.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/assets/index.html",
+      "duplicateOf": "pim.documents"
+    },
+    {
+      "claim": "Asset categories with name, system name, inheritance (none, merge, fallback), control type, extensions and folder preset.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/assets/assetcategories.html",
+      "duplicateOf": "pim.documents"
+    },
+    {
+      "claim": "Asset category auto-checkin section with search pattern, regular expression and primary image rule.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/assets/assetcategories.html",
+      "duplicateOf": "pim.asset-auto-checkin"
+    },
+    {
+      "claim": "Default missing images for products and product groups.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/assets/imageoptions.html",
+      "duplicateOf": "pim.images"
+    },
+    {
+      "claim": "The File Publishing app publishes an Assets folder to frontend.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/file-publishing.html",
+      "duplicateOf": "content.paragraph-apps"
+    }
+  ],
+  "gaps": [
+    {
+      "claim": "Asset metadata beyond the image metadata provider (stored, editable metadata on files) is not described on the manual pages reviewed.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html",
+      "note": "Mapped only the provider claim to assets.image-handler-settings; no stored asset metadata function defined."
+    },
+    {
+      "claim": "Digital Asset Portal: the MCP file tools name /Files/Digital assets as Digital Asset Portal files, but no manual page for the portal was found in the reviewed tree.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html",
+      "note": "assets.digital-assets-folder is candidate on source evidence only."
+    },
+    {
+      "claim": "Asset associations to pages and paragraphs (file and image item fields) have no dedicated manual page.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/field-types.html",
+      "note": "assets.content-file-references is candidate on MCP source evidence (validate_page_content)."
+    },
+    {
+      "claim": "Image options (default missing images for products and groups) is mapped to pim.images, but pim.images checks images per product and does not check the default missing image setting.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/assets/imageoptions.html",
+      "note": "For the PIM author: decide whether this is a separate pim function."
+    },
+    "This is an earlier-release candidate test inventory. Current documentation navigation is not evidence of availability on this baseline; see evidence/admission.json and the exact-baseline report."
+  ]
+}

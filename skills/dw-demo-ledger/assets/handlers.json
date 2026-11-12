@@ -19,5 +19,7 @@
   "sql-offenders": ["sql"],
   "pim-attributes": ["sql"],
   "pim-families": ["sql"],
-  "pim-widget-queries": ["sql"]
+  "pim-widget-queries": ["sql"],
+  "admin-feature-flag": ["admin-api"],
+  "pim-matrix": ["sql"]
 }

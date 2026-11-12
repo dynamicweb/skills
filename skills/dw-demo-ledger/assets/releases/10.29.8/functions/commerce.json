@@ -159,6 +159,10 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#commerce.time-limited-prices"
         }
       ]
     },

@@ -115,7 +115,9 @@ Describe 'Migrated catalog contracts' {
         $map.features.Count | Should -Be 35
         $map.checks.Count | Should -Be 79
         $pim=Read-LedgerJson (Join-Path $release 'functions/pim.json') (Join-Path $root '../assets/ledger.schema.json')
-        @($pim.functions|Where-Object {$_.id -match 'matrix'}).Count | Should -Be 0
+        @($pim.functions|Where-Object {$_.id -eq 'pim.matrix-fields'}).Count | Should -Be 1
+        $previous=Read-LedgerJson (Join-Path $root '../assets/releases/10.28.15/functions/pim.json')
+        @($previous.functions|Where-Object {$_.id -eq 'pim.matrix-fields'}).Count | Should -Be 0
         foreach($path in $pim.functions.checks){$null=Read-LedgerJson (Join-Path $release $path) (Join-Path $root '../assets/check.schema.json')}
     }
 }

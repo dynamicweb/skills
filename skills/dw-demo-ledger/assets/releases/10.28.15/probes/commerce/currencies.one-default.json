@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "id": "commerce.currencies.one-default",
+  "functionId": "commerce.currencies",
+  "intent": {
+    "proves": "Exactly one currency code is marked default.",
+    "level": "configured",
+    "scope": "all currencies; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_currencies",
+      "projection": {
+        "filter": {
+          "field": "isDefault",
+          "op": "equals",
+          "value": true
+        }
+      }
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT CurrencyCode) FROM EcomCurrencies WHERE CurrencyIsDefault = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/currencies.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html"
+    }
+  ]
+}

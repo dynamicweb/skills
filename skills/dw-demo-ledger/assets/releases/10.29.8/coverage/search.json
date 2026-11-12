@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "area": "search",
-  "retrieved": "2026-11-11",
+  "retrieved": "2026-11-12",
   "sources": [
     {
       "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
@@ -72,6 +72,11 @@
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-repository-index.html",
       "title": "Build repository index",
       "sectionHash": "9958024b076ff8a2"
+    },
+    {
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "title": "10.29 release candidate scan, reviewed after raw preservation",
+      "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
     }
   ],
   "claims": [
@@ -351,6 +356,16 @@
       "claim": "Finding products without a data model, with missing or expired assets, or due to be discontinued.",
       "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/queries/index.html",
       "duplicateOf": "pim.product-queries"
+    },
+    {
+      "claim": "Released addition: search.asset-metadata-fields. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "search.asset-metadata-fields"
+    },
+    {
+      "claim": "Released addition: search.variant-index-representatives. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "search.variant-index-representatives"
     }
   ],
   "gaps": [
@@ -359,6 +374,16 @@
     "get_index_fields, get_index_facets and get_index_query_expressions carry the needed fields, but mcp-count cannot filter; filtered MCP handlers would turn eight planned bindings into implemented ones.",
     "Delivery API route for storefront product search is named from the skills, not measured.",
     "Users-area auto build index on user save lives in the global settings file; key not verified.",
-    "PIM product queries (Products > Queries) are owned by the pim area and not defined here."
+    "PIM product queries (Products > Queries) are owned by the pim area and not defined here.",
+    {
+      "claim": "search.asset-metadata-fields",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "search.variant-index-representatives",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    }
   ]
 }

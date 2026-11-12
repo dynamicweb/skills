@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "area": "users",
-  "retrieved": "2026-11-11",
+  "retrieved": "2026-11-12",
   "sources": [
     {
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/extranet.html",
@@ -157,6 +157,11 @@
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
       "title": "User groups",
       "sectionHash": "28aa8b167d5baaed"
+    },
+    {
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "title": "10.29 release candidate scan, reviewed after raw preservation",
+      "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
     }
   ],
   "claims": [
@@ -721,6 +726,16 @@
       "claim": "Clean up login log task deletes entries older than the retention days (default 365).",
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-login-log.html",
       "functionId": "users.login-activity"
+    },
+    {
+      "claim": "Released addition: users.backend-self-service. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "users.backend-self-service"
+    },
+    {
+      "claim": "Released addition: users.login-activity. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "users.login-activity"
     }
   ],
   "gaps": [
@@ -731,6 +746,11 @@
     "The 'SystemAccount' group type and the ListUserProfiles / Source setting values were observed on a 10.29.x baseline database; no public DW source confirms them.",
     "Swift customer-center pages for account administrators managing colleague users are not covered by the manual pages read; owned by the Swift building area if added.",
     "The All Users system query, Export to Excel and Send user details are excluded as admin UI actions without a demo outcome.",
-    "Checks offered to the owners of duplicated functions, not authored here: the group gate pair (AuthenticatedFrontend None plus a group Read on the same entity) and a per-persona refusal proof for content.page-permissions; the storefront switch proof for commerce.sales-on-behalf."
+    "Checks offered to the owners of duplicated functions, not authored here: the group gate pair (AuthenticatedFrontend None plus a group Read on the same entity) and a per-persona refusal proof for content.page-permissions; the storefront switch proof for commerce.sales-on-behalf.",
+    {
+      "claim": "users.backend-self-service",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    }
   ]
 }

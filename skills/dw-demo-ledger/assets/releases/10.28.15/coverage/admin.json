@@ -1,0 +1,845 @@
+{
+  "schema": 1,
+  "area": "admin",
+  "retrieved": "2026-11-12",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/administration/index.html",
+      "title": "Administration",
+      "sectionHash": "sha256:663c0f0cfb81b82f6ec7748ef7b402ed537fd498b007365cf25d68a711792497"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/apps/index.html",
+      "title": "Apps",
+      "sectionHash": "sha256:0f5f1fcbf1112e85ea77683c8d61e73f5bc9520211eaf250ccdcda10e3b25bfd"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html",
+      "title": "Insights",
+      "sectionHash": "sha256:673cf992dd51bfef5301a650abacae7e8d71f3f23bc7b5cc16c94636bc065880"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/analytics.html",
+      "title": "Analytics",
+      "sectionHash": "sha256:301510a66ae202eed82c2651d335780c07343736163e83359feaea64adaac789"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/index.html",
+      "title": "Monitoring",
+      "sectionHash": "sha256:814e880a0f1280d185d20ac6fe9b1f0a9481e12a36ccbc6633f7544c204e41e8"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/reports.html",
+      "title": "Reports",
+      "sectionHash": "sha256:d97dc531e2eac6297dfdc49e4e206c3c04eb0f171ade9cf446a137c529ad899c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/health.html",
+      "title": "Health",
+      "sectionHash": "sha256:22d2d48f8164dc300f6e0e71ed79f62f7379326969646af3994eb0f61b1ed67a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/notifications.html",
+      "title": "Notifications",
+      "sectionHash": "sha256:31f8227dd2b097fdd01e659a6289a4794c106a186332abcac79f791f39418163"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/logs.html",
+      "title": "Logs",
+      "sectionHash": "sha256:5043d5821c1b263902e71a0b513f1e331d752413d5e837fa48212d1970e92449"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/index.html",
+      "title": "System",
+      "sectionHash": "sha256:5de84062aa615e2d76a2ed6640b64ef3f85954a43bd3c99b6c0e33a9d75b0bfa"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/solutionsettings.html",
+      "title": "Solution settings",
+      "sectionHash": "sha256:6303cd767ff47dc8ae4462e50785e4bb803ea4b0eee82f6c0c4c976fcaf5c80c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/systeminformation.html",
+      "title": "System information",
+      "sectionHash": "sha256:6f09f080139b847374c03ce23f3e3c872609e8c9152d54a74016960fe92e1ce3"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/globalsettings.html",
+      "title": "Global settings",
+      "sectionHash": "sha256:8c461e786e379b9faad44d5f608dd988701f9f95ce0e721f6dadd6c638557fdd"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "title": "Scheduled tasks",
+      "sectionHash": "sha256:6b5b799db4260c7f3b728c8634f7a95b193873c01577b15b03515b3d3ed03c96"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduled-task-settings.html",
+      "title": "Scheduled task settings",
+      "sectionHash": "sha256:cf1bae281917f326b7cf25831145a56247b25368a1f0248f82d8d8561357e9d5"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/run-sql.html",
+      "title": "Run SQL add-in",
+      "sectionHash": "sha256:e2cf211b3dc8de7e0f65469ebad2c9f15354012a7a770381efe9478d22ceaa42"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/execute-method-from-assembly.html",
+      "title": "Execute method from Assembly",
+      "sectionHash": "sha256:df3dbac3dcca8d558fe459cc7551710f0cbd0db0af39e47b5c60263b937f6d9c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-login-log.html",
+      "title": "Clean up login log",
+      "sectionHash": "sha256:04a08a7463a2579bda6d413dbe47a042ef3628d50485463d814007212921eea1"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-repository-index.html",
+      "title": "Build repository index",
+      "sectionHash": "sha256:928eb59044a6f3ae7b63277b4e1e10ff3235fdcbee4002ae7e0f97248e1fec7d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-assortments.html",
+      "title": "Build Ecommerce Assortment Items",
+      "sectionHash": "sha256:3ae8f9f2ee8476120b704ba088a3e6e1b0b8c3d1d6ef7b9a0446df646aa148b7"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/assign-products.html",
+      "title": "Assign products to groups",
+      "sectionHash": "sha256:81aa7741b7e15ca977e8d4c5b5df69fb0d8428335c45e9389609aacd9b53ff87"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/digital-assets-checkin.html",
+      "title": "Digital assets checkin",
+      "sectionHash": "sha256:79d36de99089997fc0a7ce303237783ad7e4857b3900e57c528ff19a8362c5e1"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-missing-digital-assets.html",
+      "title": "Cleanup missing digital assets",
+      "sectionHash": "sha256:dace43b5bcfbee5ef0a29db1862ded8d940c7a9f9bf00de690c537dc6b70864b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/deploy-data-items.html",
+      "title": "Deploy data items from upload folder",
+      "sectionHash": "sha256:2c276239831fd9a1053488370fd091f2852af139db99f74002c26710cbcc8e94"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/discontinue-products-by-date.html",
+      "title": "Discontinue products by date",
+      "sectionHash": "sha256:bfdcf51b2c6d366dc138e5a3f0408b037a7048fae0105157728c3efabf48fb15"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/feed-file-export.html",
+      "title": "Feed File Export Task",
+      "sectionHash": "sha256:6fb6a997a049e92d45c195b15133c963d1ac0941ac69cb21c6b0eb511a22c1b7"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/payment-card-expiration-notification.html",
+      "title": "Payment Card Expiration Notification",
+      "sectionHash": "sha256:d1322a0e90c6227f74786ef5ffaa083721cae3fe2d2cf4f25adc05d1104bd15d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/audit.html",
+      "title": "Audit",
+      "sectionHash": "sha256:edb0b12e0d0524e02859e600b8e587b82d75b3ee4f8dfbfbdd9ecd195c1fd54f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/eventviewer.html",
+      "title": "Event viewer",
+      "sectionHash": "sha256:cfe402ff6f7260c290a9ab113e704e286d71c7a66102ab67a0aca4f8cdb6d360"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/license.html",
+      "title": "License",
+      "sectionHash": "sha256:f9ab5e8e8a14c9421bb0b31d38b829bb1c3440a32dd67e7a86d4392fe54f1cc2"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/commandlog.html",
+      "title": "CommandLog",
+      "sectionHash": "sha256:30a80c02006ddeab5d20d59c90807f6abfdd16bd39a57cdb16e6a9c4edecfc85"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/logRetention.html",
+      "title": "Logging",
+      "sectionHash": "sha256:c86caafff509de05e01903a5960d658cd8f5064d369639ef360cd593502db58c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/hosting.html",
+      "title": "Hosting",
+      "sectionHash": "sha256:4acfada63e5baf427a322948eb9feb291d2bb5eb029170e88625d12b4ed079cd"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/index.html",
+      "title": "Administration settings",
+      "sectionHash": "sha256:1c2b60f6a8bc94062007ffd2d421b1a85461474bcd60e5e0a99519a602fab71e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/dashboards.html",
+      "title": "Dashboards",
+      "sectionHash": "sha256:c3896e2c9771ce13f90eb0dbe233974e3255b5aadbdea97decb119157132e016"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/ai/index.html",
+      "title": "AI",
+      "sectionHash": "sha256:2a987fe568a818125f1038ce00d50606dccf6806eece9d456a845e7782cacc60"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/ai/prompts.html",
+      "title": "Prompts",
+      "sectionHash": "sha256:e0b72bddd2124bc6edb652149daa62e3b7cdfa9ea0bead0d0b90f62d3ca3eb0e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/ai/generator-configurations.html",
+      "title": "Generator configurations",
+      "sectionHash": "sha256:f5fbc5832d9eb2bff667148191b62717e3644a703a769c491af315a0ffed5062"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/ai/generators.html",
+      "title": "Generators",
+      "sectionHash": "sha256:e61ad360c92e0cc4612e9921d3237cc2e91b60dd525e9d22ab9c69efcf4c2498"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/translation-services.html",
+      "title": "Online Translation Service",
+      "sectionHash": "sha256:40fbf6090b6a318a0cb1f5b95b617563e0e2bde9714ddc1952f7f63f6808c8b0"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/configurescreens.html",
+      "title": "Configure screens",
+      "sectionHash": "sha256:8ba0e42a5e1e91f909a000e22abb9458135c1db8ac57583002796b93ff260056"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/screenlayouts.html",
+      "title": "Screen layouts",
+      "sectionHash": "sha256:909035a15644f27f328e16a646b921c02c1446ebe683b36f12f3a9ee84b306fb"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/export-templates.html",
+      "title": "Export templates",
+      "sectionHash": "sha256:4dbe06bd17f42fda079ef7f50146b8bf9c3cc70b4a04be549dc7c226f1289a7d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/import-configurations.html",
+      "title": "Import configurations",
+      "sectionHash": "sha256:2527b21628782dfe59248473775388404e1434dfd8c4228c2c12b99557c2ba91"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/feature-management.html",
+      "title": "Feature management",
+      "sectionHash": "sha256:1891ea06f7b1c7480ee9a9c0344e8cb8e092d8057fd18d2bce8bda097d890239"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/index.html",
+      "title": "Developer",
+      "sectionHash": "sha256:a2efe6db3fd051e7ddc3b85a4e01d33bb0e4c4452d47ea4a3e3d9263a0ece75d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/deployment.html",
+      "title": "Deployment",
+      "sectionHash": "sha256:84df91ea12d4308fa96b726750403b51b605cf2a7703dfd194c1eebd8c6a285a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/addins.html",
+      "title": "Addins",
+      "sectionHash": "sha256:273ce1924839db3827cca296988faeb2a4fb37423a6b043ff92578d71aa53be7"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/cache.html",
+      "title": "Cache",
+      "sectionHash": "sha256:35f8cf8fd51495c2ad2152e3c833e7e71dc9f9d4c669bbb19fab822e8450ce2a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/api-explorer.html",
+      "title": "API Explorer",
+      "sectionHash": "sha256:1b955eb3cc5339829e989eb60ffff403c182cea4c6297b9da10779198e9ce265"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/api-keys.html",
+      "title": "API keys",
+      "sectionHash": "sha256:c3b8acb1ed7039885a6bd3a8fc2444930f7bf314371ce0df75ed315a74e2393e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/mcp-configurations.html",
+      "title": "MCP Configurations",
+      "sectionHash": "sha256:3ad6c62838af05c2a3bb39204f8441a2514c97a438db5b34b3002ecb9b137b7e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/oauth.html",
+      "title": "OAuth clients",
+      "sectionHash": "sha256:683d260fe95c2fc918d5809b1fe384badb28fe2ec0be309f5548faf16cd60a16"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/smtp.html",
+      "title": "SMTP",
+      "sectionHash": "sha256:3e1da22417c7efdea66fb7efa733817381fd147b6d8d84b33d80bb49a3881675"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/apps/index.html",
+      "title": "Apps settings area",
+      "sectionHash": "sha256:f93483661388c5d01957d44895a08035adb5aeef552d39193b185e08d137673a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/apps/appssettings/index.html",
+      "title": "Apps settings",
+      "sectionHash": "sha256:ccf0fdf8018d04a9255d61cd3dac3efc06bf1786a90f7618ddcc6115622664c1"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/apps/appssettings/product-catalog-settings.html",
+      "title": "Product Catalog (eCom)",
+      "sectionHash": "sha256:5735a37bf6b0cc27bb93b815bfede4a9afa6982b77207ba9a8bf416023e926a4"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/apps/gdpr/index.html",
+      "title": "GDPR",
+      "sectionHash": "sha256:52a5350ca605f41abac7fc9afd418c9e00b6f0bb2a40a0afb0e0f102c85cb765"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/scheduledtasks.html",
+      "title": "Scheduled tasks (Integration)",
+      "sectionHash": "sha256:46417315281fa4e7db03f2f8501f483cd8003dc2f16675b416a7b4dd8b51b010"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/extending/administration-ui/index.html",
+      "title": "Custom UI (extending the administration)"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Backend login screen at /admin with licence and version information",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/administration/index.html",
+      "excluded": {
+        "reason": "UI navigation fact, no selectable build outcome; the version is read by target discovery."
+      }
+    },
+    {
+      "claim": "Remember me keeps the backend session for a configurable number of days",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/administration/index.html",
+      "excluded": {
+        "reason": "Per-user session behaviour, not a demo build outcome."
+      }
+    },
+    {
+      "claim": "Areas, area tree, workspace, action menu, context menu, slide-over panel, top bar, info bar",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/administration/index.html",
+      "excluded": {
+        "reason": "Generic UI anatomy; extensions of it are admin.admin-ui-extensions."
+      }
+    },
+    {
+      "claim": "User action menu: own profile, password, dark mode, clear font, label position",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/administration/index.html",
+      "excluded": {
+        "reason": "Per-user preference, not a build outcome."
+      }
+    },
+    {
+      "claim": "Apps dashboard with installed apps and pending updates",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/apps/index.html",
+      "functionId": "admin.app-store"
+    },
+    {
+      "claim": "Appstore installs, updates and uninstalls add-ins; installed add-ins are enabled at once",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/apps/index.html",
+      "functionId": "admin.app-store"
+    },
+    {
+      "claim": "Forms for Editors app",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/apps/index.html",
+      "excluded": {
+        "reason": "Content forms are owned by the content area author."
+      }
+    },
+    {
+      "claim": "Monitoring dashboard: errors and warnings last 24h, errors list, events by day",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html",
+      "functionId": "admin.event-viewer"
+    },
+    {
+      "claim": "Monitoring dashboard: failed tasks and recent task runs",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html",
+      "functionId": "admin.scheduled-tasks"
+    },
+    {
+      "claim": "Insights SQL Query Counter and SQL Query Table widgets",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html",
+      "functionId": "admin.dashboards"
+    },
+    {
+      "claim": "Marketing insights dashboard from built-in visitor tracking (visits, page views, sources, pages, devices, countries, actions)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html",
+      "functionId": "admin.marketing-insights"
+    },
+    {
+      "claim": "Tracking must be enabled and cookie consent allows tracking before data shows",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html",
+      "functionId": "admin.marketing-insights"
+    },
+    {
+      "claim": "Split tracking tables: the dashboard reads only the newest table",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html",
+      "functionId": "admin.marketing-insights"
+    },
+    {
+      "claim": "Custom dashboards per area from Settings > Administration > Dashboards",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html",
+      "functionId": "admin.dashboards"
+    },
+    {
+      "claim": "Analytics section is reserved and not in use",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/analytics.html",
+      "excluded": {
+        "reason": "Documented as not in use; New report and New group are not functional."
+      }
+    },
+    {
+      "claim": "Monitoring section lists Reports, Event viewer, Health, Notifications, Logs",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/index.html",
+      "functionId": "admin.event-viewer"
+    },
+    {
+      "claim": "Reports: scheduled tasks with status Success, Error, Overdue, Never run, Disabled",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/reports.html",
+      "functionId": "admin.scheduled-tasks"
+    },
+    {
+      "claim": "Reports: integration jobs list",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/reports.html",
+      "excluded": {
+        "reason": "Integration jobs are owned by the integration area author."
+      }
+    },
+    {
+      "claim": "Reports: SMTP and Security events as filtered event lists",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/reports.html",
+      "functionId": "admin.event-viewer"
+    },
+    {
+      "claim": "Health checks in five areas maintained by health providers, custom providers add more",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/health.html",
+      "functionId": "admin.health-checks"
+    },
+    {
+      "claim": "Check states None, Ok, Warning, Error, Fatal; counts stop at 100",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/health.html",
+      "functionId": "admin.health-checks"
+    },
+    {
+      "claim": "Check detail lists affected records and the rule or query used",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/health.html",
+      "functionId": "admin.health-checks"
+    },
+    {
+      "claim": "Built-in checks per area: database indexes, user management, security settings, content data, ecommerce data",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/health.html",
+      "functionId": "admin.health-checks"
+    },
+    {
+      "claim": "Notifications by email or to a health monitoring service on stored events",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/notifications.html",
+      "functionId": "admin.log-event-notifications"
+    },
+    {
+      "claim": "Trigger rules: levels, category, send interval (0 disables)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/notifications.html",
+      "functionId": "admin.log-event-notifications"
+    },
+    {
+      "claim": "Email notifications need SMTP and the system email address",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/notifications.html",
+      "functionId": "admin.email-sending"
+    },
+    {
+      "claim": "Health monitoring service receives batches of up to 50 events",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/notifications.html",
+      "functionId": "admin.log-event-notifications"
+    },
+    {
+      "claim": "Logs section browses system log files read-only",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/logs.html",
+      "functionId": "admin.event-viewer"
+    },
+    {
+      "claim": "Old log files are deleted when log retention is enabled",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/logs.html",
+      "functionId": "admin.logging"
+    },
+    {
+      "claim": "Solution settings: system email",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/solutionsettings.html",
+      "functionId": "admin.email-sending"
+    },
+    {
+      "claim": "Solution settings: login screen logo, partner email, admin logo link",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/solutionsettings.html",
+      "excluded": {
+        "reason": "Backend branding of the login screen, no demo acceptance criterion; gap noted for a branded backend beat."
+      }
+    },
+    {
+      "claim": "Solution settings: disable solution and shut down frontend with a message",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/solutionsettings.html",
+      "excluded": {
+        "reason": "Maintenance switch; a demo must never have it on, which the critical-path checks of distribution.edition-composition observe."
+      }
+    },
+    {
+      "claim": "System information shows server, file and database locations",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/systeminformation.html",
+      "excluded": {
+        "reason": "Read-only diagnostics, used by target discovery, not a build outcome."
+      }
+    },
+    {
+      "claim": "Global settings node shows GlobalSettings.config, administrators only",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/globalsettings.html",
+      "functionId": "admin.global-settings"
+    },
+    {
+      "claim": "Create a scheduled task with begin time, end time and repeat interval",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "functionId": "admin.scheduled-tasks"
+    },
+    {
+      "claim": "A task without a repeat interval is never started",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "functionId": "admin.scheduled-tasks"
+    },
+    {
+      "claim": "Add-in and activity subtasks run in sorted sequence; continue if subtask fails",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "functionId": "admin.scheduled-task-subtasks"
+    },
+    {
+      "claim": "Don't run if last job failed",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "functionId": "admin.scheduled-task-subtasks"
+    },
+    {
+      "claim": "Task folders under Settings > Integration > Scheduled tasks; deleting a folder deletes its tasks",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "functionId": "admin.scheduled-tasks"
+    },
+    {
+      "claim": "Task overview: info, history (last 7 runs, started by), subtasks, combined log",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "functionId": "admin.scheduled-tasks"
+    },
+    {
+      "claim": "Reset run time deletes the run history",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "excluded": {
+        "reason": "Destructive maintenance action; the ledger runs read-only checks."
+      }
+    },
+    {
+      "claim": "Shipped add-in set (assign products, assortments, index build, segments, clean-ups, feeds, recurring orders, version cleanup, notifications, loyalty points, URL request, Run SQL)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "functionId": "admin.scheduled-task-addins"
+    },
+    {
+      "claim": "Further add-ins arrive with apps from the Apps area",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "functionId": "admin.app-store"
+    },
+    {
+      "claim": "Scheduler is a .NET hosted service checking every minute; TasksQuery and TaskRunCommand run tasks programmatically",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html",
+      "functionId": "admin.scheduled-tasks"
+    },
+    {
+      "claim": "Scheduled task settings disable all tasks on a solution",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduled-task-settings.html",
+      "functionId": "admin.scheduled-tasks"
+    },
+    {
+      "claim": "Scheduled tasks node under Integration opens the same list",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/scheduledtasks.html",
+      "functionId": "admin.scheduled-tasks"
+    },
+    {
+      "claim": "Run SQL add-in runs a SQL query on execution",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/run-sql.html",
+      "functionId": "admin.scheduled-task-addins"
+    },
+    {
+      "claim": "Execute method from Assembly add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/execute-method-from-assembly.html",
+      "functionId": "admin.scheduled-task-addins"
+    },
+    {
+      "claim": "Clean up login log add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-login-log.html",
+      "functionId": "admin.scheduled-task-addins"
+    },
+    {
+      "claim": "Build repository index add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-repository-index.html",
+      "excluded": {
+        "reason": "Index builds are owned by the search area author; the add-in type itself is admin.scheduled-task-addins."
+      }
+    },
+    {
+      "claim": "Build Ecommerce Assortment Items add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-assortments.html",
+      "duplicateOf": "pim.assortments"
+    },
+    {
+      "claim": "Assign products to groups add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/assign-products.html",
+      "duplicateOf": "pim.auto-assign"
+    },
+    {
+      "claim": "Digital assets checkin add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/digital-assets-checkin.html",
+      "duplicateOf": "pim.asset-auto-checkin"
+    },
+    {
+      "claim": "Cleanup missing digital assets add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-missing-digital-assets.html",
+      "functionId": "admin.scheduled-task-addins"
+    },
+    {
+      "claim": "Deploy data items from upload folder add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/deploy-data-items.html",
+      "functionId": "admin.deployment-tool"
+    },
+    {
+      "claim": "Discontinue products by date add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/discontinue-products-by-date.html",
+      "functionId": "admin.scheduled-task-addins"
+    },
+    {
+      "claim": "Feed File Export Task add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/feed-file-export.html",
+      "duplicateOf": "pim.feeds"
+    },
+    {
+      "claim": "Payment Card Expiration Notification add-in",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/payment-card-expiration-notification.html",
+      "excluded": {
+        "reason": "Saved-card expiry mail is owned by the commerce orders area author; the add-in type itself is admin.scheduled-task-addins."
+      }
+    },
+    {
+      "claim": "Audit lists who changed what and when (date, updated by, object type, language, id, information)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/audit.html",
+      "functionId": "admin.audit-trail"
+    },
+    {
+      "claim": "Event viewer: levels, categories, actions; filters and search",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/eventviewer.html",
+      "functionId": "admin.event-viewer"
+    },
+    {
+      "claim": "Event details with file log content",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/eventviewer.html",
+      "functionId": "admin.event-viewer"
+    },
+    {
+      "claim": "Minimum log level decides which events are stored; change needs a restart",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/eventviewer.html",
+      "functionId": "admin.logging"
+    },
+    {
+      "claim": "Licence information, refresh or install a licence; SKU and email recipient counting",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/license.html",
+      "functionId": "admin.license"
+    },
+    {
+      "claim": "CommandLog lists commands with who and what changed",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/commandlog.html",
+      "functionId": "admin.command-log"
+    },
+    {
+      "claim": "Log retention: delete file and database logs automatically after a period",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/logRetention.html",
+      "functionId": "admin.logging"
+    },
+    {
+      "claim": "Log level hierarchy Trace to Off",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/logRetention.html",
+      "functionId": "admin.logging"
+    },
+    {
+      "claim": "Hosting: update mode release ring or locked version, cloud only",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/hosting.html",
+      "functionId": "admin.hosting-ring"
+    },
+    {
+      "claim": "Default dashboards for Ecommerce, Marketing, Insights, Monitoring, Products, Users with saved per-user layout",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/dashboards.html",
+      "functionId": "admin.dashboards"
+    },
+    {
+      "claim": "Additional dashboards per area, default flag, assigned to users or groups",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/dashboards.html",
+      "functionId": "admin.dashboards"
+    },
+    {
+      "claim": "Products area dashboard and query widgets",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/dashboards.html",
+      "duplicateOf": "pim.dashboards"
+    },
+    {
+      "claim": "Widget types: counters, lists, graphs, query widgets; widget explanation text",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/dashboards.html",
+      "functionId": "admin.dashboards"
+    },
+    {
+      "claim": "Preconfigured Ecommerce, Insights, Users and application widgets",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/dashboards.html",
+      "functionId": "admin.dashboards"
+    },
+    {
+      "claim": "Configure screens: screen presets of visible and frozen fields assigned to users and groups",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/configurescreens.html",
+      "duplicateOf": "pim.screen-layouts"
+    },
+    {
+      "claim": "Screen layouts: tabs and field groups on an edit screen",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/screenlayouts.html",
+      "duplicateOf": "pim.screen-layouts"
+    },
+    {
+      "claim": "AI area: assistant (prompts plus generator configurations) and rich text AI tools (generators)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/ai/index.html",
+      "duplicateOf": "pim.ai-text"
+    },
+    {
+      "claim": "Prompts for generating or modifying product texts",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/ai/prompts.html",
+      "duplicateOf": "pim.ai-text"
+    },
+    {
+      "claim": "Generator configurations: Azure OpenAI and OpenAI text generators",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/ai/generator-configurations.html",
+      "duplicateOf": "pim.ai-text"
+    },
+    {
+      "claim": "Online Translation Service providers (Google Cloud Translation, DeepL), separate licence",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/translation-services.html",
+      "duplicateOf": "pim.machine-translation"
+    },
+    {
+      "claim": "Export templates with model type, attributes and header mode",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/export-templates.html",
+      "functionId": "admin.export-import-configurations"
+    },
+    {
+      "claim": "Import configurations: personal, shared with permissions, all",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/import-configurations.html",
+      "functionId": "admin.export-import-configurations"
+    },
+    {
+      "claim": "Feature Management activates or deactivates beta features",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/feature-management.html",
+      "functionId": "admin.feature-management"
+    },
+    {
+      "claim": "Deployment tool: destinations, data groups, compare and deploy",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/deployment.html",
+      "functionId": "admin.deployment-tool"
+    },
+    {
+      "claim": "Deployment needs matching versions unless SkipCompatibilityCheck is set",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/deployment.html",
+      "functionId": "admin.deployment-tool"
+    },
+    {
+      "claim": "DataItemProviders: content, areas, pages, paragraphs, grid rows, forms, schema, settings, SQL, files",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/deployment.html",
+      "functionId": "admin.deployment-tool"
+    },
+    {
+      "claim": "Addins node lists notification subscribers",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/addins.html",
+      "functionId": "admin.notification-subscribers"
+    },
+    {
+      "claim": "Addins node lists template extenders",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/addins.html",
+      "excluded": {
+        "reason": "TemplateTags extenders are owned by the rendering area author."
+      }
+    },
+    {
+      "claim": "Addins node lists configurable add-ins (customisations)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/addins.html",
+      "functionId": "admin.addin-install"
+    },
+    {
+      "claim": "Cache node explores static, memory, session and service caches and clears service caches",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/cache.html",
+      "excluded": {
+        "reason": "Operational tool, no build outcome; cache refresh after writes belongs to dw-data-write-effects and is not a read-only check."
+      }
+    },
+    {
+      "claim": "API Explorer lists commands with model schemas and lets queries be tried",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/api-explorer.html",
+      "excluded": {
+        "reason": "Developer discovery tool; the descriptor it reflects is read by target discovery."
+      }
+    },
+    {
+      "claim": "API keys valid until expiry, shown once",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/api-keys.html",
+      "functionId": "admin.management-api-access"
+    },
+    {
+      "claim": "OAuth client credentials for machine-to-machine Management API access",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/oauth.html",
+      "functionId": "admin.management-api-access"
+    },
+    {
+      "claim": "MCP configurations: API key, OAuth client or Claude credentials, expiry",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/mcp-configurations.html",
+      "functionId": "admin.mcp-configurations"
+    },
+    {
+      "claim": "MCP tool permissions per area and level, locked tools, full access",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/mcp-configurations.html",
+      "functionId": "admin.mcp-configurations"
+    },
+    {
+      "claim": "Show widgets toggle for MCP clients",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/mcp-configurations.html",
+      "functionId": "admin.mcp-configurations"
+    },
+    {
+      "claim": "SMTP server settings for outgoing mail",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/smtp.html",
+      "functionId": "admin.email-sending"
+    },
+    {
+      "claim": "Apps settings area holds standard app and GDPR settings",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/apps/index.html",
+      "excluded": {
+        "reason": "Index page; its children are mapped separately."
+      }
+    },
+    {
+      "claim": "Product Catalog (eCom) advanced settings for the older paragraph app",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/apps/appssettings/product-catalog-settings.html",
+      "excluded": {
+        "reason": "Storefront catalogue rendering is owned by the commerce catalogue area author."
+      }
+    },
+    {
+      "claim": "GDPR apps: data portability and data processing consents",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/apps/gdpr/index.html",
+      "excluded": {
+        "reason": "User consent and data export belong to the users area author."
+      }
+    }
+  ],
+  "gaps": [
+    "Version history (page and paragraph versions, order versions, Product version cleanup add-in) has no admin function: product history is pim.review-changes, and content and order versions are left to their area authors.",
+    "AI Generators for the rich text editor on item fields (settings/system/administration/ai/generators.html) are content-side; not mapped to a function here and not covered by pim.ai-text.",
+    "Login screen branding (Solution settings logo, partner email) has no function; add one if a branded backend becomes a demo beat.",
+    "Several admin checks need reads that no reserved handler covers yet: GlobalSettings.config key parsing, log-file lines, health-check state projection, scalar MCP count tools, and Admin API list queries for licence, keys, MCP configurations, deployment, features, apps and export templates.",
+    "The GlobalSettings keys for Scheduled task settings (disable all) and Log retention are not verified; no key was named.",
+    "The Insights eventviewer page redirects to the Settings event viewer page; both are mapped through the Settings page.",
+    "This is an earlier-release candidate test inventory. Current documentation navigation is not evidence of availability on this baseline; see evidence/admission.json and the exact-baseline report."
+  ]
+}

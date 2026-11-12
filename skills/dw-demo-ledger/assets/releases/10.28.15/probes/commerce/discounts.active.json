@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "commerce.discounts.active",
+  "functionId": "commerce.discounts",
+  "intent": {
+    "proves": "At least one discount is active.",
+    "level": "configured",
+    "scope": "all discounts"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query-count",
+      "operation": "DiscountAll",
+      "reason": "Admin query named in the skills; authenticated payload projection and active filter not measured."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomDiscount WHERE DiscountActive = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/index.html"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "content.forms.app-settings",
+  "functionId": "content.forms",
+  "intent": {
+    "proves": "At least one shared app settings configuration exists.",
+    "level": "configured",
+    "scope": "all app configurations"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-app-configurations",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_app_configurations",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Table holding app configurations is not verified."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/AppConfigurationTools.cs"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "area": "delivery",
-  "retrieved": "2026-11-11",
+  "retrieved": "2026-11-12",
   "sources": [
     {
       "url": "https://doc.dynamicweb.dev/documentation/headless/index.html",
@@ -94,6 +94,11 @@
     {
       "url": "https://doc.dynamicweb.dev/documentation/fundamentals/dw9upgrade/convertingtemplates.html",
       "title": "Converting Razor (& Swift) Templates"
+    },
+    {
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "title": "10.29 release candidate scan, reviewed after raw preservation",
+      "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
     }
   ],
   "claims": [
@@ -477,6 +482,16 @@
       "excluded": {
         "reason": "DW9 to DW10 upgrade task owned by dw-setup-upgrade."
       }
+    },
+    {
+      "claim": "Released addition: delivery.purchased-products-api. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "delivery.purchased-products-api"
+    },
+    {
+      "claim": "Released addition: delivery.response-field-selection. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "delivery.response-field-selection"
     }
   ],
   "gaps": [
@@ -484,6 +499,16 @@
     "Service authorization: /dwapi/serviceauth/token is in the skill but not on the delivery documentation pages read; delivery.service-authentication stays candidate until the live /dwapi/api.json confirms it.",
     "CORS: the administration setting that lists allowed origins was not located in the manual; delivery.cors-origin is candidate.",
     "Favorites, loyalty points, internationalisation and order search endpoints are in the skill endpoint reference but not on the delivery documentation pages read; no functions here. Order search RetrieveMode belongs with commerce orders.",
-    "Referenced, not redefined: commerce.product-catalog-app, pim.feeds, content.layout-templates, content.navigation, content.forms, content.design-styles, assets.image-handler, swift.impersonation, users.external-login, orders.payment-methods, orders.shipping-methods, search.index-queries."
+    "Referenced, not redefined: commerce.product-catalog-app, pim.feeds, content.layout-templates, content.navigation, content.forms, content.design-styles, assets.image-handler, swift.impersonation, users.external-login, orders.payment-methods, orders.shipping-methods, search.index-queries.",
+    {
+      "claim": "delivery.purchased-products-api",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "delivery.response-field-selection",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    }
   ]
 }

@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "admin.addin-install.uploaded",
+  "functionId": "admin.addin-install",
+  "intent": {
+    "proves": "At least one custom assembly is present in System/AddIns/Local.",
+    "level": "configured",
+    "scope": "Files/System/AddIns/Local, top level"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-files-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-files-count",
+      "operation": "list_files",
+      "arguments": {
+        "path": "/Files/System/AddIns/Local"
+      },
+      "reason": "System/AddIns is outside the MCP file allowlist measured so far."
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "System\\AddIns\\Local",
+        "filter": "*.dll",
+        "includeSubfolders": false
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-cli/references/addin-install.md"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-extend-admin-ui/SKILL.md"
+    }
+  ]
+}

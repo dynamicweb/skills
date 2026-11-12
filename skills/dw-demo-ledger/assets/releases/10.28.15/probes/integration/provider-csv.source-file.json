@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "integration.provider-csv.source-file",
+  "functionId": "integration.provider-csv",
+  "intent": {
+    "proves": "A CSV file is present in the integration file archive.",
+    "level": "configured",
+    "scope": "Files/Integration and subfolders"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "Files\\Integration",
+        "filter": "*.csv",
+        "includeSubfolders": true
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/csv-provider.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/index.html"
+    }
+  ]
+}

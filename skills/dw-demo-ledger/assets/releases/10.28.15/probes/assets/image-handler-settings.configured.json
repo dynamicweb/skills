@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "assets.image-handler-settings.configured",
+  "functionId": "assets.image-handler-settings",
+  "intent": {
+    "proves": "The image handler settings hold the values the build declares.",
+    "level": "configured",
+    "scope": "/Globalsettings/Settings/ImageHandler settings"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-settings",
+      "surface": "file",
+      "status": "planned",
+      "handler": "settings-read",
+      "localOnly": true,
+      "path": "GlobalSettings.config",
+      "reason": "Documented keys are /Globalsettings/Settings/ImageHandler/CacheSeconds, DefaultWebPQuality and Send404IfMissingImage; no reserved settings-read handler exists."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html"
+    }
+  ]
+}

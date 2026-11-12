@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "distribution.sample-data.catalogue",
+  "functionId": "distribution.sample-data",
+  "intent": {
+    "proves": "The sample catalogue products are present.",
+    "level": "applied",
+    "scope": "EcomProducts rows whose product number starts TCPROD"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_products",
+      "reason": "get_products is paged and filters by other keys; a number-prefix count is not equivalent."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomProducts WHERE ProductNumber LIKE 'TCPROD%'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/base/base.contract.json"
+    }
+  ]
+}

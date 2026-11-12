@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.service-authentication.service-token",
+  "functionId": "delivery.service-authentication",
+  "intent": {
+    "proves": "An API key yields a short-lived JWT for SSR or build-time fetching.",
+    "level": "behavioural",
+    "scope": "one key supplied at runtime, never stored in the build"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-auth",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-auth",
+      "operation": "POST /dwapi/serviceauth/token",
+      "reason": "Route taken from the skill, not from the delivery documentation pages; unverified, and issuing a token is a write."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-headless-delivery/SKILL.md"
+    }
+  ]
+}

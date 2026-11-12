@@ -27,8 +27,24 @@ function Get-LedgerCapabilities {
         }
     } catch {$cap.errors+='Admin descriptor could not be read.'}
     if($McpToken){try{$tools=Get-DwMcpTools;$cap.mcp.tools=@($tools.name);$cap.mcp.available=$true}catch{$cap.errors+='MCP discovery failed.'}}
+    if($cap.adminApi.authenticated -and 'FeaturesAll' -in $cap.adminApi.queries){
+        try {$cap.facts=Get-LedgerFeatureFacts (Invoke-DwApi 'FeaturesAll')} catch {$cap.errors+='Complete feature flag observation unavailable.'}
+    }
     # Delivery-route reachability is not recorded as usable until a claim-specific read proves it.
     return $cap
+}
+function Get-LedgerFeatureFacts {
+    param($Response)
+    $data=$Response|ConvertTo-Json -Depth 30|ConvertFrom-Json -AsHashtable
+    $model=Get-LedgerField $data 'model'
+    if(-not $model.ContainsKey('totalCount') -or -not $model.ContainsKey('totalPages')){throw [InvalidOperationException]::new('Feature enumeration has no completeness evidence.')}
+    $rows=ConvertTo-LedgerRows $model 'data';$facts=@{}
+    foreach($row in $rows){
+        Assert-LedgerFields @($row) @('featureTypeName','active')
+        if([string]::IsNullOrWhiteSpace($row.featureTypeName) -or $row.active -isnot [bool] -or $facts.ContainsKey($row.featureTypeName)){throw [InvalidOperationException]::new('Ambiguous feature flag observation.')}
+        $facts[$row.featureTypeName]=$row.active
+    }
+    return $facts
 }
 function Read-LedgerMcp {
     param([string]$Operation,[hashtable]$Arguments=@{})

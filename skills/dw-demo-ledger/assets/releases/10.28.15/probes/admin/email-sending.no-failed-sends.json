@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "admin.email-sending.no-failed-sends",
+  "functionId": "admin.email-sending",
+  "intent": {
+    "proves": "No failed send has been saved for reference.",
+    "level": "behavioural",
+    "scope": "Files/System/Log/EmailHandler, top level"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "System\\Log\\EmailHandler",
+        "filter": "*.eml",
+        "includeSubfolders": false
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/smtp.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/solutionsettings.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/SKILL.md"
+    }
+  ]
+}

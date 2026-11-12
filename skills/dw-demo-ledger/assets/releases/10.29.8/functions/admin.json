@@ -34,6 +34,10 @@
         {
           "kind": "source",
           "ref": "skills/dw-extend-scheduled-tasks/references/scheduler-rows-and-runs.md"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#admin.scheduled-tasks"
         }
       ]
     },
@@ -547,6 +551,10 @@
         {
           "kind": "source",
           "ref": "skills/dw-setup-config/SKILL.md"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#admin.license"
         }
       ]
     },
@@ -714,6 +722,58 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/import-configurations.html"
+        }
+      ]
+    },
+    {
+      "id": "admin.database-index-health",
+      "area": "admin",
+      "name": "Database index health",
+      "description": "Report database index health in Insights Data Health.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/admin/database-index-health.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#admin.database-index-health"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "admin.page-performance-tracking",
+      "area": "admin",
+      "name": "Page performance tracking",
+      "description": "Record page view execution duration for performance dashboards.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/admin/page-performance-tracking.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#admin.page-performance-tracking"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
         }
       ]
     }

@@ -49,6 +49,10 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#users.user-groups"
         }
       ]
     },
@@ -444,6 +448,10 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/advancedconfiguration.html"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#users.login-security"
         }
       ]
     },
@@ -506,6 +514,10 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-login-log.html"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#users.login-activity"
         }
       ]
     },
@@ -537,6 +549,32 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/geolocation.html"
+        }
+      ]
+    },
+    {
+      "id": "users.backend-self-service",
+      "area": "users",
+      "name": "Backend profile self-service",
+      "description": "Edit the current backend profile and change its password from the admin user menu.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/users/backend-self-service.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#users.backend-self-service"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
         }
       ]
     }

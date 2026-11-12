@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "integration.schema-management.schemas",
+  "functionId": "integration.schema-management",
+  "intent": {
+    "proves": "Central schema files exist.",
+    "level": "configured",
+    "scope": "Files/Integration/Schemas"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "planned",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "Files\\Integration\\Schemas",
+        "filter": "*",
+        "includeSubfolders": false
+      },
+      "reason": "Schema file extension not verified; feature flag key not verified."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/schemamanagement.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html"
+    }
+  ]
+}

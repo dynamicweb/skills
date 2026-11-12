@@ -149,6 +149,11 @@ function Get-LedgerAdminObservation {
     param($Binding,$Build,$Capabilities)
     if(-not $Capabilities.adminApi.authenticated){throw [UnauthorizedAccessException]::new('Authenticated API identity is required.')}
     if($Binding.operation -notmatch '^[A-Za-z][A-Za-z0-9]*$' -or $Binding.operation -notin $Capabilities.adminApi.queries){throw 'Only a discovered named GET query may execute.'}
+    if($Binding.handler -eq 'admin-feature-flag'){
+        $id=$Binding.arguments.featureTypeName
+        if(-not $Capabilities.facts.ContainsKey($id)){throw [InvalidOperationException]::new('Feature state is unknown.')}
+        return @{value=[int]($Capabilities.facts[$id] -eq $true);scanned=1;offenders=@();complete=$true}
+    }
     $args=Expand-LedgerArguments $Binding.arguments $Build
     $pairs=@(foreach($key in $args.Keys){[Uri]::EscapeDataString($key)+'='+[Uri]::EscapeDataString([string]$args[$key])})
     $command=$Binding.operation;if($pairs.Count){$command+='?'+($pairs -join '&')}

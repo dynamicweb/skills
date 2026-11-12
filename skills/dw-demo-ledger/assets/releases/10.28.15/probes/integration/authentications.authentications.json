@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "integration.authentications.authentications",
+  "functionId": "integration.authentications",
+  "intent": {
+    "proves": "At least one endpoint authentication exists.",
+    "level": "configured",
+    "scope": "all authentications"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EndpointAuthentication"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/authentications.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/s2s-guide.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.DataIntegration 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

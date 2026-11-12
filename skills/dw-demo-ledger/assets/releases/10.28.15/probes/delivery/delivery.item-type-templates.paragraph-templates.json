@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "delivery.item-type-templates.paragraph-templates",
+  "functionId": "delivery.item-type-templates",
+  "intent": {
+    "proves": "Paragraph templates exist per item type under the design Paragraph folder.",
+    "level": "supported",
+    "scope": "all designs; path relative to the Files root"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-count",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "path": "Templates/Designs/*/Paragraph/*/*.cshtml"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/content/paragraphs.html"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.identifiers.number-missing",
+  "functionId": "pim.identifiers",
+  "intent": {
+    "proves": "Product numbers: number-missing satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-number-missing",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-number-missing",
+      "operation": "get_products",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND ISNULL(p.ProductNumber, N'') = N'' AND p.ProductActive = 1{inScope} AND (ISNULL(p.ProductVariantId, N'') <> N'' OR NOT EXISTS (SELECT 1 FROM EcomVariantGroupProductRelation v WHERE v.VariantGroupProductRelationProductId = p.ProductId))"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#identifiers/number-missing"
+    }
+  ]
+}

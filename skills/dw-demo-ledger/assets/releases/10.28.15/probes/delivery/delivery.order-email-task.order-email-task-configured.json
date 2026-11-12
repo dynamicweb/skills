@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "delivery.order-email-task.order-email-task-configured",
+  "functionId": "delivery.order-email-task",
+  "intent": {
+    "proves": "An active Order Emails scheduled task exists to send headless order receipts.",
+    "level": "configured",
+    "scope": "all scheduled tasks"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api-query",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "Scheduled tasks list (query name unverified)",
+      "reason": "Scheduled task query name and add-in type identifier are not verified in the Management API descriptor."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM ScheduledTask",
+      "localOnly": true,
+      "reason": "Scheduled task table and add-in column names are not verified in the DW source; placeholder only."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html"
+    }
+  ]
+}

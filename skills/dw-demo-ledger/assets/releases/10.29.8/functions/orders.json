@@ -524,6 +524,10 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/payment.html"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#orders.payment-methods"
         }
       ]
     },

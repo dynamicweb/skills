@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "area": "admin",
-  "retrieved": "2026-11-11",
+  "retrieved": "2026-11-12",
   "sources": [
     {
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/administration/index.html",
@@ -301,6 +301,11 @@
     {
       "url": "https://doc.dynamicweb.dev/documentation/extending/administration-ui/index.html",
       "title": "Custom UI (extending the administration)"
+    },
+    {
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "title": "10.29 release candidate scan, reviewed after raw preservation",
+      "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
     }
   ],
   "claims": [
@@ -831,6 +836,16 @@
       "excluded": {
         "reason": "User consent and data export belong to the users area author."
       }
+    },
+    {
+      "claim": "Released addition: admin.database-index-health. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "admin.database-index-health"
+    },
+    {
+      "claim": "Released addition: admin.page-performance-tracking. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "admin.page-performance-tracking"
     }
   ],
   "gaps": [
@@ -839,6 +854,16 @@
     "Login screen branding (Solution settings logo, partner email) has no function; add one if a branded backend becomes a demo beat.",
     "Several admin checks need reads that no reserved handler covers yet: GlobalSettings.config key parsing, log-file lines, health-check state projection, scalar MCP count tools, and Admin API list queries for licence, keys, MCP configurations, deployment, features, apps and export templates.",
     "The GlobalSettings keys for Scheduled task settings (disable all) and Log retention are not verified; no key was named.",
-    "The Insights eventviewer page redirects to the Settings event viewer page; both are mapped through the Settings page."
+    "The Insights eventviewer page redirects to the Settings event viewer page; both are mapped through the Settings page.",
+    {
+      "claim": "admin.database-index-health",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "admin.page-performance-tracking",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    }
   ]
 }

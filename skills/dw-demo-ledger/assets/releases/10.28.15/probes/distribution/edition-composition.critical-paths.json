@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "id": "distribution.edition-composition.critical-paths",
+  "functionId": "distribution.edition-composition",
+  "intent": {
+    "proves": "Every criticalPaths URL of the edition answers 2xx with no in-page Dynamicweb error.",
+    "level": "behavioural",
+    "scope": "criticalPaths of the edition; a 2xx alone does not pass an empty product list"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "dwapi-http-critical-paths",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "http-critical-paths",
+      "reason": "No reserved handler issues frontend requests."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:README.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:editions/edition.schema.json"
+    }
+  ]
+}

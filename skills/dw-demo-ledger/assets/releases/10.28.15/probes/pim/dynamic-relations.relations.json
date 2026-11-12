@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "pim.dynamic-relations.relations",
+  "functionId": "pim.dynamic-relations",
+  "intent": {
+    "proves": "Dynamic relations with amounts (materials, packaging, ingredients): relations satisfies the selected profile assertion.",
+    "level": "stored-integrity",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomDynamicProductRelations"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#dynamic-relations/relations"
+    }
+  ]
+}

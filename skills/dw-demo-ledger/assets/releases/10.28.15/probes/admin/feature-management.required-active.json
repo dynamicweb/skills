@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "id": "admin.feature-management.required-active",
+  "functionId": "admin.feature-management",
+  "intent": {
+    "proves": "Every feature the build requires is active.",
+    "level": "configured",
+    "scope": "features named by the build's flag requires predicates"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-feature-flags",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-feature-flags",
+      "reason": "The feature list query and feature ids are unverified; no flag key is invented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/feature-management.html"
+    }
+  ]
+}

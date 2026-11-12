@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "content.website-domains.not-found-page",
+  "functionId": "content.website-domains",
+  "intent": {
+    "proves": "At least one active website names a 404 page.",
+    "level": "configured",
+    "scope": "active, non-deleted websites"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-areas",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_areas",
+      "arguments": {},
+      "reason": "Needs a projection on the 404 page setting; mcp-count counts rows only."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Area WHERE AreaActive = 1 AND AreaDeleted = 0 AND LEN(ISNULL(AreaNotFound, N'')) > 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html"
+    }
+  ]
+}

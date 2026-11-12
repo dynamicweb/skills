@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "admin.marketing-insights.sessions",
+  "functionId": "admin.marketing-insights",
+  "intent": {
+    "proves": "At least one tracked visit passes the dashboard's valid-session filter.",
+    "level": "applied",
+    "scope": "TrackingSession rows that are not bots and not excluded; all websites"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "reason": "No MCP tool reads tracking data in 0.6.3-BETA."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM TrackingSession WHERE TrackingSessionBotType = 0 AND TrackingSessionExcluded = 0",
+      "reason": "The A schema capture has no TrackingSession table; this binding is withheld until A-local provisioning evidence establishes that optional table."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/references/tracking-insights.md"
+    }
+  ]
+}

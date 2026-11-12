@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "id": "admin.marketing-insights.single-session-table",
+  "functionId": "admin.marketing-insights",
+  "intent": {
+    "proves": "Exactly one table name matches TrackingSession%, so the widgets read the live table.",
+    "level": "stored-integrity",
+    "scope": "database table names; a solution that splits tracking by Table time interval has several by design"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM sys.tables WHERE name LIKE 'TrackingSession%'",
+      "reason": "The A schema capture has no TrackingSession table; this binding is withheld until A-local provisioning evidence establishes that optional table."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/references/tracking-insights.md"
+    }
+  ]
+}

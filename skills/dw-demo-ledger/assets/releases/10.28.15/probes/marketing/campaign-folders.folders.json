@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "id": "marketing.campaign-folders.folders",
+  "functionId": "marketing.campaign-folders",
+  "intent": {
+    "proves": "At least one email campaign folder exists.",
+    "level": "configured",
+    "scope": "all campaign top folders; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-email-campaign-top-folders",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_email_campaign_top_folders",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EmailMarketingTopFolder"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

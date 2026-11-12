@@ -1,0 +1,710 @@
+{
+  "schema": 1,
+  "area": "commerce",
+  "functions": [
+    {
+      "id": "commerce.product-catalog-app",
+      "area": "commerce",
+      "name": "Product catalogue on a page",
+      "description": "A content page publishes products through the Product Catalog app (list, details, feed and compare templates). Swift product list and detail pages use it.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/product-catalog-app.paragraph.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "headless-storefront",
+          "when": "the storefront is a headless frontend on the Delivery API with no Razor catalogue paragraph"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.product-catalog-app"
+        }
+      ]
+    },
+    {
+      "id": "commerce.default-price",
+      "area": "commerce",
+      "name": "Default product price",
+      "description": "Products carry a default price in the default currency, converted at the currency rate when no price matrix entry matches.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/default-price.priced-products.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.default-price"
+        }
+      ]
+    },
+    {
+      "id": "commerce.price-matrix",
+      "area": "commerce",
+      "name": "Price matrix entries",
+      "description": "Price matrix rows (EcomPrices) give explicit prices per product with optional currency, VAT handling, quantity, period, customer and location dimensions.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/price-matrix.entries.json",
+        "probes/commerce/price-matrix.prices-resolve.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.price-matrix"
+        }
+      ]
+    },
+    {
+      "id": "commerce.quantity-prices",
+      "area": "commerce",
+      "name": "Quantity break prices",
+      "description": "Tiered prices that apply from a minimum order quantity.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/quantity-prices.tiers.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-unit-retail",
+          "when": "the demo story sells single items with no volume pricing"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.quantity-prices"
+        }
+      ]
+    },
+    {
+      "id": "commerce.customer-prices",
+      "area": "commerce",
+      "name": "Customer and customer group prices",
+      "description": "Negotiated prices scoped to a user, a user group, a customer number or a group customer number (B2B price lists).",
+      "skill": "dw-commerce-b2b",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/customer-prices.scoped.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "b2c-only",
+          "when": "the demo has no logged-in business buyers"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.customer-prices"
+        }
+      ]
+    },
+    {
+      "id": "commerce.price-discount-lines",
+      "area": "commerce",
+      "name": "Discount percentage on price lines",
+      "description": "Price matrix entries with a discount percentage, including discount-only lines (amount 0) that discount the lowest matching price, typically per customer group.",
+      "skill": "dw-commerce-b2b",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/price-discount-lines.discount-lines.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.price-discount-lines"
+        }
+      ]
+    },
+    {
+      "id": "commerce.time-limited-prices",
+      "area": "commerce",
+      "name": "Time-limited prices",
+      "description": "Price entries valid only between a start and end date (campaign or contract prices).",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/time-limited-prices.dated.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.time-limited-prices"
+        }
+      ]
+    },
+    {
+      "id": "commerce.informative-prices",
+      "area": "commerce",
+      "name": "Informative (before or RRP) prices",
+      "description": "Reference prices marked informative, shown as a before price or recommended retail price and never applied to an order.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/informative-prices.informative.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.informative-prices"
+        }
+      ]
+    },
+    {
+      "id": "commerce.price-priority",
+      "area": "commerce",
+      "name": "Price priority",
+      "description": "Price entries with a priority so a contract or ERP-chosen price wins over a lower price.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/price-priority.prioritised.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.price-priority"
+        }
+      ]
+    },
+    {
+      "id": "commerce.market-prices",
+      "area": "commerce",
+      "name": "Market, channel and location prices",
+      "description": "Price entries restricted to a country, a shop (channel), a language, a variant or a stock location.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/market-prices.scoped.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.market-prices"
+        }
+      ]
+    },
+    {
+      "id": "commerce.unit-prices",
+      "area": "commerce",
+      "name": "Prices per unit of measure",
+      "description": "Different prices per unit (piece, box, pallet). Units and product units themselves are pim.sales-units.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/unit-prices.unit-priced.json",
+        "probes/commerce/unit-prices.units-resolve.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-unit",
+          "when": "products are sold in one unit only"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.unit-prices"
+        }
+      ]
+    },
+    {
+      "id": "commerce.currencies",
+      "area": "commerce",
+      "name": "Multiple currencies",
+      "description": "Several currencies with an exchange rate against exactly one default currency, so buyers browse and pay in their own currency.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/currencies.several.json",
+        "probes/commerce/currencies.one-default.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-currency",
+          "when": "the demo sells in one currency only"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.currencies"
+        }
+      ]
+    },
+    {
+      "id": "commerce.currency-prices",
+      "area": "commerce",
+      "name": "Explicit prices in other currencies",
+      "description": "Market-friendly price points entered per currency instead of conversion from the default currency.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/currency-prices.non-default.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.currency-prices"
+        }
+      ]
+    },
+    {
+      "id": "commerce.currency-rounding",
+      "area": "commerce",
+      "name": "Currency rounding rules",
+      "description": "Rounding definitions assigned to currencies so converted prices land on clean price points.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/currency-rounding.roundings.json",
+        "probes/commerce/currency-rounding.assigned.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.currency-rounding"
+        }
+      ]
+    },
+    {
+      "id": "commerce.price-settings",
+      "area": "commerce",
+      "name": "Price, VAT and discount calculation settings",
+      "description": "Global price settings: system VAT, prices stored with VAT, rounding mode (display, line total, unit price), fee basis, negative totals, and the order discount behaviour (aggregated, highest, lowest; before taxes; per quantity).",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/price-settings.declared.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.price-settings"
+        }
+      ]
+    },
+    {
+      "id": "commerce.stock-levels",
+      "area": "commerce",
+      "name": "Stock on products",
+      "description": "Simple stock on the product stock field, decremented on sale, shown in the catalogue and checked at checkout.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/stock-levels.in-stock.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.stock-levels"
+        }
+      ]
+    },
+    {
+      "id": "commerce.stock-locations",
+      "area": "commerce",
+      "name": "Stock locations",
+      "description": "Warehouses or stores stock is held and distributed from, optionally linked to shops and categorised (click and collect, warehouse).",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/stock-locations.locations.json",
+        "probes/commerce/stock-locations.categories.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-warehouse",
+          "when": "stock is one total per product with no locations"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.stock-locations"
+        }
+      ]
+    },
+    {
+      "id": "commerce.stock-matrix",
+      "area": "commerce",
+      "name": "Stock per location, unit and variant",
+      "description": "Stock matrix entries (stock units) per stock location, unit and variant, with optional dimensions, never-out-of-stock and expected delivery.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/stock-matrix.entries.json",
+        "probes/commerce/stock-matrix.locations-resolve.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "simple-stock",
+          "when": "stock is the single product stock field"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.stock-matrix"
+        }
+      ]
+    },
+    {
+      "id": "commerce.stock-states",
+      "area": "commerce",
+      "name": "Stock state labels",
+      "description": "Stock state collections that label stock levels (out of stock, few left, in stock) with delivery time and icon, tied to a channel.",
+      "skill": "dw-commerce-catalog",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/stock-states.collections.json",
+        "probes/commerce/stock-states.on-shop.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.stock-states"
+        }
+      ]
+    },
+    {
+      "id": "commerce.product-reservation",
+      "area": "commerce",
+      "name": "Product reservation",
+      "description": "Stock reserved when a product is added to cart or at the checkout step, for a set number of minutes.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/product-reservation.enabled.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.product-reservation"
+        }
+      ]
+    },
+    {
+      "id": "commerce.discounts",
+      "area": "commerce",
+      "name": "Discounts",
+      "description": "Discounts (amount, percentage, product, free shipping, loyalty points, amount from field, custom amount or percentage) with conditions on users, groups, customer numbers, totals, products, groups, country, shipping, payment, quantity, campaign and priority.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/discounts.active.json",
+        "probes/commerce/discounts.conditioned.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.discounts"
+        }
+      ]
+    },
+    {
+      "id": "commerce.discounts-v2",
+      "area": "commerce",
+      "name": "New Discount Experience",
+      "description": "Discounts built from rewards and conditions with priority and stop-further-processing. Must be activated in Feature Management (feature flag key unverified, so not declared under requires).",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/discounts-v2.discounts.json",
+        "probes/commerce/discounts-v2.rewarded.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "classic-discounts",
+          "when": "the build uses the classic discount engine (commerce.discounts)"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.discounts-v2"
+        }
+      ]
+    },
+    {
+      "id": "commerce.coupon-codes",
+      "area": "commerce",
+      "name": "Coupon codes",
+      "description": "A reusable code typed into an order field at checkout triggers a discount.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/coupon-codes.field-triggered.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.coupon-codes"
+        }
+      ]
+    },
+    {
+      "id": "commerce.vouchers",
+      "area": "commerce",
+      "name": "Voucher lists",
+      "description": "Lists of single-use voucher codes, generated or entered, linked to a discount, distributed by email, CSV or the Voucher Renderer app.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/vouchers.lists.json",
+        "probes/commerce/vouchers.linked.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.vouchers"
+        }
+      ]
+    },
+    {
+      "id": "commerce.gift-cards",
+      "area": "commerce",
+      "name": "Gift cards",
+      "description": "A gift card product generates codes with a balance when sold; codes pay all or part of later orders in the same currency and expire.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/gift-cards.issued.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.gift-cards"
+        }
+      ]
+    },
+    {
+      "id": "commerce.loyalty-rewards",
+      "area": "commerce",
+      "name": "Loyalty point rewards",
+      "description": "Rewards (fixed or percentage points) with reward rules on shop, product, group, user, country, total, quantity, shipping, payment, field or voucher.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/loyalty-rewards.rewards.json",
+        "probes/commerce/loyalty-rewards.ruled.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.loyalty-rewards"
+        }
+      ]
+    },
+    {
+      "id": "commerce.loyalty-spend",
+      "area": "commerce",
+      "name": "Spending loyalty points",
+      "description": "Points are spent on point-priced products or converted to an order discount by a loyalty points discount; customers see balance and history in the Customer Experience Center.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/commerce/loyalty-spend.spend-route.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "earn-only",
+          "when": "the loyalty story only shows points earned"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#commerce.loyalty-spend"
+        }
+      ]
+    }
+  ]
+}

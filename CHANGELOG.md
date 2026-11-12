@@ -3,6 +3,12 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.4.0]
+
+- Add a general release scanner using public package metadata, feature-class ancestry, milestone work items and local schema evidence. Preserve raw unreviewed output before candidate review.
+- Add the 10.28.15 candidate baseline with explicit admission evidence and exclusions; release-specific support requires exact-baseline measurement.
+- Review the A/B scan into the 10.29.8 revision: matrix fields with MCP-first field type discovery, explicit feature facts and exact SQL cell checks; other additions retain explicit measurement gaps. Keep snapshot bytes stable across Windows checkouts.
+
 ## [6.3.0]
 
 - Add `dw-demo-ledger`: release-pinned platform function and check contracts, explicit build locks and evidence states. MCP-first bindings preserve proof requirements across local and hosted targets; SQL remains optional and local-only.

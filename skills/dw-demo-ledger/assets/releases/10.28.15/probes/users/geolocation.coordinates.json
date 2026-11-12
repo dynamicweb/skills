@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "users.geolocation.coordinates",
+  "functionId": "users.geolocation",
+  "intent": {
+    "proves": "At least one user or group has coordinates.",
+    "level": "applied",
+    "scope": "AccessUser rows with a non-zero latitude"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE ISNULL(AccessUserGeoLocationLat,0) <> 0",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/geolocation.html"
+    }
+  ]
+}

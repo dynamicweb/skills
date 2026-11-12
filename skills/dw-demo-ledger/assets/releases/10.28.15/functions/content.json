@@ -1,0 +1,814 @@
+{
+  "schema": 1,
+  "area": "content",
+  "functions": [
+    {
+      "id": "content.websites",
+      "area": "content",
+      "name": "Websites",
+      "description": "At least one active, published website (area) under which pages are placed.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/websites.active.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.websites"
+        }
+      ]
+    },
+    {
+      "id": "content.website-domains",
+      "area": "content",
+      "name": "Website domains and 404 handling",
+      "description": "Domains, primary domain, lock-to-domain and a 404 page set on a website.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/website-domains.domain-set.json",
+        "probes/content/website-domains.not-found-page.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-host-local-demo",
+          "when": "The demo is served on one host name with no domain routing or 404-page story."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.website-domains"
+        }
+      ]
+    },
+    {
+      "id": "content.website-ecommerce-context",
+      "area": "content",
+      "name": "Website Ecommerce defaults",
+      "description": "Default shop, language and currency set on every active website so commerce features resolve their context.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/website-ecommerce-context.defaults-set.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "content-only",
+          "when": "The demo has no commerce context (no shop, catalog or price display on the website)."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.website-ecommerce-context"
+        }
+      ]
+    },
+    {
+      "id": "content.robots-sitemap",
+      "area": "content",
+      "name": "Robots.txt and sitemap",
+      "description": "Virtual robots.txt content and sitemap exposure configured per website.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/robots-sitemap.configured.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "not-crawled",
+          "when": "The demo is not exposed to search engine crawlers and has no SEO story."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.robots-sitemap"
+        }
+      ]
+    },
+    {
+      "id": "content.layout-templates",
+      "area": "content",
+      "name": "Website and page layout templates",
+      "description": "Layout (master) templates from the design assigned to websites and pages.",
+      "skill": "dw-render-razor",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/layout-templates.layouts-available.json",
+        "probes/content/layout-templates.website-layout-set.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.layout-templates"
+        }
+      ]
+    },
+    {
+      "id": "content.design-styles",
+      "area": "content",
+      "name": "Design styles: color schemes, typography, buttons, fonts",
+      "description": "Color scheme collections, typography and button styles defined and connected to a website.",
+      "skill": "dw-swift-building",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/design-styles.color-schemes.json",
+        "probes/content/design-styles.website-styles-set.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "design-without-styles",
+          "when": "The design does not use the design-system styles (a custom design that styles itself)."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.design-styles"
+        }
+      ]
+    },
+    {
+      "id": "content.language-layers",
+      "area": "content",
+      "name": "Language layers",
+      "description": "Websites that are structural copies of a master website, with language management settings controlling how content follows the master.",
+      "skill": "dw-content-localization",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/language-layers.layers.json",
+        "probes/content/language-layers.master-links-resolve.json",
+        "probes/content/language-layers.language-management.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-language",
+          "when": "The demo runs one website language with no language layer and no translated-site story."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.language-layers"
+        }
+      ]
+    },
+    {
+      "id": "content.content-translation",
+      "area": "content",
+      "name": "Translated page content on language layers",
+      "description": "Pages and paragraphs on language layers carry translated text rather than a copy of the master.",
+      "skill": "dw-content-localization",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/content-translation.pages-translated.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-language",
+          "when": "The demo runs one website language with no language layer and no translated-site story."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.content-translation"
+        }
+      ]
+    },
+    {
+      "id": "content.template-translations",
+      "area": "content",
+      "name": "Template translation keys",
+      "description": "Design texts printed with @Translate resolved from translations.xml per design and culture.",
+      "skill": "dw-content-localization",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/template-translations.keys.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-language",
+          "when": "The demo runs one website language with no language layer and no translated-site story."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.template-translations"
+        }
+      ]
+    },
+    {
+      "id": "content.pages",
+      "area": "content",
+      "name": "Pages and page tree",
+      "description": "Pages define the content structure of a website and contain paragraphs or item content.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/pages.exist.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.pages"
+        }
+      ]
+    },
+    {
+      "id": "content.page-publication",
+      "area": "content",
+      "name": "Publication states and publication period",
+      "description": "Publish state (Published, Hide in menu, Unpublished) and a publication period from/to on pages.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/page-publication.scheduled.json",
+        "probes/content/page-publication.period-valid.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-scheduling-story",
+          "when": "The demo does not show scheduled publishing; the period-valid integrity check still applies."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.page-publication"
+        }
+      ]
+    },
+    {
+      "id": "content.page-seo",
+      "area": "content",
+      "name": "Page SEO metadata and URL names",
+      "description": "Meta title, description, noindex/nofollow, canonical and a custom 'Use in URL' name per page.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/page-seo.metadata.json",
+        "probes/content/page-seo.url-names-legal.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "not-crawled",
+          "when": "The demo has no SEO story; the URL-name integrity check still applies."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.page-seo"
+        }
+      ]
+    },
+    {
+      "id": "content.navigation",
+      "area": "content",
+      "name": "Navigation from the page tree",
+      "description": "Frontend navigation generated from the page tree, honouring publish state and navigation tags.",
+      "skill": "dw-swift-building",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/navigation.menu-pages.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.navigation"
+        }
+      ]
+    },
+    {
+      "id": "content.url-provider",
+      "area": "content",
+      "name": "URL providers (Ecommerce URL provider)",
+      "description": "A page carries a URL provider that generates URLs for groups, products and variants under it.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/url-provider.configured.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "content-only",
+          "when": "The demo has no commerce context (no shop, catalog or price display on the website)."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.url-provider"
+        }
+      ]
+    },
+    {
+      "id": "content.friendly-urls",
+      "area": "content",
+      "name": "Friendly URLs",
+      "description": "Path-based friendly URLs with language-layer grouping, normalisation and redirect of non-friendly URLs.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/friendly-urls.enabled.json",
+        "probes/content/friendly-urls.resolves.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.friendly-urls"
+        }
+      ]
+    },
+    {
+      "id": "content.redirects",
+      "area": "content",
+      "name": "Redirects",
+      "description": "Permanent (301) redirects from virtual paths to pages, paths or external URLs, optionally per website.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/redirects.active.json",
+        "probes/content/redirects.no-loops.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-redirect-story",
+          "when": "The demo has no migration, campaign or URL-change story; the no-loops check still applies when rows exist."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.redirects"
+        }
+      ]
+    },
+    {
+      "id": "content.paragraphs",
+      "area": "content",
+      "name": "Paragraphs",
+      "description": "Paragraphs hold content on pages (standard or item-based) and anchor paragraph apps.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/paragraphs.visible.json",
+        "probes/content/paragraphs.item-instances.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.paragraphs"
+        }
+      ]
+    },
+    {
+      "id": "content.item-types",
+      "area": "content",
+      "name": "Item types",
+      "description": "Custom content types (fields, groups, validation) used as pages, paragraphs, rows or settings extensions.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/item-types.defined.json",
+        "probes/content/item-types.table-health.json",
+        "probes/content/item-types.field-health.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.item-types"
+        }
+      ]
+    },
+    {
+      "id": "content.item-pages",
+      "area": "content",
+      "name": "Item-based pages",
+      "description": "Pages created from a page item type, where the page itself is the structured content.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/item-pages.in-use.json",
+        "probes/content/item-pages.item-instances.json",
+        "probes/content/item-pages.types-resolve.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.item-pages"
+        }
+      ]
+    },
+    {
+      "id": "content.item-restrictions",
+      "area": "content",
+      "name": "Item type restrictions",
+      "description": "Allowed websites, parents, children and tree sections controlling where an item type may be used.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/item-restrictions.allowed-somewhere.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.item-restrictions"
+        }
+      ]
+    },
+    {
+      "id": "content.grid-rows",
+      "area": "content",
+      "name": "Grid rows",
+      "description": "Rows with columns define the grid on grid-based designs; paragraphs are placed in row columns.",
+      "skill": "dw-swift-building",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/grid-rows.rows.json",
+        "probes/content/grid-rows.container-set.json",
+        "probes/content/grid-rows.paragraph-placement.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "not-grid-design",
+          "when": "The design is placeholder-based, not a grid-based (visual editor) design."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.grid-rows"
+        }
+      ]
+    },
+    {
+      "id": "content.row-definitions",
+      "area": "content",
+      "name": "Grid row definitions",
+      "description": "Row definitions (columns, features, defaults) in the design, created as files or in Settings > Grid.",
+      "skill": "dw-swift-building",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/row-definitions.defined.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "not-grid-design",
+          "when": "The design is placeholder-based, not a grid-based (visual editor) design."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.row-definitions"
+        }
+      ]
+    },
+    {
+      "id": "content.paragraph-apps",
+      "area": "content",
+      "name": "Paragraph apps",
+      "description": "Apps (modules) attached to paragraphs, for example catalogs, carts, forms, item and file publishing.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/paragraph-apps.available.json",
+        "probes/content/paragraph-apps.placed.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.paragraph-apps"
+        }
+      ]
+    },
+    {
+      "id": "content.presets",
+      "area": "content",
+      "name": "Content presets",
+      "description": "Saved page, row and paragraph presets editors pick when creating content.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/presets.saved.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-editor-story",
+          "when": "The demo shows no editor content-creation flow."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.presets"
+        }
+      ]
+    },
+    {
+      "id": "content.versioning",
+      "area": "content",
+      "name": "Drafts and versions",
+      "description": "Website workflow setting choosing drafts or saved versions when content is edited.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/versioning.workflow-set.json",
+        "probes/content/versioning.versions-stored.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-editorial-workflow-story",
+          "when": "The demo shows no draft, approval or version-history story."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.versioning"
+        }
+      ]
+    },
+    {
+      "id": "content.recycle-bin",
+      "area": "content",
+      "name": "Recycle bins for content",
+      "description": "Deleted websites, pages, rows and paragraphs can be restored or permanently deleted.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/recycle-bin.supported.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.recycle-bin"
+        }
+      ]
+    },
+    {
+      "id": "content.page-permissions",
+      "area": "content",
+      "name": "Page permissions",
+      "description": "Explicit permissions on pages (and rows or paragraphs) restricting frontend access per role or group.",
+      "skill": "dw-users-permissions",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/page-permissions.explicit.json",
+        "probes/content/page-permissions.keys-resolve.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "public-only",
+          "when": "The demo has no gated or role-specific content."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.page-permissions"
+        }
+      ]
+    },
+    {
+      "id": "content.forms",
+      "area": "content",
+      "name": "Forms for Editors",
+      "description": "Forms with fields, published through the Forms for Editors apps, with confirmation, emails, submit limits and shared app settings.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/forms.defined.json",
+        "probes/content/forms.fields.json",
+        "probes/content/forms.published.json",
+        "probes/content/forms.app-settings.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-forms-story",
+          "when": "The demo shows no form, lead capture, signup or contact flow."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.forms"
+        }
+      ]
+    },
+    {
+      "id": "content.form-submissions",
+      "area": "content",
+      "name": "Form submissions",
+      "description": "Visitor submissions stored per form and page, viewable and exportable in the backend.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/content/form-submissions.received.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-forms-story",
+          "when": "The demo shows no form, lead capture, signup or contact flow."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#content.form-submissions"
+        }
+      ]
+    }
+  ]
+}

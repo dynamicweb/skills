@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "pim.completeness-rules.models-without-rule",
+  "functionId": "pim.completeness-rules",
+  "intent": {
+    "proves": "Completeness rules per family: models-without-rule satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-models-without-rule",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-models-without-rule",
+      "operation": "get_completion_rules",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT DISTINCT CAST(g.GroupId AS nvarchar(50)) + N' ' + CAST(g.GroupName AS nvarchar(100)) FROM EcomGroups g WHERE g.GroupType = 2 AND g.GroupLanguageId = N'{lang}' AND ISNULL(g.GroupCompletionRules, N'') = N'' AND EXISTS (SELECT 1 FROM EcomGroupProductRelation r WHERE r.GroupProductRelationGroupId = g.GroupId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#completeness-rules/models-without-rule"
+    }
+  ]
+}

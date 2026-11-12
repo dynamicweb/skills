@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.field-validation.pattern",
+  "functionId": "pim.field-validation",
+  "intent": {
+    "proves": "Validation pattern on formatted codes: pattern satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-pattern",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-pattern",
+      "operation": "ProductCategoryFieldsByCategoryId",
+      "reason": "Needs authenticated full-payload and scope parity measurement; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT (SELECT COUNT(*) FROM EcomProductCategoryField WHERE ISNULL(FieldValidationPattern, N'') <> N'' AND FieldCategoryId <> N'reference_category') + (SELECT COUNT(*) FROM EcomProductField WHERE ISNULL(ProductFieldValidationPattern, N'') <> N'')"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-validation/pattern"
+    }
+  ]
+}

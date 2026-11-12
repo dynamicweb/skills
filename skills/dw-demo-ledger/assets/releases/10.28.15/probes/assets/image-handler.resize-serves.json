@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "assets.image-handler.resize-serves",
+  "functionId": "assets.image-handler",
+  "intent": {
+    "proves": "A resize request through the image handler answers with an image.",
+    "level": "behavioural",
+    "scope": "one known image under /Files/Images"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-http",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "http-observe",
+      "operation": "GET /Admin/Public/GetImage.ashx with width and format",
+      "reason": "No reserved HTTP handler; a measured response projection (status and content type) is required."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "integration.live-integration.enabled",
+  "functionId": "integration.live-integration",
+  "intent": {
+    "proves": "A live integration instance is enabled.",
+    "level": "configured",
+    "scope": "all live integration settings files"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-content",
+      "surface": "file",
+      "status": "planned",
+      "handler": "file-content",
+      "path": "Files/System/LiveIntegration/*.Setup.xml",
+      "reason": "No reserved handler reads the IsLiveIntegrationEnabled setting."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/DataIntegration.LiveIntegration Configuration/SettingsFileHandler.cs (settings file /Files/System/LiveIntegration/{instance}.Setup.xml)"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/erp-plug-in-units/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.DataIntegration 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

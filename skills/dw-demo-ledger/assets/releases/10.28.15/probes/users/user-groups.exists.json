@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "users.user-groups.exists",
+  "functionId": "users.user-groups",
+  "intent": {
+    "proves": "At least one user group exists.",
+    "level": "configured",
+    "scope": "all user groups (AccessUserType 2); complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-user-groups",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_user_groups",
+      "arguments": {}
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE AccessUserType = 2",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html"
+    }
+  ]
+}

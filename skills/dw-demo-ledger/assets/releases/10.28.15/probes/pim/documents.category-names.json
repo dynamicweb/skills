@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "pim.documents.category-names",
+  "functionId": "pim.documents",
+  "intent": {
+    "proves": "Documents in their own asset categories: category-names satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "admin-category-names",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-category-names",
+      "operation": "AssetCategoryTranslationsAll",
+      "reason": "Needs authenticated full-payload and scope parity measurement; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(g.EcomDetailsGroupSystemName AS nvarchar(100)) FROM EcomDetailsGroup g WHERE EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailsGroupId = g.EcomDetailsGroupId) AND NOT EXISTS (SELECT 1 FROM EcomDetailsGroupTranslation t WHERE t.DetailsGroupTranslationGroupId = g.EcomDetailsGroupId AND t.DetailsGroupTranslationLanguageId = N'{lang}' AND ISNULL(t.DetailsGroupTranslationText, N'') <> N'')"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#documents/category-names"
+    }
+  ]
+}

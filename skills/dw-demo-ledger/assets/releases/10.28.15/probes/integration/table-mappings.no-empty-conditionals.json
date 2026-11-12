@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "id": "integration.table-mappings.no-empty-conditionals",
+  "functionId": "integration.table-mappings",
+  "intent": {
+    "proves": "No job file carries an empty conditionals element (which silently drops the table mapping).",
+    "level": "stored-integrity",
+    "scope": "all job files"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "file-content",
+      "surface": "file",
+      "status": "planned",
+      "handler": "file-content",
+      "path": "Files/Integration/jobs/**/*.xml",
+      "reason": "No reserved handler reads job file content."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-integration-framework/SKILL.md"
+    }
+  ]
+}

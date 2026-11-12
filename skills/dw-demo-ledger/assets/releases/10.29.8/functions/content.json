@@ -335,6 +335,10 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#content.page-seo"
         }
       ]
     },
@@ -758,6 +762,10 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/formsettings.html"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#content.forms"
         }
       ]
     },
@@ -783,6 +791,84 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html"
+        }
+      ]
+    },
+    {
+      "id": "content.url-index-backup",
+      "area": "content",
+      "name": "URL index backup",
+      "description": "Use a backup URL index while a replacement index is built.",
+      "skill": "dw-content-modelling",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/content/url-index-backup.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#content.url-index-backup"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "content.open-graph-fallback",
+      "area": "content",
+      "name": "Open Graph fallback",
+      "description": "Set Open Graph tags as a fallback without overwriting explicit values.",
+      "skill": "dw-content-modelling",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/content/open-graph-fallback.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#content.open-graph-fallback"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "content.item-field-search",
+      "area": "content",
+      "name": "Page item field search",
+      "description": "Search page item fields from the page list.",
+      "skill": "dw-content-modelling",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/content/item-field-search.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#content.item-field-search"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
         }
       ]
     }

@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "orders.address-validation.active",
+  "functionId": "orders.address-validation",
+  "intent": {
+    "proves": "At least one address validator is active.",
+    "level": "configured",
+    "scope": "all address validators"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomAddressValidatorSettings WHERE AddressValidatorActive = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/addressvalidation.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/vertex.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

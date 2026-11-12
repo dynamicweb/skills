@@ -1,0 +1,403 @@
+{
+  "schema": 1,
+  "area": "marketing",
+  "retrieved": "2026-11-12",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html",
+      "title": "Abandoned Cart Emails",
+      "sectionHash": "ff6f10b54f9dbb1a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html",
+      "title": "Back-in-Stock Notifications",
+      "sectionHash": "821366ff423fe1d1"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html",
+      "title": "Campaigns",
+      "sectionHash": "a61d34c02beb7390"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/dynamic-segments.html",
+      "title": "Dynamic segments",
+      "sectionHash": "118bd1908b46a400"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailflows.html",
+      "title": "Flows",
+      "sectionHash": "64066890694be86c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html",
+      "title": "Email marketing",
+      "sectionHash": "40c6027dfabf203b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "title": "Emails",
+      "sectionHash": "80086d97701fd700"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailtemplates.html",
+      "title": "Email templates",
+      "sectionHash": "251f848eb2a9ec5f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/index.html",
+      "title": "Email",
+      "sectionHash": "3cd7067ba237239c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html",
+      "title": "Voucher Emails",
+      "sectionHash": "dc83a7cf8af8480b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/deliveryproviders.html",
+      "title": "Delivery providers",
+      "sectionHash": "4d4041bdd37ce3b1"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/emailmarketing.html",
+      "title": "Email Marketing",
+      "sectionHash": "f1fa18ed66a6052c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/index.html",
+      "title": "Email",
+      "sectionHash": "fd378f36fc7158ad"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/sendgrid.html",
+      "title": "SendGrid delivery provider",
+      "sectionHash": "753e762f82f6459f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/dynamic-segments.html",
+      "title": "Queries",
+      "sectionHash": "61cd958a9f80d772"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/segment-search.html",
+      "title": "Segment search",
+      "sectionHash": "d2dfd9000488e731"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "The Email area organises email marketing with a tree and a workspace",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/index.html",
+      "excluded": {
+        "reason": "Navigation description, no selectable outcome"
+      }
+    },
+    {
+      "claim": "Create email templates to create new emails efficiently",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/index.html",
+      "functionId": "marketing.email-templates"
+    },
+    {
+      "claim": "Set up email schedules",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/index.html",
+      "functionId": "marketing.scheduled-send"
+    },
+    {
+      "claim": "Select recipients based on dynamic criteria such as website behaviour",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/index.html",
+      "functionId": "marketing.recipients"
+    },
+    {
+      "claim": "Register unsubscribes directly and instantly on user accounts",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/index.html",
+      "functionId": "marketing.unsubscribe"
+    },
+    {
+      "claim": "Emails are created and organised under campaign folders whose settings emails inherit",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html",
+      "functionId": "marketing.campaign-folders"
+    },
+    {
+      "claim": "Campaign folder overview with clicks widget, emails widget and draft/scheduled/sent states",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html",
+      "functionId": "marketing.tracking-statistics"
+    },
+    {
+      "claim": "Create an email, select recipients and sender, select the content page and send it",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html",
+      "functionId": "marketing.emails"
+    },
+    {
+      "claim": "Email overview with state, preview, schedule/send actions, clicks and recipients widgets",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html",
+      "functionId": "marketing.send"
+    },
+    {
+      "claim": "Automation Active folder lists scheduled emails, Inactive lists sent or draft emails",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html",
+      "functionId": "marketing.scheduled-send"
+    },
+    {
+      "claim": "Email flows send a series of emails in fixed order with fixed delays",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html",
+      "functionId": "marketing.flows"
+    },
+    {
+      "claim": "Choose an email template when creating an email",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html",
+      "functionId": "marketing.email-templates"
+    },
+    {
+      "claim": "Campaign folder settings: name, from name, from email, description, subject, domain",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html",
+      "functionId": "marketing.campaign-folders"
+    },
+    {
+      "claim": "Render content for each recipient on the campaign folder",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html",
+      "functionId": "marketing.personalized-content"
+    },
+    {
+      "claim": "Unsubscribe text and redirect after unsubscribe on the campaign folder",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html",
+      "functionId": "marketing.unsubscribe"
+    },
+    {
+      "claim": "Engagement index values for open, click, add to cart, sign on and unsubscribe",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html",
+      "functionId": "marketing.tracking-statistics"
+    },
+    {
+      "claim": "Delivery provider on the campaign folder, default Dynamicweb Send Provider",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html",
+      "functionId": "marketing.delivery-providers"
+    },
+    {
+      "claim": "Recipient provider on the campaign folder (Dynamicweb Users, Unresponsive recipients)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html",
+      "functionId": "marketing.recipients"
+    },
+    {
+      "claim": "Optional tracking provider on the campaign folder",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html",
+      "functionId": "marketing.tracking-statistics"
+    },
+    {
+      "claim": "On unsubscribe: uncheck email allowed, remove from group, uncheck custom fields, withdraw consent",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html",
+      "functionId": "marketing.unsubscribe"
+    },
+    {
+      "claim": "Data processing: ensure consent to activities is given",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html",
+      "functionId": "marketing.consent-gating"
+    },
+    {
+      "claim": "Create an email with sender, recipients, recipient groups or segment search, subject, pre-header, page, domain, attachments",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.emails"
+    },
+    {
+      "claim": "Select recipients, recipient groups and segment search on the email",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.recipients"
+    },
+    {
+      "claim": "Unsubscribe link text and redirect page on the email",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.unsubscribe"
+    },
+    {
+      "claim": "Render content for each recipient on the email",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.personalized-content"
+    },
+    {
+      "claim": "Plain text version auto-generated or custom",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.emails"
+    },
+    {
+      "claim": "Ensure unique recipients and quarantine period",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.scheduled-send"
+    },
+    {
+      "claim": "Delivery provider on the email",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.delivery-providers"
+    },
+    {
+      "claim": "Four recipient providers: Abandoned cart, Back in stock, Dynamicweb Users, Unresponsive recipients",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.recipients"
+    },
+    {
+      "claim": "Tracking provider on the email",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.tracking-statistics"
+    },
+    {
+      "claim": "Dynamicweb Users provider: consent activities and disregard email allowed",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.consent-gating"
+    },
+    {
+      "claim": "Abandoned cart recipients settings: mark abandoned after, age limit, shop, language, login, sales terms, email allowed",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.abandoned-cart"
+    },
+    {
+      "claim": "Send email now",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.send"
+    },
+    {
+      "claim": "Schedule email for a date and time",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html",
+      "functionId": "marketing.scheduled-send"
+    },
+    {
+      "claim": "Save an email as a template with name and description; edit, copy or delete templates",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailtemplates.html",
+      "functionId": "marketing.email-templates"
+    },
+    {
+      "claim": "Create a flow: name, active, start, recipients, recipient groups, processing, repeat, stop adding recipients",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailflows.html",
+      "functionId": "marketing.flows"
+    },
+    {
+      "claim": "Add flow steps: email, delay unit, delay",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailflows.html",
+      "functionId": "marketing.flows"
+    },
+    {
+      "claim": "Segment search returns users matching criteria (rows to fetch, select by)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/dynamic-segments.html",
+      "duplicateOf": "users.dynamic-groups"
+    },
+    {
+      "claim": "Five criteria kinds: user information, audit, website behaviour, custom fields, email marketing behaviour",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/dynamic-segments.html",
+      "duplicateOf": "users.dynamic-groups"
+    },
+    {
+      "claim": "A segment search must become a user group before email marketing can use it",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/dynamic-segments.html",
+      "duplicateOf": "users.dynamic-groups"
+    },
+    {
+      "claim": "Segment search results are calculated by a scheduled task",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/segment-search.html",
+      "duplicateOf": "users.dynamic-groups"
+    },
+    {
+      "claim": "Segment search depends on the deprecated statistics module; queries recommended",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/segment-search.html",
+      "excluded": {
+        "reason": "Advisory note, no selectable outcome"
+      }
+    },
+    {
+      "claim": "User queries make user group membership dynamic",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/dynamic-segments.html",
+      "duplicateOf": "users.dynamic-groups"
+    },
+    {
+      "claim": "Abandoned cart campaign folder with render content per recipient and the abandoned cart provider",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html",
+      "functionId": "marketing.abandoned-cart"
+    },
+    {
+      "claim": "Email page with an order lines paragraph and the Context order renderer app",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html",
+      "functionId": "marketing.abandoned-cart"
+    },
+    {
+      "claim": "Schedule the abandoned cart email with a repetition interval",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html",
+      "functionId": "marketing.abandoned-cart"
+    },
+    {
+      "claim": "Back in stock notification column in the Swift product details",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html",
+      "functionId": "marketing.back-in-stock"
+    },
+    {
+      "claim": "Back-in-stock campaign folder with the back in stock recipients provider",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html",
+      "functionId": "marketing.back-in-stock"
+    },
+    {
+      "claim": "Email page with Product Catalog app in product context render mode",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html",
+      "functionId": "marketing.back-in-stock"
+    },
+    {
+      "claim": "Schedule the back-in-stock email; scheduled folder",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html",
+      "functionId": "marketing.back-in-stock"
+    },
+    {
+      "claim": "Test: sign up on an out-of-stock product, restock, send",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html",
+      "functionId": "marketing.back-in-stock"
+    },
+    {
+      "claim": "Voucher emails need a voucher list and a discount triggered by the voucher",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html",
+      "duplicateOf": "commerce.vouchers"
+    },
+    {
+      "claim": "Voucher renderer app on the email page drawing from a voucher list",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html",
+      "functionId": "marketing.voucher-emails"
+    },
+    {
+      "claim": "New signups segment search (permission updated in 24 hours, permission true, no voucher yet)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html",
+      "duplicateOf": "users.dynamic-groups"
+    },
+    {
+      "claim": "Voucher email sent once per user with ensure unique recipients, scheduled with repetition",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html",
+      "functionId": "marketing.voucher-emails"
+    },
+    {
+      "claim": "External delivery provider Mandrill or SendGrid with username, password, time zone, time window, API key",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/deliveryproviders.html",
+      "functionId": "marketing.delivery-providers"
+    },
+    {
+      "claim": "Dynamicweb Save Provider saves emails to a folder for debugging",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/deliveryproviders.html",
+      "functionId": "marketing.delivery-providers"
+    },
+    {
+      "claim": "SendGrid provider: API key, legacy user name and password, time zone, time window",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/sendgrid.html",
+      "functionId": "marketing.delivery-providers"
+    },
+    {
+      "claim": "Sending time-out setting (default 720 minutes)",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/emailmarketing.html",
+      "functionId": "marketing.delivery-providers"
+    },
+    {
+      "claim": "Email settings section: email marketing and delivery providers",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/index.html",
+      "excluded": {
+        "reason": "Section index, no selectable outcome"
+      }
+    }
+  ],
+  "gaps": [
+    "Unresponsive recipients provider: no observable state distinguishes it beyond the recipient provider configuration; covered only as a recipient choice in marketing.recipients.",
+    "Email attachments: no check (attachment path column EmailFileAttachmentPath exists but an attachment is optional and not a demo outcome on its own).",
+    "Mandrill delivery provider page is linked from Delivery providers but was not in the fetched table of contents.",
+    "Product email notifications (PIM) are pim.email-notifications, not email marketing; no marketing page claims them.",
+    "Split test has no page in the DW10 manual; marketing.split-test is a candidate from the assembly only.",
+    "This is an earlier-release candidate test inventory. Current documentation navigation is not evidence of availability on this baseline; see evidence/admission.json and the exact-baseline report."
+  ]
+}

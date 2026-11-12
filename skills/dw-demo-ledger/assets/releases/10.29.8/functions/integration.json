@@ -218,6 +218,10 @@
         {
           "kind": "source",
           "ref": "skills/dw-extend-scheduled-tasks/references/scheduler-rows-and-runs.md (ScheduledTask row contract)"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#integration.scheduled-runs"
         }
       ]
     },
@@ -561,6 +565,10 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/architecture/architecture.html"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#integration.provider-odata"
         }
       ]
     },
@@ -819,6 +827,10 @@
         {
           "kind": "source",
           "ref": "nuget Dynamicweb.Ecommerce 10.29.8 (table and column names in assembly SQL strings)"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#integration.live-cart-orders"
         }
       ]
     },
@@ -932,6 +944,84 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/dynamicwebPIM-BCConnector-Use-guide.html"
+        }
+      ]
+    },
+    {
+      "id": "integration.activity-variables",
+      "area": "integration",
+      "name": "Activity variables",
+      "description": "Use variables in Data Integration jobs.",
+      "skill": "dw-integration-framework",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/integration/activity-variables.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#integration.activity-variables"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "integration.source-file-retention",
+      "area": "integration",
+      "name": "Source file retention",
+      "description": "Configure archive or delete actions for CSV and Excel source files after processing.",
+      "skill": "dw-integration-framework",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/integration/source-file-retention.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#integration.source-file-retention"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "integration.excel-title-row",
+      "area": "integration",
+      "name": "Excel title row",
+      "description": "Configure a title row above exported Excel column headers.",
+      "skill": "dw-integration-framework",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/integration/excel-title-row.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#integration.excel-title-row"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
         }
       ]
     }

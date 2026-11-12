@@ -1,0 +1,1484 @@
+{
+  "schema": 1,
+  "area": "pim",
+  "functions": [
+    {
+      "id": "pim.data-models",
+      "area": "pim",
+      "name": "Data models per product family",
+      "description": "The list of product families, each with its own attribute set (pim-build.json families[]). One attribute category and one data model per family, under a data-model folder in the DataStructure shop, with every product of the family related to its data model.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/data-models.families-have-models.json",
+        "probes/pim/data-models.folder.json",
+        "probes/pim/data-models.products-without-model.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.data-models"
+        }
+      ]
+    },
+    {
+      "id": "pim.data-sets",
+      "area": "pim",
+      "name": "Data sets with inherited default values",
+      "description": "A sub-type inside a family whose products share fixed attribute values (a pack size, a series, a certification set), with those values named.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/data-sets.data-set.json",
+        "probes/pim/data-sets.defaults.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-shared-defaults",
+          "when": "no family has a sub-type whose products share a fixed attribute value"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.data-sets"
+        }
+      ]
+    },
+    {
+      "id": "pim.field-types",
+      "area": "pim",
+      "name": "Typed fields: every attribute on the field type that fits its value",
+      "description": "The product data registry (pim-build.json attributes[]): every attribute with its kind. measure and decimal are Decimal, count is Integer, choice and multi-choice are List, flag is Checkbox, date is Date, text and code are Text, long-text is Long text, rich-text is Editor, link is Link, file is File.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/field-types.declared-typing.json",
+        "probes/pim/field-types.type-spread.json",
+        "probes/pim/field-types.text-share.json",
+        "probes/pim/field-types.declared-have-values.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.field-types"
+        }
+      ]
+    },
+    {
+      "id": "pim.field-units",
+      "area": "pim",
+      "name": "Units on measures",
+      "description": "For every measure: the quantity (length, weight, volume, voltage, current, power, pressure, temperature, flow) and the unit the company states it in. One unit group per quantity with a base unit and the conversions the markets need; the unit set as the field's preset.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/field-units.declared-units.json",
+        "probes/pim/field-units.groups-in-use.json",
+        "probes/pim/field-units.groups-valid.json",
+        "probes/pim/field-units.unit-in-label.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.field-units"
+        }
+      ]
+    },
+    {
+      "id": "pim.unit-rules-per-language",
+      "area": "pim",
+      "name": "Unit shown per language",
+      "description": "Which markets read metric and which read imperial, and the unit each language shows for each measure.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/unit-rules-per-language.rules.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-market",
+          "when": "the build has one language",
+          "probe": "probes/pim/unit-rules-per-language.ruling.one-language.json"
+        },
+        {
+          "id": "single-unit-system",
+          "when": "every language of the build belongs to a market on the same unit system"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.unit-rules-per-language"
+        }
+      ]
+    },
+    {
+      "id": "pim.list-fields",
+      "area": "pim",
+      "name": "List fields with options, single and multi select",
+      "description": "For every choice attribute: the closed list of options with a stable value and a display name; which attributes allow more than one option.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/list-fields.declared-options.json",
+        "probes/pim/list-fields.multi-select.json",
+        "probes/pim/list-fields.values-resolve.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.list-fields"
+        }
+      ]
+    },
+    {
+      "id": "pim.field-rules",
+      "area": "pim",
+      "name": "Required fields",
+      "description": "Per family, the attributes a product may not be saved without (pim-build.json attributes[].required).",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/field-rules.declared-required.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.field-rules"
+        }
+      ]
+    },
+    {
+      "id": "pim.field-validation",
+      "area": "pim",
+      "name": "Validation pattern on formatted codes",
+      "description": "A text attribute with a fixed format (a part number scheme, a HS code, a certificate number) and its pattern.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/field-validation.pattern.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-formatted-codes",
+          "when": "no text attribute of the catalogue has a fixed format"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.field-validation"
+        }
+      ]
+    },
+    {
+      "id": "pim.field-scope",
+      "area": "pim",
+      "name": "Fields that differ per language or per variant",
+      "description": "Which attributes are translated (marketing text, application notes) and which differ between variants of one product (size, colour, rating).",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/field-scope.declared-scope.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-language-no-variants",
+          "when": "the build has one language and no variants",
+          "probe": "probes/pim/field-scope.ruling.one-language-no-variant.json"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.field-scope"
+        }
+      ]
+    },
+    {
+      "id": "pim.computed-fields",
+      "area": "pim",
+      "name": "Computed fields (calculation or concatenation)",
+      "description": "A value derived from other fields: a dimension string, a converted figure, a generated title.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/computed-fields.provider-field.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-derived-values",
+          "when": "no attribute of the catalogue is derived from other attributes"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.computed-fields"
+        }
+      ]
+    },
+    {
+      "id": "pim.field-display-groups",
+      "area": "pim",
+      "name": "Field display groups",
+      "description": "How the specifications are grouped for a reader (Dimensions, Electrical, Certification), per family.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/field-display-groups.groups.json",
+        "probes/pim/field-display-groups.unnamed-groups.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-consumer-of-groups",
+          "when": "the build has no storefront and no feed",
+          "probe": "probes/pim/field-display-groups.ruling.no-shop-no-feed.json"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.field-display-groups"
+        }
+      ]
+    },
+    {
+      "id": "pim.identifiers",
+      "area": "pim",
+      "name": "Product numbers",
+      "description": "A unique item number per product and per variant.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/identifiers.number-missing.json",
+        "probes/pim/identifiers.number-duplicates.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.identifiers"
+        }
+      ]
+    },
+    {
+      "id": "pim.gtin",
+      "area": "pim",
+      "name": "GTIN / EAN on the standard field",
+      "description": "The GTIN of every product traded through retail or marketplaces.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/gtin.ean-share.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-barcode-channel",
+          "when": "no channel of the company identifies products by barcode (direct industrial sales only)"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.gtin"
+        }
+      ]
+    },
+    {
+      "id": "pim.manufacturers",
+      "area": "pim",
+      "name": "Manufacturers / brands",
+      "description": "The brands in the catalogue, each with a name and a logo, and the brand of every product.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/manufacturers.manufacturers.json",
+        "probes/pim/manufacturers.product-share.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-own-brand",
+          "when": "every product is the company's own single brand and brand is not a filter"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.manufacturers"
+        }
+      ]
+    },
+    {
+      "id": "pim.sales-units",
+      "area": "pim",
+      "name": "Units of measure on products",
+      "description": "The units a product is sold in (each, box, pallet, metre) and the quantity per unit.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/sales-units.units.json",
+        "probes/pim/sales-units.product-units.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "pieces-only",
+          "when": "every product is sold by the piece and in no other unit"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.sales-units"
+        }
+      ]
+    },
+    {
+      "id": "pim.variants",
+      "area": "pim",
+      "name": "Variants",
+      "description": "Products that exist in several orderable versions of one thing, the axis or axes that tell them apart (size, colour, voltage, length), the options on each axis and the item number of each combination.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/variants.groups-with-options.json",
+        "probes/pim/variants.masters.json",
+        "probes/pim/variants.inactive-variants.json",
+        "probes/pim/variants.variant-numbers.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-orderable-options",
+          "when": "no product of the catalogue exists in versions that differ only by an option"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.variants"
+        }
+      ]
+    },
+    {
+      "id": "pim.bom",
+      "area": "pim",
+      "name": "Bundles and parts lists (BOM)",
+      "description": "Kits, assemblies or sets, each with its component products and quantities.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/bom.bom-products.json",
+        "probes/pim/bom.lines-resolve.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-kits-or-assemblies",
+          "when": "no product is sold as a set of other catalogue products and no parts list is published"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.bom"
+        }
+      ]
+    },
+    {
+      "id": "pim.product-relations",
+      "area": "pim",
+      "name": "Product relations (accessories, spare parts, replacements)",
+      "description": "Per product: its accessories, its spare parts or consumables, and its successor when it is replaced; one relation group per kind.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/product-relations.relation-groups.json",
+        "probes/pim/product-relations.relations.json",
+        "probes/pim/product-relations.relations-resolve.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-related-products",
+          "when": "no product of the catalogue is an accessory, spare part, consumable or successor of another"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.product-relations"
+        }
+      ]
+    },
+    {
+      "id": "pim.dynamic-relations",
+      "area": "pim",
+      "name": "Dynamic relations with amounts (materials, packaging, ingredients)",
+      "description": "Per product: the materials, packaging components or ingredients it is made of, each with an amount.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/dynamic-relations.groups.json",
+        "probes/pim/dynamic-relations.relations.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-composition-data",
+          "when": "the company does not publish or report the composition or packaging of its products"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.dynamic-relations"
+        }
+      ]
+    },
+    {
+      "id": "pim.images",
+      "area": "pim",
+      "name": "Product images with a default",
+      "description": "At least one image per product, one of them marked as the default.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/images.image-share.json",
+        "probes/pim/images.images-without-default.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.images"
+        }
+      ]
+    },
+    {
+      "id": "pim.documents",
+      "area": "pim",
+      "name": "Documents in their own asset categories",
+      "description": "Per product: datasheet, manual or installation guide, certificate or declaration; one asset category per document kind with its file-type filter.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/documents.document-categories.json",
+        "probes/pim/documents.products-with-documents.json",
+        "probes/pim/documents.category-names.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.documents"
+        }
+      ]
+    },
+    {
+      "id": "pim.completeness-rules",
+      "area": "pim",
+      "name": "Completeness rules per family",
+      "description": "Per family, the fields a product needs before it may be published.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/completeness-rules.rules.json",
+        "probes/pim/completeness-rules.models-without-rule.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.completeness-rules"
+        }
+      ]
+    },
+    {
+      "id": "pim.workflow",
+      "area": "pim",
+      "name": "Product workflow with states, transitions and notifications",
+      "description": "The enrichment steps a product passes (for example Draft, Technical review, Approved), who is told at each step, and where each seeded product stands.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/workflow.states.json",
+        "probes/pim/workflow.transitions.json",
+        "probes/pim/workflow.attached.json",
+        "probes/pim/workflow.states-in-use.json",
+        "probes/pim/workflow.notification.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-editor",
+          "when": "one person owns all product data and nothing is reviewed before publication"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.workflow"
+        }
+      ]
+    },
+    {
+      "id": "pim.product-queries",
+      "area": "pim",
+      "name": "Saved product queries (worklists)",
+      "description": "The questions the team asks of the catalogue: what is incomplete per family, what waits for review, what is in which channel, what lacks a translation.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/product-queries.shared-queries.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.product-queries"
+        }
+      ]
+    },
+    {
+      "id": "pim.dashboards",
+      "area": "pim",
+      "name": "PIM dashboard with query-backed widgets",
+      "description": "The numbers the product manager watches: incomplete per family, waiting for review, missing translation, per channel.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/dashboards.dashboard.json",
+        "probes/pim/dashboards.widget-queries.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.dashboards"
+        }
+      ]
+    },
+    {
+      "id": "pim.workspaces",
+      "area": "pim",
+      "name": "Dynamic workspaces",
+      "description": "The slices the team works in: by family, by brand, by a specification, by what is incomplete.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/workspaces.workspaces.json",
+        "probes/pim/workspaces.empty-workspaces.json",
+        "probes/pim/workspaces.completeness-level.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.workspaces"
+        }
+      ]
+    },
+    {
+      "id": "pim.email-notifications",
+      "area": "pim",
+      "name": "PIM email notifications on a query",
+      "description": "Who is mailed when a worklist has rows (the enricher when products are incomplete, the reviewer when products wait).",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/email-notifications.notifications.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-editor",
+          "when": "one person owns all product data and nothing is reviewed before publication"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.email-notifications"
+        }
+      ]
+    },
+    {
+      "id": "pim.field-permissions",
+      "area": "pim",
+      "name": "Field permissions per role",
+      "description": "The roles in the product team and the fields each may read or edit (pricing fields for pricing, technical fields for engineering).",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/field-permissions.field-permissions.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-editor",
+          "when": "one person owns all product data and nothing is reviewed before publication"
+        },
+        {
+          "id": "all-roles-edit-all-fields",
+          "when": "every role of the product team may edit every field"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.field-permissions"
+        }
+      ]
+    },
+    {
+      "id": "pim.screen-layouts",
+      "area": "pim",
+      "name": "Product edit screen layout and list presets",
+      "description": "The tabs and field groups an editor needs on the product screen, and the columns each role wants in the product list.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/screen-layouts.layout.json",
+        "probes/pim/screen-layouts.preset.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "under-25-fields-per-family",
+          "when": "no family carries more than 25 attributes",
+          "probe": "probes/pim/screen-layouts.ruling.max-fields.json"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.screen-layouts"
+        }
+      ]
+    },
+    {
+      "id": "pim.channels",
+      "area": "pim",
+      "name": "Channels with their own group tree",
+      "description": "The places product data goes (webshop, marketplace, dealer portal, print, a partner), and which products go to each.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/channels.channels-with-products.json",
+        "probes/pim/channels.shared-groups.json",
+        "probes/pim/channels.empty-channels.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.channels"
+        }
+      ]
+    },
+    {
+      "id": "pim.feeds",
+      "area": "pim",
+      "name": "Feeds",
+      "description": "Per outgoing feed: the receiver, the format (JSON, XML, template), the products (a query, a channel or groups), the language and the fields.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/feeds.feeds.json",
+        "probes/pim/feeds.feeds-incomplete.json",
+        "probes/pim/feeds.template-content-type.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.feeds"
+        }
+      ]
+    },
+    {
+      "id": "pim.assortments",
+      "area": "pim",
+      "name": "Assortments",
+      "description": "Which customers or customer groups may see which part of the catalogue, AND the range an anonymous visitor may see. One active assortment switches access control on for every visitor of every shop: a visitor with no assortment sees no product. So the anonymous assortment that covers the public range is created, related and built first, and only then is anything activated.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/assortments.active.json",
+        "probes/pim/assortments.permissions.json",
+        "probes/pim/assortments.built.json",
+        "probes/pim/assortments.anonymous-range.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "open-catalogue",
+          "when": "every buyer may see every published product"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.assortments"
+        }
+      ]
+    },
+    {
+      "id": "pim.auto-assign",
+      "area": "pim",
+      "name": "Product assignment rules (auto-assign to groups)",
+      "description": "The rule that places a product in a channel group: a query, or an attribute value per group.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/auto-assign.rules.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "under-250-products",
+          "when": "the catalogue is small enough to place by hand",
+          "probe": "probes/pim/auto-assign.ruling.product-count.json"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.auto-assign"
+        }
+      ]
+    },
+    {
+      "id": "pim.languages",
+      "area": "pim",
+      "name": "Translations of products, field labels and list options",
+      "description": "The languages of the markets served; translated name and description per product; translated field labels and list option names.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/languages.translated-products.json",
+        "probes/pim/languages.text-differs.json",
+        "probes/pim/languages.label-translations.json",
+        "probes/pim/languages.option-translations.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-market",
+          "when": "the company sells in one language",
+          "probe": "probes/pim/languages.ruling.one-language.json"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.languages"
+        }
+      ]
+    },
+    {
+      "id": "pim.integration",
+      "area": "pim",
+      "name": "Data Integration activity for the product load",
+      "description": "The source the product rows come from (an ERP export, a supplier sheet) and its mapping to product fields.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "pimShop",
+        "families",
+        "attributes",
+        "productScope"
+      ],
+      "checks": [
+        "probes/pim/integration.activities.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "under-250-products",
+          "when": "the catalogue is small enough to seed without an import",
+          "probe": "probes/pim/integration.ruling.product-count.json"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.integration"
+        }
+      ]
+    },
+    {
+      "id": "pim.grid-edit",
+      "area": "pim",
+      "name": "Grid editing",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/grid-edit.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.grid-edit"
+        }
+      ]
+    },
+    {
+      "id": "pim.bulk-update",
+      "area": "pim",
+      "name": "Bulk product updates",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/bulk-update.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.bulk-update"
+        }
+      ]
+    },
+    {
+      "id": "pim.review-changes",
+      "area": "pim",
+      "name": "Review product changes",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/review-changes.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.review-changes"
+        }
+      ]
+    },
+    {
+      "id": "pim.comments",
+      "area": "pim",
+      "name": "Product comments",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/comments.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.comments"
+        }
+      ]
+    },
+    {
+      "id": "pim.ai-text",
+      "area": "pim",
+      "name": "Provider-backed product text generation",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/ai-text.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.ai-text"
+        }
+      ]
+    },
+    {
+      "id": "pim.machine-translation",
+      "area": "pim",
+      "name": "Provider-backed translation",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/machine-translation.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.machine-translation"
+        }
+      ]
+    },
+    {
+      "id": "pim.asset-patterns",
+      "area": "pim",
+      "name": "Image filename patterns",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/asset-patterns.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.asset-patterns"
+        }
+      ]
+    },
+    {
+      "id": "pim.asset-auto-checkin",
+      "area": "pim",
+      "name": "Automatic asset check-in",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/asset-auto-checkin.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.asset-auto-checkin"
+        }
+      ]
+    },
+    {
+      "id": "pim.schema-output",
+      "area": "pim",
+      "name": "Structured schema output",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/schema-output.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.schema-output"
+        }
+      ]
+    },
+    {
+      "id": "pim.auto-numbering",
+      "area": "pim",
+      "name": "Automatic product numbering",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/auto-numbering.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.auto-numbering"
+        }
+      ]
+    },
+    {
+      "id": "pim.range-fields",
+      "area": "pim",
+      "name": "Range fields",
+      "description": "Inventory omission recovered; baseline support and observable behaviour require measurement.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/pim/range-fields.availability.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#pim.range-fields"
+        }
+      ]
+    }
+  ]
+}

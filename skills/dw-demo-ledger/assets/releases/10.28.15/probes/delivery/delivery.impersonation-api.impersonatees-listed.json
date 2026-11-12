@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.impersonation-api.impersonatees-listed",
+  "functionId": "delivery.impersonation-api",
+  "intent": {
+    "proves": "GET /dwapi/users/impersonatees returns at least one user for the impersonator persona.",
+    "level": "behavioural",
+    "scope": "impersonator persona token supplied at runtime"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-auth",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-auth",
+      "operation": "GET /dwapi/users/impersonatees",
+      "reason": "No dwapi handler is implemented; needs a frontend credential supplied as runtime input and a measured response projection."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html"
+    }
+  ]
+}

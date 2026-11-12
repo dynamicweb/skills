@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "id": "swift.style-wiring.typography-defined",
+  "functionId": "swift.style-wiring",
+  "intent": {
+    "proves": "At least one typography exists for the Swift stylesheets.",
+    "level": "configured",
+    "scope": "all typographies"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-typographies",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_typographies",
+      "arguments": {}
+    },
+    {
+      "id": "file-count",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "path": "System/Styles/Typography/*.json"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/typography.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Core/ToolNames.cs and tool classes (HEAD, read 2026-11-11)"
+    }
+  ]
+}

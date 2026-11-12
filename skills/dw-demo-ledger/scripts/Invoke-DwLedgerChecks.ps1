@@ -49,6 +49,7 @@ $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Ledger.Sql.ps1')
 . (Join-Path $PSScriptRoot 'Pim.Fields.ps1')
 . (Join-Path $PSScriptRoot 'Pim.Queries.ps1')
+. (Join-Path $PSScriptRoot 'Pim.Matrix.ps1')
 . (Join-Path $PSScriptRoot 'Ledger.Transport.ps1')
 . (Join-Path $PSScriptRoot 'Ledger.Execute.ps1')
 $script:LedgerMcpCache=@{};$script:LedgerStoredFields=$null

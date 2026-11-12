@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "swift.header-footer.footer-page",
+  "functionId": "swift.header-footer",
+  "intent": {
+    "proves": "At least one live footer page (item type Swift-v2_Footer) exists.",
+    "level": "applied",
+    "scope": "all non-deleted pages on the solution"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM Page WHERE PageItemType = 'Swift-v2_Footer' AND PageDeleted = 0",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/references/paragraphs.md and dw-data-access/references/recipes-content.md (Page, Paragraph and GridRow columns)"
+    }
+  ]
+}

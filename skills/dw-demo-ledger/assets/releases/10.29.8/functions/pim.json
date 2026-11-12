@@ -27,6 +27,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#data-models"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.data-models"
         }
       ]
     },
@@ -117,6 +121,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#field-units"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.field-units"
         }
       ]
     },
@@ -181,6 +189,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#list-fields"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.list-fields"
         }
       ]
     },
@@ -238,6 +250,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#field-validation"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.field-validation"
         }
       ]
     },
@@ -270,6 +286,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#field-scope"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.field-scope"
         }
       ]
     },
@@ -301,6 +321,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#computed-fields"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.computed-fields"
         }
       ]
     },
@@ -334,6 +358,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#field-display-groups"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.field-display-groups"
         }
       ]
     },
@@ -490,6 +518,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#variants"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.variants"
         }
       ]
     },
@@ -587,6 +619,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#dynamic-relations"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.dynamic-relations"
         }
       ]
     },
@@ -730,6 +766,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#product-queries"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.product-queries"
         }
       ]
     },
@@ -851,6 +891,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#field-permissions"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.field-permissions"
         }
       ]
     },
@@ -884,6 +928,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#screen-layouts"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.screen-layouts"
         }
       ]
     },
@@ -940,6 +988,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#feeds"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.feeds"
         }
       ]
     },
@@ -974,6 +1026,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#assortments"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.assortments"
         }
       ]
     },
@@ -1113,6 +1169,10 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#omissions"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.bulk-update"
         }
       ]
     },
@@ -1293,6 +1353,125 @@
         {
           "kind": "migration",
           "ref": "migration/pim-registry.json#omissions"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.range-fields"
+        }
+      ]
+    },
+    {
+      "id": "pim.matrix-fields",
+      "area": "pim",
+      "name": "Matrix fields",
+      "description": "Store a product attribute as a typed table with declared columns, rows and source values.",
+      "skill": "dw-pim-modelling",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "flag",
+          "id": "Dynamicweb.Ecommerce.Products.MatrixFieldTypeFeature",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "expected.matrix"
+      ],
+      "checks": [
+        "probes/pim/matrix-fields.field-type.json",
+        "probes/pim/matrix-fields.flag-on.json",
+        "probes/pim/matrix-fields.columns.json",
+        "probes/pim/matrix-fields.parent-marker.json",
+        "probes/pim/matrix-fields.cells.json",
+        "probes/pim/matrix-fields.negative-control.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.matrix-fields"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "pim.json-feeds",
+      "area": "pim",
+      "name": "JSON feed provider",
+      "description": "Publish a configured PIM feed with the JSON provider.",
+      "skill": "dw-pim-modelling",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/pim/json-feeds.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.json-feeds"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "pim.attribute-translation-state",
+      "area": "pim",
+      "name": "Attribute translation state",
+      "description": "Show translation states for standard, global and category attribute definitions.",
+      "skill": "dw-pim-localization",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/pim/attribute-translation-state.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.attribute-translation-state"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "pim.import-key-detection",
+      "area": "pim",
+      "name": "Import key detection",
+      "description": "Detect primary keys when preparing a PIM import.",
+      "skill": "dw-pim-modelling",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/pim/import-key-detection.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#pim.import-key-detection"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
         }
       ]
     }
