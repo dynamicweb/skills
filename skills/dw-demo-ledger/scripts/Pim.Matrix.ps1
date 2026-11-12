@@ -98,7 +98,9 @@ function Get-PimMatrixObservation {
     $m=Get-PimMatrixDeclaration $Build
     function Quote-MatrixSql([string]$Value){return "N'"+$Value.Replace("'","''")+"'"}
     function Read-MatrixSql([string]$Query){
-        $json=@(Invoke-Sqlcmd-Rows -Server $Server -Database $Database -Query ($Query+' FOR JSON PATH, INCLUDE_NULL_VALUES')) -join ''
+        # SQL can emit no JSON row for an empty result. COALESCE makes a completed
+        # empty read explicit, so absence FAILs instead of becoming UNVERIFIED.
+        $json=@(Invoke-Sqlcmd-Rows -Server $Server -Database $Database -Query ("SELECT COALESCE(($Query FOR JSON PATH, INCLUDE_NULL_VALUES),N'[]')")) -join ''
         if(-not $json){throw [InvalidOperationException]::new('No complete SQL JSON observation.')}
         return ,(ConvertFrom-Json -InputObject $json -AsHashtable -NoEnumerate)
     }
