@@ -53,9 +53,10 @@ $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Pim.Fields.ps1')
 . (Join-Path $PSScriptRoot 'Pim.Queries.ps1')
 . (Join-Path $PSScriptRoot 'Pim.Matrix.ps1')
+. (Join-Path $PSScriptRoot 'Pim.Layout.ps1')
 . (Join-Path $PSScriptRoot 'Ledger.Transport.ps1')
 . (Join-Path $PSScriptRoot 'Ledger.Execute.ps1')
-$script:LedgerMcpCache=@{};$script:LedgerStoredFields=$null
+$script:LedgerMcpCache=@{};$script:LedgerStoredFields=$null;$script:LedgerPimLayout=@{}
 $assets=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
 try {
     $build=Read-LedgerJson $BuildFile (Join-Path $assets 'build.schema.json')

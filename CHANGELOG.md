@@ -3,6 +3,10 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.0]
+
+- Replace the PIM ledger's `screen-layouts` layout check with nine edit-layout checks (product edit screen type, resolving editors, a pure tab per family, at most 5 tabs per product, 12 editors per group and 30 per tab, no mechanism names, one catch-all group, unique group names, a stated division) and the ground `one-attribute-family` for `under-25-fields-per-family`. Add `pim.field-placement` (`global-fields-filled`, ground `single-family-catalogue`). New local SQL handlers `pim-edit-layout` and `pim-field-placement` read their tables once per run; every rule is a pure function with a red control and its limits are binding arguments. The build schema gains an optional `editLayout`. Recorded as 10.29.8 revision 6 and, from A schema and package evidence, 10.28.15 revision 3. Admin API and MCP bindings stay planned.
+
 ## [6.7.0]
 
 - Implement five read-only CPQ SQL observations with independent scope, strict condition JSON, ownership checks and green/red tests. Revision 5 keeps the baseline candidate and app facts unverified without loaded-runtime evidence.

@@ -44,6 +44,8 @@ Follow [the release process](references/release-process.md) for additions/remova
 
 For [dw 10.29.8] matrix fields, follow [the matrix contract](references/matrix-fields.md): explicit feature facts, declared source cells, exact stored comparisons and a read-only red control. Availability in an older release must come from that release's evidence.
 
+The product edit layout and global field placement follow [the edit-layout contract](references/edit-layout.md): declare `editLayout` before building, limits as binding data.
+
 CPQ checks use [independent scope declarations and read-only observations](references/cpq-observations.md). Loaded runtime evidence and complete domain producers remain prerequisites to readiness.
 
 ## Scripts (scripts/)
@@ -71,6 +73,9 @@ CPQ checks use [independent scope declarations and read-only observations](refer
 | [Ledger.Execute.ps1](scripts/Ledger.Execute.ps1) | Reads selected binding | Fixed handlers; missing implementation fails visibly |
 | [Pim.Fields.ps1](scripts/Pim.Fields.ps1) | Local reads when called | Declared attribute checks and token validation |
 | [Pim.Queries.ps1](scripts/Pim.Queries.ps1) | Local SQL/files when called | Migrated family/widget checks |
+| [Pim.Layout.ps1](scripts/Pim.Layout.ps1) | Local SQL SELECT and in-memory rules | Edit layout aspects and global field fill |
+| [Layout.Tests.ps1](scripts/tests/Layout.Tests.ps1) | Isolated fixtures | Green and red controls per edit layout rule |
+| [Placement.Tests.ps1](scripts/tests/Placement.Tests.ps1) | Isolated fixtures | Green and red controls for global field placement |
 | [Ledger.Tests.ps1](scripts/tests/Ledger.Tests.ps1) | Isolated fixtures | Red controls, selection, missing probes and schema checks |
 | [Observations.Tests.ps1](scripts/tests/Observations.Tests.ps1) | Isolated fixtures | Filter, token, XML, path and authenticated-query controls |
 | [Corrections.Tests.ps1](scripts/tests/Corrections.Tests.ps1) | Inline SQL fixtures in tempdb (optional local server) | Green and red controls for corrected and newly inventoried checks, refusal fallback |

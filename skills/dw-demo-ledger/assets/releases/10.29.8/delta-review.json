@@ -9113,6 +9113,22 @@
       "functionId": "commerce.product-compare",
       "source": "https://github.com/dynamicweb/skills/issues/212",
       "reason": "The carrier is the Product Catalog app's Compare template (platform), not Swift; Swift 2 ships no compare template."
+    },
+    {
+      "candidateId": "registry:2026-11-11.3#pim.field-placement",
+      "kind": "inventory-correction",
+      "disposition": "inventory-correction",
+      "functionId": "pim.field-placement",
+      "source": "registry-commit:02354513e0f8ea86227535d137ffb999096504b5",
+      "reason": "Reviewed against the 10.29.8 schema: the custom global field columns and the EcomProductField flags carry the measure. Carried as written under ruling ex4m9z. Not counted as a release addition."
+    },
+    {
+      "candidateId": "registry:2026-11-11.3#pim.screen-layouts",
+      "kind": "check-correction",
+      "disposition": "check-correction",
+      "functionId": "pim.screen-layouts",
+      "source": "registry-commit:02354513e0f8ea86227535d137ffb999096504b5",
+      "reason": "The layout check passed any active layout with a tab. Replaced by nine edit-layout checks and the ground one-attribute-family, carried as written under ruling ex4m9z. The ScreenLayout tables and Dynamicweb.Products.UI.Screens.ProductEditScreen are unchanged between 10.28.15 and 10.29.8."
     }
   ]
 }

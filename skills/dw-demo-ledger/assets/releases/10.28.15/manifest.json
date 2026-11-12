@@ -34,7 +34,7 @@
   ],
   "coverage": {
     "status": "incomplete",
-    "note": "Earlier-release candidate test inventory admitted from A package metadata and A schema only. Removed B-only login activity; matrix is absent. Retained candidates make no availability claim until measured on A. Optional absent tracking-table bindings are withheld. Revision 2 admits the brand-build inventory corrections whose carriers are in A package bytes and A schema, with the same check corrections as 10.29.8 revision 3."
+    "note": "Earlier-release candidate test inventory admitted from A package metadata and A schema only. Removed B-only login activity; matrix is absent. Retained candidates make no availability claim until measured on A. Optional absent tracking-table bindings are withheld. Revision 2 admits the brand-build inventory corrections whose carriers are in A package bytes and A schema, with the same check corrections as 10.29.8 revision 3. Revision 3 applies the same edit-layout check replacement and pim.field-placement correction as 10.29.8 revision 6: the ScreenLayout tables are unchanged between A and B and ProductEditScreen is a public type of the A Products.UI package (evidence/admission.json)."
   },
-  "revision": 2
+  "revision": 3
 }

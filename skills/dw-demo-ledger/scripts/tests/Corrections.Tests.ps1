@@ -134,6 +134,44 @@ Describe 'Inventory corrections have green and red SQL controls (<_>)' -ForEach 
         (Invoke-ProbeFixture $c @{EcomShippings=(T $cols @("1, N'', N''","0, N'P1', N''"))}).result | Should -Be FAIL
     }
 }
+Describe 'Edit-layout and field-placement grounds and reads have SQL controls (<_>)' -ForEach $versions {
+    BeforeAll {
+        $v=$_
+        function CatFields([string]$Category,[int]$Count){1..$Count|ForEach-Object {"N'$Category', N'f$_'"}}
+        $script:catCols=@('FieldCategoryId','FieldId')
+    }
+    It 'one-attribute-family holds for one small family only' -Skip:$noSql {
+        $c=Get-Probe $v 'probes/pim/screen-layouts.ruling.one-category-with-fields.json'
+        $one=@{EcomProductCategoryField=(T $catCols (@(CatFields 'press' 25)+@(CatFields 'reference_category' 3)))}
+        $r=Invoke-ProbeFixture $c $one;$r.value | Should -Be 1;$r.result | Should -Be PASS
+        $r=Invoke-ProbeFixture $c @{EcomProductCategoryField=(T $catCols @(CatFields 'press' 26))};$r.value | Should -Be 2;$r.result | Should -Be FAIL
+        (Invoke-ProbeFixture $c @{EcomProductCategoryField=(T $catCols (@(CatFields 'press' 3)+@(CatFields 'film' 3)))}).result | Should -Be FAIL
+    }
+    It 'single-family-catalogue holds for one category with fields, whatever its size' -Skip:$noSql {
+        $c=Get-Probe $v 'probes/pim/field-placement.ruling.one-category-with-fields.json'
+        (Invoke-ProbeFixture $c @{EcomProductCategoryField=(T $catCols (@(CatFields 'press' 40)+@(CatFields 'reference_category' 3)))}).result | Should -Be PASS
+        (Invoke-ProbeFixture $c @{EcomProductCategoryField=(T $catCols (@(CatFields 'press' 2)+@(CatFields 'film' 1)))}).result | Should -Be FAIL
+    }
+    It 'the four layout reads run as local SELECTs and keep NULL parents and pipes intact' -Skip:$noSql {
+        . (Join-Path $PSScriptRoot '../Pim.Layout.ps1')
+        $tables=@{
+            ScreenLayout=(T @('ScreenLayoutId','ScreenLayoutActive','ScreenLayoutScreenType','ScreenLayoutName') @("CAST(1 AS bigint), CAST(1 AS bit), N'Dynamicweb.Products.UI.Screens.ProductEditScreen', N'Editor'"))
+            ScreenLayoutTab=(T @('ScreenLayoutTabId','ScreenLayoutTabScreenLayoutId','ScreenLayoutTabOrder','ScreenLayoutTabName') @("CAST(3 AS bigint), 1, 1, N'Press | heat'","CAST(4 AS bigint), CAST(NULL AS int), 2, N'Orphan'"))
+            ScreenLayoutGroup=(T @('ScreenLayoutGroupId','ScreenLayoutGroupScreenLayoutTabId','ScreenLayoutGroupIsCatchAll','ScreenLayoutGroupOrder','ScreenLayoutGroupName') @("CAST(7 AS bigint), 3, CAST(1 AS bit), 1, N'Other fields '"))
+            ScreenLayoutEditor=(T @('ScreenLayoutEditorId','ScreenLayoutEditorScreenLayoutGroupId','ScreenLayoutEditorOrder','ScreenLayoutEditorSystemName') @("CAST(9 AS bigint), N'7', 1, N'CategoryFields|ProductCategory|press|platen'"))
+        }
+        $real=${function:Invoke-Sqlcmd-Rows}
+        Mock Invoke-Sqlcmd-Rows {& $real -Server $env:LEDGER_TEST_SQLSERVER -Database 'tempdb' -Query (ConvertTo-FixtureSql $Query $tables)}
+        $l=Get-PimEditLayout -Server $env:LEDGER_TEST_SQLSERVER -Database 'tempdb'
+        $l.tabs.name | Should -Contain 'Press | heat'
+        ($l.tabs|Where-Object name -EQ 'Orphan').layoutId | Should -Be '0'
+        $l.groups[0].name | Should -Be 'Other fields '
+        $m=Resolve-PimEditLayout -Layout $l
+        $m.tabs.Count | Should -Be 1
+        $m.tabs[0].groups[0].catchAll | Should -BeTrue
+        $m.tabs[0].groups[0].editors[0].field | Should -Be 'platen'
+    }
+}
 Describe 'Declared attribute controls' {
     It 'accepts a range attribute on field type 16 only' {
         $a=@(@{category='c';field='f';kind='range'})

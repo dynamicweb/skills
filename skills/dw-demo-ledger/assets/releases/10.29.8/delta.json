@@ -3,7 +3,7 @@
   "status": "reviewed",
   "before": "10.28.15",
   "after": "10.29.8",
-  "revision": 4,
+  "revision": 6,
   "rawScanDigest": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c",
   "review": "delta-review.json",
   "added": [
@@ -586,7 +586,8 @@
     "This is a candidate ledger revision, not a measured platform release.",
     "Seventeen newly declared behaviours have planned bindings and remain UNVERIFIED.",
     "The matrix comparator has synthetic red controls; target flag-on and altered-cell proof belong to the demo build session.",
-    "Revision 3 inventory corrections are candidates: implemented SQL reads have fixture red controls only, and every new behavioural binding is planned."
+    "Revision 3 inventory corrections are candidates: implemented SQL reads have fixture red controls only, and every new behavioural binding is planned.",
+    "Revision 6 edit-layout and field-placement checks have pure-rule red controls and SQL bindings only; Admin API and MCP bindings are planned. A legitimate 0 in a number field reads as no value in global-fields-filled, a tab named exactly like a category id is an offender, and a shared-category tab counts for every family in tabs-per-product."
   ],
   "corrections": [
     {
@@ -1066,6 +1067,20 @@
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
+    },
+    {
+      "id": "pim.field-placement",
+      "change": "inventory-correction",
+      "sources": [
+        "registry-commit:02354513e0f8ea86227535d137ffb999096504b5",
+        "ruling:ex4m9z"
+      ],
+      "evidence": [
+        "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomProductField.ProductFieldSystemName, ProductFieldTypeId, ProductFieldIsStandard; dbo.EcomFieldType.FieldTypeProvider; the custom global field columns on dbo.EcomProducts"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "admittedTo10.28.15": true,
+      "note": "Revision 6: not a platform addition between 10.28.15 and 10.29.8. A placement rule the inventory missed: a custom global field filled on under half the products in scope belongs in a family's data model."
     }
   ],
   "mapped": [
@@ -1142,6 +1157,38 @@
       "change": "check-correction",
       "source": "https://github.com/dynamicweb/skills/issues/210",
       "note": "Planned binding moved to the status tool; the log tool misses completed runs."
+    },
+    {
+      "checkId": "pim.screen-layouts.layout",
+      "change": "check-replaced",
+      "replacedBy": [
+        "pim.screen-layouts.product-edit-layout",
+        "pim.screen-layouts.editors-resolve",
+        "pim.screen-layouts.family-tabs",
+        "pim.screen-layouts.tabs-per-product",
+        "pim.screen-layouts.scannable",
+        "pim.screen-layouts.editor-words",
+        "pim.screen-layouts.one-catch-all",
+        "pim.screen-layouts.unique-group-names",
+        "pim.screen-layouts.division-stated"
+      ],
+      "sources": [
+        "registry-commit:02354513e0f8ea86227535d137ffb999096504b5",
+        "ruling:ex4m9z"
+      ],
+      "note": "Passed any active layout that had a tab: it read no screen type, did not check that editors resolve and said nothing about which tab a family's fields sit on. Replaced by nine edit-layout checks (handler pim-edit-layout) with their limits as binding arguments: one active layout for the full ProductEditScreen type, resolving editors, a pure tab per family, at most 5 tabs per product, 12 editors per group and 30 per tab, no mechanism names, one catch-all group, unique group names and a stated division."
+    },
+    {
+      "checkId": "pim.screen-layouts.ruling.max-fields",
+      "change": "ground-replaced",
+      "replacedBy": [
+        "pim.screen-layouts.ruling.one-category-with-fields"
+      ],
+      "sources": [
+        "registry-commit:02354513e0f8ea86227535d137ffb999096504b5",
+        "ruling:ex4m9z"
+      ],
+      "note": "Ground under-25-fields-per-family is replaced by one-attribute-family: a catalogue with two or more families that carry fields can no longer rule the layout out because each family is small. A ruling on the old ground is an invalid ruling."
     }
   ]
 }

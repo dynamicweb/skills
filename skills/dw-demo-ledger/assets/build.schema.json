@@ -74,6 +74,52 @@
     "productScope": {
       "type": "object"
     },
+    "editLayout": {
+      "type": "object",
+      "properties": {
+        "division": {
+          "enum": [
+            "role",
+            "task",
+            "lifecycle",
+            "source"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "tabs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "\\S"
+              },
+              "for": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$"
+              },
+              "owner": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "for"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "division",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
     "rulings": {
       "type": "object"
     },
