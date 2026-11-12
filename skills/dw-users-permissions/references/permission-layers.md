@@ -387,6 +387,17 @@ a GROUP row (`AccessUserType = 2`) and inherited — MCP `save_user_groups` expo
 `allowBackend`. A user needs both: the bit to reach the shell, and a `Section` grant to see
 anything in it.
 
+**A `Section` level of `None` does not fence Management API read queries.** A `Default` backend user in
+one group with `Section`/`Settings` at `None`, no `All` grant and no Settings navigation still read a
+key/value row from the `GlobalSettingsAll` query with its own backend bearer [dw 10.29.8]. The query maps
+configuration keys and values with no permission check of its own, while the same bearer was held to
+level `none` and zero rows on file folders outside its grant. Only the read was measured, not a settings
+write. Hidden navigation therefore proves nothing about a restricted backend role. Run the negative
+probe as the restricted user: sign in as that user, take that user's own bearer from the admin session
+(never an API key or an administrator's token), call `GlobalSettingsAll` with a page size of 1, and
+require a denial carrying no data. Do not log the returned value. Until the probe denies, do not leave
+that identity with backend access on an install whose settings hold secrets.
+
 ## 5. The unified picture
 
 ```

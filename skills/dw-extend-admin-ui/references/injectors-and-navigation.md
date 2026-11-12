@@ -6,6 +6,7 @@ Adding to someone else's screen, area tree or Actions menu without forking it, a
 
 - [Extending navigation and menus you do not own](#extending-navigation-and-menus-you-do-not-own)
 - [Step 5 — Extending a screen you do not own](#step-5-extending-a-screen-you-do-not-own)
+- [Add-in plumbing outside the screen model](#add-in-plumbing-outside-the-screen-model)
 
 ## Extending navigation and menus you do not own
 
@@ -146,3 +147,14 @@ someone else's screen.
 
 `EditScreenInjector<TScreen, TModel>` and `ListScreenInjector<TScreen, TRowModel>` are specialised bases
 for field- and cell-level work.
+
+## Add-in plumbing outside the screen model
+
+Three facts for an add-in that serves its own endpoint or reads platform files beside its screens:
+
+- **An `IPipeline` endpoint outside `/Admin` sees no backend user** until it calls
+  `HttpContext.AuthenticateAsync("Dynamicweb.Admin")`. Authenticate against that scheme first and
+  authorise on the result; an unauthenticated context there is not a signed-out administrator.
+- **`Database.CreateConnection()` returns an OPEN connection.** Do not open it again; dispose it.
+- **An `ItemType_*.xml` file can declare `encoding="utf-16"` while stored as UTF-8 with a BOM.** Decode
+  by the byte-order mark, not by the XML declaration.
