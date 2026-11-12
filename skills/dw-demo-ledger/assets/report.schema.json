@@ -13,7 +13,10 @@
       "minLength": 1
     },
     "lock": {
-      "type": "object",
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
         "commit": {
           "type": "string",
@@ -48,7 +51,10 @@
       "type": "object",
       "properties": {
         "baseline": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "minLength": 1
         },
         "observed": {
@@ -62,6 +68,28 @@
         },
         "diagnostic": {
           "type": "boolean"
+        },
+        "local": {
+          "type": "object",
+          "properties": {
+            "files": {
+              "enum": [
+                "not-supplied",
+                "not-tied-to-target"
+              ]
+            },
+            "database": {
+              "enum": [
+                "not-supplied",
+                "not-tied-to-target"
+              ]
+            }
+          },
+          "required": [
+            "files",
+            "database"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

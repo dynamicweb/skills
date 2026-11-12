@@ -35,6 +35,8 @@ function Invoke-LedgerCheck {
             $observation=Get-LedgerFileObservation -Binding $binding -FilesPath $FilesPath
         } elseif($binding.surface -eq 'admin-api') {
             $observation=Get-LedgerAdminObservation -Binding $binding -Build $Build -Capabilities $Capabilities
+        } elseif($binding.surface -eq 'dwapi') {
+            $observation=Get-LedgerDwapiObservation -Binding $binding -Build $Build
         } elseif($binding.surface -eq 'sql') {
             if(-not $Database){throw 'Local SQL requires Database.'}
             switch($binding.handler) {

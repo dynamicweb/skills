@@ -53,6 +53,7 @@ CPQ checks use [independent scope declarations and read-only observations](refer
 | Script | Reads / writes | What it does |
 |---|---|---|
 | [Invoke-DwLedgerChecks.ps1](scripts/Invoke-DwLedgerChecks.ps1) | Reads target; writes local report | Schema/lock verification, discovery, binding selection and evidence |
+| [Update-DwLedgerLock.ps1](scripts/Update-DwLedgerLock.ps1) | Reads build file and snapshot; writes a new build file | Re-lock report after a snapshot revision: removed checks and functions, grounds that are gone, new checks |
 | [Compare-DwLedgerRelease.ps1](scripts/Compare-DwLedgerRelease.ps1) | Reads snapshots/evidence; writes proposed delta | Release comparison skeleton; never marks a feature measured |
 | [Find-DwReleaseFunctions.ps1](scripts/Find-DwReleaseFunctions.ps1) | Reads releases/schema; writes raw scan | General package, flag, schema and changelog discovery before review |
 | [Release.Metadata.ps1](scripts/Release.Metadata.ps1) | Reads assembly metadata bytes | Public types, enum constants and feature ancestry without target execution |
@@ -71,6 +72,8 @@ CPQ checks use [independent scope declarations and read-only observations](refer
 | [Ledger.Observations.ps1](scripts/Ledger.Observations.ps1) | Reads collections/local XML when called | Tokens, filtered counts, authenticated API projection and scoped files |
 | [Ledger.Sql.ps1](scripts/Ledger.Sql.ps1) | Local SELECT when called | Single-SELECT guard and integrated-authentication reads in a rolled-back transaction |
 | [Ledger.Execute.ps1](scripts/Ledger.Execute.ps1) | Reads selected binding | Fixed handlers; missing implementation fails visibly |
+| [Ledger.Facts.ps1](scripts/Ledger.Facts.ps1) | Reads add-in folder names and settings layers when called | App and settings facts for the requested functions' requirements |
+| [Ledger.Run.ps1](scripts/Ledger.Run.ps1) | Definitions only | Ruling, then requirements, then observation; functions named by a requirement or a ground |
 | [Pim.Fields.ps1](scripts/Pim.Fields.ps1) | Local reads when called | Declared attribute checks and token validation |
 | [Pim.Queries.ps1](scripts/Pim.Queries.ps1) | Local SQL/files when called | Migrated family/widget checks |
 | [Pim.Layout.ps1](scripts/Pim.Layout.ps1) | Local SQL SELECT and in-memory rules | Edit layout aspects and global field fill |
@@ -79,6 +82,9 @@ CPQ checks use [independent scope declarations and read-only observations](refer
 | [Ledger.Tests.ps1](scripts/tests/Ledger.Tests.ps1) | Isolated fixtures | Red controls, selection, missing probes and schema checks |
 | [Observations.Tests.ps1](scripts/tests/Observations.Tests.ps1) | Isolated fixtures | Filter, token, XML, path and authenticated-query controls |
 | [Integrity.Tests.ps1](scripts/tests/Integrity.Tests.ps1) | Isolated fixtures, fake connection, mocked MCP | Red controls for the SQL guard, read-tool allowlist, profiles, rulings, requirements and runner errors |
+| [Requirements.Tests.ps1](scripts/tests/Requirements.Tests.ps1) | Isolated fixtures, mocked reads | Red controls for requirement facts, evaluation order, cited functions, digest and the delivery read |
+| [Runner.Tests.ps1](scripts/tests/Runner.Tests.ps1) | Temporary git checkout, loopback stub | End-to-end runner and re-lock controls: PASS, DISABLED, changed runner, version change, stopped run |
+| [LedgerFixture.ps1](scripts/tests/LedgerFixture.ps1) | Writes a temporary fixture checkout | Fixture repository and stub site for the end-to-end controls |
 | [Corrections.Tests.ps1](scripts/tests/Corrections.Tests.ps1) | Inline SQL fixtures in tempdb (optional local server) | Green and red controls for corrected and newly inventoried checks, refusal fallback |
 
 Run from a clean checkout at the build lock's commit:
@@ -87,4 +93,4 @@ Run from a clean checkout at the build lock's commit:
 pwsh -NoProfile -File scripts/Invoke-DwLedgerChecks.ps1 -Manifest $manifest -BuildFile $build -OutFile $report
 ```
 
-Set DW_BASE_URL and DW_MCP_TOKEN or DW_API_TOKEN in the process environment. No credential belongs in a build declaration. Supply SqlServer explicitly only for a local target. DiagnosticVersionMismatch permits investigation of another baseline or uncommitted runner, but cannot produce aggregate PASS.
+Set DW_BASE_URL and DW_MCP_TOKEN or DW_API_TOKEN in the process environment. No credential belongs in a build declaration. Supply SqlServer explicitly only for a local target. DiagnosticVersionMismatch permits investigation of another baseline or uncommitted runner, but cannot produce aggregate PASS. A run that stops before any check still writes the report: `result` is ERROR and `errors` names the cause. After a snapshot revision an existing build keeps its lock commit; move it with [Update-DwLedgerLock.ps1](scripts/Update-DwLedgerLock.ps1) as the release process describes.

@@ -3,6 +3,15 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.5]
+
+- `dw-demo-ledger` requirements can be established. The runner reads an `app` requirement from the installed add-in folder (`<id>.<version>`, local Files root or MCP file listing; `true`, an exact version or `{min}`), a settings path from the settings layers at the local Files root, and a flag by its class name when one feature type ends with it. A `capability` that names a function holds when that function's locked checks pass in the run. Rulings are applied before requirements, and a ground may cite a function (`requiresFunction`) that must be locked and passing.
+- The run covers what it loads: the dirty-checkout refusal includes the shared transport `Dw.Api.psm1`, the digest hashes hidden files, the descriptor read is retried and an unread descriptor is no longer reported as another release. The report states that a supplied Files root or database is not tied to the target (`compatibility.local`). A run that stops early writes a report with `result` ERROR and the cause in `errors`.
+- New `Update-DwLedgerLock.ps1` re-locks a build after a snapshot revision and reports removed checks and functions, grounds that are gone and new checks. A digest mismatch names both digests and says when converted line endings are the cause.
+- New read-only delivery handler `dwapi-count`: one anonymous GET on a route from `dwapiReadRoutes`, with a row projection. No snapshot binding uses it yet.
+- `Find-DwReleaseFunctions.ps1` takes `-ChangelogFile` and `-ChangelogDigest`, never overwrites retained evidence with different content, keeps the ring listing, writes ordered output with a `candidatesDigest`, lists a work item once and records where each schema capture came from.
+- Validator: delivery routes and projection, the shape of an app expectation, cited functions, circular function requirements, and a ratchet for functions without a coverage claim (`scripts/ledger-coverage-baseline.json`). No snapshot file changes; both snapshot digests are unchanged.
+
 ## [6.8.4]
 
 - `dw-source-explorer`: the platform source is not on public GitHub (`dynamicweb-core` and `dynamicweb-ecommerce` answer 404 unauthenticated, `DynamicWeb` is the feature-request repository with no code). The skill now leads with the public routes: NuGet package metadata read with `MetadataReader`, the release changelog API and the documentation, then a table of the repositories that are public and hold code. `dw-extend-mcp-tools`, the tag-contexts reference and the README no longer point at platform source on GitHub.

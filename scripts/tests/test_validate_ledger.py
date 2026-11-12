@@ -194,5 +194,78 @@ class LedgerValidationTests(unittest.TestCase):
         self.assertEqual([], validate_ledgers(self.repo))
 
 
+    def test_delivery_binding_is_an_allowlisted_read_route_with_a_projection(self):
+        binding = {'id': 'dwapi', 'surface': 'dwapi', 'status': 'implemented', 'handler': 'dwapi-count',
+                   'operation': 'content/areas', 'projection': {'rowsPath': '$'}}
+        self.check['bindings'] = [binding]
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        for route in ('users/info/profiles/switch', 'users/authenticate/refresh', 'ecommerce/carts/create'):
+            binding['operation'] = route
+            self.save()
+            self.assertIn('delivery route is not an allowlisted read route', '\n'.join(validate_ledgers(self.repo)))
+        binding.update(operation='content/areas', projection={})
+        self.save()
+        self.assertIn('dwapi-count needs projection.rowsPath', '\n'.join(validate_ledgers(self.repo)))
+        del binding['operation']
+        self.save()
+        self.assertIn('delivery binding names no operation', '\n'.join(validate_ledgers(self.repo)))
+
+    def test_app_expectation_is_true_a_version_or_a_minimum(self):
+        for expected in (True, '10.24.2', {'min': '0.6.0-beta'}):
+            self.function['requires'] = [{'kind': 'app', 'id': 'Example.App', 'expected': expected}]
+            self.save()
+            self.assertEqual([], validate_ledgers(self.repo), expected)
+        for expected in (False, '', 3, {'max': '1.0.0'}, {'min': '1.0.0', 'max': '2.0.0'}):
+            self.function['requires'] = [{'kind': 'app', 'id': 'Example.App', 'expected': expected}]
+            self.save()
+            self.assertIn('schema validation failed', '\n'.join(validate_ledgers(self.repo)), expected)
+
+    def second_function(self, **change):
+        other = dict(self.function, id='test.other', checks=[], requires=[], notApplicable=[])
+        other.update(change)
+        self.write('functions/test.json', {'schema': 1, 'area': 'test', 'functions': [self.function, other]})
+        claims = self.coverage['claims'] + [{'claim': 'Other', 'url': 'https://example.invalid/docs', 'functionId': 'test.other'}]
+        self.write('coverage/test.json', dict(self.coverage, claims=claims))
+
+    def test_function_requirements_do_not_form_a_circle(self):
+        self.function['requires'] = [{'kind': 'capability', 'id': 'test.other', 'expected': True}]
+        self.second_function()
+        self.assertEqual([], validate_ledgers(self.repo))
+        self.second_function(requires=[{'kind': 'capability', 'id': 'test.function', 'expected': True}])
+        self.assertIn('circular function requirement: test.function -> test.other -> test.function', '\n'.join(validate_ledgers(self.repo)))
+        self.second_function(notApplicable=[{'id': 'replaced', 'when': 'Other one', 'requiresFunction': 'test.function'}])
+        self.assertIn('circular function requirement', '\n'.join(validate_ledgers(self.repo)))
+
+    def test_ground_cites_a_known_other_function(self):
+        self.function['notApplicable'] = [{'id': 'replaced', 'when': 'Other one', 'requiresFunction': 'test.other'}]
+        self.second_function()
+        self.assertEqual([], validate_ledgers(self.repo))
+        for cited in ('test.absent', 'test.function'):
+            self.function['notApplicable'][0]['requiresFunction'] = cited
+            self.second_function()
+            self.assertIn(f'ground replaced cites unknown function {cited}', '\n'.join(validate_ledgers(self.repo)))
+
+    def test_function_without_a_coverage_claim(self):
+        self.coverage['claims'] = []
+        self.save()
+        self.assertIn('test.function: function has no coverage claim', '\n'.join(validate_ledgers(self.repo)))
+        baseline = self.repo / 'scripts/ledger-coverage-baseline.json'
+        baseline.parent.mkdir(parents=True, exist_ok=True)
+        baseline.write_text(json.dumps({'1.0.0': ['test.function']}), encoding='utf-8')
+        self.assertEqual([], validate_ledgers(self.repo))
+
+    def test_shipped_coverage_baseline_only_lists_unclaimed_functions(self):
+        repo = Path(__file__).resolve().parents[2]
+        baseline = json.loads((repo / 'scripts/ledger-coverage-baseline.json').read_text(encoding='utf-8'))
+        for version, listed in baseline.items():
+            root = repo / 'skills/dw-demo-ledger/assets/releases' / version
+            claimed = set()
+            for file in (root / 'coverage').glob('*.json'):
+                for claim in json.loads(file.read_text(encoding='utf-8'))['claims']:
+                    claimed.update(claim[key] for key in ('functionId', 'duplicateOf') if key in claim)
+            self.assertEqual([], sorted(set(listed) & claimed), version)
+
+
 if __name__ == '__main__':
     unittest.main()

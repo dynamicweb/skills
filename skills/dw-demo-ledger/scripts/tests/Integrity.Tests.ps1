@@ -265,7 +265,11 @@ Describe 'The runner names why it stopped' {
         $run.exit | Should -Be 1
         $run.text | Should -Match "lock\.manifest is 'assets/releases/1\.0\.0/manifest\.json' but the selected manifest is '"
         $run.text | Should -Match 'relative to the repository root'
-        Test-Path $report | Should -BeFalse
+        # The stopped run still leaves a report, and it carries the same cause.
+        $stopped=Read-LedgerJson $report (Join-Path $assets 'report.schema.json')
+        $stopped.result | Should -Be ERROR
+        $stopped.checks | Should -BeNullOrEmpty
+        $stopped.errors[0] | Should -Match "lock\.manifest is 'assets/releases/1\.0\.0/manifest\.json'"
     }
     It 'names a locked check that no function references' {
         $run=Invoke-Runner (Edit-Lock @{checkIds=@('fx.one.count','fx.one.orphan')})
