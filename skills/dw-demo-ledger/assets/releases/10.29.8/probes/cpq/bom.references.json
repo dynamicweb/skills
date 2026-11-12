@@ -32,7 +32,7 @@
       "status": "planned",
       "handler": "cpq-structured-read",
       "localOnly": true,
-      "reason": "Local proving targets only when higher surfaces lack raw JSON or ownership/schema fields. No version-scoped CPQ SELECT/decoder is implemented. SQL is never a remote fallback and performs no write or cache flush."
+      "reason": "Partial stored-reference reader exists, but it cannot prove this complete intent. No live binding is promoted. See references/cpq-observations.md for missing observations and controls."
     }
   ],
   "sources": [

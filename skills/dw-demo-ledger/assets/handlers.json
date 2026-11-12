@@ -21,5 +21,6 @@
   "pim-families": ["sql"],
   "pim-widget-queries": ["sql"],
   "admin-feature-flag": ["admin-api"],
-  "pim-matrix": ["sql"]
+  "pim-matrix": ["sql"],
+  "cpq-structured-read": ["sql"]
 }

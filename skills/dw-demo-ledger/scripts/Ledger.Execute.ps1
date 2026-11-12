@@ -31,6 +31,7 @@ function Invoke-LedgerCheck {
         } elseif($binding.surface -eq 'sql') {
             if(-not $Database){throw 'Local SQL requires Database.'}
             switch($binding.handler) {
+                'cpq-structured-read' {$observation=Get-CpqLedgerObservation -Check $Check -Build $Build -Server $SqlServer -Database $Database}
                 'pim-matrix' {$observation=Get-PimMatrixObservation -Aspect $binding.arguments.aspect -Build $Build -Server $SqlServer -Database $Database}
                 'sql-scalar' {$n=Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.query $Build);$observation=@{value=$n;complete=$true;scanned=$null;offenders=@()}}
                 'sql-offenders' {$off=@(Invoke-Sqlcmd-Rows -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.query $Build));$observation=@{value=$off.Count;complete=$true;scanned=$null;offenders=$off}}

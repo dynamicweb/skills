@@ -3,6 +3,11 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.7.0]
+
+- Implement five read-only CPQ SQL observations with independent scope, strict condition JSON, ownership checks and green/red tests. Revision 5 keeps the baseline candidate and app facts unverified without loaded-runtime evidence.
+- Add incomplete configured/reference comparators and a Distribution v1 behavioral receipt reader. Preserve runtime failures and independent price/BOM mismatches; all behavioral bindings remain planned. Record diagnostic parity and package-drift limits.
+
 ## [6.6.0]
 
 - Add the app-backed CPQ ledger area to the 10.29.8 snapshot at revision 4, following the merged brand-gap revision. Inventory the accepted function/check intents with exact vendor app predicates, optional profile grounds and per-area coverage.
