@@ -8,7 +8,7 @@ For Truvio Commerce (powered by Dynamicweb), a new release creates a new candida
 4. Review the candidate and implement or update an observation binding. Keep unsupported flags, app versions and missing read surfaces explicit. A planned binding cannot produce PASS.
 5. Test positive and red controls, including missing data, missing handler and incomplete pagination. Compare equivalent MCP and local SQL observations when both are available; a valid disagreement remains evidence of a problem.
 6. Measure on the exact baseline and compatible components. Mark the entries measured only with retained evidence. A diagnostic newer-host run never establishes older-release support.
-7. Publish the immutable commit and snapshot digest. New editions may select it; existing editions retain their previous lock until deliberately upgraded.
+7. Publish the immutable commit and snapshot digest. New editions may select it; existing editions retain their previous lock until deliberately upgraded ("Re-locking an existing build" below).
 
 Run the comparison as a local report operation:
 
@@ -22,7 +22,20 @@ Run the generic scanner without a feature search term:
 pwsh -NoProfile -File scripts/Find-DwReleaseFunctions.ps1 -BeforeVersion $a -AfterVersion $b -EvidenceDirectory $cache -OutFile $raw -SqlServer $server -BeforeDatabase $dbA -AfterDatabase $dbB -BeforeBaseUrl $urlA -AfterBaseUrl $urlB
 ```
 
-Capture the earlier schema before upgrading its host. BeforeSchemaFile and AfterSchemaFile
+The scan can be rerun from retained evidence. `-ChangelogFile` takes the retained
+`changelog-response.json`, and no changelog request is made; `-ChangelogDigest` refuses a capture
+whose digest is not the recorded one. Evidence in the directory is written once: the same content
+again is left alone, and a changelog capture, ring listing or schema capture that differs from the
+retained file stops the scan instead of replacing it. Output members are ordered, so two scans of
+the same evidence differ in `generatedAt` only and have the same `candidatesDigest`. A work item
+listed under several releases is one candidate that names them all.
+
+Capture the earlier schema before upgrading its host, and capture the later schema from the same
+database after the upgrade. Each schema capture records its database name, a `sourceId` (a digest
+of server and database, no machine name) and the capture time. The scan reports
+`schemaComparison`: only `same-database` makes a column difference a release difference; with
+`different-databases` or `unknown-provenance` it warns that site differences are in the list, and
+every added or missing column needs a second source before it is admitted or rejected. BeforeSchemaFile and AfterSchemaFile
 accept retained captures; the recorded version must match the requested side. Compare
 INFORMATION_SCHEMA columns and primary keys, preserving site-specific differences as
 candidates rather than assuming every schema difference is a release addition. Package
@@ -49,3 +62,31 @@ Each implemented SQL read gets a green and a red fixture control
 The release experiment starts with a genuine pre-feature release and discovers capabilities
 through general evidence. Feature-specific implementation research happens after the raw
 scan is saved; it must not change what that scan originally found.
+
+## Re-locking an existing build
+
+A snapshot revision edits the release directory in place, so its digest changes and a build
+locked on the earlier revision stops with a digest mismatch on any later commit. That build
+keeps running from its own lock commit. Moving it to the current revision is a deliberate
+upgrade, and the earlier report does not carry over:
+
+1. Check out the commit to lock, clean. On a commit older than the repository's
+   `.gitattributes`, check out with `core.autocrlf=false`: the digest is over bytes.
+2. Run the re-lock report. Without `-OutFile` it writes nothing:
+
+```powershell
+pwsh -NoProfile -File scripts/Update-DwLedgerLock.ps1 -BuildFile $build -Manifest $manifest -OutFile $newBuild
+```
+
+3. Read the report. `removedChecks` are dropped from the lock; the snapshot's `delta.json` says
+   what replaced them. `removedFunctions` and `invalidRulings` (with `groundsNow`, the grounds the
+   function has in this revision) are decisions: edit `functions` and `rulings` in the build
+   file, then run it again. While one is open the exit code is 1 and no file is written.
+   `newChecks` lists the checks of the requested functions that the old lock does not hold;
+   `-IncludeNewChecks` locks them, otherwise they stay out and are not proven.
+4. Run the checks with the new build file. A re-locked build is a new claim: a ground that was
+   replaced may no longer apply, and checks that replaced a removed one may fail on an unchanged
+   site.
+
+The script never rewrites `functions` or `rulings`, never overwrites a build file and refuses a
+checkout with uncommitted changes.

@@ -67,8 +67,14 @@ def binding_faults(binding, kind, registry) -> list[str]:
             faults.append("Admin binding names no operation")
         elif operation not in registry.get("adminReadQueries", []):
             faults.append(f"Admin operation is not an allowlisted read query: {operation}")
-    if handler == "admin-query-count" and not (binding.get("projection") or {}).get("rowsPath"):
-        faults.append("admin-query-count needs projection.rowsPath")
+    if surface == "dwapi":
+        # A delivery read is one anonymous GET; some GET routes switch a profile or issue a token, so the route is listed.
+        if not operation:
+            faults.append("delivery binding names no operation")
+        elif operation not in registry.get("dwapiReadRoutes", []):
+            faults.append(f"delivery route is not an allowlisted read route: {operation}")
+    if handler in ("admin-query-count", "dwapi-count") and not (binding.get("projection") or {}).get("rowsPath"):
+        faults.append(f"{handler} needs projection.rowsPath")
     if handler == "admin-feature-flag" and not args.get("featureTypeName"):
         faults.append("admin-feature-flag needs arguments.featureTypeName")
     if handler == "files-count" and not (binding.get("path") or (args.get("folder") and args.get("filter"))):
@@ -78,6 +84,34 @@ def binding_faults(binding, kind, registry) -> list[str]:
     if handler in ("sql-scalar", "sql-offenders") and not binding.get("query"):
         faults.append("implemented SQL scalar/offenders binding needs a query")
     return faults + [f"{handler} binding {fault}" for fault in layout_argument_faults(handler, binding.get("arguments"))]
+
+
+def requirement_cycles(functions) -> list[str]:
+    """A capability requirement that names a function holds when that function's checks pass, and a
+    ground may cite a function the same way (requiresFunction). A circle can never be established."""
+    edges = {}
+    for fid, f in functions.items():
+        targets = [r.get("id") for r in f.get("requires", []) if isinstance(r, dict) and r.get("kind") == "capability"]
+        targets += [g.get("requiresFunction") for g in f.get("notApplicable", []) if isinstance(g, dict)]
+        edges[fid] = sorted({t for t in targets if isinstance(t, str) and t in functions})
+    faults, done = [], set()
+
+    def visit(fid, path):
+        if fid in path:
+            circle = path[path.index(fid):] + [fid]
+            start = circle.index(min(circle[:-1]))
+            circle = circle[start:-1] + circle[:start] + [circle[start]]
+            faults.append("circular function requirement: " + " -> ".join(circle))
+            return
+        if fid in done:
+            return
+        for target in edges[fid]:
+            visit(target, path + [fid])
+        done.add(fid)
+
+    for fid in sorted(edges):
+        visit(fid, [])
+    return sorted(set(faults))
 
 
 def validate_ledgers(repo: Path) -> list[str]:
@@ -99,6 +133,12 @@ def validate_ledgers(repo: Path) -> list[str]:
             error(path, f"unreadable JSON ({exc})")
             return None
 
+    # Functions that had no coverage claim when the rule was introduced. The list only shrinks: a
+    # function outside it needs a claim, and the snapshot revision that adds the claims empties it.
+    try:
+        unclaimed_baseline = json.loads((repo / "scripts/ledger-coverage-baseline.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        unclaimed_baseline = {}
     registry = read(assets / "handlers.json") or {}
     if not isinstance(registry.get("handlers"), dict):
         error(assets / "handlers.json", "expected handlers, mcpReadTools and adminReadQueries")
@@ -186,6 +226,13 @@ def validate_ledgers(repo: Path) -> list[str]:
                 rid = req.get("id", "")
                 if req.get("kind") == "capability" and re.fullmatch(r"[a-z][a-z0-9.-]*", rid) and rid not in functions:
                     error(manifest, f"{fid}: requires unknown function {rid}")
+            for ground in f.get("notApplicable", []):
+                cited = ground.get("requiresFunction") if isinstance(ground, dict) else None
+                if cited is not None and (cited not in functions or cited == fid):
+                    error(manifest, f"{fid}: ground {ground.get('id')} cites unknown function {cited}")
+        for fault in requirement_cycles(functions):
+            error(manifest, fault)
+        claimed = set()
         for file in sorted((root / "coverage").glob("*.json")):
             coverage = read(file, "coverage.schema.json") or {}
             if coverage.get("area") != file.stem or not (root / "functions" / file.name).is_file():
@@ -197,6 +244,11 @@ def validate_ledgers(repo: Path) -> list[str]:
                 for key in ("functionId", "duplicateOf"):
                     if key in claim and claim[key] not in functions:
                         error(file, f"coverage {key} does not resolve: {claim[key]}")
+                    elif key in claim:
+                        claimed.add(claim[key])
+        allowed = set(unclaimed_baseline.get(root.name, []))
+        for fid in sorted(set(functions) - claimed - allowed):
+            error(manifest, f"{fid}: function has no coverage claim")
 
     # One process validates all schemas and every SQL text, never one process per probe. Paths
     # and queries travel as JSON data on stdin, not as executable command text. The SQL check is

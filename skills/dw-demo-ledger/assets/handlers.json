@@ -13,6 +13,7 @@
     "mcp-field-text-share": {"surfaces": ["mcp"], "assertions": ["scalar"]},
     "mcp-multiselect": {"surfaces": ["mcp"], "assertions": ["scalar"]},
     "admin-query-count": {"surfaces": ["admin-api"], "assertions": ["scalar"]},
+    "dwapi-count": {"surfaces": ["dwapi"], "assertions": ["scalar"]},
     "settings-value": {"surfaces": ["file"], "assertions": ["scalar"]},
     "xml-count": {"surfaces": ["file"], "assertions": ["scalar"]},
     "files-count": {"surfaces": ["file"], "assertions": ["scalar"]},
@@ -85,5 +86,11 @@
   ],
   "adminReadQueries": [
     "FeaturesAll"
+  ],
+  "dwapiReadRoutes": [
+    "content/areas",
+    "ecommerce/products/search",
+    "frontend/navigations/{areaId}",
+    "query"
   ]
 }

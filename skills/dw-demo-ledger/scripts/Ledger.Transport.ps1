@@ -7,12 +7,20 @@ PowerShell 7. Owning reference: ../references/contract.md. Imports the shared AP
 . ./Ledger.Transport.ps1
 #>
 #Requires -Version 7.0
+function Read-LedgerDescriptor {
+    # The public descriptor identifies the release. One failed read is retried, so a hiccup is not reported as another release.
+    param([string]$BaseUrl,[switch]$AllowSelfSignedCertificate,[int]$Attempts=3,[int]$DelayMs=1000)
+    $skip=$AllowSelfSignedCertificate -or $BaseUrl -match '^https?://(localhost|127\.0\.0\.1)([:/]|$)'
+    for($attempt=1;;$attempt++){
+        try{return Invoke-RestMethod -Uri ($BaseUrl.TrimEnd('/')+'/admin/api/api.json') -TimeoutSec 20 -SkipCertificateCheck:$skip}
+        catch{if($attempt -ge $Attempts){throw};Start-Sleep -Milliseconds ($DelayMs*$attempt)}
+    }
+}
 function Get-LedgerObservedVersion {
     param([string]$BaseUrl,[switch]$AllowSelfSignedCertificate)
     if(-not $BaseUrl){return $null}
-    $skip=$AllowSelfSignedCertificate -or $BaseUrl -match '^https?://(localhost|127\.0\.0\.1)([:/]|$)'
     try {
-        $spec=Invoke-RestMethod -Uri ($BaseUrl.TrimEnd('/')+'/admin/api/api.json') -TimeoutSec 20 -SkipCertificateCheck:$skip
+        $spec=Read-LedgerDescriptor -BaseUrl $BaseUrl -AllowSelfSignedCertificate:$AllowSelfSignedCertificate
         return [string]$spec.info.version
     }catch{return $null}
 }
@@ -30,20 +38,22 @@ function Get-LedgerCapabilities {
     Connect-Dw -BaseUrl $BaseUrl -ApiToken $ApiToken -McpToken $McpToken -AllowSelfSignedCertificate:$AllowSelfSignedCertificate | Out-Null
     Assert-DwConnection | Out-Null
     $skip=$AllowSelfSignedCertificate -or $BaseUrl -match '^https?://(localhost|127\.0\.0\.1)([:/]|$)'
+    $script:LedgerTarget=@{baseUrl=$BaseUrl.TrimEnd('/');insecure=[bool]$skip}
     try {
-        $spec=Invoke-RestMethod -Uri ($BaseUrl.TrimEnd('/')+'/admin/api/api.json') -TimeoutSec 20 -SkipCertificateCheck:$skip
+        $spec=Read-LedgerDescriptor -BaseUrl $BaseUrl -AllowSelfSignedCertificate:$AllowSelfSignedCertificate
         $cap.adminApi.available=$true
+        # The host answers. A delivery read still proves its own claim: the route, the projection and completeness.
+        $cap.dwapi.available=$true
         if($spec.info.version) {$cap.dwVersion=[string]$spec.info.version}
         $cap.adminApi.queries=@($spec.paths.PSObject.Properties | Where-Object {$_.Value.get} | ForEach-Object {$_.Name.TrimStart('/')})
         if ($ApiToken -and 'McpConfigurationAll' -in $cap.adminApi.queries) {
             try {$null=Invoke-DwApi 'McpConfigurationAll';$cap.adminApi.authenticated=$true} catch {$cap.errors+='Admin authenticated read failed.'}
         }
-    } catch {$cap.errors+='Admin descriptor could not be read.'}
+    } catch {$cap.errors+='Admin descriptor could not be read after 3 attempts.'}
     if($McpToken){try{$tools=Get-DwMcpTools;$cap.mcp.tools=@($tools.name);$cap.mcp.available=$true}catch{$cap.errors+='MCP discovery failed.'}}
     if($cap.adminApi.authenticated -and 'FeaturesAll' -in $cap.adminApi.queries){
         try {$cap.facts=Get-LedgerFeatureFacts (Invoke-DwApi 'FeaturesAll')} catch {$cap.errors+='Complete feature flag observation unavailable.'}
     }
-    # Delivery-route reachability is not recorded as usable until a claim-specific read proves it.
     return $cap
 }
 function Get-LedgerFeatureFacts {
@@ -124,4 +134,26 @@ function Get-LedgerMcpObservation {
         default {throw 'No registered MCP observation handler.'}
     }
     return @{value=$value;offenders=$offenders;scanned=$rows.Count;complete=$complete}
+}
+function Get-LedgerDwapiObservation {
+    # One anonymous GET on an allowlisted delivery route. No credential is sent and no other method exists here.
+    param($Binding,$Build)
+    if($Binding.handler -ne 'dwapi-count'){throw 'No registered delivery observation handler.'}
+    if($Binding.operation -cnotin @((Read-LedgerJson (Join-Path $PSScriptRoot '../assets/handlers.json')).dwapiReadRoutes)){throw 'Delivery route is not an allowlisted read route.'}
+    if(-not $script:LedgerTarget -or -not $script:LedgerTarget.baseUrl){throw [InvalidOperationException]::new('Target URL is unavailable.')}
+    if(-not $Binding.projection.rowsPath){throw [InvalidOperationException]::new('Delivery read needs an explicit measured row projection.')}
+    $route=[string](Expand-LedgerArguments $Binding.operation $Build)
+    if($route -notmatch '^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*$'){throw 'Delivery route input is not a plain id.'}
+    $query=if($Binding.arguments){Expand-LedgerArguments $Binding.arguments $Build}else{@{}}
+    $pairs=@(foreach($key in @($query.Keys|Sort-Object)){[Uri]::EscapeDataString($key)+'='+[Uri]::EscapeDataString([string]$query[$key])})
+    $uri=$script:LedgerTarget.baseUrl+'/dwapi/'+$route;if($pairs.Count){$uri+='?'+($pairs -join '&')}
+    $response=Invoke-WebRequest -Uri $uri -Method Get -Headers @{Accept='application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:LedgerTarget.insecure
+    $status=[int]$response.StatusCode
+    if($status -in @(401,403)){throw [UnauthorizedAccessException]::new('Delivery read is not authorised without a credential.')}
+    if($status -eq 404){throw [InvalidOperationException]::new('Delivery route is not served by this target.')}
+    if($status -ne 200){throw 'Delivery read failed.'}
+    $text=if($response.Content -is [byte[]]){[Text.Encoding]::UTF8.GetString($response.Content)}else{[string]$response.Content}
+    $data=ConvertFrom-Json -InputObject $text -AsHashtable -NoEnumerate
+    $rows=ConvertTo-LedgerRows $data $Binding.projection.rowsPath
+    return Measure-LedgerRows $rows $Binding.projection
 }
