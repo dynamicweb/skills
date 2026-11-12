@@ -68,6 +68,23 @@
                 "id",
                 "expected"
               ],
+              "if": {
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "flag",
+                      "capability"
+                    ]
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "expected": {
+                    "type": "boolean"
+                  }
+                }
+              },
               "additionalProperties": false
             }
           },

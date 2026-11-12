@@ -10,18 +10,25 @@ PowerShell 7. Owning reference: ../references/contract.md. No dynamic code evalu
 function Invoke-LedgerCheck {
     param($Check,$Build,$Capabilities,$Profile,[string[]]$Surfaces,[string]$SqlServer,[string]$Database,[string]$FilesPath,[string[]]$Refused=@())
     $row=New-LedgerRow $Check
+    $assertion=@{};foreach($k in $Check.assertion.Keys){$assertion[$k]=$Check.assertion[$k]}
+    if($Profile.expectations.ContainsKey($Check.id)){foreach($k in $Profile.expectations[$Check.id].Keys){
+        # A profile states expectations. It never changes what a check observes or how the observation is judged.
+        if($k -cnotin @('op','value','minimumSubjects')){$row.result='ERROR';$row.reason='Profile may change only op, value and minimumSubjects of a check.';return $row}
+        $assertion[$k]=$Profile.expectations[$Check.id][$k]
+    }}
     $binding=Select-LedgerBinding -Check $Check -Capabilities $Capabilities -Surfaces $Surfaces -Exclude $Refused
     if(-not $binding){
         if($Refused.Count){$row.reason='Binding is not authorised for the required scope and no other equivalent binding is available: '+($Refused -join ', ')}
         return $row
     }
     $row.surface=$binding.surface;$row.binding=$binding.id
-    $assertion=@{};foreach($k in $Check.assertion.Keys){$assertion[$k]=$Check.assertion[$k]}
-    if($Profile.expectations.ContainsKey($Check.id)){foreach($k in $Profile.expectations[$Check.id].Keys){$assertion[$k]=$Profile.expectations[$Check.id][$k]}}
     $row.expected=$assertion
     try {
         $registry=Read-LedgerJson (Join-Path $PSScriptRoot '../assets/handlers.json')
-        if(-not $registry.ContainsKey($binding.handler) -or $binding.surface -notin $registry[$binding.handler]){throw 'Handler/surface is not allowlisted.'}
+        $entry=$registry.handlers[$binding.handler]
+        if(-not $entry -or $binding.surface -notin $entry.surfaces){throw 'Handler/surface is not allowlisted.'}
+        # A scalar handler reports no offenders, so judging it as offenders would always pass.
+        if($assertion.kind -cnotin $entry.assertions){throw 'Assertion kind does not fit the handler.'}
         if($binding.surface -eq 'mcp') {
             $observation=Get-LedgerMcpObservation -Binding $binding -Check $Check -Build $Build
         } elseif($binding.surface -eq 'file') {

@@ -51,3 +51,16 @@ jobs:
           Write-Host "All shipped PowerShell scripts parse cleanly."
       - name: Verify manifest.json is current
         run: node scripts/build-manifest.mjs --check
+
+  # The ledger runner's red controls. Fixtures, fakes and mocks only: no host, no
+  # database (the tempdb controls skip without LEDGER_TEST_SQLSERVER) and no credential.
+  # Windows, because the runner's SQL surface is local-only and developed there.
+  ledger-pester:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ledger Pester suite
+        shell: pwsh
+        run: |
+          $result = Invoke-Pester skills/dw-demo-ledger/scripts/tests -PassThru -Output Detailed
+          if ($result.Result -ne 'Passed' -or $result.PassedCount -eq 0) { exit 1 }

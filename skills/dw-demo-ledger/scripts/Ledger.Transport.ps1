@@ -61,6 +61,8 @@ function Get-LedgerFeatureFacts {
 }
 function Read-LedgerMcp {
     param([string]$Operation,[hashtable]$Arguments=@{})
+    # The runner is read-only: only a tool on the read allowlist is ever called, whatever a binding names.
+    if($Operation -cnotin @((Read-LedgerJson (Join-Path $PSScriptRoot '../assets/handlers.json')).mcpReadTools)){throw 'MCP tool is not an allowlisted read tool.'}
     $key=$Operation+($Arguments|ConvertTo-Json -Compress -Depth 10)
     if($script:LedgerMcpCache.ContainsKey($key)){return $script:LedgerMcpCache[$key]}
     $raw=Invoke-DwMcp -Tool $Operation -Arguments $Arguments -Raw -TimeoutSec 30

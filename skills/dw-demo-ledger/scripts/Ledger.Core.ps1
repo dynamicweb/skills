@@ -9,9 +9,14 @@ PowerShell 7. Owning reference: ../references/contract.md. Rejects path escapes,
 #Requires -Version 7.0
 function Read-LedgerJson {
     param([string]$Path, [string]$Schema)
-    $text = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
-    if ($Schema -and -not (Test-Json -Json $text -SchemaFile $Schema -ErrorAction Stop)) { throw 'JSON contract invalid.' }
-    return ConvertFrom-Json -InputObject $text -AsHashtable
+    # Contract failures are IO.InvalidDataException: their text names the cause and holds no credential, so the runner may print it.
+    try { $text = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop } catch { throw [IO.InvalidDataException]::new("Cannot read '$Path'.") }
+    if ($Schema) {
+        $valid = $false; $detail = ''
+        try { $valid = Test-Json -Json $text -SchemaFile $Schema -ErrorAction Stop } catch { $detail = ' ' + $_.Exception.Message }
+        if (-not $valid) { throw [IO.InvalidDataException]::new("'$Path' does not match $(Split-Path -Leaf $Schema).$detail") }
+    }
+    try { return ConvertFrom-Json -InputObject $text -AsHashtable } catch { throw [IO.InvalidDataException]::new("'$Path' is not valid JSON.") }
 }
 function Resolve-LedgerPath {
     param([string]$Root, [string]$Relative)
@@ -79,7 +84,29 @@ function Get-LedgerVerdict {
         if (@($Checks | Where-Object {$_.result -eq $state}).Count -gt 0) { return $state }
     }
     if (@($Checks | Where-Object {$_.result -notin @('PASS','NOT-APPLICABLE')}).Count) {return 'ERROR'}
+    # A ruling observes nothing: a run of NOT-APPLICABLE rows alone has evaluated no requirement.
+    if (@($Checks | Where-Object {$_.result -eq 'PASS'}).Count -eq 0) { return 'UNVERIFIED' }
     return 'PASS'
+}
+function Get-LedgerRulingFault {
+    # A ruling is evidence, so its types are checked. Returns the fault, or $null for a usable ruling.
+    param($Ruling, $Function)
+    if ($Ruling -isnot [Collections.IDictionary] -or $Ruling.applies -isnot [bool]) { return 'applies must be a boolean.' }
+    if ($Ruling.applies) { return $null }
+    if ($Ruling.rule -isnot [string] -or @($Function.notApplicable | Where-Object {$_.id -eq $Ruling.rule}).Count -ne 1) { return 'rule must name one allowed ground of the function.' }
+    if ($Ruling.evidence -isnot [string] -or [string]::IsNullOrWhiteSpace($Ruling.evidence)) { return 'evidence must be text.' }
+    return $null
+}
+function Get-LedgerRequirementState {
+    # $null when the requirement is established; otherwise the row state and its reason. No type is coerced.
+    param($Requirement, $Facts)
+    $expected = $Requirement.expected
+    if ($Requirement.kind -in @('flag','capability') -and $expected -isnot [bool]) { return @{result='ERROR'; reason='Requirement expectation must be a boolean.'} }
+    if (-not $Facts.ContainsKey($Requirement.id)) { return @{result='UNVERIFIED'; reason='Required capability fact is unknown.'} }
+    $fact = $Facts[$Requirement.id]
+    $met = ($fact -is [bool] -and $expected -is [bool] -and $fact -eq $expected) -or ($fact -is [string] -and $expected -is [string] -and $fact -ceq $expected)
+    if ($met) { return $null }
+    return @{result=$(if ($Requirement.kind -eq 'flag') {'DISABLED'} else {'UNSUPPORTED'}); reason='Required capability not satisfied.'}
 }
 function New-LedgerRow {
     param($Check)

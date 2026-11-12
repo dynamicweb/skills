@@ -58,34 +58,42 @@ $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Ledger.Execute.ps1')
 $script:LedgerMcpCache=@{};$script:LedgerStoredFields=$null;$script:LedgerPimLayout=@{}
 $assets=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
+# A contract failure the runner can name. Its text states ids and paths, never a credential or an exception body.
+function New-LedgerFault([string]$Message){return [IO.InvalidDataException]::new($Message)}
 try {
     $build=Read-LedgerJson $BuildFile (Join-Path $assets 'build.schema.json')
+    if(-not(Test-Path -LiteralPath $Manifest -PathType Leaf)){throw (New-LedgerFault "Manifest '$Manifest' does not exist.")}
     $manifestPath=(Resolve-Path -LiteralPath $Manifest).Path;$root=Split-Path -Parent $manifestPath
     $manifestData=Read-LedgerJson $manifestPath
-    if($manifestData.schema -ne 1 -or -not $manifestData.dwVersion){throw 'Invalid manifest.'}
-    if($build.lock.digest -ne (Get-LedgerDigest $root)){throw 'Snapshot digest mismatch.'}
+    if($manifestData.schema -ne 1 -or -not $manifestData.dwVersion){throw (New-LedgerFault "Manifest '$manifestPath' needs schema 1 and a dwVersion.")}
+    $digest=Get-LedgerDigest $root
+    if($build.lock.digest -ne $digest){throw (New-LedgerFault "Snapshot digest mismatch: lock.digest is $($build.lock.digest), the snapshot beside the manifest is $digest. The snapshot changed after the lock was written, or the lock names another revision.")}
     $relativeManifest=[IO.Path]::GetRelativePath((Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path,$manifestPath).Replace('\','/')
-    if($build.lock.manifest -ne $relativeManifest){throw 'Manifest path differs from lock.'}
+    if($build.lock.manifest -ne $relativeManifest){throw (New-LedgerFault "lock.manifest is '$($build.lock.manifest)' but the selected manifest is '$relativeManifest'. The lock takes the path relative to the repository root, with forward slashes.")}
     $repoRoot=(Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
     $runnerCommit=(& git -C $repoRoot rev-parse --verify HEAD 2>$null)
-    if($LASTEXITCODE -ne 0 -or $runnerCommit -notmatch '^[a-f0-9]{40}$'){throw 'Cannot establish runner commit.'}
+    if($LASTEXITCODE -ne 0 -or $runnerCommit -notmatch '^[a-f0-9]{40}$'){throw (New-LedgerFault 'Cannot establish the runner commit: the skills repository is not a git checkout.')}
     $runnerDirty=@(& git -C $repoRoot status --porcelain -- skills/dw-demo-ledger).Count -gt 0
     $runnerMatches=$runnerCommit -eq $build.lock.commit -and -not $runnerDirty
-    if(-not $runnerMatches -and -not $DiagnosticVersionMismatch){throw 'Runner commit or working tree does not match the lock.'}
+    if(-not $runnerMatches -and -not $DiagnosticVersionMismatch){throw (New-LedgerFault "Runner does not match the lock: lock.commit is $($build.lock.commit), the checkout is at $runnerCommit$(if($runnerDirty){' with uncommitted changes under skills/dw-demo-ledger'}). Run from a clean checkout of the locked commit.")}
     $functions=@{};$checks=@{}
     foreach($file in Get-ChildItem -LiteralPath (Join-Path $root 'functions') -Filter '*.json' -File){
         $area=Read-LedgerJson $file.FullName (Join-Path $assets 'ledger.schema.json')
         foreach($f in $area.functions){
-            if($functions.ContainsKey($f.id)){throw 'Duplicate function id.'};$functions[$f.id]=$f
+            if($functions.ContainsKey($f.id)){throw (New-LedgerFault "Duplicate function id '$($f.id)' in the snapshot.")};$functions[$f.id]=$f
             foreach($path in $f.checks){
                 $check=Read-LedgerJson (Resolve-LedgerPath $root $path) (Join-Path $assets 'check.schema.json')
-                if($check.functionId -ne $f.id -or $checks.ContainsKey($check.id)){throw 'Invalid check ownership or duplicate id.'};$checks[$check.id]=$check
+                if($check.functionId -ne $f.id -or $checks.ContainsKey($check.id)){throw (New-LedgerFault "Check '$($check.id)' at '$path' is owned by another function than '$($f.id)', or its id is used twice.")};$checks[$check.id]=$check
             }
         }
     }
-    $seen=@{};foreach($id in $build.lock.checkIds){if($seen.ContainsKey($id) -or -not $checks.ContainsKey($id)){throw 'Unknown or duplicate locked check.'};$seen[$id]=$true}
-    foreach($id in $build.functions){if(-not $functions.ContainsKey($id)){throw 'Unknown function.'}}
-    foreach($id in $build.lock.checkIds){if($checks[$id].functionId -notin $build.functions){throw 'Locked check is outside requested functions.'}}
+    $seen=@{};foreach($id in $build.lock.checkIds){
+        if($seen.ContainsKey($id)){throw (New-LedgerFault "Locked check '$id' is listed twice in lock.checkIds.")}
+        if(-not $checks.ContainsKey($id)){throw (New-LedgerFault "Locked check '$id' is not in the checks list of any function in this snapshot. A lock takes its ids from the probes that functions/<area>.json references.")}
+        $seen[$id]=$true
+    }
+    foreach($id in $build.functions){if(-not $functions.ContainsKey($id)){throw (New-LedgerFault "Function '$id' in build.functions is not in this snapshot.")}}
+    foreach($id in $build.lock.checkIds){if($checks[$id].functionId -notin $build.functions){throw (New-LedgerFault "Locked check '$id' belongs to '$($checks[$id].functionId)', which build.functions does not request.")}}
     $profile=@{expectations=@{}}
     if($build.profile){$profile=Read-LedgerJson (Resolve-LedgerPath $assets $build.profile)}
     $cap=Get-LedgerCapabilities -BaseUrl $BaseUrl -ApiToken $ApiToken -McpToken $McpToken -SqlServer $SqlServer -FilesPath $FilesPath -AllowSelfSignedCertificate:$AllowSelfSignedCertificate
@@ -97,15 +105,16 @@ try {
         if(-not $matches -and -not $DiagnosticVersionMismatch){$row.result='UNSUPPORTED';$row.reason='Exact baseline not established; use diagnostic mode only for investigation.';$rows.Add($row);continue}
         $blocked=$false
         foreach($requirement in $f.requires){
-            if(-not $cap.facts.ContainsKey($requirement.id)){$row.result='UNVERIFIED';$row.reason='Required capability fact is unknown.';$blocked=$true;break}
-            if($cap.facts[$requirement.id] -ne $requirement.expected){$row.result=if($requirement.kind -eq 'flag'){'DISABLED'}else{'UNSUPPORTED'};$row.reason='Required capability not satisfied.';$blocked=$true;break}
+            $state=Get-LedgerRequirementState $requirement $cap.facts
+            if($state){$row.result=$state.result;$row.reason=$state.reason;$blocked=$true;break}
         }
         if($blocked){$rows.Add($row);continue}
-        $ruling=if($build.rulings){$build.rulings[$f.id]}else{$null}
-        if($ruling -and $ruling.applies -eq $false){
+        $ruling=if($build.rulings -and $build.rulings.ContainsKey($f.id)){$build.rulings[$f.id]}else{$null}
+        $fault=if($null -ne $ruling){Get-LedgerRulingFault $ruling $f}else{$null}
+        if($fault){$row.result='ERROR';$row.reason='Invalid not-applicable ruling: '+$fault;$rows.Add($row);continue}
+        if($null -ne $ruling -and $ruling.applies -eq $false){
             $grounds=@($f.notApplicable|Where-Object {$_.id -eq $ruling.rule})
-            if($grounds.Count -ne 1 -or [string]::IsNullOrWhiteSpace($ruling.evidence)){$row.result='ERROR';$row.reason='Invalid not-applicable ruling.'}
-            elseif($grounds[0].probe){
+            if($grounds[0].probe){
                 $probe=Read-LedgerJson (Resolve-LedgerPath $root $grounds[0].probe) (Join-Path $assets 'check.schema.json')
                 $proof=Invoke-LedgerCheck $probe $build $cap $profile $Surfaces $SqlServer $Database $FilesPath
                 $row.result=if($proof.result -eq 'PASS'){'NOT-APPLICABLE'}else{$proof.result};$row.reason='Ruling probe: '+$proof.result
@@ -127,8 +136,13 @@ try {
     if(-not $runnerMatches){$report.errors+='Diagnostic runner differs from the locked commit or has uncommitted changes.'}
     if(-not $stableVersion){$report.errors+='Target version changed or became unavailable during observation; the initial baseline cannot certify this report.'}
     $json=$report|ConvertTo-Json -Depth 80
-    if(-not(Test-Json -Json $json -SchemaFile (Join-Path $assets 'report.schema.json') -ErrorAction Stop)){throw 'Report contract invalid.'}
+    if(-not(Test-Json -Json $json -SchemaFile (Join-Path $assets 'report.schema.json') -ErrorAction Stop)){throw (New-LedgerFault 'The produced report does not match report.schema.json.')}
     [IO.File]::WriteAllText([IO.Path]::GetFullPath($OutFile),$json+"`n",[Text.UTF8Encoding]::new($false))
     Write-Output ($counts|ConvertTo-Json -Compress)
     if($verdict -eq 'PASS'){exit 0};exit 1
-} catch {Write-Verbose $_.ScriptStackTrace;Write-Error 'Ledger run failed before a trustworthy report could be produced. Check schema, paths, snapshot lock, grants and required handlers.' -ErrorAction Continue;exit 1}
+} catch {
+    Write-Verbose $_.ScriptStackTrace
+    # Only a contract failure names itself. Any other exception may carry a host, token or response body, so it stays generic.
+    $cause=if($_.Exception -is [IO.InvalidDataException]){$_.Exception.Message}else{'Check schema, paths, snapshot lock, grants and required handlers; -Verbose shows where it stopped.'}
+    Write-Error ('Ledger run failed before a trustworthy report could be produced. '+$cause) -ErrorAction Continue;exit 1
+}

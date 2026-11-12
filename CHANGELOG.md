@@ -3,6 +3,14 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.2]
+
+- `dw-demo-ledger` read-only guards. A SQL query is one SELECT: the guard reads executable tokens, refuses statement keywords and a second statement, and every local SQL read runs in a transaction that is always rolled back. `assets/handlers.json` now holds `handlers` (surfaces and assertion kinds), `mcpReadTools` and `adminReadQueries`; an MCP binding naming a tool off the list is refused by the validator and by the runner before the call.
+- A profile may change `op`, `value` and `minimumSubjects` only, and an assertion kind must fit its handler. `flag` and `capability` requirements take a boolean `expected`. A ruling needs a boolean `applies` and text `evidence`; a run that holds rulings alone is UNVERIFIED.
+- The repository validator runs the SQL guard over every probe and checks read allowlists, assertion kind per handler, required handler arguments, manifest identity, profile keys and that every snapshot JSON parses. CI runs the ledger Pester suite.
+- The runner error names its cause (check id, lock and selected manifest path, digests, file and schema). The contract documents the repository-relative `lock.manifest`, where `checkIds` come from, and the handlers `admin-feature-flag`, `pim-matrix` and `cpq-structured-read`.
+- Check corrections in code: completeness evidence is read along a nested Admin `rowsPath`, an absent `families` input is no longer a nameless family, an empty CPQ condition is not a judged subject, and an undeclared `{lang}` or `{pimShop}` input is UNVERIFIED. No snapshot file changes; both snapshot digests are unchanged.
+
 ## [6.8.1]
 
 - Fold measured learnings into the references. `dw-pim-modelling`: `combine_products_as_variants` copies the master's global custom fields onto every variant (snapshot and restore), `save_product_relations` keys without variant scope, the workspace drill passes an untyped node value while `WorkflowState` filters in a typed query, and a matrix-fields pointer. `dw-commerce-catalog` / `dw-data-access`: dynamic relation calculations sum standard fields only, `Method` is a string, the overview-screen tab; a discontinued product needs `NeverOutOfStock=0`. `dw-content-modelling`: `save_paragraphs` ignores `active` and a SQL `ParagraphShowParagraph=0` still rendered.

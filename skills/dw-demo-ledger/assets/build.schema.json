@@ -121,7 +121,39 @@
       "additionalProperties": false
     },
     "rulings": {
-      "type": "object"
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "applies": {
+            "type": "boolean"
+          },
+          "rule": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        },
+        "required": [
+          "applies"
+        ],
+        "if": {
+          "properties": {
+            "applies": {
+              "const": false
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "rule",
+            "evidence"
+          ]
+        }
+      }
     },
     "expected": {
       "type": "object"
