@@ -32,7 +32,7 @@ skills/
   dw-data-access/           # data-access patterns and caching
   dw-data-write-effects/    # proving a write landed, and the rebuilds it owes
   dw-data-audit-trail/      # investigate who/when/why something changed
-  dw-source-explorer/       # browse Dynamicweb source on GitHub
+  dw-source-explorer/       # API internals from package metadata and public repos
   dw-source-doc-lookup/     # consult the live Dynamicweb documentation
   dw-demo-*/                # presales demo chain (base, pim, swift, headless, hosted, erp, fo, foldback)
 ```
@@ -173,7 +173,7 @@ Prove a write landed (success is not proof — round-trip it) and know which mut
 Investigate why something changed, who changed a record, when a value was set, or inspect version/history for any Dynamicweb 10 entity.
 
 **[dw-source-explorer](skills/dw-source-explorer/SKILL.md)**
-Browse Dynamicweb source code on GitHub to understand internal APIs, classes, and extension points.
+Find internal APIs, classes, and extension points from NuGet package metadata, the release changelog and the public GitHub repositories. The platform source itself is not public.
 
 **[dw-source-doc-lookup](skills/dw-source-doc-lookup/SKILL.md)**
 Consult the live Dynamicweb documentation as the source of truth before answering how a feature works, is configured, or fits together.

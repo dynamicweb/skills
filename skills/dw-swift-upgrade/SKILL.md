@@ -16,7 +16,10 @@ description: 'Upgrade a Swift 1 site to Swift 2 as it is: a faithful port of its
 tools: the add-in declares them on its migration tool class, and that class is marked restricted,
 so they reach an MCP configuration only once that configuration has been granted them. Without
 the grant the names are absent from `tools/list` and a call answers `Access denied ... Required
-permission: Read. Allowed permission: none` [mcp 0.6.0-beta]. That is a grant on the solution, not
+permission: <the tool's own>. Allowed permission: none`. Full access on the configuration does
+not cover them: each tool is ticked by name in the configuration's permission editor, and
+`tools/list` carries the seven names right after (measured with and without the grant)
+[mcp 0.6.5-beta]. That is a grant on the solution, not
 a property of the client: Dynamo and an external client alike get the family when the
 configuration they connect with carries it.
 
