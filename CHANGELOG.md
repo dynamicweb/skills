@@ -3,6 +3,14 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.2]
+
+- `dw-demo-ledger` read-only guards. A SQL query is one SELECT: the guard reads executable tokens, refuses statement keywords and a second statement, and every local SQL read runs in a transaction that is always rolled back. `assets/handlers.json` now holds `handlers` (surfaces and assertion kinds), `mcpReadTools` and `adminReadQueries`; an MCP binding naming a tool off the list is refused by the validator and by the runner before the call.
+- A profile may change `op`, `value` and `minimumSubjects` only, and an assertion kind must fit its handler. `flag` and `capability` requirements take a boolean `expected`. A ruling needs a boolean `applies` and text `evidence`; a run that holds rulings alone is UNVERIFIED.
+- The repository validator runs the SQL guard over every probe and checks read allowlists, assertion kind per handler, required handler arguments, manifest identity, profile keys and that every snapshot JSON parses. CI runs the ledger Pester suite.
+- The runner error names its cause (check id, lock and selected manifest path, digests, file and schema). The contract documents the repository-relative `lock.manifest`, where `checkIds` come from, and the handlers `admin-feature-flag`, `pim-matrix` and `cpq-structured-read`.
+- Check corrections in code: completeness evidence is read along a nested Admin `rowsPath`, an absent `families` input is no longer a nameless family, an empty CPQ condition is not a judged subject, and an undeclared `{lang}` or `{pimShop}` input is UNVERIFIED. No snapshot file changes; both snapshot digests are unchanged.
+
 ## [6.8.0]
 
 - Replace the PIM ledger's `screen-layouts` layout check with nine edit-layout checks (product edit screen type, resolving editors, a pure tab per family, at most 5 tabs per product, 12 editors per group and 30 per tab, no mechanism names, one catch-all group, unique group names, a stated division) and the ground `one-attribute-family` for `under-25-fields-per-family`. Add `pim.field-placement` (`global-fields-filled`, ground `single-family-catalogue`). New local SQL handlers `pim-edit-layout` and `pim-field-placement` read their tables once per run; every rule is a pure function with a red control and its limits are binding arguments. The build schema gains an optional `editLayout`. Recorded as 10.29.8 revision 6 and, from A schema and package evidence, 10.28.15 revision 3. Admin API and MCP bindings stay planned.

@@ -105,12 +105,14 @@ function Invoke-PimFeatureCheck {
                     $p = "$line".Split('|'); if ($p.Count -eq 2) { $have[$p[0]] = [int]$p[1] }
                 }
                 $off = @()
-                foreach ($f in @($Build.families)) {
+                # An absent families input is no declaration, not one family without a name.
+                $families = @($Build.families | Where-Object { $null -ne $_ })
+                foreach ($f in $families) {
                     if (-not $have.ContainsKey("$($f.category)")) { $off += "family '$($f.name)' has no data model on category '$($f.category)'" }
                     elseif ($have["$($f.category)"] -lt 1) { $off += "family '$($f.name)' has a data model and no product" }
                 }
                 $min = if ($null -ne $Check.minFamilies) { [int]$Check.minFamilies } else { 1 }
-                $n = @($Build.families).Count
+                $n = $families.Count
                 if ($n -lt $min) { $off += "the build file declares $n family(ies); this check needs $min" }
                 return New-PimFeatureCheckRow -Id $id -Result $(if ($off.Count -eq 0) { 'PASS' } else { 'FAIL' }) -Measured "$n declared, $($off.Count) offender(s)" -Expected "at least $min declared, each with a data model and products" -Proves $proves -Offenders $off
             }

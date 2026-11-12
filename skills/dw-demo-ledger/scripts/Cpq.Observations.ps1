@@ -38,6 +38,8 @@ function Test-CpqObservation {
                 foreach($table in $conditionFields.Keys){foreach($row in $rows[$table]){
                     $field=$conditionFields[$table]
                     if(-not $row.Contains($field)){throw [InvalidOperationException]::new('Missing condition field.')}
+                    # An empty condition states nothing to judge; it is not a subject.
+                    if([string]::IsNullOrWhiteSpace($row[$field])){continue}
                     $scanned++
                     try{Assert-CpqConditions $row[$field] $inputs $variables $groups}catch{$off.Add(@{table=$table;field=$field;reason='Invalid condition shape, operator or reference.'})}
                 }}

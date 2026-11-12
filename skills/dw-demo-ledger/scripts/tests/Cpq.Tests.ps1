@@ -61,6 +61,15 @@ Describe 'CPQ complete stored observations' {
             '[{"group_operator":"AND","group_operator":"OR","and":[["formInput[Size]","eq","small"]]}]'
         )){$f=New-CpqFixture;$f.snapshot.rows.CPQInputRule[0].InputRuleConditions=$text;Verdict $f conditions.dialect | Should -BeExactly FAIL}
     }
+    It 'does not count an empty condition as a judged subject' {
+        $f=New-CpqFixture;$f.snapshot.rows.CPQInputRule=@();$f.snapshot.rows.CPQGroup=@($f.snapshot.rows.CPQGroup[0])
+        $r=Test-CpqObservation conditions.dialect $f.expected $f.snapshot
+        $r.scanned | Should -Be 0
+        Verdict $f conditions.dialect | Should -BeExactly FAIL
+        $f.snapshot.rows.CPQGroup[0].GroupCondition='[["formInput[Size]","eq","small"]]'
+        (Test-CpqObservation conditions.dialect $f.expected $f.snapshot).scanned | Should -Be 1
+        Verdict $f conditions.dialect | Should -BeExactly PASS
+    }
     It 'checks references case-insensitively and checks nested group and price conditions' {
         $f=New-CpqFixture;$f.snapshot.rows.CPQInputRule[0].InputRuleConditions='[{"group_operator":"OR","or":[["forminput[size]","in",["small","large"]],{"group_operator":"AND","and":[["var[bom_total_sell]","gte",0]]}]}]'
         Verdict $f conditions.dialect | Should -BeExactly PASS

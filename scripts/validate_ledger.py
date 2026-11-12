@@ -40,11 +40,51 @@ def layout_argument_faults(handler, arguments) -> list[str]:
     return faults
 
 
+PROFILE_KEYS = {"op", "value", "minimumSubjects"}
+
+
+def binding_faults(binding, kind, registry) -> list[str]:
+    """What an implemented binding must state before the runner may execute it. The registry
+    (assets/handlers.json) is the same one the runner reads; nothing here is inferred from a name."""
+    handler, surface = binding.get("handler"), binding.get("surface")
+    entry = (registry.get("handlers") or {}).get(handler)
+    if not isinstance(entry, dict) or surface not in entry.get("surfaces", []):
+        return [f"implemented handler/surface not allowlisted: {handler}"]
+    faults = []
+    args = binding.get("arguments") if isinstance(binding.get("arguments"), dict) else {}
+    operation = binding.get("operation")
+    if kind not in entry.get("assertions", []):
+        faults.append(f"assertion kind {kind} does not fit handler {handler}")
+    if surface == "mcp":
+        tools = registry.get("mcpReadTools", [])
+        if not operation:
+            faults.append("MCP binding names no operation")
+        for tool in [operation, *(binding.get("requiredTools") or [])]:
+            if tool and tool not in tools:
+                faults.append(f"MCP tool is not an allowlisted read tool: {tool}")
+    if surface == "admin-api":
+        if not operation:
+            faults.append("Admin binding names no operation")
+        elif operation not in registry.get("adminReadQueries", []):
+            faults.append(f"Admin operation is not an allowlisted read query: {operation}")
+    if handler == "admin-query-count" and not (binding.get("projection") or {}).get("rowsPath"):
+        faults.append("admin-query-count needs projection.rowsPath")
+    if handler == "admin-feature-flag" and not args.get("featureTypeName"):
+        faults.append("admin-feature-flag needs arguments.featureTypeName")
+    if handler == "files-count" and not (binding.get("path") or (args.get("folder") and args.get("filter"))):
+        faults.append("files-count needs a path, or arguments.folder with arguments.filter")
+    if handler == "settings-value" and not args.get("key"):
+        faults.append("settings-value needs arguments.key")
+    if handler in ("sql-scalar", "sql-offenders") and not binding.get("query"):
+        faults.append("implemented SQL scalar/offenders binding needs a query")
+    return faults + [f"{handler} binding {fault}" for fault in layout_argument_faults(handler, binding.get("arguments"))]
+
+
 def validate_ledgers(repo: Path) -> list[str]:
     assets = repo / "skills/dw-demo-ledger/assets"
     if not assets.exists():
         return []
-    errors, schema_jobs = [], []
+    errors, schema_jobs, sql_jobs = [], [], []
 
     def error(path, message):
         errors.append(f"{path.relative_to(repo).as_posix()}: {message}")
@@ -59,10 +99,20 @@ def validate_ledgers(repo: Path) -> list[str]:
             error(path, f"unreadable JSON ({exc})")
             return None
 
-    handlers = read(assets / "handlers.json") or {}
+    registry = read(assets / "handlers.json") or {}
+    if not isinstance(registry.get("handlers"), dict):
+        error(assets / "handlers.json", "expected handlers, mcpReadTools and adminReadQueries")
+    for file in sorted((assets / "profiles").glob("*.json")):
+        profile = read(file) or {}
+        for cid, overrides in (profile.get("expectations") or {}).items():
+            extra = sorted(set(overrides) - PROFILE_KEYS) if isinstance(overrides, dict) else ["(not an object)"]
+            if extra:
+                error(file, f"profile may change only op, value and minimumSubjects: {cid} states {', '.join(extra)}")
     for manifest in sorted((assets / "releases").glob("*/manifest.json")):
         root = manifest.parent
         meta = read(manifest) or {}
+        if meta.get("schema") != 1 or not isinstance(meta.get("dwVersion"), str) or not meta.get("dwVersion"):
+            error(manifest, "manifest needs schema 1 and a dwVersion")
         if meta.get("functionsGlob") != "functions/*.json" or meta.get("coverageGlob") != "coverage/*.json":
             error(manifest, "expected functions/*.json and coverage/*.json discovery patterns")
         functions, checks, referenced = {}, {}, set()
@@ -118,17 +168,19 @@ def validate_ledgers(repo: Path) -> list[str]:
                         binding_ids.add(binding.get("id"))
                         if binding.get("surface") == "sql" and binding.get("localOnly") is not True:
                             error(path, "SQL binding must declare localOnly:true")
+                        if isinstance(binding.get("query"), str):
+                            sql_jobs.append({"path": path.relative_to(repo).as_posix(), "query": binding["query"]})
                         if binding.get("status") == "implemented":
-                            allowed = handlers.get(binding.get("handler"))
-                            if not allowed or binding.get("surface") not in allowed:
-                                error(path, f"implemented handler/surface not allowlisted: {binding.get('handler')}")
-                            if binding.get("surface") == "sql" and binding.get("handler") in ("sql-scalar", "sql-offenders") and not binding.get("query"):
-                                error(path, "implemented SQL scalar/offenders binding needs a query")
-                            for fault in layout_argument_faults(binding.get("handler"), binding.get("arguments")):
-                                error(path, f"{binding.get('handler')} binding {fault}")
+                            kind = (check.get("assertion") or {}).get("kind")
+                            for fault in binding_faults(binding, kind, registry):
+                                error(path, fault)
         for path in (root / "probes").glob("**/*.json"):
             if path.resolve() not in referenced:
                 error(path, "orphan probe is not referenced by a function")
+        # Evidence, deltas and migration maps are hashed into the snapshot digest; each must at least parse.
+        for path in sorted(root.glob("**/*.json")):
+            if path.relative_to(root).parts[0] not in ("functions", "probes", "coverage") and path != manifest:
+                read(path)
         for fid, f in functions.items():
             for req in f.get("requires", []):
                 rid = req.get("id", "")
@@ -146,22 +198,31 @@ def validate_ledgers(repo: Path) -> list[str]:
                     if key in claim and claim[key] not in functions:
                         error(file, f"coverage {key} does not resolve: {claim[key]}")
 
-    # One process validates all schemas, never one process per probe. Paths travel
-    # as JSON data on stdin, not as executable command text.
+    # One process validates all schemas and every SQL text, never one process per probe. Paths
+    # and queries travel as JSON data on stdin, not as executable command text. The SQL check is
+    # the runner's own guard (Assert-LedgerSelect), so the validator and the runner cannot drift.
+    guard = repo / "skills/dw-demo-ledger/scripts/Ledger.Sql.ps1"
+    if not guard.is_file():
+        guard = Path(__file__).resolve().parents[1] / "skills/dw-demo-ledger/scripts/Ledger.Sql.ps1"
     command = r'''
 $ErrorActionPreference='Stop'
-$jobs=[Console]::In.ReadToEnd()|ConvertFrom-Json
-$failures=@(foreach($job in $jobs){
+$work=[Console]::In.ReadToEnd()|ConvertFrom-Json
+. $work.guard
+$failures=@(foreach($job in $work.schemas){
     try {
         $valid=Test-Json -Json (Get-Content -LiteralPath $job.path -Raw) -SchemaFile $job.schema -ErrorAction Stop
         if(-not $valid){$job.path+': schema validation failed'}
     } catch { $job.path+': schema validation failed: '+$_.Exception.Message }
+}
+foreach($job in $work.sql){
+    try {Assert-LedgerSelect $job.query} catch {$job.path+': SQL binding is not a single read-only SELECT statement'}
 })
 ConvertTo-Json -InputObject $failures -Compress
 '''
     try:
+        work = {"guard": str(guard), "schemas": schema_jobs, "sql": sql_jobs}
         proc = subprocess.run(["pwsh", "-NoProfile", "-NonInteractive", "-Command", command],
-                              input=json.dumps(schema_jobs), text=True, capture_output=True, timeout=120)
+                              input=json.dumps(work), text=True, capture_output=True, timeout=120)
         if proc.returncode:
             errors.append("ledger schema validation failed to execute in PowerShell 7")
         else:

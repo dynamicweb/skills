@@ -63,11 +63,15 @@ function ConvertTo-LedgerRows {
     $rows=$Data
     if($RowsPath -ne '$'){$rows=Get-LedgerField $Data $RowsPath}
     if($null -eq $rows -or $rows -isnot [array]){throw [InvalidOperationException]::new('Expected an explicit array projection.')}
-    if($Data -is [Collections.IDictionary]){
+    # Completeness evidence sits on the root or on a container along the row path (Admin responses carry it under model).
+    $containers=[Collections.Generic.List[object]]::new();$containers.Add($Data);$cursor=$Data
+    if($RowsPath -ne '$'){$keys=$RowsPath.Split('.');for($i=0;$i -lt $keys.Count-1;$i++){$cursor=$cursor[$keys[$i]];$containers.Add($cursor)}}
+    foreach($container in $containers){
+        if($container -isnot [Collections.IDictionary]){continue}
         foreach($key in @('count','total','totalCount')){
-            if($Data.Contains($key) -and $Data[$key] -ne $rows.Count){throw [InvalidOperationException]::new('Collection enumeration is incomplete.')}
+            if($container.Contains($key) -and $container[$key] -ne $rows.Count){throw [InvalidOperationException]::new('Collection enumeration is incomplete.')}
         }
-        if($Data.totalPages -gt 1 -or $Data.hasMore -or $Data.hasNextPage -or $Data.nextCursor -or $Data.nextLink){throw [InvalidOperationException]::new('Paged collection is not complete.')}
+        if($container.totalPages -gt 1 -or $container.hasMore -or $container.hasNextPage -or $container.nextCursor -or $container.nextLink){throw [InvalidOperationException]::new('Paged collection is not complete.')}
     }
     return ,$rows
 }

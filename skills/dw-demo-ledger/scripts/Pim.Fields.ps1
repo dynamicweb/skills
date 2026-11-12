@@ -47,6 +47,8 @@ function Expand-PimSql {
     param([string]$Sql, $Build)
     foreach ($p in @(@('{lang}', "$($Build.defaultLanguage)"), @('{pimShop}', "$($Build.pimShop)"))) {
         if ($Sql.Contains($p[0])) {
+            # An undeclared input is missing evidence (UNVERIFIED); a declared value that is not a plain id stays an error.
+            if (-not $p[1]) { throw [InvalidOperationException]::new("token $($p[0]) is not declared in the build file") }
             if ($p[1] -notmatch $script:PimTokenPattern) { throw "token $($p[0]) has no plain-id value in the build file" }
             $Sql = $Sql.Replace($p[0], $p[1])
         }
