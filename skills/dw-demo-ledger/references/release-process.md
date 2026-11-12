@@ -36,6 +36,16 @@ applies to old versions. Its admission record must name exclusions supported by 
 and schema evidence. Keep unverifiable candidates visibly unverified. A newly found function
 gets a reviewed entry and executable proof, or a planned binding that cannot pass.
 
+An inventory correction is a capability a build found that the inventory missed. It is not a
+platform addition: record it in the snapshot's `delta.json` `corrections` (and a `mapped` entry
+when a proposal is an existing function), review it in `delta-review.json` `corrections`, raise
+the manifest `revision`, and name the source issue. Check fixes go in `checkCorrections`; a
+correction makes the check measure what its `proves` says and never weakens an assertion to let
+a build pass. Admit the same entry to an earlier snapshot only from that release's package bytes
+and schema (its `evidence/admission.json` `corrections`); otherwise list it as not admitted.
+Each implemented SQL read gets a green and a red fixture control
+([Corrections.Tests.ps1](../scripts/tests/Corrections.Tests.ps1)).
+
 The release experiment starts with a genuine pre-feature release and discovers capabilities
 through general evidence. Feature-specific implementation research happens after the raw
 scan is saved; it must not change what that scan originally found.

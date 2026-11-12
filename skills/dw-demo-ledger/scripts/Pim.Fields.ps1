@@ -21,6 +21,7 @@ $script:PimAttributeKindTypes = @{
     'rich-text'    = @(14)
     'link'         = @(8)
     'file'         = @(9)
+    'range'        = @(16)
     'computed'     = @()
 }
 # List presentation: 1 radio, 2 dropdown, 3 multi-select list, 4 checkbox list, 5 tag cloud.
@@ -73,7 +74,10 @@ SELECT CAST(f.FieldCategoryId AS nvarchar(100)) + N'|' + CAST(f.FieldId AS nvarc
   CAST(ISNULL(CAST(f.FieldAllowChangesAcrossVariants AS int),0) AS nvarchar(2)) + N'|' +
   CAST((SELECT COUNT(*) FROM EcomFieldOption o WHERE o.FieldOptionFieldId IN (N'ProductCategory|' + f.FieldCategoryId + N'|' + f.FieldId, N'ProductCategory|reference_category|' + f.FieldId)) AS nvarchar(10)) + N'|' +
   CAST((SELECT COUNT(*) FROM EcomProductCategoryFieldValue v WHERE v.FieldValueFieldCategoryId = f.FieldCategoryId AND v.FieldValueFieldId = f.FieldId AND ISNULL(CAST(v.FieldValueValue AS nvarchar(max)),N'') <> N'') AS nvarchar(10)) + N'|' +
-  CASE WHEN ISNULL(t.FieldTypeProvider,N'') <> N'' THEN N'1' ELSE N'0' END
+  CASE WHEN ISNULL(t.FieldTypeProvider,N'') <> N'' THEN N'1' ELSE N'0' END + N'|' +
+  CAST((SELECT COUNT(*) FROM EcomProductCategoryFieldGroupValue g WHERE g.FieldValueFieldCategoryId = f.FieldCategoryId AND g.FieldValueFieldId = f.FieldId AND ISNULL(CAST(g.FieldValueValue AS nvarchar(max)),N'') <> N'' AND
+    (EXISTS (SELECT 1 FROM EcomGroupProductRelation r WHERE r.GroupProductRelationGroupId = g.FieldValueGroupId) OR
+     EXISTS (SELECT 1 FROM EcomGroupRelations c JOIN EcomGroupProductRelation r ON r.GroupProductRelationGroupId = c.GroupRelationsGroupId WHERE c.GroupRelationsParentId = g.FieldValueGroupId))) AS nvarchar(10))
 FROM EcomProductCategoryField f LEFT JOIN EcomFieldType t ON t.FieldTypeId = f.FieldType
 WHERE f.FieldCategoryId <> N'reference_category'
 UNION ALL
@@ -83,18 +87,18 @@ SELECT N'|' + CAST(p.ProductFieldSystemName AS nvarchar(100)) + N'|' +
   CAST(ISNULL(CAST(p.ProductFieldRequired AS int),0) AS nvarchar(2)) + N'|' + CAST(ISNULL(CAST(p.ProductFieldAllowChangesAcrossLanguages AS int),0) AS nvarchar(2)) + N'|' +
   CAST(ISNULL(CAST(p.ProductFieldAllowChangesAcrossVariants AS int),0) AS nvarchar(2)) + N'|' +
   CAST((SELECT COUNT(*) FROM EcomFieldOption o WHERE o.FieldOptionFieldId = p.ProductFieldSystemName) AS nvarchar(10)) + N'|-1|' +
-  CASE WHEN ISNULL(t.FieldTypeProvider,N'') <> N'' THEN N'1' ELSE N'0' END
+  CASE WHEN ISNULL(t.FieldTypeProvider,N'') <> N'' THEN N'1' ELSE N'0' END + N'|0'
 FROM EcomProductField p LEFT JOIN EcomFieldType t ON t.FieldTypeId = p.ProductFieldTypeId
 '@
     $out = @{}
     foreach ($line in @(Invoke-Sqlcmd-Rows -Server $Server -Database $Database -Query ($sql -replace '\s+', ' '))) {
         $p = "$line".Split('|')
-        if ($p.Count -lt 12) { continue }
+        if ($p.Count -lt 13) { continue }
         $out["$($p[0])|$($p[1])"] = [pscustomobject]@{
             category = $p[0]; field = $p[1]; type = [int]$p[2]; presentation = [int]$p[3]
             unitGroup = [int]$p[4]; unitPreset = [int]$p[5]; required = ($p[6] -eq '1')
             perLanguage = ($p[7] -eq '1'); perVariant = ($p[8] -eq '1'); options = [int]$p[9]
-            values = [int]$p[10]; computed = ($p[11] -eq '1')
+            values = [int]$p[10]; computed = ($p[11] -eq '1'); defaults = [int]$p[12]
         }
     }
     return $out
@@ -159,7 +163,9 @@ function Test-PimAttributeAspect {
                 if ($kind -eq 'computed' -or [string]::IsNullOrEmpty("$($a.category)")) { continue }
                 $scanned++
                 if (-not $s) { $offenders += "$key is not stored"; continue }
-                if ($s.values -lt 1) { $offenders += "$key has no value on any product" }
+                # A value equal to the data set or data model default is inherited, not stored on the product.
+                # A default counts only on a group (or the parent of a group) that holds at least one product.
+                if ($s.values -lt 1 -and $s.defaults -lt 1) { $offenders += "$key has no value on any product and no inherited default on a group with products" }
             }
         }
     }

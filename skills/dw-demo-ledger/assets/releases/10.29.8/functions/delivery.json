@@ -120,6 +120,10 @@
         {
           "id": "client-side-only",
           "when": "The frontend renders client-side only and authenticates users directly."
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
         }
       ],
       "sources": [
@@ -232,6 +236,10 @@
         {
           "id": "catalogue-only-headless",
           "when": "The headless demo shows content and catalogue only, no buying."
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
         }
       ],
       "sources": [

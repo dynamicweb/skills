@@ -57,9 +57,9 @@ function Test-LedgerAssertion {
     return 'ERROR'
 }
 function Select-LedgerBinding {
-    param($Check, $Capabilities, [string[]]$Surfaces = @('mcp','admin-api','dwapi','file','sql'))
+    param($Check, $Capabilities, [string[]]$Surfaces = @('mcp','admin-api','dwapi','file','sql'), [string[]]$Exclude = @())
     foreach ($surface in $Surfaces) {
-        foreach ($binding in @($Check.bindings | Where-Object {$_.surface -eq $surface -and $_.status -eq 'implemented'})) {
+        foreach ($binding in @($Check.bindings | Where-Object {$_.surface -eq $surface -and $_.status -eq 'implemented' -and $_.id -notin $Exclude})) {
             $available = switch ($surface) {
                 'mcp' { $Capabilities.mcp.available -and $binding.operation -in $Capabilities.mcp.tools -and @($binding.requiredTools | Where-Object {$_ -and $_ -notin $Capabilities.mcp.tools}).Count -eq 0 }
                 'admin-api' { $Capabilities.adminApi.authenticated -and $binding.operation -in $Capabilities.adminApi.queries }

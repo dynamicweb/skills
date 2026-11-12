@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "pim.document-metadata.versioned",
+  "functionId": "pim.document-metadata",
+  "intent": {
+    "proves": "At least one non-image asset of an active product carries a version label.",
+    "level": "applied",
+    "scope": "active products of the declared product scope, every language; complete SQL enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-product-images",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_product_images",
+      "reason": "get_product_images reads one product at a time; no complete host enumeration of details. The detail DTO does not establish the version field."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomDetails d WHERE d.DetailType = 0 AND ISNULL(d.DetailVersion, N'') <> N'' AND NOT (LOWER(d.DetailValue) LIKE N'%.jpg' OR LOWER(d.DetailValue) LIKE N'%.jpeg' OR LOWER(d.DetailValue) LIKE N'%.png' OR LOWER(d.DetailValue) LIKE N'%.gif' OR LOWER(d.DetailValue) LIKE N'%.webp' OR LOWER(d.DetailValue) LIKE N'%.avif' OR LOWER(d.DetailValue) LIKE N'%.svg') AND EXISTS (SELECT 1 FROM EcomProducts p WHERE p.ProductId = d.DetailProductId AND p.ProductActive = 1{inScope})"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    },
+    {
+      "kind": "source",
+      "ref": "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomDetails.DetailVersion"
+    }
+  ]
+}

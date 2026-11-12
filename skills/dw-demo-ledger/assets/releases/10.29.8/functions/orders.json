@@ -346,7 +346,12 @@
       "checks": [
         "probes/orders/rma-notifications.configured.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "docs",
@@ -430,7 +435,12 @@
         "probes/orders/favorite-lists.lists.json",
         "probes/orders/favorite-lists.paragraph.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "docs",
@@ -454,7 +464,12 @@
       "checks": [
         "probes/orders/order-fields.fields.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "docs",
@@ -474,7 +489,12 @@
       "checks": [
         "probes/orders/order-line-fields.fields.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "docs",
@@ -547,6 +567,10 @@
         {
           "id": "invoice-only",
           "when": "the demo takes payment on account or invoice only"
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
         }
       ],
       "sources": [
@@ -572,7 +596,12 @@
       "checks": [
         "probes/orders/payment-fees.fees.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "docs",
@@ -600,6 +629,10 @@
         {
           "id": "invoice-only",
           "when": "the demo takes payment on account or invoice only"
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
         }
       ],
       "sources": [
@@ -670,7 +703,12 @@
       "checks": [
         "probes/orders/free-shipping.threshold.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "docs",
@@ -747,7 +785,12 @@
       "checks": [
         "probes/orders/track-and-trace.schemes.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
       "sources": [
         {
           "kind": "docs",
@@ -871,6 +914,10 @@
         {
           "id": "vat-market",
           "when": "the market uses VAT only"
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
         }
       ],
       "sources": [
@@ -988,6 +1035,31 @@
         {
           "kind": "source",
           "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+        }
+      ]
+    },
+    {
+      "id": "orders.product-delivery-options",
+      "area": "orders",
+      "name": "Delivery options per product",
+      "description": "Which shipping methods (home delivery, pickup) are offered for an article: a shipping method limited to products or product groups (EcomShippings.ShippingProductIds, ShippingProductGroupIds, ShippingProductFilterMode).",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/product-delivery-options.restricted-methods.json",
+        "probes/orders/product-delivery-options.checkout-offers-allowed.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "measurement",
+          "ref": "https://github.com/dynamicweb/skills/issues/212"
+        },
+        {
+          "kind": "release",
+          "ref": "delta.json#corrections"
         }
       ]
     }

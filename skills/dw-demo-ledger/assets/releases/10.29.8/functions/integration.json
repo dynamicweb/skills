@@ -891,6 +891,10 @@
         {
           "id": "odata-integration",
           "when": "the remote system is integrated through OData, not a plug-in unit"
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
         }
       ],
       "sources": [

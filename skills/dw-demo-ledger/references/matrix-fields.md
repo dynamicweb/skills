@@ -1,5 +1,12 @@
 # Matrix fields on [dw 10.29.8]
 
+## Contents
+
+- [Declared source values](#declared-source-values)
+- [Six checks](#six-checks)
+- [Building a matrix](#building-a-matrix)
+- [Release evidence and handoff](#release-evidence-and-handoff)
+
 The release scan must finish and preserve its raw output before this feature is
 reviewed. No matrix keyword belongs in the scanner. `pim.matrix-fields` is absent
 from [dw 10.28.15]. Its [dw 10.29.8] declaration requires the observed boolean feature
@@ -18,7 +25,7 @@ values with the approved source data before running. An empty table cannot pass.
 
 ```json
 {
-  "categoryId": "nutrition_matrix",
+  "categoryId": "Matrix_nutrition",
   "columns": [
     {"id": "nutrient", "type": "Text"},
     {"id": "per_100g", "type": "Double"},
@@ -71,6 +78,23 @@ MCP remains first for the supported field-type read. The current category field 
 product DTOs have not established complete matrix cell, row and parent evidence;
 their bindings stay planned. Those stored-integrity checks require local SQL.
 No fallback silently upgrades an incomplete MCP observation to a pass.
+
+## Building a matrix
+
+Measured on [dw 10.29.8] in the release A/B build (food-ingredient catalogue, 2026-11-12):
+
+- Toggle the flag through the Management API command `FeatureManagementToggle` with body
+  `{"FeatureTypeName": "<feature type name>"}`. `FeatureManagementToggleCommand` answers
+  "Unknown command".
+- Save the owner field with `ProductFieldSave` and the Matrix type looked up by alias (id 18 on
+  that host; never hard-code it). The platform then creates the matrix category itself as
+  `Matrix_<fieldSystemName>` (name "Matrix column configuration", CategoryType 3) and ignores a
+  requested `MatrixAttributeGroupId`. Do not create your own matrix category; add the columns to
+  the one the platform made and declare that id as `categoryId`.
+- List columns need DropDownList presentation (2).
+- No MCP tool in the 0.6.x add-in writes matrix cells. The build wrote the stored shape directly:
+  the parent marker on the owner field, cells in the matrix category, rows from 0. `ProductById`
+  then returned the field as a matrix value.
 
 ## Release evidence and handoff
 

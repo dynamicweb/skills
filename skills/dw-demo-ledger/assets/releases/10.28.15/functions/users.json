@@ -259,6 +259,10 @@
         {
           "id": "users.na.admin-only-backend",
           "when": "The demo shows the backend only as the administrator."
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
         }
       ],
       "sources": [
@@ -491,16 +495,10 @@
       "id": "users.geolocation",
       "area": "users",
       "name": "User and group geolocation",
-      "description": "Latitude and longitude on users and groups, calculated from the address through Google Maps or set by hand, for maps and distance logic (for example a dealer locator).",
+      "description": "Latitude and longitude on users and groups, calculated from the address through Google Maps or set by hand, for maps and distance logic (for example a dealer locator). Stored coordinates need no map service; only the Update geolocation action needs Google Maps credentials, and no check covers that action.",
       "skill": "dw-users-permissions",
       "status": "candidate",
-      "requires": [
-        {
-          "kind": "capability",
-          "id": "Google Maps credentials (only for the Update geolocation action)",
-          "expected": true
-        }
-      ],
+      "requires": [],
       "inputs": [],
       "checks": [
         "probes/users/geolocation.coordinates.json"

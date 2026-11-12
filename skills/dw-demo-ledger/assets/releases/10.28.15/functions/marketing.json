@@ -379,6 +379,10 @@
         {
           "id": "always-in-stock",
           "when": "the demo catalogue has no out-of-stock beat"
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
         }
       ],
       "sources": [

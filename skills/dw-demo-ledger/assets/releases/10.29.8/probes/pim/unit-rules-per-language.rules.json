@@ -3,8 +3,8 @@
   "id": "pim.unit-rules-per-language.rules",
   "functionId": "pim.unit-rules-per-language",
   "intent": {
-    "proves": "Unit shown per language: rules satisfies the selected profile assertion.",
-    "level": "applied",
+    "proves": "At least one per-language unit conversion rule is stored for a unit of an existing unit group. Configured only: rendering in the ruled language is unit-rules-per-language.rendered.",
+    "level": "configured",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },
   "assertion": {
@@ -34,6 +34,10 @@
     {
       "kind": "migration",
       "ref": "migration/pim-registry.json#unit-rules-per-language/rules"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
     }
   ]
 }

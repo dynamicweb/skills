@@ -20,7 +20,7 @@
       "handler": "mcp-count",
       "operation": "get_product_index_status",
       "arguments": {},
-      "reason": "Handler must project DocumentCount and HasBuildConfigured for the index the storefront query uses; not implemented."
+      "reason": "get_product_index_status answers the claim (measured on 10.29.8: documentCount and indexState Success), but it returns one object for a named repository and index, not a row collection; mcp-count cannot project it. Needs an object-field handler and the index name from the storefront query."
     },
     {
       "id": "admin-repositoryindexstatus",
@@ -40,6 +40,10 @@
     {
       "kind": "docs",
       "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
     }
   ]
 }

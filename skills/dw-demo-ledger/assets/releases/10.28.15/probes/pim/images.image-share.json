@@ -3,9 +3,9 @@
   "id": "pim.images.image-share",
   "functionId": "pim.images",
   "intent": {
-    "proves": "Product images with a default: image-share satisfies the selected profile assertion.",
+    "proves": "The percentage of active master products in scope with an image asset or a product image field meets the selected profile assertion; documents and videos are not images.",
     "level": "applied",
-    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+    "scope": "Active master products of the default language in scope; image assets are file details with extension jpg, jpeg, png, gif, webp, avif or svg."
   },
   "assertion": {
     "kind": "scalar",
@@ -27,13 +27,17 @@
       "status": "implemented",
       "handler": "sql-scalar",
       "localOnly": true,
-      "query": "SELECT ISNULL(100 * (SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1 AND ISNULL(p.ProductVariantId, N'') = N''{inScope} AND (EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailProductId = p.ProductId AND d.DetailType = 0) OR ISNULL(p.ProductImageSmall, N'') + ISNULL(p.ProductImageMedium, N'') + ISNULL(p.ProductImageLarge, N'') <> N'')) / NULLIF((SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1 AND ISNULL(p.ProductVariantId, N'') = N''{inScope}), 0), 0)"
+      "query": "SELECT ISNULL(100 * (SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1 AND ISNULL(p.ProductVariantId, N'') = N''{inScope} AND (EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailProductId = p.ProductId AND d.DetailType = 0 AND (LOWER(d.DetailValue) LIKE N'%.jpg' OR LOWER(d.DetailValue) LIKE N'%.jpeg' OR LOWER(d.DetailValue) LIKE N'%.png' OR LOWER(d.DetailValue) LIKE N'%.gif' OR LOWER(d.DetailValue) LIKE N'%.webp' OR LOWER(d.DetailValue) LIKE N'%.avif' OR LOWER(d.DetailValue) LIKE N'%.svg')) OR ISNULL(p.ProductImageSmall, N'') + ISNULL(p.ProductImageMedium, N'') + ISNULL(p.ProductImageLarge, N'') <> N'')) / NULLIF((SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1 AND ISNULL(p.ProductVariantId, N'') = N''{inScope}), 0), 0)"
     }
   ],
   "sources": [
     {
       "kind": "migration",
       "ref": "migration/pim-registry.json#images/image-share"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
     }
   ]
 }

@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "orders.product-delivery-options.restricted-methods",
+  "functionId": "orders.product-delivery-options",
+  "intent": {
+    "proves": "At least one active shipping method names products or product groups in its product filter.",
+    "level": "configured",
+    "scope": "all active shipping methods; the filter mode is reported, not interpreted"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-shipping-methods",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_shipping_methods",
+      "reason": "get_shipping_methods does not establish the product filter fields in its DTO."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomShippings s WHERE s.ShippingActive = 1 AND (ISNULL(s.ShippingProductIds, N'') <> N'' OR ISNULL(s.ShippingProductGroupIds, N'') <> N'')"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    },
+    {
+      "kind": "source",
+      "ref": "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomShippings.ShippingProductIds, ShippingProductGroupIds, ShippingProductFilterMode"
+    }
+  ]
+}

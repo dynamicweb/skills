@@ -3,9 +3,9 @@
   "id": "pim.images.images-without-default",
   "functionId": "pim.images",
   "intent": {
-    "proves": "Product images with a default: images-without-default satisfies the selected profile assertion.",
+    "proves": "Every active master product in scope that has an image asset also has a default image asset; documents and videos are not images.",
     "level": "applied",
-    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+    "scope": "Active master products of the default language in scope; image assets are file details with extension jpg, jpeg, png, gif, webp, avif or svg."
   },
   "assertion": {
     "kind": "scalar",
@@ -27,13 +27,17 @@
       "status": "implemented",
       "handler": "sql-scalar",
       "localOnly": true,
-      "query": "SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1 AND ISNULL(p.ProductVariantId, N'') = N''{inScope} AND EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailProductId = p.ProductId AND d.DetailType = 0 AND ISNULL(d.DetailVariantId, N'') = N'') AND NOT EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailProductId = p.ProductId AND d.DetailType = 0 AND d.DetailIsDefault = 1)"
+      "query": "SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1 AND ISNULL(p.ProductVariantId, N'') = N''{inScope} AND EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailProductId = p.ProductId AND d.DetailType = 0 AND ISNULL(d.DetailVariantId, N'') = N'' AND (LOWER(d.DetailValue) LIKE N'%.jpg' OR LOWER(d.DetailValue) LIKE N'%.jpeg' OR LOWER(d.DetailValue) LIKE N'%.png' OR LOWER(d.DetailValue) LIKE N'%.gif' OR LOWER(d.DetailValue) LIKE N'%.webp' OR LOWER(d.DetailValue) LIKE N'%.avif' OR LOWER(d.DetailValue) LIKE N'%.svg')) AND NOT EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailProductId = p.ProductId AND d.DetailType = 0 AND d.DetailIsDefault = 1 AND (LOWER(d.DetailValue) LIKE N'%.jpg' OR LOWER(d.DetailValue) LIKE N'%.jpeg' OR LOWER(d.DetailValue) LIKE N'%.png' OR LOWER(d.DetailValue) LIKE N'%.gif' OR LOWER(d.DetailValue) LIKE N'%.webp' OR LOWER(d.DetailValue) LIKE N'%.avif' OR LOWER(d.DetailValue) LIKE N'%.svg'))"
     }
   ],
   "sources": [
     {
       "kind": "migration",
       "ref": "migration/pim-registry.json#images/images-without-default"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
     }
   ]
 }

@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "area": "pim",
+  "retrieved": "2026-11-12",
+  "sources": [
+    {
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "title": "Brand-build ledger gaps and check findings (vacuum components, food ingredients)"
+    },
+    {
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "title": "Brand-build ledger gaps and check findings (outdoor power equipment)"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Brand-build inventory correction: Documents per language or market.",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "functionId": "pim.document-scope"
+    },
+    {
+      "claim": "Brand-build inventory correction: Document metadata: version and history.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.document-metadata"
+    },
+    {
+      "claim": "Brand-build inventory correction: Image alt text per language.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.asset-alt-text"
+    },
+    {
+      "claim": "Brand-build inventory correction: Product videos.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.product-videos"
+    },
+    {
+      "claim": "Proposed as pim.box-contents: No separate platform carrier. Box contents that are products are one more relation group kind (pim.product-relations, one group per kind); contents that are not products are a declared list or long-text attribute (pim.field-types, pim.list-fields).",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "duplicateOf": "pim.product-relations"
+    }
+  ],
+  "gaps": []
+}
