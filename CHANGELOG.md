@@ -3,6 +3,16 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.6.0]
+
+- Add the app-backed CPQ ledger area to the 10.29.8 snapshot at revision 4, following the merged brand-gap revision. Inventory the accepted function/check intents with exact vendor app predicates, optional profile grounds and per-area coverage.
+- Keep every CPQ binding planned. Structural reads prefer MCP and authenticated Admin queries; SQL remains local-only. Behavioral checks require complete, fresh, independently bound evidence. No compiler, live handler, platform release addition or compatibility measurement is claimed.
+
+## [6.5.1]
+
+- Correct `dw-commerce-cpq` conditions, operators, input references, version ownership and local quote claims against the pinned vendor profile and Studio 0.7.0 source. Separate vendor model duplication from Studio version copy and keep custom metadata outside vendor settings.
+- Add an engine characterization reference with seven authoring constraints, planned truth tables and cart/quote persistence checks. Preserve MCP-first complete observations and Studio's Dynamo-only tool boundary. These corrections do not certify a new installation.
+
 ## [6.5.0]
 
 - `dw-demo-ledger` 10.29.8 revision 3: fold two brand builds (#210, #212) into the inventory as corrections, not release additions. 14 new functions (documents per language, document versions, image alt text, product videos, expected delivery, product reviews, product compare, delivery options per product, and planned-only entries for price on request, configured products, offset units, unit display format, relation values and feature blocks); box contents and matrix fields map to existing functions. Eight of them are admitted to 10.28.15 revision 2 from its package bytes and schema.

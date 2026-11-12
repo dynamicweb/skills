@@ -155,9 +155,12 @@ Card mutations from the card page go through post-redirect-get on a card action 
 this API — adding a card to a quote, deleting or duplicating a card item, saving card details,
 creating a quote.
 
-> The quote paths are worth distinguishing before wiring a submit button: the cart/order/quote
-> endpoints create Dynamicweb records, while the sales-quote path is the one associated with ERP
-> sales documents. Confirm which one a given build should call.
+Confirm the installed submit path before wiring a button. A CPQ card, a local Dynamicweb quote
+and an ERP sales quote are different records. `CreateSalesQuote` is associated with the ERP path;
+other route names are not proof of local success. `CreateQuoteWithCard` has also been observed,
+including a missing authorization check: verify owner isolation in an isolated fixture before use.
+Require a destination ID and read back the saved lines, prices and card link. See
+[engine-characterization.md](engine-characterization.md) for the acceptance plan.
 
 ### Add to Cart: a hard-coded page gate and a failing `ToCart`
 
@@ -182,7 +185,10 @@ product id is whatever the solution maps each line's `item_no` to in `EcomProduc
 with no matching product cannot be added and needs that mapping first. Render the button from
 `cpq-custom.js` too, since the vendor one is absent. Each BOM item becomes one basket line, and the
 stock Swift checkout places the order. Verify with the basket contents and a placed order, not with
-the HTTP status of the add call. Recheck `ToCart` and the page gate on each CPQ release.
+the HTTP status of the add call. Also compare CPQ's configured price and discount with the saved
+cart and quote: adding catalogue components separately can reprice them and lose configured
+pricing. Treat this as a candidate handoff, not proof of complete configuration-to-quote support.
+Recheck `ToCart` and the page gate on each CPQ release.
 
 ## Selections and client storage
 

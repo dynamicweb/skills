@@ -9,13 +9,15 @@ description: 'Build Carrot Solutions CPQ configurators on DW10. Triggers: input/
 
 # Dynamicweb CPQ
 
-Carrot Solutions CPQ is a configure-price-quote engine that installs into Dynamicweb 10 as two
+Carrot Solutions CPQ is a configure-price-quote engine for Truvio Commerce (powered by Dynamicweb), installed as two
 NuGet add-ins. A **model** asks questions, **rules** decide what the answers mean, and the result is
 a priced bill of materials on a **card** that behaves as a quote or order header.
 
 It is a partner product, not a platform feature, so the platform documentation does not cover it and
-the vendor guide is a tutorial rather than a reference. Everything here is grounded in the shipped
-assemblies, templates and schema.
+the vendor guide is a tutorial rather than a reference. The condition corrections apply to
+the vendor package profile recorded with the Studio 0.7.0 review. Read
+[engine-characterization.md](references/engine-characterization.md) for evidence, version limits
+and the experiments still needed before claiming a new runtime combination works.
 
 ## Contents
 
@@ -27,18 +29,19 @@ assemblies, templates and schema.
 
 ## The one question that shapes every project
 
-**CPQ does not need an ERP.** A complete configurator — inputs, rules, BOM, routing, pricing,
-summary, cart, quote, order and a generated document — runs entirely inside Dynamicweb.
+**Local configuration does not need an ERP.** Inputs, rules, BOM, routing, pricing, cards and
+local document generation run inside Dynamicweb. Cart/order/quote handoffs need separate proof
+on the installed CPQ version: a route or button existing does not establish that it creates a
+correct, authorized record.
 
-Business Central is reached only to *materialise* a result as an ERP record. Every one of those
-paths guards itself and returns early when no connector is configured, so nothing calls out and
-nothing fails:
+An ERP connector is required to materialize ERP records. An early return without a connector is
+unavailable functionality, not a successful operation:
 
-| Local, always | Needs a Business Central connector |
+| Local capability or handoff to verify | Needs a Business Central connector |
 |---|---|
 | All rule evaluation (input, BOM, route, price, output) | Creating the BC **item card** |
 | Pricing — reads `EcomProducts` and the platform price service | Creating the **production BOM** and **routing** |
-| Cart, order and quote via `/dwapi/ecommerce/carts/…` | Creating **sales quote headers and lines** |
+| Cart/order/quote through a measured platform handoff; see the known CPQ route failures | Creating **sales quote headers and lines** |
 | Cards, revisions, templates, configurations | Storing the generated document **in BC** |
 | Document generation (OpenXml `.docx`) | Refreshing customer info from a BC quote |
 
@@ -103,9 +106,9 @@ telling the whole story.
 2. **Create the model and its first version**, then set `ModelVersionSetting`: at minimum
    `EcomShopId` (which channel the model reads), `PricingMethod`, and the item-number prefix.
    Settings are listed in [model-and-inputs.md](references/model-and-inputs.md).
-3. **Model the input groups and inputs** before writing a single rule. Name inputs meaningfully —
-   rules address them as `formInput[GroupName_InputName]`, and renaming later means editing every
-   rule that mentions them.
+3. **Model the input groups and inputs** before writing a rule. References use the actual
+   `InputName`, as `formInput[InputName]`. A `Group_Name` prefix is a naming convention, not
+   something the engine adds. Keep names stable and change labels for presentation.
 4. **Build the page early**, with a `CPQ_Tabs` paragraph and an explicit `CPQ_Theme`, and preview it
    as soon as one input group exists. Both omissions fail silently (see traps).
 5. **Add input rules**, then BOM rules, then price rules — in evaluation order, so each layer is
@@ -119,9 +122,10 @@ telling the whole story.
 |---|---|
 | [install.md](references/install.md) | The two packages, their dependencies, what the update providers create and when, and how to verify an install |
 | [model-and-inputs.md](references/model-and-inputs.md) | Model/version/group/input schema, all 17 input types with their internal tokens, `InputSettings`, model variables, and every `ModelVersionSetting` key |
-| [rules-and-lookups.md](references/rules-and-lookups.md) | Condition and action JSON in both dialects, the operator table, `setproperty`, BOM rules, price rules, evaluation order, and the complete `dw_sql` Lookup List configuration |
+| [rules-and-lookups.md](references/rules-and-lookups.md) | Measured tuple conditions, rejected forms/operators, actions, BOM/price rules and `dw_sql` Lookup Lists |
 | [pages-and-runtime.md](references/pages-and-runtime.md) | The 18 item types, page assembly, themes, the `/cpqapi/` surface, and the request cycle |
 | [cards-and-erp.md](references/cards-and-erp.md) | Cards, card items, BOM lines, templates, revisions, the Dynamicweb order link, and the ERP boundary in full |
+| [engine-characterization.md](references/engine-characterization.md) | Source evidence, seven admin/runtime constraints, MCP access, and the unexecuted truth-table and handoff test plan |
 
 ## Traps that cost an afternoon
 
@@ -152,8 +156,9 @@ option list and no error. Use `dw_sql` for catalogue-driven options.
 `InputRuleType='CPQOptions'`, so a rule saved without it is enabled, correct, and inert. The engine's
 own log names the symptom: `LoadInputRule=0ms`.
 
-**Rules address inputs by `formInput[Group_Name]`.** Renaming a group or an input silently breaks
-every rule that referenced it, because an unresolved reference is not an error.
+**Rules address the stored `InputName`.** A rename needs a version-scoped reference rewrite,
+including quantities, price/output rules, group gates and lookup parameters. The vendor admin's
+rename crosses model/version boundaries and misses some references; use a proven scoped operation.
 
 **Lookup SQL is string-interpolated, not parameterised.** A lookup whose filter interpolates a
 free-text input is a concatenated query. Keep interpolated values on constrained inputs — a select,

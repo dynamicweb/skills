@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "cpq.diagrams.dependencies",
+  "functionId": "cpq.diagrams",
+  "intent": {
+    "proves": "Expected nodes/edges for the fixture, variable-only mode omits display-only passthrough inputs but keeps price/BOM/constraint dependencies; changing answers agrees with the engine. Do not assert removed Studio screens. Literal forminput[...] values in defaults or variables create no evaluated edge. Diagram presence is not proof of vendor execution.",
+    "level": "behavioural",
+    "scope": "Exact declared model/version, catalogue and case set on the target with loaded package and assembly hashes; complete observations only. Missing identity, denied access or truncated scope is UNVERIFIED."
+  },
+  "assertion": {
+    "kind": "attributes",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "file-cpq-receipt",
+      "surface": "file",
+      "status": "planned",
+      "handler": "cpq-behavior-receipt",
+      "reason": "No CPQ behavior-receipt reader is implemented. Consume complete fresh evidence from an isolated producer, bound to trusted host/run/model/spec/package/ledger identities and independent golden cases. Never mutate the target from the ledger checker or treat schema validation as PASS."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+    },
+    {
+      "kind": "docs",
+      "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+    }
+  ]
+}

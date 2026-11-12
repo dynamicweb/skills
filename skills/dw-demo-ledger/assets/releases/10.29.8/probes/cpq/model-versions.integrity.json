@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "id": "cpq.model-versions.integrity",
+  "functionId": "cpq.model-versions",
+  "intent": {
+    "proves": "Parent references resolve, every declared child is in its version, no duplicate symbolic names. Resolve quantity, price/output, group-gate and lookup references within the owning version; names alone do not establish identity.",
+    "level": "stored-integrity",
+    "scope": "Exact declared model/version, catalogue and case set on the target with loaded package and assembly hashes; complete observations only. Missing identity, denied access or truncated scope is UNVERIFIED."
+  },
+  "assertion": {
+    "kind": "attributes",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-cpq-observation",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "cpq-structured-read",
+      "reason": "Discover an authorized external MCP read whose projection proves this whole intent and exhaust pagination. No such CPQ binding is implemented or tool name promised; Studio read/analyze tools are Dynamo-only and cannot be repurposed as external MCP."
+    },
+    {
+      "id": "admin-cpq-observation",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "cpq-structured-read",
+      "reason": "Discover authenticated queries on the installed version through API Explorer; verify projection, model-version filter and complete enumeration. Assembly type existence and row counts are insufficient; no structured CPQ reader is implemented."
+    },
+    {
+      "id": "sql-cpq-observation",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "cpq-structured-read",
+      "localOnly": true,
+      "reason": "Local proving targets only when higher surfaces lack raw JSON or ownership/schema fields. No version-scoped CPQ SELECT/decoder is implemented. SQL is never a remote fallback and performs no write or cache flush."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+    },
+    {
+      "kind": "docs",
+      "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+    }
+  ]
+}
