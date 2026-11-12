@@ -38,6 +38,10 @@ Where a repair needs `SQL`, the row says why the job surface does not cover it.
 - **Conditionals filter rows** on the table mapping; `@Request()` / `@Session()` / `@User()` tokens
   in them are replaced only if the provider calls
   `ReplaceMappingConditionalsWithValuesFromRequest(job)`.
+- **An update-only DynamicwebProvider destination keyed on an identity primary key updates exactly the
+  rows in the file.** Rows absent from the file are untouched, nothing is inserted, and a table that is
+  in the mapping but has no rows in the file logs `No rows were imported`. The log line
+  `The number of rows affected: <n> in the <table> table` is the proof of the write.
 
 ## EcomProvider as a destination
 
