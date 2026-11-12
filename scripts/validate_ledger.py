@@ -8,6 +8,38 @@ import subprocess
 from pathlib import Path
 
 
+EDIT_LAYOUT_ASPECTS = ("screen-type", "editors-resolve", "family-tabs", "tabs-per-family", "scannable", "names",
+                       "catch-all", "unique-group-names", "division")
+
+
+def layout_argument_faults(handler, arguments) -> list[str]:
+    """The limits an edit-layout or field-placement rule needs are data on the binding, never code.
+    The runner repeats these checks (Test-PimLayoutArguments) and also compiles the banned patterns."""
+    args = arguments if isinstance(arguments, dict) else {}
+
+    def positive(key):
+        return isinstance(args.get(key), int) and not isinstance(args.get(key), bool) and args[key] > 0
+
+    if handler == "pim-field-placement":
+        share = args.get("minSharePct")
+        if not (isinstance(share, int) and not isinstance(share, bool) and 1 <= share <= 100):
+            return ["states no minSharePct between 1 and 100"]
+        return []
+    if handler != "pim-edit-layout":
+        return []
+    aspect = args.get("aspect")
+    if aspect not in EDIT_LAYOUT_ASPECTS:
+        return [f"has unknown edit-layout aspect {aspect!r}"]
+    faults = []
+    if aspect == "tabs-per-family" and not positive("maxTabs"):
+        faults.append("states no maxTabs")
+    if aspect == "scannable" and not (positive("maxEditorsPerGroup") and positive("maxEditorsPerTab")):
+        faults.append("states no maxEditorsPerGroup and maxEditorsPerTab")
+    if aspect == "names" and not (args.get("bannedNames") or args.get("bannedPatterns")):
+        faults.append("lists no banned name or pattern")
+    return faults
+
+
 def validate_ledgers(repo: Path) -> list[str]:
     assets = repo / "skills/dw-demo-ledger/assets"
     if not assets.exists():
@@ -92,6 +124,8 @@ def validate_ledgers(repo: Path) -> list[str]:
                                 error(path, f"implemented handler/surface not allowlisted: {binding.get('handler')}")
                             if binding.get("surface") == "sql" and binding.get("handler") in ("sql-scalar", "sql-offenders") and not binding.get("query"):
                                 error(path, "implemented SQL scalar/offenders binding needs a query")
+                            for fault in layout_argument_faults(binding.get("handler"), binding.get("arguments")):
+                                error(path, f"{binding.get('handler')} binding {fault}")
         for path in (root / "probes").glob("**/*.json"):
             if path.resolve() not in referenced:
                 error(path, "orphan probe is not referenced by a function")

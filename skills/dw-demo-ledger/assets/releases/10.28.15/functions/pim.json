@@ -35,6 +35,44 @@
       ]
     },
     {
+      "id": "pim.field-placement",
+      "area": "pim",
+      "name": "Family attributes live in the family's data model, not in a global field",
+      "description": "Family attributes live in the family's data model, not in a global field. A global product field is a column on every product and an editor on every product's screen; an attribute only one family has belongs in that family's data model. Measured as the share of in-scope products that carry a value per custom global field.",
+      "skill": "dw-demo-pim",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "defaultLanguage",
+        "productScope",
+        "families"
+      ],
+      "checks": [
+        "probes/pim/field-placement.global-fields-filled.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-family-catalogue",
+          "when": "at most one data model carries fields, so there is no second family a global field could be foreign to",
+          "probe": "probes/pim/field-placement.ruling.one-category-with-fields.json"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "migration",
+          "ref": "migration/pim-registry.json#field-placement"
+        },
+        {
+          "kind": "source",
+          "ref": "registry-commit:02354513e0f8ea86227535d137ffb999096504b5"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#corrections"
+        }
+      ]
+    },
+    {
       "id": "pim.data-sets",
       "area": "pim",
       "name": "Data sets with inherited default values",
@@ -970,8 +1008,8 @@
     {
       "id": "pim.screen-layouts",
       "area": "pim",
-      "name": "Product edit screen layout and list presets",
-      "description": "The tabs and field groups an editor needs on the product screen, and the columns each role wants in the product list.",
+      "name": "Product edit layout: a tab per family, shared tabs by a declared division, list presets",
+      "description": "A product edit layout an editor can work with: one tab per family, named after the product and carrying only that family's fields, so it shows on that family's products only; the fields every product shares on shared tabs divided one stated way (role, task, lifecycle or source, in the build's editLayout); at most 5 tabs on any product, groups an editor can scan, exactly one catch-all group; and list presets with the columns each role wants. One active layout applies to the product edit screen for every user.",
       "skill": "dw-demo-pim",
       "status": "candidate",
       "requires": [],
@@ -980,17 +1018,26 @@
         "pimShop",
         "families",
         "attributes",
-        "productScope"
+        "productScope",
+        "editLayout"
       ],
       "checks": [
-        "probes/pim/screen-layouts.layout.json",
+        "probes/pim/screen-layouts.product-edit-layout.json",
+        "probes/pim/screen-layouts.editors-resolve.json",
+        "probes/pim/screen-layouts.family-tabs.json",
+        "probes/pim/screen-layouts.tabs-per-product.json",
+        "probes/pim/screen-layouts.scannable.json",
+        "probes/pim/screen-layouts.editor-words.json",
+        "probes/pim/screen-layouts.one-catch-all.json",
+        "probes/pim/screen-layouts.unique-group-names.json",
+        "probes/pim/screen-layouts.division-stated.json",
         "probes/pim/screen-layouts.preset.json"
       ],
       "notApplicable": [
         {
-          "id": "under-25-fields-per-family",
-          "when": "no family carries more than 25 attributes",
-          "probe": "probes/pim/screen-layouts.ruling.max-fields.json"
+          "id": "one-attribute-family",
+          "when": "at most one data model carries fields and it has at most 25 of them, so the stock Categories tab already is that one family's tab",
+          "probe": "probes/pim/screen-layouts.ruling.one-category-with-fields.json"
         }
       ],
       "sources": [
@@ -1001,6 +1048,10 @@
         {
           "kind": "source",
           "ref": "evidence/admission.json#pim.screen-layouts"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#checkCorrections"
         }
       ]
     },

@@ -23,7 +23,9 @@ A binding contains id, surface, status and handler. Surfaces are mcp, admin-api,
 - MCP: `mcp-count`, `mcp-files-count`, `mcp-workspace-count`, `mcp-workspace-empty`, `mcp-workspace-completeness`, `mcp-workflow-states`, `mcp-workflow-transitions`, `mcp-completion-rules`, `mcp-dashboard-count`, `mcp-field-types`, `mcp-field-text-share`, `mcp-multiselect`.
 - Admin API: `admin-query-count`, requiring a successful authenticated read and a discovered named GET query. A public descriptor alone never permits a permission count.
 - Local files: `files-count`, `settings-value`, `xml-count`.
-- Local SQL: `sql-scalar`, `sql-offenders`, `pim-attributes`, `pim-families`, `pim-widget-queries`.
+- Local SQL: `sql-scalar`, `sql-offenders`, `pim-attributes`, `pim-families`, `pim-widget-queries`, `pim-edit-layout`, `pim-field-placement`.
+
+`pim-edit-layout` and `pim-field-placement` carry no query: they read fixed tables once per run and take their aspect and limits from `arguments` ([edit-layout.md](edit-layout.md)). The runner and the repository validator refuse such a binding without the limits its rule needs.
 
 `mcp-provider-types` is still planned, not implemented. An implemented handler does not make every proposed binding equivalent: the PIM field projection bindings remain planned where scope differs or a required DTO field is absent.
 
@@ -47,7 +49,7 @@ The runner verifies the explicit check set and rejects unknown/duplicate ids. An
 
 Repository validation uses PowerShell 7 `Test-Json` for the same draft-7 schemas as the runner, and checks unique IDs, probe ownership/existence, capability-function references, coverage references, implemented handler/surface pairs and SQL localOnly. Non-ID capability descriptions, app names and flag keys are external facts, not function IDs; they stay unknown until measured.
 
-The optional profile path resolves beneath the skill's assets directory and contains `{schema:1, id, expectations:{checkId:{...assertion overrides...}}}`. The build carries defaultLanguage, pimShop, families, attributes and productScope when those checks need them. No SQL connection or tokens belong in a build file. Connection parameters/environment are runtime input only.
+The optional profile path resolves beneath the skill's assets directory and contains `{schema:1, id, expectations:{checkId:{...assertion overrides...}}}`. The build carries defaultLanguage, pimShop, families, attributes, productScope and editLayout when those checks need them. No SQL connection or tokens belong in a build file. Connection parameters/environment are runtime input only.
 
 Requires predicates have kind (flag/app/licence/capability), id, expected and optional probe. A runner must establish them from target facts; absence means UNVERIFIED, never an assumption of enabled. A requirement gates every check of its function, so put on a function only what all of its checks need; a precondition of one action belongs in the description or that check's planned reason. A false flag is DISABLED; a known incompatible component is UNSUPPORTED. No requires is inferred from a feature's name.
 

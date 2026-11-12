@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "pim.screen-layouts.one-catch-all",
+  "functionId": "pim.screen-layouts",
+  "intent": {
+    "proves": "The layout has exactly one catch-all group, so a field that is placed nowhere still has one place on the screen.",
+    "level": "applied",
+    "scope": "The active layout of the product edit screen (Dynamicweb.Products.UI.Screens.ProductEditScreen) against the build's declared families and editLayout; complete SQL enumeration of ScreenLayout, ScreenLayoutTab, ScreenLayoutGroup and ScreenLayoutEditor, read once per run."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "admin-layout",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-edit-layout",
+      "operation": "ScreenLayoutsAll",
+      "reason": "Needs an authenticated full payload of every layout with its screen type, tabs, groups (with the catch-all flag) and editor system names, measured for scope parity with the SQL read; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "mcp-layout",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-edit-layout",
+      "reason": "The measured MCP tool set has no screen layout read."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-edit-layout",
+      "localOnly": true,
+      "arguments": {
+        "aspect": "catch-all"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#screen-layouts/one-catch-all"
+    },
+    {
+      "kind": "source",
+      "ref": "registry-commit:02354513e0f8ea86227535d137ffb999096504b5"
+    }
+  ]
+}

@@ -87,6 +87,11 @@
       "claim": "Proposed as pim.box-contents: No separate platform carrier. Box contents that are products are one more relation group kind (pim.product-relations, one group per kind); contents that are not products are a declared list or long-text attribute (pim.field-types, pim.list-fields).",
       "url": "https://github.com/dynamicweb/skills/issues/212",
       "duplicateOf": "pim.product-relations"
+    },
+    {
+      "claim": "Inventory correction: family attributes live in the family's data model, not in a global field.",
+      "url": "delta.json#corrections",
+      "functionId": "pim.field-placement"
     }
   ],
   "gaps": [

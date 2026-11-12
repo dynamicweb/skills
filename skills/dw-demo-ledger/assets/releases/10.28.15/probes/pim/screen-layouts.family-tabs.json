@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "pim.screen-layouts.family-tabs",
+  "functionId": "pim.screen-layouts",
+  "intent": {
+    "proves": "Every category field of every declared family is on the layout, on a tab that carries that one family's fields and nothing else, so the tab shows on that family's products and on no other. Offenders: a family with fields on no tab, a tab that mixes two families, a tab that carries a family's fields together with standard fields, shared-category fields or the catch-all group. A category that is not a declared family is a shared category and is not held to this.",
+    "level": "applied",
+    "scope": "The active layout of the product edit screen (Dynamicweb.Products.UI.Screens.ProductEditScreen) against the build's declared families and editLayout; complete SQL enumeration of ScreenLayout, ScreenLayoutTab, ScreenLayoutGroup and ScreenLayoutEditor, read once per run."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "admin-layout",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-edit-layout",
+      "operation": "ScreenLayoutsAll",
+      "reason": "Needs an authenticated full payload of every layout with its screen type, tabs, groups (with the catch-all flag) and editor system names, measured for scope parity with the SQL read; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "mcp-layout",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-edit-layout",
+      "reason": "The measured MCP tool set has no screen layout read."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-edit-layout",
+      "localOnly": true,
+      "arguments": {
+        "aspect": "family-tabs"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#screen-layouts/family-tabs"
+    },
+    {
+      "kind": "source",
+      "ref": "registry-commit:02354513e0f8ea86227535d137ffb999096504b5"
+    }
+  ]
+}

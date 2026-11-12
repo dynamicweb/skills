@@ -33,6 +33,8 @@ function Invoke-LedgerCheck {
             switch($binding.handler) {
                 'cpq-structured-read' {$observation=Get-CpqLedgerObservation -Check $Check -Build $Build -Server $SqlServer -Database $Database}
                 'pim-matrix' {$observation=Get-PimMatrixObservation -Aspect $binding.arguments.aspect -Build $Build -Server $SqlServer -Database $Database}
+                'pim-edit-layout' {$observation=Get-PimEditLayoutObservation -Arguments $binding.arguments -Build $Build -Server $SqlServer -Database $Database}
+                'pim-field-placement' {$observation=Get-PimFieldPlacementObservation -Arguments $binding.arguments -Build $Build -Server $SqlServer -Database $Database}
                 'sql-scalar' {$n=Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.query $Build);$observation=@{value=$n;complete=$true;scanned=$null;offenders=@()}}
                 'sql-offenders' {$off=@(Invoke-Sqlcmd-Rows -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.query $Build));$observation=@{value=$off.Count;complete=$true;scanned=$null;offenders=$off}}
                 {$_ -in @('pim-attributes','pim-families','pim-widget-queries')} {
@@ -49,7 +51,7 @@ function Invoke-LedgerCheck {
             }
         } else {throw 'No registered observation handler for this binding.'}
         $row.result=Test-LedgerAssertion -Assertion $assertion -Observation $observation
-        $row.measured=$observation.value;$row.scanned=$observation.scanned;$row.offenders=@($observation.offenders|Select-Object -First 25)
+        $row.measured=if($observation -is [Collections.IDictionary] -and $observation.Contains('measured')){$observation.measured}else{$observation.value};$row.scanned=$observation.scanned;$row.offenders=@($observation.offenders|Select-Object -First 25)
         $row.reason=if($observation.complete){'Equivalent observation evaluated.'}else{'Observation omits required fields or completeness evidence.'}
         if($Refused.Count){$row.reason+=' Refused before observation: '+($Refused -join ', ')+'.'}
     } catch {

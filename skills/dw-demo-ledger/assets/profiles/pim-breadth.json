@@ -13,6 +13,11 @@
       "op": "eq",
       "value": 0
     },
+    "pim.field-placement.global-fields-filled": {},
+    "pim.field-placement.ruling.one-category-with-fields": {
+      "op": "le",
+      "value": 1
+    },
     "pim.data-sets.data-set": {
       "op": "ge",
       "value": 1
@@ -218,17 +223,22 @@
       "op": "ge",
       "value": 2
     },
-    "pim.screen-layouts.layout": {
-      "op": "ge",
-      "value": 1
-    },
+    "pim.screen-layouts.product-edit-layout": {},
+    "pim.screen-layouts.editors-resolve": {},
+    "pim.screen-layouts.family-tabs": {},
+    "pim.screen-layouts.tabs-per-product": {},
+    "pim.screen-layouts.scannable": {},
+    "pim.screen-layouts.editor-words": {},
+    "pim.screen-layouts.one-catch-all": {},
+    "pim.screen-layouts.unique-group-names": {},
+    "pim.screen-layouts.division-stated": {},
     "pim.screen-layouts.preset": {
       "op": "ge",
       "value": 1
     },
-    "pim.screen-layouts.ruling.max-fields": {
+    "pim.screen-layouts.ruling.one-category-with-fields": {
       "op": "le",
-      "value": 25
+      "value": 1
     },
     "pim.channels.channels-with-products": {
       "op": "ge",
@@ -299,6 +309,8 @@
     "pim.data-models.families-have-models": "every declared family has a GroupType 2 data model on its category with at least one product, and at least two families are declared",
     "pim.data-models.folder": "the DataStructure shop carries at least one data-model folder",
     "pim.data-models.products-without-model": "no active product sits outside every data model",
+    "pim.field-placement.global-fields-filled": "every custom global product field (EcomProductField, not standard) carries a value on at least 50% of the products in scope (checkboxes and computed fields are not judged)",
+    "pim.field-placement.ruling.one-category-with-fields": "at most one attribute category carries fields",
     "pim.data-sets.data-set": "at least one GroupType 3 data set exists",
     "pim.data-sets.defaults": "at least one default value is stored on a data model or data set",
     "pim.field-types.declared-typing": "every declared attribute is stored on a field type that fits its kind, and at least 12 attributes are declared",
@@ -360,9 +372,17 @@
     "pim.workspaces.completeness-level": "at least one workspace level shows completeness",
     "pim.email-notifications.notifications": "at least one PIM notification has a recipient",
     "pim.field-permissions.field-permissions": "at least 2 field permissions are stored",
-    "pim.screen-layouts.layout": "at least one active screen layout has a tab",
+    "pim.screen-layouts.product-edit-layout": "exactly one active layout with a tab names the product edit screen by its full type name, Dynamicweb.Products.UI.Screens.ProductEditScreen, and no active layout carries a short or misspelt product edit screen type (stored, never applied)",
+    "pim.screen-layouts.editors-resolve": "every editor named CategoryFields|ProductCategory|<category>|<field> on the layout matches a stored category field, and the layout places at least one. Editors with any other name (standard fields such as Name or Weight, global custom fields, completeness rules) are counted and not judged: their names are defined by the platform, not by a table",
+    "pim.screen-layouts.family-tabs": "every category field of every declared family is on the layout, on a tab that carries that one family's fields and nothing else, so the tab shows on that family's products and on no other. Offenders: a family with fields on no tab, a tab that mixes two families, a tab that carries a family's fields together with standard fields, shared-category fields or the catch-all group. A category that is not a declared family is a shared category and is not held to this",
+    "pim.screen-layouts.tabs-per-product": "no family's product shows more than 5 tabs: the shared tabs (every tab that carries no declared family's field) plus the tabs that carry that family's fields",
+    "pim.screen-layouts.scannable": "no group holds more than 12 editors and no tab more than 30",
+    "pim.screen-layouts.editor-words": "no tab or group is named after the mechanism: not a name on the banned list, not a category id, not a name with an underscore, ending in Attrs or containing the words attributes, data model, category fields, custom fields or misc. Every tab and group has a name. The catch-all group is exempt (it may be called Other fields)",
+    "pim.screen-layouts.one-catch-all": "the layout has exactly one catch-all group, so a field that is placed nowhere still has one place on the screen",
+    "pim.screen-layouts.unique-group-names": "no two groups on the layout share a name, on the same tab or on different tabs",
+    "pim.screen-layouts.division-stated": "the build file's editLayout states how the shared fields are divided (role, task, lifecycle or source) and why; when it declares tabs, every declared tab is on the layout, every layout tab is declared, a tab declared shared carries no family's field and a tab declared for a category carries that category's fields only. Whether the division is a good one is not judged",
     "pim.screen-layouts.preset": "at least one list preset has 3 or more columns",
-    "pim.screen-layouts.ruling.max-fields": "the largest attribute category has at most 25 fields",
+    "pim.screen-layouts.ruling.one-category-with-fields": "the number of attribute categories that carry fields, plus 1 when the largest has more than 25 fields, is at most 1",
     "pim.channels.channels-with-products": "at least one channel has a group that holds products",
     "pim.channels.shared-groups": "no group is shared between two shops or channels",
     "pim.channels.empty-channels": "no channel is empty",

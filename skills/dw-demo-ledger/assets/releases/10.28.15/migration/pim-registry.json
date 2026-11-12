@@ -1,9 +1,16 @@
 {
   "schema": 1,
-  "sourceCommit": "e5171416a91f49e00ebcbe7eb8e784200098e9d9",
-  "sourceRegistryVersion": "2026-11-11.2",
+  "sourceCommit": "02354513e0f8ea86227535d137ffb999096504b5",
+  "sourceRegistryVersion": "2026-11-11.3",
+  "history": [
+    {
+      "sourceCommit": "e5171416a91f49e00ebcbe7eb8e784200098e9d9",
+      "sourceRegistryVersion": "2026-11-11.2"
+    }
+  ],
   "features": {
     "data-models": "pim.data-models",
+    "field-placement": "pim.field-placement",
     "data-sets": "pim.data-sets",
     "field-types": "pim.field-types",
     "field-units": "pim.field-units",
@@ -43,6 +50,7 @@
     "data-models/families-have-models": "pim.data-models.families-have-models",
     "data-models/folder": "pim.data-models.folder",
     "data-models/products-without-model": "pim.data-models.products-without-model",
+    "field-placement/global-fields-filled": "pim.field-placement.global-fields-filled",
     "data-sets/data-set": "pim.data-sets.data-set",
     "data-sets/defaults": "pim.data-sets.defaults",
     "field-types/declared-typing": "pim.field-types.declared-typing",
@@ -101,7 +109,15 @@
     "workspaces/completeness-level": "pim.workspaces.completeness-level",
     "email-notifications/notifications": "pim.email-notifications.notifications",
     "field-permissions/field-permissions": "pim.field-permissions.field-permissions",
-    "screen-layouts/layout": "pim.screen-layouts.layout",
+    "screen-layouts/product-edit-layout": "pim.screen-layouts.product-edit-layout",
+    "screen-layouts/editors-resolve": "pim.screen-layouts.editors-resolve",
+    "screen-layouts/family-tabs": "pim.screen-layouts.family-tabs",
+    "screen-layouts/tabs-per-product": "pim.screen-layouts.tabs-per-product",
+    "screen-layouts/scannable": "pim.screen-layouts.scannable",
+    "screen-layouts/editor-words": "pim.screen-layouts.editor-words",
+    "screen-layouts/one-catch-all": "pim.screen-layouts.one-catch-all",
+    "screen-layouts/unique-group-names": "pim.screen-layouts.unique-group-names",
+    "screen-layouts/division-stated": "pim.screen-layouts.division-stated",
     "screen-layouts/preset": "pim.screen-layouts.preset",
     "channels/channels-with-products": "pim.channels.channels-with-products",
     "channels/shared-groups": "pim.channels.shared-groups",
@@ -120,5 +136,31 @@
     "languages/option-translations": "pim.languages.option-translations",
     "integration/activities": "pim.integration.activities"
   },
-  "note": "Legacy ids mapped without claiming baseline measurement. Original count thresholds reside in pim-breadth."
+  "replaced": {
+    "screen-layouts/layout": {
+      "id": "pim.screen-layouts.layout",
+      "replacedBy": [
+        "pim.screen-layouts.product-edit-layout",
+        "pim.screen-layouts.editors-resolve",
+        "pim.screen-layouts.family-tabs",
+        "pim.screen-layouts.tabs-per-product",
+        "pim.screen-layouts.scannable",
+        "pim.screen-layouts.editor-words",
+        "pim.screen-layouts.one-catch-all",
+        "pim.screen-layouts.unique-group-names",
+        "pim.screen-layouts.division-stated"
+      ],
+      "sourceRegistryVersion": "2026-11-11.3",
+      "reason": "Passed any active layout that had a tab: it read no screen type and did not check that editors resolve."
+    },
+    "screen-layouts/max-fields": {
+      "id": "pim.screen-layouts.ruling.max-fields",
+      "replacedBy": [
+        "pim.screen-layouts.ruling.one-category-with-fields"
+      ],
+      "sourceRegistryVersion": "2026-11-11.3",
+      "reason": "Ground under-25-fields-per-family replaced by one-attribute-family: two small families still need a tab each."
+    }
+  },
+  "note": "Legacy ids mapped without claiming baseline measurement. Original count thresholds reside in pim-breadth. Registry 2026-11-11.3 replaces screen-layouts/layout with nine edit-layout checks and adds field-placement; replaced ids are listed in replaced."
 }

@@ -109,11 +109,11 @@ Describe 'Read safety and lock integrity' {
     }
 }
 Describe 'Migrated catalog contracts' {
-    It 'retains all original ids and 79 checks' {
+    It 'retains all original ids, 88 checks after the edit-layout replacement' {
         $release=Join-Path $root '../assets/releases/10.29.8'
         $map=Read-LedgerJson (Join-Path $release 'migration/pim-registry.json')
-        $map.features.Count | Should -Be 35
-        $map.checks.Count | Should -Be 79
+        $map.features.Count | Should -Be 36
+        $map.checks.Count | Should -Be 88
         $pim=Read-LedgerJson (Join-Path $release 'functions/pim.json') (Join-Path $root '../assets/ledger.schema.json')
         @($pim.functions|Where-Object {$_.id -eq 'pim.matrix-fields'}).Count | Should -Be 1
         $previous=Read-LedgerJson (Join-Path $root '../assets/releases/10.28.15/functions/pim.json')

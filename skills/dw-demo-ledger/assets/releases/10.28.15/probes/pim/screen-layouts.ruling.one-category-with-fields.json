@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "pim.screen-layouts.ruling.one-category-with-fields",
+  "functionId": "pim.screen-layouts",
+  "intent": {
+    "proves": "The number of attribute categories that carry fields, plus 1 when the largest has more than 25 fields, is at most 1.",
+    "level": "applied",
+    "scope": "Every attribute category except reference_category; global scan."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "le",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT (SELECT COUNT(DISTINCT FieldCategoryId) FROM EcomProductCategoryField WHERE FieldCategoryId <> N'reference_category') + CASE WHEN (SELECT ISNULL(MAX(x.n), 0) FROM (SELECT COUNT(*) n FROM EcomProductCategoryField WHERE FieldCategoryId <> N'reference_category' GROUP BY FieldCategoryId) x) > 25 THEN 1 ELSE 0 END"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#screen-layouts/one-category-with-fields"
+    },
+    {
+      "kind": "source",
+      "ref": "registry-commit:02354513e0f8ea86227535d137ffb999096504b5"
+    }
+  ]
+}

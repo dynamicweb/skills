@@ -22,5 +22,7 @@
   "pim-widget-queries": ["sql"],
   "admin-feature-flag": ["admin-api"],
   "pim-matrix": ["sql"],
+  "pim-edit-layout": ["sql"],
+  "pim-field-placement": ["sql"],
   "cpq-structured-read": ["sql"]
 }

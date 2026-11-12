@@ -81,6 +81,30 @@ class LedgerValidationTests(unittest.TestCase):
         self.assertIn('invalid probe path', errors)
         self.assertIn('schema validation failed', errors)
 
+    def test_edit_layout_and_field_placement_limits_are_data(self):
+        self.check['assertion'] = {'kind': 'offenders'}
+        good = {'id': 'sql', 'surface': 'sql', 'status': 'implemented', 'handler': 'pim-edit-layout', 'localOnly': True,
+                'arguments': {'aspect': 'tabs-per-family', 'maxTabs': 5}}
+        self.check['bindings'] = [good]
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        red = [
+            ({'aspect': 'pretty'}, "unknown edit-layout aspect 'pretty'"),
+            ({'aspect': 'tabs-per-family'}, 'states no maxTabs'),
+            ({'aspect': 'scannable', 'maxEditorsPerGroup': 12}, 'states no maxEditorsPerGroup and maxEditorsPerTab'),
+            ({'aspect': 'names'}, 'lists no banned name or pattern'),
+        ]
+        for arguments, message in red:
+            self.check['bindings'] = [dict(good, arguments=arguments)]
+            self.save()
+            self.assertIn(message, '\n'.join(validate_ledgers(self.repo)))
+        self.check['bindings'] = [{'id': 'sql', 'surface': 'sql', 'status': 'implemented', 'handler': 'pim-field-placement', 'localOnly': True}]
+        self.save()
+        self.assertIn('states no minSharePct between 1 and 100', '\n'.join(validate_ledgers(self.repo)))
+        self.check['bindings'][0]['arguments'] = {'minSharePct': 50}
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+
 
 if __name__ == '__main__':
     unittest.main()
