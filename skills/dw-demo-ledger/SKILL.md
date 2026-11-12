@@ -44,6 +44,8 @@ Follow [the release process](references/release-process.md) for additions/remova
 
 For [dw 10.29.8] matrix fields, follow [the matrix contract](references/matrix-fields.md): explicit feature facts, declared source cells, exact stored comparisons and a read-only red control. Availability in an older release must come from that release's evidence.
 
+CPQ checks use [independent scope declarations and read-only observations](references/cpq-observations.md). Loaded runtime evidence and complete domain producers remain prerequisites to readiness.
+
 ## Scripts (scripts/)
 
 | Script | Reads / writes | What it does |
@@ -57,6 +59,11 @@ For [dw 10.29.8] matrix fields, follow [the matrix contract](references/matrix-f
 | [Release.Tests.ps1](scripts/tests/Release.Tests.ps1) | Isolated fixtures | Synthetic A/B discovery and missing-evidence red controls |
 | [Pim.Matrix.ps1](scripts/Pim.Matrix.ps1) | Local SQL SELECT and in-memory comparisons | Matrix category, parent and exact cell observations |
 | [Matrix.Tests.ps1](scripts/tests/Matrix.Tests.ps1) | Isolated fixtures | Green/red matrix controls and incomplete capability evidence |
+| [Cpq.Read.ps1](scripts/Cpq.Read.ps1) | Local SELECT | Version-scoped CPQ rows in one read transaction |
+| [Cpq.Json.ps1](scripts/Cpq.Json.ps1) | Definitions only | Strict JSON, tuple dialect and references |
+| [Cpq.Observations.ps1](scripts/Cpq.Observations.ps1) | In-memory comparisons | Independent stored/configured CPQ assertions |
+| [Cpq.Receipts.ps1](scripts/Cpq.Receipts.ps1) | Validated receipt data | Distribution trust boundary and independent price/BOM red checks |
+| [tests/Cpq.Tests.ps1](scripts/tests/Cpq.Tests.ps1) | Isolated fixtures | CPQ positive and negative controls |
 | [Ledger.Core.ps1](scripts/Ledger.Core.ps1) | Definitions only | Schema, digest, safe paths, selection and assertions |
 | [Ledger.Transport.ps1](scripts/Ledger.Transport.ps1) | Reads MCP/Admin when called | Discovery and observations using the shared API transport |
 | [Ledger.Observations.ps1](scripts/Ledger.Observations.ps1) | Reads collections/local XML when called | Tokens, filtered counts, authenticated API projection and scoped files |

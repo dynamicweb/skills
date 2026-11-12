@@ -2,12 +2,13 @@
 
 The CPQ area is a proposed acceptance inventory for app-backed CPQ on Truvio Commerce
 (powered by Dynamicweb). It is not a claim that a platform release added these functions.
-Every function is a candidate and every binding is planned. Inventory and schema validation
+Every function is a candidate. Revision 5 implements five local stored-data bindings; the remaining
+bindings stay planned. Inventory and schema validation
 cannot establish runtime support, readiness or a passing configuration.
 
 The source profile and seven authoring constraints are in
 [engine-characterization.md](../../dw-commerce-cpq/references/engine-characterization.md).
-The snapshot is revision 4, following the merged brand-gap inventory revision. [dw 10.29.8]
+The snapshot is revision 5, following the merged brand-gap inventory revision. [dw 10.29.8]
 The earlier release snapshot and existing consumer locks remain unchanged.
 
 Core predicates require the two exact vendor app versions recorded by that profile. Checks
@@ -24,7 +25,7 @@ version-scoped reads for facts higher surfaces cannot expose. Denied, incomplete
 observations are UNVERIFIED, not an empty model or PASS.
 
 Behavioral intents consume evidence from an isolated producer. The ledger checker never runs
-save, copy, rename, cart, quote or document experiments itself. A future receipt reader must
+save, copy, rename, cart, quote or document experiments itself. The receipt reader must
 bind complete observations to trusted host/release/run, loaded packages, concrete model/version,
 model/spec/catalogue hashes and the exact ledger lock. It must compare independent golden
 expectations, check freshness and retain raw failures. A valid receipt envelope is not a passing
@@ -42,3 +43,6 @@ The corresponding Distribution CPQ spec/package/behavior contracts are proposed 
 contracts, not an installed feature layer or released edition. Keep the actual compiler,
 producer, observation handlers and proof separate from these intent declarations. Enable a
 binding only when its complete read and negative controls are implemented and tested.
+
+Implementation scope, declarations, measured parity and remaining gaps are in
+[cpq-observations.md](cpq-observations.md).

@@ -29,10 +29,10 @@
     {
       "id": "sql-cpq-observation",
       "surface": "sql",
-      "status": "planned",
+      "status": "implemented",
       "handler": "cpq-structured-read",
       "localOnly": true,
-      "reason": "Local proving targets only when higher surfaces lack raw JSON or ownership/schema fields. No version-scoped CPQ SELECT/decoder is implemented. SQL is never a remote fallback and performs no write or cache flush."
+      "reason": "Fixed local SELECT projection plus complete normalized assertion. Independent build.expected.cpq scope is required; missing declarations remain UNVERIFIED. Positive/red controls and measured parity limits: references/cpq-observations.md."
     }
   ],
   "sources": [

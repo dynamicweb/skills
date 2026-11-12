@@ -40,7 +40,7 @@
   ],
   "coverage": {
     "status": "incomplete",
-    "note": "Reviewed A/B additions are recorded in delta.json. Revision 3 adds brand-build inventory corrections and check corrections (delta.json corrections, issues #210 and #212). Matrix reads are implemented; other new behaviour bindings are explicitly planned. Existing functions still require target measurement. Revision 4 adds the app-backed CPQ area as candidate inventory with planned-only bindings. It is not a platform release addition or runtime proof."
+    "note": "Reviewed A/B additions are recorded in delta.json. Revision 3 adds brand-build inventory corrections and check corrections (delta.json corrections, issues #210 and #212). Matrix reads are implemented; other new behaviour bindings are explicitly planned. Existing functions still require target measurement. Revision 4 adds the app-backed CPQ area as candidate inventory with planned-only bindings. It is not a platform release addition or runtime proof. Revision 5 implements five local CPQ stored-data observations with red controls; normalized configured and behavioral receipt readers remain unpromoted where evidence is incomplete. No baseline or loaded-app proof is claimed."
   },
-  "revision": 4
+  "revision": 5
 }

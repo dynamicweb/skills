@@ -17,7 +17,7 @@
       "surface": "file",
       "status": "planned",
       "handler": "cpq-behavior-receipt",
-      "reason": "No CPQ behavior-receipt reader is implemented. Consume complete fresh evidence from an isolated producer, bound to trusted host/run/model/spec/package/ledger identities and independent golden cases. Never mutate the target from the ledger checker or treat schema validation as PASS."
+      "reason": "Distribution v1 receipt reader validates independent trust, freshness and scope and preserves failures. No complete domain producer/assertion exists for this intent; the binding stays planned. See references/cpq-observations.md."
     }
   ],
   "sources": [
