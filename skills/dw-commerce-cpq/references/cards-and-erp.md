@@ -85,9 +85,12 @@ stops updating its order line has almost always lost one half of that pair.
 Note the source order id is **not a column** on any CPQ table. It lives in the `DWCartInfo` JSON, so
 a query looking for a column will not find it.
 
-The cart, order and quote paths themselves are ordinary Dynamicweb: the engine creates a cart
-through `/dwapi/ecommerce/carts/…`, adds items, and calls `createOrder`, passing quote flags when the
-result should be a quote rather than an order.
+The platform supports local carts/orders/quotes, but that does not prove a CPQ button or endpoint
+hands the configuration over correctly. For the [reviewed vendor profile](engine-characterization.md), distinguish a saved CPQ card, a persisted
+Dynamicweb quote and an ERP sales quote. Read back the destination ID, owner, lines, quantities,
+currency, price and both linkage keys before claiming success. See
+[pages-and-runtime.md](pages-and-runtime.md) for the known cart failure and
+[engine-characterization.md](engine-characterization.md) for quote acceptance cases.
 
 ## CPQConfiguration
 
@@ -101,17 +104,18 @@ Two types are in use:
 
 ## The ERP boundary
 
-**A complete configurator runs with no ERP.** Local, always:
+**Local configuration needs no ERP.** The local capabilities are:
 
 - All rule evaluation — input, BOM, route, price and output rules are SQL over the CPQ tables.
 - **Pricing.** List prices come from the platform price service and `EcomProducts`. No price path
   calls an ERP.
-- Cart, order and quote, through the Dynamicweb delivery API.
+- Platform cart/order/quote storage, through a separately verified handoff. The vendor submit
+  route may still require a connector or fail silently; verify the installed route.
 - Cards, card items, BOM lines, templates, revisions, configurations, quick-configure.
 - **Document generation** — OpenXml `.docx`, written under the solution's own file store.
 
-Business Central is required for exactly these, and each guards itself and returns early when no
-connector is configured:
+The following operations require a Business Central connector. A guarded early return with no
+connector means unavailable, not successful:
 
 | Operation | What it creates in the ERP |
 |---|---|

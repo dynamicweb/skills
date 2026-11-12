@@ -38,6 +38,10 @@ CPQModel
 inputs, rules and outputs. `ModelVersionActive` is *not* exclusive — several versions can be active,
 and the flag only breaks ties when the runtime has to guess a version.
 
+In the [reviewed vendor profile](engine-characterization.md), **Duplicate creates a new model**, copying the active version or the
+newest when none is active. It is not a new version of the existing model. Studio's version-copy
+operation is separate; verify the resulting model and version IDs rather than relying on labels.
+
 ## Model version settings
 
 `ModelVersionSetting` is a JSON document on the version. It is where a model meets the solution
@@ -59,6 +63,9 @@ quietly does nothing.
 `DataConnectionId` being per version is worth internalising: a version with no data connection fails
 every ERP operation exactly as if no connector were configured anywhere, which is a confusing way to
 discover the setting exists.
+
+The reviewed vendor settings editor drops unknown `ModelVersionSetting` keys when saving. Keep compiler
+ownership and custom metadata in a separate manifest; verify supported settings after an admin save.
 
 ## Groups
 
@@ -194,6 +201,9 @@ Use them for anything that would otherwise be a magic number repeated across rul
 threshold, a default quantity. Changing the rate then means editing one row instead of hunting
 through rule JSON.
 
+In the reviewed vendor profile, `forminput[...]` inside a model-variable value or input default stays literal text.
+It is not evaluated and does not create a dependency. Put calculated values in evaluated actions.
+
 Two names are built in and cannot be redefined: **`var[bom_total_sell]`** and
 **`var[bom_total_cost]`**, which the price rules populate.
 
@@ -205,15 +215,15 @@ Card-scoped variables are different: they persist as `CPQConfiguration` rows and
 
 ## Naming, and why it is hard to change later
 
-Rules address an input as `formInput[GroupName_InputName]` — the group name is prefixed to make the
-reference unique. Nothing validates that a reference resolves, so **renaming a group or an input
-silently breaks every rule that mentioned it**: the rules still save, still run, and simply stop
-matching.
+Rules address the stored `InputName` as `formInput[InputName]`, case-insensitively. Prefixing that
+name with a group is a convention only. A label change is independent; an input-name change needs
+a reference rewrite. Unresolved references do not reliably raise an error.
 
 So name inputs before writing rules, and name them for what they mean rather than how they read on
 screen — `Hull_Length` rather than `WhatLengthWouldYouLike`. `InputLabel` carries the wording the
 user sees and can be rewritten freely.
 
-If a rename is unavoidable, search the rule JSON for the old reference across `CPQInputRule`,
-`CPQBOMRule`, `CPQRouteRule` and `CPQPriceRule` before changing the name, and treat any lookup
-`params` block as another place a reference can hide.
+Use a proven version-scoped rename and verify all references, including price/output rules,
+line quantities, group gates and lookup parameters. The reviewed vendor admin rename can rewrite
+other models/versions and skips those locations. Studio 0.7.0 supplies a scoped rename; compare
+the untouched version too. See [engine-characterization.md](engine-characterization.md).

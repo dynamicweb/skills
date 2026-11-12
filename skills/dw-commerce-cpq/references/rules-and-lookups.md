@@ -43,7 +43,9 @@ Ordering is `…Seq` within a group, filtered on `…Enabled = 1`.
 
 ## Conditions
 
-Two dialects parse. The engine detects which by shape, and can migrate between them.
+Use the tuple form below for the reviewed vendor profile. The previous object-test examples were
+incorrect for this engine. Evidence and the remaining live truth-table work are in
+[engine-characterization.md](engine-characterization.md).
 
 ### Tuple dialect
 
@@ -83,41 +85,36 @@ right]` or a nested group object. Nesting, mixed operators, and boolean right-ha
 ]
 ```
 
-### Object dialect
+### Rejected object tests and group casing
 
-```json
-[
-  {
-    "and": [
-      { "left": "forminput[Qty]",  "operator": ">",  "right": 0 },
-      { "left": "forminput[Type]", "operator": "==", "right": "Premium" }
-    ]
-  }
-]
-```
+An object with `left`, `operator` and `right` is read as an empty group and counts as true,
+not as a comparison. Author a three-element tuple instead.
 
-`group_operator` may be omitted; a bare `and` array is enough.
+`group_operator` is case-sensitive: write `AND` or `OR`. Missing, lowercase or other values
+make the engine evaluate only the group's `and` list. In particular `NAND` and `NOR` are not
+group-operator synonyms. Legacy `nand`/`nor` list behavior needs its own truth table before use.
 
 ### Referencing an input
 
-`formInput[GroupName_InputName]` — the group name is prefixed to make the reference unique. Matching
-is case-insensitive, so `formInput` and `FormInput` both resolve. A property is addressed with a dot
-inside the brackets:
+`formInput[InputName]` resolves the stored input name, case-insensitively. If that name is
+`Frame_InternalCableRouting`, include it verbatim. A group prefix is a naming convention; the
+engine does not concatenate `GroupName` and `InputName`. A property uses a dot inside the brackets:
 
 ```
 FormInput[Frame_InternalCableRouting.visible]
 ```
 
-### Matching a multi-select
+### Matching alternatives
 
-Use `in`. A multi-select control submits its values comma-joined, and `in` tests membership:
+For `in`, pass multiple right-hand alternatives as a JSON array. A comma-separated right-hand
+string is one value. This example tests a single answer against two alternatives:
 
 ```json
 [
   {
     "group_operator": "AND",
     "and": [
-      ["formInput[General_WhatMattersMost]", "in", "Appearance"]
+      ["formInput[General_Usage]", "in", ["Workshop", "Office"]]
     ]
   }
 ]
@@ -125,19 +122,21 @@ Use `in`. A multi-select control submits its values comma-joined, and `in` tests
 
 ## Operators
 
-The runtime dispatch table:
+The operator allowlist recorded from the reviewed engine profile and Studio checker:
 
 ```
-eq   in   nin   notin   not in   gt   gte   contain   neq   ne   lt   lte   start with   end with
+eq  in  neq  ne  not equal  nin  notin  not in  gt  gte  lt  lte  hasvalue
+contains  not contain  startswith  start with  endswith  end with
 ```
 
-Two spellings catch people out: **`contain`** is singular, and **`start with` / `end with`** contain
-a space. The symbolic forms the admin help advertises — `==`, `!=`, `>`, `>=`, `<`, `<=`, `contains`
-— are normalised on the way in, so both styles work; pick one and hold to it.
+`contains` is reversed: it tests whether the right-hand text contains the answer. For example,
+answer `A` and right-hand `AB` match; answer `AB` and right-hand `A` do not.
 
-`hasvalue`, `novalue`, `notempty` and `optional` are presence tests, not comparisons.
-
-Combinators include the negated pairs: `AND`, `OR`, `NAND`, `NOR`, and nested groups.
+`contain`, `==`, `!=`, `>`, `>=`, `<`, `<=`, `novalue`, `notempty` and `optional` are outside that
+allowlist. Unsupported tests evaluate false; they are not normalized to a supported operator.
+Use `eq`/`neq` and the named comparison operators. Characterize nulls, numeric strings, empty
+answers and checkbox submissions against the actual engine before depending on coercion or
+multiselect membership. Do not derive those semantics from the spelling of an operator.
 
 ## Actions
 
