@@ -3,6 +3,11 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.3]
+
+- `dw-demo-pim`: a Data Integration load with the build's own product ids as a product step (full virtual path in `Source file`), the three conditions for a completeness worklist on a blank base and what a session without a user does about the feature flag, and a table of the Management API routes for PIM writes that have no MCP tool.
+- MCP 0.6.5 boundaries, stated as before and from: `create_category_fields` / `create_data_model_structure` store `fieldRequired` and the scope flags, product queries type numeric constants, `save_paragraphs` stores `active: false` on an unbound paragraph and refuses it on a grid-bound one, `save_grid_rows` exposes `mobileLayout` / `mobileSortColumns`. `save_product_relations` still replaces by product and related product: several variant options go in one entry.
+
 ## [6.8.2]
 
 - `dw-demo-ledger` read-only guards. A SQL query is one SELECT: the guard reads executable tokens, refuses statement keywords and a second statement, and every local SQL read runs in a transaction that is always rolled back. `assets/handlers.json` now holds `handlers` (surfaces and assertion kinds), `mcpReadTools` and `adminReadQueries`; an MCP binding naming a tool off the list is refused by the validator and by the runner before the call.

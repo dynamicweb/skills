@@ -130,17 +130,21 @@ every variant's custom fields, not only its number and name.
 - The absorbed products' category-value rows stay behind as orphans.
 - The master edit screen hides variant-editable category fields; edit them on the variants.
 
-**`save_product_relations` keys a relation without its variant scope.** It replaces by product, related
-product and related variant, so two saves of the same related product with `variantOptionIds` `[A]` and
-then `[B]` leave only `[B]` [dw 10.29.8 · mcp 0.6.0-BETA]. Merge the scopes per master and related
-product first and send one call carrying the union; send an empty list when every variant applies. Read
-the stored scope back with `get_product_relations`.
+**`save_product_relations` replaces by product and related product, without the variant scope in the
+key.** Two entries or two saves for the same related product with `variantOptionIds` `[A]` and then `[B]`
+leave only `[B]` [dw 10.29.8 · mcp 0.6.0-BETA]; unchanged on [dw 10.29.8 · mcp 0.6.5-BETA]. Put every
+variant option of one related product in ONE entry's `variantOptionIds`; send an empty list when every
+variant applies. Read the stored scope back with `get_product_relations`.
 
 **Two more variant-field traps on the same build.** `patch_products_safe` on a variant stores nothing
 when the value equals the master's, so a read of the variant row shows no override. And the
 variant-editable flag depends on the tool: `update_category_fields` with
 `allowChangesAcrossVariants=true` stores 1, while `create_data_model_structure` with the same `true`
-created the field with 0. Read the stored flag back after either call before relying on per-variant values.
+created the field with 0. Before MCP 0.6.5 `create_category_fields` and `create_data_model_structure`
+accept `fieldRequired`, `allowChangesAcrossLanguages` and `allowChangesAcrossVariants` and store none
+(0 of 75 and 0 of 79 fields), so set them with `update_category_fields` in a second call; from 0.6.5
+both tools store all three [dw 10.29.8 · mcp 0.6.5-BETA]. Read the stored flag back after either call
+before relying on per-variant values.
 
 **The working sequence on this build:**
 

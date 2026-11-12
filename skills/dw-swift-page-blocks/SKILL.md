@@ -450,7 +450,8 @@ save: the two Swift row templates have different defaults (`Swift-v2_Row` 6, `Sw
 ## Ceiling (not settable via MCP)
 
 No per-column settings (offsets, per-column scheme or spacing), no grid-row template/variant,
-no row `MobileLayout`/`MobileSortColumns`/`FlexibleColumns`, no per-row device visibility, no
+no row `MobileLayout`/`MobileSortColumns` before MCP 0.6.5 (from 0.6.5 `save_grid_rows` takes
+`mobileLayout` and `mobileSortColumns`), no row `FlexibleColumns`, no per-row device visibility, no
 paragraph styling beyond `ColorSchemeId` (no CSS class/anchor), no page-level SEO/redirect/
 validity unless surfaced as item fields, and no slider slides-per-page/ratio (see gotcha 10).
 Design within this — don't promise what the tools can't set.
