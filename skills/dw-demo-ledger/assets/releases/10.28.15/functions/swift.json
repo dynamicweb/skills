@@ -1,0 +1,774 @@
+{
+  "schema": 1,
+  "area": "swift",
+  "functions": [
+    {
+      "id": "swift.design-installed",
+      "area": "swift",
+      "name": "Swift 2 design and item types installed",
+      "description": "The Swift-v2 design folder, its item type definitions and the database rows that make up the preconfigured storefront.",
+      "skill": "dw-swift-building",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.design-installed.item-type-tables.json",
+        "probes/swift/swift.design-installed.design-templates.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.design-installed"
+        }
+      ]
+    },
+    {
+      "id": "swift.website-settings",
+      "area": "swift",
+      "name": "Swift website settings",
+      "description": "General, Layout, Ecommerce, Meta and API keys (including Google Tag Manager), Domain and URL and Advanced tabs on the website, with Swift page settings per page.",
+      "skill": "dw-swift-building",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "websiteAreaIds"
+      ],
+      "checks": [
+        "probes/swift/swift.website-settings.master-bound.json",
+        "probes/swift/swift.website-settings.front-page-healthy.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.website-settings"
+        }
+      ]
+    },
+    {
+      "id": "swift.style-wiring",
+      "area": "swift",
+      "name": "Swift style wiring",
+      "description": "Swift renders from the styles wired on the website: generated colour scheme, typography and button CSS, and rows painted by scheme id.",
+      "skill": "dw-swift-building",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "content.design-styles",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.style-wiring.typography-defined.json",
+        "probes/swift/swift.style-wiring.buttons-defined.json",
+        "probes/swift/swift.style-wiring.area-wired.json",
+        "probes/swift/swift.style-wiring.rows-use-schemes.json",
+        "probes/swift/swift.style-wiring.stylesheets-emitted.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.style-wiring"
+        }
+      ]
+    },
+    {
+      "id": "swift.header-footer",
+      "area": "swift",
+      "name": "Header and footer",
+      "description": "Desktop and mobile header and footer pages in Swift Setup, built from rows of header and footer paragraph types and selected in the website settings.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.header-footer.header-page.json",
+        "probes/swift/swift.header-footer.footer-page.json",
+        "probes/swift/swift.header-footer.selected-on-website.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.header-footer"
+        }
+      ]
+    },
+    {
+      "id": "swift.header-navigation",
+      "area": "swift",
+      "name": "Header navigation",
+      "description": "Navigation, off-canvas navigation, logo, search, mini cart and account elements in the header.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "content.navigation",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.header-navigation.navigation-paragraph.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.header-navigation"
+        }
+      ]
+    },
+    {
+      "id": "swift.mega-menu",
+      "area": "swift",
+      "name": "Product group mega menu",
+      "description": "Image-based product group menu opened from the header.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.mega-menu.menu-paragraph.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "content-only-site",
+          "when": "The demo website has no product catalogue or buying."
+        },
+        {
+          "id": "flat-menu-by-design",
+          "when": "The customer design uses a plain text menu."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.mega-menu"
+        }
+      ]
+    },
+    {
+      "id": "swift.content-blocks",
+      "area": "swift",
+      "name": "Content paragraph types",
+      "description": "Poster, Text, Card, Feature, Accordion, Slider, Image, Video and other Swift paragraph types placed in row columns.",
+      "skill": "dw-swift-page-blocks",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "content.grid-rows",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.content-blocks.swift-paragraphs.json",
+        "probes/swift/swift.content-blocks.apps-in-grid-have-item.json",
+        "probes/swift/swift.content-blocks.no-render-errors.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.content-blocks"
+        }
+      ]
+    },
+    {
+      "id": "swift.shop-catalog",
+      "area": "swift",
+      "name": "Shop page and product catalogue shell",
+      "description": "The Shop page with the product catalogue app, which hosts the product list and product detail pages.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "commerce.product-catalog-app",
+          "expected": true
+        },
+        {
+          "kind": "capability",
+          "id": "content.website-ecommerce-context",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.shop-catalog.shop-page.json",
+        "probes/swift/swift.shop-catalog.shop-navigation-tag.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "content-only-site",
+          "when": "The demo website has no product catalogue or buying."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.shop-catalog"
+        }
+      ]
+    },
+    {
+      "id": "swift.product-list",
+      "area": "swift",
+      "name": "Product list page",
+      "description": "Products by group with filtering, sorting and facets, laid out with product list components.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "swift.shop-catalog",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "productScope"
+      ],
+      "checks": [
+        "probes/swift/swift.product-list.list-page.json",
+        "probes/swift/swift.product-list.cards-render.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "content-only-site",
+          "when": "The demo website has no product catalogue or buying."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.product-list"
+        }
+      ]
+    },
+    {
+      "id": "swift.product-detail",
+      "area": "swift",
+      "name": "Product detail page",
+      "description": "Name, images, media, price, stock, specifications, field display groups, BOM and related products as product components.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "swift.shop-catalog",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "productScope"
+      ],
+      "checks": [
+        "probes/swift/swift.product-detail.details-page.json",
+        "probes/swift/swift.product-detail.components-used.json",
+        "probes/swift/swift.product-detail.detail-renders.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "content-only-site",
+          "when": "The demo website has no product catalogue or buying."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.product-detail"
+        }
+      ]
+    },
+    {
+      "id": "swift.variant-selector",
+      "area": "swift",
+      "name": "Variant selector",
+      "description": "Selectable variant options on the product detail page.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "pim.variants",
+          "expected": true
+        },
+        {
+          "kind": "capability",
+          "id": "swift.product-detail",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "productScope"
+      ],
+      "checks": [
+        "probes/swift/swift.variant-selector.selector-paragraph.json",
+        "probes/swift/swift.variant-selector.selector-renders.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "content-only-site",
+          "when": "The demo website has no product catalogue or buying."
+        },
+        {
+          "id": "catalogue-without-variants",
+          "when": "No product in the demo scope has variants."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.variant-selector"
+        }
+      ]
+    },
+    {
+      "id": "swift.cart-checkout",
+      "area": "swift",
+      "name": "Cart and checkout",
+      "description": "Mini cart, cart page and checkout flow with anonymous or account checkout, payment, shipping and vouchers.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "swift.shop-catalog",
+          "expected": true
+        },
+        {
+          "kind": "capability",
+          "id": "orders.payment-methods",
+          "expected": true
+        },
+        {
+          "kind": "capability",
+          "id": "orders.shipping-methods",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.cart-checkout.cart-page.json",
+        "probes/swift/swift.cart-checkout.checkout-page.json",
+        "probes/swift/swift.cart-checkout.mini-cart.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "content-only-site",
+          "when": "The demo website has no product catalogue or buying."
+        },
+        {
+          "id": "catalogue-only",
+          "when": "The demo shows the catalogue without buying."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.cart-checkout"
+        }
+      ]
+    },
+    {
+      "id": "swift.express-buy",
+      "area": "swift",
+      "name": "Express buy",
+      "description": "A page for quickly finding and adding many products to the cart.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "swift.cart-checkout",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.express-buy.express-buy-page.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "content-only-site",
+          "when": "The demo website has no product catalogue or buying."
+        },
+        {
+          "id": "b2c-story",
+          "when": "The demo has no repeat or bulk B2B buyer."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.express-buy"
+        }
+      ]
+    },
+    {
+      "id": "swift.customer-center",
+      "area": "swift",
+      "name": "Customer experience center on the storefront",
+      "description": "Swift account entry, order history, reorder, favorites and manage users surfaces for signed-in customers.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "swift.sign-in",
+          "expected": true
+        },
+        {
+          "kind": "capability",
+          "id": "orders.customer-experience-center",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "demoPersona"
+      ],
+      "checks": [
+        "probes/swift/swift.customer-center.account-entry.json",
+        "probes/swift/swift.customer-center.favorites-entry.json",
+        "probes/swift/swift.customer-center.account-pages-render.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "anonymous-b2c-story",
+          "when": "The demo shows anonymous buying only."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.customer-center"
+        }
+      ]
+    },
+    {
+      "id": "swift.sign-in",
+      "area": "swift",
+      "name": "Storefront sign-in element",
+      "description": "Sign in element in the Swift header leading to the sign-in page, including Swift 2.4 sign-in profiles.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "users.frontend-sign-in",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "demoPersona"
+      ],
+      "checks": [
+        "probes/swift/swift.sign-in.sign-in-entry.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "anonymous-b2c-story",
+          "when": "The demo shows anonymous buying only."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.sign-in"
+        }
+      ]
+    },
+    {
+      "id": "swift.impersonation",
+      "area": "swift",
+      "name": "Impersonation bar on the storefront",
+      "description": "Sales on behalf: users or groups allowed to act for other users, used by a sales rep or customer service user through the Swift impersonation bar. Canonical impersonation function for the ledger.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "swift.sign-in",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "impersonatorPersona"
+      ],
+      "checks": [
+        "probes/swift/swift.impersonation.impersonation-bar.json",
+        "probes/swift/swift.impersonation.grants-exist.json",
+        "probes/swift/swift.impersonation.rep-switches-customer.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-sales-on-behalf",
+          "when": "The demo story has no sales rep acting for customers."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.impersonation"
+        }
+      ]
+    },
+    {
+      "id": "swift.multi-language",
+      "area": "swift",
+      "name": "Language and preferences selector",
+      "description": "Visitor-facing language, country and currency selection across language layers of the Swift website.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "content.language-layers",
+          "expected": true
+        },
+        {
+          "kind": "capability",
+          "id": "pim.languages",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.multi-language.language-switch.json",
+        "probes/swift/swift.multi-language.layer-renders.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-language",
+          "when": "The demo runs in one language only."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.multi-language"
+        }
+      ]
+    },
+    {
+      "id": "swift.search",
+      "area": "swift",
+      "name": "Storefront search",
+      "description": "Search field and results pages over the Content and ProductsFrontend repositories.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "search.free-text-search",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "productScope"
+      ],
+      "checks": [
+        "probes/swift/swift.search.search-field.json",
+        "probes/swift/swift.search.search-results.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.search"
+        }
+      ]
+    },
+    {
+      "id": "swift.cookie-consent",
+      "area": "swift",
+      "name": "Cookie consent",
+      "description": "Cookie Manager with the Swift Cookies template, consent categories Statistical and Marketing, and Google Consent Mode in the master.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.cookie-consent.cookie-manager-template.json",
+        "probes/swift/swift.cookie-consent.banner-renders.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "internal-demo-host",
+          "when": "The host is never shown on a public URL and the story does not cover consent."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.cookie-consent"
+        }
+      ]
+    },
+    {
+      "id": "swift.posts",
+      "area": "swift",
+      "name": "Posts and post lists",
+      "description": "Blog, news or article pages listed with the Post List paragraph or the Query Publisher app over the Post index.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.posts.post-list.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-editorial-content",
+          "when": "The demo has no article-style content."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.posts"
+        }
+      ]
+    },
+    {
+      "id": "swift.emails",
+      "area": "swift",
+      "name": "Swift email pages",
+      "description": "Transactional and marketing emails built as Swift email pages under an Email settings page with email header and footer.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.emails.email-page.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-email-in-story",
+          "when": "The demo shows no email."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.emails"
+        }
+      ]
+    },
+    {
+      "id": "swift.responsive",
+      "area": "swift",
+      "name": "Responsive storefront",
+      "description": "Mobile layouts, device-specific hiding of rows and paragraphs, and mobile header and footer.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/swift/swift.responsive.no-horizontal-overflow.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#swift.responsive"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "integration.live-integration.live-endpoint",
+  "functionId": "integration.live-integration",
+  "intent": {
+    "proves": "At least one endpoint is marked for live integration.",
+    "level": "configured",
+    "scope": "all endpoints; applies when the instance connects through endpoints"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM [Endpoint] WHERE EndpointUseInLiveIntegration = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/DataIntegration.LiveIntegration Configuration/SettingsFileHandler.cs (settings file /Files/System/LiveIntegration/{instance}.Setup.xml)"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/erp-plug-in-units/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.DataIntegration 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

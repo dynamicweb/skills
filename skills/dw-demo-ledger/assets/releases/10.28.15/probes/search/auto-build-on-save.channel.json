@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "search.auto-build-on-save.channel",
+  "functionId": "search.auto-build-on-save",
+  "intent": {
+    "proves": "At least one channel or shop rebuilds a named product index on save.",
+    "level": "configured",
+    "scope": "EcomShops rows with ShopAutoBuildIndex set and a repository named"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-shops",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_shops",
+      "arguments": {},
+      "reason": "Shop model projection of the auto-build fields not verified."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM EcomShops WHERE ShopAutoBuildIndex = 1 AND ISNULL(ShopIndexRepository,'') <> '' AND ISNULL(ShopIndexName,'') <> ''",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html"
+    }
+  ]
+}

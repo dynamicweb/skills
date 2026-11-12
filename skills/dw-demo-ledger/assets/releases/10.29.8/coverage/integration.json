@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "area": "integration",
-  "retrieved": "2026-11-11",
+  "retrieved": "2026-11-12",
   "sources": [
     {
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/integration-customer-center.html",
@@ -197,6 +197,11 @@
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/schemamanagement.html",
       "title": "Schemas",
       "sectionHash": "6fee785d9a06ed82"
+    },
+    {
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "title": "10.29 release candidate scan, reviewed after raw preservation",
+      "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
     }
   ],
   "claims": [
@@ -775,10 +780,40 @@
       "claim": "Scheduled tasks are also available from Settings > System",
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/scheduledtasks.html",
       "duplicateOf": "admin.scheduled-tasks"
+    },
+    {
+      "claim": "Released addition: integration.activity-variables. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "integration.activity-variables"
+    },
+    {
+      "claim": "Released addition: integration.excel-title-row. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "integration.excel-title-row"
+    },
+    {
+      "claim": "Released addition: integration.source-file-retention. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "integration.source-file-retention"
     }
   ],
   "gaps": [
     "Dynamicweb connector service for on-prem plug-in units has no Dynamicweb-side observable state beyond the live integration web service URL.",
-    "Excel provider check counts *.xlsx only; .xls and .xlsm files are not counted by the implemented file binding."
+    "Excel provider check counts *.xlsx only; .xls and .xlsm files are not counted by the implemented file binding.",
+    {
+      "claim": "integration.activity-variables",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "integration.excel-title-row",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "integration.source-file-retention",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    }
   ]
 }

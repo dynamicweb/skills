@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "content.template-translations.keys",
+  "functionId": "content.template-translations",
+  "intent": {
+    "proves": "At least one translations file exists in the designs folder.",
+    "level": "configured",
+    "scope": "translations files under Templates/Designs, all designs and the shared file"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-template-translations",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_template_translations",
+      "arguments": {
+        "design": ""
+      },
+      "reason": "Paged response; mcp-count would count one page of keys, not files. A projection on total is needed."
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "Templates\\Designs",
+        "filter": "translations.xml",
+        "includeSubfolders": true
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/translations/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/TranslationTools.cs"
+    }
+  ]
+}

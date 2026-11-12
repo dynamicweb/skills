@@ -7,6 +7,19 @@ PowerShell 7. Owning reference: ../references/contract.md. Imports the shared AP
 . ./Ledger.Transport.ps1
 #>
 #Requires -Version 7.0
+function Get-LedgerObservedVersion {
+    param([string]$BaseUrl,[switch]$AllowSelfSignedCertificate)
+    if(-not $BaseUrl){return $null}
+    $skip=$AllowSelfSignedCertificate -or $BaseUrl -match '^https?://(localhost|127\.0\.0\.1)([:/]|$)'
+    try {
+        $spec=Invoke-RestMethod -Uri ($BaseUrl.TrimEnd('/')+'/admin/api/api.json') -TimeoutSec 20 -SkipCertificateCheck:$skip
+        return [string]$spec.info.version
+    }catch{return $null}
+}
+function Test-LedgerStableVersion {
+    param([string]$Before,[string]$After)
+    return -not [string]::IsNullOrWhiteSpace($Before) -and -not [string]::IsNullOrWhiteSpace($After) -and $Before -ceq $After
+}
 function Get-LedgerCapabilities {
     param([string]$BaseUrl,[string]$ApiToken,[string]$McpToken,[string]$SqlServer,[string]$FilesPath,[switch]$AllowSelfSignedCertificate)
     $cap=@{schema=1;dwVersion=$null;discoveredAt=[DateTimeOffset]::UtcNow.ToString('o');mcp=@{available=$false;tools=@()};adminApi=@{available=$false;authenticated=$false;queries=@()};dwapi=@{available=$false};file=@{available=$false;local=$false};sql=@{available=$false;localOnly=$true};facts=@{};errors=@()}
@@ -27,8 +40,24 @@ function Get-LedgerCapabilities {
         }
     } catch {$cap.errors+='Admin descriptor could not be read.'}
     if($McpToken){try{$tools=Get-DwMcpTools;$cap.mcp.tools=@($tools.name);$cap.mcp.available=$true}catch{$cap.errors+='MCP discovery failed.'}}
+    if($cap.adminApi.authenticated -and 'FeaturesAll' -in $cap.adminApi.queries){
+        try {$cap.facts=Get-LedgerFeatureFacts (Invoke-DwApi 'FeaturesAll')} catch {$cap.errors+='Complete feature flag observation unavailable.'}
+    }
     # Delivery-route reachability is not recorded as usable until a claim-specific read proves it.
     return $cap
+}
+function Get-LedgerFeatureFacts {
+    param($Response)
+    $data=$Response|ConvertTo-Json -Depth 30|ConvertFrom-Json -AsHashtable
+    $model=Get-LedgerField $data 'model'
+    if(-not $model.ContainsKey('totalCount') -or -not $model.ContainsKey('totalPages')){throw [InvalidOperationException]::new('Feature enumeration has no completeness evidence.')}
+    $rows=ConvertTo-LedgerRows $model 'data';$facts=@{}
+    foreach($row in $rows){
+        Assert-LedgerFields @($row) @('featureTypeName','active')
+        if([string]::IsNullOrWhiteSpace($row.featureTypeName) -or $row.active -isnot [bool] -or $facts.ContainsKey($row.featureTypeName)){throw [InvalidOperationException]::new('Ambiguous feature flag observation.')}
+        $facts[$row.featureTypeName]=$row.active
+    }
+    return $facts
 }
 function Read-LedgerMcp {
     param([string]$Operation,[hashtable]$Arguments=@{})

@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "content.language-layers.master-links-resolve",
+  "functionId": "content.language-layers",
+  "intent": {
+    "proves": "No page on a language layer points at a master page that is missing or deleted.",
+    "level": "stored-integrity",
+    "scope": "pages on non-deleted language-layer websites; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-pages-by-area-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-offenders",
+      "operation": "get_pages_by_area_id",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 CAST(p.PageId AS nvarchar(20)) + N' -> ' + CAST(p.PageMasterPageId AS nvarchar(20)) FROM Page p JOIN Area a ON a.AreaId = p.PageAreaId WHERE ISNULL(a.AreaMasterAreaId, 0) > 0 AND a.AreaDeleted = 0 AND p.PageDeleted = 0 AND ISNULL(p.PageMasterPageId, 0) > 0 AND NOT EXISTS (SELECT 1 FROM Page m WHERE m.PageId = p.PageMasterPageId AND m.PageDeleted = 0)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html"
+    }
+  ]
+}

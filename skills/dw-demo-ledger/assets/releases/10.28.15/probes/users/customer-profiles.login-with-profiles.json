@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.customer-profiles.login-with-profiles",
+  "functionId": "users.customer-profiles",
+  "intent": {
+    "proves": "At least one login user has at least one profile sharing its username in the same shop.",
+    "level": "applied",
+    "scope": "non-group AccessUser rows with AccessUserIsLogin = 1 and other rows of the same username and shop"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-users-by-usernames",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_users_by_usernames",
+      "arguments": {},
+      "reason": "Lookup by known usernames only; a census needs an enumeration handler."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUser l WHERE l.AccessUserIsLogin = 1 AND l.AccessUserType <> 2 AND EXISTS (SELECT 1 FROM AccessUser p WHERE p.AccessUserUserName = l.AccessUserUserName AND p.AccessUserId <> l.AccessUserId AND p.AccessUserType <> 2 AND ISNULL(p.AccessUserShopId,'') = ISNULL(l.AccessUserShopId,''))",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+    }
+  ]
+}

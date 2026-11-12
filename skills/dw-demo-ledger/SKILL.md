@@ -42,12 +42,21 @@ Distribution and Serializer are platform scope. Concrete layer carriage belongs 
 
 Follow [the release process](references/release-process.md) for additions/removals and [the layer contract](references/adding-a-layer.md) for Distribution carriage and edition locks. The [PIM breadth profile](assets/profiles/pim-breadth.json) preserves the migrated thresholds.
 
+For [dw 10.29.8] matrix fields, follow [the matrix contract](references/matrix-fields.md): explicit feature facts, declared source cells, exact stored comparisons and a read-only red control. Availability in an older release must come from that release's evidence.
+
 ## Scripts (scripts/)
 
 | Script | Reads / writes | What it does |
 |---|---|---|
 | [Invoke-DwLedgerChecks.ps1](scripts/Invoke-DwLedgerChecks.ps1) | Reads target; writes local report | Schema/lock verification, discovery, binding selection and evidence |
 | [Compare-DwLedgerRelease.ps1](scripts/Compare-DwLedgerRelease.ps1) | Reads snapshots/evidence; writes proposed delta | Release comparison skeleton; never marks a feature measured |
+| [Find-DwReleaseFunctions.ps1](scripts/Find-DwReleaseFunctions.ps1) | Reads releases/schema; writes raw scan | General package, flag, schema and changelog discovery before review |
+| [Release.Metadata.ps1](scripts/Release.Metadata.ps1) | Reads assembly metadata bytes | Public types, enum constants and feature ancestry without target execution |
+| [Release.Evidence.ps1](scripts/Release.Evidence.ps1) | Reads public packages/local schema; writes cache | Version-checked evidence collection |
+| [Release.Compare.ps1](scripts/Release.Compare.ps1) | Reads captured evidence | General candidate comparison without feature keywords |
+| [Release.Tests.ps1](scripts/tests/Release.Tests.ps1) | Isolated fixtures | Synthetic A/B discovery and missing-evidence red controls |
+| [Pim.Matrix.ps1](scripts/Pim.Matrix.ps1) | Local SQL SELECT and in-memory comparisons | Matrix category, parent and exact cell observations |
+| [Matrix.Tests.ps1](scripts/tests/Matrix.Tests.ps1) | Isolated fixtures | Green/red matrix controls and incomplete capability evidence |
 | [Ledger.Core.ps1](scripts/Ledger.Core.ps1) | Definitions only | Schema, digest, safe paths, selection and assertions |
 | [Ledger.Transport.ps1](scripts/Ledger.Transport.ps1) | Reads MCP/Admin when called | Discovery and observations using the shared API transport |
 | [Ledger.Observations.ps1](scripts/Ledger.Observations.ps1) | Reads collections/local XML when called | Tokens, filtered counts, authenticated API projection and scoped files |

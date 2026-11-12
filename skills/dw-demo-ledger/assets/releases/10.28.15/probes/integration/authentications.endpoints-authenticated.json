@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "integration.authentications.endpoints-authenticated",
+  "functionId": "integration.authentications",
+  "intent": {
+    "proves": "Every endpoint has an authentication on itself or on its collection.",
+    "level": "configured",
+    "scope": "all endpoints; an anonymous remote endpoint is reported as an offender"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-integration-endpoints",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_integration_endpoints",
+      "arguments": {},
+      "reason": "Handler not reserved: needs a field-predicate projection over the tool's rows; mcp-count counts rows only. Authentication exposure in the endpoint model not verified."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(e.EndpointId AS nvarchar(20)) + N' ' + ISNULL(e.EndpointName, N'') FROM [Endpoint] e LEFT JOIN EndpointCollection c ON c.EndpointCollectionId = e.EndpointCollectionId WHERE ISNULL(e.EndpointAuthenticationId, 0) = 0 AND ISNULL(c.EndpointCollectionAuthenticationId, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/authentications.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/s2s-guide.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/userimpersonation/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.DataIntegration 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "pim.field-units.declared-units",
+  "functionId": "pim.field-units",
+  "intent": {
+    "proves": "Units on measures: declared-units satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "attributes",
+    "aspect": "units",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-declared-units",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-declared-units",
+      "operation": "ProductCategoryFieldsByCategoryId",
+      "reason": "Needs authenticated full-payload and scope parity measurement; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-attributes",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-units/declared-units"
+    }
+  ]
+}

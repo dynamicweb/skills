@@ -6,9 +6,41 @@
   "coverageGlob": "coverage/*.json",
   "checkSchema": "../../check.schema.json",
   "ledgerSchema": "../../ledger.schema.json",
-  "components": [],
+  "components": [
+    {
+      "assemblyDigest": "sha256:985cb90a0a8eb461811763d45c45b92283da3192086b180ae42ebedd49a06345",
+      "source": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.29.8/dynamicweb.10.29.8.nupkg",
+      "assemblyVersion": "10.29.8.0",
+      "entry": "lib/net10.0/Dynamicweb.dll",
+      "package": "Dynamicweb",
+      "typeCount": 1069,
+      "packageDigest": "sha256:c59004e7a996b57a4e36eb005e51084a94dee4636bd5f6316b67f91b838ed636",
+      "version": "10.29.8"
+    },
+    {
+      "assemblyDigest": "sha256:c7910dd9ee9a34f3e57070768ee12d57205868f9961f44b8fd6afd17d2c24b4c",
+      "source": "https://api.nuget.org/v3-flatcontainer/dynamicweb.core/10.29.8/dynamicweb.core.10.29.8.nupkg",
+      "assemblyVersion": "10.29.8.0",
+      "entry": "lib/net10.0/Dynamicweb.Core.dll",
+      "package": "Dynamicweb.Core",
+      "typeCount": 1582,
+      "packageDigest": "sha256:053ee9802f5538ec6c0cfc12bb79b19687c5ed502e403770bada1c3696eff0db",
+      "version": "10.29.8"
+    },
+    {
+      "assemblyDigest": "sha256:bc7e4b3bb3d0f7c92207ade6d75ccb433bbed0208d5520226efd4d9726517570",
+      "source": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.29.8/dynamicweb.ecommerce.10.29.8.nupkg",
+      "assemblyVersion": "10.29.8.0",
+      "entry": "lib/net10.0/Dynamicweb.Ecommerce.dll",
+      "package": "Dynamicweb.Ecommerce",
+      "typeCount": 2559,
+      "packageDigest": "sha256:b62a51dd00f68ad7a5d8873ceff16c4be10d699051968000b431305bb3a2d0ea",
+      "version": "10.29.8"
+    }
+  ],
   "coverage": {
     "status": "incomplete",
-    "note": "Entries and bindings require baseline-specific measurement; availability is not inferred from newer hosts."
-  }
+    "note": "Reviewed A/B additions are recorded in delta.json. Matrix reads are implemented; other new behaviour bindings are explicitly planned. Existing functions still require target measurement."
+  },
+  "revision": 2
 }

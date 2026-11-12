@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "id": "integration.column-scripting.scripting",
+  "functionId": "integration.column-scripting",
+  "intent": {
+    "proves": "At least one column mapping applies a script or a non-default null handling.",
+    "level": "applied",
+    "scope": "all column mappings"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-integration-activity-mappings",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_integration_activity_mappings",
+      "arguments": {},
+      "reason": "Handler not reserved: needs one call per subject (iterate ids from the list tool) and a client-side predicate. Predicate: scriptType not None or nullHandling not Default."
+    },
+    {
+      "id": "file-content",
+      "surface": "file",
+      "status": "planned",
+      "handler": "file-content",
+      "path": "Files/Integration/jobs/**/*.xml",
+      "reason": "No reserved handler reads job file content."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Integration/Tools (IntegrationActivityTools.cs, IntegrationEndpointTools.cs, IntegrationMappingTools.cs, IntegrationProviderTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-integration-framework/SKILL.md"
+    }
+  ]
+}

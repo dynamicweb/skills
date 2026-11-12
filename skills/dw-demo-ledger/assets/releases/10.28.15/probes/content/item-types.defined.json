@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "content.item-types.defined",
+  "functionId": "content.item-types",
+  "intent": {
+    "proves": "At least one item type is defined.",
+    "level": "supported",
+    "scope": "all item types"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-item-types",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_item_types",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Item type definitions may live in files as well as the ItemTypeDefinitions table; the table count is not proven complete."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/ItemTypeTools.cs"
+    }
+  ]
+}

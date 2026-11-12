@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "content.friendly-urls.resolves",
+  "functionId": "content.friendly-urls",
+  "intent": {
+    "proves": "A published page answers on its friendly URL.",
+    "level": "behavioural",
+    "scope": "first published top-level page of each active website"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-frontend-health",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-frontend-health",
+      "operation": "get_frontend_health",
+      "arguments": {},
+      "reason": "Response projection (status and resolved path) not measured; mcp-count does not apply."
+    },
+    {
+      "id": "dwapi-http",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "http-observe",
+      "operation": "GET friendly page URL",
+      "reason": "No reserved HTTP handler; a measured response projection is required."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/customized-urls.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/FrontendVerificationTools.cs"
+    }
+  ]
+}

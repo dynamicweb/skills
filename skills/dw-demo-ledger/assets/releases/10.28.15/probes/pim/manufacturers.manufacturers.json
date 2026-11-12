@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.manufacturers.manufacturers",
+  "functionId": "pim.manufacturers",
+  "intent": {
+    "proves": "Manufacturers / brands: manufacturers satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-manufacturers",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_manufacturers",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomManufacturers"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#manufacturers/manufacturers"
+    }
+  ]
+}

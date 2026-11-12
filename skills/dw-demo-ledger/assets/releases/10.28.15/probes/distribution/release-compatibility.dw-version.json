@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "distribution.release-compatibility.dw-version",
+  "functionId": "distribution.release-compatibility",
+  "intent": {
+    "proves": "The host runs the DW version recorded in gateProven.",
+    "level": "supported",
+    "scope": "the host's Management API descriptor version against gateProven.dw.version of the locked commit"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-descriptor-version",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-descriptor-version",
+      "operation": "api.json",
+      "reason": "The descriptor version is readable without a key, but no reserved handler compares versions."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:README.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:CONTRIBUTING.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/INDEX.json"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:versions/spine.json"
+    }
+  ]
+}

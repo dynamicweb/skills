@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "pim.channels.empty-channels",
+  "functionId": "pim.channels",
+  "intent": {
+    "proves": "Channels with their own group tree: empty-channels satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-empty-channels",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-empty-channels",
+      "operation": "get_shops",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(s.ShopId AS nvarchar(50)) + N' ' + CAST(s.ShopName AS nvarchar(100)) FROM EcomShops s WHERE s.ShopType = 3 AND NOT EXISTS (SELECT 1 FROM EcomShopGroupRelation r JOIN EcomGroupProductRelation gp ON gp.GroupProductRelationGroupId = r.ShopGroupGroupId WHERE r.ShopGroupShopId = s.ShopId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#channels/empty-channels"
+    }
+  ]
+}

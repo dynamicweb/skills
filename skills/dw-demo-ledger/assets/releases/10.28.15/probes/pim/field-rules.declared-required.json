@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "pim.field-rules.declared-required",
+  "functionId": "pim.field-rules",
+  "intent": {
+    "proves": "Required fields: declared-required satisfies the selected profile assertion.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "attributes",
+    "aspect": "rules",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-declared-required",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-declared-required",
+      "operation": "get_product_category_fields",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-attributes",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-rules/declared-required"
+    }
+  ]
+}

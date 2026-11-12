@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "swift.customer-center.favorites-entry",
+  "functionId": "swift.customer-center",
+  "intent": {
+    "proves": "At least one live favorites paragraph (Swift-V2_Favorites, Swift-v2_ProductAddToFavorites) exists.",
+    "level": "applied",
+    "scope": "all non-deleted paragraphs on the solution"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM Paragraph WHERE ParagraphItemType IN ('Swift-V2_Favorites', 'Swift-v2_ProductAddToFavorites') AND ParagraphDeleted = 0",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/references/paragraphs.md and dw-data-access/references/recipes-content.md (Page, Paragraph and GridRow columns)"
+    }
+  ]
+}

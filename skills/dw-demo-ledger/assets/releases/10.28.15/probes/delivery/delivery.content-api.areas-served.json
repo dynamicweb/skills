@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.content-api.areas-served",
+  "functionId": "delivery.content-api",
+  "intent": {
+    "proves": "GET /dwapi/content/areas answers anonymously with at least one area.",
+    "level": "behavioural",
+    "scope": "anonymous request to the delivery API of the target host"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-count",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-count",
+      "operation": "GET /dwapi/content/areas",
+      "reason": "No dwapi handler is implemented; a scalar HTTP binding needs a measured response projection (contract.md), endpoint presence alone does not qualify."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html"
+    }
+  ]
+}

@@ -246,6 +246,10 @@
         {
           "kind": "source",
           "ref": "skills/dw-headless-delivery/references/endpoint-reference.md"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#delivery.cart-checkout-api"
         }
       ]
     },
@@ -546,6 +550,58 @@
         {
           "kind": "docs",
           "ref": "https://doc.dynamicweb.dev/documentation/implementing/content/apps/product-catalog-viewmodel.html"
+        }
+      ]
+    },
+    {
+      "id": "delivery.purchased-products-api",
+      "area": "delivery",
+      "name": "Purchased products API",
+      "description": "Return products purchased by the authorised customer with declared aggregation and sorting.",
+      "skill": "dw-headless-delivery",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/delivery/purchased-products-api.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#delivery.purchased-products-api"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "delivery.response-field-selection",
+      "area": "delivery",
+      "name": "Response field selection",
+      "description": "Limit Delivery API response properties using the fields query parameter.",
+      "skill": "dw-headless-delivery",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/delivery/response-field-selection.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "delta-review.json#delivery.response-field-selection"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
         }
       ]
     }

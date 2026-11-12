@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "orders.order-flows.states",
+  "functionId": "orders.order-flows",
+  "intent": {
+    "proves": "At least two order states exist for the Order type.",
+    "level": "configured",
+    "scope": "order states of order type Order"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 2
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_order_states",
+      "arguments": {
+        "orderType": "Order"
+      },
+      "reason": "Observed MCP Order states count differs from nondeleted stored states (17 versus 16). Virtual/deleted state scope must be reconciled."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomOrderStates WHERE OrderStateOrderType = 0 AND ISNULL(OrderStateIsDeleted, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/orderflows.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "Dynamicweb.Ecommerce 10.29.8: Dynamicweb.Ecommerce.Orders.OrderType Order=0, Quote=1, Recurringorder=2, LedgerEntry=3, Cart=4"
+    }
+  ]
+}

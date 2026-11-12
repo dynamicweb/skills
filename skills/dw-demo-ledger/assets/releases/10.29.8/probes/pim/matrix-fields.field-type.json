@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "pim.matrix-fields.field-type",
+  "functionId": "pim.matrix-fields",
+  "intent": {
+    "proves": "Exactly one Matrix field type is available.",
+    "level": "supported",
+    "scope": "Explicit expected.matrix declaration; feature type and flag reads are solution-wide."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_field_types",
+      "arguments": {},
+      "projection": {
+        "filter": {
+          "field": "dynamicwebAlias",
+          "op": "equals",
+          "value": "Matrix"
+        }
+      }
+    },
+    {
+      "id": "sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomFieldType WHERE FieldTypeDW=N'Matrix'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "release",
+      "ref": "delta-review.json#pim.matrix-fields"
+    },
+    {
+      "kind": "release",
+      "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "content.forms.published",
+  "functionId": "content.forms",
+  "intent": {
+    "proves": "At least one visible paragraph renders a Forms for Editors app.",
+    "level": "applied",
+    "scope": "non-deleted paragraphs on non-deleted pages"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-search-paragraphs",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "search_paragraphs",
+      "arguments": {},
+      "reason": "Needs the module system names of both Forms for Editors apps; only the classic app's name has been observed."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "The ViewModel app's module system name is unverified; counting only the classic app would understate the claim."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors-viewmodel.html"
+    }
+  ]
+}

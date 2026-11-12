@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "area": "pim",
+  "retrieved": "2026-11-12",
+  "sources": [
+    {
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "title": "10.29 release candidate scan, reviewed after raw preservation",
+      "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Released addition: pim.attribute-translation-state. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "pim.attribute-translation-state"
+    },
+    {
+      "claim": "Released addition: pim.import-key-detection. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "pim.import-key-detection"
+    },
+    {
+      "claim": "Released addition: pim.json-feeds. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "pim.json-feeds"
+    },
+    {
+      "claim": "Released addition: pim.matrix-fields. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "pim.matrix-fields"
+    }
+  ],
+  "gaps": [
+    {
+      "claim": "pim.attribute-translation-state",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "pim.import-key-detection",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "pim.json-feeds",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    }
+  ]
+}

@@ -49,6 +49,7 @@ $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Ledger.Sql.ps1')
 . (Join-Path $PSScriptRoot 'Pim.Fields.ps1')
 . (Join-Path $PSScriptRoot 'Pim.Queries.ps1')
+. (Join-Path $PSScriptRoot 'Pim.Matrix.ps1')
 . (Join-Path $PSScriptRoot 'Ledger.Transport.ps1')
 . (Join-Path $PSScriptRoot 'Ledger.Execute.ps1')
 $script:LedgerMcpCache=@{};$script:LedgerStoredFields=$null
@@ -113,10 +114,14 @@ try {
     foreach($id in $build.functions){if(@($build.lock.checkIds|Where-Object {$checks[$_].functionId -eq $id}).Count -eq 0){
         $rows.Add(@{id=$id+'.coverage';functionId=$id;result='UNVERIFIED';surface=$null;binding=$null;level='supported';proves='Requested function has executable coverage.';reason='No locked check covers the requested function.'})
     }}
+    $endingVersion=Get-LedgerObservedVersion -BaseUrl $BaseUrl -AllowSelfSignedCertificate:$AllowSelfSignedCertificate
+    $stableVersion=Test-LedgerStableVersion $cap.dwVersion $endingVersion
+    if(-not $stableVersion){$matches=$false}
     $verdict=Get-LedgerVerdict $rows.ToArray();if((-not $matches -or -not $runnerMatches) -and $verdict -eq 'PASS'){$verdict='UNVERIFIED'}
     $counts=@{};foreach($state in @('PASS','FAIL','ERROR','UNVERIFIED','UNSUPPORTED','DISABLED','NOT-APPLICABLE')){$counts[$state]=@($rows|Where-Object {$_.result -eq $state}).Count}
     $report=@{schema=1;generatedAt=[DateTimeOffset]::UtcNow.ToString('o');slug=$build.slug;lock=$build.lock;compatibility=@{baseline=$manifestData.dwVersion;observed=$cap.dwVersion;matches=[bool]$matches;diagnostic=[bool]$DiagnosticVersionMismatch};result=$verdict;counts=$counts;capabilities=$cap;checks=$rows.ToArray();errors=@()}
     if(-not $runnerMatches){$report.errors+='Diagnostic runner differs from the locked commit or has uncommitted changes.'}
+    if(-not $stableVersion){$report.errors+='Target version changed or became unavailable during observation; the initial baseline cannot certify this report.'}
     $json=$report|ConvertTo-Json -Depth 80
     if(-not(Test-Json -Json $json -SchemaFile (Join-Path $assets 'report.schema.json') -ErrorAction Stop)){throw 'Report contract invalid.'}
     [IO.File]::WriteAllText([IO.Path]::GetFullPath($OutFile),$json+"`n",[Text.UTF8Encoding]::new($false))

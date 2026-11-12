@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "content.grid-rows.container-set",
+  "functionId": "content.grid-rows",
+  "intent": {
+    "proves": "No active grid row lacks a container (such rows never render in the layout).",
+    "level": "stored-integrity",
+    "scope": "active, non-deleted grid rows that are not presets; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-grid-rows-by-page-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-offenders",
+      "operation": "get_grid_rows_by_page_id",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 CAST(GridRowId AS nvarchar(20)) + N' page ' + CAST(GridRowPageId AS nvarchar(20)) FROM GridRow WHERE GridRowActive = 1 AND GridRowDeleted = 0 AND ISNULL(GridRowIsTemplate, 0) = 0 AND ISNULL(GridRowContainer, N'') = N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/rows.html"
+    }
+  ]
+}

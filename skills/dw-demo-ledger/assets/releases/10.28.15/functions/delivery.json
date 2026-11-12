@@ -1,0 +1,549 @@
+{
+  "schema": 1,
+  "area": "delivery",
+  "functions": [
+    {
+      "id": "delivery.content-api",
+      "area": "delivery",
+      "name": "Delivery API content endpoints",
+      "description": "Areas, pages, page views, paragraphs, grid rows, navigation and translations as JSON ViewModels from /dwapi/.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "websiteAreaIds"
+      ],
+      "checks": [
+        "probes/delivery/delivery.content-api.website-exists.json",
+        "probes/delivery/delivery.content-api.areas-served.json",
+        "probes/delivery/delivery.content-api.pageview-served.json",
+        "probes/delivery/delivery.content-api.navigation-served.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.content-api"
+        }
+      ]
+    },
+    {
+      "id": "delivery.jwt-authentication",
+      "area": "delivery",
+      "name": "Frontend user JWT authentication",
+      "description": "Username and password exchange for a bearer JWT (default 1800 s) with refresh before expiry.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "demoPersona"
+      ],
+      "checks": [
+        "probes/delivery/delivery.jwt-authentication.frontend-user-exists.json",
+        "probes/delivery/delivery.jwt-authentication.authenticate-issues-token.json",
+        "probes/delivery/delivery.jwt-authentication.token-refresh.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "anonymous-only-frontend",
+          "when": "The demo frontend never signs a user in and uses only anonymous delivery endpoints."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.jwt-authentication"
+        }
+      ]
+    },
+    {
+      "id": "delivery.cookie-token-exchange",
+      "area": "delivery",
+      "name": "Extranet cookie to JWT exchange",
+      "description": "Bridges a Razor or external-provider login to the Delivery API by exchanging the Extranet cookie for a JWT.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "delivery.jwt-authentication",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/delivery/delivery.cookie-token-exchange.token-from-cookie.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-hybrid-login",
+          "when": "No Razor page or external login provider signs users in before they call /dwapi."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.cookie-token-exchange"
+        }
+      ]
+    },
+    {
+      "id": "delivery.service-authentication",
+      "area": "delivery",
+      "name": "API key service authentication",
+      "description": "Server-side delivery access with an API key instead of a user login; the key never reaches the browser.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/delivery/delivery.service-authentication.api-key-exists.json",
+        "probes/delivery/delivery.service-authentication.service-token.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "client-side-only",
+          "when": "The frontend renders client-side only and authenticates users directly."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.service-authentication"
+        }
+      ]
+    },
+    {
+      "id": "delivery.impersonation-api",
+      "area": "delivery",
+      "name": "Impersonation through the Delivery API",
+      "description": "A sales rep token lists and impersonates customers; carts can be created on their behalf.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "swift.impersonation",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "impersonatorPersona"
+      ],
+      "checks": [
+        "probes/delivery/delivery.impersonation-api.impersonatees-listed.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-sales-on-behalf",
+          "when": "The demo story has no sales rep acting for customers."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.impersonation-api"
+        }
+      ]
+    },
+    {
+      "id": "delivery.commerce-products-api",
+      "area": "delivery",
+      "name": "Delivery API product endpoints",
+      "description": "Product list, single product and variant ViewModels with currency, country, language and user context.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "productScope",
+        "defaultLanguage"
+      ],
+      "checks": [
+        "probes/delivery/delivery.commerce-products-api.products-served.json",
+        "probes/delivery/delivery.commerce-products-api.product-visible.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "content-only",
+          "when": "The headless demo has no product catalogue."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.commerce-products-api"
+        }
+      ]
+    },
+    {
+      "id": "delivery.cart-checkout-api",
+      "area": "delivery",
+      "name": "Headless cart and checkout",
+      "description": "Cart secret lifecycle from create to createOrder, with gateway callbacks and receipt by order secret.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "orders.payment-methods",
+          "expected": true
+        },
+        {
+          "kind": "capability",
+          "id": "orders.shipping-methods",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "productScope"
+      ],
+      "checks": [
+        "probes/delivery/delivery.cart-checkout-api.cart-to-order.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "catalogue-only-headless",
+          "when": "The headless demo shows content and catalogue only, no buying."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.cart-checkout-api"
+        }
+      ]
+    },
+    {
+      "id": "delivery.order-email-task",
+      "area": "delivery",
+      "name": "Headless order confirmation by scheduled task",
+      "description": "Headless createOrder sends no confirmation mail; the Order Emails scheduled task sends it on its next run.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "delivery.cart-checkout-api",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/delivery/delivery.order-email-task.order-email-task-configured.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-order-mail-in-story",
+          "when": "The demo does not show an order confirmation mail."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.order-email-task"
+        }
+      ]
+    },
+    {
+      "id": "delivery.users-api",
+      "area": "delivery",
+      "name": "Delivery API user management",
+      "description": "Create user, password recovery and change, addresses, profile update and customer profiles over /dwapi/users.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "delivery.jwt-authentication",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "demoPersona"
+      ],
+      "checks": [
+        "probes/delivery/delivery.users-api.user-info.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "anonymous-only-frontend",
+          "when": "The demo frontend has no account features."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.users-api"
+        }
+      ]
+    },
+    {
+      "id": "delivery.forms-api",
+      "area": "delivery",
+      "name": "Delivery API forms",
+      "description": "Form definitions fetched and submitted from a decoupled frontend.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "content.forms",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/delivery/delivery.forms-api.form-served.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-forms-in-story",
+          "when": "The demo frontend has no forms."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.forms-api"
+        }
+      ]
+    },
+    {
+      "id": "delivery.query-api",
+      "area": "delivery",
+      "name": "Delivery API query endpoint",
+      "description": "Pre-configured repository queries with custom parameters (no macros in headless), paging, sorting and facets.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "search.index-queries",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "queryName"
+      ],
+      "checks": [
+        "probes/delivery/delivery.query-api.query-served.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-query-in-story",
+          "when": "The frontend lists products by group or id only."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.query-api"
+        }
+      ]
+    },
+    {
+      "id": "delivery.cors-origin",
+      "area": "delivery",
+      "name": "Cross-origin access for a decoupled frontend",
+      "description": "The Dynamicweb host allows the app origin so browser calls to /dwapi succeed.",
+      "skill": "dw-headless-delivery",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "frontendOrigin"
+      ],
+      "checks": [
+        "probes/delivery/delivery.cors-origin.origin-allowed.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "same-origin-frontend",
+          "when": "The frontend is served from the Dynamicweb host or calls /dwapi server-side only."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.cors-origin"
+        }
+      ]
+    },
+    {
+      "id": "delivery.item-type-templates",
+      "area": "delivery",
+      "name": "Paragraph and grid row templates",
+      "description": "Item-typed paragraphs and grid rows render through templates chosen per item type, with page layouts per item type.",
+      "skill": "dw-render-razor",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/delivery/delivery.item-type-templates.paragraph-templates.json",
+        "probes/delivery/delivery.item-type-templates.row-templates.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "headless-only",
+          "when": "The demo renders no Razor pages; every page comes from a decoupled frontend."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.item-type-templates"
+        }
+      ]
+    },
+    {
+      "id": "delivery.viewmodel-templates",
+      "area": "delivery",
+      "name": "ViewModel-based Razor templates",
+      "description": "Typed ParagraphViewModel, ItemViewModel, ProductViewModel and ProductListViewModel templates.",
+      "skill": "dw-render-viewmodels",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/delivery/delivery.viewmodel-templates.viewmodel-inherits.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "headless-only",
+          "when": "The demo renders no Razor pages; every page comes from a decoupled frontend."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.viewmodel-templates"
+        }
+      ]
+    },
+    {
+      "id": "delivery.templatetags-templates",
+      "area": "delivery",
+      "name": "Legacy TemplateTags templates",
+      "description": "String-keyed GetString, GetLoop and related accessors in legacy templates that predate ViewModels.",
+      "skill": "dw-render-templatetags",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/delivery/delivery.templatetags-templates.templatetags-in-use.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "viewmodel-only-design",
+          "when": "The design uses ViewModel templates only, as Swift 2 does."
+        },
+        {
+          "id": "headless-only",
+          "when": "The demo renders no Razor pages; every page comes from a decoupled frontend."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.templatetags-templates"
+        }
+      ]
+    },
+    {
+      "id": "delivery.feed-publication",
+      "area": "delivery",
+      "name": "Product feed delivery",
+      "description": "Feeds defined in PIM (pim.feeds) reach a consumer through their API Url, a template feed provider, or feed=true on a catalogue page.",
+      "skill": "dw-render-viewmodels",
+      "status": "candidate",
+      "requires": [
+        {
+          "kind": "capability",
+          "id": "pim.feeds",
+          "expected": true
+        }
+      ],
+      "inputs": [
+        "feedNames"
+      ],
+      "checks": [
+        "probes/delivery/delivery.feed-publication.feed-url-served.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-feed-in-story",
+          "when": "No channel consumes a feed in the demo."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#delivery.feed-publication"
+        }
+      ]
+    }
+  ]
+}

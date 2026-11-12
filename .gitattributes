@@ -1,0 +1,2 @@
+# Snapshot locks hash exact bytes on every checkout, including Windows.
+skills/dw-demo-ledger/assets/releases/**/*.json text eol=lf

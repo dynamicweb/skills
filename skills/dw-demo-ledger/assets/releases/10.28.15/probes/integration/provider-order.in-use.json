@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "integration.provider-order.in-use",
+  "functionId": "integration.provider-order",
+  "intent": {
+    "proves": "At least one activity uses the Order provider.",
+    "level": "applied",
+    "scope": "all activities"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-integration-activities",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_integration_activities",
+      "arguments": {},
+      "reason": "Handler not reserved: needs a field-predicate projection over the tool's rows; mcp-count counts rows only. Predicate: provider label is Order; exact label not measured."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/providers/order-provider.html"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.Ecommerce 10.29.8 (table and column names in assembly SQL strings)"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-integration-erp/SKILL.md (Order Export Pattern)"
+    }
+  ]
+}

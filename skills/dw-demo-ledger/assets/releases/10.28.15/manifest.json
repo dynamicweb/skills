@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "dwVersion": "10.28.15",
+  "status": "candidate",
+  "functionsGlob": "functions/*.json",
+  "coverageGlob": "coverage/*.json",
+  "checkSchema": "../../check.schema.json",
+  "ledgerSchema": "../../ledger.schema.json",
+  "components": [
+    {
+      "package": "Dynamicweb",
+      "version": "10.28.15",
+      "source": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg",
+      "packageDigest": "sha256:9d8f4924e698313dedc1620aeab4ad799c3cfffb4fc31e55da4fdf0d6d4f5bb7",
+      "assemblyDigest": "sha256:9fc62fb95b5c9e5394304ebd934df0c276a8965a41b2286c1d3552d22177c1e5",
+      "entry": "lib/net10.0/Dynamicweb.dll"
+    },
+    {
+      "package": "Dynamicweb.Core",
+      "version": "10.28.15",
+      "source": "https://api.nuget.org/v3-flatcontainer/dynamicweb.core/10.28.15/dynamicweb.core.10.28.15.nupkg",
+      "packageDigest": "sha256:9d4af8eb18da42e44f5bfb3bf8e9b6f057a56f4fa065222e7e3c87cc7d985540",
+      "assemblyDigest": "sha256:c127308589350fa6ab2c80d99a3097220e14dd45ddffe7e897a1b1a717df7286",
+      "entry": "lib/net10.0/Dynamicweb.Core.dll"
+    },
+    {
+      "package": "Dynamicweb.Ecommerce",
+      "version": "10.28.15",
+      "source": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.28.15/dynamicweb.ecommerce.10.28.15.nupkg",
+      "packageDigest": "sha256:ad41d943384f6703d908050a0a543bcbc4c6c27046e7f4076238bc976b084e41",
+      "assemblyDigest": "sha256:0733f86cf4c1b21bd29bfaff0bfd37ab36188a031face9b54336f8f907458c23",
+      "entry": "lib/net10.0/Dynamicweb.Ecommerce.dll"
+    }
+  ],
+  "coverage": {
+    "status": "incomplete",
+    "note": "Earlier-release candidate test inventory admitted from A package metadata and A schema only. Removed B-only login activity; matrix is absent. Retained candidates make no availability claim until measured on A. Optional absent tracking-table bindings are withheld."
+  }
+}

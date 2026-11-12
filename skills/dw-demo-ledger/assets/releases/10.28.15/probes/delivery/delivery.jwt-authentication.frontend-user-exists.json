@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "delivery.jwt-authentication.frontend-user-exists",
+  "functionId": "delivery.jwt-authentication",
+  "intent": {
+    "proves": "At least one active frontend user exists that can authenticate.",
+    "level": "configured",
+    "scope": "all user rows; group rows excluded by user type"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-search-users",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "search_users",
+      "arguments": {},
+      "reason": "search_users arguments and paging not verified for a whole-solution count of active users."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE AccessUserActive = 1 AND AccessUserType = 5",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-data-access/references/recipes-commerce.md (AccessUserType = 5 selects user rows)"
+    }
+  ]
+}

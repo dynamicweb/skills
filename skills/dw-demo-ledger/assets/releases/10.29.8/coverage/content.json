@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "area": "content",
-  "retrieved": "2026-11-11",
+  "retrieved": "2026-11-12",
   "sources": [
     {
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html",
@@ -227,6 +227,11 @@
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/richtext-editor.html",
       "title": "Richtext editor",
       "sectionHash": "sha256:f757517529f6dd15f4d437e48af504cd8946eafcb65f8675d054656bcfdfcb0e"
+    },
+    {
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "title": "10.29 release candidate scan, reviewed after raw preservation",
+      "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
     }
   ],
   "claims": [
@@ -1201,6 +1206,21 @@
       "excluded": {
         "reason": "User account, login or backend access feature; owned by the users area (dw-users-permissions)."
       }
+    },
+    {
+      "claim": "Released addition: content.item-field-search. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "content.item-field-search"
+    },
+    {
+      "claim": "Released addition: content.open-graph-fallback. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "content.open-graph-fallback"
+    },
+    {
+      "claim": "Released addition: content.url-index-backup. Evidence and measurement limits are in delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "content.url-index-backup"
     }
   ],
   "gaps": [
@@ -1223,6 +1243,21 @@
       "claim": "Content apps whose own pages were not read in this census (the per-app commerce and user pages) are excluded at the apps index level only.",
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html",
       "note": "Their detailed claims belong to the owning areas' coverage files."
+    },
+    {
+      "claim": "content.item-field-search",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "content.open-graph-fallback",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "content.url-index-backup",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
     }
   ]
 }

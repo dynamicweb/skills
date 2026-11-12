@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "serializer.deserialize.dry-run-replace",
+  "functionId": "serializer.deserialize",
+  "intent": {
+    "proves": "A Replace dry run reports zero failed rows over the intended entries.",
+    "level": "behavioural",
+    "scope": "every entry of the replace manifest"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-serializer-dry-run",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-serializer-dry-run",
+      "operation": "Deserialize",
+      "arguments": {
+        "Mode": "Replace",
+        "IsDryRun": true
+      },
+      "reason": "Deserialize is a POST command; the runner executes read-only checks and has no approved handler for a dry-run command."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-base/references/serializer-reference.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/concepts.md"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/references/deserialize-flow.md"
+    }
+  ]
+}

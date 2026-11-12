@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "id": "content.design-styles.color-schemes",
+  "functionId": "content.design-styles",
+  "intent": {
+    "proves": "At least one color scheme exists.",
+    "level": "configured",
+    "scope": "all color schemes"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-color-schemes",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_color_schemes",
+      "arguments": {}
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "planned",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "System\\Styles\\ColorSchemes",
+        "filter": "*.*",
+        "includeSubfolders": true
+      },
+      "reason": "Folder layout of style config files is not verified on 10.29.8."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/index.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/color-schemes.html"
+    }
+  ]
+}

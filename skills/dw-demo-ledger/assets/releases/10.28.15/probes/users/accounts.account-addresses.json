@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.accounts.account-addresses",
+  "functionId": "users.accounts",
+  "intent": {
+    "proves": "At least one active address is owned by an account rather than by a buyer.",
+    "level": "applied",
+    "scope": "AccessUserAddress rows whose owner is an account group; carrier rows excluded"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-user-addresses-by-user-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_user_addresses_by_user_id",
+      "arguments": {},
+      "reason": "The tool answers one subject id at a time; a whole-host count needs a per-subject enumeration handler that is not implemented."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUserAddress a JOIN AccessUser g ON g.AccessUserId = a.AccessUserAddressUserId WHERE g.AccessUserType = 2 AND g.AccessUserUserAndGroupType = 'SystemAccount' AND ISNULL(a.AccessUserAddressActive,1) = 1 AND ISNULL(a.AccessUserAddressDefaultAddressCustomFields,0) = 0",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html"
+    }
+  ]
+}

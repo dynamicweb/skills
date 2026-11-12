@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "id": "marketing.tracking-statistics.actions",
+  "functionId": "marketing.tracking-statistics",
+  "intent": {
+    "proves": "At least one email action (open or other tracked action) is recorded.",
+    "level": "behavioural",
+    "scope": "all email actions"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-email-campaign-stats",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_email_campaign_stats",
+      "arguments": {},
+      "reason": "Handler not reserved: needs one call per subject (iterate ids from the list tool) and a client-side predicate. Predicate: openingRatePercent > 0."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EmailAction"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/references/dashboard-seeding.md (email statistics and flow schema)"
+    }
+  ]
+}

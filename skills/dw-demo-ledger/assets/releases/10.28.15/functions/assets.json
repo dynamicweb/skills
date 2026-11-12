@@ -1,0 +1,283 @@
+{
+  "schema": 1,
+  "area": "assets",
+  "functions": [
+    {
+      "id": "assets.file-archive",
+      "area": "assets",
+      "name": "File archive (media library)",
+      "description": "The Assets area file archive with Media, System and Design sections; upload, search, organise and download files.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/assets/file-archive.media-files.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#assets.file-archive"
+        }
+      ]
+    },
+    {
+      "id": "assets.upload-policy",
+      "area": "assets",
+      "name": "Upload extension policy",
+      "description": "Allowed and disallowed file extensions for uploads, and the option to disallow upload in the image editor.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/assets/upload-policy.configured.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-asset-governance-story",
+          "when": "The demo shows no file manager or asset governance flow."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#assets.upload-policy"
+        }
+      ]
+    },
+    {
+      "id": "assets.folder-permissions",
+      "area": "assets",
+      "name": "Folder permissions in Assets",
+      "description": "Read, create, edit and delete permissions per folder or section separating editor and implementer access.",
+      "skill": "dw-users-permissions",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/assets/folder-permissions.explicit.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-asset-governance-story",
+          "when": "The demo shows no file manager or asset governance flow."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#assets.folder-permissions"
+        }
+      ]
+    },
+    {
+      "id": "assets.image-handler",
+      "area": "assets",
+      "name": "Image handler (on-the-fly resize, crop, convert)",
+      "description": "GetImage.ashx resizes, crops and converts images (for example to WebP) on request and caches the generated variants.",
+      "skill": "dw-render-razor",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/assets/image-handler.variants-generated.json",
+        "probes/assets/image-handler.resize-serves.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#assets.image-handler"
+        }
+      ]
+    },
+    {
+      "id": "assets.image-handler-settings",
+      "area": "assets",
+      "name": "Image handler settings and providers",
+      "description": "Browser cache max-age, default WebP quality, 404 with alternative image, and the converter, size, attributes, metadata, editor and PDF providers.",
+      "skill": "dw-setup-config",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/assets/image-handler-settings.configured.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "defaults-only",
+          "when": "The demo keeps the default image handler settings and tells no image delivery story."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#assets.image-handler-settings"
+        }
+      ]
+    },
+    {
+      "id": "assets.image-editing",
+      "area": "assets",
+      "name": "Image crop and edit in Assets",
+      "description": "Image overview with preview and crop for supported formats (not SVG), producing a generated image.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/assets/image-editing.crop-available.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-asset-governance-story",
+          "when": "The demo shows no file manager or asset governance flow."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#assets.image-editing"
+        }
+      ]
+    },
+    {
+      "id": "assets.cdn",
+      "area": "assets",
+      "name": "CDN for files and images",
+      "description": "CDN host and CDN image host replacing src attributes for /Files and GetImage requests.",
+      "skill": "dw-setup-config",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/assets/cdn.configured.json",
+        "probes/assets/cdn.rewritten.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-cdn",
+          "when": "The demo is not served through a CDN."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#assets.cdn"
+        }
+      ]
+    },
+    {
+      "id": "assets.digital-assets-folder",
+      "area": "assets",
+      "name": "Digital assets folder",
+      "description": "Files kept under /Files/Digital assets for the Digital Asset Portal, readable and writable by the MCP file tools.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/assets/digital-assets-folder.populated.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-dam-story",
+          "when": "The demo shows no digital asset portal story."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#assets.digital-assets-folder"
+        }
+      ]
+    },
+    {
+      "id": "assets.missing-asset-cleanup",
+      "area": "assets",
+      "name": "Cleanup of missing digital assets",
+      "description": "A scheduled task removes asset references whose files no longer exist in a folder.",
+      "skill": "dw-extend-scheduled-tasks",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/assets/missing-asset-cleanup.scheduled.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-auto-checkin",
+          "when": "The demo does not use automatic asset check-in (pim.asset-auto-checkin)."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#assets.missing-asset-cleanup"
+        }
+      ]
+    },
+    {
+      "id": "assets.content-file-references",
+      "area": "assets",
+      "name": "Content file and image references resolve",
+      "description": "Image and file fields on pages and paragraphs point at files that exist in the archive.",
+      "skill": "dw-content-modelling",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/assets/content-file-references.resolve.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#assets.content-file-references"
+        }
+      ]
+    }
+  ]
+}

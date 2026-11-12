@@ -62,3 +62,8 @@ Reports match assets/report.schema.json and include the lock, compatibility, cap
 PASS proves the specified assertion. FAIL disproves it with a valid observation. ERROR means execution or contract failure. UNVERIFIED means evidence is insufficient. UNSUPPORTED means known incompatible capability/version. DISABLED means a required feature is off. NOT-APPLICABLE means an evidenced allowed exclusion. Aggregate success requires only PASS/NOT-APPLICABLE and at least one evaluated requirement; all other states prevent readiness. Count states separately. ERROR takes precedence, then FAIL, UNSUPPORTED, DISABLED, UNVERIFIED, otherwise PASS.
 
 An exact baseline mismatch blocks normal execution. An explicit diagnostic switch may observe another version, but compatibility.matches remains false and the aggregate cannot be PASS. Baseline claims require baseline measurements. SQL reads owe no cache flush because they do not mutate anything.
+
+The runner reads the public version descriptor again after all checks. A changed
+or unavailable final version sets compatibility.matches to false and records an
+error note; the aggregate cannot be PASS. Individual observations remain available
+for diagnosis, but cannot certify the starting release across a concurrent upgrade.

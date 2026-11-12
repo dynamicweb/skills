@@ -1,0 +1,995 @@
+{
+  "schema": 1,
+  "area": "orders",
+  "functions": [
+    {
+      "id": "orders.shopping-cart-app",
+      "area": "orders",
+      "name": "Shopping cart and checkout on a page",
+      "description": "A content page runs the Shopping Cart app: cart content, addresses, shipping and payment selection, receipt and confirmation email.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/shopping-cart-app.paragraph.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "headless-storefront",
+          "when": "checkout runs in a headless frontend through the Delivery API"
+        },
+        {
+          "id": "catalogue-only",
+          "when": "the demo shows the catalogue with no cart or checkout"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.shopping-cart-app"
+        }
+      ]
+    },
+    {
+      "id": "orders.completed-orders",
+      "area": "orders",
+      "name": "Completed orders from checkout",
+      "description": "Checkout converts a cart into a completed order that appears in the Orders list with an order state. A demo that sells proves it with at least one completed order.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/completed-orders.completed.json",
+        "probes/orders/completed-orders.stateful.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "catalogue-only",
+          "when": "the demo shows the catalogue with no cart or checkout"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.completed-orders"
+        }
+      ]
+    },
+    {
+      "id": "orders.order-processing",
+      "area": "orders",
+      "name": "Back-office order processing",
+      "description": "Orders, Incomplete orders and Carts lists: change flow and state, capture, refund, cancel, delete, edit order lines, shipping documents, receipt and Excel export. Capture and refund depend on the payment provider.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/order-processing.progressed.json",
+        "probes/orders/order-processing.captured.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "erp-fulfilment",
+          "when": "fulfilment and capture are shown in the ERP, not in the back office"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.order-processing"
+        }
+      ]
+    },
+    {
+      "id": "orders.order-flows",
+      "area": "orders",
+      "name": "Order flows and states",
+      "description": "Order flows with states (received, picked, shipped, completed) that orders move through, one default state for new orders.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/order-flows.states.json",
+        "probes/orders/order-flows.default-flow.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.order-flows"
+        }
+      ]
+    },
+    {
+      "id": "orders.state-notifications",
+      "area": "orders",
+      "name": "Order state notification emails",
+      "description": "An order state sends an email (to billing, shipping, an order field address or named others) when an order enters it, for example a shipped mail with a tracking link.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/state-notifications.mailing-state.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.state-notifications"
+        }
+      ]
+    },
+    {
+      "id": "orders.cart-flows",
+      "area": "orders",
+      "name": "Cart flows",
+      "description": "Cart flows with states that carts move through before checkout, for B2B or CPQ carts passed between customer and business.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/cart-flows.states.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "direct-checkout",
+          "when": "carts go straight to checkout with no approval or preparation step"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.cart-flows"
+        }
+      ]
+    },
+    {
+      "id": "orders.named-carts",
+      "area": "orders",
+      "name": "Multiple named carts",
+      "description": "Customers keep several named carts (cart management commands or order contexts) and choose which to check out.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/named-carts.named.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-cart",
+          "when": "buyers work with one cart at a time"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.named-carts"
+        }
+      ]
+    },
+    {
+      "id": "orders.order-contexts",
+      "area": "orders",
+      "name": "Order contexts",
+      "description": "Separate carts on one website (for example a daily and a weekly cart) selected by an OrderContext parameter, optionally limited to a shop. Largely replaced by named carts.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/order-contexts.contexts.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-cart",
+          "when": "buyers work with one cart at a time"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.order-contexts"
+        }
+      ]
+    },
+    {
+      "id": "orders.quotes",
+      "area": "orders",
+      "name": "Quotes",
+      "description": "Customers submit a cart as a quote; staff move it through a quote flow and the customer accepts (converts to an order) or rejects it in the Customer Experience Center.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/quotes.states.json",
+        "probes/orders/quotes.convertible.json",
+        "probes/orders/quotes.submitted.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-quote-story",
+          "when": "the demo story has no request for quote"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.quotes"
+        }
+      ]
+    },
+    {
+      "id": "orders.subscriptions",
+      "area": "orders",
+      "name": "Subscriptions (recurring orders)",
+      "description": "A base order generates orders at an interval (weekly, monthly) between a start and end date; customers and staff can cancel future deliveries.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/subscriptions.base-orders.json",
+        "probes/orders/subscriptions.resolve.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-replenishment",
+          "when": "the demo has no repeat or replenishment story"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.subscriptions"
+        }
+      ]
+    },
+    {
+      "id": "orders.rma",
+      "area": "orders",
+      "name": "Returns (RMA)",
+      "description": "Return, defective and exchange cases raised from an order or by the customer, moved through RMA states, closed, optionally ending in a replacement or refund order.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/rma.states.json",
+        "probes/orders/rma.default-state.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "returns-in-erp",
+          "when": "returns are handled in the ERP"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.rma"
+        }
+      ]
+    },
+    {
+      "id": "orders.rma-notifications",
+      "area": "orders",
+      "name": "RMA email notifications",
+      "description": "Emails sent when an RMA enters a state or an RMA event occurs.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/rma-notifications.configured.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.rma-notifications"
+        }
+      ]
+    },
+    {
+      "id": "orders.ledgers",
+      "area": "orders",
+      "name": "Ledger entries",
+      "description": "Invoices, credit memos and payments, usually imported from the ERP, moved through ledger flows and shown to customers in the Customer Experience Center.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/ledgers.types.json",
+        "probes/orders/ledgers.entries.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-erp-documents",
+          "when": "the demo shows no invoices or other ERP financial documents"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.ledgers"
+        }
+      ]
+    },
+    {
+      "id": "orders.customer-experience-center",
+      "area": "orders",
+      "name": "Customer self-service (Customer Experience Center)",
+      "description": "Logged-in customers see orders, quotes, carts, ledgers and subscriptions, reorder a previous order, accept a quote and, with impersonation, see their customers' orders.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/customer-experience-center.paragraph.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "anonymous-shop",
+          "when": "the demo has no logged-in customers"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.customer-experience-center"
+        }
+      ]
+    },
+    {
+      "id": "orders.favorite-lists",
+      "area": "orders",
+      "name": "Favourite lists",
+      "description": "Customers or staff keep favourite lists per user or user group, with quantities, notes and units, for reorder from the storefront.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/favorite-lists.lists.json",
+        "probes/orders/favorite-lists.paragraph.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.favorite-lists"
+        }
+      ]
+    },
+    {
+      "id": "orders.order-fields",
+      "area": "orders",
+      "name": "Custom order fields",
+      "description": "Custom fields on orders (for example a PO reference, a coupon field or a service checkbox) entered at checkout or by staff.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/order-fields.fields.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.order-fields"
+        }
+      ]
+    },
+    {
+      "id": "orders.order-line-fields",
+      "area": "orders",
+      "name": "Custom order line fields",
+      "description": "Custom fields on order lines, for example a cut length for products sold by the metre.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/order-line-fields.fields.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.order-line-fields"
+        }
+      ]
+    },
+    {
+      "id": "orders.checkout-validation",
+      "area": "orders",
+      "name": "Checkout field validation groups",
+      "description": "Validation groups with rules (required, contains, regex, valid email, valid gift card or voucher) selected on the Shopping Cart app to block a checkout step.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/checkout-validation.ruled.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.checkout-validation"
+        }
+      ]
+    },
+    {
+      "id": "orders.payment-methods",
+      "area": "orders",
+      "name": "Payment methods",
+      "description": "Active payment methods offered at checkout, limited by country and user group, with a manual (invoice) or provider-backed handler.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/payment-methods.active.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "catalogue-only",
+          "when": "the demo shows the catalogue with no cart or checkout"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.payment-methods"
+        }
+      ]
+    },
+    {
+      "id": "orders.payment-providers",
+      "area": "orders",
+      "name": "Payment provider integration",
+      "description": "A payment method uses a checkout handler (for example Stripe, QuickPay, Klarna) that takes card data on the provider's page and reports capture and refund support.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/payment-providers.handler.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "invoice-only",
+          "when": "the demo takes payment on account or invoice only"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.payment-providers"
+        }
+      ]
+    },
+    {
+      "id": "orders.payment-fees",
+      "area": "orders",
+      "name": "Payment fees",
+      "description": "Fixed or percentage payment fees from an order total threshold, optionally per country or region.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/payment-fees.fees.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.payment-fees"
+        }
+      ]
+    },
+    {
+      "id": "orders.saved-cards",
+      "area": "orders",
+      "name": "Saved payment cards",
+      "description": "Customers save cards with a supporting provider, manage them in the Customer Experience Center and receive expiry reminders from a scheduled task.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/saved-cards.paragraph.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "invoice-only",
+          "when": "the demo takes payment on account or invoice only"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.saved-cards"
+        }
+      ]
+    },
+    {
+      "id": "orders.shipping-methods",
+      "area": "orders",
+      "name": "Shipping methods",
+      "description": "Active shipping methods offered at checkout, limited by delivery country, user group, product or group (inclusive or exclusive) and weight.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/shipping-methods.active.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "catalogue-only",
+          "when": "the demo shows the catalogue with no cart or checkout"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.shipping-methods"
+        }
+      ]
+    },
+    {
+      "id": "orders.shipping-fees",
+      "area": "orders",
+      "name": "Shipping fee rules",
+      "description": "Fee rules per shipping method by weight, volume, total, user, group, shop, product, context, country, region, currency or zip, with highest or lowest fee priority.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/shipping-fees.rules.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.shipping-fees"
+        }
+      ]
+    },
+    {
+      "id": "orders.free-shipping",
+      "area": "orders",
+      "name": "Free shipping threshold",
+      "description": "No shipping fee above an order amount, optionally on the price with VAT or after discount; methods marked eligible for free shipping discounts.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/free-shipping.threshold.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.free-shipping"
+        }
+      ]
+    },
+    {
+      "id": "orders.shipping-providers",
+      "area": "orders",
+      "name": "Shipping provider integration",
+      "description": "A shipping method uses a carrier provider app (for example GLS, UPS, PostNord, Shipmondo) for fees, service points or shipping documents.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/shipping-providers.provider.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "fee-rules-only",
+          "when": "shipping fees come from fee rules with no carrier integration"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.shipping-providers"
+        }
+      ]
+    },
+    {
+      "id": "orders.method-countries",
+      "area": "orders",
+      "name": "Payment and shipping per country",
+      "description": "Payment and shipping methods restricted to delivery countries and regions.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/method-countries.relations.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.method-countries"
+        }
+      ]
+    },
+    {
+      "id": "orders.track-and-trace",
+      "area": "orders",
+      "name": "Track and trace",
+      "description": "Tracking URL schemes with parameters filled per order and used in order state emails.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/track-and-trace.schemes.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.track-and-trace"
+        }
+      ]
+    },
+    {
+      "id": "orders.country-vat",
+      "area": "orders",
+      "name": "Country VAT",
+      "description": "VAT rate per country, applied on the billing (or optionally delivery) country; VAT groups override it and system VAT is the fallback.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/country-vat.rated.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "us-sales-tax",
+          "when": "the market uses sales tax through a tax provider instead of VAT"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.country-vat"
+        }
+      ]
+    },
+    {
+      "id": "orders.vat-groups",
+      "area": "orders",
+      "name": "VAT groups",
+      "description": "Differentiated VAT (reduced, exempt) per country through VAT groups assigned to products.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/vat-groups.groups.json",
+        "probes/orders/vat-groups.assigned.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-rate",
+          "when": "every product carries the country VAT rate"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.vat-groups"
+        }
+      ]
+    },
+    {
+      "id": "orders.reverse-charge",
+      "area": "orders",
+      "name": "Reverse charge VAT",
+      "description": "Reverse charge for VAT on B2B cross-border sales, set per country, per VAT group country rate or per user.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/reverse-charge.enabled.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "domestic-only",
+          "when": "the demo sells within one VAT country"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.reverse-charge"
+        }
+      ]
+    },
+    {
+      "id": "orders.tax-providers",
+      "area": "orders",
+      "name": "Sales tax providers",
+      "description": "Tax settings with a provider (flat rate, Avalara AvaTax, Vertex) per country for sales tax and fees on orders.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/tax-providers.active.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "vat-market",
+          "when": "the market uses VAT only"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.tax-providers"
+        }
+      ]
+    },
+    {
+      "id": "orders.address-validation",
+      "area": "orders",
+      "name": "Address validation",
+      "description": "Address validators per country validate checkout and user addresses, mainly for US tax. The manual states no validation provider ships for DW10; Vertex validates addresses inside its tax provider.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/address-validation.active.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-provider",
+          "when": "no address validation provider is installed (the 10.29.8 default)"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.address-validation"
+        }
+      ]
+    },
+    {
+      "id": "orders.cart-settings",
+      "area": "orders",
+      "name": "Shopping cart behaviour settings",
+      "description": "Global cart settings: recalculate on login, auto-select single methods, skip zero payment, anonymous cart merge on login, cart isolation, reorder recalculation, cart lifetime and session timeout, saved for later.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/cart-settings.declared.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.cart-settings"
+        }
+      ]
+    },
+    {
+      "id": "orders.order-numbering",
+      "area": "orders",
+      "name": "Order numbering",
+      "description": "Auto-numbering series for orders, carts, quotes, recurring orders and ledger entries, with prefix and postfix.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/order-numbering.series.json",
+        "probes/orders/order-numbering.ahead.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.order-numbering"
+        }
+      ]
+    },
+    {
+      "id": "orders.order-export",
+      "area": "orders",
+      "name": "Order export to ERP",
+      "description": "Completed orders are flagged as exported when the ERP integration (batch or live) has picked them up; staff also export order lists to Excel.",
+      "skill": "dw-commerce-orders",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/orders/order-export.exported.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-erp",
+          "when": "the demo has no ERP integration"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg"
+        },
+        {
+          "kind": "source",
+          "ref": "evidence/admission.json#orders.order-export"
+        }
+      ]
+    }
+  ]
+}
