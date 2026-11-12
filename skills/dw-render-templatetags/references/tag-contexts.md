@@ -20,9 +20,10 @@ of these five names is misspelled". A table of blanks reads as the former and is
 
 **Prove the names from the renderer before concluding the context is empty.** Each notification and
 module context is built by one renderer class that sets its tags by literal string; enumerate those
-literals (read the renderer in the Dynamicweb source, or its IL) and compare them with what the
-template asks for. See [dw-source-explorer](../../dw-source-explorer/SKILL.md) for reaching the
-source.
+literals (read the renderer's IL from the installed assembly, or its source when you have access
+to it) and compare them with what the template asks for. See
+[dw-source-explorer](../../dw-source-explorer/SKILL.md) for what is public and how to read the
+assembly.
 
 The names do not follow one convention across entities, so guessing from the entity name is the
 trap rather than the shortcut — §2 is the worked case.

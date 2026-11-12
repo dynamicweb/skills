@@ -4,7 +4,7 @@ type: knowledge
 group: source
 mcp: none
 dynamo: false
-description: 'Browse Dynamicweb source on GitHub for API internals and extension points. Triggers: find classes/methods, understand implementation before coding. MCP tool implementation -> dw-extend-mcp-tools.'
+description: 'Find Dynamicweb API internals and extension points from NuGet package metadata, the release changelog and the public GitHub repositories. Triggers: find classes/methods, understand implementation before coding. MCP tool implementation -> dw-extend-mcp-tools.'
 ---
 
 # Dynamicweb Source Explorer
@@ -17,77 +17,135 @@ description: 'Browse Dynamicweb source on GitHub for API internals and extension
 
 ## Purpose
 
-Navigate the Dynamicweb open-source repositories on GitHub to understand internal APIs, discover available classes/methods, and find implementation patterns. This replaces the need for a local Dynamicweb source checkout.
+Find what Truvio Commerce (powered by Dynamicweb) exposes to code: which classes, methods,
+services and extension points exist in a given version, and what changed between versions. The
+platform source is not public, so the answer comes from what is published: the NuGet packages,
+the release changelog, the documentation and a handful of public repositories.
 
 ## When to Use
 
 - Before creating a new MCP tool, to find the right Dynamicweb API to wrap
 - When a tool is failing and you need to understand the internal behavior
 - When you need to discover what services, entities, or extension points exist
-- When documentation on `doc.dynamicweb.dev` is insufficient and you need source-level understanding
+- When documentation on `doc.dynamicweb.dev` is insufficient and you need the exact surface of a version
 
-## Dynamicweb GitHub Repositories
+## What is public and what is not
 
-The Dynamicweb platform source code is split across multiple repositories under `https://github.com/dynamicweb/`:
+**The platform source (`Dynamicweb`, `Dynamicweb.Core`, `Dynamicweb.Ecommerce` and the other
+platform assemblies) is not on public GitHub.** Reading it needs access granted by Dynamicweb.
+Measured 2026-11-12 with unauthenticated requests to `api.github.com/repos/dynamicweb/<repo>`:
+`dynamicweb-core` and `dynamicweb-ecommerce` answer 404, and `DynamicWeb` is the feature-request
+repository (`.github`, `LICENSE`, `README.md`, no code). Do not build a
+`raw.githubusercontent.com` URL to a platform class: it returns 404, and a guess at the
+implementation is not a finding. When a question can only be settled by the implementation, say
+so and ask whoever has that access.
 
-| Repository | NuGet Package | Contains |
-|------------|---------------|----------|
-| `dynamicweb` | `Dynamicweb` | Core platform: content, pages, areas, users, security |
-| `dynamicweb-core` | `Dynamicweb.Core` | Base utilities, extensibility, caching, logging |
-| `dynamicweb-ecommerce` | `Dynamicweb.Ecommerce` | Products, categories, orders, pricing, discounts, shops |
+Work down the public routes in this order.
 
-### Key Namespaces by Area
+### 1. NuGet package metadata (the exact API surface of a version)
 
-| Area | Namespace | Typical Location |
-|------|-----------|------------------|
-| Products | `Dynamicweb.Ecommerce.Products` | `dynamicweb-ecommerce/src/Dynamicweb.Ecommerce/Products/` |
-| Orders | `Dynamicweb.Ecommerce.Orders` | `dynamicweb-ecommerce/src/Dynamicweb.Ecommerce/Orders/` |
-| Pricing | `Dynamicweb.Ecommerce.Prices` | `dynamicweb-ecommerce/src/Dynamicweb.Ecommerce/Prices/` |
-| Discounts | `Dynamicweb.Ecommerce.Products.Discounts` | `dynamicweb-ecommerce/src/Dynamicweb.Ecommerce/Products/Discounts/` |
-| Categories | `Dynamicweb.Ecommerce.Products.Categories` | `dynamicweb-ecommerce/src/Dynamicweb.Ecommerce/Products/Categories/` |
-| Shops | `Dynamicweb.Ecommerce.Shops` | `dynamicweb-ecommerce/src/Dynamicweb.Ecommerce/Shops/` |
-| Content/Pages | `Dynamicweb.Content` | `dynamicweb/src/Dynamicweb/Content/` |
-| Users | `Dynamicweb.Security` | `dynamicweb/src/Dynamicweb/Security/` |
-| Indexing | `Dynamicweb.Indexing` | `dynamicweb-core/src/Dynamicweb.Core/Indexing/` |
-| Extensibility | `Dynamicweb.Extensibility` | `dynamicweb-core/src/Dynamicweb.Core/Extensibility/` |
+Every platform assembly ships on nuget.org with its XML documentation file. The package is a zip:
+download it, unpack it, and read the assembly with `MetadataReader`, which lists types and members
+without loading the assembly or its dependencies
+([`references/assembly-introspection.md`](references/assembly-introspection.md) explains why
+`Assembly.LoadFrom` fails here).
 
-## How to Browse Source
+```powershell
+$id = 'Dynamicweb.Ecommerce'; $version = '<version the solution runs>'; $work = '<empty work folder>'
+$lower = $id.ToLowerInvariant()
+Invoke-WebRequest "https://api.nuget.org/v3-flatcontainer/$lower/$version/$lower.$version.nupkg" -OutFile "$work\$lower.zip"
+Expand-Archive "$work\$lower.zip" "$work\$lower" -Force
+$dll = Get-ChildItem "$work\$lower\lib" -Recurse -Filter "$id.dll" | Select-Object -First 1
 
-### Using WebFetch on GitHub
-
-Fetch raw source files directly:
-```
-https://raw.githubusercontent.com/dynamicweb/{repo}/main/{path-to-file}
-```
-
-Example -- read the Product class:
-```
-https://raw.githubusercontent.com/dynamicweb/dynamicweb-ecommerce/main/src/Dynamicweb.Ecommerce/Products/Product.cs
-```
-
-### Using GitHub API for Directory Listing
-
-List files in a directory:
-```
-https://api.github.com/repos/dynamicweb/{repo}/contents/{path}
-```
-
-Example -- list files in the Products directory:
-```
-https://api.github.com/repos/dynamicweb/dynamicweb-ecommerce/contents/src/Dynamicweb.Ecommerce/Products
+Add-Type -AssemblyName System.Reflection.Metadata -ErrorAction SilentlyContinue
+$stream = [System.IO.File]::OpenRead($dll.FullName)
+try {
+  $pe = [System.Reflection.PortableExecutable.PEReader]::new($stream)
+  $mr = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($pe)
+  foreach ($h in $mr.TypeDefinitions) {
+    $td = $mr.GetTypeDefinition($h)
+    $name = '{0}.{1}' -f $mr.GetString($td.Namespace), $mr.GetString($td.Name)
+    if ($name -ne 'Dynamicweb.Ecommerce.Products.ProductService') { continue }   # or print every $name
+    $td.GetMethods() | ForEach-Object {
+      $m = $mr.GetMethodDefinition($_)
+      if ($m.Attributes -band [System.Reflection.MethodAttributes]::Public) { $mr.GetString($m.Name) }
+    } | Sort-Object -Unique
+  }
+} finally { $pe.Dispose(); $stream.Dispose() }
 ```
 
-### Using GitHub Search
+- `https://api.nuget.org/v3-flatcontainer/<lowercase id>/index.json` lists the published versions.
+  Take the version from the solution (its `.csproj` or the installed assembly), never from memory.
+- `<Assembly>.xml` next to the DLL holds the summaries and parameter descriptions of the public
+  members: search it for the member name.
+- Run the same recipe on two versions and compare the output to see what a release added or
+  removed.
+- Metadata answers "does it exist and what is its signature". It does not answer "what does the
+  body do" or "why is this provider not selected"; see the reference before concluding a
+  capability is missing.
 
-Search across a repository:
+### 2. The release changelog API
+
+`https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/<n>` answers
+without authentication with a JSON array of releases, each with `version`, `isReleased` and
+`workItems` (`title`, `id`, `type`, `area`). `<n>` is a number that selects a release line, `1`
+being the newest; on 2026-11-12, `1` held the 10.30 line and `2` the 10.29 line. Read the
+`version` values in the answer to confirm which line you got, since the numbering shifts when a
+new line ships. A version string in place of the number answers 400. Use it to find the work
+item behind a behavior change, then confirm the change in the package metadata.
+
+### 3. The documentation
+
+`doc.dynamicweb.dev` carries the API reference and the extensibility guides. The lookup
+discipline is in `dw-source-doc-lookup`.
+
+### 4. Public repositories under `github.com/dynamicweb`
+
+These are public and hold code (unauthenticated org listing, 2026-11-12; default branch `main`
+on each). They cover the storefront, the tooling and some providers, not the platform.
+
+| Repository | Contains |
+|------------|----------|
+| `Swift` | The Swift 2 design: Razor templates, item types and its project file |
+| `swift-demo-data` | The `Files` content of the Swift demo |
+| `BasicDesign` | A basic design: templates for content, navigation, ecommerce and users |
+| `CLI` | The `dw` command line tool |
+| `CheckoutHandlers.AuthorizeNetApi`, `CheckoutHandlers.KlarnaCheckout` | Checkout handler providers in C# |
+| `Shipping.UPS` | A shipping provider in C# |
+| `DataIntegration.LiveIntegration` | The live integration add-in in C# |
+| `Samples` | Extensibility samples in C# |
+| `Summit2022_APILandscape`, `Summit2022_ExtendingTheUI` | Conference samples for the APIs and the administration UI |
+| `NetStandardIntellisenseProject` | A project that gives template IntelliSense |
+
+The provider repositories are the closest public example of how a provider or add-in is written
+against the platform. The listing changes: read
+`https://api.github.com/orgs/dynamicweb/repos?per_page=100` before relying on a name, and treat a
+404 as "not public", not as a typo to work around.
+
+Reading them:
+
 ```
-https://api.github.com/search/code?q={query}+repo:dynamicweb/{repo}
+https://api.github.com/repos/dynamicweb/{repo}/contents/{path}           # directory listing
+https://raw.githubusercontent.com/dynamicweb/{repo}/main/{path-to-file}  # one file
 ```
 
-Example -- find all classes implementing `IDiscount`:
-```
-https://api.github.com/search/code?q=IDiscount+repo:dynamicweb/dynamicweb-ecommerce
-```
+The unauthenticated GitHub API allows 60 requests an hour; raw file fetches do not count against
+it. Code search (`api.github.com/search/code`) requires authentication.
+
+## Key Namespaces by Area
+
+| Area | Namespace | Package |
+|------|-----------|---------|
+| Products | `Dynamicweb.Ecommerce.Products` | `Dynamicweb.Ecommerce` |
+| Orders | `Dynamicweb.Ecommerce.Orders` | `Dynamicweb.Ecommerce` |
+| Pricing | `Dynamicweb.Ecommerce.Prices` | `Dynamicweb.Ecommerce` |
+| Discounts | `Dynamicweb.Ecommerce.Products.Discounts` | `Dynamicweb.Ecommerce` |
+| Categories | `Dynamicweb.Ecommerce.Products.Categories` | `Dynamicweb.Ecommerce` |
+| Shops | `Dynamicweb.Ecommerce.Shops` | `Dynamicweb.Ecommerce` |
+| Content/Pages | `Dynamicweb.Content` | `Dynamicweb` |
+| Users | `Dynamicweb.Security` | `Dynamicweb` |
+| Indexing | `Dynamicweb.Indexing` | `Dynamicweb.Core` |
+| Extensibility | `Dynamicweb.Extensibility` | `Dynamicweb.Core` |
 
 ## Exploration Workflow
 
@@ -100,28 +158,32 @@ https://api.github.com/search/code?q=IDiscount+repo:dynamicweb/dynamicweb-ecomme
    Dynamicweb.Ecommerce.Services.Languages
    Dynamicweb.Ecommerce.Services.Shops
    ```
-   Browse `https://api.github.com/repos/dynamicweb/dynamicweb-ecommerce/contents/src/Dynamicweb.Ecommerce/Services` to see all available service classes.
+   List the members of the `Dynamicweb.Ecommerce.Services` type from the package metadata to see
+   every service the version carries.
 
-2. **Read the service interface** -- most services have an interface (e.g., `IProductService`) that documents available methods.
+2. **Read the service type** -- list its public methods from the metadata and read their
+   summaries in the XML documentation file.
 
-3. **Check the entity class** -- understand the domain model properties and methods (e.g., `Product.cs`, `Order.cs`).
+3. **Check the entity class** -- its public properties are the domain model (e.g. `Product`,
+   `Order`).
 
 4. **Look at existing tools in this project** -- check `*/Tools/` and `*/Services/` for patterns already established.
 
 ### Understanding an Entity's Properties
 
-1. Fetch the entity class from GitHub
+1. List the entity type's members from the package metadata
 2. Look for public properties (these are what your model should map)
 3. Check for `Save()` methods or service methods that persist the entity
-4. Note any special behavior (computed properties, required fields, validation)
+4. Read the XML documentation for special behavior (computed properties, required fields); what
+   it does not state, measure on a running solution rather than assume
 
 ### Finding Extension Points
 
-1. Search for `AddInManager`, `Provider`, or `abstract class` in the relevant namespace
-2. Check `Dynamicweb.Extensibility` for base classes and attributes
-3. Look for `[AddInName]`, `[AddInParameter]` attributes on existing implementations
+1. List the types in `Dynamicweb.Extensibility` and the abstract `*Provider` types in the relevant namespace
+2. Read a public provider (`CheckoutHandlers.*`, `Shipping.UPS`) for a complete implementation,
+   including its `[AddInName]` and `[AddInParameter]` attributes
 
-## Common Patterns in Dynamicweb Source
+## Common Patterns in the Dynamicweb API
 
 ### Static Service Facades
 ```csharp
@@ -147,9 +209,6 @@ var reader = Database.CreateDataReader(cmd);
 
 ## Tips
 
-- GitHub API has rate limits (60 requests/hour unauthenticated). Batch your exploration.
-- Raw file fetching (`raw.githubusercontent.com`) does not count against the API rate limit.
-- If a repository structure is unclear, start with the `.csproj` file to see the namespace root.
-- The `main` branch is the default for all Dynamicweb repositories.
-- NuGet package versions in this project's `.csproj` correspond to tagged releases in the GitHub repos.
-
+- Pin every lookup to the version the solution runs; a member present in the newest package may not exist there.
+- A provider repository's `.csproj` names the platform package versions it was built against.
+- State where a finding came from (package and version, changelog work item, documentation page, repository file) so the next reader can repeat it.

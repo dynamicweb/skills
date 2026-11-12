@@ -3,6 +3,11 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.4]
+
+- `dw-source-explorer`: the platform source is not on public GitHub (`dynamicweb-core` and `dynamicweb-ecommerce` answer 404 unauthenticated, `DynamicWeb` is the feature-request repository with no code). The skill now leads with the public routes: NuGet package metadata read with `MetadataReader`, the release changelog API and the documentation, then a table of the repositories that are public and hold code. `dw-extend-mcp-tools`, the tag-contexts reference and the README no longer point at platform source on GitHub.
+- `setup_website_chrome` is a restricted migration tool, measured on MCP 0.6.5-beta: absent from `tools/list` under Full access, present once the configuration is granted it by name. `dw-swift-page-design` no longer says no grant adds it; `dw-swift-upgrade` and the `dw-swift-migrate-site` content-rebuild reference carry the same measurement.
+
 ## [6.8.3]
 
 - `dw-demo-pim`: a Data Integration load with the build's own product ids as a product step (full virtual path in `Source file`), the three conditions for a completeness worklist on a blank base and what a session without a user does about the feature flag, and a table of the Management API routes for PIM writes that have no MCP tool.
