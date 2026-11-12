@@ -7,6 +7,19 @@ PowerShell 7. Owning reference: ../references/contract.md. Imports the shared AP
 . ./Ledger.Transport.ps1
 #>
 #Requires -Version 7.0
+function Get-LedgerObservedVersion {
+    param([string]$BaseUrl,[switch]$AllowSelfSignedCertificate)
+    if(-not $BaseUrl){return $null}
+    $skip=$AllowSelfSignedCertificate -or $BaseUrl -match '^https?://(localhost|127\.0\.0\.1)([:/]|$)'
+    try {
+        $spec=Invoke-RestMethod -Uri ($BaseUrl.TrimEnd('/')+'/admin/api/api.json') -TimeoutSec 20 -SkipCertificateCheck:$skip
+        return [string]$spec.info.version
+    }catch{return $null}
+}
+function Test-LedgerStableVersion {
+    param([string]$Before,[string]$After)
+    return -not [string]::IsNullOrWhiteSpace($Before) -and -not [string]::IsNullOrWhiteSpace($After) -and $Before -ceq $After
+}
 function Get-LedgerCapabilities {
     param([string]$BaseUrl,[string]$ApiToken,[string]$McpToken,[string]$SqlServer,[string]$FilesPath,[switch]$AllowSelfSignedCertificate)
     $cap=@{schema=1;dwVersion=$null;discoveredAt=[DateTimeOffset]::UtcNow.ToString('o');mcp=@{available=$false;tools=@()};adminApi=@{available=$false;authenticated=$false;queries=@()};dwapi=@{available=$false};file=@{available=$false;local=$false};sql=@{available=$false;localOnly=$true};facts=@{};errors=@()}

@@ -104,6 +104,13 @@ Describe 'Matrix evidence is exact and has red controls' {
     }
 }
 Describe 'New capability reads never manufacture a pass' {
+    It 'rejects a concurrent upgrade or an unavailable final version' {
+        Test-LedgerStableVersion '10.28.15+build' '10.28.15+build' | Should -BeTrue
+        Test-LedgerStableVersion '10.28.15+build' '10.29.8+build' | Should -BeFalse
+        Test-LedgerStableVersion '10.28.15+build' '' | Should -BeFalse
+        Test-LedgerStableVersion '' '' | Should -BeFalse
+        Test-LedgerStableVersion '10.28.15+one' '10.28.15+two' | Should -BeFalse
+    }
     It 'keeps every other new behaviour unverified and its threshold has a red control' {
         $release=Join-Path $PSScriptRoot '../../assets/releases/10.29.8'
         $delta=Read-LedgerJson (Join-Path $release 'delta.json')
