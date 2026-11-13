@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "commerce.default-price.priced-products",
+  "functionId": "commerce.default-price",
+  "intent": {
+    "proves": "At least one active product has a default price above zero.",
+    "level": "applied",
+    "scope": "all active product rows in every language and variant"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_products",
+      "reason": "get_products is paged and its list projection is not proven to carry the default price for every row; a complete enumeration handler is not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomProducts WHERE ProductPrice > 0 AND ProductActive = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html"
+    }
+  ]
+}

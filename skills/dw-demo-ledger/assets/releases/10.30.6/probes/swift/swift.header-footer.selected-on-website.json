@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "swift.header-footer.selected-on-website",
+  "functionId": "swift.header-footer",
+  "intent": {
+    "proves": "Every active website selects a header and a footer page in its layout settings.",
+    "level": "configured",
+    "scope": "active areas"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-page-item-field-values",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-attributes",
+      "operation": "get_page_item_field_values",
+      "arguments": {},
+      "reason": "The website settings item field names for header and footer are not verified; needs a field projection."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/design/header-and-footer.html"
+    }
+  ]
+}

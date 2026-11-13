@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.languages.translated-products",
+  "functionId": "pim.languages",
+  "intent": {
+    "proves": "At least one product has a row in a language other than the default.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-translated-products",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-translated-products",
+      "operation": "get_products",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT p.ProductId) FROM EcomProducts p WHERE p.ProductLanguageId <> N'{lang}' AND ISNULL(p.ProductVariantId, N'') = N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#languages/translated-products"
+    }
+  ]
+}

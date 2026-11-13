@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "search.free-text-search.term-returns-products",
+  "functionId": "search.free-text-search",
+  "intent": {
+    "proves": "A declared search term returns at least one product on the storefront.",
+    "level": "behavioural",
+    "scope": "one declared term per demo language"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-dwapi-ecommerce-products-search",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-count",
+      "operation": "ecommerce/products/search",
+      "reason": "Measured on a blank base-only 10.29.8 host (2026-11-13, anonymous GET): the route needs a repository and query or a group (400 without them), and a host without products cannot show the row projection; also needs a declared search term from the build."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/productsearch.html"
+    }
+  ]
+}

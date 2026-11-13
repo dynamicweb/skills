@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.data-models.folder",
+  "functionId": "pim.data-models",
+  "intent": {
+    "proves": "The PIM shop holds at least one data-model folder (GroupType 1) in the default language.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-folder",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-folder",
+      "operation": "get_shops",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomGroups g WHERE g.GroupType = 1 AND g.GroupLanguageId = N'{lang}' AND EXISTS (SELECT 1 FROM EcomShopGroupRelation r WHERE r.ShopGroupGroupId = g.GroupId AND r.ShopGroupShopId = N'{pimShop}')"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#data-models/folder"
+    }
+  ]
+}

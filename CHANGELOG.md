@@ -3,6 +3,13 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.7]
+
+- `dw-demo-ledger` snapshot **10.30.6** (revision 1), the release delta 10.29.8 to 10.30.6. The raw scan (`Find-DwReleaseFunctions.ps1`: the three platform packages of both versions, the 10.30 changelog through 10.30.6, and the schema of one database before and after its upgrade) found 363 candidates; `delta-review.json` gives each a disposition: 63 support two added functions, 46 enhance 26 existing functions, 254 are rejected with a reason. Every 10.29.8 revision 7 function, check, ground and coverage claim is carried over unchanged; no function or check is removed.
+- Added `commerce.price-groups` (attribute-based pricing: customer price groups, customer and product discount groups) with two SQL checks and fixture red controls, and `orders.bc-invoices` (Business Central invoices in the Customer Experience Center) with a planned check, because its module system name is not measured.
+- Release reviews recorded where a 10.30 change touches what a check reads: matrix language inheritance and per-column shared values (the six matrix checks are unchanged; `matrix-fields.md` and `delta.json` limitations), the removed Searchv1 wiring (no check binds it), the widened `Area.AreaDomain`, and the index build-state corrections.
+- The carried checks were run read-only on 10.30.6 hosts. The tests (`Corrections`, `Integrity`, `Layout`) now cover the 10.30.6 snapshot too.
+
 ## [6.8.6]
 
 - `dw-demo-ledger` snapshot revisions: 10.29.8 revision 7 and 10.28.15 revision 4. Both digests change, so every build lock on an earlier revision needs a re-lock with `Update-DwLedgerLock.ps1` (release process, "Re-locking an existing build").

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "swift.style-wiring.area-wired",
+  "functionId": "swift.style-wiring",
+  "intent": {
+    "proves": "No active website lacks a colour scheme collection, a typography or a button style.",
+    "level": "configured",
+    "scope": "active areas"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "sql-offenders",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "query": "SELECT AreaID FROM Area WHERE AreaActive = 1 AND (AreaColorSchemeGroupId IS NULL OR AreaColorSchemeGroupId = '' OR AreaTypographyId IS NULL OR AreaTypographyId = '' OR AreaButtonStyleId IS NULL OR AreaButtonStyleId = '')",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-data-access/references/recipes-swift.md"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/references/integrity-sweep.md"
+    }
+  ]
+}

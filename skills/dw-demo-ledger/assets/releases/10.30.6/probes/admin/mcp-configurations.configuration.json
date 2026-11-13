@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "admin.mcp-configurations.configuration",
+  "functionId": "admin.mcp-configurations",
+  "intent": {
+    "proves": "At least one MCP configuration exists.",
+    "level": "configured",
+    "scope": "MCP configurations"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-tools-list",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-tools-list",
+      "reason": "A working MCP call proves a granted configuration; reading tools/list is discovery, not a reserved handler."
+    },
+    {
+      "id": "admin-api-admin-mcp-configurations",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-mcp-configurations",
+      "reason": "The configuration list query is unverified."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/mcp-configurations.html"
+    }
+  ]
+}

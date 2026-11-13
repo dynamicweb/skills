@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "content.content-translation.pages-translated",
+  "functionId": "content.content-translation",
+  "intent": {
+    "proves": "At least one language-layer page has a menu text different from its master page.",
+    "level": "applied",
+    "scope": "non-deleted pages on language layers with a resolvable master page"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-translatable-content",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-text-differs",
+      "operation": "get_translatable_content",
+      "arguments": {},
+      "reason": "Requires paging through every unit per area and a comparison with the master; handler not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Page p JOIN Page m ON m.PageId = p.PageMasterPageId WHERE p.PageDeleted = 0 AND m.PageDeleted = 0 AND ISNULL(p.PageMasterPageId, 0) > 0 AND ISNULL(p.PageMenuText, N'') <> ISNULL(m.PageMenuText, N'')"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/languagemanagement.html"
+    }
+  ]
+}

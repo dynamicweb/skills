@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "integration.pim-bc-connector.api-key",
+  "functionId": "integration.pim-bc-connector",
+  "intent": {
+    "proves": "An API key for the connector exists.",
+    "level": "configured",
+    "scope": "all API keys"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-apikeysall",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "ApiKeysAll",
+      "reason": "Admin query name and a key-name predicate not verified; API keys are named by the person who creates them."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/index.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/dynamicwebPIM-BCConnector.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/DynamicWebPIM-BCConnector/dynamicwebPIM-BCConnector-Use-guide.html"
+    }
+  ]
+}

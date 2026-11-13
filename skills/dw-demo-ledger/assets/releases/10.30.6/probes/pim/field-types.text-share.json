@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "pim.field-types.text-share",
+  "functionId": "pim.field-types",
+  "intent": {
+    "proves": "The share of category fields stored as a text type (field types 1, 10, 11, 12 and 13) stays at or under the limit, in percent.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "le",
+    "value": 100
+  },
+  "bindings": [
+    {
+      "id": "mcp-text-share",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-field-text-share",
+      "operation": "get_product_category_fields",
+      "arguments": {},
+      "reason": "Live parity review found category-field projection differs from complete stored-field scope or omits presentation. Do not claim equivalence."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT ISNULL(100 * SUM(CASE WHEN FieldType IN (1, 10, 11, 12, 13) THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 100) FROM EcomProductCategoryField WHERE FieldCategoryId <> N'reference_category'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-types/text-share"
+    }
+  ]
+}

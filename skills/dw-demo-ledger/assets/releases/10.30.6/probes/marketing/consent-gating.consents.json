@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "marketing.consent-gating.consents",
+  "functionId": "marketing.consent-gating",
+  "intent": {
+    "proves": "At least one consent record exists.",
+    "level": "applied",
+    "scope": "all consent records, any status"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM DataProcessingConsent"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.Core 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

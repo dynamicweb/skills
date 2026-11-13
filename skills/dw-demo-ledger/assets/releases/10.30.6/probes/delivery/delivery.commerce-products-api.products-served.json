@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.commerce-products-api.products-served",
+  "functionId": "delivery.commerce-products-api",
+  "intent": {
+    "proves": "GET /dwapi/ecommerce/products/search returns products for a group in the build currency, country and language.",
+    "level": "behavioural",
+    "scope": "the build productScope group; anonymous unless a persona is named"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-count",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-count",
+      "operation": "ecommerce/products/search",
+      "reason": "Measured on a blank base-only 10.29.8 host (2026-11-13, anonymous GET): 400 \"Specify Repository and QueryName or specify a group ID\" without arguments; the host has no product group or repository, so the row projection of a served result is not measured."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html"
+    }
+  ]
+}

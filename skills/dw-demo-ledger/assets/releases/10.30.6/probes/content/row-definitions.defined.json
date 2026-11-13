@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "id": "content.row-definitions.defined",
+  "functionId": "content.row-definitions",
+  "intent": {
+    "proves": "The website's layout offers at least one row definition.",
+    "level": "supported",
+    "scope": "row definitions of each active website's layout"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-row-definitions",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_row_definitions",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "planned",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "Templates\\Designs",
+        "filter": "RowDefinitions*.json",
+        "includeSubfolders": true
+      },
+      "reason": "Two documented layouts (a RowDefinitions.json file or a folder of definition files) under a design-dependent path; the file pattern is not verified on 10.29.8."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/Grid.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/LayoutDiscoveryTools.cs"
+    }
+  ]
+}

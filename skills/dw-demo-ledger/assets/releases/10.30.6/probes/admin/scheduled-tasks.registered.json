@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "id": "admin.scheduled-tasks.registered",
+  "functionId": "admin.scheduled-tasks",
+  "intent": {
+    "proves": "At least one top-level scheduled task is registered.",
+    "level": "configured",
+    "scope": "top-level tasks (no parent task); every row, enabled or not"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-scheduled-tasks",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_scheduled_tasks",
+      "arguments": {
+        "includeSubTasks": false
+      }
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM ScheduledTask WHERE TaskParentId IS NULL"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/reports.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduled-task-settings.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-extend-scheduled-tasks/references/scheduler-rows-and-runs.md"
+    }
+  ]
+}

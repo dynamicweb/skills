@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "id": "users.backend-roles.section-grants",
+  "functionId": "users.backend-roles",
+  "intent": {
+    "proves": "At least one user group holds a Read-or-higher grant on a backend area (Section entity).",
+    "level": "configured",
+    "scope": "UnifiedPermission rows with PermissionName Section and a group principal; levels are the sparse enum (Read = 4)"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-area-permissions",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_area_permissions",
+      "arguments": {},
+      "reason": "get_area_permissions reads content website areas, not backend Section grants; no MCP read covers Section entities."
+    },
+    {
+      "id": "admin-permissionsbyquery",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "PermissionsByQuery",
+      "arguments": {},
+      "reason": "Admin permission read verb named in dw-data-access recipes; response projection not measured."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM UnifiedPermission WHERE PermissionName = 'Section' AND PermissionLevel >= 4 AND PermissionUserId NOT IN ('Anonymous','AuthenticatedFrontend','Administrator')",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html"
+    }
+  ]
+}

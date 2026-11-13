@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "id": "integration.run-and-log.last-run-ok",
+  "functionId": "integration.run-and-log",
+  "intent": {
+    "proves": "No activity's last run failed or completed with errors.",
+    "level": "behavioural",
+    "scope": "all activities that have run"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-integration-activity-status",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_integration_activity_status",
+      "arguments": {},
+      "reason": "Per-activity status read (lastRunStatus, lastSuccessfulRun) measured on 10.29.8; needs a handler that enumerates activities and reads each status. Not get_integration_activity_logs: it reported no run log for a completed run. Predicate: lastRunStatus in Failed, CompletedWithError."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Integration/Tools (IntegrationActivityTools.cs, IntegrationEndpointTools.cs, IntegrationMappingTools.cs, IntegrationProviderTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-integration-framework/SKILL.md"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}

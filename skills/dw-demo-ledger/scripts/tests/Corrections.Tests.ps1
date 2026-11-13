@@ -13,7 +13,7 @@ $env:LEDGER_TEST_SQLSERVER='.\SQLEXPRESS'; Invoke-Pester -Path scripts/tests/Cor
 param()
 BeforeDiscovery {
     $script:noSql=-not $env:LEDGER_TEST_SQLSERVER
-    $script:versions=@('10.29.8','10.28.15')
+    $script:versions=@('10.30.6','10.29.8','10.28.15')
 }
 BeforeAll {
     foreach($file in @('Ledger.Core.ps1','Ledger.Observations.ps1','Ledger.Sql.ps1','Pim.Fields.ps1','Ledger.Transport.ps1','Ledger.Execute.ps1')){. (Join-Path $PSScriptRoot "../$file")}
@@ -227,6 +227,31 @@ Describe 'An authorisation refusal falls back; an observation never does' {
         Should -Invoke Get-LedgerFileObservation -Times 0
     }
 }
+Describe 'Price and discount group checks (10.30.6 addition)' {
+    BeforeAll {
+        $script:cpg=@('CustomerPriceGroupId','CustomerPriceGroupIsActive');$script:cdg=@('CustomerDiscountGroupId','CustomerDiscountGroupIsActive');$script:pdg=@('ProductDiscountGroupId','ProductDiscountGroupIsActive')
+        $script:price=@('PriceId','PriceCustomerPriceGroupId','PriceCustomerDiscountGroupId','PriceProductDiscountGroupId')
+        function G([string[]]$Columns,[string[]]$Rows){if($Rows.Count){T $Columns $Rows}else{T $Columns @("N'', 0") -Empty}}
+    }
+    It 'groups-defined counts active groups of any of the three kinds and fails on none or inactive ones' -Skip:$noSql {
+        $c=Get-Probe '10.30.6' 'probes/commerce/price-groups.groups-defined.json'
+        (Invoke-ProbeFixture $c @{EcomCustomerPriceGroups=(G $cpg @());EcomCustomerDiscountGroups=(G $cdg @());EcomProductDiscountGroups=(G $pdg @("N'PDG1', 1"))}).result | Should -Be PASS
+        (Invoke-ProbeFixture $c @{EcomCustomerPriceGroups=(G $cpg @("N'CPG1', 1"));EcomCustomerDiscountGroups=(G $cdg @());EcomProductDiscountGroups=(G $pdg @())}).result | Should -Be PASS
+        $r=Invoke-ProbeFixture $c @{EcomCustomerPriceGroups=(G $cpg @("N'CPG1', 0"));EcomCustomerDiscountGroups=(G $cdg @("N'CDG1', 0"));EcomProductDiscountGroups=(G $pdg @())}
+        $r.value | Should -Be 0;$r.result | Should -Be FAIL
+    }
+    It 'prices-targeted needs a price row on an existing active group' -Skip:$noSql {
+        $c=Get-Probe '10.30.6' 'probes/commerce/price-groups.prices-targeted.json'
+        $groups=@{EcomCustomerPriceGroups=(G $cpg @("N'CPG1', 1","N'OLD', 0"));EcomCustomerDiscountGroups=(G $cdg @());EcomProductDiscountGroups=(G $pdg @())}
+        (Invoke-ProbeFixture $c ($groups+@{EcomPrices=(T $price @("N'P1', N'CPG1', NULL, NULL"))})).result | Should -Be PASS
+        $r=Invoke-ProbeFixture $c ($groups+@{EcomPrices=(T $price @("N'P1', N'MISSING', NULL, NULL","N'P2', N'OLD', NULL, NULL","N'P3', NULL, NULL, NULL"))})
+        $r.value | Should -Be 0;$r.result | Should -Be FAIL
+    }
+    It 'are absent from the snapshots before 10.30.6' {
+        foreach($v in @('10.29.8','10.28.15')){(Get-Functions $v).ContainsKey('commerce.price-groups') | Should -BeFalse}
+        (Get-Functions '10.30.6').ContainsKey('commerce.price-groups') | Should -BeTrue
+    }
+}
 Describe 'Snapshot contracts of the corrections (<_>)' -ForEach $versions {
     BeforeAll {$v=$_;$fs=Get-Functions $v}
     It 'no longer gates stored coordinates on an unknowable map credential' {
@@ -238,7 +263,8 @@ Describe 'Snapshot contracts of the corrections (<_>)' -ForEach $versions {
         @($with.id|Where-Object {$_ -like 'pim.*' -or $_ -in @('orders.completed-orders','commerce.default-price')}).Count | Should -Be 0
     }
     It 'keeps every new correction unverified without a target' {
-        $ids=if($v -eq '10.29.8'){@((Read-LedgerJson (Join-Path $releases '10.29.8/delta.json')).corrections.id)}else{@((Read-LedgerJson (Join-Path $releases '10.28.15/evidence/admission.json')).corrections.id)}
+        # 10.30.6 carries the 10.29.8 corrections unchanged; its own delta has none.
+        $ids=if($v -in @('10.30.6','10.29.8')){@((Read-LedgerJson (Join-Path $releases '10.29.8/delta.json')).corrections.id)}else{@((Read-LedgerJson (Join-Path $releases '10.28.15/evidence/admission.json')).corrections.id)}
         $ids.Count | Should -BeGreaterThan 0
         foreach($id in $ids){
             $fs.ContainsKey($id) | Should -BeTrue

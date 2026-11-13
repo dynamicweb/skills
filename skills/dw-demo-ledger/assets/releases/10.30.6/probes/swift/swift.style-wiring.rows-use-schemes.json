@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "swift.style-wiring.rows-use-schemes",
+  "functionId": "swift.style-wiring",
+  "intent": {
+    "proves": "At least one grid row is painted with a colour scheme.",
+    "level": "applied",
+    "scope": "all grid rows"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-color-scheme-usage-counts",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_color_scheme_usage_counts",
+      "arguments": {
+        "groupId": "{colorSchemeGroupId}"
+      },
+      "reason": "Needs the area colour scheme group id as input; token substitution is not defined."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM GridRow WHERE GridRowColorSchemeId IS NOT NULL AND GridRowColorSchemeId <> ''",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/color-schemes.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-render-razor/references/razor-surfaces-and-pitfalls.md (GridRow.GridRowColorSchemeId)"
+    }
+  ]
+}

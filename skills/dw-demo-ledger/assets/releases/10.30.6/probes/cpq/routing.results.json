@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "cpq.routing.results",
+  "functionId": "cpq.routing",
+  "intent": {
+    "proves": "Declared operation quantities, time, rate and totals for a fixture; absence of routing is explicit in the spec. Required only by profiles that declare routing.",
+    "level": "behavioural",
+    "scope": "Exact declared model/version, catalogue and case set on the target with loaded package and assembly hashes; complete observations only. Missing identity, denied access or truncated scope is UNVERIFIED."
+  },
+  "assertion": {
+    "kind": "attributes",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "file-cpq-receipt",
+      "surface": "file",
+      "status": "planned",
+      "handler": "cpq-behavior-receipt",
+      "reason": "Distribution v1 receipt reader validates independent trust, freshness and scope and preserves failures. No complete domain producer/assertion exists for this intent; the binding stays planned. See references/cpq-observations.md."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+    },
+    {
+      "kind": "docs",
+      "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "search.index-fields.declared-populated",
+  "functionId": "search.index-fields",
+  "intent": {
+    "proves": "Every manually declared index field is populated by the builder: count(field = X) + count(field <> X) equals the unfiltered count with neither side degenerate.",
+    "level": "stored-integrity",
+    "scope": "manually declared fields of the storefront product index"
+  },
+  "assertion": {
+    "kind": "offenders",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-products-by-query",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_products_by_query",
+      "arguments": {},
+      "reason": "Needs an index-query count handler that runs paired predicates; not implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-search-indexing/SKILL.md#queries"
+    }
+  ]
+}

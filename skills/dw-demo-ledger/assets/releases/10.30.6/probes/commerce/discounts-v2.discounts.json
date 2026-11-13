@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "id": "commerce.discounts-v2.discounts",
+  "functionId": "commerce.discounts-v2",
+  "intent": {
+    "proves": "At least one New Discount Experience discount exists.",
+    "level": "configured",
+    "scope": "all discounts of the new engine"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_adjustment_discounts",
+      "arguments": {}
+    },
+    {
+      "id": "admin-api",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query-count",
+      "operation": "DiscountsAll",
+      "reason": "Admin query named in the skills; authenticated payload projection not measured."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomDiscounts"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/newdiscount.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discountsv2/discountorderexecution.html"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "delivery.viewmodel-templates.viewmodel-inherits",
+  "functionId": "delivery.viewmodel-templates",
+  "intent": {
+    "proves": "Design templates bind data through ViewModelTemplate<T> rather than TemplateTags.",
+    "level": "applied",
+    "scope": "templates under the active design"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-match",
+      "surface": "file",
+      "status": "planned",
+      "handler": "files-match",
+      "path": "Templates/Designs/*/**/*.cshtml",
+      "reason": "files-count counts files by pattern only; asserting the ViewModelTemplate inherits line needs a content-match handler."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-render-viewmodels/SKILL.md"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-render-razor/SKILL.md"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "commerce.product-compare.template",
+  "functionId": "commerce.product-compare",
+  "intent": {
+    "proves": "A Product Catalog paragraph has a Compare template selected.",
+    "level": "configured",
+    "scope": "Product Catalog app paragraphs"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "The storage key of the Compare template in the paragraph module settings is not measured."
+    },
+    {
+      "id": "mcp-files",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-files-count",
+      "operation": "list_files",
+      "reason": "A template file name proves no selection; the design folder name varies per build."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-commerce-catalog/SKILL.md"
+    }
+  ]
+}

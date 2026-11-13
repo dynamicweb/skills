@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "orders.reverse-charge.enabled",
+  "functionId": "orders.reverse-charge",
+  "intent": {
+    "proves": "Reverse charge is set on at least one country, VAT group country rate or user.",
+    "level": "configured",
+    "scope": "commerce countries, VAT country rates and users"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT (SELECT COUNT(*) FROM EcomCountries WHERE CountryReverseChargeForVAT = 1) + (SELECT COUNT(*) FROM EcomVatCountryRelations WHERE VatCountryRelReverseChargeForVat = 1) + (SELECT COUNT(*) FROM AccessUser WHERE AccessUserReverseChargeForVat = 1)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/vat-taxes.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/vat-groups.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

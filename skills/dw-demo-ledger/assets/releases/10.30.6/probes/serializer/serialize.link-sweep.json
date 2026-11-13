@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "serializer.serialize.link-sweep",
+  "functionId": "serializer.serialize",
+  "intent": {
+    "proves": "The last serialize finished without orphaned link references.",
+    "level": "behavioural",
+    "scope": "the latest serialize run log"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "file-serializer-run-log",
+      "surface": "file",
+      "status": "planned",
+      "handler": "serializer-run-log",
+      "path": "System/Serializer/Log",
+      "reason": "Run logs are written under Files/System/Serializer/Log; no reserved handler reads them and the line format is not pinned."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-base/references/serializer-reference.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/concepts.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/link-resolution.md"
+    }
+  ]
+}

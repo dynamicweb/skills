@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.workflow.notification",
+  "functionId": "pim.workflow",
+  "intent": {
+    "proves": "At least one workflow state sends a notification that has recipient users.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-notification",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-notification",
+      "operation": "WorkflowNotificationByWorkflowIdAndStateId",
+      "reason": "Needs authenticated full-payload and scope parity measurement; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM WorkflowStateNotificationRelation r WHERE EXISTS (SELECT 1 FROM WorkflowNotification n WHERE n.WorkflowNotificationId = r.WorkflowStateNotificationRelationNotificationId AND ISNULL(n.WorkflowNotificationUsers, N'') <> N'') AND EXISTS (SELECT 1 FROM WorkflowState s WHERE s.WorkflowStateId = r.WorkflowStateNotificationRelationStateId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#workflow/notification"
+    }
+  ]
+}

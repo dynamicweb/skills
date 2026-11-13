@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.query-api.query-served",
+  "functionId": "delivery.query-api",
+  "intent": {
+    "proves": "GET /dwapi/query with a repository and query name returns results with paging and facet groups.",
+    "level": "behavioural",
+    "scope": "the query named by the build, anonymous"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-count",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-count",
+      "operation": "query",
+      "reason": "Measured on a blank base-only 10.29.8 host (2026-11-13, anonymous GET): 400 \"Missing required parameters: RepositoryName and/or QueryName\"; the host has no repository or query, so the row projection of a served result is not measured."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/query.html"
+    }
+  ]
+}

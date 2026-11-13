@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.users-api.user-info",
+  "functionId": "delivery.users-api",
+  "intent": {
+    "proves": "GET /dwapi/users/info returns the signed-in persona.",
+    "level": "behavioural",
+    "scope": "demo persona token supplied at runtime"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-auth",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-auth",
+      "operation": "GET /dwapi/users/info",
+      "reason": "No dwapi handler is implemented; needs a frontend credential supplied as runtime input and a measured response projection."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/users.html"
+    }
+  ]
+}

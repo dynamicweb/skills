@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "search.index-queries.no-constant-macros",
+  "functionId": "search.index-queries",
+  "intent": {
+    "proves": "No query expression stores a macro-shaped value (Namespace.Something:Field) as a constant, which never matches.",
+    "level": "stored-integrity",
+    "scope": "every expression of every repository index query"
+  },
+  "assertion": {
+    "kind": "offenders",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-index-query-expressions",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_index_query_expressions",
+      "arguments": {},
+      "reason": "Needs per-query enumeration and an expression-tree projection; not implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-search-indexing/references/mcp-query-tools.md"
+    }
+  ]
+}
