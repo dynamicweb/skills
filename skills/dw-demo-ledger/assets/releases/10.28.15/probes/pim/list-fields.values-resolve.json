@@ -3,7 +3,7 @@
   "id": "pim.list-fields.values-resolve",
   "functionId": "pim.list-fields",
   "intent": {
-    "proves": "List fields with options, single and multi select: values-resolve satisfies the selected profile assertion.",
+    "proves": "Every value stored on a list field is one of the option values of that field or of its reference field.",
     "level": "stored-integrity",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

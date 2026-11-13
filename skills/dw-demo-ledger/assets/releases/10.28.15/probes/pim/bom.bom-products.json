@@ -3,7 +3,7 @@
   "id": "pim.bom.bom-products",
   "functionId": "pim.bom",
   "intent": {
-    "proves": "Bundles and parts lists (BOM): bom-products satisfies the selected profile assertion.",
+    "proves": "At least one product of type BOM (ProductType 2) has two or more BOM lines.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

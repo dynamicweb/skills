@@ -3,7 +3,7 @@
   "id": "pim.field-validation.pattern",
   "functionId": "pim.field-validation",
   "intent": {
-    "proves": "Validation pattern on formatted codes: pattern satisfies the selected profile assertion.",
+    "proves": "At least one category field or global product field carries a validation pattern.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

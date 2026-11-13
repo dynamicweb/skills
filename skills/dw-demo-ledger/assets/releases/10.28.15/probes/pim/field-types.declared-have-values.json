@@ -3,7 +3,7 @@
   "id": "pim.field-types.declared-have-values",
   "functionId": "pim.field-types",
   "intent": {
-    "proves": "Typed fields: every attribute on the field type that fits its value: declared-have-values satisfies the selected profile assertion.",
+    "proves": "Every category attribute the build declares has a stored value on at least one product.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

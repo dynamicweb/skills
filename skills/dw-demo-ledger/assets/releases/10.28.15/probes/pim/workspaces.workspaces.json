@@ -3,7 +3,7 @@
   "id": "pim.workspaces.workspaces",
   "functionId": "pim.workspaces",
   "intent": {
-    "proves": "Dynamic workspaces: workspaces satisfies the selected profile assertion.",
+    "proves": "At least one dynamic workspace has a level.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

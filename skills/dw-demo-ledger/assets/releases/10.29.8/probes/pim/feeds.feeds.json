@@ -3,7 +3,7 @@
   "id": "pim.feeds.feeds",
   "functionId": "pim.feeds",
   "intent": {
-    "proves": "Feeds: feeds satisfies the selected profile assertion.",
+    "proves": "At least one feed (not a folder) has a provider.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

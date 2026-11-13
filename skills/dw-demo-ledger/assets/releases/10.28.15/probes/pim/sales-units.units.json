@@ -3,7 +3,7 @@
   "id": "pim.sales-units.units",
   "functionId": "pim.sales-units",
   "intent": {
-    "proves": "Units of measure on products: units satisfies the selected profile assertion.",
+    "proves": "At least one unit exists.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

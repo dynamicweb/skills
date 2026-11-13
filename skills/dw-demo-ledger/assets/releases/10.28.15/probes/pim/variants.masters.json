@@ -3,7 +3,7 @@
   "id": "pim.variants.masters",
   "functionId": "pim.variants",
   "intent": {
-    "proves": "Variants: masters satisfies the selected profile assertion.",
+    "proves": "At least one product has variant rows in the default language.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

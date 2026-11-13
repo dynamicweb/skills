@@ -3,7 +3,7 @@
   "id": "pim.variants.groups-with-options",
   "functionId": "pim.variants",
   "intent": {
-    "proves": "Variants: groups-with-options satisfies the selected profile assertion.",
+    "proves": "At least one variant group has two or more options in the default language.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

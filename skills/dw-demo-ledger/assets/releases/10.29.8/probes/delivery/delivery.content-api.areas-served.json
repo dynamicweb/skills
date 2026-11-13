@@ -16,10 +16,12 @@
     {
       "id": "dwapi-count",
       "surface": "dwapi",
-      "status": "planned",
+      "status": "implemented",
       "handler": "dwapi-count",
-      "operation": "GET /dwapi/content/areas",
-      "reason": "No dwapi handler is implemented; a scalar HTTP binding needs a measured response projection (contract.md), endpoint presence alone does not qualify."
+      "operation": "content/areas",
+      "projection": {
+        "rowsPath": "$"
+      }
     }
   ],
   "sources": [

@@ -3,7 +3,7 @@
   "id": "pim.completeness-rules.rules",
   "functionId": "pim.completeness-rules",
   "intent": {
-    "proves": "Completeness rules per family: rules satisfies the selected profile assertion.",
+    "proves": "At least one completeness rule lists three or more product fields.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

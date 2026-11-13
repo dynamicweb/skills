@@ -3,7 +3,7 @@
   "id": "pim.matrix-fields.cells",
   "functionId": "pim.matrix-fields",
   "intent": {
-    "proves": "Every declared row and column equals its source value with no missing or extra cells.",
+    "proves": "Every declared row and column equals its source value with no missing or extra cells, and the matrix category holds no cell outside the declared subjects.",
     "level": "stored-integrity",
     "scope": "Explicit expected.matrix declaration; feature type and flag reads are solution-wide."
   },

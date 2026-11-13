@@ -40,6 +40,9 @@ Checks (errors fail the build, warnings are printed but do not):
     assignment and no environment literal (localhost:<port>, *.mydwsite*.com,
     the local solutions tree) inside scripts/.
   - BOM and mojibake checks cover skills/*/scripts/* files as well as markdown.
+  - No file under skills/, and no top-level or docs/ markdown file, links to a
+    private repository (PRIVATE_REPOSITORIES): the link is dead for a public
+    reader. Describe the behaviour in place instead.
   - WARN if a skill description lacks a trigger signal (Triggers:/Use when/Use FIRST).
   - WARN if a scripts/ file is never linked from markdown in its own skill.
   - WARN if a SKILL.md body exceeds 500 lines or 16000 characters (split into
@@ -871,6 +874,33 @@ def check_no_secrets() -> None:
                         "it from a parameter or the environment")
 
 
+# Repositories that are not public. A link into one is dead for every reader of
+# this public repository, so the behaviour it points at is described in place.
+PRIVATE_REPOSITORIES = ("truvio-commerce/Truvio.Commerce.CpqStudio",)
+PRIVATE_LINK_RE = re.compile(
+    r"github\.com/(?:" + "|".join(re.escape(r) for r in PRIVATE_REPOSITORIES) + r")(?![\w.-])",
+    re.IGNORECASE)
+
+
+def private_repository_links(text: str) -> list[tuple[int, str]]:
+    """(line, link) for every link into a private repository."""
+    return [(i, m.group(0)) for i, line in enumerate(text.splitlines(), 1)
+            for m in PRIVATE_LINK_RE.finditer(line)]
+
+
+def check_no_private_links() -> None:
+    files = [f for f in SKILLS_DIR.rglob("*") if f.is_file()]
+    files += list(REPO.glob("*.md")) + list((REPO / "docs").rglob("*.md"))
+    for f in sorted(set(files)):
+        try:
+            text = f.read_text(encoding=ENCODING)
+        except UnicodeDecodeError:
+            continue  # binary asset; the encoding checks own text files
+        for i, link in private_repository_links(text):
+            err(f"{rel(f)}:{i}: link to a private repository ({link}) - "
+                "describe the behaviour in place instead")
+
+
 def check_no_environment_literals() -> None:
     # A hardcoded host:port, demo-hosting domain, or solutions-tree path marks
     # a script lifted unsanitized from a demo build. Connection discovery is
@@ -1568,6 +1598,7 @@ def main() -> int:
     check_no_mojibake()
     check_no_secrets()
     check_no_environment_literals()
+    check_no_private_links()
     check_script_contract()
     check_av_safe_scripts()
     check_script_imports()

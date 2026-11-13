@@ -8,10 +8,6 @@
       "title": "Recorded vendor profile and unexecuted CPQ characterization plan"
     },
     {
-      "url": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md",
-      "title": "Studio 0.7.0 implementation and access contract"
-    },
-    {
       "url": "skills/dw-demo-ledger/references/cpq-area.md",
       "title": "Proposed CPQ area acceptance contract"
     }
@@ -127,7 +123,7 @@
     "All CPQ bindings are planned; no structured MCP/Admin/SQL reader, loaded-identity observer or behavior-receipt consumer is implemented.",
     "The exact vendor/Studio combination on DW 10.29.8 still requires installation, engine truth tables, package hashes and end-to-end measurement. No 10.28.15 admission is made.",
     "Resolve exact compatible MCP/MCP host/OpenXml dependencies and any required licence fact from the installed product; unknown required facts stay UNVERIFIED. Studio tools remain Dynamo-only.",
-    "The neutral spec contracts do not implement a compiler, behavior producer, feature-cpq layer or cpq-demo edition. Known option/cart/quote failures remain release blockers until measured fixes exist.",
+    "The neutral spec contracts do not implement a compiler, a behavior producer, or a Distribution layer and edition that carry CPQ. Known option/cart/quote failures remain release blockers until measured fixes exist.",
     "Routing, CPQ visualization and ERP profiles are optional and independently proven. External execution consumers keep their own commands and machine setup outside foundational skill content."
   ]
 }

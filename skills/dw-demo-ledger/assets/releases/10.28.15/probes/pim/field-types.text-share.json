@@ -3,7 +3,7 @@
   "id": "pim.field-types.text-share",
   "functionId": "pim.field-types",
   "intent": {
-    "proves": "Typed fields: every attribute on the field type that fits its value: text-share satisfies the selected profile assertion.",
+    "proves": "The share of category fields stored as a text type (field types 1, 10, 11, 12 and 13) stays at or under the limit, in percent.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

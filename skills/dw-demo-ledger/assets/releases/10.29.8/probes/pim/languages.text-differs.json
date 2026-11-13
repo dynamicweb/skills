@@ -3,7 +3,7 @@
   "id": "pim.languages.text-differs",
   "functionId": "pim.languages",
   "intent": {
-    "proves": "Translations of products, field labels and list options: text-differs satisfies the selected profile assertion.",
+    "proves": "The share of products translated into another language whose long description is filled and differs from the default language reaches the minimum, in percent.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

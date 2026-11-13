@@ -3,7 +3,7 @@
   "id": "pim.workspaces.completeness-level",
   "functionId": "pim.workspaces",
   "intent": {
-    "proves": "Dynamic workspaces: completeness-level satisfies the selected profile assertion.",
+    "proves": "At least one dynamic workspace level shows completeness.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

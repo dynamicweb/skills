@@ -18,8 +18,8 @@
       "surface": "dwapi",
       "status": "planned",
       "handler": "dwapi-count",
-      "operation": "GET /dwapi/query?RepositoryName=&QueryName=",
-      "reason": "No dwapi handler is implemented; a scalar HTTP binding needs a measured response projection (contract.md), endpoint presence alone does not qualify."
+      "operation": "query",
+      "reason": "Measured on a blank base-only 10.29.8 host (2026-11-13, anonymous GET): 400 \"Missing required parameters: RepositoryName and/or QueryName\"; the host has no repository or query, so the row projection of a served result is not measured."
     }
   ],
   "sources": [

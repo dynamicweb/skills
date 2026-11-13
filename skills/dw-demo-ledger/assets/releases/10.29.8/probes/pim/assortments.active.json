@@ -3,7 +3,7 @@
   "id": "pim.assortments.active",
   "functionId": "pim.assortments",
   "intent": {
-    "proves": "Assortments: active satisfies the selected profile assertion.",
+    "proves": "At least one active assortment is related to a product group, a product or a shop.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

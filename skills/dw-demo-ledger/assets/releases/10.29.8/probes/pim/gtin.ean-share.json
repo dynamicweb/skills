@@ -3,9 +3,9 @@
   "id": "pim.gtin.ean-share",
   "functionId": "pim.gtin",
   "intent": {
-    "proves": "GTIN / EAN on the standard field: ean-share satisfies the selected profile assertion.",
+    "proves": "The share of active traded products in the default language and in scope (simple products and variants; a master with variant groups is exempt) that carry a GTIN in ProductEAN reaches the minimum, in percent.",
     "level": "applied",
-    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+    "scope": "Active products in the default language that are traded: simple products and variant rows; a master that has variant groups is exempt, as in pim.identifiers.number-missing. productScope exclusions apply."
   },
   "assertion": {
     "kind": "scalar",
@@ -27,7 +27,7 @@
       "status": "implemented",
       "handler": "sql-scalar",
       "localOnly": true,
-      "query": "SELECT ISNULL(100 * SUM(CASE WHEN ISNULL(p.ProductEAN, N'') <> N'' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1 AND ISNULL(p.ProductVariantId, N'') = N''{inScope}"
+      "query": "SELECT ISNULL(100 * SUM(CASE WHEN ISNULL(p.ProductEAN, N'') <> N'' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1{inScope} AND (ISNULL(p.ProductVariantId, N'') <> N'' OR NOT EXISTS (SELECT 1 FROM EcomVariantGroupProductRelation v WHERE v.VariantGroupProductRelationProductId = p.ProductId))"
     }
   ],
   "sources": [

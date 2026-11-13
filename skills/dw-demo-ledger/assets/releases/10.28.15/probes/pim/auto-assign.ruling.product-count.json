@@ -3,7 +3,7 @@
   "id": "pim.auto-assign.ruling.product-count",
   "functionId": "pim.auto-assign",
   "intent": {
-    "proves": "Product assignment rules (auto-assign to groups): product-count satisfies the selected profile assertion.",
+    "proves": "The catalogue holds no more distinct product ids than the limit, which the ruling that products are placed by hand relies on.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

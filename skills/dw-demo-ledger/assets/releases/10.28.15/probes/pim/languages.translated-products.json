@@ -3,7 +3,7 @@
   "id": "pim.languages.translated-products",
   "functionId": "pim.languages",
   "intent": {
-    "proves": "Translations of products, field labels and list options: translated-products satisfies the selected profile assertion.",
+    "proves": "At least one product has a row in a language other than the default.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

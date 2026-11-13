@@ -3,7 +3,7 @@
   "id": "pim.workflow.attached",
   "functionId": "pim.workflow",
   "intent": {
-    "proves": "Product workflow with states, transitions and notifications: attached satisfies the selected profile assertion.",
+    "proves": "At least one product group is attached to a workflow that exists.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

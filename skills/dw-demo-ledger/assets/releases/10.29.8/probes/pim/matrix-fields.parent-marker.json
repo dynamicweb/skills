@@ -3,7 +3,7 @@
   "id": "pim.matrix-fields.parent-marker",
   "functionId": "pim.matrix-fields",
   "intent": {
-    "proves": "Every declared subject has exactly one correct parent marker.",
+    "proves": "Every declared subject has exactly one correct parent marker, and no other product, variant, language or owner field holds a marker that references the matrix category.",
     "level": "stored-integrity",
     "scope": "Explicit expected.matrix declaration; feature type and flag reads are solution-wide."
   },

@@ -67,6 +67,7 @@ CPQ checks use [independent scope declarations and read-only observations](refer
 | [Cpq.Observations.ps1](scripts/Cpq.Observations.ps1) | In-memory comparisons | Independent stored/configured CPQ assertions |
 | [Cpq.Receipts.ps1](scripts/Cpq.Receipts.ps1) | Validated receipt data | Distribution trust boundary and independent price/BOM red checks |
 | [tests/Cpq.Tests.ps1](scripts/tests/Cpq.Tests.ps1) | Isolated fixtures | CPQ positive and negative controls |
+| [tests/Receipts.Tests.ps1](scripts/tests/Receipts.Tests.ps1) | Producer-shaped fixtures; a Distribution checkout through `CPQ_DISTRIBUTION_ROOT` | Receipt reader verdicts, wrong price and BOM red controls |
 | [Ledger.Core.ps1](scripts/Ledger.Core.ps1) | Definitions only | Schema, digest, safe paths, selection and assertions |
 | [Ledger.Transport.ps1](scripts/Ledger.Transport.ps1) | Reads MCP/Admin when called | Discovery and observations using the shared API transport |
 | [Ledger.Observations.ps1](scripts/Ledger.Observations.ps1) | Reads collections/local XML when called | Tokens, filtered counts, authenticated API projection and scoped files |

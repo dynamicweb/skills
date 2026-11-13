@@ -3,7 +3,7 @@
   "id": "pim.dynamic-relations.relations",
   "functionId": "pim.dynamic-relations",
   "intent": {
-    "proves": "Dynamic relations with amounts (materials, packaging, ingredients): relations satisfies the selected profile assertion.",
+    "proves": "At least one dynamic product relation exists.",
     "level": "stored-integrity",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

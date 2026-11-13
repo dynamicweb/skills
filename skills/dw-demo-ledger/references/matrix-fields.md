@@ -49,7 +49,9 @@ One to six distinct columns, explicit product/variant/language identities and al
 cells are required. Rows are zero based and contiguous. Values must be nonempty
 scalars; null and omitted values require a future declared sparse-cell contract.
 Text is compared exactly. Integer and Double values are compared numerically using
-invariant culture, including zero. Every subject must have its own source rows.
+invariant culture, including zero; the stored text must be a sign, digits and a decimal
+point (padding or an exponent is another stored representation and fails). A FAIL names
+the cell with its observed and expected value. Every subject must have its own source rows.
 This contract checks a matrix owned by an attribute category field; it does not
 claim support for global custom fields without a declared owning category.
 
@@ -59,9 +61,9 @@ claim support for global custom fields without a declared owning category.
 |---|---|---|
 | `field-type` | MCP `get_field_types`, `dynamicwebAlias == Matrix`; local SQL fallback resolves FieldTypeDW without assuming the Matrix type id | Missing Matrix alias fails |
 | `flag-on` | Authenticated complete FeaturesAll observation | False fails the assertion; the function requirement reports DISABLED |
-| `columns` | Local SQL reads CategoryType 3 and exact column ids/types | Wrong category or column type fails |
-| `parent-marker` | One marker per product/variant/language and owning field: row zero, NULL value, reference to the matrix category | Missing or altered marker fails |
-| `cells` | Exact rows times columns, scoped by matrix category and product/variant/language; no missing, extra, duplicate or changed cells | One changed source cell fails |
+| `columns` | Local SQL reads CategoryType 3 and exact column ids/types, and each declared owner field's type and `FieldMatrixAttributeGroupId` | Wrong category or column type, an owner field that is not Matrix or is linked to another matrix category fails |
+| `parent-marker` | One marker per product/variant/language and owning field: row zero, NULL value, reference to the matrix category; every marker that references the category, counted per product/variant/language and owner field | Missing or altered marker, an undeclared marker or one in another owner field fails |
+| `cells` | Exact rows times columns, scoped by matrix category and product/variant/language; no missing, extra, duplicate or changed cells; every cell of the category counted per product/variant/language | One changed source cell, rows on an undeclared product or language, a padded or exponent number fails |
 | `negative-control` | The same cell comparator first accepts the observed data, then rejects an in-memory altered copy | Already incorrect input fails; the target is never changed |
 
 Matrix columns allow platform type ids 1, 6, 7, 8, 10, 11, 12, 13 and 15 in the

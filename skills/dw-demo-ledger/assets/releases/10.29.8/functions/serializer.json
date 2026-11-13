@@ -69,7 +69,8 @@
       "notApplicable": [
         {
           "id": "consume-only",
-          "when": "the build only deserializes layers and never serializes its own work"
+          "when": "the build only deserializes layers and never serializes its own work",
+          "requiresFunction": "serializer.deserialize"
         }
       ],
       "sources": [

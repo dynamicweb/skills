@@ -3,7 +3,7 @@
   "id": "pim.computed-fields.provider-field",
   "functionId": "pim.computed-fields",
   "intent": {
-    "proves": "Computed fields (calculation or concatenation): provider-field satisfies the selected profile assertion.",
+    "proves": "At least one category field or global product field is built on a field type that has a provider.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

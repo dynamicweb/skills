@@ -336,7 +336,7 @@
     "pim.field-display-groups.ruling.no-shop-no-feed": "no storefront shop and no feed exists",
     "pim.identifiers.number-missing": "every active product and variant has a number (a master with variants is exempt: the platform blanks it)",
     "pim.identifiers.number-duplicates": "no product number is used twice",
-    "pim.gtin.ean-share": "at least 50 percent of the active products carry a GTIN on ProductEAN",
+    "pim.gtin.ean-share": "at least 50 percent of the active traded products and variants carry a GTIN on ProductEAN (a master with variants is exempt)",
     "pim.manufacturers.manufacturers": "at least 2 manufacturers exist",
     "pim.manufacturers.product-share": "at least 80 percent of the active products name a manufacturer that exists",
     "pim.sales-units.units": "at least 2 units exist",

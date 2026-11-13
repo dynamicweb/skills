@@ -177,7 +177,8 @@
       "notApplicable": [
         {
           "id": "deserialize-only",
-          "when": "the build restores no bacpac and delivers by deserialize from a locked commit (the tree hash check still applies through release-compatibility)"
+          "when": "the build restores no bacpac and delivers by deserialize from a locked commit (the tree hash check still applies through release-compatibility)",
+          "requiresFunction": "distribution.release-compatibility"
         }
       ],
       "sources": [

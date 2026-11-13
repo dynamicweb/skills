@@ -3,7 +3,7 @@
   "id": "pim.channels.channels-with-products",
   "functionId": "pim.channels",
   "intent": {
-    "proves": "Channels with their own group tree: channels-with-products satisfies the selected profile assertion.",
+    "proves": "At least one channel (ShopType 3) has a group that holds products.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

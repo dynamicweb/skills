@@ -3,7 +3,7 @@
   "id": "pim.assortments.built",
   "functionId": "pim.assortments",
   "intent": {
-    "proves": "Assortments: built satisfies the selected profile assertion.",
+    "proves": "Assortments have been built: at least one assortment item row exists.",
     "level": "stored-integrity",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

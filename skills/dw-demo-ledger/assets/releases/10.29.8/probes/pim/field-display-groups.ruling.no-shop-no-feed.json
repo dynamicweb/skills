@@ -3,7 +3,7 @@
   "id": "pim.field-display-groups.ruling.no-shop-no-feed",
   "functionId": "pim.field-display-groups",
   "intent": {
-    "proves": "Field display groups: no-shop-no-feed satisfies the selected profile assertion.",
+    "proves": "No storefront shop (ShopType 1) and no feed exists, which the ruling that display groups have no consumer relies on.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

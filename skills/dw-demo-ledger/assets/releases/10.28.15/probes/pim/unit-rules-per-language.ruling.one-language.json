@@ -3,7 +3,7 @@
   "id": "pim.unit-rules-per-language.ruling.one-language",
   "functionId": "pim.unit-rules-per-language",
   "intent": {
-    "proves": "Unit shown per language: one-language satisfies the selected profile assertion.",
+    "proves": "Product rows exist in no more languages than the limit, which the single-market ruling on unit rules relies on.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

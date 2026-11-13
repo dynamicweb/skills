@@ -3,7 +3,7 @@
   "id": "pim.variants.inactive-variants",
   "functionId": "pim.variants",
   "intent": {
-    "proves": "Variants: inactive-variants satisfies the selected profile assertion.",
+    "proves": "No variant row in the default language has a NULL active flag; a variant set inactive (0) is not counted.",
     "level": "stored-integrity",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },
