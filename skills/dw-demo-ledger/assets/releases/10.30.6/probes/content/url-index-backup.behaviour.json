@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "content.url-index-backup.behaviour",
+  "functionId": "content.url-index-backup",
+  "intent": {
+    "proves": "Use a backup URL index while a replacement index is built.",
+    "level": "behavioural",
+    "scope": "An explicitly configured example and its expected output; a release note is not runtime proof."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "release-behaviour",
+      "reason": "No complete equivalent read and fixture have yet been verified for this release addition. UNVERIFIED until a measured binding is added."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "release",
+      "ref": "delta-review.json#content.url-index-backup"
+    },
+    {
+      "kind": "release",
+      "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+    }
+  ]
+}

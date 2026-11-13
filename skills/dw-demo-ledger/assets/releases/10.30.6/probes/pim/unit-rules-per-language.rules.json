@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "pim.unit-rules-per-language.rules",
+  "functionId": "pim.unit-rules-per-language",
+  "intent": {
+    "proves": "At least one per-language unit conversion rule is stored for a unit of an existing unit group. Configured only: rendering in the ruled language is unit-rules-per-language.rendered.",
+    "level": "configured",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-rules",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-rules",
+      "operation": "get_field_value_conversion_rules",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomFieldValueConversionRule r WHERE EXISTS (SELECT 1 FROM EcomFieldValueConversion c WHERE c.FieldValueConversionId = r.FieldValueConversionRuleFieldValueConversionId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#unit-rules-per-language/rules"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}

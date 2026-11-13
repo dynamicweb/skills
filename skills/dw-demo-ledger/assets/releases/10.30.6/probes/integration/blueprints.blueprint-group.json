@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "integration.blueprints.blueprint-group",
+  "functionId": "integration.blueprints",
+  "intent": {
+    "proves": "A blueprint's activity group is installed.",
+    "level": "applied",
+    "scope": "activity groups"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-integration-activities",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_integration_activities",
+      "arguments": {},
+      "reason": "Handler not reserved: needs a field-predicate projection over the tool's rows; mcp-count counts rows only. Blueprint group names vary per package and are not fixed in this snapshot."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/blueprints.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/index.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/bc-odata-default-api.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/blueprints/bc-odata-v4-blueprint.html"
+    }
+  ]
+}

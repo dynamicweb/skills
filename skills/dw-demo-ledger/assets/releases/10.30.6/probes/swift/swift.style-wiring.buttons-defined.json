@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "id": "swift.style-wiring.buttons-defined",
+  "functionId": "swift.style-wiring",
+  "intent": {
+    "proves": "At least one button style exists for the Swift stylesheets.",
+    "level": "configured",
+    "scope": "all button styles"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-button-styles",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_button_styles",
+      "arguments": {}
+    },
+    {
+      "id": "file-count",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "path": "System/Styles/Buttons/*.json"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/button-styles.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Core/ToolNames.cs and tool classes (HEAD, read 2026-11-11)"
+    }
+  ]
+}

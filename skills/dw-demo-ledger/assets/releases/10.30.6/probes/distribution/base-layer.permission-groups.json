@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "distribution.base-layer.permission-groups",
+  "functionId": "distribution.base-layer",
+  "intent": {
+    "proves": "The five permission groups the base contract guarantees exist.",
+    "level": "applied",
+    "scope": "AccessUser rows of type 2 with the contract ids 1325, 1270, 1292, 1249, 95"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 5
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_user_groups_by_system_names",
+      "reason": "get_user_groups_by_system_names keys on system names, not the contract ids; equivalence unverified."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE AccessUserType = 2 AND AccessUserID IN (1325, 1270, 1292, 1249, 95)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:README.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/base/base.contract.json"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "search.repositories.exists",
+  "functionId": "search.repositories",
+  "intent": {
+    "proves": "At least one repository exists.",
+    "level": "configured",
+    "scope": "every repository on the solution"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-index-repositories",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_index_repositories",
+      "arguments": {}
+    },
+    {
+      "id": "file-files-system-repositories",
+      "surface": "file",
+      "status": "planned",
+      "handler": "files-count",
+      "path": "Files/System/Repositories/*",
+      "reason": "Repository definitions are XML files under Files/System/Repositories; an XML projection handler is not implemented and MCP file access to this folder is not granted by default."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/index.html"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.workspaces.workspaces",
+  "functionId": "pim.workspaces",
+  "intent": {
+    "proves": "At least one dynamic workspace has a level.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-workspaces",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-workspace-count",
+      "operation": "get_dynamic_structures",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM DynamicStructures s WHERE EXISTS (SELECT 1 FROM DynamicStructureLevels l WHERE l.DynamicStructureLevelStructureId = CAST(s.DynamicStructureUniqueId AS nvarchar(50)))"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#workspaces/workspaces"
+    }
+  ]
+}

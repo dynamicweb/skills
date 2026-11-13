@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "integration.activity-variables.behaviour",
+  "functionId": "integration.activity-variables",
+  "intent": {
+    "proves": "Use variables in Data Integration jobs.",
+    "level": "behavioural",
+    "scope": "An explicitly configured example and its expected output; a release note is not runtime proof."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "release-behaviour",
+      "reason": "No complete equivalent read and fixture have yet been verified for this release addition. UNVERIFIED until a measured binding is added."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "release",
+      "ref": "delta-review.json#integration.activity-variables"
+    },
+    {
+      "kind": "release",
+      "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+    }
+  ]
+}

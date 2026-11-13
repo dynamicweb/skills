@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "admin.dashboards.custom",
+  "functionId": "admin.dashboards",
+  "intent": {
+    "proves": "At least one additional dashboard exists for an area other than Products.",
+    "level": "applied",
+    "scope": "additional dashboards; the preconfigured default workspaces are not counted"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-dashboards",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-dashboard-count",
+      "operation": "get_dashboards",
+      "arguments": {},
+      "reason": "get_dashboards returns dashboardType, but the reserved handler's area filter is PIM-oriented; a non-Products filter is not built."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Dashboard WHERE DashboardType <> N'Products'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/dashboards.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html"
+    }
+  ]
+}

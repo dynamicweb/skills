@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.asset-alt-text.translated",
+  "functionId": "pim.asset-alt-text",
+  "intent": {
+    "proves": "At least one image has language-specific rows with different, nonempty alt text in two languages.",
+    "level": "applied",
+    "scope": "image assets (file extension jpg, jpeg, png, gif, webp, avif or svg) of active products in scope; complete SQL enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-product-images",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_product_images",
+      "reason": "get_product_images reads one product at a time; no complete host enumeration of details."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomDetails a WHERE a.DetailType = 0 AND (LOWER(a.DetailValue) LIKE N'%.jpg' OR LOWER(a.DetailValue) LIKE N'%.jpeg' OR LOWER(a.DetailValue) LIKE N'%.png' OR LOWER(a.DetailValue) LIKE N'%.gif' OR LOWER(a.DetailValue) LIKE N'%.webp' OR LOWER(a.DetailValue) LIKE N'%.avif' OR LOWER(a.DetailValue) LIKE N'%.svg') AND ISNULL(a.DetailLanguageId, N'') <> N'' AND ISNULL(a.DetailsName, N'') <> N'' AND EXISTS (SELECT 1 FROM EcomDetails b WHERE b.DetailProductId = a.DetailProductId AND ISNULL(b.DetailVariantId, N'') = ISNULL(a.DetailVariantId, N'') AND b.DetailValue = a.DetailValue AND ISNULL(b.DetailLanguageId, N'') <> N'' AND b.DetailLanguageId <> a.DetailLanguageId AND ISNULL(b.DetailsName, N'') <> N'' AND b.DetailsName <> a.DetailsName) AND EXISTS (SELECT 1 FROM EcomProducts p WHERE p.ProductId = a.DetailProductId AND p.ProductActive = 1{inScope})"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    }
+  ]
+}

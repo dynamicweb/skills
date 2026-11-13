@@ -1,0 +1,196 @@
+{
+  "schema": 1,
+  "area": "distribution",
+  "functions": [
+    {
+      "id": "distribution.base-layer",
+      "area": "distribution",
+      "name": "Base layer framework rows",
+      "description": "The privileged, framework-only base layer: framework SqlTable sets and base.contract.json guarantees (permission groups, countries, shop, order flows, number counters) that every addition binds to, delivered onto a blank DW10 database.",
+      "skill": "dw-demo-base",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/distribution/base-layer.permission-groups.json",
+        "probes/distribution/base-layer.countries.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:README.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:layers/base/base.contract.json"
+        }
+      ]
+    },
+    {
+      "id": "distribution.edition-composition",
+      "area": "distribution",
+      "name": "Edition composition delivered",
+      "description": "An edition (base-only, base-swift, swift-demo, headless-demo, dap-portal) composes the base, ordered feature layers, surfaces, the sampleData toggle and themes; its expectedCounts and criticalPaths are the acceptance of a delivery.",
+      "skill": "dw-demo-base",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "edition"
+      ],
+      "checks": [
+        "probes/distribution/edition-composition.expected-counts.json",
+        "probes/distribution/edition-composition.critical-paths.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:README.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:editions/edition.schema.json"
+        }
+      ]
+    },
+    {
+      "id": "distribution.sample-data",
+      "area": "distribution",
+      "name": "Sample data layer",
+      "description": "The one sample-data layer on the sampleData toggle: the browsable catalogue, three personas on one B2B account, orders, quotes, carts, storefront copy, the demo clock and email statistics.",
+      "skill": "dw-demo-base",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/distribution/sample-data.buyer-persona.json",
+        "probes/distribution/sample-data.catalogue.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "sample-data-off",
+          "when": "the edition sets sampleData false (base-only, base-swift)"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:layers/base/base.contract.json"
+        }
+      ]
+    },
+    {
+      "id": "distribution.theme-layer",
+      "area": "distribution",
+      "name": "Default theme with brand slot",
+      "description": "theme-default, the one disk-only presentation layer, shipping Custom/brand.css loaded after default_custom.css and brand.tokens.json for a demo-local re-skin.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/distribution/theme-layer.brand-slot.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-theme-edition",
+          "when": "the edition sets no themes (base-only, headless-demo)"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:layers/theme-default/layer.json"
+        }
+      ]
+    },
+    {
+      "id": "distribution.release-compatibility",
+      "area": "distribution",
+      "name": "Release compatibility stamp",
+      "description": "layers/INDEX.json gateProven records the proven DW milestone and ring, apps and Swift version per edition; base.contract.json compat carries the floors (DW, Swift, Truvio.Commerce.Serializer required, Truvio.Commerce.MCP optional). A consumer pins main, asserts gateProven is present and resolves retired layer names to their successor.",
+      "skill": "dw-demo-base",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "edition"
+      ],
+      "checks": [
+        "probes/distribution/release-compatibility.dw-version.json",
+        "probes/distribution/release-compatibility.app-floors.json",
+        "probes/distribution/release-compatibility.index-current.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:README.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:CONTRIBUTING.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:layers/INDEX.json"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:versions/spine.json"
+        }
+      ]
+    },
+    {
+      "id": "distribution.artifact-verification",
+      "area": "distribution",
+      "name": "Artifact verification",
+      "description": "Published databases (blank and per edition) carry a sha256 in layers/INDEX.json bacpacs and are verified before restore; each proven layer carries a provenTree hash (layer-tree/v1) that must equal its tree.",
+      "skill": "dw-demo-base",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/distribution/artifact-verification.bacpac-sha256.json",
+        "probes/distribution/artifact-verification.layer-tree-hash.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "deserialize-only",
+          "when": "the build restores no bacpac and delivers by deserialize from a locked commit (the tree hash check still applies through release-compatibility)",
+          "requiresFunction": "distribution.release-compatibility"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:CONTRIBUTING.md"
+        },
+        {
+          "kind": "source",
+          "ref": "Truvio.Commerce.Distribution:layers/bacpacs.schema.json"
+        }
+      ]
+    }
+  ]
+}

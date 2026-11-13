@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "serializer.package-transfer.staged",
+  "functionId": "serializer.package-transfer",
+  "intent": {
+    "proves": "An uploaded package is present for PackageUnzip.",
+    "level": "configured",
+    "scope": "Files/System/Serializer/Upload"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "System\\Serializer\\Upload",
+        "filter": "*.zip",
+        "includeSubfolders": false
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-base/references/serializer-reference.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/cicd.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/permissions.md"
+    }
+  ]
+}

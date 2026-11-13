@@ -111,6 +111,13 @@ value declaration, flag-off report, flag-on report and changed-cell report toget
 The in-memory control proves the comparator. A demo's deliberate changed-cell run
 is separate evidence and must be performed by its authorised build session.
 
+The 10.30.6 snapshot carries the six checks unchanged. The 10.30 line adds inheritance from
+MASTER to the default language and shared or language-specific values per matrix column. The cells
+check reads stored rows for the language each subject declares, so a value that is inherited or
+shared from another language is not a stored cell in that language: declare the language that
+stores it. On a matrix host after the upgrade to [dw 10.30.6] the cells were still stored per
+product and language, and no matrix column or key changed (`10.30.6/delta.json` limitations).
+
 Read-only implementation: [Pim.Matrix.ps1](../scripts/Pim.Matrix.ps1).
 Controls: [Matrix.Tests.ps1](../scripts/tests/Matrix.Tests.ps1).
 Official references: [MatrixHelper API](https://doc.dynamicweb.dev/api/Dynamicweb.Ecommerce.Products.MatrixHelper.html),

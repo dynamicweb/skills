@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "id": "pim.product-queries.shared-queries",
+  "functionId": "pim.product-queries",
+  "intent": {
+    "proves": "At least one saved product query (*.query) is stored in the shared query folder or one folder below it.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-files",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-files-count",
+      "operation": "list_files",
+      "arguments": {
+        "path": "/Files/System/SmartSearches/Ecommerce/Shared",
+        "filter": "*.query",
+        "includeSubfolders": true
+      }
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "System\\SmartSearches\\Ecommerce\\Shared",
+        "filter": "*.query",
+        "includeSubfolders": true
+      }
+    },
+    {
+      "id": "sql-not-equivalent",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "files-count",
+      "localOnly": true,
+      "reason": "SQL cannot prove physical files; the local file binding preserves the original assertion."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#product-queries/shared-queries"
+    }
+  ]
+}

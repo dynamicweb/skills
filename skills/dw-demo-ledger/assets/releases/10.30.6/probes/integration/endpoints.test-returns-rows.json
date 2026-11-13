@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "integration.endpoints.test-returns-rows",
+  "functionId": "integration.endpoints",
+  "intent": {
+    "proves": "A named endpoint answers its test with data.",
+    "level": "behavioural",
+    "scope": "one endpoint named by the build"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-test-integration-endpoint",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "test_integration_endpoint",
+      "arguments": {},
+      "reason": "Calls the remote system; needs an endpoint id from the build and a response projection (rows, not only succeeded)."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/endpoint-collections.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/connections/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Integration/Tools (IntegrationActivityTools.cs, IntegrationEndpointTools.cs, IntegrationMappingTools.cs, IntegrationProviderTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.DataIntegration 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "orders.vat-groups.groups",
+  "functionId": "orders.vat-groups",
+  "intent": {
+    "proves": "At least one VAT group exists.",
+    "level": "configured",
+    "scope": "all VAT groups"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_vat_groups",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT VatGroupId) FROM EcomVatGroups"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/vat-groups.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/vatgroups.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/vat-taxes.html"
+    }
+  ]
+}

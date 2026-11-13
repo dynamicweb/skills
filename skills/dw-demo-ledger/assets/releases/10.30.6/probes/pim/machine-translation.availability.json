@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "pim.machine-translation.availability",
+  "functionId": "pim.machine-translation",
+  "intent": {
+    "proves": "Provider-backed translation is supported on the selected baseline.",
+    "level": "supported",
+    "scope": "exact baseline and required feature/provider conditions"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "availability-pending",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "capability-evidence",
+      "reason": "Baseline and read-only oracle not measured. Do not infer support from newer documentation."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#omissions"
+    }
+  ]
+}

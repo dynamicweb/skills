@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.external-login.provider-active",
+  "functionId": "users.external-login",
+  "intent": {
+    "proves": "At least one external login provider is active.",
+    "level": "configured",
+    "scope": "ExternalLoginProvider rows"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-externalloginproviders",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "ExternalLoginProviders",
+      "arguments": {},
+      "reason": "Management API query name not verified; no MCP read tool exists."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM ExternalLoginProvider WHERE ProviderActive = 1",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/external-login-providers.html"
+    }
+  ]
+}

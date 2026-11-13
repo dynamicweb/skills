@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "commerce.price-groups.prices-targeted",
+  "functionId": "commerce.price-groups",
+  "intent": {
+    "proves": "At least one price row targets an active customer price group, customer discount group or product discount group that exists.",
+    "level": "applied",
+    "scope": "EcomPrices rows whose group column names an active group row"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-group-prices",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_prices",
+      "reason": "No MCP read tool or Admin query for price or discount groups was measured on a 10.30.6 host; a binding needs a measured tool and row projection."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomPrices p WHERE EXISTS (SELECT 1 FROM EcomCustomerPriceGroups g WHERE g.CustomerPriceGroupId = p.PriceCustomerPriceGroupId AND g.CustomerPriceGroupIsActive = 1) OR EXISTS (SELECT 1 FROM EcomCustomerDiscountGroups g WHERE g.CustomerDiscountGroupId = p.PriceCustomerDiscountGroupId AND g.CustomerDiscountGroupIsActive = 1) OR EXISTS (SELECT 1 FROM EcomProductDiscountGroups g WHERE g.ProductDiscountGroupId = p.PriceProductDiscountGroupId AND g.ProductDiscountGroupIsActive = 1)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "release",
+      "ref": "delta-review.json#commerce.price-groups"
+    },
+    {
+      "kind": "release",
+      "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.30.6/dynamicweb.ecommerce.10.30.6.nupkg"
+    },
+    {
+      "kind": "release",
+      "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/1"
+    }
+  ]
+}

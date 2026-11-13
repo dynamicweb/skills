@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "swift.content-blocks.swift-paragraphs",
+  "functionId": "swift.content-blocks",
+  "intent": {
+    "proves": "Live Swift paragraph types are used on pages.",
+    "level": "applied",
+    "scope": "all non-deleted paragraphs"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM Paragraph WHERE ParagraphItemType LIKE 'Swift-v2[_]%' AND ParagraphDeleted = 0",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/references/paragraphs.md and dw-data-access/references/recipes-content.md (Page, Paragraph and GridRow columns)"
+    }
+  ]
+}

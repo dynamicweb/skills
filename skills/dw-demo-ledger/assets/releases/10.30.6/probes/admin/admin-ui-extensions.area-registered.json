@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "admin.admin-ui-extensions.area-registered",
+  "functionId": "admin.admin-ui-extensions",
+  "intent": {
+    "proves": "Each declared custom area resolves through NavigationByPath.",
+    "level": "applied",
+    "scope": "areas named in the build's adminAreas input; sections and nodes need a signed-in admin and are not proven here"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-navigation-by-path",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-navigation-by-path",
+      "operation": "NavigationByPath",
+      "reason": "Answers 200 for a registered area and 500 otherwise (skill measurement); no reserved handler."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/extending/administration-ui/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-extend-admin-ui/SKILL.md"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "pim.data-models.families-have-models",
+  "functionId": "pim.data-models",
+  "intent": {
+    "proves": "Every family the build declares has a data model (GroupType 2) on its category with at least one product, and the minimum number of families is declared.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "families",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-families-have-models",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-families-have-models",
+      "operation": "get_shops",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-families",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#data-models/families-have-models"
+    }
+  ]
+}

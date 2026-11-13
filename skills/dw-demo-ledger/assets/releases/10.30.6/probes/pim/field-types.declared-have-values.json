@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "pim.field-types.declared-have-values",
+  "functionId": "pim.field-types",
+  "intent": {
+    "proves": "Every category attribute the build declares has a stored value on at least one product.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "attributes",
+    "aspect": "values",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-declared-have-values",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-declared-have-values",
+      "operation": "get_product_category_fields",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-attributes",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-types/declared-have-values"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.templatetags-templates.templatetags-in-use",
+  "functionId": "delivery.templatetags-templates",
+  "intent": {
+    "proves": "Templates in the active design use GetString and GetLoop TemplateTags.",
+    "level": "applied",
+    "scope": "templates under the active design"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-match",
+      "surface": "file",
+      "status": "planned",
+      "handler": "files-match",
+      "path": "Templates/Designs/*/**/*.cshtml",
+      "reason": "Needs a content-match handler for GetString( and GetLoop( calls; files-count cannot see file content."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-render-templatetags/SKILL.md"
+    }
+  ]
+}

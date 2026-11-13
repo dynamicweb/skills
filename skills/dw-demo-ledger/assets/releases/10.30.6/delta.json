@@ -1,0 +1,339 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "before": "10.29.8",
+  "after": "10.30.6",
+  "revision": 1,
+  "rawScanDigest": "sha256:e1149cbc8a86e33fd29d0e17ce258a8f322247c1a1eb65ff36c6a3e1b4902cc7",
+  "review": "delta-review.json",
+  "added": [
+    {
+      "id": "commerce.price-groups",
+      "change": "added",
+      "evidence": [
+        "column:dbo.AccessUser.AccessUserCustomerDiscountGroupId",
+        "column:dbo.AccessUser.AccessUserCustomerPriceGroupId",
+        "column:dbo.EcomCustomerDiscountGroups.CustomerDiscountGroupCode",
+        "column:dbo.EcomCustomerDiscountGroups.CustomerDiscountGroupId",
+        "column:dbo.EcomCustomerDiscountGroups.CustomerDiscountGroupIsActive",
+        "column:dbo.EcomCustomerDiscountGroups.CustomerDiscountGroupName",
+        "column:dbo.EcomCustomerPriceGroups.CustomerPriceGroupCode",
+        "column:dbo.EcomCustomerPriceGroups.CustomerPriceGroupId",
+        "column:dbo.EcomCustomerPriceGroups.CustomerPriceGroupIsActive",
+        "column:dbo.EcomCustomerPriceGroups.CustomerPriceGroupName",
+        "column:dbo.EcomPrices.PriceCustomerDiscountGroupId",
+        "column:dbo.EcomPrices.PriceCustomerPriceGroupId",
+        "column:dbo.EcomPrices.PriceProductDiscountGroupId",
+        "column:dbo.EcomProductDiscountGroups.ProductDiscountGroupCode",
+        "column:dbo.EcomProductDiscountGroups.ProductDiscountGroupId",
+        "column:dbo.EcomProductDiscountGroups.ProductDiscountGroupIsActive",
+        "column:dbo.EcomProductDiscountGroups.ProductDiscountGroupName",
+        "column:dbo.EcomProducts.ProductDiscountGroupId",
+        "enum:Dynamicweb.Ecommerce.Products.ProductDataBaseField.ProductDiscountGroupId",
+        "primary-key:dbo.EcomCustomerDiscountGroups",
+        "primary-key:dbo.EcomCustomerPriceGroups",
+        "primary-key:dbo.EcomProductDiscountGroups",
+        "type:Dynamicweb.Ecommerce.Indexing.ValueMappers.ProductDiscountGroupIdValueMapper",
+        "type:Dynamicweb.Ecommerce.Prices.CustomerDiscountGroup",
+        "type:Dynamicweb.Ecommerce.Prices.CustomerDiscountGroupService",
+        "type:Dynamicweb.Ecommerce.Prices.CustomerPriceGroup",
+        "type:Dynamicweb.Ecommerce.Prices.CustomerPriceGroupService",
+        "type:Dynamicweb.Ecommerce.Prices.ProductDiscountGroup",
+        "type:Dynamicweb.Ecommerce.Prices.ProductDiscountGroupService",
+        "work-item:29551"
+      ],
+      "sources": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.30.6/dynamicweb.ecommerce.10.30.6.nupkg",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/1"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan. Both SQL checks executed read-only on a 10.30.6 database (ledger-husqvarna, 2026-11-13): 0 groups and 0 targeted prices, FAIL as expected for a site that uses no groups."
+    },
+    {
+      "id": "orders.bc-invoices",
+      "change": "added",
+      "evidence": [
+        "enum:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcDocumentDisplay.Both",
+        "enum:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcDocumentDisplay.CreditMemosOnly",
+        "enum:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcDocumentDisplay.InvoicesOnly",
+        "enum:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcDocumentType.CreditMemo",
+        "enum:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcDocumentType.Invoice",
+        "enum:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceSortField.Amount",
+        "enum:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceSortField.CustomerName",
+        "enum:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceSortField.DueDate",
+        "enum:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceSortField.InvoiceDate",
+        "enum:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceSortField.Number",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcAccountSummary",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcCodeReference",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcCustomerFinancialDetail",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcDocumentDisplay",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcDocumentType",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceDetail",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceDetailResult",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceFrontend",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceLine",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceListItem",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceListResult",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceSearchFilter",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceSettings",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.BcInvoiceSortField",
+        "type:Dynamicweb.Ecommerce.CustomerExperienceCenter.Invoices.IBcEndpointProvider",
+        "type:Dynamicweb.Ecommerce.Frontend.Invoices.BcAccountSummaryViewModel",
+        "type:Dynamicweb.Ecommerce.Frontend.Invoices.BcInvoiceDetailViewModel",
+        "type:Dynamicweb.Ecommerce.Frontend.Invoices.BcInvoiceLineViewModel",
+        "type:Dynamicweb.Ecommerce.Frontend.Invoices.BcInvoiceListItemViewModel",
+        "type:Dynamicweb.Ecommerce.Frontend.Invoices.BcInvoiceListViewModel",
+        "type:Dynamicweb.Ecommerce.Frontend.Invoices.BcRequestErrorViewModel",
+        "work-item:27720",
+        "work-item:29453"
+      ],
+      "sources": [
+        "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.30.6/dynamicweb.ecommerce.10.30.6.nupkg",
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/1"
+      ],
+      "runtimeStatus": "requires-target-measurement",
+      "note": "Admitted from the preserved general release scan. The paragraph check is planned: the module system name is not measured."
+    }
+  ],
+  "removed": [],
+  "changed": [
+    {
+      "id": "admin.admin-ui-extensions",
+      "change": "enhancement",
+      "evidence": [
+        "column:dbo.CommandLogModelDataChange.CommandLogModelDataChangeExtensionType",
+        "work-item:28610"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "admin.dashboards",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:29376"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "content.forms",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:29392"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "content.grid-rows",
+      "change": "enhancement",
+      "evidence": [
+        "type:Dynamicweb.Notifications.Standard+GridRow",
+        "type:Dynamicweb.Notifications.Standard+GridRow+OnBeforeRenderArgs",
+        "work-item:29422"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "content.page-seo",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28811"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "content.robots-sitemap",
+      "change": "enhancement",
+      "evidence": [
+        "type:Dynamicweb.Ecommerce.Frontend.UrlHandling.ProductSitemapUrlProvider",
+        "type:Dynamicweb.Frontend.UrlHandling.SitemapUrlProvider",
+        "work-item:28972"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "content.url-index-backup",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:9659"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "delivery.cart-checkout-api",
+      "change": "enhancement",
+      "evidence": [
+        "enum:Dynamicweb.Ecommerce.Frontend.Cart.CartResultType.MultipleProductsAdded",
+        "work-item:29116"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "delivery.content-api",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:29115"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "integration.conditionals",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:29427"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "integration.provider-odata",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:24365"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "marketing.recipients",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:2941"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "orders.customer-experience-center",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:27580"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.asset-auto-checkin",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:29344"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.auto-numbering",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:23325"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.bulk-update",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28909",
+        "work-item:29414"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.data-sets",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:29146",
+        "work-item:29212"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.feeds",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28293",
+        "work-item:29162",
+        "work-item:29199",
+        "work-item:29274"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.images",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:27857",
+        "work-item:29138"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.languages",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:26401"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.machine-translation",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:29125"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.matrix-fields",
+      "change": "enhancement",
+      "evidence": [
+        "type:Dynamicweb.Ecommerce.Products.Categories.MatrixCellView",
+        "work-item:28451",
+        "work-item:28458",
+        "work-item:29103",
+        "work-item:29104",
+        "work-item:29105",
+        "work-item:29106",
+        "work-item:29107"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.product-queries",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28741"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "pim.workspaces",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:29057"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "search.user-index",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:29502"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    },
+    {
+      "id": "users.accounts",
+      "change": "enhancement",
+      "evidence": [
+        "work-item:28996",
+        "work-item:29505"
+      ],
+      "note": "Existing function retained; checks carried over unchanged. Original checks do not imply proof of this new behaviour."
+    }
+  ],
+  "limitations": [
+    "This is a candidate ledger revision, not a measured platform release.",
+    "Every 10.29.8 revision 7 function, check, ground and coverage claim is carried over unchanged; only release source references were made explicit (a 10.29.8 review reference now names the 10.29.8 snapshot).",
+    "pim.matrix-fields: 10.30 adds MASTER to default-language inheritance and shared or language-specific values per matrix column. The cells check reads stored rows per declared language; a declaration that names a language which inherits or shares a column may read no stored cell there. On ledger-supherb-matrix (10.30.6, 2026-11-13) the matrix category Matrix_nutritionFacts still stores its cells per product and language (2748 rows, ENU) and no matrix column or key changed in the upgrade.",
+    "orders.bc-invoices has a planned binding only and stays UNVERIFIED.",
+    "commerce.price-groups SQL reads have fixture red controls (Corrections.Tests.ps1) and were executed on one 10.30.6 database without groups; a site with groups has not been measured."
+  ],
+  "corrections": [],
+  "mapped": [],
+  "checkCorrections": []
+}

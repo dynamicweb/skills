@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "id": "admin.hosting-ring.ring",
+  "functionId": "admin.hosting-ring",
+  "intent": {
+    "proves": "The solution follows the release ring the build declares.",
+    "level": "configured",
+    "scope": "the solution"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-hosting-ring",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-hosting-ring",
+      "reason": "The Hosting settings query is unverified."
+    },
+    {
+      "id": "file-cloud-ring-marker",
+      "surface": "file",
+      "status": "planned",
+      "handler": "cloud-ring-marker",
+      "path": "System/CloudHosting/changeversion.txt",
+      "reason": "changeversion.txt is a request marker, not a read of the applied ring."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/hosting.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/SKILL.md"
+    }
+  ]
+}

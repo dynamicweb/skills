@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "id": "admin.event-viewer.errors-24h",
+  "functionId": "admin.event-viewer",
+  "intent": {
+    "proves": "No error event was stored in the last 24 hours (the Errors last 24h tile reads zero).",
+    "level": "behavioural",
+    "scope": "events of level Error with a timestamp in the last 24 hours"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-log-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-log-count",
+      "operation": "count_log_events_by_query",
+      "reason": "count_log_events_by_query returns a scalar int; no reserved handler reads a scalar tool result and the filter argument names are unmeasured."
+    },
+    {
+      "id": "admin-api-admin-log-count",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-log-count",
+      "operation": "LogEventByFilters",
+      "reason": "LogEventByFilters payload and paging not measured on the baseline."
+    },
+    {
+      "id": "sql-sql-scalar",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "The storage type of GeneralLog.LogLevel is unverified, so no level predicate is written."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/eventviewer.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/logs.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/references/tracking-insights.md"
+    }
+  ]
+}

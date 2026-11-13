@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "swift.cookie-consent.cookie-manager-template",
+  "functionId": "swift.cookie-consent",
+  "intent": {
+    "proves": "The Cookie Manager is set to insert the banner from Cookies.cshtml.",
+    "level": "configured",
+    "scope": "global settings"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api-query",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "Cookie manager settings (query name unverified)",
+      "reason": "The Cookie Manager setting key and its Management API read are not verified."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/cookies.html"
+    }
+  ]
+}

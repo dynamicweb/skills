@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.data-models.products-without-model",
+  "functionId": "pim.data-models",
+  "intent": {
+    "proves": "No active product (a master or simple product, not a variant row) in the default language and in scope sits outside every data model or data set (GroupType 2 or 3).",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-products-without-model",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-products-without-model",
+      "operation": "get_shops",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1 AND ISNULL(p.ProductVariantId, N'') = N''{inScope} AND NOT EXISTS (SELECT 1 FROM EcomGroupProductRelation r JOIN EcomGroups g ON g.GroupId = r.GroupProductRelationGroupId AND g.GroupType IN (2, 3) WHERE r.GroupProductRelationProductId = p.ProductId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#data-models/products-without-model"
+    }
+  ]
+}

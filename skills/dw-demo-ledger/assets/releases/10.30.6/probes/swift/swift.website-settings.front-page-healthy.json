@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "swift.website-settings.front-page-healthy",
+  "functionId": "swift.website-settings",
+  "intent": {
+    "proves": "Each website front page answers 200 as a Dynamicweb page.",
+    "level": "behavioural",
+    "scope": "each website named by the build"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-frontend-health",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-frontend-health",
+      "operation": "get_frontend_health",
+      "arguments": {
+        "areaId": "{areaId}"
+      },
+      "reason": "Needs an areaId input; the contract defines no token substitution for MCP arguments yet. Returns a status object, not a list; needs a status projection."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Core/ToolNames.cs and tool classes (HEAD, read 2026-11-11)"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-swift-building/SKILL.md"
+    }
+  ]
+}

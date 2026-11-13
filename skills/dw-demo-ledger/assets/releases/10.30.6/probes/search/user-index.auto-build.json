@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "search.user-index.auto-build",
+  "functionId": "search.user-index",
+  "intent": {
+    "proves": "The users area rebuilds a named user index when a user is saved.",
+    "level": "configured",
+    "scope": "users area indexing setting"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-files-globalsettings-config",
+      "surface": "file",
+      "status": "planned",
+      "handler": "settings-value",
+      "path": "Files/GlobalSettings.config",
+      "reason": "Setting lives in the solution's global settings file; key name not verified against source and no settings-file handler exists."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/advancedconfiguration.html"
+    }
+  ]
+}

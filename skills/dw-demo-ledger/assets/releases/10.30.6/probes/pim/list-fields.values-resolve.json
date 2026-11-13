@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "id": "pim.list-fields.values-resolve",
+  "functionId": "pim.list-fields",
+  "intent": {
+    "proves": "Every value stored on a list field is one of the option values of that field or of its reference field.",
+    "level": "stored-integrity",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT DISTINCT TOP 25 CAST(v.FieldValueFieldCategoryId AS nvarchar(100)) + N'|' + CAST(v.FieldValueFieldId AS nvarchar(100)) + N' = ' + LTRIM(RTRIM(s.value)) FROM EcomProductCategoryFieldValue v JOIN EcomProductCategoryField f ON f.FieldCategoryId = v.FieldValueFieldCategoryId AND f.FieldId = v.FieldValueFieldId AND f.FieldType = 15 CROSS APPLY STRING_SPLIT(CAST(v.FieldValueValue AS nvarchar(max)), N',') s WHERE LTRIM(RTRIM(s.value)) <> N'' AND NOT EXISTS (SELECT 1 FROM EcomFieldOption o WHERE o.FieldOptionFieldId IN (N'ProductCategory|' + f.FieldCategoryId + N'|' + f.FieldId, N'ProductCategory|reference_category|' + f.FieldId) AND o.FieldOptionValue = LTRIM(RTRIM(s.value)))"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#list-fields/values-resolve"
+    }
+  ]
+}

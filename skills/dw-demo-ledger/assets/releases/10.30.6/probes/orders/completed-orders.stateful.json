@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "orders.completed-orders.stateful",
+  "functionId": "orders.completed-orders",
+  "intent": {
+    "proves": "Every completed, non-deleted order has an order state.",
+    "level": "applied",
+    "scope": "completed orders excluding quotes, ledger entries and subscription base orders; complete enumeration; at least one subject must be in scope"
+  },
+  "assertion": {
+    "kind": "offenders",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT OrderId FROM EcomOrders WHERE OrderComplete = 1 AND ISNULL(OrderDeleted, 0) = 0 AND ISNULL(OrderIsQuote, 0) = 0 AND ISNULL(OrderIsLedgerEntry, 0) = 0 AND ISNULL(OrderIsRecurringOrderTemplate, 0) = 0 AND ISNULL(OrderStateId, N'') = N''",
+      "subjectsQuery": "SELECT COUNT(*) FROM EcomOrders WHERE OrderComplete = 1 AND ISNULL(OrderDeleted, 0) = 0 AND ISNULL(OrderIsQuote, 0) = 0 AND ISNULL(OrderIsLedgerEntry, 0) = 0 AND ISNULL(OrderIsRecurringOrderTemplate, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/index.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

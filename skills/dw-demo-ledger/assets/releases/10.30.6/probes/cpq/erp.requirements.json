@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "id": "cpq.erp.requirements",
+  "functionId": "cpq.erp",
+  "intent": {
+    "proves": "Declared connector, company and endpoint match",
+    "level": "configured",
+    "scope": "Exact declared model/version, catalogue and case set on the target with loaded package and assembly hashes; complete observations only. Missing identity, denied access or truncated scope is UNVERIFIED."
+  },
+  "assertion": {
+    "kind": "attributes",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-cpq-observation",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "cpq-structured-read",
+      "reason": "Discover an authorized external MCP read whose projection proves this whole intent and exhaust pagination. No such CPQ binding is implemented or tool name promised; Studio read/analyze tools are Dynamo-only and cannot be repurposed as external MCP."
+    },
+    {
+      "id": "admin-cpq-observation",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "cpq-structured-read",
+      "reason": "Discover authenticated queries on the installed version through API Explorer; verify projection, model-version filter and complete enumeration. Assembly type existence and row counts are insufficient; no structured CPQ reader is implemented."
+    },
+    {
+      "id": "sql-cpq-observation",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "cpq-structured-read",
+      "localOnly": true,
+      "reason": "Partial stored-reference reader exists, but it cannot prove this complete intent. No live binding is promoted. See references/cpq-observations.md for missing observations and controls."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+    },
+    {
+      "kind": "docs",
+      "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+    }
+  ]
+}

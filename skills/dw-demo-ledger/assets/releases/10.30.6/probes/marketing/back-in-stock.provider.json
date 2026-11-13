@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "id": "marketing.back-in-stock.provider",
+  "functionId": "marketing.back-in-stock",
+  "intent": {
+    "proves": "At least one email uses the Back in stock recipients provider.",
+    "level": "configured",
+    "scope": "all emails and campaign folders"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-email-campaign-recipients",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_email_campaign_recipients",
+      "arguments": {},
+      "reason": "Handler not reserved: needs one call per subject (iterate ids from the list tool) and a client-side predicate. Predicate: providerTypeName ends with BackInStockRecipientProvider."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EmailMarketingEmail e LEFT JOIN EmailMarketingTopFolder tf ON tf.TopFolderId = e.EmailTopFolderId WHERE ISNULL(e.EmailIsTemplate, 0) = 0 AND (CAST(e.EmailRecipientProviderConfiguration AS nvarchar(max)) LIKE N'%BackInStockRecipientProvider%' OR CAST(tf.TopFolderRecipientProviderConfiguration AS nvarchar(max)) LIKE N'%BackInStockRecipientProvider%')",
+      "reason": "Recipient provider configuration is an AddIn parameter blob (GetParametersToXml); that it carries the provider type name as text is assumed from the ScheduledTask settings format, not verified on 10.29.8."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.Ecommerce 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

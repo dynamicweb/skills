@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "dwVersion": "10.30.6",
+  "status": "candidate",
+  "functionsGlob": "functions/*.json",
+  "coverageGlob": "coverage/*.json",
+  "checkSchema": "../../check.schema.json",
+  "ledgerSchema": "../../ledger.schema.json",
+  "components": [
+    {
+      "assemblyDigest": "sha256:7a66042b4d4c99e5fec2adaef0ca6ec228cf6fe90d5d473dabe15d53abde0ecf",
+      "source": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.30.6/dynamicweb.10.30.6.nupkg",
+      "assemblyVersion": "10.30.6.0",
+      "entry": "lib/net10.0/Dynamicweb.dll",
+      "package": "Dynamicweb",
+      "typeCount": 1072,
+      "packageDigest": "sha256:faad1ff32f979b1987c6d7566671ecc616bf18492d7aad0b1186872c63e8d303",
+      "version": "10.30.6"
+    },
+    {
+      "assemblyDigest": "sha256:3c2a194dbbb69a411fa3f7b05e9635c12dfac63c8f87e49e57220730b8bb1287",
+      "source": "https://api.nuget.org/v3-flatcontainer/dynamicweb.core/10.30.6/dynamicweb.core.10.30.6.nupkg",
+      "assemblyVersion": "10.30.6.0",
+      "entry": "lib/net10.0/Dynamicweb.Core.dll",
+      "package": "Dynamicweb.Core",
+      "typeCount": 1585,
+      "packageDigest": "sha256:78142bda1517520b02a0d55c9e1f5817b4e8d996d28772d6bd7553e04a5209ab",
+      "version": "10.30.6"
+    },
+    {
+      "assemblyDigest": "sha256:352007904c97ea5ab0cc8ddb4df93975a37bd3324f049fa02182cc0bc34d377c",
+      "source": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.30.6/dynamicweb.ecommerce.10.30.6.nupkg",
+      "assemblyVersion": "10.30.6.0",
+      "entry": "lib/net10.0/Dynamicweb.Ecommerce.dll",
+      "package": "Dynamicweb.Ecommerce",
+      "typeCount": 2653,
+      "packageDigest": "sha256:eb53a566fea352919aceaade5cc3772a990f26d78f4973fbe6ee2e4ee1e93990",
+      "version": "10.30.6"
+    }
+  ],
+  "coverage": {
+    "status": "incomplete",
+    "note": "Revision 1 of 10.30.6 carries 10.29.8 revision 7 forward and adds the reviewed 10.29.8 to 10.30.6 release delta (delta.json, delta-review.json): two added functions (commerce.price-groups with two SQL checks, orders.bc-invoices with a planned check) and 26 existing functions with released enhancements whose checks are carried over unchanged. No function or check is removed. Existing functions still require target measurement; the carried checks were executed read-only on 10.30.6 hosts (delta.json limitations). Provable without local SQL (an implemented MCP, Admin API or delivery API binding): 63 of 598 checks."
+  },
+  "revision": 1
+}

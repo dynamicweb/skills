@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.workspaces.empty-workspaces",
+  "functionId": "pim.workspaces",
+  "intent": {
+    "proves": "No dynamic workspace was saved without a level.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global; at least one subject must be in scope"
+  },
+  "assertion": {
+    "kind": "offenders",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-empty-workspaces",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-workspace-empty",
+      "operation": "get_dynamic_structures",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(s.DynamicStructureTitle AS nvarchar(200)) FROM DynamicStructures s WHERE NOT EXISTS (SELECT 1 FROM DynamicStructureLevels l WHERE l.DynamicStructureLevelStructureId = CAST(s.DynamicStructureUniqueId AS nvarchar(50)))",
+      "subjectsQuery": "SELECT COUNT(*) FROM DynamicStructures"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#workspaces/empty-workspaces"
+    }
+  ]
+}

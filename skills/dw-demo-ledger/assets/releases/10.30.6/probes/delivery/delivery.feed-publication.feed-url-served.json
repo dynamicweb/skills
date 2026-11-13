@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.feed-publication.feed-url-served",
+  "functionId": "delivery.feed-publication",
+  "intent": {
+    "proves": "A configured feed API Url answers with a non-empty body.",
+    "level": "behavioural",
+    "scope": "feeds named by the build"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-count",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-count",
+      "operation": "GET feed API Url",
+      "reason": "No dwapi handler is implemented; a scalar HTTP binding needs a measured response projection (contract.md), endpoint presence alone does not qualify. The URL comes from the feed details per language, currency and channel."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/feeds.html"
+    }
+  ]
+}

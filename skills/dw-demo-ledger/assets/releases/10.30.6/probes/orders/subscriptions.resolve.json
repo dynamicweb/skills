@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "orders.subscriptions.resolve",
+  "functionId": "orders.subscriptions",
+  "intent": {
+    "proves": "Every recurring order schedule points at an existing base order.",
+    "level": "stored-integrity",
+    "scope": "all recurring order schedules; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(r.RecurringOrderId AS nvarchar(20)) + N' -> ' + ISNULL(r.RecurringOrderBaseOrderID, N'') FROM EcomRecurringOrder r WHERE NOT EXISTS (SELECT 1 FROM EcomOrders o WHERE o.OrderId = r.RecurringOrderBaseOrderID)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/subscriptions.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

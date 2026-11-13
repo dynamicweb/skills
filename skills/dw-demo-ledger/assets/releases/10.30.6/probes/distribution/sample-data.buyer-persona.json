@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "distribution.sample-data.buyer-persona",
+  "functionId": "distribution.sample-data",
+  "intent": {
+    "proves": "The buyer persona TruvioBuyer exists as exactly one sign-in (login) row.",
+    "level": "applied",
+    "scope": "AccessUser rows with the user name TruvioBuyer that are the login of that user name (AccessUserIsLogin); the sample data also ships a second, non-login row under the name"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-users-by-usernames",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_users_by_usernames",
+      "arguments": {
+        "userNames": [
+          "TruvioBuyer"
+        ]
+      }
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE AccessUserUserName = N'TruvioBuyer' AND AccessUserIsLogin = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/base/base.contract.json"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "id": "search.product-index.built",
+  "functionId": "search.product-index",
+  "intent": {
+    "proves": "The storefront product index has a build configured and holds at least one document.",
+    "level": "applied",
+    "scope": "the product index named by the storefront query's source index"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-product-index-status",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_product_index_status",
+      "arguments": {},
+      "reason": "get_product_index_status answers the claim (measured on 10.29.8: documentCount and indexState Success), but it returns one object for a named repository and index, not a row collection; mcp-count cannot project it. Needs an object-field handler and the index name from the storefront query."
+    },
+    {
+      "id": "admin-repositoryindexstatus",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "RepositoryIndexStatus",
+      "arguments": {},
+      "reason": "Admin index status query not measured."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}
