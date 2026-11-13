@@ -19,7 +19,7 @@
       "status": "planned",
       "handler": "dwapi-behaviour",
       "operation": "/dwapi/users/authenticate",
-      "reason": "Needs the persona's credentials at runtime and an authentication handler; not implemented."
+      "reason": "dwapi-count is one anonymous GET on an allowlisted read route and sends no credential. A sign-in is a POST to /dwapi/users/authenticate with the persona's user name and password, a secret no build field carries, followed by a read made as that user. Needs a delivery sign-in handler, a persona credential supplied to the runner like DW_API_TOKEN (never written to the build or report), and the authenticate route allowlisted for that handler only."
     }
   ],
   "sources": [

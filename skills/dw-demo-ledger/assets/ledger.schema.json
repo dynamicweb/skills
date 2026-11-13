@@ -163,6 +163,15 @@
                 "requiresFunction": {
                   "type": "string",
                   "pattern": "^[a-z][a-z0-9.-]*$"
+                },
+                "checks": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9.-]*$"
+                  }
                 }
               },
               "required": [

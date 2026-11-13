@@ -3,6 +3,17 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.8]
+
+- `dw-demo-ledger` snapshot **10.30.6 revision 2** (#244). The digest changes, so a build locked on revision 1 needs a re-lock with `Update-DwLedgerLock.ps1`.
+- `swift.header-footer.selected-on-website` is implemented: a local SQL read reports each active website whose `Swift-v2_Master` website item does not name an existing desktop header page and desktop footer page, with at least one active website required. It has green and red fixture controls and was measured read-only on a 10.30.6 host.
+- `search.facets.not-analyzed`, `search.index-queries.no-constant-macros` and `users.frontend-sign-in.persona-signs-in` stay planned. Each binding's reason now records what was measured on 10.30.6 and the handler it still needs. They stay UNVERIFIED.
+- A not-applicable ground can now list the checks it rules out (`checks`). The function's other locked checks are evaluated as usual, so a ruling about one check no longer rules out the rest. The runner, `ledger.schema.json`, the repository validator and `contract.md` support it, with red controls.
+- New check-scoped grounds:
+  - `orders.favorite-lists` `no-swift-storefront`: the paragraph only; the stored lists are still checked.
+  - `content.paragraphs` `headless-surface`: paragraph visibility only.
+  - `search.facets` `headless-surface`: catalogue wiring only.
+  The two headless grounds hold until a headless check set exists (#243).
 ## [6.8.7]
 
 - `dw-demo-ledger` snapshot **10.30.6** (revision 1), the release delta 10.29.8 to 10.30.6. The raw scan (`Find-DwReleaseFunctions.ps1`: the three platform packages of both versions, the 10.30 changelog through 10.30.6, and the schema of one database before and after its upgrade) found 363 candidates; `delta-review.json` gives each a disposition: 63 support two added functions, 46 enhance 26 existing functions, 254 are rejected with a reason. Every 10.29.8 revision 7 function, check, ground and coverage claim is carried over unchanged; no function or check is removed.

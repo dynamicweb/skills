@@ -233,10 +233,21 @@ def validate_ledgers(repo: Path) -> list[str]:
                     error(manifest, f"{fid}: requirement id is a description, not a fact id: {rid}")
                 if req.get("kind") == "capability" and re.fullmatch(r"[a-z][a-z0-9.-]*", rid) and rid not in functions:
                     error(manifest, f"{fid}: requires unknown function {rid}")
+            primary = set()
+            for relative in f.get("checks", []):
+                try:
+                    primary.add(json.loads(snapshot_path(relative).read_text(encoding="utf-8")).get("id"))
+                except (OSError, ValueError, TypeError, AttributeError):
+                    continue
             for ground in f.get("notApplicable", []):
                 cited = ground.get("requiresFunction") if isinstance(ground, dict) else None
                 if cited is not None and (cited not in functions or cited == fid):
                     error(manifest, f"{fid}: ground {ground.get('id')} cites unknown function {cited}")
+                # A ground that names checks rules out only those; each must be a check the function lists.
+                scoped = ground.get("checks") if isinstance(ground, dict) else None
+                for cid in scoped or []:
+                    if cid not in primary:
+                        error(manifest, f"{fid}: ground {ground.get('id')} names {cid}, which is not a check of this function")
         for fault in requirement_cycles(functions):
             error(manifest, fault)
         claimed = set()

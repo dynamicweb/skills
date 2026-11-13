@@ -16,10 +16,10 @@
       "id": "mcp-get-index-facets",
       "surface": "mcp",
       "status": "planned",
-      "handler": "mcp-count",
+      "handler": "mcp-facet-field-analyzed",
       "operation": "get_index_facets",
       "arguments": {},
-      "reason": "Needs a join of facet Field to get_index_fields Analyzed; not implemented."
+      "reason": "Measured on 10.30.6 with Truvio.Commerce.MCP 0.6.3: get_index_facets returns each facet's field name and no allowlisted read returns whether an index field is analysed. get_index_facet_fields (not allowlisted) returns systemName, name, group and typeName only. Facets also read fields the index builder generates (ParentGroupIDs) that the repository .index file does not declare, so the Files/System/Repositories XML cannot resolve every facet field either. Needs a handler that joins each facet's field to the index schema's Analyzed flag, generated fields included, and reports analysed ones as offenders over the facets scanned."
     }
   ],
   "sources": [
@@ -30,6 +30,10 @@
     {
       "kind": "docs",
       "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+    },
+    {
+      "kind": "measurement",
+      "ref": "A 10.30.6 host with a headless product repository, read-only, 2026-11-13: get_index_facets 7 facet groups; get_index_facet_fields Headless/Products 266 fields with keys systemName, name, group, typeName; Headless/Products.facets reads ParentGroupIDs, which Headless/Products.index does not declare."
     }
   ]
 }

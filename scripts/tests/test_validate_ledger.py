@@ -246,6 +246,17 @@ class LedgerValidationTests(unittest.TestCase):
             self.second_function()
             self.assertIn(f'ground replaced cites unknown function {cited}', '\n'.join(validate_ledgers(self.repo)))
 
+    def test_ground_names_only_checks_of_its_function(self):
+        self.function['notApplicable'] = [{'id': 'scoped', 'when': 'One check only', 'checks': ['test.function.count']}]
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        self.function['notApplicable'][0]['checks'] = ['test.other.count']
+        self.save()
+        self.assertIn('ground scoped names test.other.count, which is not a check of this function', '\n'.join(validate_ledgers(self.repo)))
+        self.function['notApplicable'][0]['checks'] = []
+        self.save()
+        self.assertNotEqual([], validate_ledgers(self.repo))
+
     def test_function_without_a_coverage_claim(self):
         self.coverage['claims'] = []
         self.save()

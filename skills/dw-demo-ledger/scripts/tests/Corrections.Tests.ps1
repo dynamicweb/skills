@@ -275,3 +275,54 @@ Describe 'Snapshot contracts of the corrections (<_>)' -ForEach $versions {
         }
     }
 }
+Describe 'Website header and footer selection (10.30.6 revision 2)' {
+    BeforeAll {
+        $script:hf=Get-Probe '10.30.6' 'probes/swift/swift.header-footer.selected-on-website.json'
+        # Table names here are bracketed or prefixes of column names, so each is replaced only where it stands alone.
+        function ConvertTo-Fixture([string]$Query,[hashtable]$Tables){
+            foreach($name in $Tables.Keys){
+                $t=$Tables[$name];$rows=(@($t.rows)|ForEach-Object {"($_)"}) -join ', '
+                $derived="(SELECT * FROM (VALUES $rows) v($($t.columns -join ', '))$(if($t.empty){' WHERE 1 = 0'}))"
+                $pattern="\b(FROM|JOIN)\s+$([regex]::Escape($name))(?=\s|$)(?:\s+(?!(?:WHERE|ON|JOIN|INNER|LEFT|RIGHT|CROSS|GROUP|ORDER|UNION)\b)([A-Za-z_]\w*))?"
+                $Query=[regex]::Replace($Query,$pattern,{param($m) $alias=if($m.Groups[2].Success){$m.Groups[2].Value}else{'fixture'};"$($m.Groups[1].Value) $derived $alias"}.GetNewClosure())
+            }
+            return $Query
+        }
+        function Invoke-HeaderFooter([hashtable]$Tables){
+            $b=$hf.bindings|Where-Object {$_.id -eq 'local-sql'}
+            $off=@(Invoke-Sqlcmd-Rows -Server $env:LEDGER_TEST_SQLSERVER -Database 'tempdb' -Query (ConvertTo-Fixture $b.query $Tables))
+            $subjects=Invoke-Sqlcmd-Scalar -Server $env:LEDGER_TEST_SQLSERVER -Database 'tempdb' -Query (ConvertTo-Fixture $b.subjectsQuery $Tables)
+            return @{offenders=$off;scanned=$subjects;result=(Test-LedgerAssertion $hf.assertion @{value=$off.Count;complete=$true;scanned=$subjects;offenders=$off})}
+        }
+        $script:areaCols=@('AreaID','AreaName','AreaActive','AreaDeleted','AreaItemType','AreaItemId')
+        $script:masterCols=@('Id','HeaderDesktop','FooterDesktop')
+        $script:pageCols=@('PageID','PageDeleted','PageItemType')
+        function A([int]$Id,[int]$Active=1,[string]$Type='Swift-v2_Master',[string]$Item='1'){"$Id, N'Site $Id', $Active, 0, N'$Type', N'$Item'"}
+        function M([string]$Id,[string]$Header,[string]$Footer){"N'$Id', N'$Header', N'$Footer'"}
+        function Pg([int]$Id,[string]$Type,[int]$Deleted=0){"$Id, $Deleted, N'$Type'"}
+        $script:pages=T $pageCols @((Pg 91 'Swift-v2_Header'),(Pg 90 'Swift-v2_Footer'),(Pg 89 'Swift-v2_Footer' 1),(Pg 5 'Swift-v2_Page'))
+        function Fixture([string[]]$Areas,[string[]]$Masters){@{Area=(T $areaCols $Areas);'[ItemType_Swift-v2_Master]'=(T $masterCols $Masters);Page=$pages}}
+    }
+    It 'is an implemented sql-offenders read with a subjects count and at least one subject' {
+        $b=$hf.bindings|Where-Object {$_.status -eq 'implemented'}
+        $b.handler | Should -Be 'sql-offenders'
+        $b.subjectsQuery | Should -Not -BeNullOrEmpty
+        $hf.assertion.minimumSubjects | Should -Be 1
+        {Assert-LedgerSelect $b.query;Assert-LedgerSelect $b.subjectsQuery} | Should -Not -Throw
+    }
+    It 'passes an active website that selects an existing header and footer page' -Skip:$noSql {
+        $r=Invoke-HeaderFooter (Fixture @((A 1),(A 2 0 '' '')) @((M '1' '91' '90')))
+        $r.result | Should -Be PASS;$r.scanned | Should -Be 1
+    }
+    It 'RED CONTROL: a deleted footer, a header of another type, no selection and no website item are offenders' -Skip:$noSql {
+        (Invoke-HeaderFooter (Fixture @((A 1)) @((M '1' '91' '89')))).offenders | Should -Be @('1 Site 1')
+        (Invoke-HeaderFooter (Fixture @((A 1)) @((M '1' '5' '90')))).result | Should -Be FAIL
+        (Invoke-HeaderFooter (Fixture @((A 1)) @((M '1' '' '90')))).result | Should -Be FAIL
+        (Invoke-HeaderFooter (Fixture @((A 1 1 'Headless_Area' '7')) @((M '1' '91' '90')))).result | Should -Be FAIL
+        $r=Invoke-HeaderFooter (Fixture @((A 1),(A 2 1 'Swift-v2_Master' '2')) @((M '1' '91' '90'),(M '2' 'x' '90')))
+        $r.offenders | Should -Be @('2 Site 2');$r.scanned | Should -Be 2
+    }
+    It 'RED CONTROL: no active website proves nothing' -Skip:$noSql {
+        (Invoke-HeaderFooter (Fixture @((A 1 0)) @((M '1' '91' '90')))).result | Should -Be FAIL
+    }
+}

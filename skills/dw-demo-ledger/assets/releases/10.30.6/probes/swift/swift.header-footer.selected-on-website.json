@@ -3,12 +3,13 @@
   "id": "swift.header-footer.selected-on-website",
   "functionId": "swift.header-footer",
   "intent": {
-    "proves": "Every active website selects a header and a footer page in its layout settings.",
+    "proves": "Every active website selects a header and a footer page in its layout settings: its Swift-v2_Master website item names a desktop header page (item type Swift-v2_Header) and a desktop footer page (Swift-v2_Footer), and both pages exist and are not deleted.",
     "level": "configured",
-    "scope": "active areas"
+    "scope": "active, non-deleted areas"
   },
   "assertion": {
-    "kind": "offenders"
+    "kind": "offenders",
+    "minimumSubjects": 1
   },
   "bindings": [
     {
@@ -18,13 +19,26 @@
       "handler": "mcp-attributes",
       "operation": "get_page_item_field_values",
       "arguments": {},
-      "reason": "The website settings item field names for header and footer are not verified; needs a field projection."
+      "reason": "The website settings are an area item, not a page item; no allowlisted MCP read returns the HeaderDesktop and FooterDesktop fields of the area's Swift-v2_Master item."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(a.AreaID AS nvarchar(20)) + N' ' + ISNULL(a.AreaName, N'') FROM Area a WHERE a.AreaActive = 1 AND ISNULL(a.AreaDeleted, 0) = 0 AND NOT EXISTS (SELECT 1 FROM [ItemType_Swift-v2_Master] m JOIN Page h ON h.PageID = TRY_CAST(m.HeaderDesktop AS int) AND ISNULL(h.PageDeleted, 0) = 0 AND h.PageItemType = N'Swift-v2_Header' JOIN Page f ON f.PageID = TRY_CAST(m.FooterDesktop AS int) AND ISNULL(f.PageDeleted, 0) = 0 AND f.PageItemType = N'Swift-v2_Footer' WHERE a.AreaItemType = N'Swift-v2_Master' AND m.Id = a.AreaItemId)",
+      "subjectsQuery": "SELECT COUNT(*) FROM Area WHERE AreaActive = 1 AND ISNULL(AreaDeleted, 0) = 0"
     }
   ],
   "sources": [
     {
       "kind": "docs",
       "ref": "https://doc.dynamicweb.dev/swift/design/header-and-footer.html"
+    },
+    {
+      "kind": "measurement",
+      "ref": "A 10.30.6 Swift 2 host, read-only, 2026-11-13: Area 1 'Swift 2' AreaItemType Swift-v2_Master, item 1 HeaderDesktop 91 (Swift-v2_Header), FooterDesktop 90 (Swift-v2_Footer); the page-select fields store the page id as text."
     }
   ]
 }

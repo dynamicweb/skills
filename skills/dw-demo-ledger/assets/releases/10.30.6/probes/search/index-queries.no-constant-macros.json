@@ -16,16 +16,23 @@
       "id": "mcp-get-index-query-expressions",
       "surface": "mcp",
       "status": "planned",
-      "handler": "mcp-count",
+      "handler": "mcp-query-constant-macros",
       "operation": "get_index_query_expressions",
       "arguments": {},
-      "reason": "Needs per-query enumeration and an expression-tree projection; not implemented."
+      "reason": "Measured on 10.30.6 with Truvio.Commerce.MCP 0.6.3: get_index_queries lists the queries (id, name, repository, sourceIndex) without expressions; get_index_query_expressions(queryId) returns every expression with field, operator, valueType and value, which is the observation this check needs, but it is not on the read allowlist and takes one call per query. The .query XML (ConstantExpression Value) can be counted with xml-count, but that handler is scalar-only and reports no subjects, so it cannot carry an offenders assertion with minimumSubjects. Needs a handler that enumerates get_index_queries, reads get_index_query_expressions per query and reports each Constant expression whose value has the macro shape as an offender over the queries scanned.",
+      "requiredTools": [
+        "get_index_queries"
+      ]
     }
   ],
   "sources": [
     {
       "kind": "source",
       "ref": "skills/dw-search-indexing/references/mcp-query-tools.md"
+    },
+    {
+      "kind": "measurement",
+      "ref": "A 10.30.6 host with a headless product repository, read-only, 2026-11-13: get_index_queries count 8; get_index_query_expressions for Headless/Products.query returned groups and flat expressions (nodeKey, groupKey, field, operator, valueType Constant or Parameter, value, disabled)."
     }
   ]
 }
