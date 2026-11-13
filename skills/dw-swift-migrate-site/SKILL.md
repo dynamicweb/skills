@@ -90,6 +90,10 @@ section; the intake only asks for what it does not already record.
 - **Keep content verbatim.** Names, descriptions, and specifications stay as scraped, also when a
   tool description lists field writing rules. Cleaned values (spelling, units, decimal separators)
   go in separate facet fields; the displayed value stays as scraped. Never invent data.
+  Content the source generates (ratings, prices, stock, opening hours, product teasers) is not
+  copied as fixed text, because it goes out of date: rebuild it with a component that generates
+  it, or leave it out and side-list it. A rating is always shown with its source (for example
+  Google or Trustpilot).
 - **Bulk data never passes through the conversation or subagents.** Scripts write files, the dw
   CLI uploads them, and Data Integration activities import them.
 - **Read back every write.** A success response or a row count is not proof; for catalog data,

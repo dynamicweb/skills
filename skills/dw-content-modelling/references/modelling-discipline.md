@@ -25,7 +25,7 @@ item-type discipline in §2 below.
 ### Why this matters
 
 A page built as a single rich-text paragraph holding a hand-authored HTML blob (inline hero `<img>`,
-custom-class `<blockquote>`, hand-built key-figures `<div>` grid, raw `<h2>` inside a `Title` field)
+custom-class `<blockquote>`, hand-built key-figures `<div>` grid)
 LOOKS right but:
 
 - An editor cannot swap the hero image (no file picker — it's markup), reword a pull-quote, or change
@@ -54,7 +54,9 @@ enforced at build time, not discovered at audit time.
    picker and templates get `/Admin/Public/GetImage.ashx` resizing/format conversion for free. Never
    `<img>` inside rich text for structural images (hero, card, avatar). Inline images are acceptable
    only as true in-prose illustrations.
-4. **Title/Header fields are plain text.** Markup belongs to the layout template
+4. **Title/Header fields hold only what their editor produces.** On Swift 2, `Title` and
+   `Subtitle` are rich-text fields that the template prints as they are, so the heading is chosen
+   in the editor. Markup belongs to the layout template
    (`<h2 class="dw-h2">@Model.Item.GetString("Title")</h2>`), not the data. (Known OOTB exception: a
    few stock Swift items — MiniCart/Favorites header titles — ship HTML fragments in `Title`;
    preserve those wrappers, don't imitate them.)

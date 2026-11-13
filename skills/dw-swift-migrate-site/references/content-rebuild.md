@@ -138,8 +138,11 @@ id from the extraction, never an invented page) and a `Plan`:
 - Omit `Component` to let the deterministic mapper choose for that block (do this for
   product-group showcases and raw-HTML blocks). Unknown components fall back to the mapper.
 - A failed plan rebuilds that page faithfully and flags it, per page, never aborting the batch.
-- Tree facts (parent, menu visibility, name, order, front page) come from the extraction
-  automatically; never set them by hand.
+- Parent, menu visibility and name come from the extraction unless the spec gives them; what
+  the spec gives wins (parent -1 puts a page at the top level). Order and front page always come
+  from the extraction.
+- A page that is already built is skipped. To redo its layout, send its spec again with a new
+  plan and `Rebuild`: its content is replaced and the page keeps its id and URL.
 
 Without the migration tools, make the same decisions per block and record them in `RUN-STATE.md`
 the same way, so every source block is accounted for.
@@ -151,7 +154,9 @@ the same way, so every source block is accounted for.
    read over `/dwapi`; anything else falls back to generic HTML extraction, and the warnings say
    which mode ran (treat HTML-mode trees with extra scepticism). Note the source host and report
    the warnings: an unauthenticated read misses unpublished pages, so every count is a floor. A
-   prior extraction can be re-read without crawling again.
+   prior extraction can be re-read without crawling again. Before building from an extraction or
+   crawl, compare 3–5 of its pages with the same pages rendered in a browser, late-loading blocks
+   included (tabs, accordions, sliders, product grids), and fix the gaps before building.
    **Run the extraction only when the user confirms the source's owner accepts its load.** Both
    modes read the source 6 requests at a time without reading `robots.txt`, and HTML mode crawls
    up to 120 pages [mcp 0.6.1-beta], so it cannot keep the crawl delay, the
@@ -170,17 +175,30 @@ the same way, so every source block is accounted for.
    `Default.aspx?ID=<sourceId>` first), cookie-banner layout. Skip and side-list analytics ids,
    verification tokens, social handles, ERP settings, and custom head includes. Then:
    - Create and apply the branded color scheme from the captured palette with the migration tool
-     built for it. Do not hand-build schemes while that tool is available.
-   - Scaffold the header and footer (logo and navigation, desktop and mobile) with the chrome
-     tool, and the product catalog shell when the catalog is in scope. For a shop it also adds a
-     mini cart and a search field to the header and creates the cart flow: a cart page, an
-     empty-cart page, anonymous and signed-in checkout pages (information, delivery, payment,
-     receipt), the cart service pages, a search-results page, and a sign-in page. It works
-     without an extraction when given the logo file and the menu links. Payment and shipping
-     methods are not set up, so the checkout cannot complete an order until they are. Check its
-     status, wired fields and errors. Do not hand-build the chrome while that tool is available.
+     built for it. Treat the created schemes as a starting point and adjust them to the brand
+     with `save_color_schemes`. Don't run the tool again after adjusting: it overwrites the group.
+     Take the brand's colours from its brand guide if there is one, and from the logo. After
+     adjusting, check that every text and button colour pair reaches at least 4.5:1 contrast.
+   - Build the header and footer (desktop and phone) with the chrome tool, and the product
+     catalog shell when the catalog is in scope. Without a plan it builds the header and footer
+     the original site has: its rows and columns, with its logo, menu, search, account and cart
+     as the Swift 2 components; Swift 2 has no mega menu, so one becomes the menu's dropdown, and
+     footer menus are left out because their links point outside the migration. When the
+     original's header or footer does not fit the rebuilt site (a shop that needs a product-group
+     menu or a cart, a phone header), pass a plan for it in the
+     same format as the page plans; a slot can name just a component, such as the logo, menu,
+     search or mini cart, with its settings. Running it again with a plan replaces that header or
+     footer. Without an original header or footer and without a plan it builds the standard one,
+     and it works without an extraction when given the logo file and the menu links. For a shop
+     it also creates the cart flow: a cart page, an empty-cart page, anonymous and signed-in
+     checkout pages (information, delivery, payment, receipt), the cart service pages, a
+     search-results page, and a sign-in page. Payment and shipping methods are not set up, so the
+     checkout cannot complete an order until they are. Check its status, wired fields, notes
+     (what it left out, a shop header without a cart) and errors. Do not hand-build the chrome
+     while that tool is available.
 4. **Media.** Import the source media (path-preserving and safe to repeat). Side-list its
-   failures. The media import reads the source 6 files at a time like the extraction, so the
+   failures and the files it skipped because a different file already had the same path; on an
+   installation with more than one website, check that each of them is this site's own. The media import reads the source 6 files at a time like the extraction, so the
    same consent applies; without it, upload the images downloaded in step 2.
 5. **Build pages in batches.** For each page, read the extracted page, decide what each block
    wants to be, and write the plan. Build a batch of pages in one call; the result has per-page
@@ -221,33 +239,31 @@ definitions before choosing.
 
 ## How a well-built Swift 2 page reads
 
-1. **Hero:** full-width `1Column` with a `Poster` or a `Swift-v2_Slider` of image slides
-2. **Intro:** `1Column` `Text`
-3. **Image-beside-text sections:** `2Columns_8-4` / `2Columns_4-8`, alternating sides
-4. **Showcase:** `3Columns`/`4Columns` of `Poster` tiles or `Feature`s; `Card`s only with real
-   body text
-5. **CTA:** a standalone `Button` row
-6. **FAQ/details:** an `Accordion`
-
-Vary section types, group related small blocks into shared rows (`merged-into`) instead of a
-long single-column stack, and give a hero or section row the `primary` color band when it fits the
-brand.
+Choose each page's sections for its content and visitors; a page has a hero, a showcase or an FAQ
+only when its content calls for one. Vary section types, and group related small blocks into
+shared rows instead of a long single-column stack.
 
 ## The product catalog shell
 
-A stock Swift 2 catalog is one fixed shape; do not invent another:
+A Swift 2 catalog has a fixed page structure; keep it as it is:
 
 - **Shop** page in the menu (`Swift-v2_Shop`), with the shop's group navigation under it
-- Hidden **Product list** child (`Swift-v2_ProductList`): one `2Columns_3-9` row with group
-  navigation and facets in the narrow column and a list-component selector in the wide one,
-  pointing at a **Product list area** component page whose item repeater stamps a **Product
+- Hidden **Product list** child (`Swift-v2_ProductList`), with a list-component selector
+  pointing at a **Product list area** component page, whose item repeater stamps a **Product
   card** component page per product
-- Hidden **Product detail** child (`Swift-v2_ProductDetails`): one `2Columns_8-4` row with
-  product media wide and a component selector narrow, pointing at a **Product info** component
-  page (name, number, price, description, variant selector, add-to-cart)
+- Hidden **Product detail** child (`Swift-v2_ProductDetails`), with a component selector
+  pointing at a **Product info** component page
 - All component pages in a **Product Components** folder
+- Optionally, a product group can have its own product detail page, for products that need a
+  different page (for example specifications first instead of images): a copy of the detail page
+  without the navigation tag, set as the group's Primary page. Products use it only when that
+  group is their primary group.
 
-The chrome tool builds exactly this shape when asked to include the product catalog. Ask for it
+The layout of these pages is decided for each site. Read what is on them, and the settings of the
+product list and facet components, before changing it, and check the result rendered at desktop
+and phone width.
+
+The chrome tool builds this structure when asked to include the product catalog. Ask for it
 whenever the migration scope includes the catalog, and never for a content-only migration of a
 site without commerce, so a brochure site never gets a shop. The catalog renders empty until the
 import step has supplied products, the website is bound to the shop, and the product index is

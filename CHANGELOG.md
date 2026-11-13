@@ -3,6 +3,13 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.9.0]
+
+- `dw-swift-migrate-site`: build the original site's header and footer (or a planned one) with the chrome tool, adjust the generated colour schemes for the brand and check 4.5:1 contrast, side-list media skipped because another file had the path, size images by use (2x the shown width, at most 2560 px, never upscale, keep transparency), let `build_pages` specs set name, parent and menu visibility and rebuild a built page, keep the Swift 2 catalog's page structure while its layout is decided per site (with an optional group-specific detail page), choose each page's sections for its content instead of a fixed order, decide related products from the source and the data, and add checks: generated content is not copied as text, extractions are compared with rendered pages, phone measurements in the review loop, and import timing. The critic judges against the brief.
+- `dw-swift-building`: remove `branding-presets.md` (colours, type and imagery come from the brand); brand, layout, content and images are set with MCP tools, not left for the owner; template touchpoints are built for the site; list or grid in the product list is decided for the shop.
+- `dw-swift-page-blocks` and `dw-swift-page-design`: replace the fixed page grammar and alternating bands with composing each page for its content and brand; text fields use only markup the editor produces (no Bootstrap classes or inline style); type scale and eyebrows follow the brand's typography; the chrome tool is a restricted migration tool.
+- `dw-content-modelling`: Swift 2 `Title`/`Subtitle` are rich-text fields whose heading is chosen in the editor.
+
 ## [6.8.0]
 
 - Replace the PIM ledger's `screen-layouts` layout check with nine edit-layout checks (product edit screen type, resolving editors, a pure tab per family, at most 5 tabs per product, 12 editors per group and 30 per tab, no mechanism names, one catch-all group, unique group names, a stated division) and the ground `one-attribute-family` for `under-25-fields-per-family`. Add `pim.field-placement` (`global-fields-filled`, ground `single-family-catalogue`). New local SQL handlers `pim-edit-layout` and `pim-field-placement` read their tables once per run; every rule is a pure function with a red control and its limits are binding arguments. The build schema gains an optional `editLayout`. Recorded as 10.29.8 revision 6 and, from A schema and package evidence, 10.28.15 revision 3. Admin API and MCP bindings stay planned.
