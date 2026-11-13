@@ -17,7 +17,8 @@
       "notApplicable": [
         {
           "id": "headless-storefront",
-          "when": "the storefront is a headless frontend on the Delivery API with no Razor catalogue paragraph"
+          "when": "the storefront is a headless frontend on the Delivery API with no Razor catalogue paragraph",
+          "requiresFunction": "delivery.commerce-products-api"
         }
       ],
       "sources": [
@@ -405,7 +406,8 @@
       "notApplicable": [
         {
           "id": "single-warehouse",
-          "when": "stock is one total per product with no locations"
+          "when": "stock is one total per product with no locations",
+          "requiresFunction": "commerce.stock-levels"
         }
       ],
       "sources": [
@@ -435,7 +437,8 @@
       "notApplicable": [
         {
           "id": "simple-stock",
-          "when": "stock is the single product stock field"
+          "when": "stock is the single product stock field",
+          "requiresFunction": "commerce.stock-levels"
         }
       ],
       "sources": [
@@ -536,7 +539,8 @@
       "notApplicable": [
         {
           "id": "classic-discounts",
-          "when": "the build uses the classic discount engine (commerce.discounts)"
+          "when": "the build uses the classic discount engine (commerce.discounts)",
+          "requiresFunction": "commerce.discounts"
         }
       ],
       "sources": [
@@ -687,7 +691,8 @@
       "notApplicable": [
         {
           "id": "earn-only",
-          "when": "the loyalty story only shows points earned"
+          "when": "the loyalty story only shows points earned",
+          "requiresFunction": "commerce.loyalty-rewards"
         },
         {
           "id": "catalogue-does-not-use",
@@ -748,7 +753,7 @@
       "requires": [
         {
           "kind": "app",
-          "id": "CPQ configurator app",
+          "id": "DW_CPQ_API",
           "expected": true
         }
       ],

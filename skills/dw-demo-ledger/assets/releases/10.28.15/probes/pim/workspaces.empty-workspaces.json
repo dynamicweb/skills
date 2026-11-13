@@ -3,12 +3,13 @@
   "id": "pim.workspaces.empty-workspaces",
   "functionId": "pim.workspaces",
   "intent": {
-    "proves": "Dynamic workspaces: empty-workspaces satisfies the selected profile assertion.",
+    "proves": "No dynamic workspace was saved without a level.",
     "level": "applied",
-    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global; at least one subject must be in scope"
   },
   "assertion": {
-    "kind": "offenders"
+    "kind": "offenders",
+    "minimumSubjects": 1
   },
   "bindings": [
     {
@@ -25,7 +26,8 @@
       "status": "implemented",
       "handler": "sql-offenders",
       "localOnly": true,
-      "query": "SELECT CAST(s.DynamicStructureTitle AS nvarchar(200)) FROM DynamicStructures s WHERE NOT EXISTS (SELECT 1 FROM DynamicStructureLevels l WHERE l.DynamicStructureLevelStructureId = CAST(s.DynamicStructureUniqueId AS nvarchar(50)))"
+      "query": "SELECT CAST(s.DynamicStructureTitle AS nvarchar(200)) FROM DynamicStructures s WHERE NOT EXISTS (SELECT 1 FROM DynamicStructureLevels l WHERE l.DynamicStructureLevelStructureId = CAST(s.DynamicStructureUniqueId AS nvarchar(50)))",
+      "subjectsQuery": "SELECT COUNT(*) FROM DynamicStructures"
     }
   ],
   "sources": [

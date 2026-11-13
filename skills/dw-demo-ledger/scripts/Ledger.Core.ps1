@@ -74,6 +74,11 @@ function Test-LedgerAssertion {
     if (-not $Observation.complete) { return 'UNVERIFIED' }
     if ($Assertion.kind -eq 'offenders') {
         if ($null -eq $Observation.offenders) { return 'ERROR' }
+        # A claim that needs subjects is not proven by zero offenders over zero subjects.
+        if ($Assertion.ContainsKey('minimumSubjects')) {
+            if ($null -eq $Observation.scanned -or $Observation.scanned -is [string]) { return 'ERROR' }
+            if ($Observation.scanned -lt $Assertion.minimumSubjects) { return 'FAIL' }
+        }
         return $(if (@($Observation.offenders).Count -eq 0) {'PASS'} else {'FAIL'})
     }
     if ($Assertion.kind -eq 'scalar') {

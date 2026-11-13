@@ -3,7 +3,7 @@
   "id": "pim.workflow.transitions",
   "functionId": "pim.workflow",
   "intent": {
-    "proves": "Product workflow with states, transitions and notifications: transitions satisfies the selected profile assertion.",
+    "proves": "At least one workflow transition connects two states that exist.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

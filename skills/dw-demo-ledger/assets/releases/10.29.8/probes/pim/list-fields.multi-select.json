@@ -3,7 +3,7 @@
   "id": "pim.list-fields.multi-select",
   "functionId": "pim.list-fields",
   "intent": {
-    "proves": "List fields with options, single and multi select: multi-select satisfies the selected profile assertion.",
+    "proves": "At least one list field is presented as a multi-select list or a checkbox list (presentation 3 or 4).",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

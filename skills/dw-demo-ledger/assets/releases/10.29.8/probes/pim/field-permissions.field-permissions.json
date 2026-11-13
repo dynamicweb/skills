@@ -3,7 +3,7 @@
   "id": "pim.field-permissions.field-permissions",
   "functionId": "pim.field-permissions",
   "intent": {
-    "proves": "Field permissions per role: field-permissions satisfies the selected profile assertion.",
+    "proves": "At least one product field permission (UnifiedPermission ProductField) is stored.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

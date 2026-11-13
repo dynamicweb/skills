@@ -3,7 +3,7 @@
   "id": "pim.documents.document-categories",
   "functionId": "pim.documents",
   "intent": {
-    "proves": "Documents in their own asset categories: document-categories satisfies the selected profile assertion.",
+    "proves": "At least one asset category that accepts pdf holds an asset.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

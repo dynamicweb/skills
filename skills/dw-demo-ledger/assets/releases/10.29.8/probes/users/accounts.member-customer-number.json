@@ -27,6 +27,7 @@
       "status": "implemented",
       "handler": "sql-offenders",
       "query": "SELECT u.AccessUserId, g.AccessUserId AS AccountId FROM AccessUserGroupRelation r JOIN AccessUser g ON g.AccessUserId = r.AccessUserGroupRelationGroupId JOIN AccessUser u ON u.AccessUserId = r.AccessUserGroupRelationUserId WHERE g.AccessUserType = 2 AND g.AccessUserUserAndGroupType = 'SystemAccount' AND u.AccessUserType <> 2 AND u.AccessUserActive = 1 AND ISNULL(u.AccessUserCustomerNumber,'') <> ISNULL(g.AccessUserCustomerNumber,'')",
+      "subjectsQuery": "SELECT COUNT(*) FROM AccessUserGroupRelation r JOIN AccessUser g ON g.AccessUserId = r.AccessUserGroupRelationGroupId JOIN AccessUser u ON u.AccessUserId = r.AccessUserGroupRelationUserId WHERE g.AccessUserType = 2 AND g.AccessUserUserAndGroupType = 'SystemAccount' AND u.AccessUserType <> 2 AND u.AccessUserActive = 1",
       "localOnly": true
     }
   ],

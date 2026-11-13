@@ -3,6 +3,18 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.6]
+
+- `dw-demo-ledger` snapshot revisions: 10.29.8 revision 7 and 10.28.15 revision 4. Both digests change, so every build lock on an earlier revision needs a re-lock with `Update-DwLedgerLock.ps1` (release process, "Re-locking an existing build").
+- Check corrections: `distribution.sample-data.catalogue` counts product ids with the `TCPROD` prefix (it read product numbers), `distribution.sample-data.buyer-persona` counts the login row, `pim.gtin.ean-share` counts simple products and variants and exempts a master with variant groups. Twelve offender checks whose claim needs subjects state `minimumSubjects` and count their subjects with a new `subjectsQuery`: zero offenders over zero subjects is FAIL. The 80 checks with the template `intent.proves` text state what each query proves.
+- `pim.matrix-fields`: `columns` reads the owner field and requires a Matrix field linked to the matrix category, `parent-marker` and `cells` count the whole matrix category, a numeric cell must be plain decimal text, and an offender names observed and expected values.
+- Rulings and requirements: 28 grounds that name another function carry `requiresFunction`. Requirement ids that were descriptions are removed (five functions) or replaced (`commerce.configured-products` requires app `DW_CPQ_API`).
+- Every function has a coverage claim; a function with planned bindings only says "no check yet". The coverage baseline is gone and the validator rule is strict.
+- `delta-review.json` / `delta.json`: `EcomVariantGroups.VariantGroupExpandInProductIndex` corroborates `search.variant-index-representatives`; `TrackingView.TrackingViewExecutionTime` is no longer evidence.
+- First delivery API binding: `delivery.content-api.areas-served` reads `content/areas` (`dwapi-count`, rowsPath `$`), measured on a 10.29.8 host. Navigation, product search, query and the free-text search term stay planned, with the measured reason. Provable without local SQL (an implemented MCP, Admin API or delivery API binding): 10.29.8 63 of 587 checks (was 62), 10.28.15 60 of 521 (unchanged).
+- Runner: a local SQL check that reads `{lang}` or `{pimShop}` is UNVERIFIED with the reason when the language has no products or the shop does not exist. The CPQ receipt reader judges each producer row from its step journal with the Distribution's `Get-CpqObservationVerdict`, reads the facts from `steps[operation].observed` and reports `complete` when every row is proven; the binding status stays with `Resolve-CpqReaderVerdict`.
+- Validator: refuses a link to a private repository, a requirement id that is a description, the template `intent.proves` text and an `sql-offenders` minimum without `subjectsQuery`. `dw-commerce-cpq` and the CPQ snapshot files no longer link to a private repository.
+
 ## [6.8.5]
 
 - `dw-demo-ledger` requirements can be established. The runner reads an `app` requirement from the installed add-in folder (`<id>.<version>`, local Files root or MCP file listing; `true`, an exact version or `{min}`), a settings path from the settings layers at the local Files root, and a flag by its class name when one feature type ends with it. A `capability` that names a function holds when that function's locked checks pass in the run. Rulings are applied before requirements, and a ground may cite a function (`requiresFunction`) that must be locked and passing.

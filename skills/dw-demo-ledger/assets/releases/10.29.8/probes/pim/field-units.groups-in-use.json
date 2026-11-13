@@ -3,7 +3,7 @@
   "id": "pim.field-units.groups-in-use",
   "functionId": "pim.field-units",
   "intent": {
-    "proves": "Units on measures: groups-in-use satisfies the selected profile assertion.",
+    "proves": "Category fields and global product fields use at least one unit (conversion) group.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

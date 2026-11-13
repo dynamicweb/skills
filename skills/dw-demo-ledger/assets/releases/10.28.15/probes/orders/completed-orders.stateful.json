@@ -5,10 +5,11 @@
   "intent": {
     "proves": "Every completed, non-deleted order has an order state.",
     "level": "applied",
-    "scope": "completed orders excluding quotes, ledger entries and subscription base orders; complete enumeration"
+    "scope": "completed orders excluding quotes, ledger entries and subscription base orders; complete enumeration; at least one subject must be in scope"
   },
   "assertion": {
-    "kind": "offenders"
+    "kind": "offenders",
+    "minimumSubjects": 1
   },
   "bindings": [
     {
@@ -17,7 +18,8 @@
       "status": "implemented",
       "handler": "sql-offenders",
       "localOnly": true,
-      "query": "SELECT OrderId FROM EcomOrders WHERE OrderComplete = 1 AND ISNULL(OrderDeleted, 0) = 0 AND ISNULL(OrderIsQuote, 0) = 0 AND ISNULL(OrderIsLedgerEntry, 0) = 0 AND ISNULL(OrderIsRecurringOrderTemplate, 0) = 0 AND ISNULL(OrderStateId, N'') = N''"
+      "query": "SELECT OrderId FROM EcomOrders WHERE OrderComplete = 1 AND ISNULL(OrderDeleted, 0) = 0 AND ISNULL(OrderIsQuote, 0) = 0 AND ISNULL(OrderIsLedgerEntry, 0) = 0 AND ISNULL(OrderIsRecurringOrderTemplate, 0) = 0 AND ISNULL(OrderStateId, N'') = N''",
+      "subjectsQuery": "SELECT COUNT(*) FROM EcomOrders WHERE OrderComplete = 1 AND ISNULL(OrderDeleted, 0) = 0 AND ISNULL(OrderIsQuote, 0) = 0 AND ISNULL(OrderIsLedgerEntry, 0) = 0 AND ISNULL(OrderIsRecurringOrderTemplate, 0) = 0"
     }
   ],
   "sources": [

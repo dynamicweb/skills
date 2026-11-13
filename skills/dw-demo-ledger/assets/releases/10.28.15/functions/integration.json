@@ -78,7 +78,8 @@
       "notApplicable": [
         {
           "id": "full-table-sync",
-          "when": "every mapped source row is imported or exported"
+          "when": "every mapped source row is imported or exported",
+          "requiresFunction": "integration.table-mappings"
         }
       ],
       "sources": [
@@ -107,7 +108,8 @@
       "notApplicable": [
         {
           "id": "plain-mapping",
-          "when": "every column is mapped one to one"
+          "when": "every column is mapped one to one",
+          "requiresFunction": "integration.table-mappings"
         }
       ],
       "sources": [
@@ -246,13 +248,7 @@
       "description": "Feature-managed central schema files under Files/Integration/Schemas shared across activities instead of a schema snapshot in every job file; table schema error list and update.",
       "skill": "dw-integration-framework",
       "status": "candidate",
-      "requires": [
-        {
-          "kind": "flag",
-          "id": "Feature Management: Schema Management (storage key unverified)",
-          "expected": true
-        }
-      ],
+      "requires": [],
       "inputs": [],
       "checks": [
         "probes/integration/schema-management.schemas.json"
@@ -260,7 +256,8 @@
       "notApplicable": [
         {
           "id": "per-job-schemas",
-          "when": "activities keep their own schema snapshot"
+          "when": "activities keep their own schema snapshot",
+          "requiresFunction": "integration.activities"
         }
       ],
       "sources": [
@@ -281,13 +278,7 @@
       "description": "Blueprint app packages installing a pre-configured activity group (for example Business Central OData default API or OData V4) that is then configured manually.",
       "skill": "dw-integration-erp",
       "status": "candidate",
-      "requires": [
-        {
-          "kind": "app",
-          "id": "integration blueprint package (name per blueprint; unverified)",
-          "expected": true
-        }
-      ],
+      "requires": [],
       "inputs": [],
       "checks": [
         "probes/integration/blueprints.blueprint-group.json"
@@ -295,7 +286,8 @@
       "notApplicable": [
         {
           "id": "custom-activities",
-          "when": "the integration is built from custom activities"
+          "when": "the integration is built from custom activities",
+          "requiresFunction": "integration.activities"
         }
       ],
       "sources": [
@@ -629,7 +621,8 @@
       "notApplicable": [
         {
           "id": "batch-only",
-          "when": "the demo uses batch integration only, no real-time lookups"
+          "when": "the demo uses batch integration only, no real-time lookups",
+          "requiresFunction": "integration.activities"
         }
       ],
       "sources": [
@@ -664,7 +657,8 @@
       "notApplicable": [
         {
           "id": "synced-prices",
-          "when": "prices are imported in batch"
+          "when": "prices are imported in batch",
+          "requiresFunction": "integration.activities"
         }
       ],
       "sources": [
@@ -700,7 +694,8 @@
       "notApplicable": [
         {
           "id": "dw-calculates-cart",
-          "when": "Dynamicweb calculates carts and orders are exported in batch"
+          "when": "Dynamicweb calculates carts and orders are exported in batch",
+          "requiresFunction": "orders.order-export"
         }
       ],
       "sources": [
@@ -756,13 +751,7 @@
       "description": "A scheduled task with the Import data with custom request add-in calling a plug-in unit endpoint, saving the XML response and running an XML-to-Dynamicweb activity with runtime mappings.",
       "skill": "dw-integration-erp",
       "status": "candidate",
-      "requires": [
-        {
-          "kind": "app",
-          "id": "Import data with custom request add-in (package name unverified)",
-          "expected": true
-        }
-      ],
+      "requires": [],
       "inputs": [],
       "checks": [
         "probes/integration/plugin-unit-import.custom-request-task.json"
@@ -770,7 +759,8 @@
       "notApplicable": [
         {
           "id": "odata-integration",
-          "when": "the remote system is integrated through OData, not a plug-in unit"
+          "when": "the remote system is integrated through OData, not a plug-in unit",
+          "requiresFunction": "integration.provider-odata"
         },
         {
           "id": "catalogue-does-not-use",
@@ -795,13 +785,7 @@
       "description": "The PIM for Business Central connector apps on the Dynamicweb side and an API key used by the Business Central extension to synchronise item data both ways.",
       "skill": "dw-integration-bc",
       "status": "candidate",
-      "requires": [
-        {
-          "kind": "app",
-          "id": "PIM for Business Central connector",
-          "expected": true
-        }
-      ],
+      "requires": [],
       "inputs": [],
       "checks": [
         "probes/integration/pim-bc-connector.api-key.json"

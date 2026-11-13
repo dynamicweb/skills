@@ -3,7 +3,7 @@
   "id": "pim.dashboards.dashboard",
   "functionId": "pim.dashboards",
   "intent": {
-    "proves": "PIM dashboard with query-backed widgets: dashboard satisfies the selected profile assertion.",
+    "proves": "At least one Products dashboard has four or more widgets.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

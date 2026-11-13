@@ -3,7 +3,7 @@
   "id": "pim.data-sets.data-set",
   "functionId": "pim.data-sets",
   "intent": {
-    "proves": "Data sets with inherited default values: data-set satisfies the selected profile assertion.",
+    "proves": "At least one data set (GroupType 3) exists.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

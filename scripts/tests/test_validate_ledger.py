@@ -250,22 +250,52 @@ class LedgerValidationTests(unittest.TestCase):
         self.coverage['claims'] = []
         self.save()
         self.assertIn('test.function: function has no coverage claim', '\n'.join(validate_ledgers(self.repo)))
+        # The rule is strict: no list of exempt functions is read any more.
         baseline = self.repo / 'scripts/ledger-coverage-baseline.json'
         baseline.parent.mkdir(parents=True, exist_ok=True)
         baseline.write_text(json.dumps({'1.0.0': ['test.function']}), encoding='utf-8')
+        self.assertIn('test.function: function has no coverage claim', '\n'.join(validate_ledgers(self.repo)))
+
+    def test_description_requirement_template_proves_and_subjects(self):
+        self.function['requires'] = [{'kind': 'app', 'id': 'Some connector app', 'expected': True}]
+        self.check['intent']['proves'] = 'Test: count satisfies the selected profile assertion.'
+        self.save()
+        errors = '\n'.join(validate_ledgers(self.repo))
+        self.assertIn('requirement id is a description', errors)
+        self.assertIn('intent.proves is the template text', errors)
+        self.setUp()
+        self.check['assertion'] = {'kind': 'offenders', 'minimumSubjects': 1}
+        self.check['bindings'][0]['handler'] = 'sql-offenders'
+        self.save()
+        self.assertIn('sql-offenders with minimumSubjects needs a subjectsQuery', '\n'.join(validate_ledgers(self.repo)))
+        self.check['bindings'][0]['subjectsQuery'] = 'SELECT 1 DROP TABLE x'
+        self.save()
+        errors = '\n'.join(validate_ledgers(self.repo))
+        self.assertNotIn('needs a subjectsQuery', errors)
+        self.assertIn('not a single read-only SELECT', errors)
+        self.check['bindings'][0]['subjectsQuery'] = 'SELECT COUNT(*) FROM T'
+        self.save()
         self.assertEqual([], validate_ledgers(self.repo))
 
-    def test_shipped_coverage_baseline_only_lists_unclaimed_functions(self):
-        repo = Path(__file__).resolve().parents[2]
-        baseline = json.loads((repo / 'scripts/ledger-coverage-baseline.json').read_text(encoding='utf-8'))
-        for version, listed in baseline.items():
-            root = repo / 'skills/dw-demo-ledger/assets/releases' / version
-            claimed = set()
-            for file in (root / 'coverage').glob('*.json'):
-                for claim in json.loads(file.read_text(encoding='utf-8'))['claims']:
-                    claimed.update(claim[key] for key in ('functionId', 'duplicateOf') if key in claim)
-            self.assertEqual([], sorted(set(listed) & claimed), version)
+
+class PrivateLinkTests(unittest.TestCase):
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('validate_skills', Path(__file__).resolve().parents[1] / 'validate-skills.py')
+        self.module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.module)
+
+    def test_private_repository_link_is_found(self):
+        text = 'ok\nsee https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/abc/README.md\n'
+        self.assertEqual([2], [line for line, _ in self.module.private_repository_links(text)])
+        self.assertEqual(1, len(self.module.private_repository_links('GITHUB.COM/Truvio-Commerce/truvio.commerce.cpqstudio')))
+
+    def test_public_repository_and_plain_name_pass(self):
+        text = ('https://github.com/dynamicweb/skills/blob/x/README.md\nTruvio.Commerce.CpqStudio = 0.7.0\n'
+                'https://github.com/truvio-commerce/Truvio.Commerce.CpqStudioX')
+        self.assertEqual([], self.module.private_repository_links(text))
 
 
 if __name__ == '__main__':
     unittest.main()
+

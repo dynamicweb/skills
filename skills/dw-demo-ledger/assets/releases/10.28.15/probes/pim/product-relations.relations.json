@@ -3,7 +3,7 @@
   "id": "pim.product-relations.relations",
   "functionId": "pim.product-relations",
   "intent": {
-    "proves": "Product relations (accessories, spare parts, replacements): relations satisfies the selected profile assertion.",
+    "proves": "At least one product relation exists.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

@@ -3,7 +3,7 @@
   "id": "pim.bom.lines-resolve",
   "functionId": "pim.bom",
   "intent": {
-    "proves": "Bundles and parts lists (BOM): lines-resolve satisfies the selected profile assertion.",
+    "proves": "Every BOM line points at a component product that exists or, when it names a group, at a product group that exists.",
     "level": "stored-integrity",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

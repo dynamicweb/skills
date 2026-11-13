@@ -3,7 +3,7 @@
   "id": "pim.field-units.declared-units",
   "functionId": "pim.field-units",
   "intent": {
-    "proves": "Units on measures: declared-units satisfies the selected profile assertion.",
+    "proves": "Every measure the build declares has a unit group and a preset unit on its stored field, and the minimum number of measures is declared.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

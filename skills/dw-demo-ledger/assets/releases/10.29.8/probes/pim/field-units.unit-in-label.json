@@ -3,12 +3,13 @@
   "id": "pim.field-units.unit-in-label",
   "functionId": "pim.field-units",
   "intent": {
-    "proves": "Units on measures: unit-in-label satisfies the selected profile assertion.",
+    "proves": "No category field label carries a unit in brackets, such as (mm), (kg) or (V).",
     "level": "applied",
-    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global; at least one subject must be in scope"
   },
   "assertion": {
-    "kind": "offenders"
+    "kind": "offenders",
+    "minimumSubjects": 1
   },
   "bindings": [
     {
@@ -25,7 +26,8 @@
       "status": "implemented",
       "handler": "sql-offenders",
       "localOnly": true,
-      "query": "SELECT DISTINCT CAST(t.FieldTranslationFieldCategoryId AS nvarchar(100)) + N'|' + CAST(t.FieldTranslationFieldId AS nvarchar(100)) + N' = ' + CAST(t.FieldTranslationFieldLabel AS nvarchar(200)) FROM EcomProductCategoryFieldTranslation t WHERE t.FieldTranslationFieldCategoryId <> N'reference_category' AND (t.FieldTranslationFieldLabel LIKE N'%(in)%' OR t.FieldTranslationFieldLabel LIKE N'%(inch%' OR t.FieldTranslationFieldLabel LIKE N'%(mm)%' OR t.FieldTranslationFieldLabel LIKE N'%(cm)%' OR t.FieldTranslationFieldLabel LIKE N'%(m)%' OR t.FieldTranslationFieldLabel LIKE N'%(ft)%' OR t.FieldTranslationFieldLabel LIKE N'%(kg)%' OR t.FieldTranslationFieldLabel LIKE N'%(g)%' OR t.FieldTranslationFieldLabel LIKE N'%(lb%' OR t.FieldTranslationFieldLabel LIKE N'%(oz)%' OR t.FieldTranslationFieldLabel LIKE N'%(l)%' OR t.FieldTranslationFieldLabel LIKE N'%(gal%' OR t.FieldTranslationFieldLabel LIKE N'%(V)%' OR t.FieldTranslationFieldLabel LIKE N'%(A)%' OR t.FieldTranslationFieldLabel LIKE N'%(W)%' OR t.FieldTranslationFieldLabel LIKE N'%(kW)%' OR t.FieldTranslationFieldLabel LIKE N'%(hp)%' OR t.FieldTranslationFieldLabel LIKE N'%(bar)%' OR t.FieldTranslationFieldLabel LIKE N'%(psi)%' OR t.FieldTranslationFieldLabel LIKE N'%(°C)%' OR t.FieldTranslationFieldLabel LIKE N'%(°F)%')"
+      "query": "SELECT DISTINCT CAST(t.FieldTranslationFieldCategoryId AS nvarchar(100)) + N'|' + CAST(t.FieldTranslationFieldId AS nvarchar(100)) + N' = ' + CAST(t.FieldTranslationFieldLabel AS nvarchar(200)) FROM EcomProductCategoryFieldTranslation t WHERE t.FieldTranslationFieldCategoryId <> N'reference_category' AND (t.FieldTranslationFieldLabel LIKE N'%(in)%' OR t.FieldTranslationFieldLabel LIKE N'%(inch%' OR t.FieldTranslationFieldLabel LIKE N'%(mm)%' OR t.FieldTranslationFieldLabel LIKE N'%(cm)%' OR t.FieldTranslationFieldLabel LIKE N'%(m)%' OR t.FieldTranslationFieldLabel LIKE N'%(ft)%' OR t.FieldTranslationFieldLabel LIKE N'%(kg)%' OR t.FieldTranslationFieldLabel LIKE N'%(g)%' OR t.FieldTranslationFieldLabel LIKE N'%(lb%' OR t.FieldTranslationFieldLabel LIKE N'%(oz)%' OR t.FieldTranslationFieldLabel LIKE N'%(l)%' OR t.FieldTranslationFieldLabel LIKE N'%(gal%' OR t.FieldTranslationFieldLabel LIKE N'%(V)%' OR t.FieldTranslationFieldLabel LIKE N'%(A)%' OR t.FieldTranslationFieldLabel LIKE N'%(W)%' OR t.FieldTranslationFieldLabel LIKE N'%(kW)%' OR t.FieldTranslationFieldLabel LIKE N'%(hp)%' OR t.FieldTranslationFieldLabel LIKE N'%(bar)%' OR t.FieldTranslationFieldLabel LIKE N'%(psi)%' OR t.FieldTranslationFieldLabel LIKE N'%(°C)%' OR t.FieldTranslationFieldLabel LIKE N'%(°F)%')",
+      "subjectsQuery": "SELECT COUNT(*) FROM EcomProductCategoryFieldTranslation t WHERE t.FieldTranslationFieldCategoryId <> N'reference_category'"
     }
   ],
   "sources": [

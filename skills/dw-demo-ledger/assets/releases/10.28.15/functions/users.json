@@ -462,13 +462,7 @@
       "description": "Sign-in through an external identity service (Azure AD B2C, GitHub, Google, Microsoft Entra, Entra External ID, Okta) for backend, frontend or both.",
       "skill": "dw-users-permissions",
       "status": "candidate",
-      "requires": [
-        {
-          "kind": "capability",
-          "id": "external identity tenant and client registration supplied at runtime",
-          "expected": true
-        }
-      ],
+      "requires": [],
       "inputs": [],
       "checks": [
         "probes/users/external-login.provider-active.json",

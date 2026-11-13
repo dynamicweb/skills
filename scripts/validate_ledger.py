@@ -41,9 +41,10 @@ def layout_argument_faults(handler, arguments) -> list[str]:
 
 
 PROFILE_KEYS = {"op", "value", "minimumSubjects"}
+TEMPLATE_PROVES = "satisfies the selected profile assertion"
 
 
-def binding_faults(binding, kind, registry) -> list[str]:
+def binding_faults(binding, kind, registry, assertion=None) -> list[str]:
     """What an implemented binding must state before the runner may execute it. The registry
     (assets/handlers.json) is the same one the runner reads; nothing here is inferred from a name."""
     handler, surface = binding.get("handler"), binding.get("surface")
@@ -83,6 +84,11 @@ def binding_faults(binding, kind, registry) -> list[str]:
         faults.append("settings-value needs arguments.key")
     if handler in ("sql-scalar", "sql-offenders") and not binding.get("query"):
         faults.append("implemented SQL scalar/offenders binding needs a query")
+    if binding.get("subjectsQuery") and handler != "sql-offenders":
+        faults.append("subjectsQuery belongs to an sql-offenders binding only")
+    # Zero offenders over zero subjects proves nothing; a minimum needs the subjects counted.
+    if handler == "sql-offenders" and "minimumSubjects" in (assertion or {}) and not binding.get("subjectsQuery"):
+        faults.append("sql-offenders with minimumSubjects needs a subjectsQuery")
     return faults + [f"{handler} binding {fault}" for fault in layout_argument_faults(handler, binding.get("arguments"))]
 
 
@@ -133,12 +139,6 @@ def validate_ledgers(repo: Path) -> list[str]:
             error(path, f"unreadable JSON ({exc})")
             return None
 
-    # Functions that had no coverage claim when the rule was introduced. The list only shrinks: a
-    # function outside it needs a claim, and the snapshot revision that adds the claims empties it.
-    try:
-        unclaimed_baseline = json.loads((repo / "scripts/ledger-coverage-baseline.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        unclaimed_baseline = {}
     registry = read(assets / "handlers.json") or {}
     if not isinstance(registry.get("handlers"), dict):
         error(assets / "handlers.json", "expected handlers, mcpReadTools and adminReadQueries")
@@ -198,6 +198,9 @@ def validate_ledgers(repo: Path) -> list[str]:
                     checks[cid] = check
                     if check.get("functionId") != fid:
                         error(path, f"probe owner differs from {fid}")
+                    # A PASS is audited against its claim; the template text states none.
+                    if TEMPLATE_PROVES in ((check.get("intent") or {}).get("proves") or ""):
+                        error(path, "intent.proves is the template text; state what the check proves")
                     binding_ids = set()
                     for binding in check.get("bindings", []):
                         if not isinstance(binding, dict):
@@ -208,11 +211,12 @@ def validate_ledgers(repo: Path) -> list[str]:
                         binding_ids.add(binding.get("id"))
                         if binding.get("surface") == "sql" and binding.get("localOnly") is not True:
                             error(path, "SQL binding must declare localOnly:true")
-                        if isinstance(binding.get("query"), str):
-                            sql_jobs.append({"path": path.relative_to(repo).as_posix(), "query": binding["query"]})
+                        for key in ("query", "subjectsQuery"):
+                            if isinstance(binding.get(key), str):
+                                sql_jobs.append({"path": path.relative_to(repo).as_posix(), "query": binding[key]})
                         if binding.get("status") == "implemented":
                             kind = (check.get("assertion") or {}).get("kind")
-                            for fault in binding_faults(binding, kind, registry):
+                            for fault in binding_faults(binding, kind, registry, check.get("assertion")):
                                 error(path, fault)
         for path in (root / "probes").glob("**/*.json"):
             if path.resolve() not in referenced:
@@ -224,6 +228,9 @@ def validate_ledgers(repo: Path) -> list[str]:
         for fid, f in functions.items():
             for req in f.get("requires", []):
                 rid = req.get("id", "")
+                # A description is not a fact id: no discovery can ever match it, so the check stays UNVERIFIED.
+                if re.search(r"\s", rid):
+                    error(manifest, f"{fid}: requirement id is a description, not a fact id: {rid}")
                 if req.get("kind") == "capability" and re.fullmatch(r"[a-z][a-z0-9.-]*", rid) and rid not in functions:
                     error(manifest, f"{fid}: requires unknown function {rid}")
             for ground in f.get("notApplicable", []):
@@ -246,8 +253,8 @@ def validate_ledgers(repo: Path) -> list[str]:
                         error(file, f"coverage {key} does not resolve: {claim[key]}")
                     elif key in claim:
                         claimed.add(claim[key])
-        allowed = set(unclaimed_baseline.get(root.name, []))
-        for fid in sorted(set(functions) - claimed - allowed):
+        # Every function carries a claim; one without a check says so ("no check yet").
+        for fid in sorted(set(functions) - claimed):
             error(manifest, f"{fid}: function has no coverage claim")
 
     # One process validates all schemas and every SQL text, never one process per probe. Paths

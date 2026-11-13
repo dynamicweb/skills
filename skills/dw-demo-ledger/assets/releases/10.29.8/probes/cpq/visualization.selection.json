@@ -26,10 +26,6 @@
       "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
     },
     {
-      "kind": "source",
-      "ref": "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
-    },
-    {
       "kind": "docs",
       "ref": "skills/dw-demo-ledger/references/cpq-area.md"
     }

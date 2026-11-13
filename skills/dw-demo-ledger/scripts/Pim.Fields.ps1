@@ -42,14 +42,32 @@ function Test-PimOp {
     throw "unknown op '$Op'"
 }
 
+# A declared language without products, or a shop the target does not have, makes every check that
+# reads it measure an empty scope: that is a wrong input, not a FAIL of the site. Counted once per run.
+function Assert-PimTokenScope {
+    [CmdletBinding()]
+    param([string]$Token, [string]$Value, [string]$Server, [string]$Database)
+    if (-not $Server -or -not $Database) { return }
+    if (-not $script:PimTokenScope) { $script:PimTokenScope = @{} }
+    $key = "$Server|$Database|$Token|$Value"
+    if (-not $script:PimTokenScope.ContainsKey($key)) {
+        $query = if ($Token -eq '{lang}') { "SELECT COUNT(*) FROM EcomProducts WHERE ProductLanguageId = N'$Value'" } else { "SELECT COUNT(*) FROM EcomShops WHERE ShopId = N'$Value'" }
+        $script:PimTokenScope[$key] = Invoke-Sqlcmd-Scalar -Server $Server -Database $Database -Query $query
+    }
+    if ($script:PimTokenScope[$key] -lt 1) {
+        $what = if ($Token -eq '{lang}') { "defaultLanguage '$Value' has no products on the target" } else { "pimShop '$Value' is not a shop on the target" }
+        throw [InvalidOperationException]::new("Build input: $what; declare the catalogue's language and shop.")
+    }
+}
 function Expand-PimSql {
     [CmdletBinding()]
-    param([string]$Sql, $Build)
+    param([string]$Sql, $Build, [string]$Server, [string]$Database)
     foreach ($p in @(@('{lang}', "$($Build.defaultLanguage)"), @('{pimShop}', "$($Build.pimShop)"))) {
         if ($Sql.Contains($p[0])) {
             # An undeclared input is missing evidence (UNVERIFIED); a declared value that is not a plain id stays an error.
             if (-not $p[1]) { throw [InvalidOperationException]::new("token $($p[0]) is not declared in the build file") }
             if ($p[1] -notmatch $script:PimTokenPattern) { throw "token $($p[0]) has no plain-id value in the build file" }
+            Assert-PimTokenScope -Token $p[0] -Value $p[1] -Server $Server -Database $Database
             $Sql = $Sql.Replace($p[0], $p[1])
         }
     }

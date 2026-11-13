@@ -3,7 +3,7 @@
   "id": "pim.field-scope.ruling.one-language-no-variant",
   "functionId": "pim.field-scope",
   "intent": {
-    "proves": "Fields that differ per language or per variant: one-language-no-variant satisfies the selected profile assertion.",
+    "proves": "Product rows exist in one language only and no variant row exists, which the ruling that field scope does not matter relies on.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

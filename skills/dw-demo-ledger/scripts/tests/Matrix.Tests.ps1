@@ -17,7 +17,10 @@ BeforeAll {
             @{categoryId='nutrition';fieldId='amount';row=0;value='1.500';referenceCategoryId=''},
             @{categoryId='nutrition';fieldId='name';row=1;value='Energy';referenceCategoryId=''},
             @{categoryId='nutrition';fieldId='amount';row=1;value='0';referenceCategoryId=''}
-        )})}
+        )})
+            owners=@(@{categoryId='food';id='table';type='Matrix';matrixCategoryId='nutrition'})
+            markers=@(@{productId='P1';variantId='';languageId='L1';categoryId='food';fieldId='table';markers=1})
+            census=@(@{productId='P1';variantId='';languageId='L1';cells=4})}
         return @{matrix=$m;observation=$o}
     }
 }
@@ -73,6 +76,47 @@ Describe 'Matrix evidence is exact and has red controls' {
         $null=Test-PimMatrixObservation $f.matrix $f.observation 'negative-control'
         ($f.observation|ConvertTo-Json -Depth 30) | Should -BeExactly $before
     }
+    It 'RED CONTROL: an owner field that is not a Matrix field, or is linked to another matrix, fails' {
+        $f=New-MatrixFixture;$f.observation.owners[0].type='Text'
+        $r=Test-PimMatrixObservation $f.matrix $f.observation 'columns'
+        $r.value | Should -Be 0
+        $r.offenders[0] | Should -BeLike "*observed type 'Text'*expected 'Matrix' linked to 'nutrition'*"
+        $f=New-MatrixFixture;$f.observation.owners[0].matrixCategoryId='other_matrix'
+        (Test-PimMatrixObservation $f.matrix $f.observation 'columns').value | Should -Be 0
+        $f=New-MatrixFixture;$f.observation.owners=@()
+        (Test-PimMatrixObservation $f.matrix $f.observation 'columns').value | Should -Be 0
+    }
+    It 'RED CONTROL: rows and markers outside the declared subjects fail' {
+        # Matrix rows on an undeclared product (the 999 rows of the retest).
+        $f=New-MatrixFixture;$f.observation.census+=,@{productId='P9';variantId='';languageId='L1';cells=2}
+        $r=Test-PimMatrixObservation $f.matrix $f.observation 'cells'
+        $r.value | Should -Be 0
+        $r.offenders | Should -Contain "Undeclared matrix rows: P9//L1: observed 2 cell(s), expected 0"
+        # Orphan cells in another language of the declared product.
+        $f=New-MatrixFixture;$f.observation.census+=,@{productId='P1';variantId='';languageId='L2';cells=4}
+        (Test-PimMatrixObservation $f.matrix $f.observation 'cells').value | Should -Be 0
+        # A second parent marker in another owner category.
+        $f=New-MatrixFixture;$f.observation.markers+=,@{productId='P1';variantId='';languageId='L1';categoryId='drink';fieldId='table';markers=1}
+        $r=Test-PimMatrixObservation $f.matrix $f.observation 'parent-marker'
+        $r.value | Should -Be 0
+        $r.offenders | Should -Contain "Markers referencing 'nutrition': observed 2, expected 1"
+        $f=New-MatrixFixture;$f.observation.markers=@(@{productId='P9';variantId='';languageId='L1';categoryId='food';fieldId='table';markers=1})
+        (Test-PimMatrixObservation $f.matrix $f.observation 'parent-marker').value | Should -Be 0
+    }
+    It 'names observed and expected values in a cell offender' {
+        $f=New-MatrixFixture;$f.observation.subjects[0].cells[1].value='1.6'
+        $r=Test-PimMatrixObservation $f.matrix $f.observation 'cells'
+        $r.offenders | Should -Contain "P1//L1:0:amount: observed '1.6', expected '1.5'"
+        $f=New-MatrixFixture;$f.observation.subjects[0].cells=$f.observation.subjects[0].cells[0..2]
+        (Test-PimMatrixObservation $f.matrix $f.observation 'cells').offenders | Should -Contain "P1//L1:1:amount: observed 0 cell(s), expected '0'"
+    }
+    It 'RED CONTROL: a padded or exponent number is another stored representation' {
+        Test-PimMatrixValue ' 4e0 ' 4 'Double' | Should -BeFalse
+        Test-PimMatrixValue '4e0' 4 'Double' | Should -BeFalse
+        Test-PimMatrixValue '-4.50' -4.5 'Double' | Should -BeTrue
+        $f=New-MatrixFixture;$f.observation.subjects[0].cells[1].value=' 1.5 '
+        (Test-PimMatrixObservation $f.matrix $f.observation 'cells').value | Should -Be 0
+    }
     It 'compares numbers invariantly without treating missing values as zero' {
         Test-PimMatrixValue '0' 0 'Double' | Should -BeTrue
         Test-PimMatrixValue $null 0 'Double' | Should -BeFalse
@@ -93,6 +137,8 @@ Describe 'Matrix evidence is exact and has red controls' {
         Mock Invoke-Sqlcmd-Rows {
             param($Server,$Database,$Query)
             Assert-LedgerSelect $Query
+            # The whole-category count reads every subject of the category; it carries no subject scope.
+            if($Query -match 'COUNT\(\*\) cells'){$Query | Should -Match "FieldValueFieldCategoryId=N'nutrition'";return '[]'}
             $Query | Should -Match "FieldValueProductId=N'P''1'"
             $Query | Should -Match "FieldValueProductVariantId=N'V1'"
             $Query | Should -Match "FieldValueProductLanguageId=N'L1'"
@@ -100,7 +146,8 @@ Describe 'Matrix evidence is exact and has red controls' {
         }
         $m=(New-MatrixFixture).matrix;$m.subjects[0].productId="P'1";$m.subjects[0].variantId='V1'
         (Get-PimMatrixObservation -Aspect cells -Build @{expected=@{matrix=$m}} -Server '.' -Database 'fixture').value | Should -Be 0
-        Should -Invoke Invoke-Sqlcmd-Rows -Times 1 -Exactly
+        # The declared subject's cells, then the whole matrix category.
+        Should -Invoke Invoke-Sqlcmd-Rows -Times 2 -Exactly
     }
     It 'projects complete SQL JSON into the <aspect> observation' -TestCases @(@{aspect='columns'},@{aspect='parent-marker'},@{aspect='cells'},@{aspect='negative-control'}) {
         param($aspect)
@@ -109,7 +156,10 @@ Describe 'Matrix evidence is exact and has red controls' {
             param($Server,$Database,$Query)
             Assert-LedgerSelect $Query
             $data=if($Query -match 'FROM EcomProductCategory WHERE'){$script:sqlFixture.observation.categories}
+                elseif($Query -match 'FieldMatrixAttributeGroupId'){$script:sqlFixture.observation.owners}
                 elseif($Query -match 'EcomProductCategoryField f'){$script:sqlFixture.observation.columns}
+                elseif($Query -match 'COUNT\(\*\) markers'){$script:sqlFixture.observation.markers}
+                elseif($Query -match 'COUNT\(\*\) cells'){$script:sqlFixture.observation.census}
                 elseif($Query -match "FieldValueFieldCategoryId=N'food'"){$script:sqlFixture.observation.subjects[0].parents}
                 else{$script:sqlFixture.observation.subjects[0].cells}
             return ConvertTo-Json -InputObject @($data) -Depth 30 -Compress

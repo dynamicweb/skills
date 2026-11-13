@@ -351,6 +351,11 @@
       "claim": "Finding products without a data model, with missing or expired assets, or due to be discontinued.",
       "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/queries/index.html",
       "duplicateOf": "pim.product-queries"
+    },
+    {
+      "claim": "Facet overrides per product group: no check yet. Its check (exists) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg",
+      "functionId": "search.group-facet-overrides"
     }
   ],
   "gaps": [

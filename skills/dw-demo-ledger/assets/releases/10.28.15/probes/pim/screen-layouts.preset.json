@@ -3,7 +3,7 @@
   "id": "pim.screen-layouts.preset",
   "functionId": "pim.screen-layouts",
   "intent": {
-    "proves": "Product edit screen layout and list presets: preset satisfies the selected profile assertion.",
+    "proves": "At least one list screen preset has three or more columns.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

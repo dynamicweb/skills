@@ -305,7 +305,7 @@ function Test-PimEditLayoutAspect {
 function Get-PimGlobalFieldFill {
     param([Parameter(Mandatory)][string]$Server, [Parameter(Mandatory)][string]$Database, [Parameter(Mandatory)]$Build)
     if ("$($Build.defaultLanguage)" -notmatch $script:PimTokenPattern) { throw [InvalidOperationException]::new('Field placement needs the build defaultLanguage.') }
-    $scope = Expand-PimSql -Sql "FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND ISNULL(p.ProductVariantId, N'') = N''{inScope}" -Build $Build
+    $scope = Expand-PimSql -Sql "FROM EcomProducts p WHERE p.ProductLanguageId = N'{lang}' AND ISNULL(p.ProductVariantId, N'') = N''{inScope}" -Build $Build -Server $Server -Database $Database
     $total = Invoke-Sqlcmd-Scalar -Server $Server -Database $Database -Query "SELECT COUNT(DISTINCT p.ProductId) $scope"
     $sql = "SELECT CAST(f.ProductFieldSystemName AS nvarchar(128)) COLLATE DATABASE_DEFAULT + N'|' + CASE WHEN ISNULL(t.FieldTypeProvider, N'') <> N'' THEN N'1' ELSE N'0' END + N'|' + ISNULL((SELECT TOP 1 CAST(ty.name AS nvarchar(128)) COLLATE DATABASE_DEFAULT FROM sys.columns c JOIN sys.types ty ON ty.user_type_id = c.user_type_id WHERE c.object_id = OBJECT_ID(N'EcomProducts') AND c.name COLLATE DATABASE_DEFAULT = f.ProductFieldSystemName COLLATE DATABASE_DEFAULT), N'') + N'|' FROM EcomProductField f LEFT JOIN EcomFieldType t ON t.FieldTypeId = f.ProductFieldTypeId WHERE ISNULL(f.ProductFieldIsStandard, 0) = 0"
     $fields = @()

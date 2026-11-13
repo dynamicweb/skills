@@ -3,7 +3,7 @@
   "id": "pim.data-sets.defaults",
   "functionId": "pim.data-sets",
   "intent": {
-    "proves": "Data sets with inherited default values: defaults satisfies the selected profile assertion.",
+    "proves": "At least one non-empty default value is stored on a data model or data set.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

@@ -24,16 +24,14 @@ DW_CPQ_API = 10.24.2
 Truvio.Commerce.CpqStudio = 0.7.0
 ```
 
-Source corroboration is Studio commit `4a99413bf184217d9d110ee33dda8bac3eef7f44`:
+Source corroboration is Studio commit `4a99413bf184217d9d110ee33dda8bac3eef7f44`, reviewed in its
+own repository, which is not public: its conditions reader and operator allowlist, its model
+checker, its embedded CPQ guidance and its behaviour and access contract. The findings this file
+relies on are stated in place below, so a reader needs no access to that repository.
 
-- [Conditions reader and operator allowlist](https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/src/Native/Core/Conditions.cs).
-- [Model checker](https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/src/Native/Core/Checker.cs) and
-  [embedded CPQ guidance](https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/dynamo-skill/cpq-json-assistant.md).
-- [Studio behavior and access contract](https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md).
-
-Repository access may be required. These identify the reviewed implementation and its recorded
-engine findings; Studio's parser is not an independent execution of the vendor runtime. The
-public skill contains no vendor decompiled source, customer model or host-specific receipt.
+These identify the reviewed implementation and its recorded engine findings; Studio's parser is
+not an independent execution of the vendor runtime. The public skill contains no vendor
+decompiled source, customer model or host-specific receipt.
 
 The condition correction follows the engine-inspection finding `k-fc9cc59c`. Related measured
 failure records are `k-5723ae2a` (package/assembly identity), `k-dd71594c` (page-bound cart button),
@@ -65,7 +63,7 @@ SQL is a last observation surface for local installs only when higher surfaces o
 ownership fields; a SELECT needs no cache flush. No direct SQL write recipe is supplied here.
 
 Studio's read and analyze operations belong to its own Dynamo tool pack, not the base MCP registry.
-The [reviewed implementation](https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/src/Dynamo/CpqStudioTools.cs)
+The reviewed implementation of that tool pack
 checks for the `/admin/dynamo` request context and administrator access; external
 MCP requests are refused. Discover the current tool surface rather than assuming these operations are
 externally callable. Follow `nextCursor` until `complete=true`; a denial or partial page is not an

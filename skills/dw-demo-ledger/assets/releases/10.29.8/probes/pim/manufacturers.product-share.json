@@ -3,7 +3,7 @@
   "id": "pim.manufacturers.product-share",
   "functionId": "pim.manufacturers",
   "intent": {
-    "proves": "Manufacturers / brands: product-share satisfies the selected profile assertion.",
+    "proves": "The share of active products (masters and simple products) in the default language and in scope that name a manufacturer that exists reaches the minimum, in percent.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

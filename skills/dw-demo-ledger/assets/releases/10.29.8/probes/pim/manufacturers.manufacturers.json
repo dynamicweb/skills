@@ -3,7 +3,7 @@
   "id": "pim.manufacturers.manufacturers",
   "functionId": "pim.manufacturers",
   "intent": {
-    "proves": "Manufacturers / brands: manufacturers satisfies the selected profile assertion.",
+    "proves": "At least one manufacturer exists.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

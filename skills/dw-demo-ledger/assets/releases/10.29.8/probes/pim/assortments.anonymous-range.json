@@ -3,7 +3,7 @@
   "id": "pim.assortments.anonymous-range",
   "functionId": "pim.assortments",
   "intent": {
-    "proves": "Assortments: anonymous-range satisfies the selected profile assertion.",
+    "proves": "At least one active assortment that allows anonymous users has been built (it has assortment items), so anonymous visitors still see a range.",
     "level": "stored-integrity",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

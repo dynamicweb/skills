@@ -17,7 +17,8 @@
       "notApplicable": [
         {
           "id": "headless-storefront",
-          "when": "checkout runs in a headless frontend through the Delivery API"
+          "when": "checkout runs in a headless frontend through the Delivery API",
+          "requiresFunction": "delivery.cart-checkout-api"
         },
         {
           "id": "catalogue-only",
@@ -81,7 +82,8 @@
       "notApplicable": [
         {
           "id": "erp-fulfilment",
-          "when": "fulfilment and capture are shown in the ERP, not in the back office"
+          "when": "fulfilment and capture are shown in the ERP, not in the back office",
+          "requiresFunction": "orders.order-export"
         }
       ],
       "sources": [
@@ -316,7 +318,8 @@
       "notApplicable": [
         {
           "id": "returns-in-erp",
-          "when": "returns are handled in the ERP"
+          "when": "returns are handled in the ERP",
+          "requiresFunction": "orders.order-export"
         }
       ],
       "sources": [
@@ -566,7 +569,8 @@
       "notApplicable": [
         {
           "id": "invoice-only",
-          "when": "the demo takes payment on account or invoice only"
+          "when": "the demo takes payment on account or invoice only",
+          "requiresFunction": "orders.payment-methods"
         },
         {
           "id": "catalogue-does-not-use",
@@ -628,7 +632,8 @@
       "notApplicable": [
         {
           "id": "invoice-only",
-          "when": "the demo takes payment on account or invoice only"
+          "when": "the demo takes payment on account or invoice only",
+          "requiresFunction": "orders.payment-methods"
         },
         {
           "id": "catalogue-does-not-use",
@@ -735,7 +740,8 @@
       "notApplicable": [
         {
           "id": "fee-rules-only",
-          "when": "shipping fees come from fee rules with no carrier integration"
+          "when": "shipping fees come from fee rules with no carrier integration",
+          "requiresFunction": "orders.shipping-methods"
         }
       ],
       "sources": [
@@ -847,7 +853,8 @@
       "notApplicable": [
         {
           "id": "single-rate",
-          "when": "every product carries the country VAT rate"
+          "when": "every product carries the country VAT rate",
+          "requiresFunction": "orders.country-vat"
         }
       ],
       "sources": [
@@ -913,7 +920,8 @@
       "notApplicable": [
         {
           "id": "vat-market",
-          "when": "the market uses VAT only"
+          "when": "the market uses VAT only",
+          "requiresFunction": "orders.country-vat"
         },
         {
           "id": "catalogue-does-not-use",

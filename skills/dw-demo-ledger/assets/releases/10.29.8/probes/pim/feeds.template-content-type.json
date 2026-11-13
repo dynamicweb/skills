@@ -3,7 +3,7 @@
   "id": "pim.feeds.template-content-type",
   "functionId": "pim.feeds",
   "intent": {
-    "proves": "Feeds: template-content-type satisfies the selected profile assertion.",
+    "proves": "Every feed on the template provider states a non-empty Content Type in its provider configuration.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },
