@@ -463,7 +463,15 @@
         "probes/content/paragraphs.visible.json",
         "probes/content/paragraphs.item-instances.json"
       ],
-      "notApplicable": [],
+      "notApplicable": [
+        {
+          "id": "headless-surface",
+          "when": "The edition's storefront is a headless surface: its content is item-field pages read through the Delivery API, not visible Swift paragraphs. Until a headless check set exists (dynamicweb/skills#243) only the paragraph visibility check is ruled out; item instances are still checked.",
+          "checks": [
+            "content.paragraphs.visible"
+          ]
+        }
+      ],
       "sources": [
         {
           "kind": "docs",

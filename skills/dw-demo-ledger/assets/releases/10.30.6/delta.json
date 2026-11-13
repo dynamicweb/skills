@@ -3,7 +3,7 @@
   "status": "reviewed",
   "before": "10.29.8",
   "after": "10.30.6",
-  "revision": 1,
+  "revision": 2,
   "rawScanDigest": "sha256:e1149cbc8a86e33fd29d0e17ce258a8f322247c1a1eb65ff36c6a3e1b4902cc7",
   "review": "delta-review.json",
   "added": [
@@ -331,9 +331,45 @@
     "Every 10.29.8 revision 7 function, check, ground and coverage claim is carried over unchanged; only release source references were made explicit (a 10.29.8 review reference now names the 10.29.8 snapshot).",
     "pim.matrix-fields: 10.30 adds MASTER to default-language inheritance and shared or language-specific values per matrix column. The cells check reads stored rows per declared language; a declaration that names a language which inherits or shares a column may read no stored cell there. On ledger-supherb-matrix (10.30.6, 2026-11-13) the matrix category Matrix_nutritionFacts still stores its cells per product and language (2748 rows, ENU) and no matrix column or key changed in the upgrade.",
     "orders.bc-invoices has a planned binding only and stays UNVERIFIED.",
-    "commerce.price-groups SQL reads have fixture red controls (Corrections.Tests.ps1) and were executed on one 10.30.6 database without groups; a site with groups has not been measured."
+    "commerce.price-groups SQL reads have fixture red controls (Corrections.Tests.ps1) and were executed on one 10.30.6 database without groups; a site with groups has not been measured.",
+    "Revision 2: search.facets.not-analyzed, search.index-queries.no-constant-macros and users.frontend-sign-in.persona-signs-in still have planned bindings only and stay UNVERIFIED; each binding's reason names the handler it needs (#244)."
   ],
   "corrections": [],
   "mapped": [],
-  "checkCorrections": []
+  "checkCorrections": [
+    {
+      "checkId": "swift.header-footer.selected-on-website",
+      "change": "binding-promoted",
+      "source": "https://github.com/dynamicweb/skills/issues/244",
+      "note": "Revision 2: implemented sql-offenders binding with a subjects count. Offenders are active, non-deleted areas whose Swift-v2_Master website item does not name an existing, non-deleted desktop header page (Swift-v2_Header) and desktop footer page (Swift-v2_Footer); assertion now needs at least one active area. Measured read-only on a 10.30.6 Swift 2 host (0 offenders, 1 area); green and red fixture controls in Corrections.Tests.ps1. The MCP binding stays planned: no allowlisted read returns the area item's fields."
+    },
+    {
+      "checkId": "search.facets.not-analyzed",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/244",
+      "note": "Revision 2: binding stays planned; the reason records the measured reads (get_index_facets has the facet field, no allowlisted read has the Analyzed flag, generated fields such as ParentGroupIDs are not in the .index file) and the handler it needs."
+    },
+    {
+      "checkId": "search.index-queries.no-constant-macros",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/244",
+      "note": "Revision 2: binding stays planned; the reason records that get_index_query_expressions returns valueType and value per expression but is not allowlisted and needs one call per query, that xml-count cannot carry an offenders assertion with minimumSubjects, and the handler it needs."
+    },
+    {
+      "checkId": "users.frontend-sign-in.persona-signs-in",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/244",
+      "note": "Revision 2: binding stays planned; the reason records why the anonymous dwapi-count GET cannot sign a persona in and what a sign-in handler needs (a POST route, a persona credential passed like DW_API_TOKEN)."
+    },
+    {
+      "functionIds": [
+        "orders.favorite-lists",
+        "content.paragraphs",
+        "search.facets"
+      ],
+      "change": "ground-added",
+      "source": "https://github.com/dynamicweb/skills/issues/244",
+      "note": "Revision 2: a ground may list the checks it rules out (checks); the function's other checks are evaluated as usual. New check-scoped grounds: orders.favorite-lists no-swift-storefront (the paragraph check only; the stored lists stay checked), content.paragraphs headless-surface (paragraph visibility only; item instances stay checked) and search.facets headless-surface (catalogue wiring only; facet groups and analysed fields stay checked). The headless grounds hold until a headless check set exists (#243)."
+    }
+  ]
 }

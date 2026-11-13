@@ -186,6 +186,13 @@
         {
           "id": "search.na.no-storefront-catalog",
           "when": "The demo shows no product list."
+        },
+        {
+          "id": "headless-surface",
+          "when": "The edition's storefront is a headless surface that serves facets through a repository query and the Delivery API, not through a Product Catalog app paragraph. Until a headless check set exists (dynamicweb/skills#243) only the catalogue wiring check is ruled out; facet groups and analysed facet fields are still checked.",
+          "checks": [
+            "search.facets.catalog-wired"
+          ]
         }
       ],
       "sources": [

@@ -130,9 +130,11 @@ Describe 'Rulings come first and a named function must pass' {
                 'fx.loop-a'=@{id='fx.loop-a';requires=@(@{kind='capability';id='fx.loop-b';expected=$true});notApplicable=@()}
                 'fx.loop-b'=@{id='fx.loop-b';requires=@(@{kind='capability';id='fx.loop-a';expected=$true});notApplicable=@()}
                 'fx.text'=@{id='fx.text';requires=@(@{kind='capability';id='external identity tenant supplied at runtime';expected=$true});notApplicable=@()}
+                'fx.scoped'=@{id='fx.scoped';requires=@();notApplicable=@(@{id='one-check-only';when='Only the first check is ruled out';checks=@('fx.scoped.one')})}
             }
             $checks=@{};foreach($id in $functions.Keys){$checks["$id.one"]=@{id="$id.one";functionId=$id;intent=@{level='configured';proves='p'}}}
             $checks['fx.base.two']=@{id='fx.base.two';functionId='fx.base';intent=@{level='configured';proves='p'}}
+            $checks['fx.scoped.two']=@{id='fx.scoped.two';functionId='fx.scoped';intent=@{level='configured';proves='p'}}
             $script:outcomes=$Outcomes
             $cap=New-Capabilities;$cap.facts=$Facts
             return Get-LedgerRows @{build=@{lock=@{checkIds=$CheckIds};functions=$FunctionIds;rulings=$Rulings};functions=$functions;checks=$checks;capabilities=$cap;profile=@{expectations=@{}};surfaces=@('file');root=$TestDrive;assets=$assets;blocked=$null}
@@ -194,6 +196,30 @@ Describe 'Rulings come first and a named function must pass' {
         $row.reason | Should -Be "Ruling ground 'classic-engine' cites another function, and function 'fx.base' is FAIL in this run."
         $rows=New-Run @{} @('fx.replaced.one') @('fx.replaced') $ruling
         (Get-Result $rows 'fx.replaced.one').reason | Should -Match "function 'fx\.base' has no locked check in this build"
+    }
+    It 'rules out only the checks a scoped ground names and evaluates the function''s other checks' {
+        $ruling=@{'fx.scoped'=@{applies=$false;rule='one-check-only';evidence='Owner ruling on the first check.'}}
+        $rows=New-Run @{'fx.scoped.one'='FAIL';'fx.scoped.two'='PASS'} @('fx.scoped.one','fx.scoped.two') @('fx.scoped') $ruling
+        $one=Get-Result $rows 'fx.scoped.one'
+        $one.result | Should -Be 'NOT-APPLICABLE'
+        $one.reason | Should -Match 'rules out only fx\.scoped\.one'
+        (Get-Result $rows 'fx.scoped.two').result | Should -Be PASS
+        Should -Invoke Invoke-LedgerCheck -Times 1 -Exactly -ParameterFilter {$Check.id -eq 'fx.scoped.two'}
+        Should -Invoke Invoke-LedgerCheck -Times 0 -Exactly -ParameterFilter {$Check.id -eq 'fx.scoped.one'}
+        Get-LedgerVerdict $rows.ToArray() | Should -Be PASS
+    }
+    It 'RED CONTROL: a scoped ground does not hide a failing check it does not name' {
+        $ruling=@{'fx.scoped'=@{applies=$false;rule='one-check-only';evidence='Owner ruling on the first check.'}}
+        $rows=New-Run @{'fx.scoped.one'='PASS';'fx.scoped.two'='FAIL'} @('fx.scoped.one','fx.scoped.two') @('fx.scoped') $ruling
+        (Get-Result $rows 'fx.scoped.two').result | Should -Be FAIL
+        Get-LedgerVerdict $rows.ToArray() | Should -Be FAIL
+    }
+    It 'accepts a non-empty list of check ids on a ground and refuses an empty one' {
+        $function=@{id='fx.one';area='fx';name='One';skill='dw-demo-ledger';status='candidate';requires=@();inputs=@();checks=@();notApplicable=@(@{id='scoped';when='Only one check';checks=@('fx.one.a')});sources=@()}
+        $file=Join-Path $TestDrive 'scoped.json';@{schema=1;area='fx';functions=@($function)}|ConvertTo-Json -Depth 10|Set-Content $file
+        {Read-LedgerJson $file (Join-Path $assets 'ledger.schema.json')} | Should -Not -Throw
+        $function.notApplicable[0].checks=@();@{schema=1;area='fx';functions=@($function)}|ConvertTo-Json -Depth 10|Set-Content $file
+        {Read-LedgerJson $file (Join-Path $assets 'ledger.schema.json')} | Should -Throw '*ledger.schema.json*'
     }
     It 'accepts requiresFunction on a ground in a function file' {
         $function=@{id='fx.one';area='fx';name='One';skill='dw-demo-ledger';status='candidate';requires=@();inputs=@();checks=@();notApplicable=@(@{id='classic-engine';when='Uses the other one';requiresFunction='fx.two'});sources=@()}
