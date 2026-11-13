@@ -3,6 +3,13 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.9.0]
+
+- `dw-swift-migrate-site`: build the original site's header and footer (or a planned one) with the chrome tool, adjust the generated colour schemes for the brand and check 4.5:1 contrast, side-list media skipped because another file had the path, size images by use (2x the shown width, at most 2560 px, never upscale, keep transparency), let `build_pages` specs set name, parent and menu visibility and rebuild a built page, keep the Swift 2 catalog's page structure while its layout is decided per site (with an optional group-specific detail page), choose each page's sections for its content instead of a fixed order, decide related products from the source and the data, and add checks: generated content is not copied as text, extractions are compared with rendered pages, phone measurements in the review loop, and import timing. The critic judges against the brief.
+- `dw-swift-building`: remove `branding-presets.md` (colours, type and imagery come from the brand); brand, layout, content and images are set with MCP tools, not left for the owner; template touchpoints are built for the site; list or grid in the product list is decided for the shop.
+- `dw-swift-page-blocks` and `dw-swift-page-design`: replace the fixed page grammar and alternating bands with composing each page for its content and brand; text fields use only markup the editor produces (no Bootstrap classes or inline style); type scale and eyebrows follow the brand's typography; the chrome tool is a restricted migration tool.
+- `dw-content-modelling`: Swift 2 `Title`/`Subtitle` are rich-text fields whose heading is chosen in the editor.
+
 ## [6.8.6]
 
 - `dw-demo-ledger` snapshot revisions: 10.29.8 revision 7 and 10.28.15 revision 4. Both digests change, so every build lock on an earlier revision needs a re-lock with `Update-DwLedgerLock.ps1` (release process, "Re-locking an existing build").

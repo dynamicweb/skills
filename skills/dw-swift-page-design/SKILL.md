@@ -24,8 +24,8 @@ page's style) or "build a page from this image/screenshot/mockup". You compose t
 directly with the low-level content tools and the Swift 2 design vocabulary.
 
 **Load [dw-swift-page-blocks](../dw-swift-page-blocks) first** — it is the vocabulary (row
-`DefinitionId`s, paragraph components + variants + fields, color schemes, the pretty-page
-grammar) and the tool reference this flow assumes. Everything below is the *procedure*; that
+`DefinitionId`s, paragraph components + variants + fields, color schemes, composing a
+page) and the tool reference this flow assumes. Everything below is the *procedure*; that
 skill is the *catalog*.
 
 This is for authoring ONE page (or a small handful) with design intent — modeled on a
@@ -263,11 +263,8 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
 
 ## Design discipline (both modes)
 
-- Follow the pretty-page grammar from `dw-swift-page-blocks`: full-width `Poster` hero →
-  alternating banded sections → `3Columns` for repeated blocks → standalone `Button` CTA →
-  `Accordion` at the foot.
-- **Alternate color schemes** between adjacent sections — that banding is what makes a Swift
-  page read as designed rather than a flat stack.
+- Choose each page's sections and colour bands for its content, brand and visitors (see
+  "Composing a page" in `dw-swift-page-blocks`).
 - Use `3Columns` for any "three of a thing" (features, team, cards); don't stack them in a
   single column.
 - Snap every component/variant/`DefinitionId` to what `get_item_types` /
@@ -283,9 +280,8 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
   can't fill. Tell the user which sections need images. (See the image + rich-text contracts
   in `dw-swift-page-blocks`.)
 - **Write Title/Subtitle/Eyebrow/Text as HTML, never bare strings.** These fields render raw,
-  so a plain `Title` becomes tiny unstyled text glued to the next field. Wrap headings as
-  `<h2 class="h1 mb-2">…</h2>`, eyebrows as `<p class="text-uppercase small mb-2">…</p>`, body
-  as `<p class="mb-0">…</p>`. This is what gives the page its type hierarchy and vertical
+  so a plain `Title` becomes tiny unstyled text glued to the next field. Use only markup the
+  editor itself produces (see "Field & template contracts" in `dw-swift-page-blocks`). This is what gives the page its type hierarchy and vertical
   rhythm. **Express vertical spacing as markup** — separate `<p>` elements, or a `<br>` pair — because
   the field renders raw and a blank line between two runs of text is whitespace in the markup, not a
   gap on the page. (The write path itself is faithful: a `RichTextEditor` value round-trips byte for
@@ -297,15 +293,11 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
 
 A page can clear every contract above and still look amateur. Apply all of these:
 
-- **One type scale, used consistently.** Pick exactly three levels and reuse them: hero =
-  `display-4`/`display-5`; every section heading = the SAME class (e.g. `h1`); every
-  card/feature title = the SAME smaller class (e.g. `h5`). Mixing `h1` on one section and `h2`
-  on the next reads as a mistake.
-- **Legible eyebrows — never washed-out grey.** An eyebrow/kicker is a small uppercase accent
-  line: `<p class="text-uppercase fw-semibold mb-2"
-  style="letter-spacing:.14em;font-size:.8rem;color:#<brand-accent>;">`. On a dark/`primary`
-  band use white. `text-secondary` grey on a light band is near-invisible — don't use it for
-  eyebrows or sub-headings.
+- **One type scale, used consistently.** The same level for the same role on every page, with
+  sizes from the brand's typography. Mixing levels for the same role reads as a mistake.
+- **Legible eyebrows — never washed-out grey.** If the design uses eyebrows, give them the
+  scheme's text or accent colour, and set their look in the typography or a template, not with
+  inline style.
 - **Distinct, on-topic imagery — or none.** Never reuse the same photo twice on a page, and
   make each image *mean* its section. Verify what a file actually depicts before using it —
   generic "environment/stock" folders and the brand's own product set may both be off-topic

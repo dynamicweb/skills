@@ -17,17 +17,26 @@ Take full-page screenshots of the same page set on the source and the new site:
 
 Use the same pages and products every round, so scores compare.
 
+Measure on the phone pages, besides the screenshots: the page does not scroll sideways (its scroll
+width equals the viewport width; if not, name the element that sticks out), tap targets in the
+menu and the buying path are at least 44 px, add-to-cart can be reached from the product page's
+first screen or a sticky bar, and the phone menu reaches as many levels as the desktop menu.
+
+All browser tabs share one cart: a critic or check that adds products changes the cart for every
+tab.
+
 ## The critic
 
-Give the screenshots to a fresh agent that has not seen the build notes, together with the goal
-("an improved version of the source, not a copy") and last round's issues. Tell it the real
+Give the screenshots to a fresh agent that has not seen the build notes, together with the brief
+(the brand, its customers and visitors, the type of site, and the design decisions with their
+reasons) and last round's issues. Tell it the real
 constraints, such as data the source does not publish, so it does not ask for invented content.
 A prompt that works:
 
-> You are a strict e-commerce UX critic. Compare the source screenshots with the new site's
-> screenshots. The goal is an improved version of the source, not a copy. Score the new site out
-> of 10, list the five most important issues with a concrete fix for each, and name any
-> regressions since the last round.
+> You are a strict UX critic for this type of site. Compare the source screenshots with the new
+> site's screenshots, and judge the new site against the brief. The goal is a better site for this
+> brand's visitors, not a copy of the source. Score the new site out of 10, list the five most
+> important issues with a concrete fix for each, and name any regressions since the last round.
 
 Fix the issues, take new screenshots, and run the critic again. After each round, state the
 round number and the score in the conversation (for example "Round 3: 7.4/10"), so the user, and

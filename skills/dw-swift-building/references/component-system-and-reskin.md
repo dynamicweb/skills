@@ -119,7 +119,7 @@ comes from the item-type's `Title` field.
 | Long description has too-wide lines | `Swift-v2_ProductLongDescription` | `TextReadability` | `max-width-on` (default) constrains to a reading column; `max-width-off` fills the column. |
 | Paragraph renders as empty `<div>` after SQL-direct seed | `Swift-v2_ProductGroupGrid` | `SelectedGroups` | See `SelectedGroups` below — SQL CSV/JSON inserts silently return `null`. |
 | PLP filters render as a horizontal pill bar; no setting yields a left sidebar | `Swift-v2_ProductListFacets` | `Layout` | `horizontal` = pill bar, `vertical` = accordion — this styles the panel ONLY; sidebar **position** is pure grid. See the facet-sidebar recipe below. |
-| PLP renders one product per row with a giant full-bleed image | `Swift-v2_ProductListItemRepeater` + `Swift-v2_ProductDefaultImage` | `GridLayoutDesktop` / `Width` | The surface-serialized shop repeater ships `GridLayoutDesktop='list'` — **list IS the intended shipped layout**, so keep it rather than "fixing" it to a column grid. The full-bleed image is the card image item's `Width='auto'`, which the template renders as `w-100`; a **px value** (e.g. `160`) is the thumbnail lever (`style="width:<N>px"`). Column variants (`2-columns`…`6-columns` → `g-col-lg-*`) remain available when a grid is the deliberate choice. In list mode the row must earn its width — pair the thumbnail with decision-driving fields (price, and e.g. the default-unit shipping weight when the buying story is logistics-led). |
+| PLP renders one product per row with a giant full-bleed image | `Swift-v2_ProductListItemRepeater` + `Swift-v2_ProductDefaultImage` | `GridLayoutDesktop` / `Width` | The shop repeater ships `GridLayoutDesktop='list'`; list or a column grid (`2-columns`…`6-columns` → `g-col-lg-*`) is decided for the shop. The full-bleed image is the card image item's `Width='auto'`, which the template renders as `w-100`; a **px value** (e.g. `160`) is the thumbnail lever (`style="width:<N>px"`). In list mode the row must earn its width — pair the thumbnail with decision-driving fields (price, and e.g. the default-unit shipping weight when the buying story is logistics-led). |
 | Variant option chips render as unlabelled rows — no way to tell one axis from another | the PDP variant-selector paragraph | `HideGroupHeaders` | `Components/VariantSelector.cshtml` already emits `<h3>@group.Name</h3>`; the labels are suppressed by this paragraph setting, which ships `True`. **Check the setting before editing the template** — one field flip to `False` restored the group names across three variant families with zero template changes. Worth defaulting to `False` in a shipped edition. |
 | Every PLP tile renders a Razor NRE error block | `Swift-v2_ProductDefaultImage` | `ShowAlternativeImageOnHover` | With hover-swap on, the stock template's `allAssetsImages.RemoveAll(x => x.Value == product.DefaultImage.Value)` throws when a product has no `DefaultImage` (common on data-first catalogs without imagery). Either turn the field off, or null-guard the predicate (`x?.Value == product?.DefaultImage?.Value`) as a logged template adjustment. |
 
@@ -406,13 +406,13 @@ layer's own component-page clones (separate ids, separate cache entries) — see
 | Folder | Role | Touchpoint |
 |--------|------|------------|
 | `Customer center/` | Logged-in self-service + CSR section | DO NOT re-build the CSR section |
-| `Header _ Footer/` | Site-wide header and footer | Logo + nav + copy edits via Visual Editor |
-| `Navigation/` | Top nav + footer nav structure | Copy edits via Visual Editor |
+| `Header _ Footer/` | Site-wide header and footer | Built for the site: layout, components and settings |
+| `Navigation/` | Top nav + footer nav structure | Built for the site: layout, components and settings |
 | `Page presets/` | Template page-preset definitions (`_theme` + layout primitives) | Theme tokens via Visual Editor |
-| `Product Components/` | Product detail page paragraphs | Copy edits only — no custom controllers |
-| `Search result page/` | Search results page | Copy edits |
-| `Service Pages/` | FAQ, Privacy, About, etc. | Standard CMS pages — copy edits |
-| `Shop/` | Catalog browse | Copy edits + product-list paragraph config |
+| `Product Components/` | Product detail page paragraphs | Built for the site: layout, components and settings — no custom controllers |
+| `Search result page/` | Search results page | Built for the site: layout, components and settings |
+| `Service Pages/` | FAQ, Privacy, About, etc. | Built for the site: layout, components and settings |
+| `Shop/` | Catalog browse | Built for the site: layout, components and settings |
 | `Shopping cart/` | Cart + checkout flow | Stock — DO NOT customise (high regression risk) |
 | `Sign in/` | Login + register | Stock |
 | `Newsletter Emails/` + `System emails/` | Email templates | Subject / body copy edits via admin UI |
