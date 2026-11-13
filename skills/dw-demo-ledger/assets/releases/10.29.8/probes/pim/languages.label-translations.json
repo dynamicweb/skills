@@ -3,7 +3,7 @@
   "id": "pim.languages.label-translations",
   "functionId": "pim.languages",
   "intent": {
-    "proves": "Translations of products, field labels and list options: label-translations satisfies the selected profile assertion.",
+    "proves": "At least one category field label is translated into a language other than the default that has product rows.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

@@ -3,7 +3,7 @@
   "status": "reviewed",
   "before": "10.28.15",
   "after": "10.29.8",
-  "revision": 6,
+  "revision": 7,
   "rawScanDigest": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c",
   "review": "delta-review.json",
   "added": [
@@ -26,15 +26,13 @@
       "id": "admin.page-performance-tracking",
       "change": "added",
       "evidence": [
-        "column:dbo.TrackingView.TrackingViewExecutionTime",
         "work-item:28808"
       ],
       "sources": [
-        "INFORMATION_SCHEMA.COLUMNS and KEY_COLUMN_USAGE",
         "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
       ],
       "runtimeStatus": "requires-target-measurement",
-      "note": "Admitted from the preserved general release scan."
+      "note": "Admitted from the preserved general release scan. Revision 7 (issue #229): the TrackingView column is no longer evidence; the table is absent from both sides of a same-database upgrade diff."
     },
     {
       "id": "assets.file-transfer-api",
@@ -262,13 +260,15 @@
       "id": "search.variant-index-representatives",
       "change": "added",
       "evidence": [
-        "work-item:28392"
+        "work-item:28392",
+        "column:dbo.EcomVariantGroups.VariantGroupExpandInProductIndex"
       ],
       "sources": [
-        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+        "INFORMATION_SCHEMA.COLUMNS and KEY_COLUMN_USAGE"
       ],
       "runtimeStatus": "requires-target-measurement",
-      "note": "Admitted from the preserved general release scan."
+      "note": "Admitted from the preserved general release scan. Revision 7 (issue #229): the variant group column added by the upgrade corroborates it."
     },
     {
       "id": "users.backend-self-service",
@@ -782,8 +782,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -796,8 +795,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -810,8 +808,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -824,8 +821,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -838,8 +834,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -852,8 +847,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -866,8 +860,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -880,8 +873,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -894,8 +886,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -908,8 +899,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -922,8 +912,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -936,8 +925,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -950,8 +938,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -964,8 +951,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -978,8 +964,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -992,8 +977,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -1006,8 +990,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -1020,8 +1003,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -1034,8 +1016,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -1048,8 +1029,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -1062,8 +1042,7 @@
         "studio-source:4a99413bf184217d9d110ee33dda8bac3eef7f44"
       ],
       "sources": [
-        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md",
-        "https://github.com/truvio-commerce/Truvio.Commerce.CpqStudio/blob/4a99413bf184217d9d110ee33dda8bac3eef7f44/README.md"
+        "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
       ],
       "runtimeStatus": "requires-target-measurement",
       "note": "Revision 4: proposed app-backed CPQ acceptance inventory; all bindings planned. Not an addition between DW releases and not admitted to 10.28.15."
@@ -1189,6 +1168,169 @@
         "ruling:ex4m9z"
       ],
       "note": "Ground under-25-fields-per-family is replaced by one-attribute-family: a catalogue with two or more families that carry fields can no longer rule the layout out because each family is small. A ruling on the old ground is an invalid ruling."
+    },
+    {
+      "checkId": "distribution.sample-data.catalogue",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/230",
+      "note": "Revision 7: counted ProductNumber LIKE TCPROD%, but TCPROD is the sample-data product id prefix (the numbers are TC-<concept>-nnnn), so a correct site FAILed. Now counts distinct ProductId values that start TCPROD."
+    },
+    {
+      "checkId": "distribution.sample-data.buyer-persona",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/230",
+      "note": "Revision 7: the sample data ships two AccessUser rows under the user name TruvioBuyer (AccessUserIsLogin 1 and 0), so SQL counted 2 where MCP counted 1. The SQL read now counts the login row only, the scope the MCP read returned."
+    },
+    {
+      "checkId": "pim.gtin.ean-share",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/230",
+      "note": "Revision 7: the function claims a GTIN for every product that is traded. The share counted masters and simple products and left variants out, so a variant catalogue whose variants carry the GTIN read low. It now counts simple products and variants and exempts a master with variant groups, the population pim.identifiers.number-missing already uses."
+    },
+    {
+      "checkIds": [
+        "orders.completed-orders.stateful",
+        "users.accounts.member-customer-number",
+        "pim.channels.empty-channels",
+        "pim.channels.shared-groups",
+        "pim.completeness-rules.models-without-rule",
+        "pim.documents.category-names",
+        "pim.field-display-groups.unnamed-groups",
+        "pim.field-units.groups-valid",
+        "pim.field-units.unit-in-label",
+        "pim.identifiers.number-duplicates",
+        "pim.workspaces.empty-workspaces",
+        "content.website-ecommerce-context.defaults-set"
+      ],
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/227",
+      "note": "Revision 7: offender checks whose claim needs subjects state minimumSubjects 1 and count their subjects with subjectsQuery. Zero offenders over zero subjects (for example no completed orders) is FAIL, no longer PASS."
+    },
+    {
+      "checkIds": [
+        "pim.assortments.active",
+        "pim.assortments.anonymous-range",
+        "pim.assortments.built",
+        "pim.assortments.permissions",
+        "pim.auto-assign.rules",
+        "pim.auto-assign.ruling.product-count",
+        "pim.bom.bom-products",
+        "pim.bom.lines-resolve",
+        "pim.channels.channels-with-products",
+        "pim.channels.empty-channels",
+        "pim.channels.shared-groups",
+        "pim.completeness-rules.models-without-rule",
+        "pim.completeness-rules.rules",
+        "pim.computed-fields.provider-field",
+        "pim.dashboards.dashboard",
+        "pim.dashboards.widget-queries",
+        "pim.data-models.families-have-models",
+        "pim.data-models.folder",
+        "pim.data-models.products-without-model",
+        "pim.data-sets.data-set",
+        "pim.data-sets.defaults",
+        "pim.documents.category-names",
+        "pim.documents.document-categories",
+        "pim.documents.products-with-documents",
+        "pim.dynamic-relations.groups",
+        "pim.dynamic-relations.relations",
+        "pim.email-notifications.notifications",
+        "pim.feeds.feeds",
+        "pim.feeds.feeds-incomplete",
+        "pim.feeds.template-content-type",
+        "pim.field-display-groups.groups",
+        "pim.field-display-groups.ruling.no-shop-no-feed",
+        "pim.field-display-groups.unnamed-groups",
+        "pim.field-permissions.field-permissions",
+        "pim.field-rules.declared-required",
+        "pim.field-scope.declared-scope",
+        "pim.field-scope.ruling.one-language-no-variant",
+        "pim.field-types.declared-have-values",
+        "pim.field-types.declared-typing",
+        "pim.field-types.text-share",
+        "pim.field-units.declared-units",
+        "pim.field-units.groups-in-use",
+        "pim.field-units.groups-valid",
+        "pim.field-units.unit-in-label",
+        "pim.field-validation.pattern",
+        "pim.gtin.ean-share",
+        "pim.identifiers.number-duplicates",
+        "pim.identifiers.number-missing",
+        "pim.integration.activities",
+        "pim.integration.ruling.product-count",
+        "pim.languages.label-translations",
+        "pim.languages.option-translations",
+        "pim.languages.ruling.one-language",
+        "pim.languages.text-differs",
+        "pim.languages.translated-products",
+        "pim.list-fields.declared-options",
+        "pim.list-fields.multi-select",
+        "pim.list-fields.values-resolve",
+        "pim.manufacturers.manufacturers",
+        "pim.manufacturers.product-share",
+        "pim.product-queries.shared-queries",
+        "pim.product-relations.relation-groups",
+        "pim.product-relations.relations",
+        "pim.product-relations.relations-resolve",
+        "pim.sales-units.product-units",
+        "pim.sales-units.units",
+        "pim.screen-layouts.preset",
+        "pim.unit-rules-per-language.ruling.one-language",
+        "pim.variants.groups-with-options",
+        "pim.variants.inactive-variants",
+        "pim.variants.masters",
+        "pim.variants.variant-numbers",
+        "pim.workflow.attached",
+        "pim.workflow.notification",
+        "pim.workflow.states",
+        "pim.workflow.states-in-use",
+        "pim.workflow.transitions",
+        "pim.workspaces.completeness-level",
+        "pim.workspaces.empty-workspaces",
+        "pim.workspaces.workspaces"
+      ],
+      "change": "intent-restated",
+      "source": "https://github.com/dynamicweb/skills/issues/227",
+      "note": "Revision 7: intent.proves stated the template text \"... satisfies the selected profile assertion\". Each now states what its query proves. No query or assertion changed by this record."
+    },
+    {
+      "checkIds": [
+        "pim.matrix-fields.columns",
+        "pim.matrix-fields.parent-marker",
+        "pim.matrix-fields.cells"
+      ],
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/228",
+      "note": "Revision 7: columns also reads each declared owner field and requires a Matrix field linked to the matrix category (FieldMatrixAttributeGroupId); parent-marker and cells also count every marker and cell of the matrix category, so rows outside the declared subjects FAIL; a numeric cell must be stored as plain decimal text; offenders name observed and expected values."
+    },
+    {
+      "note": "Revision 7 (issue #223): grounds that say another function carries the need name it in requiresFunction; the ruling holds only while every locked check of that function passes. 28 grounds, for example commerce.discounts-v2 classic-discounts -> commerce.discounts.",
+      "source": "https://github.com/dynamicweb/skills/issues/223",
+      "change": "ground-cites-function"
+    },
+    {
+      "functionIds": [
+        "integration.schema-management",
+        "integration.blueprints",
+        "integration.plugin-unit-import",
+        "integration.pim-bc-connector",
+        "users.external-login"
+      ],
+      "change": "requirement-removed",
+      "source": "https://github.com/dynamicweb/skills/issues/222",
+      "note": "Revision 7: requirement ids that were descriptions (a storage key, a package or a tenant registration nobody had measured) can never match a fact, so every check of these functions stayed UNVERIFIED. They are removed; the precondition stays in the description."
+    },
+    {
+      "functionId": "commerce.configured-products",
+      "change": "requirement-replaced",
+      "source": "https://github.com/dynamicweb/skills/issues/222",
+      "note": "Revision 7: app \"CPQ configurator app\" replaced by app DW_CPQ_API expected true, the installed runtime package of the CPQ area."
+    },
+    {
+      "checkId": "delivery.content-api.areas-served",
+      "change": "binding-promoted",
+      "source": "https://github.com/dynamicweb/skills/issues/232",
+      "note": "Revision 7: dwapi-count on content/areas promoted with projection rowsPath $, measured on a 10.29.8 host (anonymous GET, 200, a root JSON array of areas, no paging members). navigation-served, products-served, query-served and search.free-text-search.term-returns-products stay planned: the measured host served no populated tree, product group, repository or query, so their row projections are not measured."
     }
   ]
 }

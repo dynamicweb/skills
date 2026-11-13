@@ -3,7 +3,7 @@
   "id": "pim.auto-assign.rules",
   "functionId": "pim.auto-assign",
   "intent": {
-    "proves": "Product assignment rules (auto-assign to groups): rules satisfies the selected profile assertion.",
+    "proves": "At least one active product assignment rule is a query rule or has a mapping.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

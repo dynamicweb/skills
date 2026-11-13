@@ -268,6 +268,10 @@ occurrences of `Password=` under the decoded job folder.
 
 - MCP `run_integration_activity` **queues** a run. Poll `get_integration_activity_status`, then read
   `get_integration_activity_logs`; the log is the evidence, never the queued result.
+- **MCP `read_file` returns a large export cut off.** A 52,555-byte XML export came back truncated near
+  48,000 characters with no error. An XmlProvider destination writes one file per job, so split a large
+  export into one job per table (or narrow it with a conditional), and check that the text read ends on
+  the closing root element before using it.
 - **An OData source never fails fast on a bad credential.** Every run starts with a readiness probe
   (`<entity>?$top=1`) and on failure retries with growing delays (5, 15, 30, 45, 60, 180, 300,
   600 s) until the activity's request timeout elapses, then fails with *Request has timed out after

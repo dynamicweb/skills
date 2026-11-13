@@ -68,7 +68,65 @@
                 "id",
                 "expected"
               ],
-              "additionalProperties": false
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "flag",
+                          "capability"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "expected": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "app"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "expected": {
+                        "anyOf": [
+                          {
+                            "const": true
+                          },
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "min": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "min"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
             }
           },
           "inputs": {
@@ -101,6 +159,10 @@
                 "probe": {
                   "type": "string",
                   "minLength": 1
+                },
+                "requiresFunction": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9.-]*$"
                 }
               },
               "required": [

@@ -383,7 +383,8 @@
       "notApplicable": [
         {
           "id": "no-query-in-story",
-          "when": "The frontend lists products by group or id only."
+          "when": "The frontend lists products by group or id only.",
+          "requiresFunction": "delivery.commerce-products-api"
         }
       ],
       "sources": [
@@ -444,7 +445,8 @@
       "notApplicable": [
         {
           "id": "headless-only",
-          "when": "The demo renders no Razor pages; every page comes from a decoupled frontend."
+          "when": "The demo renders no Razor pages; every page comes from a decoupled frontend.",
+          "requiresFunction": "delivery.content-api"
         }
       ],
       "sources": [
@@ -477,7 +479,8 @@
       "notApplicable": [
         {
           "id": "headless-only",
-          "when": "The demo renders no Razor pages; every page comes from a decoupled frontend."
+          "when": "The demo renders no Razor pages; every page comes from a decoupled frontend.",
+          "requiresFunction": "delivery.content-api"
         }
       ],
       "sources": [
@@ -510,11 +513,13 @@
       "notApplicable": [
         {
           "id": "viewmodel-only-design",
-          "when": "The design uses ViewModel templates only, as Swift 2 does."
+          "when": "The design uses ViewModel templates only, as Swift 2 does.",
+          "requiresFunction": "delivery.viewmodel-templates"
         },
         {
           "id": "headless-only",
-          "when": "The demo renders no Razor pages; every page comes from a decoupled frontend."
+          "when": "The demo renders no Razor pages; every page comes from a decoupled frontend.",
+          "requiresFunction": "delivery.content-api"
         }
       ],
       "sources": [

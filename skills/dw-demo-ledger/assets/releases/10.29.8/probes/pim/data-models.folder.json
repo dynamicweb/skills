@@ -3,7 +3,7 @@
   "id": "pim.data-models.folder",
   "functionId": "pim.data-models",
   "intent": {
-    "proves": "Data models per product family: folder satisfies the selected profile assertion.",
+    "proves": "The PIM shop holds at least one data-model folder (GroupType 1) in the default language.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

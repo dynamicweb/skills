@@ -3,7 +3,7 @@
   "id": "pim.workflow.notification",
   "functionId": "pim.workflow",
   "intent": {
-    "proves": "Product workflow with states, transitions and notifications: notification satisfies the selected profile assertion.",
+    "proves": "At least one workflow state sends a notification that has recipient users.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

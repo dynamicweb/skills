@@ -3,7 +3,7 @@
   "id": "pim.assortments.permissions",
   "functionId": "pim.assortments",
   "intent": {
-    "proves": "Assortments: permissions satisfies the selected profile assertion.",
+    "proves": "At least one assortment permission grants an existing assortment to a user or group that exists.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

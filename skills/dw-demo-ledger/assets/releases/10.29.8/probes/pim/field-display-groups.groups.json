@@ -3,7 +3,7 @@
   "id": "pim.field-display-groups.groups",
   "functionId": "pim.field-display-groups",
   "intent": {
-    "proves": "Field display groups: groups satisfies the selected profile assertion.",
+    "proves": "At least one display group with a name (on the group or translated into the default language) holds two or more fields.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

@@ -3,7 +3,7 @@
   "id": "pim.dashboards.widget-queries",
   "functionId": "pim.dashboards",
   "intent": {
-    "proves": "PIM dashboard with query-backed widgets: widget-queries satisfies the selected profile assertion.",
+    "proves": "Every widget query on a Products dashboard resolves to a saved query file, and at least one widget carries a query.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

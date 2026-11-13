@@ -390,6 +390,11 @@
       "excluded": {
         "reason": "Section index, no selectable outcome"
       }
+    },
+    {
+      "claim": "Split tests: checked by split-tests (local SQL). No exact-baseline measurement is claimed.",
+      "url": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg",
+      "functionId": "marketing.split-test"
     }
   ],
   "gaps": [

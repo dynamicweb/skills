@@ -18,8 +18,8 @@
       "surface": "dwapi",
       "status": "planned",
       "handler": "dwapi-count",
-      "operation": "GET /dwapi/ecommerce/products/search",
-      "reason": "No dwapi handler is implemented; a scalar HTTP binding needs a measured response projection (contract.md), endpoint presence alone does not qualify."
+      "operation": "ecommerce/products/search",
+      "reason": "Measured on a blank base-only 10.29.8 host (2026-11-13, anonymous GET): 400 \"Specify Repository and QueryName or specify a group ID\" without arguments; the host has no product group or repository, so the row projection of a served result is not measured."
     }
   ],
   "sources": [

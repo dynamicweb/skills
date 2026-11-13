@@ -3,7 +3,7 @@
   "id": "pim.workflow.states",
   "functionId": "pim.workflow",
   "intent": {
-    "proves": "Product workflow with states, transitions and notifications: states satisfies the selected profile assertion.",
+    "proves": "The workflow with the most states has at least the minimum number of states.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

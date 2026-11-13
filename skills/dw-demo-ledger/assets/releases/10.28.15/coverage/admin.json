@@ -831,6 +831,16 @@
       "excluded": {
         "reason": "User consent and data export belong to the users area author."
       }
+    },
+    {
+      "claim": "Admin UI extensions: no check yet. Its check (area-registered) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg",
+      "functionId": "admin.admin-ui-extensions"
+    },
+    {
+      "claim": "Custom database updates (UpdateProvider): no check yet. Its check (applied) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg",
+      "functionId": "admin.update-providers"
     }
   ],
   "gaps": [

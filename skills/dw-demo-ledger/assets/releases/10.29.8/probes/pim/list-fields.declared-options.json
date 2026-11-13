@@ -3,7 +3,7 @@
   "id": "pim.list-fields.declared-options",
   "functionId": "pim.list-fields",
   "intent": {
-    "proves": "List fields with options, single and multi select: declared-options satisfies the selected profile assertion.",
+    "proves": "Every choice attribute the build declares has at least two options on its stored field, and the minimum number of choice attributes is declared.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

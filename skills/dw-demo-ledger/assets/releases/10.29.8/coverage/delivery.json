@@ -492,6 +492,11 @@
       "claim": "Released addition: delivery.response-field-selection. Evidence and measurement limits are in delta-review.json.",
       "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
       "functionId": "delivery.response-field-selection"
+    },
+    {
+      "claim": "Legacy TemplateTags templates: no check yet. Its check (templatetags-in-use) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "skills/dw-render-templatetags/SKILL.md",
+      "functionId": "delivery.templatetags-templates"
     }
   ],
   "gaps": [

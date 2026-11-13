@@ -286,6 +286,16 @@
       "claim": "Released addition: assets.file-transfer-api. Evidence and measurement limits are in delta-review.json.",
       "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
       "functionId": "assets.file-transfer-api"
+    },
+    {
+      "claim": "Content file and image references resolve: no check yet. Its check (resolve) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/FrontendVerificationTools.cs",
+      "functionId": "assets.content-file-references"
+    },
+    {
+      "claim": "Digital assets folder: checked by populated (local files). No exact-baseline measurement is claimed.",
+      "url": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/FileTools.cs",
+      "functionId": "assets.digital-assets-folder"
     }
   ],
   "gaps": [

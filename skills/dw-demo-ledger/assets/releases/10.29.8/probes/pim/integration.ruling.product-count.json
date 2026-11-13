@@ -3,7 +3,7 @@
   "id": "pim.integration.ruling.product-count",
   "functionId": "pim.integration",
   "intent": {
-    "proves": "Data Integration activity for the product load: product-count satisfies the selected profile assertion.",
+    "proves": "The catalogue holds no more distinct product ids than the limit, which the ruling that the catalogue is seeded without an import relies on.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

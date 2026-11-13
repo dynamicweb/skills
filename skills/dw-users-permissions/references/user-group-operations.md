@@ -121,6 +121,30 @@ those fields are **numeric**, so the arm's right-hand side must declare `System.
 and every user document also carries the account's password hash, so a template over the results names
 the fields it renders rather than looping the document.
 
+**Qualify the direct group drill-down before claiming `AccountListScope` isolation.** The scope filters
+the directory LIST only. The module also reads `UserGroupId` from the request, and that branch
+(`RenderUserList`, `GetUsersByGroupId`) applies no account-scope filter: a signed-in user whose directory
+lists only their own account received another account's contacts by requesting a foreign `UserGroupId` on
+the same page [dw 10.29.8 · swift 2.5]. The acting-user permission check above does not validate the
+requested group against the scoped set. Read disclosure is what was measured; the management commands
+were not.
+
+1. Configure `OwnAccounts` or `OwnAndImpersonatableAccounts` with two synthetic account allocations, A
+   and B.
+2. As the least-privileged user of B, load the directory and confirm only B's accounts list.
+3. As the same user, request the page with a `UserGroupId` that belongs to A, and require a denial with
+   no foreign contact rows or selectors. Assert the body, not the status: a signed-in page denial
+   answers HTTP 200.
+4. A correct directory with a rendering foreign drill-down fails the qualification. Rows hidden by the
+   template are not authorization.
+
+**Mitigation without code where step 3 fails:** keep the UserGroups page for the role that may see every
+account, with explicit frontend denials for everyone else. Give each restricted audience its own page
+carrying the native UserView app as a `ListOfChosenUsers` picker, gated to that audience, with the chosen
+users taken from its native impersonation mapping. Verify that the permitted picker lists exactly its
+mapping, that another audience and anonymous are denied, and that a guessed `UserId` or `UserGroupId`
+does not expand it. Test a user with global impersonation rights separately; that access is legitimate.
+
 ### `UserChangeType` does NOT change the user-and-group type
 
 Two different concepts share the word "type", and the verb named after it targets the other one.

@@ -3,7 +3,7 @@
   "id": "pim.variants.variant-numbers",
   "functionId": "pim.variants",
   "intent": {
-    "proves": "Variants: variant-numbers satisfies the selected profile assertion.",
+    "proves": "Every variant row in the default language has its own product number.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

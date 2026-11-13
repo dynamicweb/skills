@@ -29,8 +29,11 @@
       "surface": "dwapi",
       "status": "planned",
       "handler": "dwapi-count",
-      "operation": "GET /dwapi/frontend/navigations/{areaId}",
-      "reason": "No dwapi handler is implemented; a scalar HTTP binding needs a measured response projection (contract.md), endpoint presence alone does not qualify."
+      "operation": "frontend/navigations/{areaId}",
+      "projection": {
+        "rowsPath": "nodes"
+      },
+      "reason": "Measured on a blank base-only 10.29.8 host (2026-11-13, anonymous GET): 200 with {\"nodes\":[],\"activeNode\":{\"nodes\":[]}} on a site without pages. Whether the top level of a populated tree is in nodes or under activeNode.nodes is not measured, so the projection is not established."
     }
   ],
   "sources": [

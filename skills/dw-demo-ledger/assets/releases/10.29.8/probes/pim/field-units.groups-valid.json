@@ -3,12 +3,13 @@
   "id": "pim.field-units.groups-valid",
   "functionId": "pim.field-units",
   "intent": {
-    "proves": "Units on measures: groups-valid satisfies the selected profile assertion.",
+    "proves": "Every unit group that a field uses has a base unit that is one of its own units.",
     "level": "applied",
-    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global; at least one subject must be in scope"
   },
   "assertion": {
-    "kind": "offenders"
+    "kind": "offenders",
+    "minimumSubjects": 1
   },
   "bindings": [
     {
@@ -25,7 +26,8 @@
       "status": "implemented",
       "handler": "sql-offenders",
       "localOnly": true,
-      "query": "SELECT CAST(g.FieldValueConversionGroupSystemName AS nvarchar(100)) FROM EcomFieldValueConversionGroup g WHERE (g.FieldValueConversionGroupId IN (SELECT FieldValueConversionGroupId FROM EcomProductCategoryField) OR g.FieldValueConversionGroupId IN (SELECT ProductFieldValueConversionGroupId FROM EcomProductField)) AND (NOT EXISTS (SELECT 1 FROM EcomFieldValueConversion c WHERE c.FieldValueConversionParentGroupId = g.FieldValueConversionGroupId AND c.FieldValueConversionId = g.FieldValueConversionGroupBaseUnitId))"
+      "query": "SELECT CAST(g.FieldValueConversionGroupSystemName AS nvarchar(100)) FROM EcomFieldValueConversionGroup g WHERE (g.FieldValueConversionGroupId IN (SELECT FieldValueConversionGroupId FROM EcomProductCategoryField) OR g.FieldValueConversionGroupId IN (SELECT ProductFieldValueConversionGroupId FROM EcomProductField)) AND (NOT EXISTS (SELECT 1 FROM EcomFieldValueConversion c WHERE c.FieldValueConversionParentGroupId = g.FieldValueConversionGroupId AND c.FieldValueConversionId = g.FieldValueConversionGroupBaseUnitId))",
+      "subjectsQuery": "SELECT COUNT(*) FROM EcomFieldValueConversionGroup g WHERE g.FieldValueConversionGroupId IN (SELECT FieldValueConversionGroupId FROM EcomProductCategoryField) OR g.FieldValueConversionGroupId IN (SELECT ProductFieldValueConversionGroupId FROM EcomProductField)"
     }
   ],
   "sources": [

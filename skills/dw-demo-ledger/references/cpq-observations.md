@@ -59,9 +59,11 @@ was readable, while an unauthenticated model query returned 401. No Admin creden
 
 The measured host ran a DW 10.30.2 prerelease and Studio 0.6.2. Its installed runtime DLL differed
 from the original pinned DW_CPQ_API package entry. These facts cannot prove the baseline or the
-planned Studio 0.7.0 combination. The ordinary runner still requires measured application facts;
-it does not populate them from folder names, SQL rows or the build declaration. Absent loaded
-hash/version evidence keeps aggregate readiness UNVERIFIED even when a stored-data check passes.
+planned Studio 0.7.0 combination. The ordinary runner establishes an `app` requirement from the installed add-in folder
+(`<id>.<version>`), which is the installed package and its version, never from SQL rows or the
+build declaration. That opens the gate for the stored-data checks; it is not loaded-assembly
+evidence. A claim about the loaded runtime still needs loaded hash/version evidence, and its
+bindings stay planned until a producer supplies it.
 
 ## Readers that remain planned
 

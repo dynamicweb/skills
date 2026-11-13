@@ -655,7 +655,9 @@ is no `5Columns`.
 `save_grid_rows` model exposes only
 `active`/`backgroundImage`/`colorSchemeId`/`container`/`definitionId`/`id`/`itemType`/`pageId`/`sort`,
 so `ContainerWidth`, `TopSpacing`/`BottomSpacing`, `HideForPhones`/`Tablets`/`Desktops`, `Gap`,
-`MobileLayout`, `FlexibleColumns` and `VerticalAlignment` are unreachable **through that tool**. They are
+`MobileLayout`, `FlexibleColumns` and `VerticalAlignment` are unreachable **through that tool** before
+MCP 0.6.5. From 0.6.5 `save_grid_rows` also exposes `mobileLayout` and `mobileSortColumns`
+[dw 10.29.8 · mcp 0.6.5-BETA]; the other members stay on the command below. They are
 reachable through the CoreUI command it does not wrap, and the read model already returns all of them
 from `GET /Admin/Api/GridRowsByPageId?PageId=<id>`:
 

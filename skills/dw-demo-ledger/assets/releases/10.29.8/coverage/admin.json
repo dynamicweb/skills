@@ -846,6 +846,16 @@
       "claim": "Released addition: admin.page-performance-tracking. Evidence and measurement limits are in delta-review.json.",
       "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
       "functionId": "admin.page-performance-tracking"
+    },
+    {
+      "claim": "Admin UI extensions: no check yet. Its check (area-registered) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "https://doc.dynamicweb.dev/documentation/extending/administration-ui/index.html",
+      "functionId": "admin.admin-ui-extensions"
+    },
+    {
+      "claim": "Custom database updates (UpdateProvider): no check yet. Its check (applied) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "skills/dw-extend-providers/SKILL.md",
+      "functionId": "admin.update-providers"
     }
   ],
   "gaps": [

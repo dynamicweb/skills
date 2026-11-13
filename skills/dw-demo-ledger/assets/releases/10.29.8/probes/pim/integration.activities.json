@@ -3,7 +3,7 @@
   "id": "pim.integration.activities",
   "functionId": "pim.integration",
   "intent": {
-    "proves": "Data Integration activity for the product load: activities satisfies the selected profile assertion.",
+    "proves": "At least one Data Integration activity file (*.xml) is stored under Files/Integration/jobs or one folder below it.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

@@ -23,9 +23,11 @@ custom, read over `/dwapi`) or any other site.
 The MCP server has a family of migration tools that read a source site and build pages from it:
 `extract_site_content`, `get_extracted_site`, `get_extracted_page`, `build_pages`,
 `import_site_media`, `apply_brand_color_scheme` and `setup_website_chrome`. The family is
-restricted: it reaches an MCP configuration only once an administrator grants it. Without the
-grant the names are absent from the tool list and a call answers `Access denied ... Required
-permission: Read. Allowed permission: none` [mcp 0.6.0-beta].
+restricted: it reaches an MCP configuration only once an administrator grants each tool by name
+in the configuration's permission editor; Full access does not cover it. Without the grant the
+names are absent from the tool list and a call answers `Access denied ... Required permission:
+<the tool's own>. Allowed permission: none`; with it the seven names are listed.
+Measured with and without the grant [mcp 0.6.5-beta].
 
 So **list the tools first**:
 

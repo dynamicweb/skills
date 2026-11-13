@@ -3,7 +3,7 @@
   "id": "pim.workflow.states-in-use",
   "functionId": "pim.workflow",
   "intent": {
-    "proves": "Product workflow with states, transitions and notifications: states-in-use satisfies the selected profile assertion.",
+    "proves": "Products stand in at least one workflow state that exists.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

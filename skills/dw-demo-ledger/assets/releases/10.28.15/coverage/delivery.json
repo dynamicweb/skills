@@ -477,6 +477,11 @@
       "excluded": {
         "reason": "DW9 to DW10 upgrade task owned by dw-setup-upgrade."
       }
+    },
+    {
+      "claim": "Legacy TemplateTags templates: no check yet. Its check (templatetags-in-use) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg",
+      "functionId": "delivery.templatetags-templates"
     }
   ],
   "gaps": [

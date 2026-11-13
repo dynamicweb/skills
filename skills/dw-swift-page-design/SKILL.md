@@ -236,13 +236,17 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
   `HeaderDesktop`/`HeaderMobile`/`FooterDesktop`/`FooterMobile` Master link fields. It is
   idempotent and `sourceHost` is **optional**, so it works for an original site with no
   migration involved. It requires the area's Swift v2 master `ItemType` (provisioned by
-  `save_areas`). It is one of the restricted migration tools: present only when an administrator has granted
-  them to the MCP configuration. List the tools to check.
+  `save_areas`). **It is a restricted tool**: it belongs to the migration tool family, which Full
+  access does not cover. `tools/list` on `/admin/mcp` carries it only after the MCP configuration
+  has been granted it by name in the permission editor; without that grant it is absent and a call
+  answers `Access denied ... Required permission: Create. Allowed permission: none`.
+  Measured with and without the grant [mcp 0.6.5-beta].
   When it is absent, read the chrome the area already has: `get_areas` for the master's
   `HeaderDesktop` / `HeaderMobile` / `FooterDesktop` / `FooterMobile` link fields, then
   `get_pages_by_area_id` and `get_paragraphs_by_page_id` on the pages those fields point at.
   Reuse that chrome; build a missing one with `save_pages` + `save_paragraphs` and wire the four
-  Master link fields through `save_areas`.
+  Master link fields through `save_areas`. Or ask the user to grant the tool to the MCP
+  configuration this session connects with, then call `tools/list` again.
 - **Third-party embeds are not content.** Source pages carry blocks that are really external
   services: an unknown custom element (`<f24-form>`, `<x-*>`), a field whose entire value is a
   `<script>`, an iframe to a non-media host, a loader placeholder. Spot these at the

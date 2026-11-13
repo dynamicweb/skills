@@ -69,12 +69,12 @@ function Invoke-PimFeatureCheck {
     try {
         switch ("$($Check.kind)") {
             'sql-scalar' {
-                $n = Invoke-Sqlcmd-Scalar -Server $Server -Database $Database -Query (Expand-PimSql -Sql "$($Check.sql)" -Build $Build)
+                $n = Invoke-Sqlcmd-Scalar -Server $Server -Database $Database -Query (Expand-PimSql -Sql "$($Check.sql)" -Build $Build -Server $Server -Database $Database)
                 $ok = Test-PimOp -Measured $n -Op "$($Check.op)" -Value ([int]$Check.value)
                 return New-PimFeatureCheckRow -Id $id -Result $(if ($ok) { 'PASS' } else { 'FAIL' }) -Measured "$n" -Expected "$($Check.op) $($Check.value)" -Proves $proves
             }
             'sql-offenders' {
-                $rows = @(Invoke-Sqlcmd-Rows -Server $Server -Database $Database -Query (Expand-PimSql -Sql "$($Check.sql)" -Build $Build))
+                $rows = @(Invoke-Sqlcmd-Rows -Server $Server -Database $Database -Query (Expand-PimSql -Sql "$($Check.sql)" -Build $Build -Server $Server -Database $Database))
                 return New-PimFeatureCheckRow -Id $id -Result $(if ($rows.Count -eq 0) { 'PASS' } else { 'FAIL' }) -Measured "$($rows.Count) offender(s)" -Expected '0 offenders' -Proves $proves -Offenders @($rows | Select-Object -First 25)
             }
             'files-count' {
@@ -105,12 +105,14 @@ function Invoke-PimFeatureCheck {
                     $p = "$line".Split('|'); if ($p.Count -eq 2) { $have[$p[0]] = [int]$p[1] }
                 }
                 $off = @()
-                foreach ($f in @($Build.families)) {
+                # An absent families input is no declaration, not one family without a name.
+                $families = @($Build.families | Where-Object { $null -ne $_ })
+                foreach ($f in $families) {
                     if (-not $have.ContainsKey("$($f.category)")) { $off += "family '$($f.name)' has no data model on category '$($f.category)'" }
                     elseif ($have["$($f.category)"] -lt 1) { $off += "family '$($f.name)' has a data model and no product" }
                 }
                 $min = if ($null -ne $Check.minFamilies) { [int]$Check.minFamilies } else { 1 }
-                $n = @($Build.families).Count
+                $n = $families.Count
                 if ($n -lt $min) { $off += "the build file declares $n family(ies); this check needs $min" }
                 return New-PimFeatureCheckRow -Id $id -Result $(if ($off.Count -eq 0) { 'PASS' } else { 'FAIL' }) -Measured "$n declared, $($off.Count) offender(s)" -Expected "at least $min declared, each with a data model and products" -Proves $proves -Offenders $off
             }
@@ -134,6 +136,10 @@ function Invoke-PimFeatureCheck {
             }
         }
         throw "unknown check kind '$($Check.kind)'"
+    } catch [InvalidOperationException] {
+        # A build input the target refutes (a language without products, an unknown shop) is missing evidence.
+        if ($_.Exception.Message -like 'Build input: *') { return New-PimFeatureCheckRow -Id $id -Result 'UNVERIFIED' -Measured 'not measured' -Expected '' -Proves $proves -Offenders @($_.Exception.Message) }
+        return New-PimFeatureCheckRow -Id $id -Result 'ERROR' -Measured 'check could not run' -Expected '' -Proves $proves -Offenders @('Read failed; inspect the local target without exposing connection details.')
     } catch {
         return New-PimFeatureCheckRow -Id $id -Result 'ERROR' -Measured 'check could not run' -Expected '' -Proves $proves -Offenders @('Read failed; inspect the local target without exposing connection details.')
     }

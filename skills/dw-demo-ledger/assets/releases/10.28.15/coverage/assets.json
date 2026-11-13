@@ -276,6 +276,16 @@
       "claim": "The File Publishing app publishes an Assets folder to frontend.",
       "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/file-publishing.html",
       "duplicateOf": "content.paragraph-apps"
+    },
+    {
+      "claim": "Content file and image references resolve: no check yet. Its check (resolve) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg",
+      "functionId": "assets.content-file-references"
+    },
+    {
+      "claim": "Digital assets folder: checked by populated (local files). No exact-baseline measurement is claimed.",
+      "url": "https://api.nuget.org/v3-flatcontainer/dynamicweb/10.28.15/dynamicweb.10.28.15.nupkg",
+      "functionId": "assets.digital-assets-folder"
     }
   ],
   "gaps": [

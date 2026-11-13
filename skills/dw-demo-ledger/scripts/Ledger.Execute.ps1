@@ -10,24 +10,33 @@ PowerShell 7. Owning reference: ../references/contract.md. No dynamic code evalu
 function Invoke-LedgerCheck {
     param($Check,$Build,$Capabilities,$Profile,[string[]]$Surfaces,[string]$SqlServer,[string]$Database,[string]$FilesPath,[string[]]$Refused=@())
     $row=New-LedgerRow $Check
+    $assertion=@{};foreach($k in $Check.assertion.Keys){$assertion[$k]=$Check.assertion[$k]}
+    if($Profile.expectations.ContainsKey($Check.id)){foreach($k in $Profile.expectations[$Check.id].Keys){
+        # A profile states expectations. It never changes what a check observes or how the observation is judged.
+        if($k -cnotin @('op','value','minimumSubjects')){$row.result='ERROR';$row.reason='Profile may change only op, value and minimumSubjects of a check.';return $row}
+        $assertion[$k]=$Profile.expectations[$Check.id][$k]
+    }}
     $binding=Select-LedgerBinding -Check $Check -Capabilities $Capabilities -Surfaces $Surfaces -Exclude $Refused
     if(-not $binding){
         if($Refused.Count){$row.reason='Binding is not authorised for the required scope and no other equivalent binding is available: '+($Refused -join ', ')}
         return $row
     }
     $row.surface=$binding.surface;$row.binding=$binding.id
-    $assertion=@{};foreach($k in $Check.assertion.Keys){$assertion[$k]=$Check.assertion[$k]}
-    if($Profile.expectations.ContainsKey($Check.id)){foreach($k in $Profile.expectations[$Check.id].Keys){$assertion[$k]=$Profile.expectations[$Check.id][$k]}}
     $row.expected=$assertion
     try {
         $registry=Read-LedgerJson (Join-Path $PSScriptRoot '../assets/handlers.json')
-        if(-not $registry.ContainsKey($binding.handler) -or $binding.surface -notin $registry[$binding.handler]){throw 'Handler/surface is not allowlisted.'}
+        $entry=$registry.handlers[$binding.handler]
+        if(-not $entry -or $binding.surface -notin $entry.surfaces){throw 'Handler/surface is not allowlisted.'}
+        # A scalar handler reports no offenders, so judging it as offenders would always pass.
+        if($assertion.kind -cnotin $entry.assertions){throw 'Assertion kind does not fit the handler.'}
         if($binding.surface -eq 'mcp') {
             $observation=Get-LedgerMcpObservation -Binding $binding -Check $Check -Build $Build
         } elseif($binding.surface -eq 'file') {
             $observation=Get-LedgerFileObservation -Binding $binding -FilesPath $FilesPath
         } elseif($binding.surface -eq 'admin-api') {
             $observation=Get-LedgerAdminObservation -Binding $binding -Build $Build -Capabilities $Capabilities
+        } elseif($binding.surface -eq 'dwapi') {
+            $observation=Get-LedgerDwapiObservation -Binding $binding -Build $Build
         } elseif($binding.surface -eq 'sql') {
             if(-not $Database){throw 'Local SQL requires Database.'}
             switch($binding.handler) {
@@ -35,8 +44,13 @@ function Invoke-LedgerCheck {
                 'pim-matrix' {$observation=Get-PimMatrixObservation -Aspect $binding.arguments.aspect -Build $Build -Server $SqlServer -Database $Database}
                 'pim-edit-layout' {$observation=Get-PimEditLayoutObservation -Arguments $binding.arguments -Build $Build -Server $SqlServer -Database $Database}
                 'pim-field-placement' {$observation=Get-PimFieldPlacementObservation -Arguments $binding.arguments -Build $Build -Server $SqlServer -Database $Database}
-                'sql-scalar' {$n=Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.query $Build);$observation=@{value=$n;complete=$true;scanned=$null;offenders=@()}}
-                'sql-offenders' {$off=@(Invoke-Sqlcmd-Rows -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.query $Build));$observation=@{value=$off.Count;complete=$true;scanned=$null;offenders=$off}}
+                'sql-scalar' {$n=Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.query $Build $SqlServer $Database);$observation=@{value=$n;complete=$true;scanned=$null;offenders=@()}}
+                'sql-offenders' {
+                    $off=@(Invoke-Sqlcmd-Rows -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.query $Build $SqlServer $Database))
+                    # The subjects in scope are counted by a separate single SELECT; without one the subject count is unknown.
+                    $subjects=if($binding.subjectsQuery){Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $Database -Query (Expand-PimSql $binding.subjectsQuery $Build $SqlServer $Database)}else{$null}
+                    $observation=@{value=$off.Count;complete=$true;scanned=$subjects;offenders=$off}
+                }
                 {$_ -in @('pim-attributes','pim-families','pim-widget-queries')} {
                     $legacy=@{id=$Check.id;kind=$assertion.kind;proves=$Check.intent.proves;aspect=$assertion.aspect;minScanned=$assertion.minimumSubjects;minFamilies=$assertion.minimumSubjects}
                     $stored=@{};if($binding.handler -eq 'pim-attributes') {
@@ -53,6 +67,9 @@ function Invoke-LedgerCheck {
         $row.result=Test-LedgerAssertion -Assertion $assertion -Observation $observation
         $row.measured=if($observation -is [Collections.IDictionary] -and $observation.Contains('measured')){$observation.measured}else{$observation.value};$row.scanned=$observation.scanned;$row.offenders=@($observation.offenders|Select-Object -First 25)
         $row.reason=if($observation.complete){'Equivalent observation evaluated.'}else{'Observation omits required fields or completeness evidence.'}
+        if($assertion.kind -eq 'offenders' -and $assertion.ContainsKey('minimumSubjects')){
+            $row.reason+=if($null -eq $observation.scanned){' The assertion needs a subject count and the binding reports none.'}elseif($observation.scanned -lt $assertion.minimumSubjects){" $($observation.scanned) subject(s) in scope, below the minimum of $($assertion.minimumSubjects)."}else{''}
+        }
         if($Refused.Count){$row.reason+=' Refused before observation: '+($Refused -join ', ')+'.'}
     } catch {
         Write-Verbose $_.ScriptStackTrace
@@ -61,7 +78,11 @@ function Invoke-LedgerCheck {
             # A completed observation, valid or failing, never reaches this branch and is never retried.
             return Invoke-LedgerCheck $Check $Build $Capabilities $Profile $Surfaces $SqlServer $Database $FilesPath (@($Refused)+$binding.id)
         }
-        elseif($_.Exception -is [InvalidOperationException]){$row.result='UNVERIFIED';$row.reason='Required input, field, path or complete enumeration is unavailable.'}
+        elseif($_.Exception -is [InvalidOperationException]){
+            $row.result='UNVERIFIED'
+            # A build input the target refutes is named; any other message stays generic so no response body is printed.
+            $row.reason=if($_.Exception.Message -like 'Build input: *'){$_.Exception.Message}else{'Required input, field, path or complete enumeration is unavailable.'}
+        }
         else {$row.result='ERROR';$row.reason='Binding execution failed. Check handler, grants, scope and target schema; no exception body is persisted.'}
     }
     return $row

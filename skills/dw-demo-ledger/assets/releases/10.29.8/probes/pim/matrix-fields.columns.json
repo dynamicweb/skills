@@ -3,7 +3,7 @@
   "id": "pim.matrix-fields.columns",
   "functionId": "pim.matrix-fields",
   "intent": {
-    "proves": "The declared CategoryType 3 category has exactly the declared supported columns.",
+    "proves": "The declared CategoryType 3 category has exactly the declared supported columns, and every declared owner field is a Matrix field linked to that category.",
     "level": "configured",
     "scope": "Explicit expected.matrix declaration; feature type and flag reads are solution-wide."
   },

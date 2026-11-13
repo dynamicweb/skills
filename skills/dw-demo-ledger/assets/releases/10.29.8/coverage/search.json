@@ -366,6 +366,11 @@
       "claim": "Released addition: search.variant-index-representatives. Evidence and measurement limits are in delta-review.json.",
       "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
       "functionId": "search.variant-index-representatives"
+    },
+    {
+      "claim": "Facet overrides per product group: no check yet. Its check (exists) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "https://github.com/dynamicweb/MCP/blob/main/Products/Tools/GroupFacetTools.cs",
+      "functionId": "search.group-facet-overrides"
     }
   ],
   "gaps": [

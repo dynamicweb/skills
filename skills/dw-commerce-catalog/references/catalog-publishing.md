@@ -428,25 +428,28 @@ That is group-scoped, so all inbound relations across groups means iterating
 `DynamicRelationGroupService.GetAll()`. The scan is served from the service cache, so no SQL view is
 needed for the reverse direction.
 
-**The calculation engine: one method is unimplemented, one reports success while generating nothing, and
-the group filter points at the side you do not expect.**
+**The calculation engine sums standard fields only, and a category field id validates and generates
+nothing** [dw 10.29.8].
 
-- **`TotalSum` is still unimplemented on 10.28.4.** A configured, active TotalSum calculation renders an
-  empty "Calculation result(s)" panel on every product in its category, and the Management API
-  `DynamicRelationCalculationConfigurationCalculate` command answers
-  `500 {"title":"TotalSum calculation method is not yet implemented."}` for it. The admin lets you configure and
-  activate it regardless, so the dead panel ships. **Do not ship an active TotalSum configuration**: set
-  `IsActive=false` so the empty panel stops rendering (`SELECT IsActive FROM
-  EcomDynamicRelationCalculationConfigurations WHERE Method=1` must be 0). **Local installs only**: on a hosted install no MCP tool is known to read this, so confirm on a product in that category that the empty panel no longer renders.
-- **`SumByProduct` can report success at every step and generate zero calculations.** Measured with the
-  group filter correctly scoped: `Calculate` answered
-  `{"status":"ok","message":"Calculations completed successfully"}`, the trace log recorded
-  `Status: SUCCESS` for all 11 steps, and both `Total Raw Calculations` and `Final Calculations` were 0
-  with zero rows in `EcomDynamicRelationCalculations`, on relations whose target products all carried the
-  summed field. The mechanism is not established. **The assert is what folds: never trust the Calculate
-  response.** Assert `COUNT(*) FROM EcomDynamicRelationCalculations` after every run and deactivate a
+- **The summed field is one of `ProductWeight`, `ProductVolume`, `ProductHeight`, `ProductWidth`,
+  `ProductDepth`.** The field step reads those standard fields and nothing else. A configuration pointing
+  at a category field id passes validation, `Calculate` answers
+  `{"status":"ok","message":"Calculations completed successfully"}`, and zero rows are generated. Put the
+  value to roll up in the standard field (a component's mass in Weight).
+- **`TotalSum` gives one result row per source product and unit of measure; `SumByProduct` gives one per
+  source and target.** Both generate rows on this build: five `TotalSum` configurations returned the
+  per-material and total mass of one sample product. On [dw 10.28.4] `TotalSum` answered
+  `500 {"title":"TotalSum calculation method is not yet implemented."}` and rendered an empty
+  "Calculation result(s)" panel; on that build keep a TotalSum configuration inactive.
+- **`Method` is a string in the configuration save**: `"TotalSum"` or `"SumByProduct"`. The enum integer
+  answers `500 "The JSON value could not be converted to System.String"`.
+- **The editor reaches it from the product overview screen** (the screen a list click opens): one tab per
+  relation group category, named by its `TabName`, holding the relation list and the calculation result
+  list. The result list keeps the configuration name off-screen.
+- **Never trust the Calculate response.** Assert `COUNT(*) FROM EcomDynamicRelationCalculations` after
+  every run (local installs only; on a hosted install read the result list on that tab) and deactivate a
   configuration that yields none.
-- **`GroupIds` scopes the SUMMED (target) products, not the sources.** It is a product-group filter
+- **`GroupIds` are the product groups of the relation TARGET (the summed products), not the sources.** It is a product-group filter
   applied during group-membership filtering to the products whose field is being read. Pointing it at the
   source group filtered every target out (`Products with Matching Groups: 0` for all 15 relations);
   pointing it at the group where the summed field's products live matched (`1` for all 15). It is not the
@@ -478,6 +481,12 @@ capture it from the response `model.id` or `modelIdentifier`. Category product f
 entity.
 
 ### Discontinuing a product: the enum literals, and the redirect that no shipped code performs
+
+**A discontinued product also needs `NeverOutOfStock=0`.** The Swift favourites list
+(`FavoriteDetail.cshtml`) re-enables Add to cart for a never-out-of-stock product after its Discontinued
+check, so a discontinued item with `NeverOutOfStock=1` keeps an enabled Add to cart there
+[dw 10.29.8 · swift 2.5]. Clear the flag when discontinuing, and assert that the favourites list renders
+the item with Add to cart disabled.
 
 **`discontinuedAction` takes exactly three string literals: `none` | `redirectToReplacementProduct` |
 `redirectToGroup`** (persisting `EcomProducts.ProductDiscontinuedAction` 0 / 1 / 2). The admin UI labels

@@ -3,7 +3,7 @@
   "id": "pim.field-rules.declared-required",
   "functionId": "pim.field-rules",
   "intent": {
-    "proves": "Required fields: declared-required satisfies the selected profile assertion.",
+    "proves": "Every attribute the build declares as required is marked required on its stored field, and the minimum number of such attributes is declared.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

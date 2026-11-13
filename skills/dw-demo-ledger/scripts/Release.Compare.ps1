@@ -51,8 +51,22 @@ function Compare-ReleaseEvidence {
         $b=@($After.database.primaryKeys | Where-Object { $_.schema+'.'+$_.table -eq $table } | Sort-Object ordinal | ForEach-Object name)
         if (($a -join '|') -ne ($b -join '|')) { $candidates.Add(@{id='primary-key:'+$table;kind='primary-key';change='changed';name=$table;source=$After.database.source;evidence=@{before=$a;after=$b}}) }
     }
+    # One row per work item: an item listed under several releases keeps its first release and names them all.
+    $items=[ordered]@{}
     foreach ($release in $Changelog.releases) {
-        foreach ($item in $release.workItems) { $candidates.Add(@{id='work-item:'+ $item.id;kind='release-work-item';change='review';name=$item.title;source=$Changelog.source;evidence=@{version=$release.version;released=$release.isReleased;type=$item.type;area=$item.area}}) }
+        foreach ($item in $release.workItems) {
+            $id='work-item:'+$item.id
+            if ($items.Contains($id)) { $items[$id].evidence.versions+=$release.version; continue }
+            $items[$id]=@{id=$id;kind='release-work-item';change='review';name=$item.title;source=$Changelog.source;evidence=@{version=$release.version;versions=@($release.version);released=$release.isReleased;type=$item.type;area=$item.area}}
+        }
     }
-    return @($candidates | Sort-Object kind,id)
+    foreach ($row in $items.Values) { $row.evidence.versions=@($row.evidence.versions | Select-Object -Unique); $candidates.Add($row) }
+    # Ordinal order, so the same evidence gives the same sequence on every machine.
+    $ordered=[Collections.Generic.SortedDictionary[string,Collections.Generic.List[object]]]::new([StringComparer]::Ordinal)
+    foreach ($row in $candidates) {
+        $key=$row.kind+[char]0+$row.id+[char]0+$row.change+[char]0+$row.package
+        if (-not $ordered.ContainsKey($key)) { $ordered[$key]=[Collections.Generic.List[object]]::new() }
+        $ordered[$key].Add($row)
+    }
+    return @(foreach ($rows in $ordered.Values) { $rows })
 }

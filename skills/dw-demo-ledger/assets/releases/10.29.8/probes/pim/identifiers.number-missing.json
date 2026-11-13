@@ -3,7 +3,7 @@
   "id": "pim.identifiers.number-missing",
   "functionId": "pim.identifiers",
   "intent": {
-    "proves": "Product numbers: number-missing satisfies the selected profile assertion.",
+    "proves": "Every active product and variant in the default language and in scope has a product number; a master with variant groups is exempt.",
     "level": "applied",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

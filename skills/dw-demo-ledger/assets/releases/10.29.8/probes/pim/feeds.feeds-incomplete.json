@@ -3,7 +3,7 @@
   "id": "pim.feeds.feeds-incomplete",
   "functionId": "pim.feeds",
   "intent": {
-    "proves": "Feeds: feeds-incomplete satisfies the selected profile assertion.",
+    "proves": "Every feed that is not a folder has a provider, a language and a product source (index query, channel, products and groups, or shop).",
     "level": "stored-integrity",
     "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
   },

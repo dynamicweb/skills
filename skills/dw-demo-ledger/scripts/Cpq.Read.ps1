@@ -4,7 +4,7 @@ READ-ONLY. Read a complete, version-scoped CPQ snapshot through local SQL.
 .DESCRIPTION
 PowerShell 7. Owning reference: ../references/cpq-observations.md.
 Requires Ledger.Sql.ps1. Fixed SELECT statements, typed parameters, integrated authentication,
-and a serializable read transaction prevent mixed-version observations. No cache flush is owed.
+and a serializable read transaction, always rolled back, prevent mixed-version observations. No cache flush is owed.
 .PARAMETER Server
 Explicit local SQL server. Remote targets are refused.
 .PARAMETER Database
@@ -80,7 +80,8 @@ function Get-CpqSqlSnapshot {
             $rows.EcomCurrencies=Invoke-CpqSelect $connection $transaction 'SELECT CurrencyCode FROM EcomCurrencies ORDER BY CurrencyCode'
             $rows.pages=Invoke-CpqSelect $connection $transaction "SELECT p.PageID,p.PageNavigationTag,p.PageItemId,i.CPQ_ModelVersionId,i.CPQ_Theme FROM Page p INNER JOIN ItemType_CPQ_Page i ON p.PageItemId=i.Id WHERE p.PageItemType=N'CPQ_Page' ORDER BY p.PageID"
             $schema=Invoke-CpqSelect $connection $transaction "SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE 'CPQ%' OR TABLE_NAME LIKE 'ItemType_CPQ%' ORDER BY TABLE_NAME,ORDINAL_POSITION"
-            $transaction.Commit()
+            # Reads only: the transaction is rolled back, never committed.
+            $transaction.Rollback()
         } finally {$transaction.Dispose()}
     } finally {$connection.Dispose()}
     return @{schemaVersion=1;modelId=$ModelId;versionId=$VersionId;complete=$true;source='sql';localOnly=$true;rows=$rows;schema=$schema}
