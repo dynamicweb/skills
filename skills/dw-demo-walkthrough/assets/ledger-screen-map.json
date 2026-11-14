@@ -1340,6 +1340,181 @@
    "ledger": [
     "content.row-definitions"
    ]
+  },
+  {
+   "match": "^storefront-account\\|(customer-center|overview)\\|[^|]*\\|[^|]*\\|[^|]*\\|/[a-z-]+/(customer-center|overview)$",
+   "ledger": [
+    "swift.customer-center",
+    "orders.customer-experience-center"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*(my-profile|edit-profile|change-password)",
+   "ledger": [
+    "users.account-self-service",
+    "swift.customer-center"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*my-orders",
+   "ledger": [
+    "orders.completed-orders",
+    "orders.customer-experience-center"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*my-carts",
+   "ledger": [
+    "orders.named-carts",
+    "orders.customer-experience-center"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*(my-quotes|quotecheckout)",
+   "ledger": [
+    "orders.quotes"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*my-wallet",
+   "ledger": [
+    "orders.saved-cards"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*my-favorites",
+   "ledger": [
+    "orders.favorite-lists"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*my-addresses",
+   "ledger": [
+    "users.addresses"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*my-returns",
+   "ledger": [
+    "orders.rma"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|shop\\|.*/shop/commerce/discounts",
+   "ledger": [
+    "commerce.discounts",
+    "commerce.customer-prices"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|shop\\|.*/shop/users/assortments",
+   "ledger": [
+    "pim.assortments",
+    "swift.product-list"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|shop\\|.*/shop/users/contract-pricing",
+   "ledger": [
+    "commerce.customer-prices"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|shop\\|.*/shop/commerce/price-structures/",
+   "ledger": [
+    "commerce.quantity-prices",
+    "commerce.price-matrix"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|shop\\|.*/shop/product-structure/variants/",
+   "ledger": [
+    "pim.variants",
+    "swift.variant-selector"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|shop\\|.*/shop/product-structure/bundles-bom/",
+   "ledger": [
+    "pim.bom"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|shop\\|[^|]*\\|[^|]*\\|[^|]*\\|/[a-z-]+/shop(/[a-z0-9-]+){3}$",
+   "ledger": [
+    "swift.product-detail"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*Search (suggestions|results)",
+   "ledger": [
+    "swift.search",
+    "search.free-text-search"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*menu, open",
+   "ledger": [
+    "swift.mega-menu",
+    "swift.header-navigation"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*(/cart$|added to the cart)",
+   "ledger": [
+    "swift.cart-checkout",
+    "orders.shopping-cart-app"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|.*/user/checkout",
+   "ledger": [
+    "swift.cart-checkout",
+    "orders.shopping-cart-app",
+    "orders.shipping-methods",
+    "orders.payment-methods"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|phone\\|",
+   "ledger": [
+    "swift.responsive"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|csr\\|.*/csr/(users|accounts)",
+   "ledger": [
+    "swift.impersonation",
+    "users.accounts",
+    "users.shared-customer-number"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|csr\\|.*/csr/(orders|carts)",
+   "ledger": [
+    "swift.impersonation",
+    "orders.customer-experience-center"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|csr\\|.*/account/",
+   "ledger": [
+    "swift.customer-center",
+    "users.accounts"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|csr\\|.*/account/subscriptions",
+   "ledger": [
+    "orders.subscriptions"
+   ]
+  },
+  {
+   "match": "^storefront-account\\|csr\\|.*/(customer-center|overview)$",
+   "ledger": [
+    "swift.customer-center",
+    "swift.impersonation"
+   ]
   }
  ]
 }
