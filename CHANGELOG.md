@@ -3,6 +3,12 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.9.0]
+
+- New demo skill **`dw-demo-walkthrough`**, screenshot mode. A walkthrough for a prospect made from real pages of a demo that already runs, re-skinned in one headless browser tab (logo, colours, navigation, sample customer and rows), with no site built and nothing written to the source site. It produces captioned stills, a silent video, clean stills for an overview, and a grounding table that ties every screen to its source page and its `dw-demo-ledger` function ids.
+- The rules it carries: every screen starts from a real page, a block that is template or project work is named in the grounding table, the concept label is part of the still, the caption layer uses the presenting company's brand, and the closing card separates standard, from the ERP, to be confirmed and not in scope.
+- Ships `scripts/reskin-engine.mjs` (page-side helpers for logo, navigation, text, table rows, blocks and captions), `scripts/build-video.mjs` (stills to mp4 through ffmpeg) and `assets/screens-template.mjs`. Registered in `dynamicweb-presales`.
+
 ## [6.8.9]
 
 - `dw-demo-ledger` snapshot **10.30.6 revision 3** (#246). The digest changes, so a build locked on revision 2 needs a re-lock with `Update-DwLedgerLock.ps1`.
