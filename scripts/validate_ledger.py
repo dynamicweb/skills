@@ -82,6 +82,8 @@ def binding_faults(binding, kind, registry, assertion=None) -> list[str]:
             faults.append(f"delivery route is not an allowlisted read route: {operation}")
     if handler in ("files-facet-analyzed", "files-query-constant-macros") and not binding.get("path"):
         faults.append(f"{handler} needs a path pattern")
+    if handler in ("files-facet-analyzed", "files-query-constant-macros") and "scope" in args and args.get("scope") != "build-repositories":
+        faults.append(f"{handler} arguments.scope is build-repositories or absent")
     if handler == "files-facet-analyzed":
         generated = args.get("generated")
         states = (True, False, "default-fields", "default-fields-if-text")

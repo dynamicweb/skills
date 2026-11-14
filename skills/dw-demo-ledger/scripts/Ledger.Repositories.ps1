@@ -8,8 +8,12 @@ entities are refused (Read-LedgerXml), and every path stays under the supplied F
 files-facet-analyzed joins each facet to its source query, the query to its source index, and the
 facet field to that index's declaration or to a field the index's schema extender generates, as the
 binding's arguments.generated table states it for the release. A field it cannot resolve to a known
-Analyzed flag is an offender, never skipped. files-query-constant-macros reports each
-ConstantExpression whose value has the macro shape Namespace.Something:Field.
+Analyzed flag is an offender, never skipped. With arguments.scope build-repositories, only the
+facets of the repositories the build declares (build.repositories, the repository folders the
+composition's layers ship) are judged; a facets file in any other repository folder is still read,
+and its offenders are reported as outOfScope, never dropped and never counted.
+files-query-constant-macros reports each ConstantExpression whose value has the macro shape
+Namespace.Something:Field.
 .EXAMPLE
 . ./Ledger.Repositories.ps1
 Get-LedgerRepositoryObservation -Binding $binding -FilesPath $files
@@ -52,8 +56,25 @@ function Get-LedgerGeneratedAnalyzed {
     }
     return $null
 }
+function Get-LedgerBuildRepositories {
+    # The repository folders the build declares it ships, for a binding scoped to them; $null when the binding is not scoped.
+    param($Binding,$Build)
+    $scope=if($Binding.arguments -is [Collections.IDictionary]){$Binding.arguments['scope']}else{$null}
+    if($null -eq $scope){return $null}
+    if($scope -cne 'build-repositories'){throw 'Repository scope is build-repositories or absent.'}
+    if($Build -isnot [Collections.IDictionary] -or -not $Build.Contains('repositories')){
+        throw [InvalidOperationException]::new('Build input: repositories is not declared. This check judges the repositories the build ships (build.repositories); without that list its scope is unknown.')
+    }
+    $names=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach($name in @($Build.repositories)){
+        if([string]::IsNullOrWhiteSpace($name) -or "$name" -match '[\\/:*?"<>|]' -or "$name" -in @('.','..')){throw [InvalidOperationException]::new('Build input: repositories holds a name that is not a single repository folder name.')}
+        $null=$names.Add("$name")
+    }
+    return ,$names
+}
 function Get-LedgerFacetAnalyzedObservation {
-    param($Binding,[string]$FilesPath,[string[]]$Files)
+    param($Binding,[string]$FilesPath,[string[]]$Files,$Build=@{})
+    $owned=Get-LedgerBuildRepositories $Binding $Build
     $generated=if($Binding.arguments -and $Binding.arguments.generated -is [Collections.IDictionary]){$Binding.arguments.generated}else{throw 'files-facet-analyzed needs arguments.generated.'}
     foreach($extender in $generated.Keys){foreach($part in @('fields','prefixes')){
         $table=$generated[$extender][$part]
@@ -62,9 +83,14 @@ function Get-LedgerFacetAnalyzedObservation {
     # DoNotAnalyzeDefaultFields turns every default-field rule off. An unstated key is not assumed.
     $defaults=Get-LedgerSettingFact $FilesPath '/Globalsettings/Ecom/Indexing/DoNotAnalyzeDefaultFields'
     $offenders=[Collections.Generic.List[object]]::new();$scanned=0;$indexes=@{}
+    $outside=[Collections.Generic.List[object]]::new();$outsideScanned=0;$outsideRepositories=[Collections.Generic.SortedSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     foreach($file in $Files){
         $doc=Read-LedgerXml $file;$where=Get-LedgerRepositoryRelative $FilesPath $file
         $facets=@($doc.SelectNodes('/Facets/Facet'))
+        # The repository folder is the facets file's parent under System/Repositories (the binding path is one level deep).
+        $repository=Split-Path -Leaf (Split-Path -Parent $file)
+        $inScope=$null -eq $owned -or $owned.Contains($repository)
+        if(-not $inScope){$null=$outsideRepositories.Add($repository)}
         $index=$null;$why=$null
         $query=Resolve-LedgerRepositoryItem $FilesPath $doc.SelectSingleNode('/Facets/Source')
         if(-not $query){$why='its source query does not resolve under System/Repositories'}
@@ -88,7 +114,7 @@ function Get-LedgerFacetAnalyzedObservation {
             }
         }
         foreach($facet in $facets){
-            $scanned++
+            if($inScope){$scanned++}else{$outsideScanned++}
             $field=$facet.GetAttribute('Field').Trim();$name=$facet.GetAttribute('Name')
             $offender=[ordered]@{facets=$where;facet=$name;field=$field;reason=$null}
             if(-not $field){$offender.reason='The facet names no field.'}
@@ -106,10 +132,18 @@ function Get-LedgerFacetAnalyzedObservation {
                 elseif($rule[0] -eq 'default-fields'){$offender.reason="$($rule[1]) generates the field analysed: /Globalsettings/Ecom/Indexing/DoNotAnalyzeDefaultFields is false."}
                 else{$offender.reason="$($rule[1]) analyses the field when its value type is text and /Globalsettings/Ecom/Indexing/DoNotAnalyzeDefaultFields is false, as it is here; the field's value type, and whether the field exists at all, are not in Files."}
             }
-            if($offender.reason){$offenders.Add($offender)}
+            if($offender.reason){
+                if($inScope){$offenders.Add($offender)}
+                else{$offender.repository=$repository;$offender.scope='The build does not ship this repository (build.repositories), so the facet is reported and not judged.';$outside.Add($offender)}
+            }
         }
     }
-    return @{value=$offenders.Count;scanned=$scanned;offenders=$offenders.ToArray();complete=$true}
+    $observation=@{value=$offenders.Count;scanned=$scanned;offenders=$offenders.ToArray();complete=$true}
+    if($null -ne $owned){
+        $observation.outOfScope=$outside.ToArray()
+        $observation.scopeNote=if($outsideScanned){"Judged: the facets of the repositories the build ships ($(@($owned|Sort-Object) -join ', ')). Not judged: $outsideScanned facet(s) in $($outsideRepositories.Count) repository folder(s) the build does not ship ($(@($outsideRepositories) -join ', ')), $($outside.Count) of them offending (outOfScope)."}else{"Judged: the facets of the repositories the build ships ($(@($owned|Sort-Object) -join ', ')); no facets file lies outside them."}
+    }
+    return $observation
 }
 function Get-LedgerQueryMacroObservation {
     param([string]$FilesPath,[string[]]$Files)
@@ -124,10 +158,10 @@ function Get-LedgerQueryMacroObservation {
     return @{value=$offenders.Count;scanned=@($Files).Count;offenders=$offenders.ToArray();complete=$true}
 }
 function Get-LedgerRepositoryObservation {
-    param($Binding,[string]$FilesPath)
+    param($Binding,[string]$FilesPath,$Build=@{})
     $files=Get-LedgerLocalFiles $Binding $FilesPath
     switch($Binding.handler){
-        'files-facet-analyzed' {return Get-LedgerFacetAnalyzedObservation $Binding $FilesPath $files}
+        'files-facet-analyzed' {return Get-LedgerFacetAnalyzedObservation $Binding $FilesPath $files $Build}
         'files-query-constant-macros' {return Get-LedgerQueryMacroObservation $FilesPath $files}
         default {throw 'No registered repository observation handler.'}
     }

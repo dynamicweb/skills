@@ -239,6 +239,14 @@ class LedgerValidationTests(unittest.TestCase):
         self.check['bindings'] = [facets, queries]
         self.save()
         self.assertEqual([], validate_ledgers(self.repo))
+        # A scoped binding judges the repositories the build ships; any other scope word is refused.
+        facets['arguments']['scope'] = 'build-repositories'
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        facets['arguments']['scope'] = 'host'
+        self.save()
+        self.assertIn('arguments.scope is build-repositories or absent', '\n'.join(validate_ledgers(self.repo)))
+        del facets['arguments']['scope']
         facets['arguments']['generated']['X.Extender']['fields']['A'] = 'maybe'
         del queries['path']
         self.save()

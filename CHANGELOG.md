@@ -3,6 +3,11 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.10]
+
+- `dw-demo-ledger` snapshot **10.30.6 revision 4** (#248). The digest changes, so a build locked on revision 3 needs a re-lock with `Update-DwLedgerLock.ps1`.
+- `search.facets.not-analyzed` judges only the repositories the build ships. The binding takes `arguments.scope: build-repositories` and the build declares `repositories`, the repository folder names it ships (`build.schema.json`). A `.facets` file in any other folder under `System/Repositories` is still read; its offenders are reported in the row's new `outOfScope` (`report.schema.json`) with the repository, never counted and never dropped, and the reason names the folders not judged. A scoped binding without `repositories` is UNVERIFIED. The validator accepts `scope` only as `build-repositories`.
+- `search.index-queries.no-constant-macros` stays unscoped: a build can bind a query in a repository it does not ship, and a macro stored as a constant there breaks that build's pages.
 ## [6.8.9]
 
 - `dw-demo-ledger` snapshot **10.30.6 revision 3** (#246). The digest changes, so a build locked on revision 2 needs a re-lock with `Update-DwLedgerLock.ps1`.

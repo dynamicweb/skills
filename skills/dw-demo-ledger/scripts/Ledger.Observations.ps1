@@ -124,8 +124,8 @@ function Read-LedgerXml {
     try{$doc=[Xml.XmlDocument]::new();$doc.XmlResolver=$null;$doc.Load($reader);return ,$doc}finally{$reader.Dispose()}
 }
 function Get-LedgerFileObservation {
-    param($Binding,[string]$FilesPath)
-    if($Binding.handler -in @('files-facet-analyzed','files-query-constant-macros')){return Get-LedgerRepositoryObservation $Binding $FilesPath}
+    param($Binding,[string]$FilesPath,$Build=@{})
+    if($Binding.handler -in @('files-facet-analyzed','files-query-constant-macros')){return Get-LedgerRepositoryObservation $Binding $FilesPath $Build}
     $files=Get-LedgerLocalFiles $Binding $FilesPath
     if($Binding.handler -eq 'files-count'){return @{value=$files.Count;scanned=$files.Count;offenders=@();complete=$true}}
     if($Binding.handler -eq 'settings-value'){

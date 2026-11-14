@@ -74,6 +74,14 @@
     "productScope": {
       "type": "object"
     },
+    "repositories": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[^\\/:*?\"<>|]+$"
+      },
+      "uniqueItems": true
+    },
     "editLayout": {
       "type": "object",
       "properties": {

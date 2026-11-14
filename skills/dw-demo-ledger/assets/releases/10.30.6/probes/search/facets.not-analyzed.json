@@ -5,7 +5,7 @@
   "intent": {
     "proves": "No facet reads an analysed index field.",
     "level": "stored-integrity",
-    "scope": "every facet joined to its index field definition"
+    "scope": "every facet in the repositories the build ships (build.repositories), joined to its index field definition; facets in other repository folders are reported as out of scope"
   },
   "assertion": {
     "kind": "offenders",
@@ -28,6 +28,7 @@
       "handler": "files-facet-analyzed",
       "path": "System/Repositories/*/*.facets",
       "arguments": {
+        "scope": "build-repositories",
         "generated": {
           "Dynamicweb.Content.ContentIndexSchemaExtender": {
             "fields": {
@@ -217,6 +218,10 @@
     {
       "kind": "measurement",
       "ref": "A 10.30.6 host with a headless product repository and the Swift 2 release repositories, read-only, 2026-11-14: 7 .facets files, 25 facets under System/Repositories; every facet resolves through its .query to an .index; Headless/Products.facets Manufacturer_Facet (Field, Analyzed false), PriceRange (Grouping, Analyzed false) and ParentGroupIDs (generated, not analysed)."
+    },
+    {
+      "kind": "measurement",
+      "ref": "Revision 4, scope (maintainer ruling, 2026-11-14): a build is judged on the repositories it ships; repositories left on the host by something else are reported, not judged. On a 10.30.6 host carrying a headless edition and the Swift 2 release Files, read-only, 2026-11-14: all 10 offenders of 25 facets were in repository folders no layer of the edition ships (Files/Files.facets, and ProductsFrontend/Products.facets and Electricals.facets reading category fields that host does not have); the edition's own Headless/Products.facets had none."
     }
   ]
 }
