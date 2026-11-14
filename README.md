@@ -204,12 +204,15 @@ Hosted/cloud installs reached only by URL + Admin API key — building a demo di
 **[dw-demo-foldback](skills/dw-demo-foldback/SKILL.md)**
 Fold a demo-build learning back into this repo as a sanitized, atomic PR — route it foundational-vs-demo, strip customer specifics, validate, bump the version, open the PR ([references/fold-back-workflow.md](skills/dw-demo-foldback/references/fold-back-workflow.md)). Maintainer flow. Use after `dw-demo-base`.
 
+**[dw-demo-walkthrough](skills/dw-demo-walkthrough/SKILL.md)**
+A captioned walkthrough video and screenshot overview for a prospect, made from real pages of a demo that already runs and re-skinned in the browser, with a grounding table per screen. No site is built. Use after `dw-demo-base`.
+
 ## Skill dependencies
 
 The **presales demo chain** has a hard order. `dw-demo-base` must run **first** — it scaffolds
 the host, wires MCP + the TLS bypass, and captures the demo's versions + downloads its artifacts
 per-demo. The sister demo skills
-(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-erp`, `dw-demo-foldback`, and the `dw-integration-bc` connector demo)
+(`dw-demo-pim`, `dw-demo-swift`, `dw-demo-headless`, `dw-demo-hosted`, `dw-demo-erp`, `dw-demo-foldback`, `dw-demo-walkthrough`, and the `dw-integration-bc` connector demo)
 are **Use AFTER** and inherit that setup; they no-op or break if run standalone.
 
 The demo skills hold domain knowledge and carry no build sequencing — that is owned by a
