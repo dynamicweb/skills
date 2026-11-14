@@ -80,8 +80,9 @@ function Invoke-LedgerCheck {
         }
         elseif($_.Exception -is [InvalidOperationException]){
             $row.result='UNVERIFIED'
-            # A build input the target refutes is named; any other message stays generic so no response body is printed.
-            $row.reason=if($_.Exception.Message -like 'Build input: *'){$_.Exception.Message}else{'Required input, field, path or complete enumeration is unavailable.'}
+            # A build input the target refutes, or a runner input that is missing, is named; any other message stays
+            # generic so no response body is printed. Neither kind of message ever carries an input's value.
+            $row.reason=if($_.Exception.Message -like 'Build input: *' -or $_.Exception.Message -like 'Runner input: *'){$_.Exception.Message}else{'Required input, field, path or complete enumeration is unavailable.'}
         }
         else {$row.result='ERROR';$row.reason='Binding execution failed. Check handler, grants, scope and target schema; no exception body is persisted.'}
     }

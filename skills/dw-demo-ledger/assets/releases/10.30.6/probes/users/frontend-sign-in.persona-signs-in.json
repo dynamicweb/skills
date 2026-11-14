@@ -14,18 +14,24 @@
   },
   "bindings": [
     {
-      "id": "dwapi-dwapi-users-authenticate",
+      "id": "dwapi-users-authenticate",
       "surface": "dwapi",
-      "status": "planned",
-      "handler": "dwapi-behaviour",
-      "operation": "/dwapi/users/authenticate",
-      "reason": "dwapi-count is one anonymous GET on an allowlisted read route and sends no credential. A sign-in is a POST to /dwapi/users/authenticate with the persona's user name and password, a secret no build field carries, followed by a read made as that user. Needs a delivery sign-in handler, a persona credential supplied to the runner like DW_API_TOKEN (never written to the build or report), and the authenticate route allowlisted for that handler only."
+      "status": "implemented",
+      "handler": "dwapi-persona-sign-in",
+      "operation": "users/authenticate",
+      "arguments": {
+        "readAs": "users/info"
+      }
     }
   ],
   "sources": [
     {
       "kind": "docs",
       "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+    },
+    {
+      "kind": "measurement",
+      "ref": "A 10.30.6 Swift 2 host with sample-data personas, 2026-11-14: POST /dwapi/users/authenticate with each of three sample-data personas answered 200 with a token; GET /dwapi/users/info with that token answered 200 and named the same user id and user name."
     }
   ]
 }

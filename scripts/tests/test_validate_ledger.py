@@ -211,6 +211,49 @@ class LedgerValidationTests(unittest.TestCase):
         self.save()
         self.assertIn('delivery binding names no operation', '\n'.join(validate_ledgers(self.repo)))
 
+    def test_persona_sign_in_uses_its_own_route_lists(self):
+        binding = {'id': 'signin', 'surface': 'dwapi', 'status': 'implemented', 'handler': 'dwapi-persona-sign-in',
+                   'operation': 'users/authenticate', 'arguments': {'readAs': 'users/info'}}
+        self.check['bindings'] = [binding]
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        binding['operation'] = 'users/authenticate/refresh'
+        self.save()
+        self.assertIn('sign-in route is not an allowlisted sign-in route', '\n'.join(validate_ledgers(self.repo)))
+        binding.update(operation='users/authenticate', arguments={'readAs': 'users/info/profiles/switch'})
+        self.save()
+        self.assertIn('needs arguments.readAs', '\n'.join(validate_ledgers(self.repo)))
+        # The sign-in route is never an anonymous read for dwapi-count.
+        self.check['bindings'] = [{'id': 'dwapi', 'surface': 'dwapi', 'status': 'implemented', 'handler': 'dwapi-count',
+                                   'operation': 'users/authenticate', 'projection': {'rowsPath': '$'}}]
+        self.save()
+        self.assertIn('delivery route is not an allowlisted read route', '\n'.join(validate_ledgers(self.repo)))
+
+    def test_repository_file_handlers_state_scope_and_generated_table(self):
+        self.check['assertion'] = {'kind': 'offenders', 'minimumSubjects': 1}
+        facets = {'id': 'facets', 'surface': 'file', 'status': 'implemented', 'handler': 'files-facet-analyzed',
+                  'path': 'System/Repositories/*/*.facets',
+                  'arguments': {'generated': {'X.Extender': {'fields': {'A': False, 'B': 'default-fields'}, 'prefixes': {'C_': 'default-fields-if-text'}}}}}
+        queries = {'id': 'queries', 'surface': 'file', 'status': 'implemented', 'handler': 'files-query-constant-macros',
+                   'path': 'System/Repositories/*/*.query'}
+        self.check['bindings'] = [facets, queries]
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        facets['arguments']['generated']['X.Extender']['fields']['A'] = 'maybe'
+        del queries['path']
+        self.save()
+        errors = '\n'.join(validate_ledgers(self.repo))
+        self.assertIn('state is true, false, default-fields or default-fields-if-text', errors)
+        self.assertIn('files-query-constant-macros needs a path pattern', errors)
+        facets['arguments'] = {}
+        self.save()
+        self.assertIn('files-facet-analyzed needs arguments.generated', '\n'.join(validate_ledgers(self.repo)))
+        self.check['assertion'] = {'kind': 'scalar', 'op': 'eq', 'value': 0}
+        facets['arguments'] = {'generated': {'X.Extender': {'fields': {'A': False}}}}
+        queries['path'] = 'System/Repositories/*/*.query'
+        self.save()
+        self.assertIn('does not fit handler files-facet-analyzed', '\n'.join(validate_ledgers(self.repo)))
+
     def test_app_expectation_is_true_a_version_or_a_minimum(self):
         for expected in (True, '10.24.2', {'min': '0.6.0-beta'}):
             self.function['requires'] = [{'kind': 'app', 'id': 'Example.App', 'expected': expected}]

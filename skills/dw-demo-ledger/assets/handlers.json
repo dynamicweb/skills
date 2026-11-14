@@ -14,9 +14,12 @@
     "mcp-multiselect": {"surfaces": ["mcp"], "assertions": ["scalar"]},
     "admin-query-count": {"surfaces": ["admin-api"], "assertions": ["scalar"]},
     "dwapi-count": {"surfaces": ["dwapi"], "assertions": ["scalar"]},
+    "dwapi-persona-sign-in": {"surfaces": ["dwapi"], "assertions": ["scalar"]},
     "settings-value": {"surfaces": ["file"], "assertions": ["scalar"]},
     "xml-count": {"surfaces": ["file"], "assertions": ["scalar"]},
     "files-count": {"surfaces": ["file"], "assertions": ["scalar"]},
+    "files-facet-analyzed": {"surfaces": ["file"], "assertions": ["offenders"]},
+    "files-query-constant-macros": {"surfaces": ["file"], "assertions": ["offenders"]},
     "sql-scalar": {"surfaces": ["sql"], "assertions": ["scalar"]},
     "sql-offenders": {"surfaces": ["sql"], "assertions": ["offenders"]},
     "pim-attributes": {"surfaces": ["sql"], "assertions": ["attributes"]},
@@ -92,5 +95,11 @@
     "ecommerce/products/search",
     "frontend/navigations/{areaId}",
     "query"
+  ],
+  "dwapiSignInRoutes": [
+    "users/authenticate"
+  ],
+  "dwapiSignedInReadRoutes": [
+    "users/info"
   ]
 }

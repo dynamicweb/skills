@@ -19,7 +19,182 @@
       "handler": "mcp-facet-field-analyzed",
       "operation": "get_index_facets",
       "arguments": {},
-      "reason": "Measured on 10.30.6 with Truvio.Commerce.MCP 0.6.3: get_index_facets returns each facet's field name and no allowlisted read returns whether an index field is analysed. get_index_facet_fields (not allowlisted) returns systemName, name, group and typeName only. Facets also read fields the index builder generates (ParentGroupIDs) that the repository .index file does not declare, so the Files/System/Repositories XML cannot resolve every facet field either. Needs a handler that joins each facet's field to the index schema's Analyzed flag, generated fields included, and reports analysed ones as offenders over the facets scanned."
+      "reason": "MCP route: get_index_facets returns each facet's field name and no allowlisted read returns whether an index field is analysed; get_index_facet_fields (not allowlisted) returns systemName, name, group and typeName only (measured on 10.30.6 with Truvio.Commerce.MCP 0.6.3). Needs an analyzed property on an MCP read. The implemented local Files binding observes the same claim."
+    },
+    {
+      "id": "files-repositories-facet-analyzed",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-facet-analyzed",
+      "path": "System/Repositories/*/*.facets",
+      "arguments": {
+        "generated": {
+          "Dynamicweb.Content.ContentIndexSchemaExtender": {
+            "fields": {
+              "PageAreaIdString": false,
+              "PageDescription": true,
+              "PageIdString": false,
+              "PageItemIdString": false,
+              "PageItemsContent": true,
+              "PageKeywords": true,
+              "PageMasterPageIdString": false,
+              "PageMenuText": true,
+              "PageMetaTitle": true,
+              "PageParentPageIdString": false,
+              "PagePath": false,
+              "PagePropertyItemType": false,
+              "ParagraphContent": true,
+              "ParagraphHeaders": true,
+              "ParagraphTexts": true,
+              "RowContent": true
+            },
+            "prefixes": {
+              "Page": false
+            }
+          },
+          "Dynamicweb.Content.Files.FileIndexSchemaExtender": {
+            "fields": {
+              "DateCreated": false,
+              "DateCreatedUTC": false,
+              "DirectoryFullPath": true,
+              "DirectoryName": true,
+              "DirectoryRelativePath": false,
+              "DynamicwebMetadata": false,
+              "EXIF": false,
+              "Extension": false,
+              "FileFullName": true,
+              "FileName": true,
+              "FileSize": false,
+              "IPTC": false,
+              "IsReadOnly": false,
+              "LastAccessTime": false,
+              "LastAccessTimeUTC": false,
+              "LastWriteTime": false,
+              "LastWriteTimeUTC": false,
+              "ParentDirectory": true,
+              "RootDirectory": true,
+              "XMP": false
+            },
+            "prefixes": {
+              "DynamicwebMetadata|": false,
+              "IPTC|": false,
+              "XMP|": false
+            }
+          },
+          "Dynamicweb.Ecommerce.Indexing.ProductIndexSchemaExtender": {
+            "fields": {
+              "Active": false,
+              "AssetCategoryGroupIDs": false,
+              "AssetDescriptions": false,
+              "AssetKeywords": false,
+              "AssetNames": false,
+              "AssetPublicationFrom": false,
+              "AssetPublicationTo": false,
+              "AssetVersions": false,
+              "AssortmentIDs": false,
+              "AutoID": false,
+              "AutoUpdateID": false,
+              "BoughtWithProducts": false,
+              "CampaignEndTime": false,
+              "CampaignShowProductsAfterExpiration": false,
+              "CampaignStartTime": false,
+              "Cost": false,
+              "Created": false,
+              "DatamodelStructureIDs": false,
+              "DefaultDetailImage": "default-fields",
+              "DefaultImageFromDetailOrImagePattern": "default-fields",
+              "DefaultImagePatternImage": "default-fields",
+              "DefaultShopID": false,
+              "DefaultUnitID": false,
+              "DefaultVariantComboID": false,
+              "Discontinued": false,
+              "DiscontinuedDate": false,
+              "DiscountGroupId": "default-fields",
+              "ExcludeFromAllProducts": false,
+              "ExtendedVariantCount": false,
+              "ExtendedVariantProductNumbers": false,
+              "ExternalId": "default-fields",
+              "ExternalVariantId": "default-fields",
+              "FavoriteListsIds": false,
+              "GroupCount": false,
+              "GroupDescriptions": "default-fields",
+              "GroupIDs": false,
+              "GroupNames": "default-fields",
+              "GroupNumbers": false,
+              "GroupsSecondLevel": false,
+              "GroupsThirdLevel": false,
+              "GroupsTop": false,
+              "ID": "default-fields",
+              "ImageDefault": "default-fields",
+              "ImageLarge": "default-fields",
+              "ImageMedium": "default-fields",
+              "ImageSmall": "default-fields",
+              "IsPrimaryVariant": false,
+              "IsRepresentativeForGroup": false,
+              "IsVariant": false,
+              "ItemOnBoms": false,
+              "LanguageID": false,
+              "Link1": false,
+              "Link2": false,
+              "LongDescription": "default-fields",
+              "ManufacturerID": false,
+              "ManufacturerName": "default-fields",
+              "MetaCanonical": false,
+              "MetaDescription": "default-fields",
+              "MetaKeywords": "default-fields",
+              "MetaTitle": "default-fields",
+              "MetaUrl": false,
+              "Name": "default-fields",
+              "NameForSort": false,
+              "NeverOutOfStock": false,
+              "Number": "default-fields",
+              "OrderCount": false,
+              "OrderCountGrowth": false,
+              "ParentGroupIDs": false,
+              "ParentGroupNames": "default-fields",
+              "Points": false,
+              "Price": false,
+              "PriceType": false,
+              "PrimaryGroupName": false,
+              "PrimaryGroupSort": false,
+              "PrimaryIndexGroupValue": false,
+              "ProductImages": "default-fields",
+              "ProductIsFullyTranslated": false,
+              "ProductKey": false,
+              "ProductMasterVariantKind": false,
+              "ProductTranslatedTo": false,
+              "ProductTranslationCount": false,
+              "Rating": false,
+              "ShopIDs": false,
+              "ShortDescription": "default-fields",
+              "ShowInProductList": false,
+              "ShowMasterOrVariantInList": false,
+              "Stock": false,
+              "StockGroupID": false,
+              "StockLocationProductAvailable": false,
+              "Type": false,
+              "Updated": false,
+              "UseAsListRepresentative": false,
+              "VariantCombinations": false,
+              "VariantID": false,
+              "VariantOptions": "default-fields",
+              "VariantOptionsInStock": "default-fields",
+              "VatGroupID": false,
+              "Volume": false,
+              "Weight": false,
+              "WorkflowState": false
+            },
+            "prefixes": {
+              "AssetsCategoryGroup_": false,
+              "CompletionRule|": false,
+              "CustomField_": "default-fields-if-text",
+              "ProductCategory|": "default-fields-if-text",
+              "ProductRelationGroup_": false,
+              "VariantGroup_": false
+            }
+          }
+        }
+      }
     }
   ],
   "sources": [
@@ -34,6 +209,14 @@
     {
       "kind": "measurement",
       "ref": "A 10.30.6 host with a headless product repository, read-only, 2026-11-13: get_index_facets 7 facet groups; get_index_facet_fields Headless/Products 266 fields with keys systemName, name, group, typeName; Headless/Products.facets reads ParentGroupIDs, which Headless/Products.index does not declare."
+    },
+    {
+      "kind": "release",
+      "ref": "arguments.generated: the Analyzed flag of every field with a fixed system name that ContentIndexSchemaExtender, FileIndexSchemaExtender (Dynamicweb 10.30.6) and ProductIndexSchemaExtender (Dynamicweb.Ecommerce 10.30.6) generate, read from the FieldDefinition initialisers of the shipped assemblies (manifest components). default-fields is AnalyzeField(): analysed unless /Globalsettings/Ecom/Indexing/DoNotAnalyzeDefaultFields is true. default-fields-if-text is AnalyzeField(value type is text) for product custom fields and category fields, whose value type is not in Files. Page is the Page table's columns, generated not analysed except PageMenuText, PageKeywords, PageDescription and PageMetaTitle."
+    },
+    {
+      "kind": "measurement",
+      "ref": "A 10.30.6 host with a headless product repository and the Swift 2 release repositories, read-only, 2026-11-14: 7 .facets files, 25 facets under System/Repositories; every facet resolves through its .query to an .index; Headless/Products.facets Manufacturer_Facet (Field, Analyzed false), PriceRange (Grouping, Analyzed false) and ParentGroupIDs (generated, not analysed)."
     }
   ]
 }
