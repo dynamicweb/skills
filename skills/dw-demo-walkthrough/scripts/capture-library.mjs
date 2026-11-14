@@ -28,6 +28,9 @@
  * Parameters:
  *   <base> <outDir>          site root and the folder to write (required, in this order)
  *   --storefront             crawl the storefront from / (navigation pages, two detail pages per list)
+ *   --signed-in              with --storefront: sign in first as the persona in DW_SF_USER / DW_SF_PASS and
+ *                            crawl what an account sees; --sign-in-path=/x (default /sign-in), --start=/a+/b
+ *                            adds pages to start from (the customer center, the cart)
  *   --admin                  crawl the back office areas
  *   --details                with --admin: the first row's detail screen, its tabs and its edit screen
  *   --areas=A,B              only these back office areas, by their name in the left bar
@@ -62,7 +65,19 @@ async function shoot(entry) {
   screens.push(entry); save(); console.log(entry.surface, k, '|', entry.title);
 }
 if (flag('storefront')) {
+  // --signed-in: sign in as a storefront persona (DW_SF_USER / DW_SF_PASS) and crawl what an account sees.
+  // Stills get the key prefix sf-in- and surface storefront-account; the sign-out link is never followed.
+  const signedIn = flag('signed-in'); const pre = signedIn ? 'sf-in-' : 'sf-';
   const seen = new Set(), queue = [['/', 0]]; let n = 0;
+  if (signedIn) {
+    const signIn = (args.find(x => x.startsWith('--sign-in-path=')) || '=/sign-in').split('=')[1];
+    await page.goto(BASE + signIn, {waitUntil: 'networkidle', timeout: 45000});
+    await page.locator('input[name="username"], input[name="Username"], input[type="email"]').first().fill(process.env.DW_SF_USER);
+    const sp = page.locator('input[type="password"]').first(); await sp.fill(process.env.DW_SF_PASS);
+    await sp.press('Enter'); await page.waitForLoadState('networkidle', {timeout: 30000}).catch(() => {}); await page.waitForTimeout(2000);
+    if (await page.locator('input[type="password"]').first().isVisible().catch(() => false)) { console.error('storefront sign-in failed: the password field is still shown'); await browser.close(); process.exit(3); }
+    for (const p of (args.find(x => x.startsWith('--start=')) || '=').split('=')[1].split('+').filter(Boolean)) queue.unshift([p, 0]);
+  }
   while (queue.length && n < 120) {
     const [p, depth] = queue.shift(); if (seen.has(p)) continue; seen.add(p);
     let r; try { r = await page.goto(BASE + p, {waitUntil: 'networkidle', timeout: 45000}); } catch { continue; }
@@ -70,7 +85,7 @@ if (flag('storefront')) {
     const u = new URL(page.url()); if (seen.has('@' + u.pathname + u.search)) continue; seen.add('@' + u.pathname + u.search);
     const title = (await page.title()).trim();
     const h1 = await page.evaluate(() => (document.querySelector('main h1, main h2, h1')?.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80));
-    await shoot({key: 'sf-' + (slug(u.pathname.replace(/^\/en-us/, '') + u.search) || 'home'), surface: 'storefront', area: u.pathname.split('/')[2] || 'home', title: h1 || title, pageTitle: title, url: u.pathname + u.search, path: u.pathname}); n++;
+    await shoot({key: pre + (slug(u.pathname.replace(/^\/en-us/, '') + u.search) || 'home'), surface: signedIn ? 'storefront-account' : 'storefront', area: u.pathname.split('/')[2] || 'home', title: h1 || title, pageTitle: title, url: u.pathname + u.search, path: u.pathname}); n++;
     if (depth >= 3) continue;
     const links = await page.evaluate(() => [...document.querySelectorAll('a[href]')].map(a => a.getAttribute('href')).filter(h => h && h.startsWith('/') && !/\.(pdf|jpg|png|zip|docx?)$/i.test(h) && !/cartcmd|logout|\/Admin|sign-out|\/Files\//i.test(h)));
     const nav = links.filter(h => h.split('/').length <= 5 && !/[?&]/.test(h));
