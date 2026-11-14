@@ -68,12 +68,35 @@ def binding_faults(binding, kind, registry, assertion=None) -> list[str]:
             faults.append("Admin binding names no operation")
         elif operation not in registry.get("adminReadQueries", []):
             faults.append(f"Admin operation is not an allowlisted read query: {operation}")
-    if surface == "dwapi":
+    if surface == "dwapi" and handler == "dwapi-persona-sign-in":
+        # The one non-GET delivery call: a persona sign-in on its own list, then one read as that user.
+        if operation not in registry.get("dwapiSignInRoutes", []):
+            faults.append(f"sign-in route is not an allowlisted sign-in route: {operation}")
+        if args.get("readAs") not in registry.get("dwapiSignedInReadRoutes", []):
+            faults.append("dwapi-persona-sign-in needs arguments.readAs on dwapiSignedInReadRoutes")
+    elif surface == "dwapi":
         # A delivery read is one anonymous GET; some GET routes switch a profile or issue a token, so the route is listed.
         if not operation:
             faults.append("delivery binding names no operation")
         elif operation not in registry.get("dwapiReadRoutes", []):
             faults.append(f"delivery route is not an allowlisted read route: {operation}")
+    if handler in ("files-facet-analyzed", "files-query-constant-macros") and not binding.get("path"):
+        faults.append(f"{handler} needs a path pattern")
+    if handler == "files-facet-analyzed":
+        generated = args.get("generated")
+        states = (True, False, "default-fields", "default-fields-if-text")
+        if not isinstance(generated, dict) or not generated:
+            faults.append("files-facet-analyzed needs arguments.generated")
+        else:
+            for extender, table in generated.items():
+                parts = [table.get(part) for part in ("fields", "prefixes")] if isinstance(table, dict) else [None]
+                if not isinstance(table, dict) or set(table) - {"fields", "prefixes"} or not all(isinstance(p, (dict, type(None))) for p in parts):
+                    faults.append(f"files-facet-analyzed generated.{extender} holds only fields and prefixes objects")
+                    continue
+                for part in parts:
+                    for name, state in (part or {}).items():
+                        if not any(state is s or (isinstance(s, str) and state == s) for s in states):
+                            faults.append(f"files-facet-analyzed generated.{extender} {name}: state is true, false, default-fields or default-fields-if-text")
     if handler in ("admin-query-count", "dwapi-count") and not (binding.get("projection") or {}).get("rowsPath"):
         faults.append(f"{handler} needs projection.rowsPath")
     if handler == "admin-feature-flag" and not args.get("featureTypeName"):

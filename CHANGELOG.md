@@ -3,6 +3,13 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.9]
+
+- `dw-demo-ledger` snapshot **10.30.6 revision 3** (#246). The digest changes, so a build locked on revision 2 needs a re-lock with `Update-DwLedgerLock.ps1`.
+- `search.facets.not-analyzed` is implemented with `files-facet-analyzed`: each facet under `System/Repositories` is joined through its query to its index, and the field's `Analyzed` flag is read from the index declaration or from the release-bound table of fields the schema extenders generate (`arguments.generated`). A field that cannot be resolved to a known flag is an offender.
+- `search.index-queries.no-constant-macros` is implemented with `files-query-constant-macros`: a `ConstantExpression` whose value has the macro shape is an offender. Files rather than allowlisting `get_index_query_expressions`: no new MCP read and no call per query.
+- `users.frontend-sign-in.persona-signs-in` is implemented with `dwapi-persona-sign-in`: each persona from `DW_PERSONA_CREDENTIALS` (runner environment only) signs in with `POST /dwapi/users/authenticate` and is then served `GET /dwapi/users/info` as that user. The two routes have their own allowlists; no password, token or response body reaches the report. Without the variable the check is UNVERIFIED.
+- The runner names a missing runner input (`Runner input: ...`) in a row's reason, as it names a refuted build input.
 ## [6.8.8]
 
 - `dw-demo-ledger` snapshot **10.30.6 revision 2** (#244). The digest changes, so a build locked on revision 1 needs a re-lock with `Update-DwLedgerLock.ps1`.

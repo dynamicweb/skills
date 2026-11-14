@@ -3,7 +3,7 @@
   "status": "reviewed",
   "before": "10.29.8",
   "after": "10.30.6",
-  "revision": 2,
+  "revision": 3,
   "rawScanDigest": "sha256:e1149cbc8a86e33fd29d0e17ce258a8f322247c1a1eb65ff36c6a3e1b4902cc7",
   "review": "delta-review.json",
   "added": [
@@ -332,7 +332,8 @@
     "pim.matrix-fields: 10.30 adds MASTER to default-language inheritance and shared or language-specific values per matrix column. The cells check reads stored rows per declared language; a declaration that names a language which inherits or shares a column may read no stored cell there. On ledger-supherb-matrix (10.30.6, 2026-11-13) the matrix category Matrix_nutritionFacts still stores its cells per product and language (2748 rows, ENU) and no matrix column or key changed in the upgrade.",
     "orders.bc-invoices has a planned binding only and stays UNVERIFIED.",
     "commerce.price-groups SQL reads have fixture red controls (Corrections.Tests.ps1) and were executed on one 10.30.6 database without groups; a site with groups has not been measured.",
-    "Revision 2: search.facets.not-analyzed, search.index-queries.no-constant-macros and users.frontend-sign-in.persona-signs-in still have planned bindings only and stay UNVERIFIED; each binding's reason names the handler it needs (#244)."
+    "Revision 2: search.facets.not-analyzed, search.index-queries.no-constant-macros and users.frontend-sign-in.persona-signs-in still have planned bindings only and stay UNVERIFIED; each binding's reason names the handler it needs (#244).",
+    "Revision 3: search.facets.not-analyzed reads the local Files repository XML; a field whose Analyzed flag depends on a category or custom field's value type is an offender while DoNotAnalyzeDefaultFields is not true, because the value type is not in Files. users.frontend-sign-in.persona-signs-in needs persona credentials in DW_PERSONA_CREDENTIALS and is UNVERIFIED without them (#246)."
   ],
   "corrections": [],
   "mapped": [],
@@ -370,6 +371,24 @@
       "change": "ground-added",
       "source": "https://github.com/dynamicweb/skills/issues/244",
       "note": "Revision 2: a ground may list the checks it rules out (checks); the function's other checks are evaluated as usual. New check-scoped grounds: orders.favorite-lists no-swift-storefront (the paragraph check only; the stored lists stay checked), content.paragraphs headless-surface (paragraph visibility only; item instances stay checked) and search.facets headless-surface (catalogue wiring only; facet groups and analysed fields stay checked). The headless grounds hold until a headless check set exists (#243)."
+    },
+    {
+      "checkId": "search.facets.not-analyzed",
+      "change": "binding-promoted",
+      "source": "https://github.com/dynamicweb/skills/issues/246",
+      "note": "Revision 3: implemented files-facet-analyzed binding over System/Repositories/*/*.facets. Each facet joins through its source query to its index; the field's Analyzed flag comes from the index declaration or from the release-bound table of extender-generated fields in arguments.generated (read from the shipped 10.30.6 assemblies). Unresolved fields are offenders. Green and red controls in Handlers.Tests.ps1; executed read-only on a 10.30.6 host. The MCP binding stays planned."
+    },
+    {
+      "checkId": "search.index-queries.no-constant-macros",
+      "change": "binding-promoted",
+      "source": "https://github.com/dynamicweb/skills/issues/246",
+      "note": "Revision 3: implemented files-query-constant-macros binding over System/Repositories/*/*.query: each ConstantExpression Value with the macro shape is an offender, over the queries read. Chosen over allowlisting get_index_query_expressions: no new MCP read, no call per query, and the .query XML is the stored representation that tool reads. Green and red controls in Handlers.Tests.ps1; executed read-only on a 10.30.6 host. The MCP binding stays planned."
+    },
+    {
+      "checkId": "users.frontend-sign-in.persona-signs-in",
+      "change": "binding-promoted",
+      "source": "https://github.com/dynamicweb/skills/issues/246",
+      "note": "Revision 3: implemented dwapi-persona-sign-in binding: POST /dwapi/users/authenticate per persona from DW_PERSONA_CREDENTIALS, then GET /dwapi/users/info with the token must name the same user. Both routes are on their own allowlists in handlers.json, not dwapiReadRoutes. No password, token or body is kept. Green and red controls in Handlers.Tests.ps1; measured on a 10.30.6 Swift 2 host with three personas."
     }
   ]
 }

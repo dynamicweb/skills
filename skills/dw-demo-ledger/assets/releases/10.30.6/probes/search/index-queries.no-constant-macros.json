@@ -19,10 +19,17 @@
       "handler": "mcp-query-constant-macros",
       "operation": "get_index_query_expressions",
       "arguments": {},
-      "reason": "Measured on 10.30.6 with Truvio.Commerce.MCP 0.6.3: get_index_queries lists the queries (id, name, repository, sourceIndex) without expressions; get_index_query_expressions(queryId) returns every expression with field, operator, valueType and value, which is the observation this check needs, but it is not on the read allowlist and takes one call per query. The .query XML (ConstantExpression Value) can be counted with xml-count, but that handler is scalar-only and reports no subjects, so it cannot carry an offenders assertion with minimumSubjects. Needs a handler that enumerates get_index_queries, reads get_index_query_expressions per query and reports each Constant expression whose value has the macro shape as an offender over the queries scanned.",
+      "reason": "MCP route, not taken: get_index_queries lists the queries without expressions; get_index_query_expressions(queryId) returns field, operator, valueType and value per expression but is not on the read allowlist and needs one call per query (measured on 10.30.6 with Truvio.Commerce.MCP 0.6.3). The implemented local Files binding reads the same stored expressions from the .query XML.",
       "requiredTools": [
         "get_index_queries"
       ]
+    },
+    {
+      "id": "files-repositories-query-constant-macros",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-query-constant-macros",
+      "path": "System/Repositories/*/*.query"
     }
   ],
   "sources": [
@@ -33,6 +40,10 @@
     {
       "kind": "measurement",
       "ref": "A 10.30.6 host with a headless product repository, read-only, 2026-11-13: get_index_queries count 8; get_index_query_expressions for Headless/Products.query returned groups and flat expressions (nodeKey, groupKey, field, operator, valueType Constant or Parameter, value, disabled)."
+    },
+    {
+      "kind": "measurement",
+      "ref": "A 10.30.6 host with a headless product repository and the Swift 2 release repositories, read-only, 2026-11-14: 8 .query files under System/Repositories; 7 ConstantExpression values (True, False, 0, ENU, Empty, empty text), none macro-shaped; the 10 macros are MacroExpression Lookup values."
     }
   ]
 }

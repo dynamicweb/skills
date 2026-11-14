@@ -71,6 +71,7 @@ CPQ checks use [independent scope declarations and read-only observations](refer
 | [Ledger.Core.ps1](scripts/Ledger.Core.ps1) | Definitions only | Schema, digest, safe paths, selection and assertions |
 | [Ledger.Transport.ps1](scripts/Ledger.Transport.ps1) | Reads MCP/Admin when called | Discovery and observations using the shared API transport |
 | [Ledger.Observations.ps1](scripts/Ledger.Observations.ps1) | Reads collections/local XML when called | Tokens, filtered counts, authenticated API projection and scoped files |
+| [Ledger.Repositories.ps1](scripts/Ledger.Repositories.ps1) | Reads repository XML under the local Files root when called | Facet field Analyzed flags through query and index, and macro-shaped query constants |
 | [Ledger.Sql.ps1](scripts/Ledger.Sql.ps1) | Local SELECT when called | Single-SELECT guard and integrated-authentication reads in a rolled-back transaction |
 | [Ledger.Execute.ps1](scripts/Ledger.Execute.ps1) | Reads selected binding | Fixed handlers; missing implementation fails visibly |
 | [Ledger.Facts.ps1](scripts/Ledger.Facts.ps1) | Reads add-in folder names and settings layers when called | App and settings facts for the requested functions' requirements |
@@ -84,6 +85,7 @@ CPQ checks use [independent scope declarations and read-only observations](refer
 | [Observations.Tests.ps1](scripts/tests/Observations.Tests.ps1) | Isolated fixtures | Filter, token, XML, path and authenticated-query controls |
 | [Integrity.Tests.ps1](scripts/tests/Integrity.Tests.ps1) | Isolated fixtures, fake connection, mocked MCP | Red controls for the SQL guard, read-tool allowlist, profiles, rulings, requirements and runner errors |
 | [Requirements.Tests.ps1](scripts/tests/Requirements.Tests.ps1) | Isolated fixtures, mocked reads | Red controls for requirement facts, evaluation order, cited functions, digest and the delivery read |
+| [Handlers.Tests.ps1](scripts/tests/Handlers.Tests.ps1) | Isolated fixtures, mocked delivery reads | Green and red controls for the facet, query-constant and persona sign-in handlers, including no secret in a row |
 | [Runner.Tests.ps1](scripts/tests/Runner.Tests.ps1) | Temporary git checkout, loopback stub | End-to-end runner and re-lock controls: PASS, DISABLED, changed runner, version change, stopped run |
 | [LedgerFixture.ps1](scripts/tests/LedgerFixture.ps1) | Writes a temporary fixture checkout | Fixture repository and stub site for the end-to-end controls |
 | [Corrections.Tests.ps1](scripts/tests/Corrections.Tests.ps1) | Inline SQL fixtures in tempdb (optional local server) | Green and red controls for corrected and newly inventoried checks, refusal fallback |
@@ -94,4 +96,4 @@ Run from a clean checkout at the build lock's commit:
 pwsh -NoProfile -File scripts/Invoke-DwLedgerChecks.ps1 -Manifest $manifest -BuildFile $build -OutFile $report
 ```
 
-Set DW_BASE_URL and DW_MCP_TOKEN or DW_API_TOKEN in the process environment. No credential belongs in a build declaration. Supply SqlServer explicitly only for a local target. DiagnosticVersionMismatch permits investigation of another baseline or uncommitted runner, but cannot produce aggregate PASS. A run that stops before any check still writes the report: `result` is ERROR and `errors` names the cause. After a snapshot revision an existing build keeps its lock commit; move it with [Update-DwLedgerLock.ps1](scripts/Update-DwLedgerLock.ps1) as the release process describes.
+Set DW_BASE_URL and DW_MCP_TOKEN or DW_API_TOKEN in the process environment. A persona sign-in check reads DW_PERSONA_CREDENTIALS from the environment ([contract](references/contract.md)). No credential belongs in a build declaration. Supply SqlServer explicitly only for a local target. DiagnosticVersionMismatch permits investigation of another baseline or uncommitted runner, but cannot produce aggregate PASS. A run that stops before any check still writes the report: `result` is ERROR and `errors` names the cause. After a snapshot revision an existing build keeps its lock commit; move it with [Update-DwLedgerLock.ps1](scripts/Update-DwLedgerLock.ps1) as the release process describes.

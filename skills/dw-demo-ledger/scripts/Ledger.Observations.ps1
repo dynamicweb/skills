@@ -125,6 +125,7 @@ function Read-LedgerXml {
 }
 function Get-LedgerFileObservation {
     param($Binding,[string]$FilesPath)
+    if($Binding.handler -in @('files-facet-analyzed','files-query-constant-macros')){return Get-LedgerRepositoryObservation $Binding $FilesPath}
     $files=Get-LedgerLocalFiles $Binding $FilesPath
     if($Binding.handler -eq 'files-count'){return @{value=$files.Count;scanned=$files.Count;offenders=@();complete=$true}}
     if($Binding.handler -eq 'settings-value'){
