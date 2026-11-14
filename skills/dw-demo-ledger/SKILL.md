@@ -85,7 +85,7 @@ CPQ checks use [independent scope declarations and read-only observations](refer
 | [Observations.Tests.ps1](scripts/tests/Observations.Tests.ps1) | Isolated fixtures | Filter, token, XML, path and authenticated-query controls |
 | [Integrity.Tests.ps1](scripts/tests/Integrity.Tests.ps1) | Isolated fixtures, fake connection, mocked MCP | Red controls for the SQL guard, read-tool allowlist, profiles, rulings, requirements and runner errors |
 | [Requirements.Tests.ps1](scripts/tests/Requirements.Tests.ps1) | Isolated fixtures, mocked reads | Red controls for requirement facts, evaluation order, cited functions, digest and the delivery read |
-| [Handlers.Tests.ps1](scripts/tests/Handlers.Tests.ps1) | Isolated fixtures, mocked delivery reads | Green and red controls for the facet, query-constant and persona sign-in handlers, including no secret in a row |
+| [Handlers.Tests.ps1](scripts/tests/Handlers.Tests.ps1) | Isolated fixtures, mocked delivery reads | Green and red controls for the facet, query-constant and persona sign-in handlers, including the facet check's build-repositories scope and no secret in a row |
 | [Runner.Tests.ps1](scripts/tests/Runner.Tests.ps1) | Temporary git checkout, loopback stub | End-to-end runner and re-lock controls: PASS, DISABLED, changed runner, version change, stopped run |
 | [LedgerFixture.ps1](scripts/tests/LedgerFixture.ps1) | Writes a temporary fixture checkout | Fixture repository and stub site for the end-to-end controls |
 | [Corrections.Tests.ps1](scripts/tests/Corrections.Tests.ps1) | Inline SQL fixtures in tempdb (optional local server) | Green and red controls for corrected and newly inventoried checks, refusal fallback |

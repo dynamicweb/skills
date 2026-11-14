@@ -16,7 +16,8 @@ BeforeAll {
     function Get-Probe([string]$Relative){Read-LedgerJson (Join-Path $release "probes/$Relative") (Join-Path $assets 'check.schema.json')}
     function Get-Implemented($Probe){@($Probe.bindings|Where-Object {$_.status -eq 'implemented'})[0]}
     function New-FileCapabilities{@{dwVersion='10.30.6';mcp=@{available=$false;tools=@()};adminApi=@{available=$false;authenticated=$false;queries=@()};dwapi=@{available=$true};file=@{available=$true;local=$true};sql=@{available=$false};facts=@{};errors=@()}}
-    function Invoke-Probe($Probe,[string]$Files,[string[]]$Surfaces=@('file')){Invoke-LedgerCheck $Probe @{} (New-FileCapabilities) @{expectations=@{}} $Surfaces '' '' $Files}
+    $script:build=@{}
+    function Invoke-Probe($Probe,[string]$Files,[string[]]$Surfaces=@('file'),$Build=$script:build){Invoke-LedgerCheck $Probe $Build (New-FileCapabilities) @{expectations=@{}} $Surfaces '' '' $Files}
     function Write-Xml([string]$Path,[string]$Text){$null=New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Path);[IO.File]::WriteAllText($Path,$Text,[Text.UTF8Encoding]::new($false))}
     function New-Repository([string]$Files,[string]$Name,[string]$Facets,[string]$IndexFields,[string]$Extender='Dynamicweb.Ecommerce.Indexing.ProductIndexSchemaExtender, Dynamicweb.Ecommerce'){
         $dir="$Files/System/Repositories/$Name"
@@ -29,7 +30,12 @@ BeforeAll {
     }
 }
 Describe 'files-facet-analyzed reads the Analyzed flag of every facet field' {
-    BeforeAll {$script:probe=Get-Probe 'search/facets.not-analyzed.json'}
+    BeforeAll {
+        $script:probe=Get-Probe 'search/facets.not-analyzed.json'
+        # The repositories every fixture below ships; the scope tests pass their own list.
+        $script:build=@{repositories=@('Headless','Swift','Content','Empty')}
+    }
+    AfterAll {$script:build=@{}}
     BeforeEach {
         $script:files=Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         Set-DefaultFields $files 'False'
@@ -38,7 +44,47 @@ Describe 'files-facet-analyzed reads the Analyzed flag of every facet field' {
         $binding=Get-Implemented $probe
         $binding.handler | Should -Be 'files-facet-analyzed'
         $binding.path | Should -Be 'System/Repositories/*/*.facets'
+        $binding.arguments.scope | Should -Be 'build-repositories'
         (Read-LedgerJson (Join-Path $assets 'handlers.json')).handlers['files-facet-analyzed'].assertions | Should -Be @('offenders')
+    }
+    It 'judges only the repositories the build ships and reports an offender elsewhere as out of scope' {
+        New-Repository $files 'Headless' '<Facet Name="M" Field="Manufacturer_Facet" />' '<Field SystemName="Manufacturer_Facet" Analyzed="false" />'
+        New-Repository $files 'Swift' '<Facet Name="Bike" Field="ProductCategory|Reference_Bike|Bike_type" /><Facet Name="M" Field="Manufacturer_Facet" />' '<Field SystemName="Manufacturer_Facet" Analyzed="false" />'
+        $row=Invoke-Probe $probe $files -Build @{repositories=@('headless')}
+        $row.result | Should -Be PASS
+        $row.scanned | Should -Be 1
+        @($row.offenders).Count | Should -Be 0
+        @($row.outOfScope).Count | Should -Be 1
+        $row.outOfScope[0].repository | Should -Be 'Swift'
+        $row.outOfScope[0].facets | Should -Be 'System/Repositories/Swift/Products.facets'
+        $row.outOfScope[0].field | Should -Be 'ProductCategory|Reference_Bike|Bike_type'
+        $row.outOfScope[0].reason | Should -Match 'DoNotAnalyzeDefaultFields'
+        $row.reason | Should -Match 'Not judged: 2 facet\(s\) in 1 repository folder\(s\) the build does not ship \(Swift\), 1 of them offending'
+    }
+    It 'RED CONTROL: an offender in a repository the build ships still FAILs beside an out-of-scope one' {
+        New-Repository $files 'Headless' '<Facet Name="Name" Field="ProductName_Search" />' '<Field SystemName="ProductName_Search" Analyzed="true" />'
+        New-Repository $files 'Swift' '<Facet Name="Bike" Field="ProductCategory|Reference_Bike|Bike_type" />' ''
+        $row=Invoke-Probe $probe $files -Build @{repositories=@('Headless')}
+        $row.result | Should -Be FAIL
+        @($row.offenders).Count | Should -Be 1
+        $row.offenders[0].facets | Should -Be 'System/Repositories/Headless/Products.facets'
+        @($row.outOfScope).Count | Should -Be 1
+    }
+    It 'RED CONTROL: when only the out-of-scope repository has facets, the build is below minimumSubjects, never PASS' {
+        New-Repository $files 'Swift' '<Facet Name="M" Field="Manufacturer_Facet" />' '<Field SystemName="Manufacturer_Facet" Analyzed="false" />'
+        $row=Invoke-Probe $probe $files -Build @{repositories=@('Headless')}
+        $row.result | Should -Be FAIL
+        $row.reason | Should -Match 'below the minimum'
+    }
+    It 'RED CONTROL: a build that declares no repositories is UNVERIFIED and says why' {
+        New-Repository $files 'Headless' '<Facet Name="M" Field="Manufacturer_Facet" />' '<Field SystemName="Manufacturer_Facet" Analyzed="false" />'
+        $row=Invoke-Probe $probe $files -Build @{}
+        $row.result | Should -Be UNVERIFIED
+        $row.reason | Should -Match '^Build input: repositories is not declared'
+    }
+    It 'RED CONTROL: a repositories entry that is not a single folder name is refused' {
+        New-Repository $files 'Headless' '<Facet Name="M" Field="Manufacturer_Facet" />' '<Field SystemName="Manufacturer_Facet" Analyzed="false" />'
+        (Invoke-Probe $probe $files -Build @{repositories=@('../Headless')}).result | Should -Be UNVERIFIED
     }
     It 'PASSes declared non-analysed fields, a grouping and a generated field the extender writes unanalysed' {
         New-Repository $files 'Headless' '<Facet Name="M" Field="Manufacturer_Facet" /><Facet Name="G" Field="ParentGroupIDs" /><Facet Name="P" Field="PriceRange" /><Facet Name="V" Field="VariantGroup_VARGRP1" />' '<Field SystemName="Manufacturer_Facet" Analyzed="false" /><Grouping SystemName="PriceRange" Analyzed="false" />'

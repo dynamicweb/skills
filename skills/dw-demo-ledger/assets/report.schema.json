@@ -304,6 +304,12 @@
             "type": "array",
             "items": {}
           },
+          "outOfScope": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
           "scanned": {
             "type": [
               "integer",

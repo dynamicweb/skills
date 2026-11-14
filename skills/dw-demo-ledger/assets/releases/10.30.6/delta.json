@@ -3,7 +3,7 @@
   "status": "reviewed",
   "before": "10.29.8",
   "after": "10.30.6",
-  "revision": 3,
+  "revision": 4,
   "rawScanDigest": "sha256:e1149cbc8a86e33fd29d0e17ce258a8f322247c1a1eb65ff36c6a3e1b4902cc7",
   "review": "delta-review.json",
   "added": [
@@ -333,7 +333,8 @@
     "orders.bc-invoices has a planned binding only and stays UNVERIFIED.",
     "commerce.price-groups SQL reads have fixture red controls (Corrections.Tests.ps1) and were executed on one 10.30.6 database without groups; a site with groups has not been measured.",
     "Revision 2: search.facets.not-analyzed, search.index-queries.no-constant-macros and users.frontend-sign-in.persona-signs-in still have planned bindings only and stay UNVERIFIED; each binding's reason names the handler it needs (#244).",
-    "Revision 3: search.facets.not-analyzed reads the local Files repository XML; a field whose Analyzed flag depends on a category or custom field's value type is an offender while DoNotAnalyzeDefaultFields is not true, because the value type is not in Files. users.frontend-sign-in.persona-signs-in needs persona credentials in DW_PERSONA_CREDENTIALS and is UNVERIFIED without them (#246)."
+    "Revision 3: search.facets.not-analyzed reads the local Files repository XML; a field whose Analyzed flag depends on a category or custom field's value type is an offender while DoNotAnalyzeDefaultFields is not true, because the value type is not in Files. users.frontend-sign-in.persona-signs-in needs persona credentials in DW_PERSONA_CREDENTIALS and is UNVERIFIED without them (#246).",
+    "Revision 4: search.facets.not-analyzed judges the facets of the repository folders the build declares in build.repositories; a repository on the target that the build does not ship is reported (outOfScope) and not judged, and a build without repositories is UNVERIFIED. search.index-queries.no-constant-macros stays unscoped: a build can bind a query in a repository it does not ship (#248)."
   ],
   "corrections": [],
   "mapped": [],
@@ -389,6 +390,12 @@
       "change": "binding-promoted",
       "source": "https://github.com/dynamicweb/skills/issues/246",
       "note": "Revision 3: implemented dwapi-persona-sign-in binding: POST /dwapi/users/authenticate per persona from DW_PERSONA_CREDENTIALS, then GET /dwapi/users/info with the token must name the same user. Both routes are on their own allowlists in handlers.json, not dwapiReadRoutes. No password, token or body is kept. Green and red controls in Handlers.Tests.ps1; measured on a 10.30.6 Swift 2 host with three personas."
+    },
+    {
+      "checkId": "search.facets.not-analyzed",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/248",
+      "note": "Revision 4: the files-facet-analyzed binding takes arguments.scope build-repositories. Only the facets in the repository folders the build ships (build.repositories) are judged; facets in other folders are still read and resolved, and their offenders are reported in the row outOfScope with the repository, never counted. A build without repositories is UNVERIFIED. The assertion is unchanged. Green and red controls in Handlers.Tests.ps1; measured read-only on a 10.30.6 host where all 10 offenders were in repositories the build does not ship."
     }
   ]
 }
