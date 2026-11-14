@@ -100,6 +100,31 @@ narrow built demo. It proves nothing about the platform. It shows what the platf
    person who decides whether they are sent.
 8. **Put the source back.** A site started for the capture is stopped again.
 
+## A screen library tied to the ledger
+
+A library is the same idea without a customer: every screen of one standing site, captured once per release and
+tied to the function ledger, so a walkthrough can be put together from stock screens without starting a site.
+
+1. **Pick the site the release is proven on.** The standing site of the estate, the one every edition is delivered
+   to and gated on, carries the widest set of functions and moves with each release. A customer demo is the wrong
+   source: its data and brand are someone's.
+2. **Capture.** `node scripts/capture-library.mjs <base> <outDir> --storefront --admin --details` with the back
+   office sign-in in `DW_USER` and `DW_PASS`. It follows links and opens tabs; it saves nothing. The assistant
+   panel is closed first (`dw-admin-assistant-sidekick-collapsed`), or every back office still loses a third of
+   its width.
+3. **Tie.** [ledger-screen-map.json](assets/ledger-screen-map.json) holds rules `{match, ledger: [ids]}`: a regex
+   over `surface|area|screen|path|title|url` of a screen and the function ids it shows. A rule names a screen type
+   or a path, never one site's record. An id the release does not have is reported, not dropped in silence.
+4. **Report coverage.** List per ledger area the functions with a screen and the ones without. A function with no
+   screen of its own (an API, a scheduled job, a setting inside another screen) stays in the list as uncovered: a
+   library that claims 100 percent has tied screens to functions they do not show.
+5. **Refresh with the release.** A new ledger snapshot means a new capture from the same site after it is on the
+   new version, the map checked against the snapshot's added and removed ids, and the coverage report redone.
+   The step is in the ledger's release process (`dw-demo-ledger/references/release-process.md`).
+
+What the capture does not reach: pages behind a storefront sign-in when no persona sign-in is passed, dialogs,
+and anything that needs a write (a cart with lines, a checkout step).
+
 ## What goes wrong
 
 - **The caption covers the content.** Bottom corners are where tables and totals are. On a Swift header with
@@ -120,7 +145,8 @@ narrow built demo. It proves nothing about the platform. It shows what the platf
 | Script | Reads / writes | What it does |
 |---|---|---|
 | [reskin-engine.mjs](scripts/reskin-engine.mjs) | READ-ONLY against the site; writes stills to the folder you pass | Library: open a signed-in tab, install the `RS` helpers, shoot captioned and clean stills, render title and closing cards |
-| [build-video.mjs](scripts/build-video.mjs) | WRITES one mp4 and a `clips/` folder beside it | Joins the captioned stills into a silent video with a slow push-in and fades |
+| [build-video.mjs](scripts/build-video.mjs) | WRITES one mp4 and a `clips/` folder beside it | Joins the captioned stills into a silent video: stills held without motion, a fade at both ends |
+| [capture-library.mjs](scripts/capture-library.mjs) | READ-ONLY against the site (GET links, tree nodes expanded, tabs clicked, nothing saved); writes `shots/` and `screens.json` to the folder you pass | Crawls the storefront and the back office of one site into a screen library: every navigation page, one or two detail pages per list, every back office list with its first row's detail screen and tabs |
 
 Both are imported or run, not retyped. The engine needs `playwright-core` resolvable (`DW_PLAYWRIGHT_DIR`
 or `npm install playwright-core` beside it) and takes the sign-in from the caller's environment.

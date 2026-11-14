@@ -9,6 +9,7 @@ For Truvio Commerce (powered by Dynamicweb), a new release creates a new candida
 5. Test positive and red controls, including missing data, missing handler and incomplete pagination. Compare equivalent MCP and local SQL observations when both are available; a valid disagreement remains evidence of a problem.
 6. Measure on the exact baseline and compatible components. Mark the entries measured only with retained evidence. A diagnostic newer-host run never establishes older-release support.
 7. Publish the immutable commit and snapshot digest. New editions may select it; existing editions retain their previous lock until deliberately upgraded ("Re-locking an existing build" below).
+8. Refresh the screen library when one is kept for the release: capture the standing site again once it runs the new version and check the ledger-to-screen map against the added and removed ids (`dw-demo-walkthrough`, "A screen library tied to the ledger"). The library is evidence of what a function looks like, never of a check passing.
 
 Run the comparison as a local report operation:
 

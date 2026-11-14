@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * build-video.mjs: WRITES one mp4 and a `clips/` folder beside it. Joins the captioned
- * stills of a screenshot walkthrough into one silent video: each still is held, pushed
- * in slowly and faded at both ends.
+ * stills of a screenshot walkthrough into one silent video: each still is held without
+ * motion and faded at both ends.
  *
  * Runtime: Node 20+ and ffmpeg. ffmpeg is taken from --ffmpeg, then the FFMPEG
  * environment variable, then `ffmpeg` on PATH. There is no default path.
@@ -12,7 +12,8 @@
  * Traps it encodes:
  *   - `*.clean.png` (the uncaptioned copies for a document) are skipped, so a folder
  *     written by reskin-engine.mjs can be passed as it is.
- *   - zoompan on a 1080p input jitters; the still is scaled up first and sampled down.
+ *   - no push-in: zoompan moves the crop in whole pixels, so a slow zoom on a screen full
+ *     of text reads as a shaking camera, also on a still scaled up first. Stills stay still.
  *   - concat needs identical encodes, so every clip is encoded with the same settings.
  *
  * Parameters:
@@ -45,11 +46,10 @@ try {
   const list = [];
   for (const f of stills) {
     const name = path.basename(f, '.png');
-    const t = per + (name.endsWith('-end') ? endExtra : 0), frames = t * 30;
-    const vf = `scale=3840:2160,zoompan=z='1+0.02*on/${frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:fps=30,` +
-      `fade=t=in:st=0:d=0.3,fade=t=out:st=${t - 0.3}:d=0.3,format=yuv420p`;
+    const t = per + (name.endsWith('-end') ? endExtra : 0);
+    const vf = `scale=1920:1080:flags=lanczos,fade=t=in:st=0:d=0.4,fade=t=out:st=${t - 0.4}:d=0.4,format=yuv420p`;
     execFileSync(ffmpeg, ['-v', 'error', '-y', '-loop', '1', '-framerate', '30', '-i', path.join(shots, f), '-vf', vf, '-t', String(t), '-an',
-      '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', path.join(clips, name + '.mp4')], { stdio: 'inherit' });
+      '-c:v', 'libx264', '-preset', 'medium', '-tune', 'stillimage', '-crf', '20', '-g', '60', path.join(clips, name + '.mp4')], { stdio: 'inherit' });
     list.push(`file '${name}.mp4'`); console.log(`${name} ${t}s`);
   }
   fs.writeFileSync(path.join(clips, 'list.txt'), list.join('\n') + '\n');

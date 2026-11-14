@@ -8,6 +8,8 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 - New demo skill **`dw-demo-walkthrough`**, screenshot mode. A walkthrough for a prospect made from real pages of a demo that already runs, re-skinned in one headless browser tab (logo, colours, navigation, sample customer and rows), with no site built and nothing written to the source site. It produces captioned stills, a silent video, clean stills for an overview, and a grounding table that ties every screen to its source page and its `dw-demo-ledger` function ids.
 - The rules it carries: every screen starts from a real page, a block that is template or project work is named in the grounding table, the concept label is part of the still, the caption layer uses the presenting company's brand, and the closing card separates standard, from the ERP, to be confirmed and not in scope.
 - Ships `scripts/reskin-engine.mjs` (page-side helpers for logo, navigation, text, table rows, blocks and captions), `scripts/build-video.mjs` (stills to mp4 through ffmpeg) and `assets/screens-template.mjs`. Registered in `dynamicweb-presales`.
+- Screen library: `scripts/capture-library.mjs` crawls the storefront and the back office of one standing site into stills with a `screens.json` (read-only: links, tree nodes, the first row of a list, the tabs of its detail screen), and `assets/ledger-screen-map.json` ties each screen to the `dw-demo-ledger` function ids it shows. The skill says how to report coverage without overclaiming, and the ledger release process gains a step to refresh the library with a new snapshot.
+- `build-video.mjs` holds each still without motion. The slow push-in moved the crop in whole pixels and read as a shaking camera on a screen full of text.
 
 ## [6.8.9]
 

@@ -1,0 +1,1345 @@
+{
+ "_schema": "Ties a captured screen to the ledger functions it shows. Each rule: match is a case-insensitive regex over 'surface|area|screen|path|title|url' of a screen (capture-library.mjs screens.json), ledger the function ids. Every rule that matches adds its ids. A rule names a screen type, a navigation path or a page kind, never one site's record. skip drops screens that show nothing of the product (an empty area start, a log file). An id a release does not have is reported by the library build. The storefront rules follow the navigation of the standing site the library is captured from (its group pages are named after the function they show); the back office rules follow screen type names and hold for any site.",
+ "skip": [
+  "^admin\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\.log\\|",
+  "^admin\\|Insights\\|LogList\\|",
+  "^admin\\|(Integration|Settings|Assets)\\|(Integration|Settings|Files)\\|(Integration|Settings|Assets)\\|",
+  "^admin\\|Settings\\|[^|]*\\|[^|]*Serializer_(Predicate|XmlType|ItemType)_",
+  "^admin\\|Settings\\|[^|]*\\|[^|]*Settings_(Cache|ApiExplorer|Database)",
+  "^admin\\|Settings\\|ItemFieldList\\|[^|]*\\|(?!Fields)",
+  "^admin\\|Settings\\|FieldOptionMetadataList"
+ ],
+ "rules": [
+  {
+   "match": "^storefront\\|home\\|",
+   "ledger": [
+    "swift.design-installed",
+    "swift.header-footer",
+    "swift.header-navigation",
+    "swift.mega-menu",
+    "swift.content-blocks",
+    "content.navigation",
+    "content.item-pages",
+    "content.paragraphs",
+    "content.grid-rows"
+   ]
+  },
+  {
+   "match": "^storefront\\|.*sign-in/sign-in",
+   "ledger": [
+    "swift.sign-in",
+    "users.frontend-sign-in"
+   ]
+  },
+  {
+   "match": "^storefront\\|.*forgot-password",
+   "ledger": [
+    "users.account-self-service",
+    "users.login-security"
+   ]
+  },
+  {
+   "match": "^storefront\\|.*create-user-profile",
+   "ledger": [
+    "users.self-registration"
+   ]
+  },
+  {
+   "match": "^storefront\\|cart\\|",
+   "ledger": [
+    "swift.cart-checkout",
+    "orders.shopping-cart-app"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|[^|]*\\|/[a-z-]+/shop(/[a-z0-9-]+){0,2}\\|",
+   "ledger": [
+    "swift.shop-catalog",
+    "swift.product-list",
+    "commerce.product-catalog-app",
+    "search.product-index",
+    "search.facets"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|[^|]*\\|/[a-z-]+/shop(/[a-z0-9-]+){3}\\|",
+   "ledger": [
+    "swift.product-detail"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/variants",
+   "ledger": [
+    "pim.variants"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|[^|]*\\|/[a-z-]+/shop/[a-z0-9-]+/variants/",
+   "ledger": [
+    "swift.variant-selector"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/units-measures",
+   "ledger": [
+    "pim.sales-units",
+    "commerce.unit-prices"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/bundles-bom",
+   "ledger": [
+    "pim.bom"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/price-structures",
+   "ledger": [
+    "commerce.default-price",
+    "commerce.price-matrix",
+    "commerce.quantity-prices"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/discounts",
+   "ledger": [
+    "commerce.discounts",
+    "commerce.customer-prices"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/stock-delivery",
+   "ledger": [
+    "commerce.stock-levels",
+    "commerce.stock-states",
+    "commerce.lead-times"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/content/documents",
+   "ledger": [
+    "pim.documents"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/media-galleries",
+   "ledger": [
+    "pim.images"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/content/relations",
+   "ledger": [
+    "pim.product-relations"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/currencies-vat",
+   "ledger": [
+    "commerce.currencies",
+    "commerce.currency-prices",
+    "orders.country-vat"
+   ]
+  },
+  {
+   "match": "^storefront\\|shop\\|.*/contract-pricing",
+   "ledger": [
+    "commerce.customer-prices",
+    "pim.assortments"
+   ]
+  },
+  {
+   "match": "^storefront\\|(about|employees|delivery|terms|privacy-policy|frequently-asked)\\|",
+   "ledger": [
+    "content.pages",
+    "content.item-pages",
+    "swift.content-blocks"
+   ]
+  },
+  {
+   "match": "^storefront\\|cookie-notice\\|",
+   "ledger": [
+    "swift.cookie-consent"
+   ]
+  },
+  {
+   "match": "^storefront\\|about\\|.*contact",
+   "ledger": [
+    "content.forms"
+   ]
+  },
+  {
+   "match": "^admin\\|[^|]*\\|DashboardOverview\\|",
+   "ledger": [
+    "admin.dashboards"
+   ]
+  },
+  {
+   "match": "^admin\\|Insights\\|DashboardOverview\\|.*Marketing insights",
+   "ledger": [
+    "admin.marketing-insights"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|DashboardOverview\\|",
+   "ledger": [
+    "pim.dashboards"
+   ]
+  },
+  {
+   "match": "^admin\\|[^|]*\\|ScheduledTask",
+   "ledger": [
+    "admin.scheduled-tasks",
+    "admin.scheduled-task-addins"
+   ]
+  },
+  {
+   "match": "^admin\\|Insights\\|IntegrationJobList\\|",
+   "ledger": [
+    "integration.run-and-log"
+   ]
+  },
+  {
+   "match": "^admin\\|[^|]*\\|EventViewer",
+   "ledger": [
+    "admin.event-viewer"
+   ]
+  },
+  {
+   "match": "^admin\\|Insights\\|EventViewerList\\|.*SMTP",
+   "ledger": [
+    "admin.email-sending"
+   ]
+  },
+  {
+   "match": "^admin\\|Insights\\|HealthProvider",
+   "ledger": [
+    "admin.health-checks"
+   ]
+  },
+  {
+   "match": "^admin\\|Insights\\|HealthProvider.*IndexHealth",
+   "ledger": [
+    "admin.database-index-health"
+   ]
+  },
+  {
+   "match": "^admin\\|Insights\\|LogEventNotification",
+   "ledger": [
+    "admin.log-event-notifications"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|LogRetention",
+   "ledger": [
+    "admin.logging"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|CommandLog",
+   "ledger": [
+    "admin.command-log"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|License",
+   "ledger": [
+    "admin.license"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|GlobalSettings",
+   "ledger": [
+    "admin.global-settings"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|SettingsSystemMailServer",
+   "ledger": [
+    "admin.email-sending"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|FeatureManagement",
+   "ledger": [
+    "admin.feature-management"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|(ExportTemplate|ImportJob)",
+   "ledger": [
+    "admin.export-import-configurations"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|DashboardList",
+   "ledger": [
+    "admin.dashboards"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(ApiKey|ManagementApi)",
+   "ledger": [
+    "admin.management-api-access"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Mcp",
+   "ledger": [
+    "admin.mcp-configurations"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Deployment",
+   "ledger": [
+    "admin.deployment-tool"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*AuditTrail|^admin\\|[^|]*\\|[^|]*Audit",
+   "ledger": [
+    "admin.audit-trail"
+   ]
+  },
+  {
+   "match": "^admin\\|Apps\\|AddinList",
+   "ledger": [
+    "admin.app-store",
+    "admin.addin-install"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|(Generator|Prompt)",
+   "ledger": [
+    "pim.ai-text"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|TranslationProvider",
+   "ledger": [
+    "pim.machine-translation"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|ScreenLayout",
+   "ledger": [
+    "pim.screen-layouts"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|ScreenPreset",
+   "ledger": [
+    "pim.screen-layouts",
+    "users.ui-permissions"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|SettingsSystemCustomizedURLs",
+   "ledger": [
+    "content.friendly-urls",
+    "content.url-provider"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|SettingsSystemSecurity",
+   "ledger": [
+    "users.login-security"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|SettingsSystemImageHandler",
+   "ledger": [
+    "assets.image-handler",
+    "assets.image-handler-settings"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|SettingsSystemCDN",
+   "ledger": [
+    "assets.cdn"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|Cookie",
+   "ledger": [
+    "swift.cookie-consent"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Redirect",
+   "ledger": [
+    "content.redirects"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*\\|[^|]*Content_ItemTypes",
+   "ledger": [
+    "content.item-types",
+    "content.item-restrictions"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(RowDefinition|GridRow)",
+   "ledger": [
+    "content.row-definitions"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(Language|Translation)(?!Provider)[^|]*\\|[^|]*Content",
+   "ledger": [
+    "content.language-layers",
+    "content.template-translations"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(Repositor|IndexEdit|IndexOverview|IndexList)",
+   "ledger": [
+    "search.repositories",
+    "search.product-index",
+    "search.index-fields"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Quer(y|ies)[^|]*\\|[^|]*Repositor",
+   "ledger": [
+    "search.index-queries"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Facet",
+   "ledger": [
+    "search.facets"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(Country|Countries)",
+   "ledger": [
+    "orders.country-vat",
+    "orders.method-countries"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Currenc",
+   "ledger": [
+    "commerce.currencies",
+    "commerce.currency-rounding"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*VatGroup",
+   "ledger": [
+    "orders.vat-groups"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Payment",
+   "ledger": [
+    "orders.payment-methods",
+    "orders.payment-providers",
+    "orders.payment-fees"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Shipping",
+   "ledger": [
+    "orders.shipping-methods",
+    "orders.shipping-fees",
+    "orders.shipping-providers"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*OrderFlow|^admin\\|Settings\\|[^|]*OrderState",
+   "ledger": [
+    "orders.order-flows",
+    "orders.state-notifications"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*CartFlow",
+   "ledger": [
+    "orders.cart-flows"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*OrderContext",
+   "ledger": [
+    "orders.order-contexts"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*OrderLineField",
+   "ledger": [
+    "orders.order-line-fields"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*OrderField",
+   "ledger": [
+    "orders.order-fields"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(NumberSeries|NumberCounter|Numbering)",
+   "ledger": [
+    "orders.order-numbering",
+    "pim.auto-numbering"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*ValidationGroup",
+   "ledger": [
+    "orders.checkout-validation"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*StockLocation",
+   "ledger": [
+    "commerce.stock-locations"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*StockStat",
+   "ledger": [
+    "commerce.stock-states"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(Shops?|Channel)(List|Edit|Overview)",
+   "ledger": [
+    "pim.channels",
+    "pim.data-models"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Manufacturer",
+   "ledger": [
+    "pim.manufacturers"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Unit",
+   "ledger": [
+    "pim.sales-units",
+    "pim.field-units"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*VariantGroup",
+   "ledger": [
+    "pim.variants"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(ProductField|FieldType|CategoryField|ProductCategor)",
+   "ledger": [
+    "pim.field-types",
+    "pim.list-fields",
+    "pim.field-placement"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Workflow",
+   "ledger": [
+    "pim.workflow"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Complet",
+   "ledger": [
+    "pim.completeness-rules"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*RelationGroup|^admin\\|Settings\\|[^|]*RelatedGroup",
+   "ledger": [
+    "pim.product-relations"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(AssetCategor|DetailType)",
+   "ledger": [
+    "pim.documents",
+    "pim.images"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*PriceSetting|^admin\\|Settings\\|[^|]*Prices?Edit",
+   "ledger": [
+    "commerce.price-settings"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Loyalty",
+   "ledger": [
+    "commerce.loyalty-rewards"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(Role|PermissionSet)",
+   "ledger": [
+    "users.backend-roles"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(ExternalLogin|ExternalAuthentication)",
+   "ledger": [
+    "users.external-login"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(UserField|AddressField|UserType|GroupType)",
+   "ledger": [
+    "users.custom-fields",
+    "users.user-group-types"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Tax",
+   "ledger": [
+    "orders.tax-providers"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*AddressValidat",
+   "ledger": [
+    "orders.address-validation"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*Rma",
+   "ledger": [
+    "orders.rma",
+    "orders.rma-notifications"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*(LiveIntegration|Endpoint)",
+   "ledger": [
+    "integration.live-integration",
+    "integration.endpoints"
+   ]
+  },
+  {
+   "match": "^admin\\|Content\\|AreaList",
+   "ledger": [
+    "content.websites"
+   ]
+  },
+  {
+   "match": "^admin\\|Content\\|Area(Edit|Overview)",
+   "ledger": [
+    "content.websites",
+    "content.website-domains",
+    "swift.website-settings",
+    "content.layout-templates"
+   ]
+  },
+  {
+   "match": "^admin\\|Content\\|PageVisualEdit",
+   "ledger": [
+    "content.pages",
+    "content.paragraphs",
+    "content.grid-rows",
+    "swift.content-blocks"
+   ]
+  },
+  {
+   "match": "^admin\\|Content\\|Page(Edit|Overview)",
+   "ledger": [
+    "content.pages",
+    "content.page-seo",
+    "content.page-publication",
+    "content.item-pages"
+   ]
+  },
+  {
+   "match": "^admin\\|Content\\|ParagraphList",
+   "ledger": [
+    "content.paragraphs",
+    "content.presets"
+   ]
+  },
+  {
+   "match": "^admin\\|Content\\|Paragraph(Edit|Overview)",
+   "ledger": [
+    "content.paragraphs",
+    "content.paragraph-apps"
+   ]
+  },
+  {
+   "match": "^admin\\|Content\\|RecycleBin",
+   "ledger": [
+    "content.recycle-bin"
+   ]
+  },
+  {
+   "match": "^admin\\|Content\\|[^|]*Version",
+   "ledger": [
+    "content.versioning"
+   ]
+  },
+  {
+   "match": "^admin\\|Content\\|[^|]*Style|^admin\\|Content\\|[^|]*(ColorScheme|Typograph|ButtonStyle)",
+   "ledger": [
+    "content.design-styles",
+    "swift.style-wiring"
+   ]
+  },
+  {
+   "match": "^admin\\|Apps\\|Form(List|Edit|Overview)",
+   "ledger": [
+    "content.forms"
+   ]
+  },
+  {
+   "match": "^admin\\|Apps\\|[^|]*Submi",
+   "ledger": [
+    "content.form-submissions"
+   ]
+  },
+  {
+   "match": "^admin\\|Apps\\|AreaTemplatesEdit",
+   "ledger": [
+    "content.layout-templates"
+   ]
+  },
+  {
+   "match": "^admin\\|Assets\\|AssetList",
+   "ledger": [
+    "assets.file-archive",
+    "assets.digital-assets-folder"
+   ]
+  },
+  {
+   "match": "^admin\\|Assets\\|Asset(Edit|Overview)|^admin\\|Assets\\|[^|]*Image",
+   "ledger": [
+    "assets.file-archive",
+    "assets.image-editing"
+   ]
+  },
+  {
+   "match": "^admin\\|Users\\|DashboardOverview",
+   "ledger": [
+    "users.user-accounts"
+   ]
+  },
+  {
+   "match": "^admin\\|Users\\|UserList",
+   "ledger": [
+    "users.user-accounts",
+    "users.user-groups"
+   ]
+  },
+  {
+   "match": "^admin\\|Users\\|User(Edit|Overview)",
+   "ledger": [
+    "users.user-accounts",
+    "users.addresses",
+    "users.custom-fields",
+    "users.customer-profiles"
+   ]
+  },
+  {
+   "match": "^admin\\|Users\\|[^|]*Group(Edit|Overview)",
+   "ledger": [
+    "users.user-groups"
+   ]
+  },
+  {
+   "match": "^admin\\|Users\\|Account",
+   "ledger": [
+    "users.accounts",
+    "users.shared-customer-number"
+   ]
+  },
+  {
+   "match": "^admin\\|Users\\|UserLoginLog",
+   "ledger": [
+    "users.login-activity"
+   ]
+  },
+  {
+   "match": "^admin\\|Users\\|[^|]*(SmartSearch|Segment)",
+   "ledger": [
+    "users.dynamic-groups"
+   ]
+  },
+  {
+   "match": "^admin\\|Users\\|[^|]*Role",
+   "ledger": [
+    "users.backend-roles"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|[^|]*QueryListScreen",
+   "ledger": [
+    "pim.product-queries"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductList",
+   "ledger": [
+    "pim.identifiers",
+    "pim.grid-edit",
+    "pim.bulk-update"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|DynamicStructure",
+   "ledger": [
+    "pim.workspaces"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductCatalogGroups",
+   "ledger": [
+    "pim.channels"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|DataModelGroup",
+   "ledger": [
+    "pim.data-models",
+    "pim.data-sets"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|DataSet",
+   "ledger": [
+    "pim.data-sets",
+    "pim.field-placement"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductOverview",
+   "ledger": [
+    "pim.identifiers",
+    "pim.images",
+    "pim.completeness-rules",
+    "pim.channels",
+    "pim.product-relations"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductOverview\\|[^|]*\\|[^|]*: Details",
+   "ledger": [
+    "pim.field-types",
+    "pim.field-display-groups",
+    "pim.screen-layouts"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductOverview\\|[^|]*\\|[^|]*: Prices",
+   "ledger": [
+    "commerce.default-price",
+    "commerce.price-matrix",
+    "commerce.discounts"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductOverview\\|[^|]*\\|[^|]*: Bundle",
+   "ledger": [
+    "pim.bom"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductOverview\\|[^|]*\\|[^|]*: Variant",
+   "ledger": [
+    "pim.variants"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductOverview\\|[^|]*\\|[^|]*: Stock",
+   "ledger": [
+    "commerce.stock-levels",
+    "commerce.stock-matrix"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductEdit",
+   "ledger": [
+    "pim.field-types",
+    "pim.field-rules",
+    "pim.languages"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductFieldCompletion",
+   "ledger": [
+    "pim.completeness-rules"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|[^|]*Feed",
+   "ledger": [
+    "pim.feeds",
+    "delivery.feed-publication"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|[^|]*Assortment",
+   "ledger": [
+    "pim.assortments"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|OrderList\\|[^|]*\\|Orders",
+   "ledger": [
+    "orders.completed-orders",
+    "orders.order-processing"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|Order(Overview|Edit)",
+   "ledger": [
+    "orders.order-processing",
+    "orders.order-flows",
+    "orders.track-and-trace"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|CartList",
+   "ledger": [
+    "orders.named-carts",
+    "marketing.abandoned-cart"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|OrderList\\|[^|]*\\|Subscriptions",
+   "ledger": [
+    "orders.subscriptions"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|Rma",
+   "ledger": [
+    "orders.rma"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|Quote",
+   "ledger": [
+    "orders.quotes"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|Ledger",
+   "ledger": [
+    "orders.ledgers"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|Price(List|Edit|Overview)",
+   "ledger": [
+    "commerce.price-matrix",
+    "commerce.quantity-prices",
+    "commerce.customer-prices",
+    "commerce.time-limited-prices",
+    "commerce.currency-prices"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|[^|]*Discount",
+   "ledger": [
+    "commerce.discounts",
+    "commerce.discounts-v2"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|Voucher",
+   "ledger": [
+    "commerce.vouchers",
+    "commerce.coupon-codes"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|LoyaltyPoint",
+   "ledger": [
+    "commerce.loyalty-rewards"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|GiftCard",
+   "ledger": [
+    "commerce.gift-cards"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|CustomerProductLists",
+   "ledger": [
+    "orders.favorite-lists"
+   ]
+  },
+  {
+   "match": "^admin\\|Email\\|DashboardOverview",
+   "ledger": [
+    "marketing.tracking-statistics"
+   ]
+  },
+  {
+   "match": "^admin\\|Email\\|EmailList\\|[^|]*\\|(All emails|Active|Inactive)",
+   "ledger": [
+    "marketing.emails",
+    "marketing.send",
+    "marketing.campaign-folders"
+   ]
+  },
+  {
+   "match": "^admin\\|Email\\|Email(Overview|Edit)",
+   "ledger": [
+    "marketing.emails",
+    "marketing.recipients",
+    "marketing.scheduled-send",
+    "marketing.tracking-statistics"
+   ]
+  },
+  {
+   "match": "^admin\\|Email\\|EmailList\\|[^|]*\\|Email templates",
+   "ledger": [
+    "marketing.email-templates"
+   ]
+  },
+  {
+   "match": "^admin\\|Email\\|Flow",
+   "ledger": [
+    "marketing.flows"
+   ]
+  },
+  {
+   "match": "^admin\\|Email\\|UserList",
+   "ledger": [
+    "marketing.recipients",
+    "users.dynamic-groups"
+   ]
+  },
+  {
+   "match": "^admin\\|Integration\\|[^|]*ActivityList",
+   "ledger": [
+    "integration.activities",
+    "integration.scheduled-runs"
+   ]
+  },
+  {
+   "match": "^admin\\|Integration\\|[^|]*Activity(Edit|Overview)",
+   "ledger": [
+    "integration.activities",
+    "integration.table-mappings",
+    "integration.run-and-log"
+   ]
+  },
+  {
+   "match": "^admin\\|Integration\\|[^|]*Endpoint",
+   "ledger": [
+    "integration.endpoints",
+    "integration.authentications"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|ProductItemEdit",
+   "ledger": [
+    "pim.bom"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|OrderList\\|[^|]*\\|Incomplete",
+   "ledger": [
+    "orders.order-processing"
+   ]
+  },
+  {
+   "match": "^admin\\|Commerce\\|CustomerProductListOverview",
+   "ledger": [
+    "orders.favorite-lists"
+   ]
+  },
+  {
+   "match": "^admin\\|(Email|Users)\\|UserOverview",
+   "ledger": [
+    "users.user-accounts",
+    "users.addresses",
+    "users.customer-profiles"
+   ]
+  },
+  {
+   "match": "^admin\\|(Email|Users)\\|UserOverview\\|[^|]*\\|[^|]*: Impersonation",
+   "ledger": [
+    "swift.impersonation"
+   ]
+  },
+  {
+   "match": "^admin\\|(Apps|Settings)\\|(AddinOverview|AssembliesList|AddinList)",
+   "ledger": [
+    "admin.app-store",
+    "admin.addin-install"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|Task(Overview|Edit)",
+   "ledger": [
+    "admin.scheduled-tasks"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|TaskEdit\\|[^|]*Repositor",
+   "ledger": [
+    "search.scheduled-index-build"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|DashboardWidget",
+   "ledger": [
+    "admin.dashboards"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|SettingsSystemTracking",
+   "ledger": [
+    "admin.marketing-insights"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|Path(List|Edit)\\|[^|]*Redirect",
+   "ledger": [
+    "content.redirects"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|SettingsSystemDeliveryApi",
+   "ledger": [
+    "delivery.content-api",
+    "delivery.cors-origin"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|AddInClassesList\\|[^|]*NotificationSubscribers",
+   "ledger": [
+    "admin.notification-subscribers"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*\\|[^|]*Serializer_",
+   "ledger": [
+    "serializer.engine",
+    "serializer.serialize"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|Translation(List|Edit)",
+   "ledger": [
+    "content.template-translations"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|(IndexStatus|LuceneSettings)",
+   "ledger": [
+    "search.repositories"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|IndexStatusOverview\\|[^|]*Products",
+   "ledger": [
+    "search.product-index",
+    "search.auto-build-on-save"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|IndexStatusOverview\\|[^|]*Content",
+   "ledger": [
+    "search.content-index"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|IndexStatusOverview\\|[^|]*Files",
+   "ledger": [
+    "search.file-index"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|OAuthClient",
+   "ledger": [
+    "users.external-login"
+   ]
+  },
+  {
+   "match": "^admin\\|Products\\|StockUnitEdit",
+   "ledger": [
+    "commerce.stock-levels",
+    "commerce.stock-matrix"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|QueryExpressionList",
+   "ledger": [
+    "search.index-queries"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|FacetList",
+   "ledger": [
+    "search.facets"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|RepositoryInfoOverview",
+   "ledger": [
+    "search.repositories"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|IndexStatusOverview\\|[^|]*users",
+   "ledger": [
+    "search.user-index"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|(ColorScheme|Font|Typography|Button)",
+   "ledger": [
+    "content.design-styles",
+    "swift.style-wiring"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|LanguageSettingsEdit",
+   "ledger": [
+    "content.language-layers"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|CustomFieldList",
+   "ledger": [
+    "users.custom-fields"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|ExtranetSettingsEdit",
+   "ledger": [
+    "users.frontend-sign-in",
+    "users.login-security"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|PasswordSecurityEdit",
+   "ledger": [
+    "users.login-security"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|UserAndGroupType",
+   "ledger": [
+    "users.user-group-types"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|ExternalLoginList",
+   "ledger": [
+    "users.external-login"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|SettingsFileManagerEdit",
+   "ledger": [
+    "assets.upload-policy"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|Language(List|Edit)\\|[^|]*Products_",
+   "ledger": [
+    "pim.languages"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|ProductAttribute(List|Edit)",
+   "ledger": [
+    "pim.field-types",
+    "pim.identifiers"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|ProductGroupAttribute",
+   "ledger": [
+    "pim.field-types"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*FieldTypeListScreen",
+   "ledger": [
+    "pim.field-types"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|FieldValueConversion",
+   "ledger": [
+    "pim.field-units",
+    "pim.offset-units",
+    "pim.unit-display-format"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|FieldDisplayGroup",
+   "ledger": [
+    "pim.field-display-groups"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|DynamicRelationList",
+   "ledger": [
+    "pim.dynamic-relations"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|SettingsImageOptionsEdit",
+   "ledger": [
+    "pim.images",
+    "pim.asset-patterns"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|ProductEmailNotificationList",
+   "ledger": [
+    "pim.email-notifications"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|ProductAssignmentRuleList",
+   "ledger": [
+    "pim.auto-assign"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|[^|]*NumberListScreen",
+   "ledger": [
+    "pim.auto-numbering"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|StockGroupList",
+   "ledger": [
+    "commerce.stock-states"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|LedgerTypeList",
+   "ledger": [
+    "orders.ledgers"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|TrackAndTraceList",
+   "ledger": [
+    "orders.track-and-trace"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|(CustomerPriceGroup|CustomerDiscountGroup|ProductDiscountGroup)",
+   "ledger": [
+    "commerce.price-groups"
+   ]
+  },
+  {
+   "match": "^admin\\|Settings\\|LayoutGridList",
+   "ledger": [
+    "content.row-definitions"
+   ]
+  }
+ ]
+}
