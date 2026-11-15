@@ -39,7 +39,9 @@ Note the backtick on `MSSQL`$SQLEXPRESS` — `$SQLEXPRESS` is a PowerShell speci
 Once a host is scaffolded and running, the *host-side* readiness checks (admin/license gate, MCP
 route gates, handshake, tool count) have their own harness — run
 [`../../dw-setup-install/scripts/Test-DwHostReady.ps1`](../../dw-setup-install/scripts/Test-DwHostReady.ps1)
-with the host's base URL rather than probing the routes by hand.
+with the host's base URL rather than probing the routes by hand. Before a live demo or recording, the
+same harness runs with the MCP key as part of [`pre-demo-check.md`](pre-demo-check.md), which adds the
+mail listener and one real form submission.
 
 **Run everything from pwsh 7+, never Windows PowerShell 5.1.** The skill's PowerShell recipes and any harness verbs (the standalone lightweight harness, DemoAgent `bin/` verbs) use the null-coalescing operator `??` and other pwsh-7 syntax — **5.1 parse-fails the whole script before the first line runs** (`Telemetry.Common.ps1` is the canonical offender). `$PSVersionTable.PSVersion.Major` must be `≥ 7`; if a verb dies with a parser error on `??`, you are in 5.1 — relaunch in `pwsh`.
 
