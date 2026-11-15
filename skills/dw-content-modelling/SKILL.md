@@ -324,6 +324,13 @@ which caches a structural write leaves stale — are in
 [references/page-paragraph-writes.md](references/page-paragraph-writes.md) and
 [references/render-after-write.md](references/render-after-write.md).
 
+## File metadata
+
+Files under `/Files` carry their own **metadata fields**: field definitions and per-file values
+(`Dynamicweb.Content.Files.Metadata`: `Field`, `Meta`, and the `EditorFactory` that edits them in the
+file manager). Descriptive data on an asset (a caption, a rights note) is a metadata field on the
+file, not an item type around it. Measure the field types on the release in hand.
+
 ## Deep reference
 
 | Read it for | Reference |
