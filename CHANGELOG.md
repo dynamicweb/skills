@@ -3,6 +3,9 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.13]
+
+- `dw-demo-hosted` publish path: moving a whole site package names `Files/System/Styles/` in the transfer manifest (file-based style definitions the target cannot regenerate; without them the site renders unstyled), verifies it with the theme gate after start, and sends media apart from the application tree in hashed batches that restart alone, compared per batch on the target.
 ## [6.8.12]
 
 - `dw-demo-base` **pre-demo check** (`references/pre-demo-check.md`): before every live demo or recording, and after a restart, reinstall, restore or licence change, prove the storefront, the admin (licensed) and the MCP handshake in one run, then the mail listener and one real form submission. A storefront at 200 is not evidence: a lost licence leaves it answering while `/Admin/` and `/admin/mcp` redirect to `/admin/license`, and a reinstall can remove the local SMTP listener the host sends to. A hand-started SMTP sink does not survive a reboot.
