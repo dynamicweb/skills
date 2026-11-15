@@ -3,6 +3,12 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.14]
+
+- Platform facts that change how a requirement is classified, checked against the documentation:
+  - `dw-commerce-catalog`: price rows carry Valid from / Valid to, so a future-effective or time-limited price is standard; a governed change process (change sets, preview, approval, rollback) is a separate requirement.
+  - `dw-users-permissions`: external login providers work for backend sign-in too (a matching local user must exist); there is no provider group mapping and no SCIM provisioning.
+  - `dw-content-modelling`: files carry metadata fields (`Dynamicweb.Content.Files.Metadata`).
 ## [6.8.13]
 
 - `dw-demo-hosted` publish path: moving a whole site package names `Files/System/Styles/` in the transfer manifest (file-based style definitions the target cannot regenerate; without them the site renders unstyled), verifies it with the theme gate after start, and sends media apart from the application tree in hashed batches that restart alone, compared per batch on the target.
