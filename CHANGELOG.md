@@ -3,6 +3,10 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.11]
+
+- `dw-demo-base` MCP setup: `/admin/mcp` refuses a Management API key and the MCP key serves both surfaces, so a demo that holds one credential mints the MCP type (Step 6, two triage rows).
+- A `NODE_EXTRA_CA_CERTS` path that no longer exists kills every MCP server while the site and the Management API answer: `setup-checks.md` tests the path in the quick ritual, `mcp-setup.md` Step 2 names the fix and the handshake that proves it.
 ## [6.8.10]
 
 - `dw-demo-ledger` snapshot **10.30.6 revision 4** (#248). The digest changes, so a build locked on revision 3 needs a re-lock with `Update-DwLedgerLock.ps1`.
