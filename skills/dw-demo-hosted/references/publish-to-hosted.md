@@ -13,6 +13,7 @@
 - [Publishing onto an install that already has content](#publishing-onto-an-install-that-already-has-content)
 - [What never rides the content export](#what-never-rides-the-content-export)
 - [Restoring a whole site package: do not ring-symlink a package built from source](#restoring-a-whole-site-package-do-not-ring-symlink-a-package-built-from-source)
+- [Moving a whole site package: style files in the manifest, media in restartable batches](#moving-a-whole-site-package-style-files-in-the-manifest-media-in-restartable-batches)
 - [Indexes — the definition travels, the built data does not](#indexes--the-definition-travels-the-built-data-does-not)
 - [Verify with a browser, not just status codes](#verify-with-a-browser-not-just-status-codes)
 
@@ -129,6 +130,36 @@ a `changeversion.txt`, so the ring watcher leaves the site alone. Verify with
 host cannot produce (a custom price provider's quantity-break price on the frontend, for example),
 never by the site rendering at all. A ring symlink at a version-compatible release is the trap: it
 starts, it serves, and it is missing the demo.
+
+## Moving a whole site package: style files in the manifest, media in restartable batches
+
+A whole site package (a database backup plus the `Application` file tree) crosses as files, and two
+parts of it decide whether it arrives working.
+
+**`Files/System/Styles/` is in the transfer manifest, by name.** The colour schemes, buttons,
+typography and fonts of a Swift site are files (`<name>.json` with its generated `<name>.css`, see
+[styles-assets.md](../../dw-demo-swift/references/styles-assets.md)), not database rows. A restored
+database plus the template tree, without this folder, renders every page in the browser's default
+font on white, and the target cannot regenerate the files: their source JSON lives only on the
+machine that made them. List the folder in the manifest, compare its file count and hashes on the
+target, and run the **theme gate** of [visual-qa.md](../../dw-demo-base/references/visual-qa.md)
+after the site starts: the three style links answer 200, the body font read from the browser is the
+configured one, and a primary button paints in the brand colour.
+
+**Media travels apart from the application tree, in batches that restart alone.** Product and content
+imagery is usually most of a site's size. One archive of everything fails as a whole over a slow or
+unreliable link and starts again from zero each time. Split it:
+
+1. The `Application` tree **without** the media folders (`Files/Images` and any other image or
+   download folder the site uses) as one archive, with a `.sha256` beside it. It is small, it crosses
+   first, and the site can start on it.
+2. The media in batches (one folder, or a few hundred MB, per batch), each with its own hash, sent
+   by a copy that resumes or by a loop that retries only the failed batch.
+3. On the target, compare per batch: file count and hash. A batch that does not match is sent again;
+   the others stay.
+
+The site is not done until both the theme gate and the media count pass; a page that renders with
+broken thumbnails is a missing batch, not a template fault.
 
 ## Indexes — the definition travels, the built data does not
 
