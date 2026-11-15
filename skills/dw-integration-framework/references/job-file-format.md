@@ -31,6 +31,15 @@ Reach for the surfaces in this order.
 Those two are the whole surface. When neither the tools nor the file reaches the operation, name the
 Data Integration admin screen that does it rather than reaching for another transport.
 
+**Column scripts are not on the MCP surface.** MCP `save_integration_activity_mapping` saves column
+mappings but cannot set a column's script (`ScriptType`, for example `Substring`, with its value),
+which the admin activity editor sets on the same mapping (measured 2026-09). The MCP server is the
+platform's own app, so the gap is not closed from a build. Do not route around it with extra staging
+tables and SQL views just because the build runs over MCP: set the script in the job file (generated,
+as below) or in the admin activity editor, read it back with `get_integration_activity_mappings`,
+and keep a staging stage only where it is a deliberate choice. Recheck `tools/list` on a newer
+release before relying on this.
+
 A job file is **build output** whenever it can be: generate it from a script and edit the
 generator, so a schema change is a regeneration rather than a hand-patch. **The generator reads its
 template from a pristine copy that nothing ever writes, never from the live job file it produces.**
