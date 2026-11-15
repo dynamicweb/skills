@@ -32,13 +32,28 @@ Those two are the whole surface. When neither the tools nor the file reaches the
 Data Integration admin screen that does it rather than reaching for another transport.
 
 **Column scripts are not on the MCP surface.** MCP `save_integration_activity_mapping` saves column
-mappings but cannot set a column's script (`ScriptType`, for example `Substring`, with its value),
+mappings but cannot set a column's script (for example `Substring` or `Code`, with its value),
 which the admin activity editor sets on the same mapping (measured 2026-09). The MCP server is the
 platform's own app, so the gap is not closed from a build. Do not route around it with extra staging
 tables and SQL views just because the build runs over MCP: set the script in the job file (generated,
-as below) or in the admin activity editor, read it back with `get_integration_activity_mappings`,
-and keep a staging stage only where it is a deliberate choice. Recheck `tools/list` on a newer
-release before relying on this.
+as below) or in the admin activity editor, read it back, and keep a staging stage only where it is a
+deliberate choice. Recheck `tools/list` on a newer release before relying on this.
+
+In the job file a column script is the provider's add-in parameter XML inside `<scriptType>`, the
+shape the platform itself writes on save:
+
+```xml
+<scriptType><Parameters addin="Dynamicweb.DataIntegration.Integration.ScriptTypes.CodeScriptType"><Parameter addin="Dynamicweb.DataIntegration.Integration.ScriptTypes.CodeScriptType" name="ScriptValue" value="@Code(Convert.ToDouble(data[&quot;PriceAmount&quot;]) * 1.25)" /></Parameters></scriptType>
+```
+
+Substring carries `StartIndex` and `Length` parameters the same way. A bare legacy name
+(`<scriptType>Substring</scriptType>` with a `<scriptValue>0:3</scriptValue>` sibling, read as start index and length) is still read
+for the seven enum types, but **Code has no legacy name**: it exists only as the parameter XML. The
+same gap applies to reading back: anything that reports the legacy `ScriptType` field shows a Code
+or custom script as `None`, so confirm such a script in the job file's `<scriptType>` element or in
+the admin editor. The `<useCodeExtension>` element is legacy: on current releases it no longer
+makes a column script evaluate `@Code(...)`; pick the Code script type instead. (Mapping
+conditionals still evaluate `@Code(...)` in their condition.)
 
 A job file is **build output** whenever it can be: generate it from a script and edit the
 generator, so a schema change is a regeneration rather than a hand-patch. **The generator reads its

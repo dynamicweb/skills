@@ -247,12 +247,14 @@ Column mappings support transformations at the mapping layer:
 | `New Guid` | Generate a new GUID (ignores source value) |
 | `Current time` | Replace with current timestamp |
 | `Invert` | Invert a boolean |
-| `Code` | C# expression evaluated at runtime (via `ScriptTypeProvider`) |
+| `Code` | One C# expression in `@Code(...)`, compiled once and run per row; from 10.21 it reads the source row as `data`, e.g. `@Code(data["Name"]?.ToString() + " (" + data["No"] + ")")` |
 
-That list is the whole set: **there is no value-lookup or conversion table at the mapping layer.**
-Translate a source system's codes into the site's own ids with an **XSLT on the source document**
-instead — it runs before the reader and the column mapper, and it keeps the payload
-source-system-native. Per-column null handling is equally narrow: `NullEmptyActionType` is
+These are the built-in script types (Code since 10.11). Each is a `ScriptTypeProvider` add-in, so a
+solution can add its own, and the legacy `ScriptType` enum has no member for Code or a custom one.
+On releases before 10.21 a Code expression sees no row data: use it for computed constants only.
+**There is no value-lookup table at the mapping layer.** Translate a source system's codes into the
+site's own ids with an **XSLT on the source document** instead: it runs before the reader and the
+column mapper, and it keeps the payload source-system-native. Per-column null handling is equally narrow: `NullEmptyActionType` is
 `None | Default | Constant | SkipRow`, and `SkipRow` skips the **whole row**, so a per-row exception
 belongs in the source data. Both are worked through in
 [references/provider-behaviour.md](references/provider-behaviour.md).

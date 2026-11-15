@@ -158,15 +158,28 @@ public class MyDestinationWriter : IDestinationWriter
 ## Custom ScriptTypeProvider
 
 ```csharp
-using Dynamicweb.DataIntegration.Providers.ScriptTypeProvider;
+using Dynamicweb.DataIntegration.Integration;
+using Dynamicweb.Extensibility.AddIns;
 
 [AddInLabel("URL Encode")]
 public class UrlEncodeScriptProvider : ScriptTypeProvider<string>
 {
-    protected override string GetValueTyped(object? input)
-        => Uri.EscapeDataString(input?.ToString() ?? "");
+    public override IEnumerable<Type> AllowedTypes { get; set; } = new[] { typeof(string) };
+
+    public override string GetValueTyped(object? input)
+        => input is null or DBNull ? "" : Uri.EscapeDataString(input.ToString() ?? "");
 }
 ```
+
+The base class is `Dynamicweb.DataIntegration.Integration.ScriptTypeProvider` (typed form
+`ScriptTypeProvider<T>`), the same base the built-in script types use, Code included. The label is
+what the column mapping editor lists; configuration is public properties with `[AddInParameter]` and
+an editor attribute, persisted in the job file as the add-in's parameter XML. `GetValueTyped` runs
+once per row, its result skips the standard type conversion (return a value the destination column
+accepts), and `AllowedTypes` limits the columns the editor offers it for. Set
+`DisableSource => true` when the value does not depend on the source column. Before writing one,
+check whether a `Code` script (`@Code(...)`, see SKILL.md "Column Mapping Scripting") already
+covers it: a one-expression transform needs no assembly.
 
 ## Authoring pitfalls
 

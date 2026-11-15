@@ -26,12 +26,21 @@ Where a repair needs `SQL`, the row says why the job surface does not cover it.
 ## Mapping mechanics that apply to every provider
 
 - **Key columns decide insert-versus-update.** Without an `IsKey` column every run inserts.
-- **Column mapping has no value-lookup or conversion mechanism.** `ScriptType` is the fixed set
-  `None | Append | Prepend | Constant | Substring | NewGuid | CurrentTime | Invert`, and none of
-  them expresses a value → value lookup table. For translating a source system's codes into the
-  site's own ids, the only seam is an **XSLT applied to the source document** (see below) — it runs
-  before the reader and the column mapper see a single row. That keeps the staged payload fully
-  source-system-native, which is what makes an "the external system owns this data" story honest.
+- **Column mapping has no value-lookup table.** A column script is a `ScriptTypeProvider` add-in
+  (namespace `Dynamicweb.DataIntegration.Integration.ScriptTypes`), not a closed enum. The platform
+  ships Append, Prepend, Constant, Substring, NewGuid, CurrentTime, Invert and **Code**, and a
+  solution can add its own ([custom-provider-authoring.md](custom-provider-authoring.md#custom-scripttypeprovider)).
+  The legacy `ScriptType` enum (`None | Append | Prepend | Constant | Substring | NewGuid |
+  CurrentTime | Invert`) is kept only for backward compatibility and has no member for Code or for a
+  custom provider. **Code** (10.11 and later) evaluates a script value of the form
+  `@Code(<one C# expression>)`; from 10.21 (late 10.20 patches too) the expression reads the
+  current source row as `data`, for example `@Code(Convert.ToDouble(data["PriceAmount"]) * 1.25)`.
+  The expression is compiled once per distinct text against the core runtime only, so a small fixed
+  code map can be an inline conditional, but nothing in the mapping layer holds a maintained
+  value-to-value table. For translating a source system's codes into the site's own ids, the seam
+  is an **XSLT applied to the source document** (see below): it runs before the reader and the
+  column mapper see a single row. That keeps the staged payload fully source-system-native, which
+  is what makes an "the external system owns this data" story honest.
 - **`NullEmptyActionType` is `None | Default | Constant | SkipRow`, and `SkipRow` skips the whole
   row.** There is no per-column "leave this column alone when the source is empty", so a per-row
   exception to a mapping has to be expressed in the source data itself.
