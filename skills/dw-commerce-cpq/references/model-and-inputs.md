@@ -67,6 +67,18 @@ discover the setting exists.
 The reviewed vendor settings editor drops unknown `ModelVersionSetting` keys when saving. Keep compiler
 ownership and custom metadata in a separate manifest; verify supported settings after an admin save.
 
+**The vendor Settings screen also drops keys the runtime uses.** The JSON stores the settings under
+snake_case names (`custom_item_name`, `custom_item_number_prefix`; the table above gives the property
+names). Pressing Save on CPQ > model > Settings wrote the document back
+without `card_page_id`, `custom_item_name` and `custom_item_number_prefix`, with no error. The configurator
+then loses its card page and the composed item name and number [dw 10.29.8]. Until the vendor fixes it:
+
+- Read the version's `ModelVersionSetting` and keep a copy before anyone opens that screen.
+- Do not save from that screen on a live demo or a configured model. Write settings through the build's own
+  scripted path, and show the screen read only.
+- After any save there, compare the JSON with the copy and restore the three keys, then run one
+  configuration end to end.
+
 ## Groups
 
 `CPQGroup` is both the visual grouping of inputs and the container for rules. `GroupMode` decides
