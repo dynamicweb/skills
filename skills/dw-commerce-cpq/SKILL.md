@@ -165,6 +165,10 @@ rename crosses model/version boundaries and misses some references; use a proven
 free-text input is a concatenated query. Keep interpolated values on constrained inputs — a select,
 a radio, a number — rather than free text.
 
+**Saving the vendor model Settings screen drops settings.** It writes the JSON back without
+`card_page_id`, `custom_item_name` and `custom_item_number_prefix`. Keep a copy, write settings through a
+script, and treat that screen as read only ([model-and-inputs.md](references/model-and-inputs.md)).
+
 **`required` and `readonly` are not action verbs.** They are properties set through `setproperty`.
 Writing them as verbs produces a rule that saves cleanly and does nothing.
 
