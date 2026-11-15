@@ -28,6 +28,8 @@ dotnet --list-sdks | Select-String '^10\.'        # .NET 10 SDK present (host ta
 dotnet new list | Select-String 'dw10-suite'       # expect "DynamicWeb 10 Suite Project Template" or similar
 Get-Service "MSSQL`$SQLEXPRESS" | Select-Object Name, Status
 [Environment]::GetEnvironmentVariable("NODE_TLS_REJECT_UNAUTHORIZED","User")
+# NODE_EXTRA_CA_CERTS, when set, must name a file that exists (mcp-setup.md Step 2): a stale path kills every MCP server
+'User','Machine' | % { $p = [Environment]::GetEnvironmentVariable("NODE_EXTRA_CA_CERTS",$_); if ($p) { "$_ NODE_EXTRA_CA_CERTS exists: $(Test-Path -LiteralPath $p -PathType Leaf)" } }
 git --version                                      # git present (clones the distribution repos)
 gh auth status                                     # gh CLI installed AND authenticated (private-repo clone over HTTPS)
 ```
