@@ -3,6 +3,9 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.15]
+
+- `dw-integration-framework` job file reference: MCP `save_integration_activity_mapping` cannot set a column's script (`ScriptType`, for example `Substring`). Set it in the generated job file or the admin activity editor and read it back, rather than moving every transform into staging tables and SQL views because the build runs over MCP.
 ## [6.8.14]
 
 - Platform facts that change how a requirement is classified, checked against the documentation:
