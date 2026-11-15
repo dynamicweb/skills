@@ -80,6 +80,12 @@ def binding_faults(binding, kind, registry, assertion=None) -> list[str]:
             faults.append("delivery binding names no operation")
         elif operation not in registry.get("dwapiReadRoutes", []):
             faults.append(f"delivery route is not an allowlisted read route: {operation}")
+    if handler == "dwapi-rendered-value":
+        # The product read takes the measure's product id; a feed measure reads the feed route, listed as well.
+        if "{productId}" not in (operation or ""):
+            faults.append("dwapi-rendered-value operation needs the {productId} route")
+        if "feedRoute" in args and args.get("feedRoute") not in registry.get("dwapiReadRoutes", []):
+            faults.append(f"delivery route is not an allowlisted read route: {args.get('feedRoute')}")
     if handler in ("files-facet-analyzed", "files-query-constant-macros") and not binding.get("path"):
         faults.append(f"{handler} needs a path pattern")
     if handler in ("files-facet-analyzed", "files-query-constant-macros") and "scope" in args and args.get("scope") != "build-repositories":

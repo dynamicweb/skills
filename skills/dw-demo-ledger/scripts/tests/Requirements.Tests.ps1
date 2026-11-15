@@ -340,7 +340,7 @@ Describe 'A delivery read is one anonymous GET on an allowlisted route' {
     It 'lists read routes only' {
         $routes=@((Read-LedgerJson (Join-Path $assets 'handlers.json')).dwapiReadRoutes)
         $routes.Count | Should -BeGreaterThan 0
-        @($routes|Where-Object {$_ -cnotmatch '^[A-Za-z]+(/([A-Za-z]+|\{(areaId|lang|pimShop)\}))*$'}) | Should -BeNullOrEmpty
+        @($routes|Where-Object {$_ -cnotmatch '^[A-Za-z]+(/([A-Za-z]+|\{(areaId|lang|pimShop|productId)\}))*$'}) | Should -BeNullOrEmpty
         @($routes|Where-Object {$_ -match '(?i)users|auth|cart|order|token|password|impersonat|switch|favorites|create'}) | Should -BeNullOrEmpty
     }
 }

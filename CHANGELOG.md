@@ -3,6 +3,11 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.18]
+
+- `dw-demo-ledger` snapshot **10.30.6 revision 5** (#217). The digest changes, so a build locked on revision 4 needs a re-lock with `Update-DwLedgerLock.ps1`.
+- `pim.unit-rules-per-language.rendered` has an implemented, read-only binding, so a build with unit rules no longer ends UNVERIFIED on it. Stored unit rules do not prove that a channel prints the ruled unit: the new `dwapi-rendered-value` handler reads each measure the build declares in `renderedMeasures` (`productId`, `field`, `languageId`, `unit`, optional `value`, `shopId`, and `channel` `product` or `feed` with `feedId`) with one anonymous GET on `ecommerce/products/{productId}` or `feeds/GetFeedOutput` in the ruled language, and reports an offender when the channel serves another language, omits the field, or prints another unit or value. The assertion is offenders with `minimumSubjects: 1`; without declared measures the row stays UNVERIFIED with that reason and no request is made.
+- Measured read-only on a consumer build (B2B apparel equipment, 10.30.6) with 12 unit rules for a second language: the product read in that language printed the converted unit, while the JSON feed asked for the same language served the source-language product and printed inches. `ecommerce/products/{productId}` and `feeds/GetFeedOutput` join `dwapiReadRoutes`; `build.schema.json` gains `renderedMeasures`; the validator requires the `{productId}` route and a listed feed route. The 10.29.8 and 10.28.15 snapshots keep the planned binding: the projection was measured on 10.30.6 only.
 ## [6.8.17]
 
 - `dw-demo-swift` dashboard seeding, the demo clock: relative history filters ("Last week", "Last 4 weeks") empty as fixed orders age, separately per persona. Before a showing, run every filter the story uses signed in as each persona it shows; history orders added or redated for the story stay marked as exported (`OrderIsExported`), so no export activity creates an ERP order or moves stock.

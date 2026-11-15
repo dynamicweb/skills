@@ -286,3 +286,93 @@ Describe 'dwapi-persona-sign-in signs each persona in and reads as that user' {
         Should -Invoke Invoke-WebRequest -Times 0 -Exactly
     }
 }
+Describe 'dwapi-rendered-value reads each ruled measure as the channel renders it' {
+    BeforeAll {
+        $script:probe=Get-Probe 'pim/unit-rules-per-language.rendered.json'
+        # Shapes as measured on 10.30.6: the product read is camelCase, a JSON feed PascalCase under Products[].
+        function New-Field([string]$Text,[string]$Raw){@{systemName='Width';name='Width';type='Double';value=@(@{name=$Text;value=$Raw})}}
+        function New-Product([string]$Lang,[string]$Text,[string]$Raw){@{id='P1';variantId='';languageId=$Lang;productFields=@{};productCategories=@{dims=@{id='dims';fields=@{Width=(New-Field $Text $Raw)}}};fieldDisplayGroups=@{limits=@{id='limits';fields=@{Width=(New-Field $Text $Raw)}}}}}
+        function New-FeedProduct([string]$Lang,[string]$Text,[string]$Raw){@{Id='P1';VariantId='';LanguageId=$Lang;ProductCategories=@{dims=@{Id='dims';Fields=@{Width=@{SystemName='Width';Type='Double';Value=@(@{Name=$Text;Value=$Raw})}}}}}}
+        function New-Response([int]$Status,$Body){return @{StatusCode=$Status;Content=$(if($null -eq $Body){''}else{$Body|ConvertTo-Json -Depth 12 -Compress})}}
+        function New-Measure([hashtable]$Change=@{}){$m=@{productId='P1';field='Width';languageId='LANG2';shopId='SHOP1';unit='cm';value=55.9};foreach($k in $Change.Keys){$m[$k]=$Change[$k]};$m}
+        function Invoke-Rendered($Measures){Invoke-Probe $probe '' @('dwapi') @{renderedMeasures=@($Measures)}}
+    }
+    BeforeEach {$script:LedgerTarget=@{baseUrl='http://stub.invalid';insecure=$false};$script:LedgerDeliveryCache=@{}}
+    It 'is implemented on listed read routes with an offenders assertion' {
+        $binding=Get-Implemented $probe
+        $binding.handler | Should -Be 'dwapi-rendered-value'
+        $registry=Read-LedgerJson (Join-Path $assets 'handlers.json')
+        $binding.operation | Should -BeIn $registry.dwapiReadRoutes
+        $binding.arguments.feedRoute | Should -BeIn $registry.dwapiReadRoutes
+        $probe.assertion.kind | Should -Be 'offenders'
+    }
+    It 'PASSes when the product read renders the rule''s unit and value in the ruled language, with one anonymous GET' {
+        Mock Invoke-WebRequest {New-Response 200 (New-Product 'LANG2' '55.9 cm' '55.9')}
+        $row=Invoke-Rendered (New-Measure)
+        $row.result | Should -Be PASS
+        $row.scanned | Should -Be 1
+        Should -Invoke Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {$Method -eq 'Get' -and $Uri -eq 'http://stub.invalid/dwapi/ecommerce/products/P1?LanguageId=LANG2&ShopId=SHOP1' -and -not $Headers.ContainsKey('Authorization')}
+    }
+    It 'RED CONTROL: a ruled field that still renders the source unit FAILs' {
+        Mock Invoke-WebRequest {New-Response 200 (New-Product 'LANG2' '22 in' '22')}
+        $row=Invoke-Rendered (New-Measure)
+        $row.result | Should -Be FAIL
+        $row.offenders[0].rendered | Should -Be '22 in'
+        $row.offenders[0].reason | Should -Match 'unit'
+    }
+    It 'RED CONTROL: the right unit with another value FAILs when the value is declared' {
+        Mock Invoke-WebRequest {New-Response 200 (New-Product 'LANG2' '22 cm' '22')}
+        (Invoke-Rendered (New-Measure)).result | Should -Be FAIL
+        (Invoke-Rendered (New-Measure @{value=$null})).result | Should -Be PASS
+    }
+    It 'RED CONTROL: a channel that serves another language, or omits the field, FAILs' {
+        Mock Invoke-WebRequest {New-Response 200 (New-Product 'LANG1' '55.9 cm' '55.9')}
+        (Invoke-Rendered (New-Measure)).offenders[0].servedLanguage | Should -Be 'LANG1'
+        $script:LedgerDeliveryCache=@{}
+        Mock Invoke-WebRequest {New-Response 200 (New-Product 'LANG2' '55.9 cm' '55.9')}
+        $row=Invoke-Rendered (New-Measure @{field='Height'})
+        $row.result | Should -Be FAIL
+        $row.offenders[0].reason | Should -Match 'not rendered'
+    }
+    It 'RED CONTROL: a JSON feed that prints the source unit in the ruled language FAILs, as measured on a consumer build' {
+        # Measured on 10.30.6: the product read rendered the converted unit, while the feed asked for the same
+        # language served the source-language product and printed the source unit.
+        Mock Invoke-WebRequest {New-Response 200 @{Products=@(New-FeedProduct 'LANG1' '22 in' '22');TotalProductsCount=1}}
+        $row=Invoke-Rendered (New-Measure @{channel='feed';feedId=1})
+        $row.result | Should -Be FAIL
+        $row.offenders[0].channel | Should -Be 'feed'
+        Should -Invoke Invoke-WebRequest -Times 1 -Exactly -ParameterFilter {$Uri -eq 'http://stub.invalid/dwapi/feeds/GetFeedOutput?id=1&LanguageId=LANG2&ShopId=SHOP1'}
+        $script:LedgerDeliveryCache=@{}
+        Mock Invoke-WebRequest {New-Response 200 @{Products=@(New-FeedProduct 'LANG2' '55.9 cm' '55.9');TotalProductsCount=1}}
+        (Invoke-Rendered (New-Measure @{channel='feed';feedId=1})).result | Should -Be PASS
+    }
+    It 'leaves a feed page without the product UNVERIFIED and a complete feed without it FAIL' {
+        Mock Invoke-WebRequest {New-Response 200 @{Products=@(@{Id='P9';VariantId='';LanguageId='LANG2'});TotalProductsCount=40}}
+        (Invoke-Rendered (New-Measure @{channel='feed';feedId=1})).result | Should -Be UNVERIFIED
+        $script:LedgerDeliveryCache=@{}
+        Mock Invoke-WebRequest {New-Response 200 @{Products=@(@{Id='P9';VariantId='';LanguageId='LANG2'});TotalProductsCount=1}}
+        (Invoke-Rendered (New-Measure @{channel='feed';feedId=1})).result | Should -Be FAIL
+    }
+    It 'stays UNVERIFIED with a named reason when the build declares no measure, and makes no request' {
+        Mock Invoke-WebRequest {throw 'no request expected'}
+        $row=Invoke-Probe $probe '' @('dwapi') @{}
+        $row.result | Should -Be UNVERIFIED
+        $row.reason | Should -Match 'renderedMeasures is not declared'
+        Should -Invoke Invoke-WebRequest -Times 0 -Exactly
+    }
+    It 'leaves a product the delivery API does not serve UNVERIFIED and a server error ERROR' {
+        Mock Invoke-WebRequest {New-Response 404 $null}
+        (Invoke-Rendered (New-Measure)).reason | Should -Match '^Build input: '
+        $script:LedgerDeliveryCache=@{}
+        Mock Invoke-WebRequest {New-Response 500 $null}
+        (Invoke-Rendered (New-Measure)).result | Should -Be ERROR
+    }
+    It 'RED CONTROL: refuses a measure id that is not plain, and a feed route off the list, before any request' {
+        Mock Invoke-WebRequest {throw 'no request expected'}
+        (Invoke-Rendered (New-Measure @{productId='P1/../../admin'})).result | Should -Be ERROR
+        $copy=Read-LedgerJson (Join-Path $release 'probes/pim/unit-rules-per-language.rendered.json')
+        $copy.bindings[0].arguments.feedRoute='users/info/profiles/switch'
+        (Invoke-LedgerCheck $copy @{renderedMeasures=@(New-Measure)} (New-FileCapabilities) @{expectations=@{}} @('dwapi') '' '' '').result | Should -Be ERROR
+        Should -Invoke Invoke-WebRequest -Times 0 -Exactly
+    }
+}

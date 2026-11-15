@@ -15,6 +15,7 @@
     "admin-query-count": {"surfaces": ["admin-api"], "assertions": ["scalar"]},
     "dwapi-count": {"surfaces": ["dwapi"], "assertions": ["scalar"]},
     "dwapi-persona-sign-in": {"surfaces": ["dwapi"], "assertions": ["scalar"]},
+    "dwapi-rendered-value": {"surfaces": ["dwapi"], "assertions": ["offenders"]},
     "settings-value": {"surfaces": ["file"], "assertions": ["scalar"]},
     "xml-count": {"surfaces": ["file"], "assertions": ["scalar"]},
     "files-count": {"surfaces": ["file"], "assertions": ["scalar"]},
@@ -93,6 +94,8 @@
   "dwapiReadRoutes": [
     "content/areas",
     "ecommerce/products/search",
+    "ecommerce/products/{productId}",
+    "feeds/GetFeedOutput",
     "frontend/navigations/{areaId}",
     "query"
   ],

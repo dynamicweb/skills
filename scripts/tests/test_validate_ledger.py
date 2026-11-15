@@ -211,6 +211,25 @@ class LedgerValidationTests(unittest.TestCase):
         self.save()
         self.assertIn('delivery binding names no operation', '\n'.join(validate_ledgers(self.repo)))
 
+    def test_rendered_value_reads_listed_product_and_feed_routes(self):
+        self.check['assertion'] = {'kind': 'offenders', 'minimumSubjects': 1}
+        binding = {'id': 'rendered', 'surface': 'dwapi', 'status': 'implemented', 'handler': 'dwapi-rendered-value',
+                   'operation': 'ecommerce/products/{productId}', 'arguments': {'feedRoute': 'feeds/GetFeedOutput'}}
+        self.check['bindings'] = [binding]
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        binding['arguments']['feedRoute'] = 'users/info/profiles/switch'
+        self.save()
+        self.assertIn('delivery route is not an allowlisted read route: users/info/profiles/switch', '\n'.join(validate_ledgers(self.repo)))
+        binding.update(operation='ecommerce/products/search', arguments={})
+        self.save()
+        self.assertIn('dwapi-rendered-value operation needs the {productId} route', '\n'.join(validate_ledgers(self.repo)))
+        # The handler reports offenders, so a scalar assertion over it is refused.
+        binding['operation'] = 'ecommerce/products/{productId}'
+        self.check['assertion'] = {'kind': 'scalar', 'op': 'ge', 'value': 1}
+        self.save()
+        self.assertIn('assertion kind scalar does not fit handler dwapi-rendered-value', '\n'.join(validate_ledgers(self.repo)))
+
     def test_persona_sign_in_uses_its_own_route_lists(self):
         binding = {'id': 'signin', 'surface': 'dwapi', 'status': 'implemented', 'handler': 'dwapi-persona-sign-in',
                    'operation': 'users/authenticate', 'arguments': {'readAs': 'users/info'}}

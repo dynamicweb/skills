@@ -183,7 +183,8 @@
         "pimShop",
         "families",
         "attributes",
-        "productScope"
+        "productScope",
+        "renderedMeasures"
       ],
       "checks": [
         "probes/pim/unit-rules-per-language.rules.json",
