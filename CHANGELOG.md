@@ -3,6 +3,9 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.19]
+
+- `dw-integration-framework` column scripts, checked against the platform package source (10.10.8 to 10.30.6) and the documentation: a column script is a `ScriptTypeProvider` add-in, not a closed enum. The built-in set includes **Code** (since 10.11): a script value `@Code(<one C# expression>)`, compiled once and run per row, which reads the current source row as `data` from 10.21 (late 10.20 patches too). The legacy `ScriptType` enum has no member for Code or a custom provider, so in a job file Code exists only as the add-in parameter XML inside `<scriptType>`, and a reader of the legacy field shows it as `None`. `<useCodeExtension>` no longer makes a column script evaluate `@Code`. SKILL.md, the provider behaviour and job file references now agree, the job file reference shows the parameter XML and keeps the 6.8.15 MCP gap (Substring and Code alike), and the custom script type example uses the real namespace and signature.
 ## [6.8.18]
 
 - `dw-demo-ledger` snapshot **10.30.6 revision 5** (#217). The digest changes, so a build locked on revision 4 needs a re-lock with `Update-DwLedgerLock.ps1`.
