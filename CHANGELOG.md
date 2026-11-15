@@ -3,6 +3,9 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.17]
+
+- `dw-demo-swift` dashboard seeding, the demo clock: relative history filters ("Last week", "Last 4 weeks") empty as fixed orders age, separately per persona. Before a showing, run every filter the story uses signed in as each persona it shows; history orders added or redated for the story stay marked as exported (`OrderIsExported`), so no export activity creates an ERP order or moves stock.
 ## [6.8.16]
 
 - `dw-commerce-cpq`: saving the vendor model Settings screen (CPQ > model > Settings, measured on DW 10.29.8 with the 10.24.2 CPQ add-in) drops `card_page_id`, `custom_item_name` and `custom_item_number_prefix` from `ModelVersionSetting` with no error. The model reference states the limit and the safe path (copy the JSON first, write settings by script, treat the screen as read only, restore and run one configuration after a save); a trap in SKILL.md and a row in the engine characterization point to it.

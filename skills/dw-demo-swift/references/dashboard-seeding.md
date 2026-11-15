@@ -116,6 +116,14 @@ The mechanic that fixes it is an **anchor table + a whole-day uniform shift**:
 - **Exclude config and logging tables** from the shift — only operational/fixture dates move. Audit and scheduled-task logs must keep their real timestamps or the task's own history becomes unreadable.
 - **Discover the date columns from `sys.columns` at build time; never hardcode the list.** Every commerce feature spells its timestamps differently — one pass hardcoded 18 column names and **12 of them were wrong**. Discovery is also what keeps the shifter correct across a platform upgrade.
 
+### Relative filters and the per-persona check before a showing
+
+A list with rows is not enough when the story uses a **relative filter**: "Last week", "Last 4 weeks" or "this month" on an order history or an ordered-quantity form. Fixed orders age out of those windows one week at a time, so a filter that answered on build day returns nothing a week later, for every persona whose history was seeded once. A uniform shift (below) keeps the windows filled; without one, refresh the dates the planned story uses before each showing.
+
+- **Check each persona the story signs in as**, not one: run every relative filter the script names, signed in as that buyer (and as the CSR acting for each account it shows), and require at least one row per filter and period. Two personas on one site can fail separately, because each owns its own history.
+- **Synthetic history orders stay marked as exported** (`OrderIsExported = 1`). A history order added or redated for the story must never reach an order export activity: one that does creates an ERP sales order and moves stock the live story depends on. Read the flag back after seeding and after every date shift.
+- Copying a real seeded order to add a period keeps its lines and prices consistent; give the copy a new order id, its own date and the exported flag before it is saved where an export can see it.
+
 ### Two silent failure modes when a SECOND shifter is added
 
 Both of these produce a task that reports **Success** while doing nothing, and neither raises an error:
