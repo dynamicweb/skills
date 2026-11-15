@@ -3,6 +3,10 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.8.12]
+
+- `dw-demo-base` **pre-demo check** (`references/pre-demo-check.md`): before every live demo or recording, and after a restart, reinstall, restore or licence change, prove the storefront, the admin (licensed) and the MCP handshake in one run, then the mail listener and one real form submission. A storefront at 200 is not evidence: a lost licence leaves it answering while `/Admin/` and `/admin/mcp` redirect to `/admin/license`, and a reinstall can remove the local SMTP listener the host sends to. A hand-started SMTP sink does not survive a reboot.
+- `Test-DwHostReady.ps1` reports the storefront (`GET /` 200, not landing on `/admin/license`) beside the admin and MCP rows.
 ## [6.8.11]
 
 - `dw-demo-base` MCP setup: `/admin/mcp` refuses a Management API key and the MCP key serves both surfaces, so a demo that holds one credential mints the MCP type (Step 6, two triage rows).

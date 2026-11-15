@@ -4,7 +4,8 @@
     and writes a PASS/FAIL report.
 
 .DESCRIPTION
-    Runs the dw-setup-install verification checks as one harness: /admin
+    Runs the dw-setup-install verification checks as one harness: the
+    storefront answering, /admin
     reachable and licensed (not redirecting to /admin/license), /admin/mcp
     answering 401 unauthenticated, HEAD /admin/mcp/bootstrap answering 405,
     and — when -McpToken is given — the MCP JSON-RPC handshake, a tool count
@@ -101,6 +102,17 @@ if ($Expectation) {
     }
 }
 else {
+    # 0. Storefront answers. Reported beside the admin and MCP rows: a storefront that
+    #    answers is NOT evidence the host is usable (a lapsed licence leaves it at 200
+    #    while /admin and /admin/mcp redirect to /admin/license).
+    try {
+        $r = Invoke-Probe GET '/'
+        $finalUrl = [string]$r.BaseResponse.RequestMessage.RequestUri
+        $onLicense = $finalUrl -match '/admin/license($|[/?#])'
+        Add-Check 'storefront answers' (($r.StatusCode -eq 200) -and -not $onLicense) "GET / -> $($r.StatusCode)$(if ($onLicense) { ' (landed on /admin/license)' })"
+    }
+    catch { Add-Check 'storefront answers' $false $_.Exception.Message }
+
     # 1. /admin reachable and licensed
     try {
         $r = Invoke-Probe GET '/admin'
