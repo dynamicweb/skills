@@ -40,7 +40,9 @@ runtime the agent can run), keeping the crawl delay:
 - Save raw responses as JSON Lines, one record per line, so a stopped crawl continues and parsing
   can be rerun without crawling again
 - Keep a crawl log of the source URL behind every record, so any value traces back to its page
-- Download images once and resize them for the web before upload (long edge around 1200px, JPEG)
+- Download images once and size them by use: scale down to 2× the widest width they're shown at,
+  at most 2560 px on the long edge; never upscale (an original smaller than that is kept as it is).
+  Keep transparency (PNG/WebP)
 - Keep names, descriptions, and specifications exactly as the source has them
 
 At the checkpoint, report record counts per file, five sample products, and every field that is
@@ -157,6 +159,8 @@ A success response or a Data Integration row count is not proof. For each import
 3. Open the frontend page of a product nobody has viewed yet and check name, number, price,
    variants, specifications, and images. A product already viewed may be served from cache and
    hide a failed import
+4. Time the product list and a product page, with a warm cache, before and after the import.
+   Stop and report if a page gets slower than 2 s or twice as slow as before.
 
 At the checkpoint, report product, variant, price, and image counts in the solution against the
 scraped counts, with links to the checked product pages.

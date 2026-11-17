@@ -38,7 +38,8 @@ the shopper picks still overrides it.
 - Show the specifications on the product page through a field display group
 - When the short and long descriptions repeat each other, choose which one each template shows;
   never edit the scraped text to fix it
-- Add a "more in this category" product row so a page never ends empty
+- Decide whether the product page shows other products, for example related or similar products,
+  accessories or spare parts, from what the original site has and what the product data supports.
 
 ## Search
 

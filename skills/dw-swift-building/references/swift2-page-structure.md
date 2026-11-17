@@ -123,13 +123,10 @@ These require the Dynamicweb backend admin UI (not available via MCP tools):
 |------|------------------|
 | Payment provider setup | eCommerce → Orders → Payment methods |
 | Shipping provider setup | eCommerce → Orders → Shipping providers |
-| Brand colours and typography | Content → Design → Color Schemes |
 | Email templates (order confirmation) | eCommerce → Communication → Email |
-| Product images upload | Products → [product] → Images |
-| Page content / hero images | Content → [page] → Edit |
-| Grid layout and paragraph content | Content → [page] → Edit → Grid |
 | SEO sitemap settings | Settings → SEO |
 
 These are intentionally out of scope for MCP — they require visual editing or file uploads.
-The MCP agent sets up all the structural and data configuration so the site is immediately functional;
-the above are polish items the business owner does once.
+Brand colours, typography, page layout, page content and images are set with the MCP tools
+(save_color_schemes, save_typographies, save_grid_rows, save_paragraphs, set_paragraph_item_fields,
+upload_file_from_url, import_product_images_from_urls) and are part of building the site.

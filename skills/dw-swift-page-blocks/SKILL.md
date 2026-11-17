@@ -198,16 +198,12 @@ auto-correction on this path. A wrong value renders as garbled raw text, overlap
   zero margin and butts straight against the next field ("Free delivery" + "Free
   shipping…" → "Free deliveryFree shipping…"). This is the single biggest cause of a page that
   "renders but looks like an unstyled wall of text." So:
-  - `Title` → a heading element with a Bootstrap size class: `<h2 class="h1 mb-2">A
-    collection worth celebrating</h2>` (use `h1`/`h2`/`h3`/`display-5` for size, `mb-*` for
-    spacing). Section headings are NOT optional formatting — without the tag they vanish into
-    the body text.
-  - `Subtitle` → `<p class="lead text-secondary mb-3">…</p>`; `Eyebrow` → `<p
-    class="text-uppercase small mb-2">New in</p>`.
-  - `Text` → `<p class="mb-0">…</p>` (multiple `<p>` for multiple paragraphs).
+  - Use only markup the editor itself produces: heading tags, paragraphs, lists, links and the
+    editor's `dw-*` styles, which follow the site's typography. No Bootstrap classes and no
+    inline style: an editor can't choose them and may lose them on the first edit. Markup the
+    editor can't produce belongs in a layout template, added only when agreed.
   - Mirror what a well-built existing page on this solution already stores
-    (`<h2 class="h3 mb-1">…</h2>`, `<p class="mb-0">…</p>`, or the editor's
-    `dw-h*`/`dw-paragraph*` classes). NEVER pass a bare unwrapped string to any of these
+    (the editor's `dw-h*`/`dw-paragraph*` classes). NEVER pass a bare unwrapped string to any of these
     fields.
 - **Pick components to match the imagery you have.** A `Poster` with no image is a flat color
   rectangle; a `Card` with no image is a text box; an empty `Image` paragraph is dead space.
@@ -308,24 +304,13 @@ Pages do not carry a theme (the `Swift-v2_Page` item type is basically just Titl
   catches the mismatch.
 
 So a page's appearance = (area styles as base) + per-row layout + per-row color scheme.
-**Alternating schemes between rows** (default → `light` → `lightgrey2` → `lightgrey1`) is what
-gives Swift pages their banded, sectioned look.
 
-## The pretty-page grammar (a good default rhythm)
+## Composing a page
 
-Top → bottom, a rhythm that reads as designed rather than a flat stack:
-1. **Hero** — full-width `1Column`: a `Poster` or a `Swift-v2_Slider` with image slides.
-2. **Intro** — `1Column` `Text`.
-3. **Media / editorial** — `2Columns_8-4` (image + caption) or a `Slider`, alternating image
-   side down the page.
-4. **Section bands** — switch to a banded scheme (`light`, then `lightgrey2`, then
-   `lightgrey1`) to separate sections.
-5. **Multi-up content** — `3Columns` of `Feature` (icon USPs), `Text`, `Card`, or `Employee`.
-6. **CTA** — a standalone `1Column` `Button` closing a section.
-7. **FAQ** — an `Accordion` at the foot.
-
-Vary section types, give a hero/section the `primary` band when it fits the brand, and group
-small related blocks into one multi-column row instead of a long single-column stack.
+Choose each page's sections for its content and visitors; a page has a hero, a showcase or an
+FAQ only when its content calls for one. Colour bands can separate sections; which schemes, and
+in what order, is decided from the brand. Vary section types, and group related small blocks into
+shared rows instead of a long single-column stack.
 
 ## Gotchas that bite
 
