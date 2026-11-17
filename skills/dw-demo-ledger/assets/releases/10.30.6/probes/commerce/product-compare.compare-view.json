@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "commerce.product-compare.compare-view",
+  "functionId": "commerce.product-compare",
+  "intent": {
+    "proves": "Two products render in one compare view.",
+    "level": "behavioural",
+    "scope": "one declared compare URL"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-page",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-page-read",
+      "reason": "No delivery read handler is implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    }
+  ]
+}

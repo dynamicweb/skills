@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "assets.image-handler.variants-generated",
+  "functionId": "assets.image-handler",
+  "intent": {
+    "proves": "The generated image cache holds at least one image variant.",
+    "level": "behavioural",
+    "scope": "files under /Files/Cache.net/Images"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-list-files",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-files-count",
+      "operation": "list_files",
+      "arguments": {
+        "path": "/Files/Cache.net/Images"
+      },
+      "reason": "Cache.net is outside the list_files allowed roots."
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "Cache.net\\Images",
+        "filter": "*.*",
+        "includeSubfolders": true
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/Image-handler.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/image-and-browser-caching.html"
+    }
+  ]
+}

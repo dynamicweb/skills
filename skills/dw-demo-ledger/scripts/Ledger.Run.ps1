@@ -5,7 +5,8 @@ READ-ONLY. Evaluate the locked checks in order: ruling, then requirements, then 
 PowerShell 7. Owning reference: ../references/contract.md. A ruling is applied before the
 function's requirements. A capability requirement that names a function, and a ground that
 cites one (requiresFunction), hold only when every locked check of that function passed in
-this run; a circular reference is ERROR. Rows come back in lock order. Definitions only.
+this run; a circular reference is ERROR. A ground that lists checks rules out only those
+checks of its function. Rows come back in lock order. Definitions only.
 .EXAMPLE
 . ./Ledger.Run.ps1
 Get-LedgerRows -Context $context
@@ -42,8 +43,10 @@ function New-LedgerEvaluatedRow {
     $ruling=if($build.rulings -and $build.rulings.ContainsKey($f.id)){$build.rulings[$f.id]}else{$null}
     $fault=if($null -ne $ruling){Get-LedgerRulingFault $ruling $f}else{$null}
     if($fault){$row.result='ERROR';$row.reason='Invalid not-applicable ruling: '+$fault;return $row}
-    if($null -ne $ruling -and $ruling.applies -eq $false){
-        $ground=@($f.notApplicable|Where-Object {$_.id -eq $ruling.rule})[0]
+    # A ground that names checks rules out only those checks; the function's other checks are evaluated as usual.
+    $ground=if($null -ne $ruling -and $ruling.applies -eq $false){@($f.notApplicable|Where-Object {$_.id -eq $ruling.rule})[0]}else{$null}
+    if($null -ne $ground -and $ground.checks -and $check.id -cnotin @($ground.checks)){$ground=$null}
+    if($null -ne $ground){
         if($ground.requiresFunction){
             # The ground says another function carries the need, so that function must be built and passing.
             $state=Get-LedgerFunctionState $Context $ground.requiresFunction
@@ -61,6 +64,7 @@ function New-LedgerEvaluatedRow {
         } else {
             $row.result='NOT-APPLICABLE'
             $row.reason=if($ground.requiresFunction){"Allowed ruling with evidence: $($ruling.rule); the cited function '$($ground.requiresFunction)' passed."}else{'Allowed ruling with evidence: '+$ruling.rule}
+            if($ground.checks){$row.reason+=" The ground rules out only $(@($ground.checks) -join ', ')."}
         }
         return $row
     }

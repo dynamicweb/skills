@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.documents.category-names",
+  "functionId": "pim.documents",
+  "intent": {
+    "proves": "Every asset category that holds an asset has a non-empty name in the default language.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global; at least one subject must be in scope"
+  },
+  "assertion": {
+    "kind": "offenders",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-category-names",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-category-names",
+      "operation": "AssetCategoryTranslationsAll",
+      "reason": "Needs authenticated full-payload and scope parity measurement; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(g.EcomDetailsGroupSystemName AS nvarchar(100)) FROM EcomDetailsGroup g WHERE EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailsGroupId = g.EcomDetailsGroupId) AND NOT EXISTS (SELECT 1 FROM EcomDetailsGroupTranslation t WHERE t.DetailsGroupTranslationGroupId = g.EcomDetailsGroupId AND t.DetailsGroupTranslationLanguageId = N'{lang}' AND ISNULL(t.DetailsGroupTranslationText, N'') <> N'')",
+      "subjectsQuery": "SELECT COUNT(*) FROM EcomDetailsGroup g WHERE EXISTS (SELECT 1 FROM EcomDetails d WHERE d.DetailsGroupId = g.EcomDetailsGroupId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#documents/category-names"
+    }
+  ]
+}

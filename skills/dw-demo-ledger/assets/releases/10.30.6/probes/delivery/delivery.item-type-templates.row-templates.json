@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "delivery.item-type-templates.row-templates",
+  "functionId": "delivery.item-type-templates",
+  "intent": {
+    "proves": "Grid row templates exist under the design Grid folder.",
+    "level": "supported",
+    "scope": "all designs; path relative to the Files root"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-count",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "path": "Templates/Designs/*/Grid/*/RowTemplates/*.cshtml"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/content/grid-rows.html"
+    }
+  ]
+}

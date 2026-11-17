@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "admin.scheduled-task-addins.types",
+  "functionId": "admin.scheduled-task-addins",
+  "intent": {
+    "proves": "The installation exposes at least one scheduled task add-in type.",
+    "level": "supported",
+    "scope": "add-in types listed by the platform; types that run arbitrary statements, methods or URLs are not listed by MCP"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-scheduled-task-add-in-types",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_scheduled_task_add_in_types",
+      "arguments": {}
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/run-sql.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-extend-scheduled-tasks/SKILL.md"
+    }
+  ]
+}

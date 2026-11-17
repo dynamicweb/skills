@@ -68,12 +68,43 @@ def binding_faults(binding, kind, registry, assertion=None) -> list[str]:
             faults.append("Admin binding names no operation")
         elif operation not in registry.get("adminReadQueries", []):
             faults.append(f"Admin operation is not an allowlisted read query: {operation}")
-    if surface == "dwapi":
+    if surface == "dwapi" and handler == "dwapi-persona-sign-in":
+        # The one non-GET delivery call: a persona sign-in on its own list, then one read as that user.
+        if operation not in registry.get("dwapiSignInRoutes", []):
+            faults.append(f"sign-in route is not an allowlisted sign-in route: {operation}")
+        if args.get("readAs") not in registry.get("dwapiSignedInReadRoutes", []):
+            faults.append("dwapi-persona-sign-in needs arguments.readAs on dwapiSignedInReadRoutes")
+    elif surface == "dwapi":
         # A delivery read is one anonymous GET; some GET routes switch a profile or issue a token, so the route is listed.
         if not operation:
             faults.append("delivery binding names no operation")
         elif operation not in registry.get("dwapiReadRoutes", []):
             faults.append(f"delivery route is not an allowlisted read route: {operation}")
+    if handler == "dwapi-rendered-value":
+        # The product read takes the measure's product id; a feed measure reads the feed route, listed as well.
+        if "{productId}" not in (operation or ""):
+            faults.append("dwapi-rendered-value operation needs the {productId} route")
+        if "feedRoute" in args and args.get("feedRoute") not in registry.get("dwapiReadRoutes", []):
+            faults.append(f"delivery route is not an allowlisted read route: {args.get('feedRoute')}")
+    if handler in ("files-facet-analyzed", "files-query-constant-macros") and not binding.get("path"):
+        faults.append(f"{handler} needs a path pattern")
+    if handler in ("files-facet-analyzed", "files-query-constant-macros") and "scope" in args and args.get("scope") != "build-repositories":
+        faults.append(f"{handler} arguments.scope is build-repositories or absent")
+    if handler == "files-facet-analyzed":
+        generated = args.get("generated")
+        states = (True, False, "default-fields", "default-fields-if-text")
+        if not isinstance(generated, dict) or not generated:
+            faults.append("files-facet-analyzed needs arguments.generated")
+        else:
+            for extender, table in generated.items():
+                parts = [table.get(part) for part in ("fields", "prefixes")] if isinstance(table, dict) else [None]
+                if not isinstance(table, dict) or set(table) - {"fields", "prefixes"} or not all(isinstance(p, (dict, type(None))) for p in parts):
+                    faults.append(f"files-facet-analyzed generated.{extender} holds only fields and prefixes objects")
+                    continue
+                for part in parts:
+                    for name, state in (part or {}).items():
+                        if not any(state is s or (isinstance(s, str) and state == s) for s in states):
+                            faults.append(f"files-facet-analyzed generated.{extender} {name}: state is true, false, default-fields or default-fields-if-text")
     if handler in ("admin-query-count", "dwapi-count") and not (binding.get("projection") or {}).get("rowsPath"):
         faults.append(f"{handler} needs projection.rowsPath")
     if handler == "admin-feature-flag" and not args.get("featureTypeName"):
@@ -233,10 +264,21 @@ def validate_ledgers(repo: Path) -> list[str]:
                     error(manifest, f"{fid}: requirement id is a description, not a fact id: {rid}")
                 if req.get("kind") == "capability" and re.fullmatch(r"[a-z][a-z0-9.-]*", rid) and rid not in functions:
                     error(manifest, f"{fid}: requires unknown function {rid}")
+            primary = set()
+            for relative in f.get("checks", []):
+                try:
+                    primary.add(json.loads(snapshot_path(relative).read_text(encoding="utf-8")).get("id"))
+                except (OSError, ValueError, TypeError, AttributeError):
+                    continue
             for ground in f.get("notApplicable", []):
                 cited = ground.get("requiresFunction") if isinstance(ground, dict) else None
                 if cited is not None and (cited not in functions or cited == fid):
                     error(manifest, f"{fid}: ground {ground.get('id')} cites unknown function {cited}")
+                # A ground that names checks rules out only those; each must be a check the function lists.
+                scoped = ground.get("checks") if isinstance(ground, dict) else None
+                for cid in scoped or []:
+                    if cid not in primary:
+                        error(manifest, f"{fid}: ground {ground.get('id')} names {cid}, which is not a check of this function")
         for fault in requirement_cycles(functions):
             error(manifest, fault)
         claimed = set()

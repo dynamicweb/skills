@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "id": "integration.scheduled-runs.schedules-not-failing",
+  "functionId": "integration.scheduled-runs",
+  "intent": {
+    "proves": "No enabled activity schedule's last run failed.",
+    "level": "behavioural",
+    "scope": "enabled scheduled tasks running integration activities"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-scheduled-tasks",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_scheduled_tasks",
+      "arguments": {},
+      "reason": "Handler not reserved: needs a field-predicate projection over the tool's rows; mcp-count counts rows only. The tool also lists only parent-level tasks."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TaskName FROM ScheduledTask WHERE TaskEnabled = 1 AND TaskAddInTypeName LIKE N'%JobScheduledTaskAddIn%' AND TaskLastResult = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Integration/Tools (IntegrationActivityTools.cs, IntegrationEndpointTools.cs, IntegrationMappingTools.cs, IntegrationProviderTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-integration-framework/SKILL.md"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/integration/scheduledtasks.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-extend-scheduled-tasks/references/scheduler-rows-and-runs.md (ScheduledTask row contract)"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "users.backend-roles.backend-editors",
+  "functionId": "users.backend-roles",
+  "intent": {
+    "proves": "At least one active default-type user may sign in to the backend, directly or through a direct group.",
+    "level": "applied",
+    "scope": "active AccessUser rows of type Default (5); backend access set on the user or on a group it is directly in (inheritance through parent groups not counted, so the count is a lower bound)"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-search-users",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "search_users",
+      "arguments": {},
+      "reason": "UserModel backend-access projection not available to mcp-count."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUser u WHERE u.AccessUserType = 5 AND u.AccessUserActive = 1 AND (u.AccessUserAllowBackend = 1 OR EXISTS (SELECT 1 FROM AccessUserGroupRelation r JOIN AccessUser g ON g.AccessUserId = r.AccessUserGroupRelationGroupId WHERE r.AccessUserGroupRelationUserId = u.AccessUserId AND g.AccessUserAllowBackend = 1))",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html"
+    }
+  ]
+}

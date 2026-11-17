@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "users.frontend-sign-in.app-placed",
+  "functionId": "users.frontend-sign-in",
+  "intent": {
+    "proves": "At least one visible Authentication or Extranet app is placed on an active page.",
+    "level": "configured",
+    "scope": "active UserAuthentication or UserManagementFrontend paragraphs on active, non-deleted pages"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-search-paragraphs",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "search_paragraphs",
+      "arguments": {},
+      "reason": "Paragraph search by app system name is not a verified argument of search_paragraphs."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM Paragraph p JOIN Page g ON g.PageId = p.ParagraphPageId WHERE p.ParagraphDeleted = 0 AND p.ParagraphShowParagraph = 1 AND g.PageDeleted = 0 AND g.PageActive = 1 AND p.ParagraphModuleSystemName IN ('UserAuthentication','UserManagementFrontend')",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-login.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/extranet.html"
+    }
+  ]
+}

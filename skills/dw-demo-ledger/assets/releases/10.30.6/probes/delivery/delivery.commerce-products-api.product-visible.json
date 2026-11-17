@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "delivery.commerce-products-api.product-visible",
+  "functionId": "delivery.commerce-products-api",
+  "intent": {
+    "proves": "A named product is visible to the frontend in the build shop and language.",
+    "level": "behavioural",
+    "scope": "products named in the build productScope"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-verify-product-visibility",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-visibility",
+      "operation": "verify_product_visibility",
+      "arguments": {},
+      "reason": "Needs product id and context inputs and a pass projection; no handler implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Core/ToolNames.cs and tool classes (HEAD, read 2026-11-11)"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "admin.global-settings.single-node-keys",
+  "functionId": "admin.global-settings",
+  "intent": {
+    "proves": "No setting name occurs twice under different parent nodes (a minted dead key).",
+    "level": "stored-integrity",
+    "scope": "Files/GlobalSettings.config"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "file-globalsettings-duplicates",
+      "surface": "file",
+      "status": "planned",
+      "handler": "globalsettings-duplicates",
+      "path": "GlobalSettings.config",
+      "reason": "No reserved handler parses GlobalSettings.config."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/globalsettings.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/SKILL.md"
+    }
+  ]
+}

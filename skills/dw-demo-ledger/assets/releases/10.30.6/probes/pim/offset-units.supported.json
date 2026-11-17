@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "pim.offset-units.supported",
+  "functionId": "pim.offset-units",
+  "intent": {
+    "proves": "A unit group can hold a unit whose conversion has an offset.",
+    "level": "supported",
+    "scope": "unit conversion storage of the target release"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Measured 10.29.8 schema: EcomFieldValueConversion has Id, ParentGroupId, Name, SystemName, Factor and SortOrder; no offset column exists. No binding can pass until a release stores an offset; record UNSUPPORTED evidence for 10.29.8 rather than a pass."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    },
+    {
+      "kind": "source",
+      "ref": "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomFieldValueConversion"
+    }
+  ]
+}

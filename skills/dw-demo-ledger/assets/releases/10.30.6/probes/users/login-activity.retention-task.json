@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "users.login-activity.retention-task",
+  "functionId": "users.login-activity",
+  "intent": {
+    "proves": "An enabled scheduled task runs the Clean up login log add-in.",
+    "level": "configured",
+    "scope": "ScheduledTask rows"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-scheduled-tasks",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_scheduled_tasks",
+      "arguments": {},
+      "reason": "Needs a filter on the add-in type; the add-in's type name is not verified, so no SQL binding either."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-login-log.html"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "delivery.service-authentication.api-key-exists",
+  "functionId": "delivery.service-authentication",
+  "intent": {
+    "proves": "At least one non-expired API key exists for server-to-server delivery calls.",
+    "level": "configured",
+    "scope": "all API keys; expiry respected"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api-query",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "API keys list (query name unverified)",
+      "reason": "The API key list query name and response shape are not verified in the Management API descriptor."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM ApiKey",
+      "localOnly": true,
+      "reason": "API key table and expiry column are not verified in the DW source; placeholder only, do not run."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/api-keys.html"
+    }
+  ]
+}

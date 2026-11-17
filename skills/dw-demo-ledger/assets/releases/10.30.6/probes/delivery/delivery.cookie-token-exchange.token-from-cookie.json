@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "delivery.cookie-token-exchange.token-from-cookie",
+  "functionId": "delivery.cookie-token-exchange",
+  "intent": {
+    "proves": "POST /dwapi/users/token returns a JWT for a session carrying a Dynamicweb.Extranet cookie.",
+    "level": "behavioural",
+    "scope": "a signed-in browser session on the Dynamicweb site"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-auth",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-auth",
+      "operation": "POST /dwapi/users/token",
+      "reason": "Needs a signed-in Extranet cookie from a browser session; no handler drives a login, and the call issues a token."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/external-login.html"
+    }
+  ]
+}

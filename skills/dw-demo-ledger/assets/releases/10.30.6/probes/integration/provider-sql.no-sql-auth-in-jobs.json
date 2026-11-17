@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "id": "integration.provider-sql.no-sql-auth-in-jobs",
+  "functionId": "integration.provider-sql",
+  "intent": {
+    "proves": "No job file carries a SQL authentication password (job files are served anonymously).",
+    "level": "stored-integrity",
+    "scope": "all job files"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "file-content",
+      "surface": "file",
+      "status": "planned",
+      "handler": "file-content",
+      "path": "Files/Integration/jobs/**/*.xml",
+      "reason": "No reserved handler reads job file content."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-integration-framework/SKILL.md"
+    }
+  ]
+}

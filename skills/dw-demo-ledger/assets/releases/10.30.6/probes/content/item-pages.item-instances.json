@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "content.item-pages.item-instances",
+  "functionId": "content.item-pages",
+  "intent": {
+    "proves": "No item-based page lacks its item instance.",
+    "level": "stored-integrity",
+    "scope": "non-deleted pages with an item type; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-pages-by-area-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-offenders",
+      "operation": "get_pages_by_area_id",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 CAST(PageId AS nvarchar(20)) + N' ' + PageItemType FROM Page WHERE PageDeleted = 0 AND ISNULL(PageItemType, N'') <> N'' AND ISNULL(PageItemId, N'') = N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html"
+    }
+  ]
+}

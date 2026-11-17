@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "content.paragraph-apps.available",
+  "functionId": "content.paragraph-apps",
+  "intent": {
+    "proves": "At least one paragraph app is available.",
+    "level": "supported",
+    "scope": "installed paragraph apps"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-content-apps",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_content_apps",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Installed app registry is not a verified SQL table."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/ModuleParagraphTools.cs"
+    }
+  ]
+}

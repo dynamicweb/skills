@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "pim.list-fields.multi-select",
+  "functionId": "pim.list-fields",
+  "intent": {
+    "proves": "At least one list field is presented as a multi-select list or a checkbox list (presentation 3 or 4).",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-multi-select",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-multiselect",
+      "operation": "get_product_category_fields",
+      "arguments": {},
+      "reason": "Live parity review found category-field projection differs from complete stored-field scope or omits presentation. Do not claim equivalence."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomProductCategoryField WHERE FieldType = 15 AND FieldPresentationType IN (3, 4) AND FieldCategoryId <> N'reference_category'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#list-fields/multi-select"
+    }
+  ]
+}

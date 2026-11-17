@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "id": "search.index-queries.no-constant-macros",
+  "functionId": "search.index-queries",
+  "intent": {
+    "proves": "No query expression stores a macro-shaped value (Namespace.Something:Field) as a constant, which never matches.",
+    "level": "stored-integrity",
+    "scope": "every expression of every repository index query"
+  },
+  "assertion": {
+    "kind": "offenders",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-index-query-expressions",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-query-constant-macros",
+      "operation": "get_index_query_expressions",
+      "arguments": {},
+      "reason": "MCP route, not taken: get_index_queries lists the queries without expressions; get_index_query_expressions(queryId) returns field, operator, valueType and value per expression but is not on the read allowlist and needs one call per query (measured on 10.30.6 with Truvio.Commerce.MCP 0.6.3). The implemented local Files binding reads the same stored expressions from the .query XML.",
+      "requiredTools": [
+        "get_index_queries"
+      ]
+    },
+    {
+      "id": "files-repositories-query-constant-macros",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-query-constant-macros",
+      "path": "System/Repositories/*/*.query"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-search-indexing/references/mcp-query-tools.md"
+    },
+    {
+      "kind": "measurement",
+      "ref": "A 10.30.6 host with a headless product repository, read-only, 2026-11-13: get_index_queries count 8; get_index_query_expressions for Headless/Products.query returned groups and flat expressions (nodeKey, groupKey, field, operator, valueType Constant or Parameter, value, disabled)."
+    },
+    {
+      "kind": "measurement",
+      "ref": "A 10.30.6 host with a headless product repository and the Swift 2 release repositories, read-only, 2026-11-14: 8 .query files under System/Repositories; 7 ConstantExpression values (True, False, 0, ENU, Empty, empty text), none macro-shaped; the 10 macros are MacroExpression Lookup values."
+    }
+  ]
+}

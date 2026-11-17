@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "orders.bc-invoices.paragraph",
+  "functionId": "orders.bc-invoices",
+  "intent": {
+    "proves": "At least one paragraph runs the Customer Experience Center BC invoices module.",
+    "level": "configured",
+    "scope": "all non-deleted paragraphs with the BC invoices module"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "The module system name of BcInvoiceFrontend is not measured: no 10.30.6 database read on 2026-11-13 registers it in the Module table, and a paragraph count needs that exact name."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "release",
+      "ref": "delta-review.json#orders.bc-invoices"
+    },
+    {
+      "kind": "release",
+      "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.30.6/dynamicweb.ecommerce.10.30.6.nupkg"
+    },
+    {
+      "kind": "release",
+      "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/1"
+    }
+  ]
+}

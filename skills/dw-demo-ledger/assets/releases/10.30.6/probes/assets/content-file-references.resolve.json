@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "assets.content-file-references.resolve",
+  "functionId": "assets.content-file-references",
+  "intent": {
+    "proves": "No page in an active website has an item file or image field pointing at a missing /Files path.",
+    "level": "stored-integrity",
+    "scope": "every non-deleted page of active websites; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-validate-page-content",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-page-issues",
+      "operation": "validate_page_content",
+      "arguments": {},
+      "reason": "Requires a call per page, a filter on broken-file issues and aggregation; handler not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "SQL cannot prove that files exist."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/FrontendVerificationTools.cs"
+    }
+  ]
+}

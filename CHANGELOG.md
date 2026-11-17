@@ -9,6 +9,69 @@ All notable changes to the Dynamicweb Skills plugin are recorded here. The
 - `dw-swift-building`: remove `branding-presets.md` (colours, type and imagery come from the brand); brand, layout, content and images are set with MCP tools, not left for the owner; template touchpoints are built for the site; list or grid in the product list is decided for the shop.
 - `dw-swift-page-blocks` and `dw-swift-page-design`: replace the fixed page grammar and alternating bands with composing each page for its content and brand; text fields use only markup the editor produces (no Bootstrap classes or inline style); type scale and eyebrows follow the brand's typography; the chrome tool is a restricted migration tool.
 - `dw-content-modelling`: Swift 2 `Title`/`Subtitle` are rich-text fields whose heading is chosen in the editor.
+## [6.8.19]
+
+- `dw-integration-framework` column scripts, checked against the platform package source (10.10.8 to 10.30.6) and the documentation: a column script is a `ScriptTypeProvider` add-in, not a closed enum. The built-in set includes **Code** (since 10.11): a script value `@Code(<one C# expression>)`, compiled once and run per row, which reads the current source row as `data` from 10.21 (late 10.20 patches too). The legacy `ScriptType` enum has no member for Code or a custom provider, so in a job file Code exists only as the add-in parameter XML inside `<scriptType>`, and a reader of the legacy field shows it as `None`. `<useCodeExtension>` no longer makes a column script evaluate `@Code`. SKILL.md, the provider behaviour and job file references now agree, the job file reference shows the parameter XML and keeps the 6.8.15 MCP gap (Substring and Code alike), and the custom script type example uses the real namespace and signature.
+## [6.8.18]
+
+- `dw-demo-ledger` snapshot **10.30.6 revision 5** (#217). The digest changes, so a build locked on revision 4 needs a re-lock with `Update-DwLedgerLock.ps1`.
+- `pim.unit-rules-per-language.rendered` has an implemented, read-only binding, so a build with unit rules no longer ends UNVERIFIED on it. Stored unit rules do not prove that a channel prints the ruled unit: the new `dwapi-rendered-value` handler reads each measure the build declares in `renderedMeasures` (`productId`, `field`, `languageId`, `unit`, optional `value`, `shopId`, and `channel` `product` or `feed` with `feedId`) with one anonymous GET on `ecommerce/products/{productId}` or `feeds/GetFeedOutput` in the ruled language, and reports an offender when the channel serves another language, omits the field, or prints another unit or value. The assertion is offenders with `minimumSubjects: 1`; without declared measures the row stays UNVERIFIED with that reason and no request is made.
+- Measured read-only on a consumer build (B2B apparel equipment, 10.30.6) with 12 unit rules for a second language: the product read in that language printed the converted unit, while the JSON feed asked for the same language served the source-language product and printed inches. `ecommerce/products/{productId}` and `feeds/GetFeedOutput` join `dwapiReadRoutes`; `build.schema.json` gains `renderedMeasures`; the validator requires the `{productId}` route and a listed feed route. The 10.29.8 and 10.28.15 snapshots keep the planned binding: the projection was measured on 10.30.6 only.
+## [6.8.17]
+
+- `dw-demo-swift` dashboard seeding, the demo clock: relative history filters ("Last week", "Last 4 weeks") empty as fixed orders age, separately per persona. Before a showing, run every filter the story uses signed in as each persona it shows; history orders added or redated for the story stay marked as exported (`OrderIsExported`), so no export activity creates an ERP order or moves stock.
+## [6.8.16]
+
+- `dw-commerce-cpq`: saving the vendor model Settings screen (CPQ > model > Settings, measured on DW 10.29.8 with the 10.24.2 CPQ add-in) drops `card_page_id`, `custom_item_name` and `custom_item_number_prefix` from `ModelVersionSetting` with no error. The model reference states the limit and the safe path (copy the JSON first, write settings by script, treat the screen as read only, restore and run one configuration after a save); a trap in SKILL.md and a row in the engine characterization point to it.
+## [6.8.15]
+
+- `dw-integration-framework` job file reference: MCP `save_integration_activity_mapping` cannot set a column's script (`ScriptType`, for example `Substring`). Set it in the generated job file or the admin activity editor and read it back, rather than moving every transform into staging tables and SQL views because the build runs over MCP.
+## [6.8.14]
+
+- Platform facts that change how a requirement is classified, checked against the documentation:
+  - `dw-commerce-catalog`: price rows carry Valid from / Valid to, so a future-effective or time-limited price is standard; a governed change process (change sets, preview, approval, rollback) is a separate requirement.
+  - `dw-users-permissions`: external login providers work for backend sign-in too (a matching local user must exist); there is no provider group mapping and no SCIM provisioning.
+  - `dw-content-modelling`: files carry metadata fields (`Dynamicweb.Content.Files.Metadata`).
+## [6.8.13]
+
+- `dw-demo-hosted` publish path: moving a whole site package names `Files/System/Styles/` in the transfer manifest (file-based style definitions the target cannot regenerate; without them the site renders unstyled), verifies it with the theme gate after start, and sends media apart from the application tree in hashed batches that restart alone, compared per batch on the target.
+## [6.8.12]
+
+- `dw-demo-base` **pre-demo check** (`references/pre-demo-check.md`): before every live demo or recording, and after a restart, reinstall, restore or licence change, prove the storefront, the admin (licensed) and the MCP handshake in one run, then the mail listener and one real form submission. A storefront at 200 is not evidence: a lost licence leaves it answering while `/Admin/` and `/admin/mcp` redirect to `/admin/license`, and a reinstall can remove the local SMTP listener the host sends to. A hand-started SMTP sink does not survive a reboot.
+- `Test-DwHostReady.ps1` reports the storefront (`GET /` 200, not landing on `/admin/license`) beside the admin and MCP rows.
+## [6.8.11]
+
+- `dw-demo-base` MCP setup: `/admin/mcp` refuses a Management API key and the MCP key serves both surfaces, so a demo that holds one credential mints the MCP type (Step 6, two triage rows).
+- A `NODE_EXTRA_CA_CERTS` path that no longer exists kills every MCP server while the site and the Management API answer: `setup-checks.md` tests the path in the quick ritual, `mcp-setup.md` Step 2 names the fix and the handshake that proves it.
+## [6.8.10]
+
+- `dw-demo-ledger` snapshot **10.30.6 revision 4** (#248). The digest changes, so a build locked on revision 3 needs a re-lock with `Update-DwLedgerLock.ps1`.
+- `search.facets.not-analyzed` judges only the repositories the build ships. The binding takes `arguments.scope: build-repositories` and the build declares `repositories`, the repository folder names it ships (`build.schema.json`). A `.facets` file in any other folder under `System/Repositories` is still read; its offenders are reported in the row's new `outOfScope` (`report.schema.json`) with the repository, never counted and never dropped, and the reason names the folders not judged. A scoped binding without `repositories` is UNVERIFIED. The validator accepts `scope` only as `build-repositories`.
+- `search.index-queries.no-constant-macros` stays unscoped: a build can bind a query in a repository it does not ship, and a macro stored as a constant there breaks that build's pages.
+## [6.8.9]
+
+- `dw-demo-ledger` snapshot **10.30.6 revision 3** (#246). The digest changes, so a build locked on revision 2 needs a re-lock with `Update-DwLedgerLock.ps1`.
+- `search.facets.not-analyzed` is implemented with `files-facet-analyzed`: each facet under `System/Repositories` is joined through its query to its index, and the field's `Analyzed` flag is read from the index declaration or from the release-bound table of fields the schema extenders generate (`arguments.generated`). A field that cannot be resolved to a known flag is an offender.
+- `search.index-queries.no-constant-macros` is implemented with `files-query-constant-macros`: a `ConstantExpression` whose value has the macro shape is an offender. Files rather than allowlisting `get_index_query_expressions`: no new MCP read and no call per query.
+- `users.frontend-sign-in.persona-signs-in` is implemented with `dwapi-persona-sign-in`: each persona from `DW_PERSONA_CREDENTIALS` (runner environment only) signs in with `POST /dwapi/users/authenticate` and is then served `GET /dwapi/users/info` as that user. The two routes have their own allowlists; no password, token or response body reaches the report. Without the variable the check is UNVERIFIED.
+- The runner names a missing runner input (`Runner input: ...`) in a row's reason, as it names a refuted build input.
+## [6.8.8]
+
+- `dw-demo-ledger` snapshot **10.30.6 revision 2** (#244). The digest changes, so a build locked on revision 1 needs a re-lock with `Update-DwLedgerLock.ps1`.
+- `swift.header-footer.selected-on-website` is implemented: a local SQL read reports each active website whose `Swift-v2_Master` website item does not name an existing desktop header page and desktop footer page, with at least one active website required. It has green and red fixture controls and was measured read-only on a 10.30.6 host.
+- `search.facets.not-analyzed`, `search.index-queries.no-constant-macros` and `users.frontend-sign-in.persona-signs-in` stay planned. Each binding's reason now records what was measured on 10.30.6 and the handler it still needs. They stay UNVERIFIED.
+- A not-applicable ground can now list the checks it rules out (`checks`). The function's other locked checks are evaluated as usual, so a ruling about one check no longer rules out the rest. The runner, `ledger.schema.json`, the repository validator and `contract.md` support it, with red controls.
+- New check-scoped grounds:
+  - `orders.favorite-lists` `no-swift-storefront`: the paragraph only; the stored lists are still checked.
+  - `content.paragraphs` `headless-surface`: paragraph visibility only.
+  - `search.facets` `headless-surface`: catalogue wiring only.
+  The two headless grounds hold until a headless check set exists (#243).
+## [6.8.7]
+
+- `dw-demo-ledger` snapshot **10.30.6** (revision 1), the release delta 10.29.8 to 10.30.6. The raw scan (`Find-DwReleaseFunctions.ps1`: the three platform packages of both versions, the 10.30 changelog through 10.30.6, and the schema of one database before and after its upgrade) found 363 candidates; `delta-review.json` gives each a disposition: 63 support two added functions, 46 enhance 26 existing functions, 254 are rejected with a reason. Every 10.29.8 revision 7 function, check, ground and coverage claim is carried over unchanged; no function or check is removed.
+- Added `commerce.price-groups` (attribute-based pricing: customer price groups, customer and product discount groups) with two SQL checks and fixture red controls, and `orders.bc-invoices` (Business Central invoices in the Customer Experience Center) with a planned check, because its module system name is not measured.
+- Release reviews recorded where a 10.30 change touches what a check reads: matrix language inheritance and per-column shared values (the six matrix checks are unchanged; `matrix-fields.md` and `delta.json` limitations), the removed Searchv1 wiring (no check binds it), the widened `Area.AreaDomain`, and the index build-state corrections.
+- The carried checks were run read-only on 10.30.6 hosts. The tests (`Corrections`, `Integrity`, `Layout`) now cover the 10.30.6 snapshot too.
 
 ## [6.8.6]
 

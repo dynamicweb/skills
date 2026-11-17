@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "orders.order-numbering.series",
+  "functionId": "orders.order-numbering",
+  "intent": {
+    "proves": "The ORDER numbering series exists exactly once.",
+    "level": "supported",
+    "scope": "all number series"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomNumbers WHERE NumberType = N'ORDER'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/auto-numbering.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

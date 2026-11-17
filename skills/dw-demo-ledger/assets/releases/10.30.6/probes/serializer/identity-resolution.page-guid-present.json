@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "serializer.identity-resolution.page-guid-present",
+  "functionId": "serializer.identity-resolution",
+  "intent": {
+    "proves": "Every page carries a PageUniqueId.",
+    "level": "stored-integrity",
+    "scope": "every Page row"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-page-guid",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-page-guid",
+      "reason": "Whether page reads expose the unique id is unverified."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Page WHERE PageUniqueId IS NULL"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/concepts.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/sql-tables.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/link-resolution.md"
+    }
+  ]
+}

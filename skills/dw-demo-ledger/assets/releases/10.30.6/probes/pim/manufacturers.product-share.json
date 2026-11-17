@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.manufacturers.product-share",
+  "functionId": "pim.manufacturers",
+  "intent": {
+    "proves": "The share of active products (masters and simple products) in the default language and in scope that name a manufacturer that exists reaches the minimum, in percent.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-product-share",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-product-share",
+      "operation": "get_manufacturers",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT ISNULL(100 * COUNT(m.ManufacturerId) / NULLIF(COUNT(*), 0), 0) FROM EcomProducts p LEFT JOIN EcomManufacturers m ON m.ManufacturerId = p.ProductManufacturerId WHERE p.ProductLanguageId = N'{lang}' AND p.ProductActive = 1 AND ISNULL(p.ProductVariantId, N'') = N''{inScope}"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#manufacturers/product-share"
+    }
+  ]
+}

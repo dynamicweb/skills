@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "commerce.product-reservation.enabled",
+  "functionId": "commerce.product-reservation",
+  "intent": {
+    "proves": "Product reservation is switched on in the shopping cart settings.",
+    "level": "configured",
+    "scope": "global settings of the solution"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file",
+      "surface": "file",
+      "status": "planned",
+      "handler": "file-setting",
+      "path": "Files/GlobalSettings.config",
+      "reason": "The setting is stored in global settings; its key path is unverified for 10.29.8 and no file-setting handler is implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/stock.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/shoppingcart.html"
+    }
+  ]
+}

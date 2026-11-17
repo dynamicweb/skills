@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "content.versioning.versions-stored",
+  "functionId": "content.versioning",
+  "intent": {
+    "proves": "At least one content version is stored.",
+    "level": "applied",
+    "scope": "content version rows"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "page version list",
+      "reason": "Admin query for page versions not verified."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "VersionData exists, but the type values used for pages and paragraphs are not verified (only order types observed)."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html"
+    }
+  ]
+}

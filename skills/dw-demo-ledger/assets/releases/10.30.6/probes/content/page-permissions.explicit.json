@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "content.page-permissions.explicit",
+  "functionId": "content.page-permissions",
+  "intent": {
+    "proves": "At least one explicit page permission exists.",
+    "level": "configured",
+    "scope": "all page permission rows"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-page-permissions",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_page_permissions",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM UnifiedPermission WHERE PermissionName = N'Page'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/ContentPermissionTools.cs"
+    }
+  ]
+}

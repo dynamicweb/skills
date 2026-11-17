@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.field-units.groups-valid",
+  "functionId": "pim.field-units",
+  "intent": {
+    "proves": "Every unit group that a field uses has a base unit that is one of its own units.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global; at least one subject must be in scope"
+  },
+  "assertion": {
+    "kind": "offenders",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-groups-valid",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-groups-valid",
+      "operation": "get_field_value_conversion_groups",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(g.FieldValueConversionGroupSystemName AS nvarchar(100)) FROM EcomFieldValueConversionGroup g WHERE (g.FieldValueConversionGroupId IN (SELECT FieldValueConversionGroupId FROM EcomProductCategoryField) OR g.FieldValueConversionGroupId IN (SELECT ProductFieldValueConversionGroupId FROM EcomProductField)) AND (NOT EXISTS (SELECT 1 FROM EcomFieldValueConversion c WHERE c.FieldValueConversionParentGroupId = g.FieldValueConversionGroupId AND c.FieldValueConversionId = g.FieldValueConversionGroupBaseUnitId))",
+      "subjectsQuery": "SELECT COUNT(*) FROM EcomFieldValueConversionGroup g WHERE g.FieldValueConversionGroupId IN (SELECT FieldValueConversionGroupId FROM EcomProductCategoryField) OR g.FieldValueConversionGroupId IN (SELECT ProductFieldValueConversionGroupId FROM EcomProductField)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-units/groups-valid"
+    }
+  ]
+}

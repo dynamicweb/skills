@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.user-group-types.in-use",
+  "functionId": "users.user-group-types",
+  "intent": {
+    "proves": "At least one user or group carries a custom user-and-group type other than the system account type.",
+    "level": "applied",
+    "scope": "AccessUser rows with AccessUserUserAndGroupType set, excluding SystemAccount"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-search-users",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "search_users",
+      "arguments": {},
+      "reason": "UserModel type projection and complete paging not implemented in mcp-count."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE ISNULL(AccessUserUserAndGroupType,'') NOT IN ('','SystemAccount')",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/user-and-grouptypes.html"
+    }
+  ]
+}

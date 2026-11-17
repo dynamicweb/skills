@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.ui-permissions.limitations",
+  "functionId": "users.ui-permissions",
+  "intent": {
+    "proves": "At least one UI limitation is stored for a user group.",
+    "level": "configured",
+    "scope": "CapabilityLimitation rows"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-capabilitylimitations",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "CapabilityLimitations",
+      "arguments": {},
+      "reason": "Management API query for capability limitations not verified; no MCP read tool exists."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM CapabilityLimitation",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html"
+    }
+  ]
+}

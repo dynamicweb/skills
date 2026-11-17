@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "id": "admin.event-viewer.stored",
+  "functionId": "admin.event-viewer",
+  "intent": {
+    "proves": "Events are being stored in the event store.",
+    "level": "configured",
+    "scope": "every stored event"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-categories",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_unique_log_event_categories",
+      "arguments": {},
+      "reason": "Observed MCP counts event categories, not event rows (7 versus 271 locally). A category count is not an equivalent event count."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM GeneralLog"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/eventviewer.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/logs.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/references/tracking-insights.md"
+    }
+  ]
+}

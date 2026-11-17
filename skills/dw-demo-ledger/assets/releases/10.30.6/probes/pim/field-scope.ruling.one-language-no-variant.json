@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "pim.field-scope.ruling.one-language-no-variant",
+  "functionId": "pim.field-scope",
+  "intent": {
+    "proves": "Product rows exist in one language only and no variant row exists, which the ruling that field scope does not matter relies on.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT (SELECT CASE WHEN COUNT(DISTINCT ProductLanguageId) > 1 THEN 1 ELSE 0 END FROM EcomProducts) + (SELECT COUNT(*) FROM EcomProducts WHERE ISNULL(ProductVariantId, N'') <> N'')"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-scope/one-language-no-variant"
+    }
+  ]
+}

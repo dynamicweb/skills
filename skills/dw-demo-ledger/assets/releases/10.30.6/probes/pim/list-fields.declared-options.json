@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "pim.list-fields.declared-options",
+  "functionId": "pim.list-fields",
+  "intent": {
+    "proves": "Every choice attribute the build declares has at least two options on its stored field, and the minimum number of choice attributes is declared.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "attributes",
+    "aspect": "options",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-declared-options",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-declared-options",
+      "operation": "get_product_category_fields",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-attributes",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#list-fields/declared-options"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.addresses.additional-addresses",
+  "functionId": "users.addresses",
+  "intent": {
+    "proves": "At least one active additional address with a street line exists.",
+    "level": "applied",
+    "scope": "AccessUserAddress rows; carrier rows (AccessUserAddressDefaultAddressCustomFields = 1) excluded; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-user-addresses-by-user-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_user_addresses_by_user_id",
+      "arguments": {},
+      "reason": "The tool answers one subject id at a time; a whole-host count needs a per-subject enumeration handler that is not implemented."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUserAddress WHERE ISNULL(AccessUserAddressActive,1) = 1 AND ISNULL(AccessUserAddressDefaultAddressCustomFields,0) = 0 AND ISNULL(AccessUserAddressAddress,'') <> ''",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+    }
+  ]
+}

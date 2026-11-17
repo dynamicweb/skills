@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "content.design-styles.website-styles-set",
+  "functionId": "content.design-styles",
+  "intent": {
+    "proves": "At least one active website has a color scheme collection selected.",
+    "level": "configured",
+    "scope": "active, non-deleted websites"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-areas",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_areas",
+      "arguments": {},
+      "reason": "Needs a projection on the color scheme group field; mcp-count counts rows only."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Area WHERE AreaActive = 1 AND AreaDeleted = 0 AND ISNULL(AreaColorSchemeGroupId, N'') <> N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/index.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "delivery.content-api.pageview-served",
+  "functionId": "delivery.content-api",
+  "intent": {
+    "proves": "GET /dwapi/frontend/pageViews/{id} returns a page view with its paragraphs for a published page.",
+    "level": "behavioural",
+    "scope": "one published page per website named by the build"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-count",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-count",
+      "operation": "GET /dwapi/frontend/pageViews/{id}",
+      "reason": "No dwapi handler is implemented; a scalar HTTP binding needs a measured response projection (contract.md), endpoint presence alone does not qualify."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/content.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-headless-delivery/references/endpoint-reference.md"
+    }
+  ]
+}

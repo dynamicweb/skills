@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "pim.field-types.type-spread",
+  "functionId": "pim.field-types",
+  "intent": {
+    "proves": "Custom product fields (category fields and global custom fields together) use at least the selected profile's number of distinct field types; the text-like types count once.",
+    "level": "applied",
+    "scope": "All category fields except the reference category, and every global product field that is not standard."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-type-spread",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-field-types",
+      "operation": "get_product_category_fields",
+      "arguments": {},
+      "reason": "Live parity review found category-field projection differs from complete stored-field scope or omits presentation. Do not claim equivalence. The category field tool also omits global custom fields."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT CASE WHEN x.FieldType IN (1, 10, 11, 12, 13) THEN 1 ELSE x.FieldType END) FROM (SELECT f.FieldType FROM EcomProductCategoryField f WHERE f.FieldCategoryId <> N'reference_category' UNION ALL SELECT g.ProductFieldTypeId FROM EcomProductField g WHERE g.ProductFieldIsStandard = 0) x"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-types/type-spread"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}

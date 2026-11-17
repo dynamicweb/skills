@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "commerce.coupon-codes.field-triggered",
+  "functionId": "commerce.coupon-codes",
+  "intent": {
+    "proves": "At least one active discount is triggered by an order field value.",
+    "level": "applied",
+    "scope": "active discounts"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomDiscount WHERE DiscountActive = 1 AND ISNULL(DiscountOrderFieldName, N'') <> N'' AND ISNULL(DiscountOrderFieldValue, N'') <> N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/coupon-discounts.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html"
+    }
+  ]
+}

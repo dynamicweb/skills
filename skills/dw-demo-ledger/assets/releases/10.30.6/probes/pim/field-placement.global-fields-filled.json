@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "pim.field-placement.global-fields-filled",
+  "functionId": "pim.field-placement",
+  "intent": {
+    "proves": "Every custom global product field (EcomProductField, not standard) carries a value on at least 50% of the products in scope (master row, default language, productScope exclusions applied). Empty text, NULL and 0 are no value. Checkboxes and computed fields are counted and not judged: false is stored for no and for never set, and a computed value is not stored. A field declared global in attributes[] is measured like any other.",
+    "level": "applied",
+    "scope": "Master rows of EcomProducts in the build's defaultLanguage with productScope exclusions applied; every custom global product field, read once per run."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-missing-values",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-field-fill",
+      "operation": "get_products_missing_field_values",
+      "reason": "Its scope (language, master rows, productScope exclusions) and its reading of 0, false and computed values are not measured against the SQL read, so it is not an equivalent observation yet."
+    },
+    {
+      "id": "admin-field-fill",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-field-fill",
+      "reason": "No discovered Management API query returns a complete per-field value count over the products in scope."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-field-placement",
+      "localOnly": true,
+      "arguments": {
+        "minSharePct": 50
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-placement/global-fields-filled"
+    },
+    {
+      "kind": "source",
+      "ref": "registry-commit:02354513e0f8ea86227535d137ffb999096504b5"
+    }
+  ]
+}

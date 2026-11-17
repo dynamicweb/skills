@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "assets.cdn.rewritten",
+  "functionId": "assets.cdn",
+  "intent": {
+    "proves": "Rendered pages reference assets on the CDN host.",
+    "level": "behavioural",
+    "scope": "first published page of an active website"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-fetch-frontend-page-html",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-html-match",
+      "operation": "fetch_frontend_page_html",
+      "arguments": {},
+      "reason": "Requires an HTML attribute match handler; not implemented."
+    },
+    {
+      "id": "dwapi-http",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "http-observe",
+      "operation": "GET page and inspect src",
+      "reason": "No reserved HTTP handler."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/cdn.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/FrontendVerificationTools.cs"
+    }
+  ]
+}

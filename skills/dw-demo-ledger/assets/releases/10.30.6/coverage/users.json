@@ -1,0 +1,756 @@
+{
+  "schema": 1,
+  "area": "users",
+  "retrieved": "2026-11-12",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/extranet.html",
+      "title": "Extranet",
+      "sectionHash": "4eae1737d978db4b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/index.html",
+      "title": "Users",
+      "sectionHash": "575dacd8f392fd51"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-addresses.html",
+      "title": "Manage addresses",
+      "sectionHash": "4879dda2b75e7ab1"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-changepassword.html",
+      "title": "Change password",
+      "sectionHash": "e391adfa46c1562f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-create.html",
+      "title": "Create user",
+      "sectionHash": "476197d660907ab8"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-edit.html",
+      "title": "Edit user",
+      "sectionHash": "33202db7dedbb079"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-login.html",
+      "title": "Authentication",
+      "sectionHash": "de1e3aaf7e4b74bc"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-password.html",
+      "title": "Forgot password",
+      "sectionHash": "6c3ba4e85b065754"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-view.html",
+      "title": "View user",
+      "sectionHash": "8377baba1c38959e"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/advancedconfiguration.html",
+      "title": "Advanced",
+      "sectionHash": "20b9564162d352cb"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/customaddressfields.html",
+      "title": "Custom address fields",
+      "sectionHash": "49d22d917eb06adf"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/customuserfields.html",
+      "title": "Custom user fields",
+      "sectionHash": "421b728b2cdd880b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/external-login-providers.html",
+      "title": "External authentication",
+      "sectionHash": "d06278e858a5a01a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/frontendlogin.html",
+      "title": "Frontend login",
+      "sectionHash": "98e679036b07067b"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/index.html",
+      "title": "Users",
+      "sectionHash": "c36c7bd7e96f43d4"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/passwordsecurity.html",
+      "title": "Password security",
+      "sectionHash": "2b872befcb2def06"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/presets.html",
+      "title": "Presets",
+      "sectionHash": "6431f5bb930534ad"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/user-and-grouptypes.html",
+      "title": "User and group types",
+      "sectionHash": "56e5aedbb5349d5f"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-login-log.html",
+      "title": "Clean up login log",
+      "sectionHash": "041eb24eebc8fe36"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html",
+      "title": "Accounts",
+      "sectionHash": "7ba67701799a578d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/all-users.html",
+      "title": "All Users",
+      "sectionHash": "d106fdbada1f1d03"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/dynamic-segments.html",
+      "title": "Queries",
+      "sectionHash": "a64aa2e4105e7a7c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/geolocation.html",
+      "title": "Geolocation",
+      "sectionHash": "5e58a130a65edb4c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/impersonation.html",
+      "title": "Impersonation",
+      "sectionHash": "6a86ddb3f159e8ce"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "title": "Users",
+      "sectionHash": "1229888146acef69"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/login-activity.html",
+      "title": "Login activity",
+      "sectionHash": "705aa7a9e0f5c992"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "title": "Permissions",
+      "sectionHash": "69c50f8f88d6af46"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/queries.html",
+      "title": "Queries",
+      "sectionHash": "2db5cb81f33b9de7"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/segment-search.html",
+      "title": "Segment search",
+      "sectionHash": "6ee1e8af0e6e9091"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "title": "User",
+      "sectionHash": "8bbf9dbf5d981ba3"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "title": "User groups",
+      "sectionHash": "28aa8b167d5baaed"
+    },
+    {
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "title": "10.29 release candidate scan, reviewed after raw preservation",
+      "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Users are registered accounts with access to the frontend, the backend or both.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "functionId": "users.user-accounts"
+    },
+    {
+      "claim": "Users can be created from the frontend by Extranet and Create user apps.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "functionId": "users.self-registration"
+    },
+    {
+      "claim": "The Shopping Cart app can create users during checkout.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "duplicateOf": "orders.shopping-cart-app"
+    },
+    {
+      "claim": "The Forms for Editors app can create users when a form is submitted.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "duplicateOf": "content.forms"
+    },
+    {
+      "claim": "Users can be created under a user group or via integration.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "functionId": "users.user-groups"
+    },
+    {
+      "claim": "Permissions control access to backend areas and frontend content; frontend users have Read by default.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Frontend content can be restricted to logged-in users by setting Anonymous users (frontend) to None.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "duplicateOf": "content.page-permissions"
+    },
+    {
+      "claim": "A user has one default address and can have additional addresses created from the frontend, backend or integration.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "functionId": "users.addresses"
+    },
+    {
+      "claim": "Custom address fields can extend addresses.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "functionId": "users.custom-fields"
+    },
+    {
+      "claim": "Backend free-text user search runs over a fixed column set.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "excluded": {
+        "reason": "Admin UI search box; no persisted state for a build to apply or prove."
+      }
+    },
+    {
+      "claim": "Any user list can be exported to Excel with column-header presets from export templates.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/index.html",
+      "excluded": {
+        "reason": "Admin UI action with no persisted outcome on the solution; not a demo build function."
+      }
+    },
+    {
+      "claim": "Groups are nested and organise users, set permissions and share settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "functionId": "users.user-groups"
+    },
+    {
+      "claim": "Users can add or remove themselves from selected groups through the Extranet app.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "functionId": "users.account-self-service"
+    },
+    {
+      "claim": "A group representing a customer should be an account.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "functionId": "users.accounts"
+    },
+    {
+      "claim": "A group can carry a default permission for its members.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Group customer number and email let the Create user app place new users in the matching group.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "functionId": "users.self-registration"
+    },
+    {
+      "claim": "A segment search query on a group makes membership dynamic.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "functionId": "users.dynamic-groups"
+    },
+    {
+      "claim": "Groups with a custom group type have an Addresses tab.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "functionId": "users.user-group-types"
+    },
+    {
+      "claim": "Group custom field values are stored on the group and not copied to members.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "functionId": "users.custom-fields"
+    },
+    {
+      "claim": "Allow backend login on a group applies to members and subgroups.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Redirect after login, item type and default user item type can be set on a group.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "excluded": {
+        "reason": "Per-group presentation settings with no independent demo outcome; covered by the content and Swift areas where used."
+      }
+    },
+    {
+      "claim": "Disable live prices and live discounts on a group.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "duplicateOf": "integration.live-prices"
+    },
+    {
+      "claim": "Group latitude, longitude, custom geolocation and map icon.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "functionId": "users.geolocation"
+    },
+    {
+      "claim": "Users can be imported into a group, for example with the User provider.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html",
+      "duplicateOf": "integration.provider-user"
+    },
+    {
+      "claim": "The user overview shows groups, addresses, impersonation, latest logins and profiles.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.user-accounts"
+    },
+    {
+      "claim": "A user has username, password, type, active state and an authentication method override.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.user-accounts"
+    },
+    {
+      "claim": "The per-user authentication method overrides the solution login type.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.login-security"
+    },
+    {
+      "claim": "Allow backend login on a user, read-only when inherited from a group.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Custom user fields appear on a Fields tab.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.custom-fields"
+    },
+    {
+      "claim": "Additional addresses are managed on the Addresses tab with active, kind and default.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.addresses"
+    },
+    {
+      "claim": "Advanced tab: role, item type, redirect, external ID, active from and to.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.user-accounts"
+    },
+    {
+      "claim": "Advanced tab: geolocation settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.geolocation"
+    },
+    {
+      "claim": "Advanced tab: disable live prices and discounts.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "duplicateOf": "integration.live-prices"
+    },
+    {
+      "claim": "Commerce tab: customer number, price and discount group, default shop, currency and stock location.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "duplicateOf": "users.shared-customer-number"
+    },
+    {
+      "claim": "Send user details email with a fixed tag set.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "excluded": {
+        "reason": "One-off admin action; no persisted outcome to prove."
+      }
+    },
+    {
+      "claim": "Send a recovery mail and set a password from the action menu.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "excluded": {
+        "reason": "One-off admin action; no persisted outcome to prove."
+      }
+    },
+    {
+      "claim": "Review changes made to the user.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "duplicateOf": "admin.audit-trail"
+    },
+    {
+      "claim": "Addresses are shared between users with the same customer number through app settings.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.shared-customer-number"
+    },
+    {
+      "claim": "Shopping cart Retrieve delivery addresses can offer addresses of users with the same customer number.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.shared-customer-number"
+    },
+    {
+      "claim": "Headless storefronts share addresses through the includeAddressesFromUsersWithSameCustomerNumber parameter.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "duplicateOf": "delivery.users-api"
+    },
+    {
+      "claim": "Sign-in depends on active state, validity dates and authentication method; sign-ins are logged.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.frontend-sign-in"
+    },
+    {
+      "claim": "Login users and customer profiles let one person buy for several customers.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.customer-profiles"
+    },
+    {
+      "claim": "The Authentication app can show a profile selector after sign-in.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.customer-profiles"
+    },
+    {
+      "claim": "System user types Administrator, Admin and Editor with default access.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Custom user and group types can be created.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html",
+      "functionId": "users.user-group-types"
+    },
+    {
+      "claim": "Accounts represent a customer company and need the Enable user account functionality feature.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html",
+      "functionId": "users.accounts"
+    },
+    {
+      "claim": "Users are added to an account by creation, by matching customer number, by the User provider or by a segment search.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html",
+      "functionId": "users.accounts"
+    },
+    {
+      "claim": "The frontend relies on the customer number, not on account membership.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html",
+      "functionId": "users.accounts"
+    },
+    {
+      "claim": "Accounts own addresses that buyers can use but not change.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html",
+      "functionId": "users.accounts"
+    },
+    {
+      "claim": "Account addresses reach users only through the shared address source.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html",
+      "functionId": "users.shared-customer-number"
+    },
+    {
+      "claim": "Account Advanced tab mirrors group settings (tree section, redirect, backend login, item types, external ID, geolocation, live prices).",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html",
+      "functionId": "users.user-groups"
+    },
+    {
+      "claim": "Imported addresses link to their owner through AccessUserAddressUserID; link by external ID.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html",
+      "duplicateOf": "integration.provider-user"
+    },
+    {
+      "claim": "Create user app can auto-assign a customer number and add the user to the matching account.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html",
+      "functionId": "users.self-registration"
+    },
+    {
+      "claim": "Login activity lists backend and frontend sign-in events with method, result, reason and IP.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/login-activity.html",
+      "functionId": "users.login-activity"
+    },
+    {
+      "claim": "Login entries can open, edit or deactivate the user.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/login-activity.html",
+      "functionId": "users.login-activity"
+    },
+    {
+      "claim": "Latest logins widget and logins-per-week graph on the user overview.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/login-activity.html",
+      "functionId": "users.login-activity"
+    },
+    {
+      "claim": "Entries are deleted after retention by the Clean up login log task.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/login-activity.html",
+      "functionId": "users.login-activity"
+    },
+    {
+      "claim": "Users or groups can act on behalf of other users or groups for assisted selling.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/impersonation.html",
+      "duplicateOf": "swift.impersonation"
+    },
+    {
+      "claim": "Impersonation relations are set on the user manually or by integration, in both directions.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/impersonation.html",
+      "duplicateOf": "swift.impersonation"
+    },
+    {
+      "claim": "Selecting a group makes all its users impersonators or impersonable.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/impersonation.html",
+      "duplicateOf": "swift.impersonation"
+    },
+    {
+      "claim": "Permission levels Not set, None, Read, Edit, Create, Delete, All form a hierarchy; highest wins.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Older solutions may still use the previous model where None was an explicit deny.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "excluded": {
+        "reason": "Legacy permission model; DW10 demos are built on the current model only."
+      }
+    },
+    {
+      "claim": "User roles supply defaults: anonymous and authenticated frontend Read, backend Not set, administrators All.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Denying Anonymous users (frontend) on a branch creates a members area.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "duplicateOf": "content.page-permissions"
+    },
+    {
+      "claim": "Explicit permissions are set per item from the Permissions workspace, including turning an inherited row explicit.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "A query can be selected as a permission principal.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "UI permissions (10.21+) hide areas and navigation sections without changing authorisation.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "users.ui-permissions"
+    },
+    {
+      "claim": "Product permissions are inherited from the product group or the Products area.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Product attribute permissions limit attributes to None, Read or Edit.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "duplicateOf": "pim.field-permissions"
+    },
+    {
+      "claim": "Content, PIM and commerce manager role examples.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Permissions on shops, warehouses, groups and ecommerce languages.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Shop and channel permissions limit order management lists and filters.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html",
+      "functionId": "users.backend-roles"
+    },
+    {
+      "claim": "Coordinates are calculated from the address through Google Maps on request.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/geolocation.html",
+      "functionId": "users.geolocation"
+    },
+    {
+      "claim": "Custom geolocation blocks automatic updates.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/geolocation.html",
+      "functionId": "users.geolocation"
+    },
+    {
+      "claim": "Geolocation is exposed through item fields on users and groups.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/geolocation.html",
+      "functionId": "users.geolocation"
+    },
+    {
+      "claim": "User queries can retrieve sets such as all active users and make group membership dynamic.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/dynamic-segments.html",
+      "functionId": "users.dynamic-groups"
+    },
+    {
+      "claim": "The All Users system query lists every user.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/all-users.html",
+      "excluded": {
+        "reason": "Built-in system query present on every solution; no build choice to prove."
+      }
+    },
+    {
+      "claim": "Segment searches filter users by user, audit, behaviour, email marketing and custom fields.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/segment-search.html",
+      "functionId": "users.dynamic-groups"
+    },
+    {
+      "claim": "Segment search membership is applied only after the Calculate user segment search results task runs.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/segment-search.html",
+      "functionId": "users.dynamic-groups"
+    },
+    {
+      "claim": "User-area queries are index queries on a user index.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/queries.html",
+      "functionId": "search.user-index"
+    },
+    {
+      "claim": "Custom user fields with typed values and options.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/customuserfields.html",
+      "functionId": "users.custom-fields"
+    },
+    {
+      "claim": "Custom address fields with typed values and options.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/customaddressfields.html",
+      "functionId": "users.custom-fields"
+    },
+    {
+      "claim": "Frontend login type: normal, TOTP, magic link or MFA, with code validity.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/frontendlogin.html",
+      "functionId": "users.login-security"
+    },
+    {
+      "claim": "Extranet login limitations: attempts per period and blocking period.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/frontendlogin.html",
+      "functionId": "users.login-security"
+    },
+    {
+      "claim": "Frontend recovery token timeout and login cookie lifetime.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/frontendlogin.html",
+      "functionId": "users.login-security"
+    },
+    {
+      "claim": "Password expiration, reuse, complexity and minimum length for backend and frontend.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/passwordsecurity.html",
+      "functionId": "users.login-security"
+    },
+    {
+      "claim": "Presets screen has no function and is pending deletion.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/presets.html",
+      "excluded": {
+        "reason": "Documented as non-functional in the current version."
+      }
+    },
+    {
+      "claim": "Backend login type: normal, TOTP, magic link or MFA.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/advancedconfiguration.html",
+      "functionId": "users.login-security"
+    },
+    {
+      "claim": "Default send-user-details subject, sender and template.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/advancedconfiguration.html",
+      "excluded": {
+        "reason": "Defaults for a one-off admin action; no demo outcome."
+      }
+    },
+    {
+      "claim": "Auto build a user index when users update.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/advancedconfiguration.html",
+      "functionId": "search.user-index"
+    },
+    {
+      "claim": "Custom user and group types with parent restrictions, stored under Files/System/UserTypes.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/user-and-grouptypes.html",
+      "functionId": "users.user-group-types"
+    },
+    {
+      "claim": "External login providers for Azure AD B2C, GitHub, Google, Microsoft Entra, Entra External ID and Okta, for backend, frontend or both.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/external-login-providers.html",
+      "functionId": "users.external-login"
+    },
+    {
+      "claim": "Handle only external verification disables creating users on first external sign-in; new users can be placed in groups.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/external-login-providers.html",
+      "functionId": "users.external-login"
+    },
+    {
+      "claim": "Backend users must exist and are matched by email; frontend providers must be added to the login template.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/external-login-providers.html",
+      "functionId": "users.external-login"
+    },
+    {
+      "claim": "Users area settings overview.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/index.html",
+      "excluded": {
+        "reason": "Index page; each setting is mapped on its own page."
+      }
+    },
+    {
+      "claim": "Users apps reimplement the Extranet tasks with ViewModels.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/index.html",
+      "functionId": "users.frontend-sign-in"
+    },
+    {
+      "claim": "Authentication app lets users log in.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-login.html",
+      "functionId": "users.frontend-sign-in"
+    },
+    {
+      "claim": "Change password app for signed-in users.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-changepassword.html",
+      "functionId": "users.account-self-service"
+    },
+    {
+      "claim": "Create user app with email activation.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-create.html",
+      "functionId": "users.self-registration"
+    },
+    {
+      "claim": "Edit user app updates or deletes the own account.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-edit.html",
+      "functionId": "users.account-self-service"
+    },
+    {
+      "claim": "Forgot password app sends a recovery link.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-password.html",
+      "functionId": "users.account-self-service"
+    },
+    {
+      "claim": "Manage addresses app lists, edits and creates addresses, optionally of users with the same customer number.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-addresses.html",
+      "functionId": "users.account-self-service"
+    },
+    {
+      "claim": "View user app lists users by group, customer number or impersonation, or shows one user.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/users/users-view.html",
+      "duplicateOf": "swift.impersonation"
+    },
+    {
+      "claim": "Extranet app creates profiles with approval and notification emails.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/extranet.html",
+      "functionId": "users.self-registration"
+    },
+    {
+      "claim": "Extranet app handles log in, password change and recovery, redirect after login.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/extranet.html",
+      "functionId": "users.frontend-sign-in"
+    },
+    {
+      "claim": "Extranet app views and edits profiles and manages addresses.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/extranet.html",
+      "functionId": "users.account-self-service"
+    },
+    {
+      "claim": "Extranet app publishes lists of users or groups.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/extranet.html",
+      "excluded": {
+        "reason": "Directory listing is a presentation choice owned by the Swift building area; no independent acceptance."
+      }
+    },
+    {
+      "claim": "Clean up login log task deletes entries older than the retention days (default 365).",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-login-log.html",
+      "functionId": "users.login-activity"
+    },
+    {
+      "claim": "Released addition: users.backend-self-service. Evidence and measurement limits are in the 10.29.8 snapshot's delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "users.backend-self-service"
+    },
+    {
+      "claim": "Released addition: users.login-activity. Evidence and measurement limits are in the 10.29.8 snapshot's delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "users.login-activity"
+    }
+  ],
+  "gaps": [
+    "Accounts feature flag key (Feature Management > User Accounts > Enable user account functionality) is not verified, so it is not declared in requires.",
+    "Login security settings (login type, password policy, login limitations) live in the global settings file; key names and a settings-file handler are missing, so both checks are planned only.",
+    "Shopping cart app setting Retrieve delivery addresses: settings key not observed, so the shared-address check reads only the Manage addresses app.",
+    "Clean up login log add-in type name not verified; its check has no SQL binding.",
+    "The 'SystemAccount' group type and the ListUserProfiles / Source setting values were observed on a 10.29.x baseline database; no public DW source confirms them.",
+    "Swift customer-center pages for account administrators managing colleague users are not covered by the manual pages read; owned by the Swift building area if added.",
+    "The All Users system query, Export to Excel and Send user details are excluded as admin UI actions without a demo outcome.",
+    "Checks offered to the owners of duplicated functions, not authored here: the group gate pair (AuthenticatedFrontend None plus a group Read on the same entity) and a per-persona refusal proof for content.page-permissions; the storefront switch proof for commerce.sales-on-behalf.",
+    {
+      "claim": "users.backend-self-service",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    }
+  ]
+}

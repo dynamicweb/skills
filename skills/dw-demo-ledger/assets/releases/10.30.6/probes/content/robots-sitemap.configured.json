@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "content.robots-sitemap.configured",
+  "functionId": "content.robots-sitemap",
+  "intent": {
+    "proves": "At least one active website has robots.txt content or includes the sitemap in robots.txt.",
+    "level": "configured",
+    "scope": "active, non-deleted websites"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-areas",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_areas",
+      "arguments": {},
+      "reason": "Needs a projection on robots settings; mcp-count counts rows only."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Area WHERE AreaActive = 1 AND AreaDeleted = 0 AND (AreaRobotsTxtIncludeSitemap = 1 OR LEN(ISNULL(CAST(AreaRobotsTxt AS nvarchar(max)), N'')) > 0)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "id": "commerce.stock-matrix.locations-resolve",
+  "functionId": "commerce.stock-matrix",
+  "intent": {
+    "proves": "Every stock unit entry with a location points at an existing stock location.",
+    "level": "stored-integrity",
+    "scope": "all EcomStockUnit rows with a location; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(s.Id AS nvarchar(50)) + N' -> ' + CAST(s.StockUnitStockLocationId AS nvarchar(50)) FROM EcomStockUnit s WHERE ISNULL(s.StockUnitStockLocationId, 0) <> 0 AND NOT EXISTS (SELECT 1 FROM EcomStockLocation l WHERE l.StockLocationId = s.StockUnitStockLocationId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/stock.html"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "commerce.loyalty-spend.spend-route",
+  "functionId": "commerce.loyalty-spend",
+  "intent": {
+    "proves": "At least one active product is priced in points or one active discount converts points to money.",
+    "level": "applied",
+    "scope": "active products and classic discounts"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT (SELECT COUNT(*) FROM EcomProducts WHERE ProductActive = 1 AND ProductPoints > 0) + (SELECT COUNT(*) FROM EcomDiscount WHERE DiscountActive = 1 AND DiscountLoyaltyPointsRate > 0)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/loyaltypoints.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/loyalty-discounts.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center-loyaltypoints.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "id": "pim.integration.activities",
+  "functionId": "pim.integration",
+  "intent": {
+    "proves": "At least one Data Integration activity file (*.xml) is stored under Files/Integration/jobs or one folder below it.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-files",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-files-count",
+      "operation": "list_files",
+      "arguments": {
+        "path": "/Files/Files/Integration/jobs",
+        "filter": "*.xml",
+        "includeSubfolders": true
+      }
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "Files\\Integration\\jobs",
+        "filter": "*.xml",
+        "includeSubfolders": true
+      }
+    },
+    {
+      "id": "sql-not-equivalent",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "files-count",
+      "localOnly": true,
+      "reason": "SQL cannot prove physical files; the local file binding preserves the original assertion."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#integration/activities"
+    }
+  ]
+}

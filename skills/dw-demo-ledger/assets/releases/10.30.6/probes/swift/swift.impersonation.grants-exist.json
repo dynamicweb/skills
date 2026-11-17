@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "swift.impersonation.grants-exist",
+  "functionId": "swift.impersonation",
+  "intent": {
+    "proves": "At least one impersonation grant (secondary user relation) exists.",
+    "level": "configured",
+    "scope": "all secondary user relations"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-impersonatable-users",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_impersonatable_users",
+      "arguments": {},
+      "reason": "Requires an impersonator id input; a whole-solution count needs enumeration over users."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUserSecondaryRelation",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/swift-search.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-data-access/scripts/Test-DwImpersonationGrant.ps1"
+    }
+  ]
+}

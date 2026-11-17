@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "id": "pim.unit-rules-per-language.rendered",
+  "functionId": "pim.unit-rules-per-language",
+  "intent": {
+    "proves": "A ruled measure reads in the rule's unit through a feed or the product API in the ruled language.",
+    "level": "behavioural",
+    "scope": "one declared ruled measure per ruled language"
+  },
+  "assertion": {
+    "kind": "offenders",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-rendered",
+      "surface": "dwapi",
+      "status": "implemented",
+      "handler": "dwapi-rendered-value",
+      "operation": "ecommerce/products/{productId}",
+      "arguments": {
+        "feedRoute": "feeds/GetFeedOutput"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/217"
+    }
+  ]
+}

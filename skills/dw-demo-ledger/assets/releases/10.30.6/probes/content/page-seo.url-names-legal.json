@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "content.page-seo.url-names-legal",
+  "functionId": "content.page-seo",
+  "intent": {
+    "proves": "No page URL name contains a character the documentation lists as illegal.",
+    "level": "stored-integrity",
+    "scope": "non-deleted pages with a Use in URL value; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-pages-by-area-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-offenders",
+      "operation": "get_pages_by_area_id",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 CAST(PageId AS nvarchar(20)) + N' ' + PageUrlName FROM Page WHERE PageDeleted = 0 AND ISNULL(PageUrlName, N'') <> N'' AND (PageUrlName LIKE N'%[+?#%:|<>*]%' OR CHARINDEX(NCHAR(59), PageUrlName) > 0 OR PageUrlName LIKE N'%  %')"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html"
+    }
+  ]
+}

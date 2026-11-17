@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "distribution.artifact-verification.bacpac-sha256",
+  "functionId": "distribution.artifact-verification",
+  "intent": {
+    "proves": "A restored database file matches the sha256 registered for it.",
+    "level": "stored-integrity",
+    "scope": "the bacpac file used for the build against layers/INDEX.json bacpacs"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-sha256-match",
+      "surface": "file",
+      "status": "planned",
+      "handler": "sha256-match",
+      "reason": "Runs on the downloaded artifact, not the host; no reserved handler."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:CONTRIBUTING.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/bacpacs.schema.json"
+    }
+  ]
+}

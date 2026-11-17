@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "content.versioning.workflow-set",
+  "functionId": "content.versioning",
+  "intent": {
+    "proves": "At least one active website uses drafts or versions.",
+    "level": "configured",
+    "scope": "active websites"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-areas",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_areas",
+      "arguments": {},
+      "reason": "Field carrying the website workflow (draft/version) setting is not verified in the get_areas response."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Area column holding the drafts/versions setting is not verified on 10.29.8."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html"
+    }
+  ]
+}

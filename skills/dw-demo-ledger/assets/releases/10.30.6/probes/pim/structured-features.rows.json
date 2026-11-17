@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "pim.structured-features.rows",
+  "functionId": "pim.structured-features",
+  "intent": {
+    "proves": "Feature rows exist per product and language.",
+    "level": "applied",
+    "scope": "products whose source shows feature blocks"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Carrier not established; see the function description. A matrix-based variant would reuse the pim.matrix-fields cell contract once declared."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    }
+  ]
+}

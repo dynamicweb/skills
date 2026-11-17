@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "pim.relation-attributes.values",
+  "functionId": "pim.relation-attributes",
+  "intent": {
+    "proves": "Relation rows carry at least two typed values per related pair.",
+    "level": "applied",
+    "scope": "declared related pairs"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Measured 10.29.8 schema: EcomProductsRelated has no value column. A carrier (for example a matrix field with one row per related product) is not established; no binding may claim it."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    },
+    {
+      "kind": "source",
+      "ref": "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomProductsRelated"
+    }
+  ]
+}

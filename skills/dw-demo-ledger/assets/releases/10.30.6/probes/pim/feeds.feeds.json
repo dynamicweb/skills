@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.feeds.feeds",
+  "functionId": "pim.feeds",
+  "intent": {
+    "proves": "At least one feed (not a folder) has a provider.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-feeds",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-feeds",
+      "operation": "get_feeds",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomFeed WHERE ISNULL(FeedIsFolder, 0) = 0 AND ISNULL(FeedProvider, N'') <> N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#feeds/feeds"
+    }
+  ]
+}

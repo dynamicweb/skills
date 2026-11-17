@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "serializer.identity-resolution.page-guid-unique",
+  "functionId": "serializer.identity-resolution",
+  "intent": {
+    "proves": "No PageUniqueId is shared by two pages.",
+    "level": "stored-integrity",
+    "scope": "every Page row"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT PageUniqueId FROM Page WHERE PageUniqueId IS NOT NULL GROUP BY PageUniqueId HAVING COUNT(*) > 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/concepts.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/sql-tables.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/link-resolution.md"
+    }
+  ]
+}

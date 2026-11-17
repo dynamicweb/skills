@@ -2,7 +2,7 @@
 .SYNOPSIS
 READ-ONLY. Evaluate a locked function ledger; writes only the requested report.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/contract.md. MCP-first equivalent reads, optional local SQL, no missing-probe passes. Connection credentials come from parameters or DW_API_TOKEN/DW_MCP_TOKEN and are never persisted. A diagnostic version mismatch can never produce aggregate PASS. A run that stops early still writes a report whose result is ERROR and whose errors name the cause.
+PowerShell 7. Owning reference: ../references/contract.md. MCP-first equivalent reads, optional local SQL, no missing-probe passes. Connection credentials come from parameters or DW_API_TOKEN/DW_MCP_TOKEN and are never persisted. Persona credentials for a sign-in check come only from DW_PERSONA_CREDENTIALS and are never persisted. A diagnostic version mismatch can never produce aggregate PASS. A run that stops early still writes a report whose result is ERROR and whose errors name the cause.
 .PARAMETER Manifest
 Selected snapshot manifest path.
 .PARAMETER BuildFile
@@ -44,7 +44,7 @@ param(
     [switch]$DiagnosticVersionMismatch,[switch]$AllowSelfSignedCertificate
 )
 $ErrorActionPreference='Stop'
-foreach($file in @('Ledger.Core.ps1','Ledger.Observations.ps1','Ledger.Sql.ps1','Cpq.Json.ps1','Cpq.Read.ps1','Cpq.Observations.ps1','Pim.Fields.ps1','Pim.Queries.ps1','Pim.Matrix.ps1','Pim.Layout.ps1','Ledger.Transport.ps1','Ledger.Facts.ps1','Ledger.Execute.ps1','Ledger.Run.ps1')){. (Join-Path $PSScriptRoot $file)}
+foreach($file in @('Ledger.Core.ps1','Ledger.Observations.ps1','Ledger.Repositories.ps1','Ledger.Sql.ps1','Cpq.Json.ps1','Cpq.Read.ps1','Cpq.Observations.ps1','Pim.Fields.ps1','Pim.Queries.ps1','Pim.Matrix.ps1','Pim.Layout.ps1','Ledger.Transport.ps1','Ledger.Facts.ps1','Ledger.Execute.ps1','Ledger.Run.ps1')){. (Join-Path $PSScriptRoot $file)}
 $script:LedgerMcpCache=@{};$script:LedgerStoredFields=$null;$script:LedgerPimLayout=@{};$script:LedgerTarget=$null
 $assets=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
 # Everything the run loads: the skill itself and the shared transport it imports.

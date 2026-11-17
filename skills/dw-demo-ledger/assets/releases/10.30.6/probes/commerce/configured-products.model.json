@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "commerce.configured-products.model",
+  "functionId": "commerce.configured-products",
+  "intent": {
+    "proves": "A configurable product has a model with at least one option rule.",
+    "level": "configured",
+    "scope": "declared configurable products"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Configurator storage belongs to the installed CPQ app, not the platform schema; no read is reviewed."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}

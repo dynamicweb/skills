@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.shared-customer-number.shared-buyers",
+  "functionId": "users.shared-customer-number",
+  "intent": {
+    "proves": "At least one customer number is carried by two or more active default-type users.",
+    "level": "applied",
+    "scope": "active AccessUser rows of type Default (5) with a non-empty customer number; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-users-by-customer-numbers",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_users_by_customer_numbers",
+      "arguments": {},
+      "reason": "Lookup by known customer numbers only; a census of shared numbers needs an enumeration handler."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM (SELECT AccessUserCustomerNumber FROM AccessUser WHERE AccessUserType = 5 AND AccessUserActive = 1 AND ISNULL(AccessUserCustomerNumber,'') <> '' GROUP BY AccessUserCustomerNumber HAVING COUNT(*) >= 2) x",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+    }
+  ]
+}

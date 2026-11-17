@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "id": "orders.vat-groups.assigned",
+  "functionId": "orders.vat-groups",
+  "intent": {
+    "proves": "At least one product is assigned a VAT group that has a country rate.",
+    "level": "applied",
+    "scope": "all product VAT group assignments"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_product_vat_groups",
+      "reason": "Reads per product; a whole-host enumeration handler is not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomProductVatGroups p WHERE EXISTS (SELECT 1 FROM EcomVatCountryRelations r WHERE r.VatCountryRelGroupId = p.ProductVatGroupVatGroupID)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/vat-groups.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/vatgroups.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/vat-taxes.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

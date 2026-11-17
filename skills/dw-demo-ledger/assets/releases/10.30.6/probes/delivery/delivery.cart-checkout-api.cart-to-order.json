@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.cart-checkout-api.cart-to-order",
+  "functionId": "delivery.cart-checkout-api",
+  "intent": {
+    "proves": "An anonymous cart is created, a line added, shipping and payment set, and createOrder returns an order.",
+    "level": "behavioural",
+    "scope": "one product from productScope, anonymous"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-flow",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-flow",
+      "operation": "POST /dwapi/ecommerce/carts/create, POST items, PATCH shipping and payment, POST createOrder",
+      "reason": "Writes data on the host (creates a cart, order or token); the runner executes read-only checks only, so this stays planned until a sandboxed behavioural rule exists."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/commerce.html"
+    }
+  ]
+}

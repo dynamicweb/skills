@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "content.forms.fields",
+  "functionId": "content.forms",
+  "intent": {
+    "proves": "No form lacks an active field.",
+    "level": "stored-integrity",
+    "scope": "all forms; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-form-fields",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-offenders",
+      "operation": "get_form_fields",
+      "arguments": {},
+      "reason": "Requires a call per form and aggregation; handler not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 CAST(f.FormId AS nvarchar(20)) + N' ' + ISNULL(f.FormName, N'') FROM Form f WHERE NOT EXISTS (SELECT 1 FROM FormField ff WHERE ff.FormFieldFormId = f.FormId AND ff.FormFieldActive = 1)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html"
+    }
+  ]
+}

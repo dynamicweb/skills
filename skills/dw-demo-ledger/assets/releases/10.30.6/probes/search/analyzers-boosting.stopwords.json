@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "search.analyzers-boosting.stopwords",
+  "functionId": "search.analyzers-boosting",
+  "intent": {
+    "proves": "A custom stop word list exists.",
+    "level": "configured",
+    "scope": "Files/System/Repositories/stopwords.txt"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-files-system-repositories-stopwords-txt",
+      "surface": "file",
+      "status": "planned",
+      "handler": "files-count",
+      "path": "Files/System/Repositories/stopwords.txt",
+      "reason": "files-count is reserved but not implemented; MCP file access to Files/System is not granted by default."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+    }
+  ]
+}

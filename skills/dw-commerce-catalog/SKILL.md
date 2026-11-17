@@ -152,6 +152,16 @@ product.GetProductLink(pageId)  // URL to product detail page
 }
 ```
 
+### Dated prices
+
+A price row carries optional **Valid from** and **Valid to** dates (the price matrix "When" section;
+`PriceValidFrom` / `PriceValidTo` on the integration job surface). The row applies only while the
+current date is inside its range; an empty date means always valid; outside the range the next
+matching row, usually the regular price, applies. So a future-effective price, or a time-limited
+one, is standard configuration and needs no extension. What dated rows do not give is a governed
+change process: grouping many changes into one change set, previewing their effect, approving them
+and rolling them back. Classify a requirement for that separately from the dates themselves.
+
 ## Product Catalog App Settings
 
 | Section | Key settings |

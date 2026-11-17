@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "admin.license.installed",
+  "functionId": "admin.license",
+  "intent": {
+    "proves": "A licence is installed and not expired.",
+    "level": "configured",
+    "scope": "the solution"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-license",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-license",
+      "reason": "The licence query and its fields are unverified."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/license.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/SKILL.md"
+    }
+  ]
+}

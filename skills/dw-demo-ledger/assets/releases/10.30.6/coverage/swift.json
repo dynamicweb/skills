@@ -1,0 +1,737 @@
+{
+  "schema": 1,
+  "area": "swift",
+  "retrieved": "2026-11-11",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "title": "Features"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/s1-vs-s2.html",
+      "title": "Swift 1 vs Swift 2"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/architecture.html",
+      "title": "Design architecture"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/master-templates.html",
+      "title": "Master templates"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html",
+      "title": "Page types"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/rows.html",
+      "title": "Row types"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "title": "Paragraph types"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "title": "Product components"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/html-architecture.html",
+      "title": "HTML architecture"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/swift-css.html",
+      "title": "CSS architecture"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/swift-configuration.html",
+      "title": "Swift configuration"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/cookies.html",
+      "title": "Cookies"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/domains.html",
+      "title": "Domains"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/sitemaps.html",
+      "title": "Sitemaps"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/swift-search.html",
+      "title": "Search"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/design/introduction.html",
+      "title": "Designing with Swift"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/design/configuration-only.html",
+      "title": "Configuration only design approach"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/design/header-and-footer.html",
+      "title": "Header and footer"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/index.html",
+      "title": "Creating content with Swift"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/visual-editor.html",
+      "title": "Visual Editor"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/pages.html",
+      "title": "Pages"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/paragraph-types.html",
+      "title": "Creating page content"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/responsive-pages.html",
+      "title": "Responsive design"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/posts.html",
+      "title": "Posts"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/presets.html",
+      "title": "Presets"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/publication.html",
+      "title": "Publication and permissions"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/on-page-seo.html",
+      "title": "On-page SEO"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/seo-tools.html",
+      "title": "SEO tools"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/tag-manager.html",
+      "title": "Google tag manager"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/swift/create-content/commerce/index.html",
+      "title": "Commerce in Swift"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/index.html",
+      "title": "Styles"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/color-schemes.html",
+      "title": "Color Schemes"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/fonts.html",
+      "title": "Fonts"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/typography.html",
+      "title": "Typography"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/button-styles.html",
+      "title": "Buttons"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/languagemanagement.html",
+      "title": "Language Management"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Styling with colour scheme, typography and button style maintained in DynamicWeb 10",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.style-wiring"
+    },
+    {
+      "claim": "Row definitions with a UI for row width, size and padding",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "duplicateOf": "content.row-definitions"
+    },
+    {
+      "claim": "Header and footer created and tweaked in the Visual Editor",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.header-footer"
+    },
+    {
+      "claim": "Responsive design for mobile, tablet and desktop",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.responsive"
+    },
+    {
+      "claim": "Flexible and extendable design",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "excluded": {
+        "reason": "Statement of design intent, no acceptance criterion."
+      }
+    },
+    {
+      "claim": "Visual Editor for creating and organising content",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "excluded": {
+        "reason": "Editor tooling in the administration; content authoring belongs to the content area."
+      }
+    },
+    {
+      "claim": "Multilingual support for websites and content",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "duplicateOf": "content.language-layers"
+    },
+    {
+      "claim": "SEO tools: metadata, URLs and structured data",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "duplicateOf": "content.page-seo"
+    },
+    {
+      "claim": "Media management through the Assets area media library",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "duplicateOf": "assets.file-archive"
+    },
+    {
+      "claim": "Paragraph layouts selectable per paragraph type, extendable with custom templates",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.content-blocks"
+    },
+    {
+      "claim": "Product list with groups, filtering and sorting",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.product-list"
+    },
+    {
+      "claim": "Product detail pages with images, variants via selectors or lists, and related products",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.product-detail"
+    },
+    {
+      "claim": "Variant selectors on the product detail page",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.variant-selector"
+    },
+    {
+      "claim": "Product search bar and results page",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.search"
+    },
+    {
+      "claim": "Custom product fields displayed on products",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.product-detail"
+    },
+    {
+      "claim": "Shopping cart to view, edit and manage products",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.cart-checkout"
+    },
+    {
+      "claim": "Checkout flow with anonymous checkout or account creation",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.cart-checkout"
+    },
+    {
+      "claim": "Payment methods and gateways in checkout",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "duplicateOf": "orders.payment-methods"
+    },
+    {
+      "claim": "Shipping methods, rates and restrictions",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "duplicateOf": "orders.shipping-methods"
+    },
+    {
+      "claim": "Discounts, coupon codes and promotions at checkout",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "duplicateOf": "commerce.discounts"
+    },
+    {
+      "claim": "Account management for customers",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.customer-center"
+    },
+    {
+      "claim": "Order history and order details",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.customer-center"
+    },
+    {
+      "claim": "Reorder previous purchases",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.customer-center"
+    },
+    {
+      "claim": "Favorite lists",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "duplicateOf": "orders.favorite-lists"
+    },
+    {
+      "claim": "Manage users: customers invite users",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.customer-center"
+    },
+    {
+      "claim": "Transactional and marketing emails designed in the Visual Editor",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "functionId": "swift.emails"
+    },
+    {
+      "claim": "Marketing module email automation",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/overview.html",
+      "duplicateOf": "marketing.flows"
+    },
+    {
+      "claim": "Styling (colour schemes, typography, buttons) moved into DynamicWeb core in Swift 2",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/s1-vs-s2.html",
+      "duplicateOf": "content.design-styles"
+    },
+    {
+      "claim": "Row and grid definitions moved into DynamicWeb and split into files",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/s1-vs-s2.html",
+      "duplicateOf": "content.row-definitions"
+    },
+    {
+      "claim": "Reduced editor complexity and enhanced paragraph layouts",
+      "url": "https://doc.dynamicweb.dev/swift/getting-started/s1-vs-s2.html",
+      "functionId": "swift.content-blocks"
+    },
+    {
+      "claim": "Swift consists of a design folder, item types and preconfigured database content",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/architecture.html",
+      "functionId": "swift.design-installed"
+    },
+    {
+      "claim": "Master template, page type, row and paragraph type layers render a page",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/architecture.html",
+      "functionId": "swift.design-installed"
+    },
+    {
+      "claim": "Swift-specific website and page settings come from Swift-v2_Master and Swift-v2_PageProperties item types",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/architecture.html",
+      "functionId": "swift.website-settings"
+    },
+    {
+      "claim": "Master template holds markup and resources shared by page types",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/master-templates.html",
+      "duplicateOf": "content.layout-templates"
+    },
+    {
+      "claim": "Content page types: Page and Shop",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html",
+      "functionId": "swift.shop-catalog"
+    },
+    {
+      "claim": "Product list page type",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html",
+      "functionId": "swift.product-list"
+    },
+    {
+      "claim": "Product details page type",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html",
+      "functionId": "swift.product-detail"
+    },
+    {
+      "claim": "Express buy page type",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html",
+      "functionId": "swift.express-buy"
+    },
+    {
+      "claim": "Cart and Checkout page types",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html",
+      "functionId": "swift.cart-checkout"
+    },
+    {
+      "claim": "Swift setup page types: Header and Footer",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html",
+      "functionId": "swift.header-footer"
+    },
+    {
+      "claim": "Product component and product list component pages",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html",
+      "functionId": "swift.product-detail"
+    },
+    {
+      "claim": "Service pages and cart summary page",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html",
+      "functionId": "swift.cart-checkout"
+    },
+    {
+      "claim": "Email page types: emails folder, email header and footer, email settings, email",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/page-types.html",
+      "functionId": "swift.emails"
+    },
+    {
+      "claim": "Rows have up to six columns with fixed or flexible widths; Page and Email grids",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/rows.html",
+      "duplicateOf": "content.grid-rows"
+    },
+    {
+      "claim": "Row definitions and row templates live under Grid/Page and Grid/Email",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/rows.html",
+      "duplicateOf": "content.row-definitions"
+    },
+    {
+      "claim": "Paragraph types are an item type plus a template folder; each template is a layout option",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.content-blocks"
+    },
+    {
+      "claim": "Content paragraph types: Accordion, Blockquote, Button, Card, Employee, Feature, Image, Poster, Slider, Text, Text and Image, Video Player, Video Poster and others",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.content-blocks"
+    },
+    {
+      "claim": "Cookie notice paragraph type",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.cookie-consent"
+    },
+    {
+      "claim": "Locations map and simple map paragraph types",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.content-blocks"
+    },
+    {
+      "claim": "Post list paragraph type",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.posts"
+    },
+    {
+      "claim": "Search field paragraph type",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.search"
+    },
+    {
+      "claim": "Vertical navigation and breadcrumb navigation paragraph types",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.header-navigation"
+    },
+    {
+      "claim": "Header and footer paragraph types: Button, Logo, Text",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.header-footer"
+    },
+    {
+      "claim": "Navigation and off-canvas navigation paragraph types",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.header-navigation"
+    },
+    {
+      "claim": "Menu product group images (mega menu)",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.mega-menu"
+    },
+    {
+      "claim": "Menu related content",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.header-navigation"
+    },
+    {
+      "claim": "Mini cart navigation element",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.cart-checkout"
+    },
+    {
+      "claim": "My account navigation element",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.customer-center"
+    },
+    {
+      "claim": "Favorites navigation element",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.customer-center"
+    },
+    {
+      "claim": "Impersonation bar",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.impersonation"
+    },
+    {
+      "claim": "Preferences for language, country and currency",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.multi-language"
+    },
+    {
+      "claim": "Sign in navigation element",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/paragraphs.html",
+      "functionId": "swift.sign-in"
+    },
+    {
+      "claim": "Product components placed through product component selectors on list and detail pages",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "functionId": "swift.product-detail"
+    },
+    {
+      "claim": "Add to cart, quantity, price, price table, stock and stock locations components",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "functionId": "swift.product-detail"
+    },
+    {
+      "claim": "Add to download cart, download data form and download publication components",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "excluded": {
+        "reason": "Digital asset and publication downloads; the Assets portal is not available on Swift 2 per the search page."
+      }
+    },
+    {
+      "claim": "Add to quote cart component",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "duplicateOf": "orders.quotes"
+    },
+    {
+      "claim": "Add to favorites component",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "functionId": "swift.customer-center"
+    },
+    {
+      "claim": "BOM component",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "functionId": "swift.product-detail"
+    },
+    {
+      "claim": "Media, media gallery, media table and default image components",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "functionId": "swift.product-detail"
+    },
+    {
+      "claim": "Product field display groups and accordion components",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "functionId": "swift.product-detail"
+    },
+    {
+      "claim": "Related products list view",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "functionId": "swift.product-detail"
+    },
+    {
+      "claim": "Selectable variant options component",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/product-components.html",
+      "functionId": "swift.variant-selector"
+    },
+    {
+      "claim": "HTML architecture and the main section of the master",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/html-architecture.html",
+      "excluded": {
+        "reason": "Template markup structure for developers, not a selectable outcome."
+      }
+    },
+    {
+      "claim": "Generated CSS variables from colour schemes and typography mapped to Bootstrap variables",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/swift-css.html",
+      "functionId": "swift.style-wiring"
+    },
+    {
+      "claim": "Building Swift SCSS and JS from source to the distribution folder",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/swift-css.html",
+      "excluded": {
+        "reason": "Developer build pipeline, not a storefront function."
+      }
+    },
+    {
+      "claim": "Website settings tabs: General, Layout, Ecommerce, Meta and API keys, Domain and URL, Advanced",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/swift-configuration.html",
+      "functionId": "swift.website-settings"
+    },
+    {
+      "claim": "Page settings tabs including colour scheme, layout, SEO, publication, navigation tag and ecommerce navigation",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/swift-configuration.html",
+      "functionId": "swift.website-settings"
+    },
+    {
+      "claim": "Cookie Manager with the Cookies.cshtml template, policy links and banner or modal",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/cookies.html",
+      "functionId": "swift.cookie-consent"
+    },
+    {
+      "claim": "Google Tag Manager with Consent Mode v2 in the master; Statistical and Marketing category names used verbatim",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/cookies.html",
+      "functionId": "swift.cookie-consent"
+    },
+    {
+      "claim": "Third-party embeds set cookies regardless of the Cookie Manager",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/cookies.html",
+      "excluded": {
+        "reason": "Guidance on third-party scripts, not a platform function."
+      }
+    },
+    {
+      "claim": "Domains added on the Domain and URL tab (IIS) or in Azure",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/domains.html",
+      "duplicateOf": "content.website-domains"
+    },
+    {
+      "claim": "Sitemaps rely on the built-in DynamicWeb sitemap generation",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/sitemaps.html",
+      "duplicateOf": "content.robots-sitemap"
+    },
+    {
+      "claim": "URLs configuration",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/urls.html",
+      "excluded": {
+        "reason": "The page has no content in the retrieved snapshot."
+      }
+    },
+    {
+      "claim": "Content repository and content search query feed the search results page",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/swift-search.html",
+      "functionId": "swift.search"
+    },
+    {
+      "claim": "ProductsFrontend repository and Products.query publish products to the frontend",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/swift-search.html",
+      "duplicateOf": "search.free-text-search"
+    },
+    {
+      "claim": "ProductsBackend repository serves backend queries and workspaces",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/swift-search.html",
+      "duplicateOf": "pim.product-queries"
+    },
+    {
+      "claim": "Files repository for the Assets portal, not available on Swift 2",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/swift-search.html",
+      "excluded": {
+        "reason": "Feature not available on Swift 2 per the page."
+      }
+    },
+    {
+      "claim": "Secondary users repository for impersonation and manage users",
+      "url": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/swift-search.html",
+      "functionId": "swift.impersonation"
+    },
+    {
+      "claim": "Design approaches: configuration only or pixel perfect",
+      "url": "https://doc.dynamicweb.dev/swift/design/introduction.html",
+      "excluded": {
+        "reason": "Design method guidance; the configuration it leads to is covered by the style functions."
+      }
+    },
+    {
+      "claim": "Configuration-only design: colour schemes, typography, buttons, logo, images and favicon connected to the website layout",
+      "url": "https://doc.dynamicweb.dev/swift/design/configuration-only.html",
+      "functionId": "swift.style-wiring"
+    },
+    {
+      "claim": "Header and footer pages in Swift Setup for desktop and mobile, selected in website settings",
+      "url": "https://doc.dynamicweb.dev/swift/design/header-and-footer.html",
+      "functionId": "swift.header-footer"
+    },
+    {
+      "claim": "Header examples with rows, colour schemes, impersonation bar, search and off-canvas menu",
+      "url": "https://doc.dynamicweb.dev/swift/design/header-and-footer.html",
+      "functionId": "swift.header-navigation"
+    },
+    {
+      "claim": "Visual Editor for creating pages and content",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/visual-editor.html",
+      "excluded": {
+        "reason": "Editor tooling; content authoring belongs to the content area."
+      }
+    },
+    {
+      "claim": "Creating and editing pages with context menu actions",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/pages.html",
+      "duplicateOf": "content.pages"
+    },
+    {
+      "claim": "Rows, paragraph types and paragraph apps on a page, with design tips",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/paragraph-types.html",
+      "functionId": "swift.content-blocks"
+    },
+    {
+      "claim": "Mobile layouts and hiding content per device",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/responsive-pages.html",
+      "functionId": "swift.responsive"
+    },
+    {
+      "claim": "Posts listed with the Post List paragraph or the Query Publisher app over the Post index",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/posts.html",
+      "functionId": "swift.posts"
+    },
+    {
+      "claim": "Page, row and paragraph presets",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/presets.html",
+      "duplicateOf": "content.presets"
+    },
+    {
+      "claim": "Publication states and publication periods on pages, rows and paragraphs",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/publication.html",
+      "duplicateOf": "content.page-publication"
+    },
+    {
+      "claim": "Frontend permissions restrict pages for anonymous users",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/publication.html",
+      "duplicateOf": "content.page-permissions"
+    },
+    {
+      "claim": "On-page SEO: title, meta data, OpenGraph, friendly URLs, headings, images",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/on-page-seo.html",
+      "duplicateOf": "content.page-seo"
+    },
+    {
+      "claim": "SEO tools such as Lighthouse audits",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/seo-tools.html",
+      "excluded": {
+        "reason": "External tool guidance, not a platform function."
+      }
+    },
+    {
+      "claim": "Google Tag Manager ID set on the Meta and API keys tab",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/tag-manager.html",
+      "functionId": "swift.website-settings"
+    },
+    {
+      "claim": "Truvio Payment Portal for managing and paying invoices",
+      "url": "https://doc.dynamicweb.dev/swift/create-content/commerce/index.html",
+      "excluded": {
+        "reason": "Separate commerce product page not read in this pass; see gaps."
+      }
+    },
+    {
+      "claim": "Styles section: colour schemes, fonts, typography, buttons connected on the website Layout tab",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/index.html",
+      "functionId": "swift.style-wiring"
+    },
+    {
+      "claim": "Colour scheme collections with background, foreground, button and custom colours; usages, replace and delete rules",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/color-schemes.html",
+      "duplicateOf": "content.design-styles"
+    },
+    {
+      "claim": "Custom fonts uploaded under System/Styles/Fonts for typography",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/fonts.html",
+      "duplicateOf": "content.design-styles"
+    },
+    {
+      "claim": "Typography with base size and scale, headings, paragraphs and buttons, Google or custom fonts",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/typography.html",
+      "functionId": "swift.style-wiring"
+    },
+    {
+      "claim": "Button styles with shape, outline and padding, previewed with a colour scheme group",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/styles/button-styles.html",
+      "functionId": "swift.style-wiring"
+    },
+    {
+      "claim": "Language management settings for unpublishing, paragraph operations and copying master changes to language versions",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/languagemanagement.html",
+      "duplicateOf": "content.language-layers"
+    }
+  ],
+  "gaps": [
+    "Referenced, not redefined: content.design-styles, content.grid-rows, content.row-definitions, content.navigation, content.language-layers, content.website-ecommerce-context, users.frontend-sign-in, orders.customer-experience-center, orders.payment-methods, orders.shipping-methods, search.free-text-search, commerce.product-catalog-app, pim.variants, pim.languages.",
+    "content.grid-rows has no offender check for rows stored without a GridRowDefinitionId; suggested to its author rather than duplicated here.",
+    "Swift 2 customer center pages (orders, addresses, manage users) have no Swift 2 documentation page; the Swift 1 pages describe them. Their item type names are unverified, so swift.customer-center checks the account and favorites elements plus a planned render check.",
+    "Truvio Payment Portal (swift/create-content/commerce/truvio-payment-portal.html) was not read in this pass and has no function.",
+    "Swift-v2_LanguageSelector comes from the skill; the documented header paragraph is Swift-v2_Preferences. Both are counted.",
+    "Header and footer selection lives in website settings item fields whose names are unverified; the check is planned.",
+    "The Swift design folder is assumed to be Swift-v2; a renamed design folder needs a profile override for the file checks.",
+    "Swift 1 documentation pages are out of scope for the 10.29.8 Swift 2 snapshot."
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "content.page-permissions.keys-resolve",
+  "functionId": "content.page-permissions",
+  "intent": {
+    "proves": "No page permission points at a page that does not exist.",
+    "level": "stored-integrity",
+    "scope": "all page permission rows; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-page-permissions",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-offenders",
+      "operation": "get_page_permissions",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 up.PermissionKey FROM UnifiedPermission up WHERE up.PermissionName = N'Page' AND NOT EXISTS (SELECT 1 FROM Page p WHERE CAST(p.PageId AS nvarchar(20)) = up.PermissionKey)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html"
+    }
+  ]
+}

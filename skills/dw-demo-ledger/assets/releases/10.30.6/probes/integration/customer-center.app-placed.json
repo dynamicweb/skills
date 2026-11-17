@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "id": "integration.customer-center.app-placed",
+  "functionId": "integration.customer-center",
+  "intent": {
+    "proves": "The Integration Customer Center app is placed on a page.",
+    "level": "configured",
+    "scope": "all paragraphs"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-paragraphs-by-page-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_paragraphs_by_page_id",
+      "arguments": {},
+      "reason": "Handler not reserved: needs one call per subject (iterate ids from the list tool) and a client-side predicate. The app's module system name is not verified for 10.29.8."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/integration-customer-center.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html"
+    }
+  ]
+}

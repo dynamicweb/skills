@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "integration.provider-order.ledger-not-exported-back",
+  "functionId": "integration.provider-order",
+  "intent": {
+    "proves": "No ledger entry is waiting to be exported as a sales order.",
+    "level": "stored-integrity",
+    "scope": "ledger entries"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT OrderId FROM EcomOrders WHERE OrderIsLedgerEntry = 1 AND ISNULL(OrderIsExported, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-integration-framework/SKILL.md"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.Ecommerce 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

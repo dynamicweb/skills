@@ -81,7 +81,10 @@
   "data_find_entities",
   "data_find_entities_sql",
   "api_find_actions",
-  "api_invoke_action"
+  "api_invoke_action",
+  "card_page_id",
+  "custom_item_name",
+  "custom_item_number_prefix"
  ],
  "tools": {
   "add_fixed_lines": {

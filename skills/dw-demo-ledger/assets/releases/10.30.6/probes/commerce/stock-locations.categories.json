@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "commerce.stock-locations.categories",
+  "functionId": "commerce.stock-locations",
+  "intent": {
+    "proves": "At least one stock location category exists.",
+    "level": "configured",
+    "scope": "all stock location categories"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_stock_location_categories",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomStockLocationCategory"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/stocklocations.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/stocklocationcategories.html"
+    }
+  ]
+}

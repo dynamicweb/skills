@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "orders.country-vat.rated",
+  "functionId": "orders.country-vat",
+  "intent": {
+    "proves": "At least one country has a VAT rate above zero.",
+    "level": "configured",
+    "scope": "all commerce countries"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_countries",
+      "reason": "The country projection is not proven to carry the VAT rate; handler not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomCountries WHERE CountryVAT > 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/concepts/vat-taxes.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/prices.html"
+    }
+  ]
+}

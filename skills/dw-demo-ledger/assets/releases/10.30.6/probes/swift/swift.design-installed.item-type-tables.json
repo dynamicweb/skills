@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "swift.design-installed.item-type-tables",
+  "functionId": "swift.design-installed",
+  "intent": {
+    "proves": "Swift 2 item types are installed (ItemType_Swift-v2_* tables exist).",
+    "level": "supported",
+    "scope": "database schema of the target"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-item-types",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-attributes",
+      "operation": "get_item_types",
+      "arguments": {},
+      "reason": "mcp-count counts every item type; the Swift-v2 prefix filter needs an attribute handler."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE 'ItemType[_]Swift-v2[_]%'",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/architecture.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/SKILL.md (Invalid object name ItemType_* symptom)"
+    }
+  ]
+}

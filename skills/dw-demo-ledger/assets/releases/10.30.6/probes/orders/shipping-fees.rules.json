@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "orders.shipping-fees.rules",
+  "functionId": "orders.shipping-fees",
+  "intent": {
+    "proves": "At least one shipping fee rule exists.",
+    "level": "configured",
+    "scope": "all fees of method type SHIP"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_all_fees",
+      "reason": "mcp-count cannot filter on the fee method type; a projection handler is not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomFees WHERE FeeMethod = N'SHIP'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

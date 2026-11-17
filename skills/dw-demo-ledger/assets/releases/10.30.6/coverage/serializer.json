@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "area": "serializer",
+  "retrieved": "2026-11-11",
+  "sources": [
+    {
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "title": "Serializer reference (dw-demo-base)"
+    },
+    {
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-data-access/SKILL.md",
+      "title": "Data access surfaces (dw-data-access)"
+    },
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/concepts.md",
+      "title": "Serializer concepts"
+    },
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/sql-tables.md",
+      "title": "Serializer SqlTable predicates"
+    },
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/strict-mode.md",
+      "title": "Serializer strict mode"
+    },
+    {
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/link-resolution.md",
+      "title": "Serializer link resolution"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Serializer ships as the NuGet package Truvio.Commerce.Serializer, installed at or above the layers' floor",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.engine"
+    },
+    {
+      "claim": "Platform floor: the package installs on Dynamicweb 10.17.5 or newer",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.engine"
+    },
+    {
+      "claim": "Config at Files/System/Serializer/Serializer.config.json; without it Deserialize fails",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.engine"
+    },
+    {
+      "claim": "GET SerializerSettings validates the staged config; a rejected config fails every call",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.engine"
+    },
+    {
+      "claim": "Predicate mode Replace or Merge; legacy Deploy and Seed are rejected",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.serialize"
+    },
+    {
+      "claim": "Four routes: Serialize, Deserialize, PackageDownload, PackageUnzip",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.serialize"
+    },
+    {
+      "claim": "Inline Scope may only narrow a configured predicate of the same mode",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.serialize"
+    },
+    {
+      "claim": "A scoped serialize folds into the mode manifest and does not clean stale entries",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.serialize"
+    },
+    {
+      "claim": "YAML ownership header per document; Deserialize honours it per document",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.deserialize"
+    },
+    {
+      "claim": "Deprecated aliases SerializerSerialize, SerializerDeserialize, SerializeSubtree removed in 1.0.0",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "excluded": {
+        "reason": "Migration note about removed route names; no function on engines at or above the floor."
+      }
+    },
+    {
+      "claim": "Deserialize body must carry Mode; an empty body runs a live Replace; query mode overrides a body Replace",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.deserialize"
+    },
+    {
+      "claim": "Dry-run content counts under-report; gate on failed == 0 and the entry count",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.deserialize"
+    },
+    {
+      "claim": "Deserialize is driven by the manifest under SerializeRoot, not the config predicates",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.deserialize"
+    },
+    {
+      "claim": "PackageUnzip replaces SerializeRoot/<mode>/; limits on size and entries; rejected zips change nothing",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.package-transfer"
+    },
+    {
+      "claim": "Strict mode escalates warnings to a 400 naming the entry; false positives listed",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-demo-base/references/serializer-reference.md",
+      "functionId": "serializer.strict-mode"
+    },
+    {
+      "claim": "Identity is GUID-based (PageUniqueId, ParagraphUniqueId); numeric ids diverge",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/concepts.md",
+      "functionId": "serializer.identity-resolution"
+    },
+    {
+      "claim": "SqlTable rows match by primary key or a resolved match key; nameColumn only names the file",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/sql-tables.md",
+      "functionId": "serializer.identity-resolution"
+    },
+    {
+      "claim": "Three buckets: Replace, Merge, Not-serialized (GlobalSettings, credentials, per-environment fields)",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/concepts.md",
+      "functionId": "serializer.serialize"
+    },
+    {
+      "claim": "Replace is source-wins; Merge is destination-wins field-level fill",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/concepts.md",
+      "functionId": "serializer.deserialize"
+    },
+    {
+      "claim": "Serialize link sweep fails on orphaned page references",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/concepts.md",
+      "functionId": "serializer.serialize"
+    },
+    {
+      "claim": "Template asset manifest validated before deserialize",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/concepts.md",
+      "functionId": "serializer.strict-mode"
+    },
+    {
+      "claim": "Internal links rewritten by the link resolver on deserialize",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/concepts.md",
+      "functionId": "serializer.identity-resolution"
+    },
+    {
+      "claim": "Per-run logs under Files/System/Serializer/Log",
+      "url": "https://github.com/justdynamics/Truvio.Commerce.Serializer/blob/main/docs/concepts.md",
+      "functionId": "serializer.strict-mode"
+    },
+    {
+      "claim": "Merge of a table without a primary key deletes host rows in that table",
+      "url": "https://github.com/dynamicweb/skills/blob/main/skills/dw-data-access/SKILL.md",
+      "functionId": "serializer.deserialize"
+    }
+  ],
+  "gaps": [
+    "No check reads the Serializer run log or SerializerSettings yet: both need handlers beyond the reserved set.",
+    "The dry-run checks are commands; whether the ledger runner may issue a Deserialize dry run is a contract decision, so they stay planned.",
+    "The admin UI screens of the Serializer (settings, mode trees) are not documented in the DW10 manual; claims come from the skills and the engine docs only.",
+    "The engine-floor check needs a confirmed read of the installed package version; the System/AddIns/Installed folder was denied to MCP on a measured host."
+  ]
+}

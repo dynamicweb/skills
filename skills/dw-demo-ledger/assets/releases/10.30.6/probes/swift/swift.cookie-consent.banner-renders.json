@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "swift.cookie-consent.banner-renders",
+  "functionId": "swift.cookie-consent",
+  "intent": {
+    "proves": "An anonymous first visit shows the cookie consent banner or modal.",
+    "level": "behavioural",
+    "scope": "the storefront pages named by the build, anonymous and signed in where relevant"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-fetch-frontend-page-html",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-html",
+      "operation": "fetch_frontend_page_html",
+      "arguments": {},
+      "reason": "No handler implemented for rendered-markup assertions; fetch_frontend_page_html returns HTML that needs a measured projection."
+    },
+    {
+      "id": "dwapi-html",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "http-html",
+      "operation": "GET storefront page",
+      "reason": "No HTTP markup handler implemented; needs a selector-count projection on the rendered page."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/key-concepts/configuration/cookies.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Core/ToolNames.cs and tool classes (HEAD, read 2026-11-11)"
+    }
+  ]
+}

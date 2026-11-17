@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "content.item-restrictions.allowed-somewhere",
+  "functionId": "content.item-restrictions",
+  "intent": {
+    "proves": "Every item type used by the build is allowed on its target website.",
+    "level": "configured",
+    "scope": "item types named by the build"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-item-type",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-item-restrictions",
+      "operation": "get_item_type",
+      "arguments": {},
+      "reason": "Restriction fields in the get_item_type response are not verified; handler not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Restrictions live in item type metadata, not a verified SQL column."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html"
+    }
+  ]
+}

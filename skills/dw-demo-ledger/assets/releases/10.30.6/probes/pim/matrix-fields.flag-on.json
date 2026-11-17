@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "pim.matrix-fields.flag-on",
+  "functionId": "pim.matrix-fields",
+  "intent": {
+    "proves": "The Matrix field type feature is explicitly active.",
+    "level": "configured",
+    "scope": "Explicit expected.matrix declaration; feature type and flag reads are solution-wide."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin",
+      "surface": "admin-api",
+      "status": "implemented",
+      "handler": "admin-feature-flag",
+      "operation": "FeaturesAll",
+      "arguments": {
+        "featureTypeName": "Dynamicweb.Ecommerce.Products.MatrixFieldTypeFeature"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "release",
+      "ref": "delta-review.json#pim.matrix-fields"
+    },
+    {
+      "kind": "release",
+      "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+    }
+  ]
+}

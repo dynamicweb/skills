@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "id": "orders.quotes.convertible",
+  "functionId": "orders.quotes",
+  "intent": {
+    "proves": "At least one quote state allows conversion to an order.",
+    "level": "configured",
+    "scope": "order states of order type Quote"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_order_states",
+      "arguments": {
+        "orderType": "Quote"
+      },
+      "reason": "The state projection is not proven to carry AllowOrder; handler not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomOrderStates WHERE OrderStateOrderType = 1 AND ISNULL(OrderStateIsDeleted, 0) = 0 AND OrderStateAllowOrder = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/quotes.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/quoteflows.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center.html"
+    },
+    {
+      "kind": "source",
+      "ref": "Dynamicweb.Ecommerce 10.29.8: Dynamicweb.Ecommerce.Orders.OrderType Order=0, Quote=1, Recurringorder=2, LedgerEntry=3, Cart=4"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

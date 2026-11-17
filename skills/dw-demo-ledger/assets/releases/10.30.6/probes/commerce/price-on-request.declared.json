@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "commerce.price-on-request.declared",
+  "functionId": "commerce.price-on-request",
+  "intent": {
+    "proves": "Products the build declares price-on-request carry no price and the declared marker.",
+    "level": "applied",
+    "scope": "declared price-on-request products"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "The marker is a build-specific custom field; build.schema.json has no input that names it, so no fixed query can read it."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}

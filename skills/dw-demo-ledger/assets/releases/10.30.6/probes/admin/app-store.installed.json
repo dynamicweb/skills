@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "admin.app-store.installed",
+  "functionId": "admin.app-store",
+  "intent": {
+    "proves": "Each app the build requires is installed.",
+    "level": "configured",
+    "scope": "apps named by the build's requires predicates"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-files-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-files-count",
+      "operation": "list_files",
+      "arguments": {
+        "path": "/Files/System/AddIns/Installed"
+      },
+      "reason": "list_files was denied on System/AddIns/Installed on a measured host."
+    },
+    {
+      "id": "admin-api-admin-installed-apps",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-installed-apps",
+      "reason": "The app list query and its version field are unverified."
+    },
+    {
+      "id": "file-installed-app-folders",
+      "surface": "file",
+      "status": "planned",
+      "handler": "installed-app-folders",
+      "path": "System/AddIns/Installed",
+      "reason": "Installed apps are folders named <id>.<version>; files-count counts files, not folders."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/apps/index.html"
+    }
+  ]
+}

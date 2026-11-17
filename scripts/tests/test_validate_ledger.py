@@ -211,6 +211,76 @@ class LedgerValidationTests(unittest.TestCase):
         self.save()
         self.assertIn('delivery binding names no operation', '\n'.join(validate_ledgers(self.repo)))
 
+    def test_rendered_value_reads_listed_product_and_feed_routes(self):
+        self.check['assertion'] = {'kind': 'offenders', 'minimumSubjects': 1}
+        binding = {'id': 'rendered', 'surface': 'dwapi', 'status': 'implemented', 'handler': 'dwapi-rendered-value',
+                   'operation': 'ecommerce/products/{productId}', 'arguments': {'feedRoute': 'feeds/GetFeedOutput'}}
+        self.check['bindings'] = [binding]
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        binding['arguments']['feedRoute'] = 'users/info/profiles/switch'
+        self.save()
+        self.assertIn('delivery route is not an allowlisted read route: users/info/profiles/switch', '\n'.join(validate_ledgers(self.repo)))
+        binding.update(operation='ecommerce/products/search', arguments={})
+        self.save()
+        self.assertIn('dwapi-rendered-value operation needs the {productId} route', '\n'.join(validate_ledgers(self.repo)))
+        # The handler reports offenders, so a scalar assertion over it is refused.
+        binding['operation'] = 'ecommerce/products/{productId}'
+        self.check['assertion'] = {'kind': 'scalar', 'op': 'ge', 'value': 1}
+        self.save()
+        self.assertIn('assertion kind scalar does not fit handler dwapi-rendered-value', '\n'.join(validate_ledgers(self.repo)))
+
+    def test_persona_sign_in_uses_its_own_route_lists(self):
+        binding = {'id': 'signin', 'surface': 'dwapi', 'status': 'implemented', 'handler': 'dwapi-persona-sign-in',
+                   'operation': 'users/authenticate', 'arguments': {'readAs': 'users/info'}}
+        self.check['bindings'] = [binding]
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        binding['operation'] = 'users/authenticate/refresh'
+        self.save()
+        self.assertIn('sign-in route is not an allowlisted sign-in route', '\n'.join(validate_ledgers(self.repo)))
+        binding.update(operation='users/authenticate', arguments={'readAs': 'users/info/profiles/switch'})
+        self.save()
+        self.assertIn('needs arguments.readAs', '\n'.join(validate_ledgers(self.repo)))
+        # The sign-in route is never an anonymous read for dwapi-count.
+        self.check['bindings'] = [{'id': 'dwapi', 'surface': 'dwapi', 'status': 'implemented', 'handler': 'dwapi-count',
+                                   'operation': 'users/authenticate', 'projection': {'rowsPath': '$'}}]
+        self.save()
+        self.assertIn('delivery route is not an allowlisted read route', '\n'.join(validate_ledgers(self.repo)))
+
+    def test_repository_file_handlers_state_scope_and_generated_table(self):
+        self.check['assertion'] = {'kind': 'offenders', 'minimumSubjects': 1}
+        facets = {'id': 'facets', 'surface': 'file', 'status': 'implemented', 'handler': 'files-facet-analyzed',
+                  'path': 'System/Repositories/*/*.facets',
+                  'arguments': {'generated': {'X.Extender': {'fields': {'A': False, 'B': 'default-fields'}, 'prefixes': {'C_': 'default-fields-if-text'}}}}}
+        queries = {'id': 'queries', 'surface': 'file', 'status': 'implemented', 'handler': 'files-query-constant-macros',
+                   'path': 'System/Repositories/*/*.query'}
+        self.check['bindings'] = [facets, queries]
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        # A scoped binding judges the repositories the build ships; any other scope word is refused.
+        facets['arguments']['scope'] = 'build-repositories'
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        facets['arguments']['scope'] = 'host'
+        self.save()
+        self.assertIn('arguments.scope is build-repositories or absent', '\n'.join(validate_ledgers(self.repo)))
+        del facets['arguments']['scope']
+        facets['arguments']['generated']['X.Extender']['fields']['A'] = 'maybe'
+        del queries['path']
+        self.save()
+        errors = '\n'.join(validate_ledgers(self.repo))
+        self.assertIn('state is true, false, default-fields or default-fields-if-text', errors)
+        self.assertIn('files-query-constant-macros needs a path pattern', errors)
+        facets['arguments'] = {}
+        self.save()
+        self.assertIn('files-facet-analyzed needs arguments.generated', '\n'.join(validate_ledgers(self.repo)))
+        self.check['assertion'] = {'kind': 'scalar', 'op': 'eq', 'value': 0}
+        facets['arguments'] = {'generated': {'X.Extender': {'fields': {'A': False}}}}
+        queries['path'] = 'System/Repositories/*/*.query'
+        self.save()
+        self.assertIn('does not fit handler files-facet-analyzed', '\n'.join(validate_ledgers(self.repo)))
+
     def test_app_expectation_is_true_a_version_or_a_minimum(self):
         for expected in (True, '10.24.2', {'min': '0.6.0-beta'}):
             self.function['requires'] = [{'kind': 'app', 'id': 'Example.App', 'expected': expected}]
@@ -245,6 +315,17 @@ class LedgerValidationTests(unittest.TestCase):
             self.function['notApplicable'][0]['requiresFunction'] = cited
             self.second_function()
             self.assertIn(f'ground replaced cites unknown function {cited}', '\n'.join(validate_ledgers(self.repo)))
+
+    def test_ground_names_only_checks_of_its_function(self):
+        self.function['notApplicable'] = [{'id': 'scoped', 'when': 'One check only', 'checks': ['test.function.count']}]
+        self.save()
+        self.assertEqual([], validate_ledgers(self.repo))
+        self.function['notApplicable'][0]['checks'] = ['test.other.count']
+        self.save()
+        self.assertIn('ground scoped names test.other.count, which is not a check of this function', '\n'.join(validate_ledgers(self.repo)))
+        self.function['notApplicable'][0]['checks'] = []
+        self.save()
+        self.assertNotEqual([], validate_ledgers(self.repo))
 
     def test_function_without_a_coverage_claim(self):
         self.coverage['claims'] = []

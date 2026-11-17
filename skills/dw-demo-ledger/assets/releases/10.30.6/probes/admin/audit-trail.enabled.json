@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "admin.audit-trail.enabled",
+  "functionId": "admin.audit-trail",
+  "intent": {
+    "proves": "Auditing is enabled under the key the application reads, and that key resolves to exactly one node.",
+    "level": "configured",
+    "scope": "Files/GlobalSettings.config"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-globalsettings-key",
+      "surface": "file",
+      "status": "planned",
+      "handler": "globalsettings-key",
+      "path": "GlobalSettings.config",
+      "reason": "No reserved handler parses GlobalSettings.config; the key is verified in the skill, the handler is not built."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/audit.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-data-audit-trail/SKILL.md"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "commerce.loyalty-rewards.rewards",
+  "functionId": "commerce.loyalty-rewards",
+  "intent": {
+    "proves": "At least one loyalty reward exists.",
+    "level": "configured",
+    "scope": "all loyalty rewards"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_loyalty_rewards",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomLoyaltyReward WHERE ISNULL(LoyaltyRewardArchived, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/loyaltypoints.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/loyaltypoints.html"
+    }
+  ]
+}

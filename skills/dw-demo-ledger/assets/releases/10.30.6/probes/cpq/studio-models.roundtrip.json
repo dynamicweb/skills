@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "cpq.studio-models.roundtrip",
+  "functionId": "cpq.studio-models",
+  "intent": {
+    "proves": "Compiled model is editable in vendor admin and understood by Studio; copy stays within the model; rename updates this version's references only; stale id.stamp edits are refused; export/diff detects later authoring changes. Use discovered JSON-textarea editors, never unreachable condition/action list classes. Check price/output rules, quantities, gates and lookup references and compare the untouched version.",
+    "level": "behavioural",
+    "scope": "Exact declared model/version, catalogue and case set on the target with loaded package and assembly hashes; complete observations only. Missing identity, denied access or truncated scope is UNVERIFIED."
+  },
+  "assertion": {
+    "kind": "attributes",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "file-cpq-receipt",
+      "surface": "file",
+      "status": "planned",
+      "handler": "cpq-behavior-receipt",
+      "reason": "Distribution v1 receipt reader validates independent trust, freshness and scope and preserves failures. No complete domain producer/assertion exists for this intent; the binding stays planned. See references/cpq-observations.md."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+    },
+    {
+      "kind": "docs",
+      "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+    }
+  ]
+}

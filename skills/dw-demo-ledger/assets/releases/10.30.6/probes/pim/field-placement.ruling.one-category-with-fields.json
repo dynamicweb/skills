@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "pim.field-placement.ruling.one-category-with-fields",
+  "functionId": "pim.field-placement",
+  "intent": {
+    "proves": "At most one attribute category carries fields.",
+    "level": "applied",
+    "scope": "Every attribute category except reference_category; global scan."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "le",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT FieldCategoryId) FROM EcomProductCategoryField WHERE FieldCategoryId <> N'reference_category'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#field-placement/one-category-with-fields"
+    },
+    {
+      "kind": "source",
+      "ref": "registry-commit:02354513e0f8ea86227535d137ffb999096504b5"
+    }
+  ]
+}

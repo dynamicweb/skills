@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "pim.matrix-fields.columns",
+  "functionId": "pim.matrix-fields",
+  "intent": {
+    "proves": "The declared CategoryType 3 category has exactly the declared supported columns, and every declared owner field is a Matrix field linked to that category.",
+    "level": "configured",
+    "scope": "Explicit expected.matrix declaration; feature type and flag reads are solution-wide."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "matrix-complete-read",
+      "reason": "The observed MCP DTOs do not establish complete category, row, cell and parent-marker evidence. Use the explicit local SQL binding."
+    },
+    {
+      "id": "sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-matrix",
+      "localOnly": true,
+      "arguments": {
+        "aspect": "columns"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "release",
+      "ref": "delta-review.json#pim.matrix-fields"
+    },
+    {
+      "kind": "release",
+      "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+    }
+  ]
+}

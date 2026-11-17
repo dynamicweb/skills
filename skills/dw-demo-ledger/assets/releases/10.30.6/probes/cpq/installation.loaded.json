@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "cpq.installation.loaded",
+  "functionId": "cpq.installation",
+  "intent": {
+    "proves": "Exact required versions and hashes, no duplicate assembly identity",
+    "level": "supported",
+    "scope": "Exact required installed app/assembly set, schema and initialized site on the target; package names without loaded identities or hashes cannot pass."
+  },
+  "assertion": {
+    "kind": "attributes",
+    "minimumSubjects": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-cpq-observation",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "cpq-structured-read",
+      "reason": "Discover an authorized external MCP read whose projection proves this whole intent and exhaust pagination. No such CPQ binding is implemented or tool name promised; Studio read/analyze tools are Dynamo-only and cannot be repurposed as external MCP."
+    },
+    {
+      "id": "admin-cpq-observation",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "cpq-structured-read",
+      "reason": "Discover authenticated queries on the installed version through API Explorer; verify projection, model-version filter and complete enumeration. Assembly type existence and row counts are insufficient; no structured CPQ reader is implemented."
+    },
+    {
+      "id": "file-cpq-loaded-identities",
+      "surface": "file",
+      "status": "planned",
+      "handler": "cpq-loaded-identities",
+      "reason": "Read the actual loaded assembly inventory and compare package/name/version/TFM/byte hashes against the lock. No reader is implemented; filenames alone are not loaded identity evidence."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/skills/blob/5b73fe1fa4cd9a740ae5c2439d28b60df1837e7d/skills/dw-commerce-cpq/references/engine-characterization.md"
+    },
+    {
+      "kind": "docs",
+      "ref": "skills/dw-demo-ledger/references/cpq-area.md"
+    }
+  ]
+}

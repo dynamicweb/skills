@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "id": "integration.run-and-log.has-run",
+  "functionId": "integration.run-and-log",
+  "intent": {
+    "proves": "At least one activity has completed a run.",
+    "level": "behavioural",
+    "scope": "all activities"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-integration-activity-status",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_integration_activity_status",
+      "arguments": {},
+      "reason": "Per-activity status read (lastRunStatus, lastSuccessfulRun) measured on 10.29.8; needs a handler that enumerates activities and reads each status. Not get_integration_activity_logs: it reported no run log for a completed run. Predicate: lastSuccessfulRun not null."
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "planned",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "System\\Log\\DataIntegration",
+        "filter": "*.log",
+        "includeSubfolders": true
+      },
+      "reason": "Log folder name differs between sources (Data integration as shown in Assets, DataIntegration in the skill); not measured on 10.29.8."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/activities.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Integration/Tools (IntegrationActivityTools.cs, IntegrationEndpointTools.cs, IntegrationMappingTools.cs, IntegrationProviderTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-integration-framework/SKILL.md"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "commerce.product-reviews.rendered",
+  "functionId": "commerce.product-reviews",
+  "intent": {
+    "proves": "The product page shows the rating.",
+    "level": "behavioural",
+    "scope": "one declared product"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-product",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-product-value",
+      "reason": "No delivery read handler is implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    }
+  ]
+}

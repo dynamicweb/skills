@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "orders.checkout-validation.ruled",
+  "functionId": "orders.checkout-validation",
+  "intent": {
+    "proves": "At least one validation group has a field with a rule.",
+    "level": "configured",
+    "scope": "all validation groups"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomValidationGroups g WHERE EXISTS (SELECT 1 FROM EcomValidations v JOIN EcomValidationRules r ON r.ValidationRuleValidationId = v.ValidationId WHERE v.ValidationGroupId = g.ValidationGroupId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/validationgroups.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

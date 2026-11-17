@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "search.product-index.two-instances",
+  "functionId": "search.product-index",
+  "intent": {
+    "proves": "The product index has at least two instances so one serves while the other builds.",
+    "level": "configured",
+    "scope": "instances declared in the product index definition"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 2
+  },
+  "bindings": [
+    {
+      "id": "file-files-system-repositories-index",
+      "surface": "file",
+      "status": "planned",
+      "handler": "index-xml",
+      "path": "Files/System/Repositories/*/*.index",
+      "reason": "Repository definitions are XML files under Files/System/Repositories; an XML projection handler is not implemented and MCP file access to this folder is not granted by default."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+    }
+  ]
+}

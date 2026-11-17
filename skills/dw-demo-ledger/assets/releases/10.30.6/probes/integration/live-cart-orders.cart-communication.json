@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "integration.live-cart-orders.cart-communication",
+  "functionId": "integration.live-cart-orders",
+  "intent": {
+    "proves": "Cart communication is not None on an enabled instance.",
+    "level": "configured",
+    "scope": "all live integration settings files"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-content",
+      "surface": "file",
+      "status": "planned",
+      "handler": "file-content",
+      "path": "Files/System/LiveIntegration/*.Setup.xml",
+      "reason": "No reserved handler reads the CartCommunicationType setting."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/DataIntegration.LiveIntegration Configuration/SettingsFileHandler.cs (settings file /Files/System/LiveIntegration/{instance}.Setup.xml)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.Ecommerce 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

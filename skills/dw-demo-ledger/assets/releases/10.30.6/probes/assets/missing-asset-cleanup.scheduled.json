@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "assets.missing-asset-cleanup.scheduled",
+  "functionId": "assets.missing-asset-cleanup",
+  "intent": {
+    "proves": "An enabled scheduled task runs the Cleanup missing digital assets add-in.",
+    "level": "configured",
+    "scope": "all scheduled tasks"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-scheduled-tasks",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_scheduled_tasks",
+      "arguments": {},
+      "reason": "Add-in type name for this task is not verified; mcp-count would count every task."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "ScheduledTask.TaskAddInTypeName exists, but the add-in's type name is not verified on 10.29.8."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/cleanup-missing-digital-assets.html"
+    }
+  ]
+}

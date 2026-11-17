@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "id": "content.navigation.menu-pages",
+  "functionId": "content.navigation",
+  "intent": {
+    "proves": "The navigation of each active website contains at least one page.",
+    "level": "behavioural",
+    "scope": "active websites; rendered navigation structure"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-navigation-structure",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-navigation-nodes",
+      "operation": "get_navigation_structure",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "PageActive/PageHidden menu semantics differ between skill sources and are unmeasured on 10.29.8; a column count is not the rendered navigation."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/FrontendVerificationTools.cs"
+    }
+  ]
+}

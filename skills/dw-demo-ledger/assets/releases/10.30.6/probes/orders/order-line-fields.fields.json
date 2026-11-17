@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "orders.order-line-fields.fields",
+  "functionId": "orders.order-line-fields",
+  "intent": {
+    "proves": "At least one order line field exists.",
+    "level": "configured",
+    "scope": "all order line fields"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomOrderLineFields"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/orderlinefields.html"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "id": "pim.bom.lines-resolve",
+  "functionId": "pim.bom",
+  "intent": {
+    "proves": "Every BOM line points at a component product that exists or, when it names a group, at a product group that exists.",
+    "level": "stored-integrity",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 CAST(i.ProductItemProductId AS nvarchar(50)) + N' -> ' + CAST(ISNULL(NULLIF(i.ProductItemBomProductId, N''), i.ProductItemBomGroupId) AS nvarchar(100)) FROM EcomProductItems i WHERE (ISNULL(i.ProductItemBomGroupId, N'') = N'' AND NOT EXISTS (SELECT 1 FROM EcomProducts c WHERE c.ProductId = i.ProductItemBomProductId)) OR (ISNULL(i.ProductItemBomGroupId, N'') <> N'' AND NOT EXISTS (SELECT 1 FROM EcomGroups g WHERE g.GroupId = i.ProductItemBomGroupId))"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#bom/lines-resolve"
+    }
+  ]
+}

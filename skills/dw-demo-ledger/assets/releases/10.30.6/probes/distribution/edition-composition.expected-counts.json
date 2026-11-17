@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "distribution.edition-composition.expected-counts",
+  "functionId": "distribution.edition-composition",
+  "intent": {
+    "proves": "Every expectedCounts table of the locked edition holds exactly the pinned row count.",
+    "level": "applied",
+    "scope": "expectedCounts of the edition named in the build, read from the locked Distribution commit"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "sql-edition-expected-counts",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "edition-expected-counts",
+      "localOnly": true,
+      "reason": "Needs the edition's table list as runtime input; contract.md defines no such token and no reserved handler."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:README.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:editions/edition.schema.json"
+    }
+  ]
+}

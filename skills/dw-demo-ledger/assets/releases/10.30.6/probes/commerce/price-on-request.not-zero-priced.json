@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "commerce.price-on-request.not-zero-priced",
+  "functionId": "commerce.price-on-request",
+  "intent": {
+    "proves": "No declared price-on-request product renders a price of zero in a feed or the product API.",
+    "level": "behavioural",
+    "scope": "declared price-on-request products, every feed language"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "dwapi-feed",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-feed-value",
+      "reason": "No delivery or feed read handler is implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}

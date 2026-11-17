@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "admin.notification-subscribers.listed",
+  "functionId": "admin.notification-subscribers",
+  "intent": {
+    "proves": "Each declared custom subscriber is listed under Developer, Addins, Notification subscribers.",
+    "level": "applied",
+    "scope": "subscribers named in the build's customAssemblies input"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-addin-list",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-addin-list",
+      "reason": "The Management API query behind the Addins node is unverified."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/addins.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-extend-providers/SKILL.md"
+    }
+  ]
+}

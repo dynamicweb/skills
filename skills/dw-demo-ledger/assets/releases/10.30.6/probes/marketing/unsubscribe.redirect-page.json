@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "id": "marketing.unsubscribe.redirect-page",
+  "functionId": "marketing.unsubscribe",
+  "intent": {
+    "proves": "Every email (not a template) has an unsubscribe redirect page on itself or on its campaign folder.",
+    "level": "configured",
+    "scope": "all emails excluding templates"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-email-campaign-by-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_email_campaign_by_id",
+      "arguments": {},
+      "reason": "Handler not reserved: needs one call per subject (iterate ids from the list tool) and a client-side predicate. The campaign model does not expose the unsubscribe page."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(e.EmailId AS nvarchar(20)) + N' ' + ISNULL(e.EmailName, N'') FROM EmailMarketingEmail e LEFT JOIN EmailMarketingTopFolder tf ON tf.TopFolderId = e.EmailTopFolderId WHERE ISNULL(e.EmailIsTemplate, 0) = 0 AND ISNULL(e.EmailUnsubscribePageId, 0) = 0 AND ISNULL(tf.TopFolderUnsubscribePageId, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

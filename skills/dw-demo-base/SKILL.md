@@ -130,6 +130,7 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 | **Upgrade a package the host csproj already references** — and recover a site 500ing on duplicate type keys after an Add-in-manager install | references/mcp-setup.md ("Upgrade a package where it is already referenced") |
 | Install Browser MCP (`@playwright/mcp`); recover from browser-launch errors | references/browser-automation.md |
 | **Read a storefront screenshot critically** — programmatic defect detectors, the interaction pass, the eyeball checklist, symptom→fix routing, per-page definition of done | **references/visual-qa.md** |
+| **Check a host before a live demo or recording** (and after any restart, reinstall, restore or licence change): storefront, admin licensed and MCP handshake in one run, then the mail listener and one real form submission. A storefront at 200 proves nothing else | **references/pre-demo-check.md** |
 | **Sweep for real-person PII and vendor boilerplate** — whole-database string sweep, stock vendor legal copy, locale-shaped patterns. **Blocking pre-demo leg**, hardest on a cloned host | **references/pii-sweep.md** |
 | The demo deltas on the action ladder — scaffold vs build phases, the bootstrap one-clicks, Browser MCP scope (the ladder itself is foundational, in `dw-data-access`) | references/surface-priority.md |
 | Generic demo-storytelling tactics (audience framing, one-source-N-shapes, the customer-wording glossary) | references/demo-tactics.md |

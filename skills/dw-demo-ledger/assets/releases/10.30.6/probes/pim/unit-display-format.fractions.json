@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "pim.unit-display-format.fractions",
+  "functionId": "pim.unit-display-format",
+  "intent": {
+    "proves": "An imperial length renders as a fraction.",
+    "level": "behavioural",
+    "scope": "one declared imperial measure"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-feed",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-feed-value",
+      "reason": "No delivery or feed read handler is implemented, and no stored setting selects a fraction format."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}

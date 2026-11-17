@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "assets.folder-permissions.explicit",
+  "functionId": "assets.folder-permissions",
+  "intent": {
+    "proves": "At least one explicit file or folder permission exists.",
+    "level": "configured",
+    "scope": "permission rows named File"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-query",
+      "operation": "PermissionsByIdentifier",
+      "reason": "No MCP tool reads file or folder permissions; the Admin permission read and its File key format are not verified for folders."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM UnifiedPermission WHERE PermissionName = N'File'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/permission.html"
+    }
+  ]
+}

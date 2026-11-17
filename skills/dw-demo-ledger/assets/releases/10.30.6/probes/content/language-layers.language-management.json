@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "content.language-layers.language-management",
+  "functionId": "content.language-layers",
+  "intent": {
+    "proves": "Language management settings are set as the build declares.",
+    "level": "configured",
+    "scope": "solution-wide language management settings"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-settings",
+      "surface": "file",
+      "status": "planned",
+      "handler": "settings-read",
+      "localOnly": true,
+      "path": "GlobalSettings.config",
+      "reason": "GlobalSettings key names for this setting are not verified on 10.29.8 and no reserved settings-read handler exists."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/languagemanagement.html"
+    }
+  ]
+}

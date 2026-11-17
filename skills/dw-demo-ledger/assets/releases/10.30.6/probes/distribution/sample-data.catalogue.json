@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "distribution.sample-data.catalogue",
+  "functionId": "distribution.sample-data",
+  "intent": {
+    "proves": "The sample catalogue products are present: at least one product id carries the sample-data prefix TCPROD.",
+    "level": "applied",
+    "scope": "distinct EcomProducts ids that start TCPROD (the sample-data product id prefix; the product numbers are TC-<concept>-nnnn), counted once across languages and variants"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_products",
+      "reason": "get_products is paged and filters by other keys; an id-prefix count is not equivalent."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT ProductId) FROM EcomProducts WHERE ProductId LIKE N'TCPROD%'"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/base/base.contract.json"
+    }
+  ]
+}

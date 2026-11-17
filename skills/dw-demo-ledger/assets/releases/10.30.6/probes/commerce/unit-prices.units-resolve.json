@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "commerce.unit-prices.units-resolve",
+  "functionId": "commerce.unit-prices",
+  "intent": {
+    "proves": "Every unit-scoped price names a unit that exists.",
+    "level": "stored-integrity",
+    "scope": "unit-scoped EcomPrices rows; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT p.PriceId + N' -> ' + p.PriceUnitId FROM EcomPrices p WHERE ISNULL(p.PriceUnitId, N'') <> N'' AND NOT EXISTS (SELECT 1 FROM EcomUnits u WHERE u.UnitId = p.PriceUnitId)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/products/managing-products/prices.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/relations/product-units.html"
+    }
+  ]
+}

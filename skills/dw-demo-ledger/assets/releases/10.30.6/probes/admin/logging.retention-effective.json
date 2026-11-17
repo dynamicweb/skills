@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "admin.logging.retention-effective",
+  "functionId": "admin.logging",
+  "intent": {
+    "proves": "No stored event is older than the retention window (30 days unless a profile overrides it).",
+    "level": "behavioural",
+    "scope": "every GeneralLog row"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-log-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-log-count",
+      "operation": "count_log_events_by_query",
+      "reason": "count_log_events_by_query returns a scalar int and its date-filter arguments are unmeasured."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM GeneralLog WHERE LogDate < DATEADD(day, -30, GETDATE())"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/logRetention.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/references/tracking-insights.md"
+    }
+  ]
+}

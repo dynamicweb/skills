@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "orders.order-export.exported",
+  "functionId": "orders.order-export",
+  "intent": {
+    "proves": "At least one completed order is flagged as exported.",
+    "level": "behavioural",
+    "scope": "completed orders"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "search_orders",
+      "reason": "search_orders takes a request object and pages; a complete-enumeration handler with this filter is not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomOrders WHERE OrderComplete = 1 AND ISNULL(OrderDeleted, 0) = 0 AND ISNULL(OrderIsQuote, 0) = 0 AND ISNULL(OrderIsLedgerEntry, 0) = 0 AND ISNULL(OrderIsRecurringOrderTemplate, 0) = 0 AND OrderIsExported = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/orders.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

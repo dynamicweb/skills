@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "serializer.strict-mode.last-run-clean",
+  "functionId": "serializer.strict-mode",
+  "intent": {
+    "proves": "The latest deserialize ran under strict mode with no escalated warning.",
+    "level": "behavioural",
+    "scope": "the latest deserialize run log"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "file-serializer-run-log",
+      "surface": "file",
+      "status": "planned",
+      "handler": "serializer-run-log",
+      "path": "System/Serializer/Log",
+      "reason": "No reserved handler reads Serializer run logs."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-base/references/serializer-reference.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/strict-mode.md"
+    }
+  ]
+}

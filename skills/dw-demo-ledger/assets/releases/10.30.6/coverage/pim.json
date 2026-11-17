@@ -1,0 +1,254 @@
+{
+  "schema": 1,
+  "area": "pim",
+  "retrieved": "2026-11-12",
+  "sources": [
+    {
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "title": "10.29 release candidate scan, reviewed after raw preservation",
+      "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
+    },
+    {
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "title": "Brand-build ledger gaps and check findings (vacuum components, food ingredients)"
+    },
+    {
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "title": "Brand-build ledger gaps and check findings (outdoor power equipment)"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Released addition: pim.attribute-translation-state. Evidence and measurement limits are in the 10.29.8 snapshot's delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "pim.attribute-translation-state"
+    },
+    {
+      "claim": "Released addition: pim.import-key-detection. Evidence and measurement limits are in the 10.29.8 snapshot's delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "pim.import-key-detection"
+    },
+    {
+      "claim": "Released addition: pim.json-feeds. Evidence and measurement limits are in the 10.29.8 snapshot's delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "pim.json-feeds"
+    },
+    {
+      "claim": "Released addition: pim.matrix-fields. Evidence and measurement limits are in the 10.29.8 snapshot's delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "pim.matrix-fields"
+    },
+    {
+      "claim": "Brand-build inventory correction: Documents per language or market.",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "functionId": "pim.document-scope"
+    },
+    {
+      "claim": "Brand-build inventory correction: Document metadata: version and history.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.document-metadata"
+    },
+    {
+      "claim": "Brand-build inventory correction: Image alt text per language.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.asset-alt-text"
+    },
+    {
+      "claim": "Brand-build inventory correction: Product videos.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.product-videos"
+    },
+    {
+      "claim": "Brand-build inventory correction: Units with an offset conversion (temperature).",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "functionId": "pim.offset-units"
+    },
+    {
+      "claim": "Brand-build inventory correction: Secondary unit and fraction display.",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "functionId": "pim.unit-display-format"
+    },
+    {
+      "claim": "Brand-build inventory correction: Relations with attribute values.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.relation-attributes"
+    },
+    {
+      "claim": "Brand-build inventory correction: Structured feature blocks.",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "functionId": "pim.structured-features"
+    },
+    {
+      "claim": "Proposed as pim.matrix-fields: Already admitted in revision 2 from the release scan; absent from 10.28.15 (admission exclusion).",
+      "url": "https://github.com/dynamicweb/skills/issues/210",
+      "duplicateOf": "pim.matrix-fields"
+    },
+    {
+      "claim": "Proposed as pim.box-contents: No separate platform carrier. Box contents that are products are one more relation group kind (pim.product-relations, one group per kind); contents that are not products are a declared list or long-text attribute (pim.field-types, pim.list-fields).",
+      "url": "https://github.com/dynamicweb/skills/issues/212",
+      "duplicateOf": "pim.product-relations"
+    },
+    {
+      "claim": "Inventory correction: family attributes live in the family's data model, not in a global field.",
+      "url": "delta.json#corrections",
+      "functionId": "pim.field-placement"
+    },
+    {
+      "claim": "Automatic product numbering: no check yet. Its check (availability) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "migration/pim-registry.json#omissions",
+      "functionId": "pim.auto-numbering"
+    },
+    {
+      "claim": "Bundles and parts lists (BOM): checked by bom-products (local SQL), lines-resolve (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#bom",
+      "functionId": "pim.bom"
+    },
+    {
+      "claim": "Bulk product updates: no check yet. Its check (availability) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "migration/pim-registry.json#omissions",
+      "functionId": "pim.bulk-update"
+    },
+    {
+      "claim": "Channels with their own group tree: checked by channels-with-products (local SQL), shared-groups (local SQL), empty-channels (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#channels",
+      "functionId": "pim.channels"
+    },
+    {
+      "claim": "Product comments: no check yet. Its check (availability) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "migration/pim-registry.json#omissions",
+      "functionId": "pim.comments"
+    },
+    {
+      "claim": "Computed fields (calculation or concatenation): checked by provider-field (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#computed-fields",
+      "functionId": "pim.computed-fields"
+    },
+    {
+      "claim": "Data models per product family: checked by families-have-models (local SQL), folder (local SQL), products-without-model (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#data-models",
+      "functionId": "pim.data-models"
+    },
+    {
+      "claim": "Data sets with inherited default values: checked by data-set (local SQL), defaults (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#data-sets",
+      "functionId": "pim.data-sets"
+    },
+    {
+      "claim": "Dynamic relations with amounts (materials, packaging, ingredients): checked by groups (MCP or local SQL), relations (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#dynamic-relations",
+      "functionId": "pim.dynamic-relations"
+    },
+    {
+      "claim": "PIM email notifications on a query: checked by notifications (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#email-notifications",
+      "functionId": "pim.email-notifications"
+    },
+    {
+      "claim": "Field display groups: checked by groups (local SQL), unnamed-groups (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#field-display-groups",
+      "functionId": "pim.field-display-groups"
+    },
+    {
+      "claim": "Required fields: checked by declared-required (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#field-rules",
+      "functionId": "pim.field-rules"
+    },
+    {
+      "claim": "Fields that differ per language or per variant: checked by declared-scope (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#field-scope",
+      "functionId": "pim.field-scope"
+    },
+    {
+      "claim": "Typed fields: every attribute on the field type that fits its value: checked by declared-typing (local SQL), type-spread (local SQL), text-share (local SQL), declared-have-values (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#field-types",
+      "functionId": "pim.field-types"
+    },
+    {
+      "claim": "Units on measures: checked by declared-units (local SQL), groups-in-use (local SQL), groups-valid (local SQL), unit-in-label (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#field-units",
+      "functionId": "pim.field-units"
+    },
+    {
+      "claim": "Validation pattern on formatted codes: checked by pattern (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#field-validation",
+      "functionId": "pim.field-validation"
+    },
+    {
+      "claim": "Grid editing: no check yet. Its check (availability) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "migration/pim-registry.json#omissions",
+      "functionId": "pim.grid-edit"
+    },
+    {
+      "claim": "GTIN / EAN on the standard field: checked by ean-share (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#gtin",
+      "functionId": "pim.gtin"
+    },
+    {
+      "claim": "Product numbers: checked by number-missing (local SQL), number-duplicates (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#identifiers",
+      "functionId": "pim.identifiers"
+    },
+    {
+      "claim": "Translations of products, field labels and list options: checked by translated-products (local SQL), text-differs (local SQL), label-translations (local SQL), option-translations (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#languages",
+      "functionId": "pim.languages"
+    },
+    {
+      "claim": "List fields with options, single and multi select: checked by declared-options (local SQL), multi-select (local SQL), values-resolve (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#list-fields",
+      "functionId": "pim.list-fields"
+    },
+    {
+      "claim": "Manufacturers / brands: checked by manufacturers (MCP or local SQL), product-share (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#manufacturers",
+      "functionId": "pim.manufacturers"
+    },
+    {
+      "claim": "Range fields: no check yet. Its check (availability) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "migration/pim-registry.json#omissions",
+      "functionId": "pim.range-fields"
+    },
+    {
+      "claim": "Review product changes: no check yet. Its check (availability) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "migration/pim-registry.json#omissions",
+      "functionId": "pim.review-changes"
+    },
+    {
+      "claim": "Structured schema output: no check yet. Its check (availability) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "migration/pim-registry.json#omissions",
+      "functionId": "pim.schema-output"
+    },
+    {
+      "claim": "Unit shown per language: checked by rules (local SQL). Planned only, so UNVERIFIED: rendered. No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#unit-rules-per-language",
+      "functionId": "pim.unit-rules-per-language"
+    },
+    {
+      "claim": "Product workflow with states, transitions and notifications: checked by states (MCP or local SQL), transitions (MCP or local SQL), attached (local SQL), states-in-use (local SQL), notification (local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#workflow",
+      "functionId": "pim.workflow"
+    },
+    {
+      "claim": "Dynamic workspaces: checked by workspaces (MCP or local SQL), empty-workspaces (MCP or local SQL), completeness-level (MCP or local SQL). No exact-baseline measurement is claimed.",
+      "url": "migration/pim-registry.json#workspaces",
+      "functionId": "pim.workspaces"
+    }
+  ],
+  "gaps": [
+    {
+      "claim": "pim.attribute-translation-state",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "pim.import-key-detection",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "pim.json-feeds",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    }
+  ]
+}

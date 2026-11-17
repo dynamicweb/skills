@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "search.index-fields.manual-field",
+  "functionId": "search.index-fields",
+  "intent": {
+    "proves": "The product index has at least one field that is not supplied by a schema extender.",
+    "level": "configured",
+    "scope": "fields of the storefront product index"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-index-fields",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_index_fields",
+      "arguments": {},
+      "reason": "Needs a filter on IndexFieldModel.Kind (not SchemaExtender); mcp-count has no filter."
+    },
+    {
+      "id": "file-files-system-repositories-index",
+      "surface": "file",
+      "status": "planned",
+      "handler": "index-xml",
+      "path": "Files/System/Repositories/*/*.index",
+      "reason": "Repository definitions are XML files under Files/System/Repositories; an XML projection handler is not implemented and MCP file access to this folder is not granted by default."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "users.customer-profiles.profile-selector",
+  "functionId": "users.customer-profiles",
+  "intent": {
+    "proves": "At least one visible Authentication app shows the profile selector after sign-in.",
+    "level": "configured",
+    "scope": "active UserAuthentication paragraphs on active pages; ListUserProfiles setting key observed on a 10.29.x baseline"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM Paragraph p JOIN Page g ON g.PageId = p.ParagraphPageId WHERE p.ParagraphDeleted = 0 AND p.ParagraphShowParagraph = 1 AND g.PageDeleted = 0 AND g.PageActive = 1 AND p.ParagraphModuleSystemName = 'UserAuthentication' AND p.ParagraphModuleSettings LIKE '%<ListUserProfiles>1</ListUserProfiles>%'",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+    }
+  ]
+}

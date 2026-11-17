@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "distribution.theme-layer.brand-slot",
+  "functionId": "distribution.theme-layer",
+  "intent": {
+    "proves": "The brand slot stylesheet is present in the Swift design.",
+    "level": "applied",
+    "scope": "Files/Templates/Designs/Swift-v2/Custom"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-files-count",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-files-count",
+      "operation": "list_files",
+      "arguments": {
+        "path": "/Files/Templates/Designs/Swift-v2/Custom"
+      },
+      "reason": "list_files on /Files/Templates is allowed on a measured host, but no handler counts a single named file there."
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "Templates\\Designs\\Swift-v2\\Custom",
+        "filter": "brand.css",
+        "includeSubfolders": false
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/theme-default/layer.json"
+    }
+  ]
+}

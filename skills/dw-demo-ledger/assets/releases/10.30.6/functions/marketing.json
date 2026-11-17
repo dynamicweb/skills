@@ -1,0 +1,615 @@
+{
+  "schema": 1,
+  "area": "marketing",
+  "functions": [
+    {
+      "id": "marketing.campaign-folders",
+      "area": "marketing",
+      "name": "Campaign folders with inherited email settings",
+      "description": "Top-level campaign folders carrying sender, subject, domain, unsubscribe, engagement index and provider defaults that emails created under them inherit.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/campaign-folders.folders.json",
+        "probes/marketing/campaign-folders.sender-default.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-email-marketing",
+          "when": "the demo scope does not include email marketing"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+        },
+        {
+          "kind": "source",
+          "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.emails",
+      "area": "marketing",
+      "name": "Emails built from a content page",
+      "description": "An email in a campaign folder with sender, subject, pre-header, domain and the content page that is sent as the message body.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/emails.emails.json",
+        "probes/marketing/emails.content-page.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-email-marketing",
+          "when": "the demo scope does not include email marketing"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+        },
+        {
+          "kind": "source",
+          "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.email-templates",
+      "area": "marketing",
+      "name": "Email templates",
+      "description": "Emails saved as reusable templates to create new emails from.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/email-templates.templates.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-template-reuse",
+          "when": "the demo never shows creating an email from a template"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailtemplates.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+        },
+        {
+          "kind": "source",
+          "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.send",
+      "area": "marketing",
+      "name": "Send an email campaign",
+      "description": "An email sent now from the email overview, leaving sent recipients and a sent state.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/send.sent.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-send-history",
+          "when": "the demo shows building and scheduling emails only, never a sent campaign or its statistics"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+        },
+        {
+          "kind": "source",
+          "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-demo-swift/references/dashboard-seeding.md (email statistics and flow schema)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.scheduled-send",
+      "area": "marketing",
+      "name": "Scheduled and recurring email sends",
+      "description": "An email scheduled for a date, time zone and optional repeat interval; the Automation Active folder lists scheduled emails.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/scheduled-send.scheduled.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "manual-send-only",
+          "when": "the demo sends emails by hand only"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html"
+        },
+        {
+          "kind": "source",
+          "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.recipients",
+      "area": "marketing",
+      "name": "Recipients from users, groups and segments",
+      "description": "Recipient selection on an email or campaign folder through a recipient provider (Dynamicweb Users: users, recipient groups, segment search; Unresponsive recipients), honouring the users' email permission.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/recipients.provider-set.json",
+        "probes/marketing/recipients.email-allowed-users.json",
+        "probes/marketing/recipients.preview.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-email-marketing",
+          "when": "the demo scope does not include email marketing"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+        },
+        {
+          "kind": "source",
+          "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.Core 10.29.8 (table and column names in assembly SQL strings)"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#marketing.recipients"
+        }
+      ]
+    },
+    {
+      "id": "marketing.unsubscribe",
+      "area": "marketing",
+      "name": "Unsubscribe handling",
+      "description": "Unsubscribe link text and redirect page, and what an unsubscribe does: clear email permission, remove from a group, clear custom fields, withdraw consent.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/unsubscribe.redirect-page.json",
+        "probes/marketing/unsubscribe.clears-permission.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-email-marketing",
+          "when": "the demo scope does not include email marketing"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/index.html"
+        },
+        {
+          "kind": "source",
+          "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.consent-gating",
+      "area": "marketing",
+      "name": "Consent-gated recipients",
+      "description": "Recipients limited to users who consented to selected data processing activities, with consent withdrawn on unsubscribe; or email permission disregarded on purpose.",
+      "skill": "dw-users-permissions",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/consent-gating.activities.json",
+        "probes/marketing/consent-gating.consents.json",
+        "probes/marketing/consent-gating.email-requires-consent.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "email-permission-only",
+          "when": "the demo relies on the email permission flag alone"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html"
+        },
+        {
+          "kind": "source",
+          "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.Core 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.flows",
+      "area": "marketing",
+      "name": "Email flows (automation)",
+      "description": "A flow sending a series of emails to recipients or recipient groups in a fixed order with a delay per step, repeating on an interval.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/flows.active-flows.json",
+        "probes/marketing/flows.flows-have-steps.json",
+        "probes/marketing/flows.flows-in-folder.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-automation",
+          "when": "the demo shows one-off emails only"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailflows.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-demo-swift/references/dashboard-seeding.md (email statistics and flow schema)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.tracking-statistics",
+      "area": "marketing",
+      "name": "Email tracking, statistics and engagement index",
+      "description": "Opens, clicks and link performance per email and campaign folder, the engagement index values per action, and an optional tracking provider.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/tracking-statistics.clicks.json",
+        "probes/marketing/tracking-statistics.actions.json",
+        "probes/marketing/tracking-statistics.engagement-index.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-send-history",
+          "when": "the demo never shows a sent campaign or its statistics"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emailmarketing.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+        },
+        {
+          "kind": "source",
+          "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-demo-swift/references/dashboard-seeding.md (email statistics and flow schema)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.personalized-content",
+      "area": "marketing",
+      "name": "Content rendered per recipient",
+      "description": "Render content for each recipient on an email or campaign folder, so user-specific content (cart, products, vouchers, names) is rendered per recipient.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/personalized-content.per-recipient.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "same-content-for-all",
+          "when": "every email in the demo has the same content for all recipients"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.abandoned-cart",
+      "area": "marketing",
+      "name": "Abandoned cart emails",
+      "description": "A scheduled, repeating email using the Abandoned cart recipients provider (abandon delay, age limit, shop, language, login and terms rules) and a page with the Context order renderer app.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/abandoned-cart.provider.json",
+        "probes/marketing/abandoned-cart.repeat-schedule.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-cart-recovery",
+          "when": "the demo story has no cart recovery beat"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/abandoned-cart-emails.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+        },
+        {
+          "kind": "source",
+          "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.Ecommerce 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.back-in-stock",
+      "area": "marketing",
+      "name": "Back-in-stock notifications",
+      "description": "Customers sign up on an out-of-stock product; a scheduled email using the Back in stock recipients provider and a product catalog app in product context mails them when stock returns.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/back-in-stock.signups.json",
+        "probes/marketing/back-in-stock.provider.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "always-in-stock",
+          "when": "the demo catalogue has no out-of-stock beat"
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/back-in-stock.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.Ecommerce 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.voucher-emails",
+      "area": "marketing",
+      "name": "Voucher emails for new signups",
+      "description": "A per-recipient email whose page carries the voucher renderer app drawing codes from a voucher list, sent once to a new-signups segment.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/voucher-emails.voucher-renderer.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-voucher-beat",
+          "when": "the demo has no signup voucher beat"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/voucher-emails.html"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.Ecommerce 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.delivery-providers",
+      "area": "marketing",
+      "name": "External delivery providers",
+      "description": "A Mandrill, SendGrid or Save (debug) delivery provider configured and set on a campaign folder or email instead of the default Dynamicweb Send Provider; sending time-out setting.",
+      "skill": "dw-demo-swift",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/delivery-providers.providers.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "default-send-provider",
+          "when": "the demo sends through the default Dynamicweb Send Provider"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/deliveryproviders.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/sendgrid.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/marketing/index.html"
+        },
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.Core 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    },
+    {
+      "id": "marketing.split-test",
+      "area": "marketing",
+      "name": "Split tests",
+      "description": "An email split test comparing variants on a sample before sending the winner.",
+      "skill": "dw-demo-swift",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/marketing/split-test.split-tests.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-split-test",
+          "when": "the demo does not show split testing"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+        }
+      ]
+    }
+  ]
+}

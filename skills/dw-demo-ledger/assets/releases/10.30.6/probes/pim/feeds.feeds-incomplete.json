@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "id": "pim.feeds.feeds-incomplete",
+  "functionId": "pim.feeds",
+  "intent": {
+    "proves": "Every feed that is not a folder has a provider, a language and a product source (index query, channel, products and groups, or shop).",
+    "level": "stored-integrity",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT CAST(FeedId AS nvarchar(20)) + N' ' + CAST(FeedName AS nvarchar(200)) FROM EcomFeed WHERE ISNULL(FeedIsFolder, 0) = 0 AND (ISNULL(FeedProvider, N'') = N'' OR ISNULL(FeedLanguageIds, N'') = N'' OR (ISNULL(FeedIndexQueryId, N'') = N'' AND ISNULL(FeedChannelId, N'') = N'' AND ISNULL(CAST(FeedProductsAndGroups AS nvarchar(max)), N'') = N'' AND ISNULL(FeedShopIds, N'') = N''))"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#feeds/feeds-incomplete"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.variants.variant-numbers",
+  "functionId": "pim.variants",
+  "intent": {
+    "proves": "Every variant row in the default language has its own product number.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-variant-numbers",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-variant-numbers",
+      "operation": "get_variant_groups",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomProducts WHERE ISNULL(ProductVariantId, N'') <> N'' AND ProductLanguageId = N'{lang}' AND ISNULL(ProductNumber, N'') = N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#variants/variant-numbers"
+    }
+  ]
+}

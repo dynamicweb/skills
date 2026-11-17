@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "admin.scheduled-tasks.parent-zero",
+  "functionId": "admin.scheduled-tasks",
+  "intent": {
+    "proves": "No task row carries TaskParentId 0, which the scheduler never fires and which logs nothing.",
+    "level": "stored-integrity",
+    "scope": "every ScheduledTask row"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-scheduled-tasks",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-task-parent-zero",
+      "operation": "get_scheduled_tasks",
+      "arguments": {
+        "includeSubTasks": true
+      },
+      "reason": "The MCP model exposes ParentId as a nullable int; whether a stored 0 reads back as 0 or null is unverified."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TaskName FROM ScheduledTask WHERE TaskParentId = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-extend-scheduled-tasks/references/scheduler-rows-and-runs.md"
+    }
+  ]
+}

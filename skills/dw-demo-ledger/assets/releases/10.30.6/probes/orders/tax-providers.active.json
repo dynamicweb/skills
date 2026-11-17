@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "orders.tax-providers.active",
+  "functionId": "orders.tax-providers",
+  "intent": {
+    "proves": "At least one tax setting is active.",
+    "level": "configured",
+    "scope": "all tax settings"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_tax_settings",
+      "reason": "mcp-count cannot filter on the active flag; a projection handler is not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomTaxSettings WHERE TaxSettingActive = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/taxsettings.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/avalara-avatax.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/product-catalog/vertex.html"
+    }
+  ]
+}

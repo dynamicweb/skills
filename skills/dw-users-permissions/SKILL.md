@@ -265,6 +265,15 @@ or `save_user_groups` carrying only name and parent, re-saves every other column
 model and blanks what the tool's model does not carry. It is the one call guaranteed to undo a SQL
 write made on the same row ([references/user-group-operations.md](references/user-group-operations.md) §17b).
 
+**External sign-in is not group mapping, and not provisioning** - keep the three apart when you
+classify a requirement. External login providers ship for Microsoft Entra ID, Entra External ID,
+Azure AD B2C, Okta, Google and GitHub (a custom provider covers the rest), and they work for
+**backend** sign-in as well as frontend: a backend sign-in succeeds only when a local user with a
+matching email already exists. A frontend sign-in can create the user, in the one user group chosen
+on the provider; there is no mapping of the provider's groups or claims to user groups, and no SCIM
+provisioning. "Admin SSO with our identity provider" is standard; "groups follow the identity
+provider" and "SCIM" are custom scope.
+
 **Dynamic group membership has latency** — segment-query-based group membership is evaluated at query time, not in real time. Changes in the underlying data (e.g., a user's country changes) may not immediately affect group membership.
 
 ## Next Steps

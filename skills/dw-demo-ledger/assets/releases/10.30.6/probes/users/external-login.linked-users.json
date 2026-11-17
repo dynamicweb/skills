@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "users.external-login.linked-users",
+  "functionId": "users.external-login",
+  "intent": {
+    "proves": "At least one user has signed in through an external provider and is linked to it.",
+    "level": "applied",
+    "scope": "AccessUserExternalLogin rows"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUserExternalLogin",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/users/external-login-providers.html"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "marketing.split-test.split-tests",
+  "functionId": "marketing.split-test",
+  "intent": {
+    "proves": "At least one split test exists.",
+    "level": "configured",
+    "scope": "all split tests"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EmailMarketingSplitTest"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

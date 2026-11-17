@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "id": "orders.quotes.states",
+  "functionId": "orders.quotes",
+  "intent": {
+    "proves": "At least one quote state exists.",
+    "level": "configured",
+    "scope": "order states of order type Quote"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-count",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_order_states",
+      "arguments": {
+        "orderType": "Quote"
+      }
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomOrderStates WHERE OrderStateOrderType = 1 AND ISNULL(OrderStateIsDeleted, 0) = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/ordermanagement/quotes.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/quoteflows.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/customer-experience-center.html"
+    },
+    {
+      "kind": "source",
+      "ref": "Dynamicweb.Ecommerce 10.29.8: Dynamicweb.Ecommerce.Orders.OrderType Order=0, Quote=1, Recurringorder=2, LedgerEntry=3, Cart=4"
+    }
+  ]
+}

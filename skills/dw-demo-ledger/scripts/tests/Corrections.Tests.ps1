@@ -13,7 +13,7 @@ $env:LEDGER_TEST_SQLSERVER='.\SQLEXPRESS'; Invoke-Pester -Path scripts/tests/Cor
 param()
 BeforeDiscovery {
     $script:noSql=-not $env:LEDGER_TEST_SQLSERVER
-    $script:versions=@('10.29.8','10.28.15')
+    $script:versions=@('10.30.6','10.29.8','10.28.15')
 }
 BeforeAll {
     foreach($file in @('Ledger.Core.ps1','Ledger.Observations.ps1','Ledger.Sql.ps1','Pim.Fields.ps1','Ledger.Transport.ps1','Ledger.Execute.ps1')){. (Join-Path $PSScriptRoot "../$file")}
@@ -227,6 +227,31 @@ Describe 'An authorisation refusal falls back; an observation never does' {
         Should -Invoke Get-LedgerFileObservation -Times 0
     }
 }
+Describe 'Price and discount group checks (10.30.6 addition)' {
+    BeforeAll {
+        $script:cpg=@('CustomerPriceGroupId','CustomerPriceGroupIsActive');$script:cdg=@('CustomerDiscountGroupId','CustomerDiscountGroupIsActive');$script:pdg=@('ProductDiscountGroupId','ProductDiscountGroupIsActive')
+        $script:price=@('PriceId','PriceCustomerPriceGroupId','PriceCustomerDiscountGroupId','PriceProductDiscountGroupId')
+        function G([string[]]$Columns,[string[]]$Rows){if($Rows.Count){T $Columns $Rows}else{T $Columns @("N'', 0") -Empty}}
+    }
+    It 'groups-defined counts active groups of any of the three kinds and fails on none or inactive ones' -Skip:$noSql {
+        $c=Get-Probe '10.30.6' 'probes/commerce/price-groups.groups-defined.json'
+        (Invoke-ProbeFixture $c @{EcomCustomerPriceGroups=(G $cpg @());EcomCustomerDiscountGroups=(G $cdg @());EcomProductDiscountGroups=(G $pdg @("N'PDG1', 1"))}).result | Should -Be PASS
+        (Invoke-ProbeFixture $c @{EcomCustomerPriceGroups=(G $cpg @("N'CPG1', 1"));EcomCustomerDiscountGroups=(G $cdg @());EcomProductDiscountGroups=(G $pdg @())}).result | Should -Be PASS
+        $r=Invoke-ProbeFixture $c @{EcomCustomerPriceGroups=(G $cpg @("N'CPG1', 0"));EcomCustomerDiscountGroups=(G $cdg @("N'CDG1', 0"));EcomProductDiscountGroups=(G $pdg @())}
+        $r.value | Should -Be 0;$r.result | Should -Be FAIL
+    }
+    It 'prices-targeted needs a price row on an existing active group' -Skip:$noSql {
+        $c=Get-Probe '10.30.6' 'probes/commerce/price-groups.prices-targeted.json'
+        $groups=@{EcomCustomerPriceGroups=(G $cpg @("N'CPG1', 1","N'OLD', 0"));EcomCustomerDiscountGroups=(G $cdg @());EcomProductDiscountGroups=(G $pdg @())}
+        (Invoke-ProbeFixture $c ($groups+@{EcomPrices=(T $price @("N'P1', N'CPG1', NULL, NULL"))})).result | Should -Be PASS
+        $r=Invoke-ProbeFixture $c ($groups+@{EcomPrices=(T $price @("N'P1', N'MISSING', NULL, NULL","N'P2', N'OLD', NULL, NULL","N'P3', NULL, NULL, NULL"))})
+        $r.value | Should -Be 0;$r.result | Should -Be FAIL
+    }
+    It 'are absent from the snapshots before 10.30.6' {
+        foreach($v in @('10.29.8','10.28.15')){(Get-Functions $v).ContainsKey('commerce.price-groups') | Should -BeFalse}
+        (Get-Functions '10.30.6').ContainsKey('commerce.price-groups') | Should -BeTrue
+    }
+}
 Describe 'Snapshot contracts of the corrections (<_>)' -ForEach $versions {
     BeforeAll {$v=$_;$fs=Get-Functions $v}
     It 'no longer gates stored coordinates on an unknowable map credential' {
@@ -238,7 +263,8 @@ Describe 'Snapshot contracts of the corrections (<_>)' -ForEach $versions {
         @($with.id|Where-Object {$_ -like 'pim.*' -or $_ -in @('orders.completed-orders','commerce.default-price')}).Count | Should -Be 0
     }
     It 'keeps every new correction unverified without a target' {
-        $ids=if($v -eq '10.29.8'){@((Read-LedgerJson (Join-Path $releases '10.29.8/delta.json')).corrections.id)}else{@((Read-LedgerJson (Join-Path $releases '10.28.15/evidence/admission.json')).corrections.id)}
+        # 10.30.6 carries the 10.29.8 corrections unchanged; its own delta has none.
+        $ids=if($v -in @('10.30.6','10.29.8')){@((Read-LedgerJson (Join-Path $releases '10.29.8/delta.json')).corrections.id)}else{@((Read-LedgerJson (Join-Path $releases '10.28.15/evidence/admission.json')).corrections.id)}
         $ids.Count | Should -BeGreaterThan 0
         foreach($id in $ids){
             $fs.ContainsKey($id) | Should -BeTrue
@@ -247,5 +273,56 @@ Describe 'Snapshot contracts of the corrections (<_>)' -ForEach $versions {
                 (Invoke-LedgerCheck $c @{} @{} @{expectations=@{}} @('mcp','admin-api','dwapi','file','sql') '' '' '').result | Should -Be UNVERIFIED
             }
         }
+    }
+}
+Describe 'Website header and footer selection (10.30.6 revision 2)' {
+    BeforeAll {
+        $script:hf=Get-Probe '10.30.6' 'probes/swift/swift.header-footer.selected-on-website.json'
+        # Table names here are bracketed or prefixes of column names, so each is replaced only where it stands alone.
+        function ConvertTo-Fixture([string]$Query,[hashtable]$Tables){
+            foreach($name in $Tables.Keys){
+                $t=$Tables[$name];$rows=(@($t.rows)|ForEach-Object {"($_)"}) -join ', '
+                $derived="(SELECT * FROM (VALUES $rows) v($($t.columns -join ', '))$(if($t.empty){' WHERE 1 = 0'}))"
+                $pattern="\b(FROM|JOIN)\s+$([regex]::Escape($name))(?=\s|$)(?:\s+(?!(?:WHERE|ON|JOIN|INNER|LEFT|RIGHT|CROSS|GROUP|ORDER|UNION)\b)([A-Za-z_]\w*))?"
+                $Query=[regex]::Replace($Query,$pattern,{param($m) $alias=if($m.Groups[2].Success){$m.Groups[2].Value}else{'fixture'};"$($m.Groups[1].Value) $derived $alias"}.GetNewClosure())
+            }
+            return $Query
+        }
+        function Invoke-HeaderFooter([hashtable]$Tables){
+            $b=$hf.bindings|Where-Object {$_.id -eq 'local-sql'}
+            $off=@(Invoke-Sqlcmd-Rows -Server $env:LEDGER_TEST_SQLSERVER -Database 'tempdb' -Query (ConvertTo-Fixture $b.query $Tables))
+            $subjects=Invoke-Sqlcmd-Scalar -Server $env:LEDGER_TEST_SQLSERVER -Database 'tempdb' -Query (ConvertTo-Fixture $b.subjectsQuery $Tables)
+            return @{offenders=$off;scanned=$subjects;result=(Test-LedgerAssertion $hf.assertion @{value=$off.Count;complete=$true;scanned=$subjects;offenders=$off})}
+        }
+        $script:areaCols=@('AreaID','AreaName','AreaActive','AreaDeleted','AreaItemType','AreaItemId')
+        $script:masterCols=@('Id','HeaderDesktop','FooterDesktop')
+        $script:pageCols=@('PageID','PageDeleted','PageItemType')
+        function A([int]$Id,[int]$Active=1,[string]$Type='Swift-v2_Master',[string]$Item='1'){"$Id, N'Site $Id', $Active, 0, N'$Type', N'$Item'"}
+        function M([string]$Id,[string]$Header,[string]$Footer){"N'$Id', N'$Header', N'$Footer'"}
+        function Pg([int]$Id,[string]$Type,[int]$Deleted=0){"$Id, $Deleted, N'$Type'"}
+        $script:pages=T $pageCols @((Pg 91 'Swift-v2_Header'),(Pg 90 'Swift-v2_Footer'),(Pg 89 'Swift-v2_Footer' 1),(Pg 5 'Swift-v2_Page'))
+        function Fixture([string[]]$Areas,[string[]]$Masters){@{Area=(T $areaCols $Areas);'[ItemType_Swift-v2_Master]'=(T $masterCols $Masters);Page=$pages}}
+    }
+    It 'is an implemented sql-offenders read with a subjects count and at least one subject' {
+        $b=$hf.bindings|Where-Object {$_.status -eq 'implemented'}
+        $b.handler | Should -Be 'sql-offenders'
+        $b.subjectsQuery | Should -Not -BeNullOrEmpty
+        $hf.assertion.minimumSubjects | Should -Be 1
+        {Assert-LedgerSelect $b.query;Assert-LedgerSelect $b.subjectsQuery} | Should -Not -Throw
+    }
+    It 'passes an active website that selects an existing header and footer page' -Skip:$noSql {
+        $r=Invoke-HeaderFooter (Fixture @((A 1),(A 2 0 '' '')) @((M '1' '91' '90')))
+        $r.result | Should -Be PASS;$r.scanned | Should -Be 1
+    }
+    It 'RED CONTROL: a deleted footer, a header of another type, no selection and no website item are offenders' -Skip:$noSql {
+        (Invoke-HeaderFooter (Fixture @((A 1)) @((M '1' '91' '89')))).offenders | Should -Be @('1 Site 1')
+        (Invoke-HeaderFooter (Fixture @((A 1)) @((M '1' '5' '90')))).result | Should -Be FAIL
+        (Invoke-HeaderFooter (Fixture @((A 1)) @((M '1' '' '90')))).result | Should -Be FAIL
+        (Invoke-HeaderFooter (Fixture @((A 1 1 'Headless_Area' '7')) @((M '1' '91' '90')))).result | Should -Be FAIL
+        $r=Invoke-HeaderFooter (Fixture @((A 1),(A 2 1 'Swift-v2_Master' '2')) @((M '1' '91' '90'),(M '2' 'x' '90')))
+        $r.offenders | Should -Be @('2 Site 2');$r.scanned | Should -Be 2
+    }
+    It 'RED CONTROL: no active website proves nothing' -Skip:$noSql {
+        (Invoke-HeaderFooter (Fixture @((A 1 0)) @((M '1' '91' '90')))).result | Should -Be FAIL
     }
 }

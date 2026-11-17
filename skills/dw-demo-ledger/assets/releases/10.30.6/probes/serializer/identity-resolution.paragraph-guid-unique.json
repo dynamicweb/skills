@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "serializer.identity-resolution.paragraph-guid-unique",
+  "functionId": "serializer.identity-resolution",
+  "intent": {
+    "proves": "No ParagraphUniqueId is shared by two paragraphs.",
+    "level": "stored-integrity",
+    "scope": "every Paragraph row"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT ParagraphUniqueId FROM Paragraph WHERE ParagraphUniqueId IS NOT NULL GROUP BY ParagraphUniqueId HAVING COUNT(*) > 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/concepts.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/sql-tables.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/link-resolution.md"
+    }
+  ]
+}

@@ -74,6 +74,77 @@
     "productScope": {
       "type": "object"
     },
+    "repositories": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[^\\/:*?\"<>|]+$"
+      },
+      "uniqueItems": true
+    },
+    "renderedMeasures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "field": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "languageId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "shopId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "unit": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "value": {
+            "type": "number"
+          },
+          "channel": {
+            "enum": [
+              "product",
+              "feed"
+            ]
+          },
+          "feedId": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "productId",
+          "field",
+          "languageId",
+          "unit"
+        ],
+        "if": {
+          "properties": {
+            "channel": {
+              "const": "feed"
+            }
+          },
+          "required": [
+            "channel"
+          ]
+        },
+        "then": {
+          "required": [
+            "feedId"
+          ]
+        },
+        "additionalProperties": false
+      }
+    },
     "editLayout": {
       "type": "object",
       "properties": {

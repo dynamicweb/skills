@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "marketing.recipients.email-allowed-users",
+  "functionId": "marketing.recipients",
+  "intent": {
+    "proves": "At least one user has given email permission.",
+    "level": "applied",
+    "scope": "all users"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE AccessUserNewsletterAllowed = 1"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/emails.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/marketing/campaigns.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/MCP Marketing/Tools (EmailCampaignTools.cs, EmailRecipientTools.cs)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.EmailMarketing 10.29.8 (table and column names in assembly SQL strings)"
+    },
+    {
+      "kind": "source",
+      "ref": "nuget Dynamicweb.Core 10.29.8 (table and column names in assembly SQL strings)"
+    }
+  ]
+}

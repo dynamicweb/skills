@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "admin.health-checks.ecommerce-clean",
+  "functionId": "admin.health-checks",
+  "intent": {
+    "proves": "The Ecommerce data health provider reports no check in Error.",
+    "level": "stored-integrity",
+    "scope": "every check of the Ecommerce data provider; counts stop at 100"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-mcp-health-failing",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-health-failing",
+      "operation": "run_health_checks",
+      "reason": "run_health_checks needs the provider type name from get_health_providers and a state projection; no reserved handler."
+    },
+    {
+      "id": "admin-api-admin-health-failing",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-health-failing",
+      "operation": "HealthProviderChecksByProviderName",
+      "reason": "HealthProviderChecksByProviderName answers with a bearer key per the skill; payload projection not measured on the baseline."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/health.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/references/tracking-insights.md"
+    }
+  ]
+}

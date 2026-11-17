@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "assets.file-archive.media-files",
+  "functionId": "assets.file-archive",
+  "intent": {
+    "proves": "The media images folder contains at least one file.",
+    "level": "applied",
+    "scope": "files under /Files/Images, including subfolders"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-list-files",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-files-count",
+      "operation": "list_files",
+      "arguments": {
+        "path": "/Files/Images"
+      },
+      "reason": "list_files is not recursive and returns folders too; a recursive file-only count handler is needed."
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "implemented",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "Images",
+        "filter": "*.*",
+        "includeSubfolders": true
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/assets/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/FileTools.cs"
+    }
+  ]
+}

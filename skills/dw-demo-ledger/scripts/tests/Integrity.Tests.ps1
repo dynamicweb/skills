@@ -56,7 +56,7 @@ Describe 'SQL text is one read-only SELECT' {
         param($query)
         {Assert-LedgerSelect $query} | Should -Not -Throw
     }
-    It 'allows every query shipped in <version>, raw and with its tokens expanded' -TestCases @(@{version='10.29.8'},@{version='10.28.15'}) {
+    It 'allows every query shipped in <version>, raw and with its tokens expanded' -TestCases @(@{version='10.30.6'},@{version='10.29.8'},@{version='10.28.15'}) {
         param($version)
         $build=@{defaultLanguage='LANG1';pimShop='SHOP1';productScope=@{exclude=@(@{idLike='X%'})}}
         $queries=@(Get-ChildItem (Join-Path $assets "releases/$version/probes") -Recurse -Filter '*.json' | ForEach-Object {(Read-LedgerJson $_.FullName).bindings} | Where-Object {$_.query} | ForEach-Object {$_.query})

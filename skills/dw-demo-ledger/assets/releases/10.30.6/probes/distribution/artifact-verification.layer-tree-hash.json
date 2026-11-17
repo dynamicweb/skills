@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "distribution.artifact-verification.layer-tree-hash",
+  "functionId": "distribution.artifact-verification",
+  "intent": {
+    "proves": "Every layer the build composes hashes to its gateProven provenTree hash.",
+    "level": "stored-integrity",
+    "scope": "layer directories of the locked commit, layer-tree/v1"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "file-layer-tree-hash",
+      "surface": "file",
+      "status": "planned",
+      "handler": "layer-tree-hash",
+      "path": "layers",
+      "reason": "Needs the layer-tree/v1 hash algorithm in the runner; not built."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:CONTRIBUTING.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/bacpacs.schema.json"
+    }
+  ]
+}

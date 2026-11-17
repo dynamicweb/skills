@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "admin.addin-install.loaded",
+  "functionId": "admin.addin-install",
+  "intent": {
+    "proves": "No declared custom assembly appears in TypeLoadErrors.log.",
+    "level": "behavioural",
+    "scope": "Files/System/Log/AddInManager/TypeLoadErrors.log against the build's customAssemblies input"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "file-log-lines",
+      "surface": "file",
+      "status": "planned",
+      "handler": "log-lines",
+      "path": "System/Log/AddInManager/TypeLoadErrors.log",
+      "reason": "No reserved handler reads log lines."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-cli/references/addin-install.md"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-extend-admin-ui/SKILL.md"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "users.dynamic-groups.query-bound",
+  "functionId": "users.dynamic-groups",
+  "intent": {
+    "proves": "At least one group has a segment search query bound.",
+    "level": "configured",
+    "scope": "AccessUser rows of type 2 with AccessUserGroupSmartSearch set"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-user-groups",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_user_groups",
+      "arguments": {},
+      "reason": "UserGroupModel does not expose the bound segment search to mcp-count; projection not verified."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE AccessUserType = 2 AND ISNULL(AccessUserGroupSmartSearch,'') <> ''",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-groups.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/segment-search.html"
+    }
+  ]
+}

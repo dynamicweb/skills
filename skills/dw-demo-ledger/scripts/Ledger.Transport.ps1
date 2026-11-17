@@ -135,9 +135,163 @@ function Get-LedgerMcpObservation {
     }
     return @{value=$value;offenders=$offenders;scanned=$rows.Count;complete=$complete}
 }
+function ConvertFrom-LedgerPersonaCredential {
+    # DW_PERSONA_CREDENTIALS: a JSON array of {userName, password, userId?}. Returns the list, or
+    # throws a fault that names the shape only: the value is a secret and is never quoted.
+    param([string]$Text)
+    if([string]::IsNullOrWhiteSpace($Text)){return ,@()}
+    try{$parsed=ConvertFrom-Json -InputObject $Text -AsHashtable -NoEnumerate}catch{throw [InvalidOperationException]::new('Runner input: persona credentials (DW_PERSONA_CREDENTIALS) are not a JSON array of {userName, password}.')}
+    if($parsed -isnot [array] -or @($parsed).Count -eq 0){throw [InvalidOperationException]::new('Runner input: persona credentials (DW_PERSONA_CREDENTIALS) are not a JSON array of {userName, password}.')}
+    $list=foreach($entry in $parsed){
+        if($entry -isnot [Collections.IDictionary] -or $entry.userName -isnot [string] -or [string]::IsNullOrWhiteSpace($entry.userName) -or
+           $entry.password -isnot [string] -or $entry.password -eq '' -or ($entry.Contains('userId') -and $entry.userId -isnot [long] -and $entry.userId -isnot [int]) -or
+           @($entry.Keys|Where-Object {$_ -cnotin @('userName','password','userId')}).Count){
+            throw [InvalidOperationException]::new('Runner input: persona credentials (DW_PERSONA_CREDENTIALS) are not a JSON array of {userName, password}.')
+        }
+        @{userName=$entry.userName;password=$entry.password;userId=$(if($entry.Contains('userId')){[long]$entry.userId}else{$null})}
+    }
+    return ,@($list)
+}
+function Get-LedgerPersonaSignInObservation {
+    # Each supplied persona signs in (POST users/authenticate) and is then served one read as that user
+    # (GET <readAs> with the issued token), which must name the same user. 1 when every persona does, else 0.
+    # The password and the token stay in this function: no row, reason or offender carries either, and no
+    # response body is kept.
+    param($Binding)
+    $registry=Read-LedgerJson (Join-Path $PSScriptRoot '../assets/handlers.json')
+    if($Binding.operation -cnotin @($registry.dwapiSignInRoutes)){throw 'Sign-in route is not allowlisted for the sign-in handler.'}
+    $readAs=if($Binding.arguments){$Binding.arguments.readAs}else{$null}
+    if($readAs -isnot [string] -or $readAs -cnotin @($registry.dwapiSignedInReadRoutes)){throw 'The read made as the persona is not an allowlisted signed-in read route.'}
+    if(-not $script:LedgerTarget -or -not $script:LedgerTarget.baseUrl){throw [InvalidOperationException]::new('Target URL is unavailable.')}
+    $personas=ConvertFrom-LedgerPersonaCredential $env:DW_PERSONA_CREDENTIALS
+    if($personas.Count -eq 0){throw [InvalidOperationException]::new('Runner input: persona credentials are not supplied (DW_PERSONA_CREDENTIALS), so no sign-in can be observed.')}
+    $base=$script:LedgerTarget.baseUrl;$insecure=$script:LedgerTarget.insecure
+    $offenders=[Collections.Generic.List[object]]::new()
+    foreach($persona in $personas){
+        $body=@{username=$persona.userName;password=$persona.password}|ConvertTo-Json -Compress
+        $sign=Invoke-WebRequest -Uri ($base+'/dwapi/'+$Binding.operation) -Method Post -Body $body -ContentType 'application/json' -Headers @{Accept='application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$insecure
+        $status=[int]$sign.StatusCode
+        if($status -ge 500){throw 'Sign-in request failed on the server.'}
+        $token=$null
+        if($status -eq 200){
+            try{$answer=ConvertFrom-Json -InputObject ([string]$sign.Content) -AsHashtable}catch{$answer=$null}
+            if($answer -is [Collections.IDictionary] -and $answer.token -is [string] -and $answer.token.Trim()){$token=$answer.token}
+        }
+        if(-not $token){$offenders.Add([ordered]@{userName=$persona.userName;step='sign-in';status=$status;reason='No token was issued.'});continue}
+        $read=Invoke-WebRequest -Uri ($base+'/dwapi/'+$readAs) -Method Get -Headers @{Accept='application/json';Authorization='Bearer '+$token} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$insecure
+        $token=$null
+        $status=[int]$read.StatusCode
+        if($status -ge 500){throw 'Signed-in read failed on the server.'}
+        $user=$null
+        if($status -eq 200){try{$user=ConvertFrom-Json -InputObject ([string]$read.Content) -AsHashtable}catch{$user=$null}}
+        if($user -isnot [Collections.IDictionary]){$offenders.Add([ordered]@{userName=$persona.userName;step='read-as-user';status=$status;reason="GET $readAs as the persona returned no user."});continue}
+        $sameName=$user.userName -is [string] -and [string]::Equals($user.userName,$persona.userName,[StringComparison]::OrdinalIgnoreCase)
+        $sameId=$null -eq $persona.userId -or ($null -ne $user.id -and "$($user.id)" -eq "$($persona.userId)")
+        if(-not($sameName -and $sameId)){$offenders.Add([ordered]@{userName=$persona.userName;step='read-as-user';status=$status;reason="GET $readAs as the persona was served another user."})}
+    }
+    return @{value=[int]($offenders.Count -eq 0);scanned=$personas.Count;offenders=$offenders.ToArray();complete=$true}
+}
+function Get-LedgerMember {
+    # Delivery reads are camelCase and a JSON feed is PascalCase: one member by name, ignoring case, or $null.
+    param($Object,[string]$Name)
+    if($Object -isnot [Collections.IDictionary]){return $null}
+    foreach($key in $Object.Keys){if([string]::Equals([string]$key,$Name,[StringComparison]::OrdinalIgnoreCase)){return ,$Object[$key]}}
+    return $null
+}
+function Read-LedgerDeliveryJson {
+    # One anonymous GET; the parsed body, cached per URI for the run. 404 is a build input the target refutes.
+    param([string]$Route,[System.Collections.Specialized.OrderedDictionary]$Query,[switch]$Feed)
+    $pairs=@(foreach($key in $Query.Keys){[Uri]::EscapeDataString($key)+'='+[Uri]::EscapeDataString([string]$Query[$key])})
+    $uri=$script:LedgerTarget.baseUrl+'/dwapi/'+$Route;if($pairs.Count){$uri+='?'+($pairs -join '&')}
+    if(-not $script:LedgerDeliveryCache){$script:LedgerDeliveryCache=@{}}
+    if($script:LedgerDeliveryCache.ContainsKey($uri)){return $script:LedgerDeliveryCache[$uri]}
+    $response=Invoke-WebRequest -Uri $uri -Method Get -Headers @{Accept='application/json'} -TimeoutSec 60 -SkipHttpErrorCheck -SkipCertificateCheck:$script:LedgerTarget.insecure
+    $status=[int]$response.StatusCode
+    if($status -in @(401,403)){throw [UnauthorizedAccessException]::new('Delivery read is not authorised without a credential.')}
+    if($status -eq 404){throw [InvalidOperationException]::new('Build input: a declared rendered measure names a product or feed the delivery API does not serve (404).')}
+    if($status -ne 200){throw 'Delivery read failed.'}
+    $text=if($response.Content -is [byte[]]){[Text.Encoding]::UTF8.GetString($response.Content)}else{[string]$response.Content}
+    try{$data=ConvertFrom-Json -InputObject $text -AsHashtable -NoEnumerate}
+    catch{if($Feed){throw [InvalidOperationException]::new('Build input: a declared feed does not render JSON, so its rendered values cannot be read.')};throw 'Delivery read is not JSON.'}
+    $script:LedgerDeliveryCache[$uri]=$data
+    return $data
+}
+function Get-LedgerRenderedValueObservation {
+    # Each measure the build declares (renderedMeasures) is read as the channel renders it in the ruled
+    # language: the product read GET ecommerce/products/{productId}, or a JSON feed GET feeds/GetFeedOutput.
+    # Measured on 10.30.6: a field renders as <container>.<group>.fields.<systemName>.value[0] = {name:"55.9 cm",
+    # value:"55.9"} under productCategories and fieldDisplayGroups (feed: the same in PascalCase, under
+    # Products[]). An offender is a measure whose channel serves another language, omits the field, or renders
+    # another unit or value than the rule's. Stored rules are never read here: only what the channel prints.
+    param($Binding,$Build)
+    $registry=Read-LedgerJson (Join-Path $PSScriptRoot '../assets/handlers.json')
+    $productRoute=[string]$Binding.operation
+    $feedRoute=if($Binding.arguments){[string]$Binding.arguments.feedRoute}else{''}
+    if($productRoute -cnotin @($registry.dwapiReadRoutes) -or $productRoute -notmatch '\{productId\}'){throw 'Delivery route is not an allowlisted read route.'}
+    if($feedRoute -and $feedRoute -cnotin @($registry.dwapiReadRoutes)){throw 'Delivery route is not an allowlisted read route.'}
+    if(-not $script:LedgerTarget -or -not $script:LedgerTarget.baseUrl){throw [InvalidOperationException]::new('Target URL is unavailable.')}
+    $measures=@($Build.renderedMeasures|Where-Object {$null -ne $_})
+    if($measures.Count -eq 0){throw [InvalidOperationException]::new('Build input: renderedMeasures is not declared, so no rendered unit can be observed. Declare one measure per ruled field and language.')}
+    $plain='^[A-Za-z0-9_-]+$'
+    foreach($m in $measures){
+        foreach($key in @('productId','field','languageId')){if("$($m[$key])" -notmatch $plain){throw 'Rendered measure input is not a plain id.'}}
+        if($m.shopId -and "$($m.shopId)" -notmatch $plain){throw 'Rendered measure input is not a plain id.'}
+        if([string]::IsNullOrWhiteSpace([string]$m.unit)){throw [InvalidOperationException]::new('Build input: a rendered measure names no unit.')}
+        if($m.channel -eq 'feed' -and (-not $feedRoute -or "$($m.feedId)" -notmatch '^[0-9]+$')){throw [InvalidOperationException]::new('Build input: a feed measure needs a feedId and a binding with a feed route.')}
+    }
+    $offenders=[Collections.Generic.List[object]]::new()
+    foreach($m in $measures){
+        $channel=if($m.channel){[string]$m.channel}else{'product'}
+        $query=[ordered]@{}
+        if($channel -eq 'feed'){$query.id=[string]$m.feedId}
+        $query.LanguageId=[string]$m.languageId
+        if($m.shopId){$query.ShopId=[string]$m.shopId}
+        if($channel -eq 'feed'){
+            $feed=Read-LedgerDeliveryJson $feedRoute $query -Feed
+            $list=Get-LedgerMember $feed 'Products'
+            if($list -isnot [array]){throw [InvalidOperationException]::new('Required observation field is missing.')}
+            $product=@($list|Where-Object {[string](Get-LedgerMember $_ 'Id') -ceq $m.productId -and -not [string](Get-LedgerMember $_ 'VariantId')})|Select-Object -First 1
+            if(-not $product){
+                $total=Get-LedgerMember $feed 'TotalProductsCount'
+                if($null -eq $total -or $total -gt $list.Count){throw [InvalidOperationException]::new('Paged collection is not complete.')}
+            }
+        } else {
+            $product=Read-LedgerDeliveryJson ($productRoute.Replace('{productId}',[string]$m.productId)) $query
+        }
+        $base=[ordered]@{productId=$m.productId;field=$m.field;languageId=$m.languageId;channel=$channel}
+        if(-not $product){$base.reason='The product is not in the feed output.';$offenders.Add($base);continue}
+        $served=Get-LedgerMember $product 'languageId'
+        if($served -isnot [string]){throw [InvalidOperationException]::new('Required observation field is missing.')}
+        $wrongLanguage=$served -cne $m.languageId
+        if($wrongLanguage){$base.servedLanguage=$served}
+        $found=@(foreach($containerName in @('productCategories','fieldDisplayGroups')){
+            $container=Get-LedgerMember $product $containerName
+            if($container -isnot [Collections.IDictionary]){continue}
+            foreach($group in $container.Values){$field=Get-LedgerMember (Get-LedgerMember $group 'fields') $m.field;if($field -is [Collections.IDictionary]){,$field}}
+        })
+        if($found.Count -eq 0){$base.reason=if($wrongLanguage){'The channel served another language than the ruled one.'}else{'The field is not rendered.'};$offenders.Add($base);continue}
+        $problems=@(if($wrongLanguage){'The channel served another language than the ruled one.'};foreach($field in $found){
+            $values=Get-LedgerMember $field 'value'
+            if($values -isnot [array] -or $values.Count -ne 1 -or $values[0] -isnot [Collections.IDictionary]){'The field does not render one value.';continue}
+            $text=[string](Get-LedgerMember $values[0] 'name');$raw=[string](Get-LedgerMember $values[0] 'value')
+            $base.rendered=$text
+            $parsed=[regex]::Match($text,'^\s*[-+]?[0-9]+(?:[.,][0-9]+)?\s*(?<unit>\S.*?)\s*$')
+            if(-not $parsed.Success){'The rendered value carries no unit.';continue}
+            if($parsed.Groups['unit'].Value -cne ([string]$m.unit).Trim()){'The rendered unit is not the rule''s unit.';continue}
+            if($null -ne $m.value){
+                $number=0.0
+                if(-not [double]::TryParse($raw,[Globalization.NumberStyles]::Float,[Globalization.CultureInfo]::InvariantCulture,[ref]$number) -or [Math]::Abs($number-[double]$m.value) -gt 1e-9){'The rendered value is not the expected value.'}
+            }
+        })
+        if($problems.Count){$base.reason=$problems[0];$offenders.Add($base)}
+    }
+    return @{value=$offenders.Count;scanned=$measures.Count;offenders=$offenders.ToArray();complete=$true}
+}
 function Get-LedgerDwapiObservation {
     # One anonymous GET on an allowlisted delivery route. No credential is sent and no other method exists here.
     param($Binding,$Build)
+    if($Binding.handler -eq 'dwapi-persona-sign-in'){return Get-LedgerPersonaSignInObservation $Binding}
+    if($Binding.handler -eq 'dwapi-rendered-value'){return Get-LedgerRenderedValueObservation $Binding $Build}
     if($Binding.handler -ne 'dwapi-count'){throw 'No registered delivery observation handler.'}
     if($Binding.operation -cnotin @((Read-LedgerJson (Join-Path $PSScriptRoot '../assets/handlers.json')).dwapiReadRoutes)){throw 'Delivery route is not an allowlisted read route.'}
     if(-not $script:LedgerTarget -or -not $script:LedgerTarget.baseUrl){throw [InvalidOperationException]::new('Target URL is unavailable.')}

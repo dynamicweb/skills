@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "content.language-layers.layers",
+  "functionId": "content.language-layers",
+  "intent": {
+    "proves": "At least one website is a language layer of a master website.",
+    "level": "configured",
+    "scope": "all non-deleted websites"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-master-areas",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_master_areas",
+      "arguments": {}
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Area WHERE ISNULL(AreaMasterAreaId, 0) > 0 AND AreaDeleted = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/index.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/AreaTools.cs"
+    }
+  ]
+}

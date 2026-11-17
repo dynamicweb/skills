@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "id": "content.layout-templates.layouts-available",
+  "functionId": "content.layout-templates",
+  "intent": {
+    "proves": "The design offers at least one layout template.",
+    "level": "supported",
+    "scope": "layout templates under the designs folder"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-layouts",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_layouts",
+      "arguments": {}
+    },
+    {
+      "id": "local-files",
+      "surface": "file",
+      "status": "planned",
+      "handler": "files-count",
+      "localOnly": true,
+      "arguments": {
+        "folder": "Templates\\Designs",
+        "filter": "*.cshtml",
+        "includeSubfolders": true
+      },
+      "reason": "Layout templates are a subset of the design's Razor files; a plain file count over-counts and is not equivalent."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/websites.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/AreaTools.cs"
+    }
+  ]
+}

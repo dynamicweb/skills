@@ -32,7 +32,7 @@ function Invoke-LedgerCheck {
         if($binding.surface -eq 'mcp') {
             $observation=Get-LedgerMcpObservation -Binding $binding -Check $Check -Build $Build
         } elseif($binding.surface -eq 'file') {
-            $observation=Get-LedgerFileObservation -Binding $binding -FilesPath $FilesPath
+            $observation=Get-LedgerFileObservation -Binding $binding -FilesPath $FilesPath -Build $Build
         } elseif($binding.surface -eq 'admin-api') {
             $observation=Get-LedgerAdminObservation -Binding $binding -Build $Build -Capabilities $Capabilities
         } elseif($binding.surface -eq 'dwapi') {
@@ -67,6 +67,11 @@ function Invoke-LedgerCheck {
         $row.result=Test-LedgerAssertion -Assertion $assertion -Observation $observation
         $row.measured=if($observation -is [Collections.IDictionary] -and $observation.Contains('measured')){$observation.measured}else{$observation.value};$row.scanned=$observation.scanned;$row.offenders=@($observation.offenders|Select-Object -First 25)
         $row.reason=if($observation.complete){'Equivalent observation evaluated.'}else{'Observation omits required fields or completeness evidence.'}
+        # Subjects read but outside the build's declared scope are reported, never judged and never dropped.
+        if($observation -is [Collections.IDictionary] -and $observation.Contains('outOfScope')){
+            $row.outOfScope=@($observation.outOfScope|Select-Object -First 25)
+            if($observation.scopeNote){$row.reason+=' '+$observation.scopeNote}
+        }
         if($assertion.kind -eq 'offenders' -and $assertion.ContainsKey('minimumSubjects')){
             $row.reason+=if($null -eq $observation.scanned){' The assertion needs a subject count and the binding reports none.'}elseif($observation.scanned -lt $assertion.minimumSubjects){" $($observation.scanned) subject(s) in scope, below the minimum of $($assertion.minimumSubjects)."}else{''}
         }
@@ -80,8 +85,9 @@ function Invoke-LedgerCheck {
         }
         elseif($_.Exception -is [InvalidOperationException]){
             $row.result='UNVERIFIED'
-            # A build input the target refutes is named; any other message stays generic so no response body is printed.
-            $row.reason=if($_.Exception.Message -like 'Build input: *'){$_.Exception.Message}else{'Required input, field, path or complete enumeration is unavailable.'}
+            # A build input the target refutes, or a runner input that is missing, is named; any other message stays
+            # generic so no response body is printed. Neither kind of message ever carries an input's value.
+            $row.reason=if($_.Exception.Message -like 'Build input: *' -or $_.Exception.Message -like 'Runner input: *'){$_.Exception.Message}else{'Required input, field, path or complete enumeration is unavailable.'}
         }
         else {$row.result='ERROR';$row.reason='Binding execution failed. Check handler, grants, scope and target schema; no exception body is persisted.'}
     }

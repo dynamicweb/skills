@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "pim.computed-fields.provider-field",
+  "functionId": "pim.computed-fields",
+  "intent": {
+    "proves": "At least one category field or global product field is built on a field type that has a provider.",
+    "level": "applied",
+    "scope": "Legacy registry scope; defaultLanguage/pimShop/productScope tokens where present. Global scans remain global."
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-provider-field",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-pim-provider-field",
+      "operation": "get_field_types",
+      "reason": "Requires complete joins and raw/fallback semantics parity before this binding may execute."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT (SELECT COUNT(*) FROM EcomProductCategoryField f JOIN EcomFieldType t ON t.FieldTypeId = f.FieldType WHERE ISNULL(t.FieldTypeProvider, N'') <> N'' AND f.FieldCategoryId <> N'reference_category') + (SELECT COUNT(*) FROM EcomProductField p JOIN EcomFieldType t ON t.FieldTypeId = p.ProductFieldTypeId WHERE ISNULL(t.FieldTypeProvider, N'') <> N'')"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#computed-fields/provider-field"
+    }
+  ]
+}

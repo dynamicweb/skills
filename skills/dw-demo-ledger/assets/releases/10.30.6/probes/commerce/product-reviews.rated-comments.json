@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "commerce.product-reviews.rated-comments",
+  "functionId": "commerce.product-reviews",
+  "intent": {
+    "proves": "At least one active product has an active comment with a rating.",
+    "level": "applied",
+    "scope": "active comments of item type ecomProduct on active products; complete SQL enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-comments",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_comments",
+      "reason": "get_comments can filter by item type; its response envelope and rating field are not measured."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Comment c WHERE c.CommentItemType = N'ecomProduct' AND c.CommentActive = 1 AND c.CommentRating > 0 AND EXISTS (SELECT 1 FROM EcomProducts p WHERE p.ProductId = c.CommentItemId AND p.ProductActive = 1)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    },
+    {
+      "kind": "source",
+      "ref": "https://api.nuget.org/v3-flatcontainer/dynamicweb.ecommerce/10.29.8/dynamicweb.ecommerce.10.29.8.nupkg (product deletion removes Comment rows with CommentItemType 'ecomProduct')"
+    }
+  ]
+}

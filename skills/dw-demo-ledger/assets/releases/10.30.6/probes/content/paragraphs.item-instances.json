@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "id": "content.paragraphs.item-instances",
+  "functionId": "content.paragraphs",
+  "intent": {
+    "proves": "No item-based paragraph lacks its item instance.",
+    "level": "stored-integrity",
+    "scope": "non-deleted paragraphs with an item type; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-paragraphs-by-page-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-offenders",
+      "operation": "get_paragraphs_by_page_id",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TOP 25 CAST(ParagraphId AS nvarchar(20)) + N' ' + ParagraphItemType FROM Paragraph WHERE ParagraphDeleted = 0 AND ISNULL(ParagraphItemType, N'') <> N'' AND ISNULL(ParagraphItemId, N'') = N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/paragraphs.html"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "content.form-submissions.received",
+  "functionId": "content.form-submissions",
+  "intent": {
+    "proves": "At least one form submission is stored.",
+    "level": "behavioural",
+    "scope": "all form submissions"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-form-submissions",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_form_submissions",
+      "arguments": {},
+      "reason": "Requires a formId per call; handler must enumerate forms and read the paged total."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM FormSubmit"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/forms-for-editors.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Forms/Tools/FormSubmissionTools.cs"
+    }
+  ]
+}

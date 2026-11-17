@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "commerce.configured-products.price",
+  "functionId": "commerce.configured-products",
+  "intent": {
+    "proves": "A configuration returns a price and reaches a cart or quote.",
+    "level": "behavioural",
+    "scope": "one declared configuration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-cart",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-cart-read",
+      "reason": "No delivery read handler is implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    }
+  ]
+}

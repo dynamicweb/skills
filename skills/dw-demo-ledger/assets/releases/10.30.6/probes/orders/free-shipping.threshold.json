@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "orders.free-shipping.threshold",
+  "functionId": "orders.free-shipping",
+  "intent": {
+    "proves": "At least one active shipping method has a free-shipping amount or is eligible for free shipping discounts.",
+    "level": "configured",
+    "scope": "all shipping methods"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_shipping_methods",
+      "arguments": {
+        "onlyActive": true
+      },
+      "reason": "The shipping projection is not proven to carry the free fee amount; handler not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT ShippingId) FROM EcomShippings WHERE ShippingActive = 1 AND (ShippingFreeFeeAmount > 0 OR ShippingEligibleForFreeShipping = 1)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/ordermanagement/shipping.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/free-shipping-discount.html"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "id": "distribution.release-compatibility.index-current",
+  "functionId": "distribution.release-compatibility",
+  "intent": {
+    "proves": "The locked commit carries gateProven for the edition and the build names no retired layer.",
+    "level": "supported",
+    "scope": "layers/INDEX.json of the locked commit against the build's edition and layers"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "file-distribution-index",
+      "surface": "file",
+      "status": "planned",
+      "handler": "distribution-index",
+      "path": "layers/INDEX.json",
+      "reason": "Reads the Distribution checkout, not the host; no reserved handler."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:README.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:LAYERS.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:CONTRIBUTING.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:layers/INDEX.json"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Distribution:versions/spine.json"
+    }
+  ]
+}

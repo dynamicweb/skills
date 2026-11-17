@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "id": "admin.scheduled-tasks.failed-active",
+  "functionId": "admin.scheduled-tasks",
+  "intent": {
+    "proves": "No active scheduled task has a failed most recent run (the Monitoring dashboard Failed tasks count is zero).",
+    "level": "behavioural",
+    "scope": "every enabled task, top level and subtasks; complete enumeration"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-scheduled-tasks",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-task-failed",
+      "operation": "get_scheduled_tasks",
+      "arguments": {
+        "includeSubTasks": true
+      },
+      "reason": "Needs a handler projecting Enabled and LastResult per row; mcp-count would count every task."
+    },
+    {
+      "id": "admin-api-admin-task-failed",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-task-failed",
+      "operation": "Tasks",
+      "reason": "TasksQuery payload projection (enabled, last result) not measured on the baseline."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-offenders",
+      "localOnly": true,
+      "query": "SELECT TaskName FROM ScheduledTask WHERE TaskEnabled = 1 AND TaskLastResult = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/reports.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduled-task-settings.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-extend-scheduled-tasks/references/scheduler-rows-and-runs.md"
+    }
+  ]
+}

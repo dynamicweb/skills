@@ -1,0 +1,394 @@
+{
+  "schema": 1,
+  "area": "search",
+  "retrieved": "2026-11-12",
+  "sources": [
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "title": "Creating indexes",
+      "sectionHash": "61ffe6c38c230741"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html",
+      "title": "Product indexes",
+      "sectionHash": "1e2a0a3941b859d7"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/userindexes.html",
+      "title": "User indexes",
+      "sectionHash": "5b76405500abafbb"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/productsearch.html",
+      "title": "Setting up a Product Search From Scratch with Facets",
+      "sectionHash": "001b85746b54a6c3"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/queries/index.html",
+      "title": "Working with queries",
+      "sectionHash": "0ca64486b87a6f44"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog-viewmodel.html",
+      "title": "Product Catalog for ViewModel",
+      "sectionHash": "5576e38089049e0d"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog.html",
+      "title": "Product Catalog",
+      "sectionHash": "5e265a224e66d31a"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/querypublisher.html",
+      "title": "Query Publisher",
+      "sectionHash": "27debd07706922b0"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/facets.html",
+      "title": "Facets",
+      "sectionHash": "079ad4e02050daff"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/index.html",
+      "title": "Repositories",
+      "sectionHash": "5f1e4902e503aa8c"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html",
+      "title": "Indexes",
+      "sectionHash": "20f0c63b2e06dbe7"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html",
+      "title": "Queries",
+      "sectionHash": "df3531e7d94e66d5"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/tasks.html",
+      "title": "Tasks",
+      "sectionHash": "c2d83782e5f422b0"
+    },
+    {
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-repository-index.html",
+      "title": "Build repository index",
+      "sectionHash": "9958024b076ff8a2"
+    },
+    {
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "title": "10.29 release candidate scan, reviewed after raw preservation",
+      "sectionHash": "sha256:e76e26020abe986f11d946a8a1acc9e57b658a2b26218da218295919287e941c"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Repositories hold indexes, queries, facets and tasks for product, content, user and file search.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/index.html",
+      "functionId": "search.repositories"
+    },
+    {
+      "claim": "Repositories implement free-text product search and content search in the frontend.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/index.html",
+      "functionId": "search.free-text-search"
+    },
+    {
+      "claim": "Repositories find products for enrichment.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/index.html",
+      "duplicateOf": "pim.product-queries"
+    },
+    {
+      "claim": "Repositories isolate subsets of users to send emails to.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/index.html",
+      "functionId": "search.user-index"
+    },
+    {
+      "claim": "Most solutions have a content index, a products index and a user index.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/index.html",
+      "functionId": "search.content-index"
+    },
+    {
+      "claim": "Index types: product, content, user, file and SQL.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html",
+      "functionId": "search.product-index"
+    },
+    {
+      "claim": "An index is built manually from its overview, by the Build repository index task, by an integration activity, or on product save in a channel.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html",
+      "functionId": "search.scheduled-index-build"
+    },
+    {
+      "claim": "Integration activities can rebuild repositories after import.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html",
+      "duplicateOf": "integration.post-run-refresh"
+    },
+    {
+      "claim": "Autobuild index on product update on the channel.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html",
+      "functionId": "search.auto-build-on-save"
+    },
+    {
+      "claim": "An index can be browsed document by document for debugging.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/indexes.html",
+      "excluded": {
+        "reason": "Diagnostic admin view; no build outcome."
+      }
+    },
+    {
+      "claim": "A query requests data from an index with a name and a source index.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html",
+      "functionId": "search.index-queries"
+    },
+    {
+      "claim": "Query parameters accept dynamic input of a declared type, arrays for multiple values.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html",
+      "functionId": "search.index-queries"
+    },
+    {
+      "claim": "Expressions combine a field, an operator and a test value; an empty query returns everything.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html",
+      "functionId": "search.index-queries"
+    },
+    {
+      "claim": "Expression groups use AND or OR and can be negated.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html",
+      "functionId": "search.index-queries"
+    },
+    {
+      "claim": "Operators include Equal, MatchAny, MatchAll, In, Contains, ContainsExtended and IsEmpty.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html",
+      "functionId": "search.index-queries"
+    },
+    {
+      "claim": "Test value types: constant, macro, parameter, term and code.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html",
+      "functionId": "search.index-queries"
+    },
+    {
+      "claim": "Sorting can be set on the query; analysed fields do not sort meaningfully.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html",
+      "functionId": "search.index-queries"
+    },
+    {
+      "claim": "Sorting is usually controlled by the publishing app.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html",
+      "duplicateOf": "commerce.product-catalog-app"
+    },
+    {
+      "claim": "Facets are search filters included on the product catalog app.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/facets.html",
+      "functionId": "search.facets"
+    },
+    {
+      "claim": "A facet group on a query holds field, list or term facets bound to a query parameter and render type.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/facets.html",
+      "functionId": "search.facets"
+    },
+    {
+      "claim": "Conditional facets show when a parameter has any or a specific value.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/facets.html",
+      "functionId": "search.conditional-facets"
+    },
+    {
+      "claim": "Do not facet analysed fields; mind data types.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/facets.html",
+      "functionId": "search.facets"
+    },
+    {
+      "claim": "Repository tasks are obsolete; use a scheduled task with the Build repository index add-in.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/tasks.html",
+      "functionId": "search.scheduled-index-build"
+    },
+    {
+      "claim": "Build repository index add-in runs a build action, with an alternate action at an alternate time of day.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/build-repository-index.html",
+      "functionId": "search.scheduled-index-build"
+    },
+    {
+      "claim": "Product Catalog for ViewModel publishes a query's products with paging, facets, details, feed and compare templates.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog-viewmodel.html",
+      "duplicateOf": "commerce.product-catalog-app"
+    },
+    {
+      "claim": "Product Catalog app (template tags) publishes products and is slower with obsolete features.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog.html",
+      "duplicateOf": "commerce.product-catalog-app"
+    },
+    {
+      "claim": "Product catalog compare and feed templates.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/product-catalog-viewmodel.html",
+      "duplicateOf": "commerce.product-catalog-app"
+    },
+    {
+      "claim": "Query Publisher renders index query results for products, users or files.",
+      "url": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/apps/querypublisher.html",
+      "functionId": "search.query-publisher"
+    },
+    {
+      "claim": "DW uses Lucene.NET indexes.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.repositories"
+    },
+    {
+      "claim": "An index has instances on disk under Files/System/Indexes; two instances are typical.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.product-index"
+    },
+    {
+      "claim": "Builds configure the builder and its settings per index type.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.product-index"
+    },
+    {
+      "claim": "Schema extenders add predefined fields: product, content, user and file.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.product-index"
+    },
+    {
+      "claim": "Fields are stored, indexed and analysed by purpose.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.index-fields"
+    },
+    {
+      "claim": "Simple, summary and grouping fields can be added manually.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.index-fields"
+    },
+    {
+      "claim": "Boost values rank matches on a field higher.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.analyzers-boosting"
+    },
+    {
+      "claim": "Custom field types apply a different analyzer.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.analyzers-boosting"
+    },
+    {
+      "claim": "stopwords.txt in Files/System/Repositories overrides the default stop words.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.analyzers-boosting"
+    },
+    {
+      "claim": "File index built by a full build only.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.file-index"
+    },
+    {
+      "claim": "SQL index for non-standard data.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/index.html",
+      "functionId": "search.sql-index"
+    },
+    {
+      "claim": "Product index balancer ActivePassive or LastUpdated.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html",
+      "functionId": "search.product-index"
+    },
+    {
+      "claim": "ProductIndexBuilder actions Full, Update and UpdateWithIds and builder settings (Skip*, ShopsToIndex, EmptyStringReplacement, BulkSize).",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html",
+      "functionId": "search.product-index"
+    },
+    {
+      "claim": "Completion rule fields are indexed only when SkipCompletionRules is unchecked.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html",
+      "duplicateOf": "pim.completeness-rules"
+    },
+    {
+      "claim": "Expand in product index on a variant group surfaces options as documents.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html",
+      "duplicateOf": "pim.variants"
+    },
+    {
+      "claim": "Rebuild after integration, on product save and on a schedule.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html",
+      "functionId": "search.scheduled-index-build"
+    },
+    {
+      "claim": "Optimise builds by skipping prices, unused images and group sorting.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/productindexes.html",
+      "functionId": "search.product-index"
+    },
+    {
+      "claim": "User index with UserIndexBuilder, UserIndexSchemaExtender and generated fields (groups, orders, loyalty, CanImpersonate).",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/userindexes.html",
+      "functionId": "search.user-index"
+    },
+    {
+      "claim": "User index builder settings HoursToUpdate, DoNotFailOnMismatchingCount, SkipOrders, SkipOrderlines, SkipLoyaltyPoints.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/userindexes.html",
+      "functionId": "search.user-index"
+    },
+    {
+      "claim": "CanImpersonate and CanBeImpersonatedBy fields in the user index.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/indexes/userindexes.html",
+      "functionId": "search.user-index"
+    },
+    {
+      "claim": "Product search from scratch: repository, index, instances, fields, query, expressions, parameters and facets.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/productsearch.html",
+      "functionId": "search.free-text-search"
+    },
+    {
+      "claim": "A free-text OR group over product name and short description bound to a search parameter.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/productsearch.html",
+      "functionId": "search.free-text-search"
+    },
+    {
+      "claim": "Facets created on the query and wired to parameters.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/productsearch.html",
+      "functionId": "search.facets"
+    },
+    {
+      "claim": "Customer assortments filtered in queries through AssortmentIDs.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/queries/index.html",
+      "duplicateOf": "pim.assortments"
+    },
+    {
+      "claim": "Excluding products with negated groups.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/queries/index.html",
+      "functionId": "search.index-queries"
+    },
+    {
+      "claim": "Matching null values through the EmptyStringReplacement value.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/queries/index.html",
+      "functionId": "search.index-queries"
+    },
+    {
+      "claim": "Finding products without a data model, with missing or expired assets, or due to be discontinued.",
+      "url": "https://doc.dynamicweb.dev/documentation/implementing/repositories/queries/index.html",
+      "duplicateOf": "pim.product-queries"
+    },
+    {
+      "claim": "Released addition: search.asset-metadata-fields. Evidence and measurement limits are in the 10.29.8 snapshot's delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "search.asset-metadata-fields"
+    },
+    {
+      "claim": "Released addition: search.variant-index-representatives. Evidence and measurement limits are in the 10.29.8 snapshot's delta-review.json.",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "functionId": "search.variant-index-representatives"
+    },
+    {
+      "claim": "Facet overrides per product group: no check yet. Its check (exists) has planned bindings only, so a build that requests it is UNVERIFIED.",
+      "url": "https://github.com/dynamicweb/MCP/blob/main/Products/Tools/GroupFacetTools.cs",
+      "functionId": "search.group-facet-overrides"
+    }
+  ],
+  "gaps": [
+    "Spell check (did you mean) on the product catalog app (FieldToSpellCheck, ParameterToSpellCheck) is described in the dw-search-indexing skill but not on the manual pages read; no function yet.",
+    "Every repository-definition check (instances, analyzers, content, user, file and SQL indexes) is planned only: no XML projection handler exists and MCP file access to Files/System/Repositories is not granted by default.",
+    "get_index_fields, get_index_facets and get_index_query_expressions carry the needed fields, but mcp-count cannot filter; filtered MCP handlers would turn eight planned bindings into implemented ones.",
+    "Delivery API route for storefront product search is named from the skills, not measured.",
+    "Users-area auto build index on user save lives in the global settings file; key not verified.",
+    "PIM product queries (Products > Queries) are owned by the pim area and not defined here.",
+    {
+      "claim": "search.asset-metadata-fields",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    },
+    {
+      "claim": "search.variant-index-representatives",
+      "url": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2",
+      "note": "Release evidence is documented; its new behavioural binding is planned and cannot PASS."
+    }
+  ]
+}

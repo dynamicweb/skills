@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "id": "pim.screen-layouts.editor-words",
+  "functionId": "pim.screen-layouts",
+  "intent": {
+    "proves": "No tab or group is named after the mechanism: not a name on the banned list, not a category id, not a name with an underscore, ending in Attrs or containing the words attributes, data model, category fields, custom fields or misc. Every tab and group has a name. The catch-all group is exempt (it may be called Other fields).",
+    "level": "applied",
+    "scope": "The active layout of the product edit screen (Dynamicweb.Products.UI.Screens.ProductEditScreen) against the build's declared families and editLayout; complete SQL enumeration of ScreenLayout, ScreenLayoutTab, ScreenLayoutGroup and ScreenLayoutEditor, read once per run."
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "admin-layout",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-pim-edit-layout",
+      "operation": "ScreenLayoutsAll",
+      "reason": "Needs an authenticated full payload of every layout with its screen type, tabs, groups (with the catch-all flag) and editor system names, measured for scope parity with the SQL read; descriptor existence alone is insufficient."
+    },
+    {
+      "id": "mcp-layout",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-edit-layout",
+      "reason": "The measured MCP tool set has no screen layout read."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "pim-edit-layout",
+      "localOnly": true,
+      "arguments": {
+        "aspect": "names",
+        "bannedNames": [
+          "Categories",
+          "Category",
+          "Category fields",
+          "Custom",
+          "Custom fields",
+          "Attributes",
+          "Fields",
+          "Data model",
+          "Data models",
+          "Other",
+          "Others",
+          "Misc",
+          "Miscellaneous"
+        ],
+        "bannedPatterns": [
+          "_",
+          "Attrs$",
+          "\\b(attributes?|attrs|data ?models?|category fields|custom fields|misc)\\b"
+        ]
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "migration",
+      "ref": "migration/pim-registry.json#screen-layouts/editor-words"
+    },
+    {
+      "kind": "source",
+      "ref": "registry-commit:02354513e0f8ea86227535d137ffb999096504b5"
+    }
+  ]
+}

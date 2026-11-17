@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.dynamic-groups.calculation-task",
+  "functionId": "users.dynamic-groups",
+  "intent": {
+    "proves": "An enabled scheduled task runs the user segment search calculation add-in.",
+    "level": "configured",
+    "scope": "ScheduledTask rows with the UserSmartSearchScheduledTaskAddIn add-in type"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-scheduled-tasks",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_scheduled_tasks",
+      "arguments": {},
+      "reason": "Needs a filter on the add-in type and enabled state; mcp-count has no filter."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM ScheduledTask WHERE TaskEnabled = 1 AND TaskAddInTypeName LIKE 'Dynamicweb.Security.UserManagement.SmartSearchProviders.UserSmartSearchScheduledTaskAddIn%'",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/segment-search.html"
+    }
+  ]
+}

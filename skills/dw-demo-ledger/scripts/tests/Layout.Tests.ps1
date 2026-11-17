@@ -15,7 +15,7 @@ Invoke-Pester -Path scripts/tests/Layout.Tests.ps1
 #Requires -Version 7.0
 param()
 BeforeDiscovery {
-    $script:versions = @('10.29.8', '10.28.15')
+    $script:versions = @('10.30.6', '10.29.8', '10.28.15')
 }
 BeforeAll {
     foreach ($file in @('Ledger.Core.ps1', 'Ledger.Observations.ps1', 'Ledger.Sql.ps1', 'Pim.Fields.ps1', 'Pim.Layout.ps1', 'Ledger.Transport.ps1', 'Ledger.Execute.ps1')) { . (Join-Path $PSScriptRoot "../$file") }

@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "content.grid-rows.rows",
+  "functionId": "content.grid-rows",
+  "intent": {
+    "proves": "At least one active grid row exists on a non-deleted page.",
+    "level": "configured",
+    "scope": "grid rows on non-deleted pages"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-grid-rows-by-page-id",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_grid_rows_by_page_id",
+      "arguments": {},
+      "reason": "Tool is scoped to one area or page; a handler must enumerate every area/page and aggregate, which mcp-count does not do."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM GridRow g JOIN Page p ON p.PageId = g.GridRowPageId WHERE g.GridRowActive = 1 AND g.GridRowDeleted = 0 AND p.PageDeleted = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/rows.html"
+    }
+  ]
+}

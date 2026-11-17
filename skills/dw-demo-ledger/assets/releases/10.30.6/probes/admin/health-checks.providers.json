@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "admin.health-checks.providers",
+  "functionId": "admin.health-checks",
+  "intent": {
+    "proves": "The five built-in health providers are present.",
+    "level": "supported",
+    "scope": "registered health providers"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 5
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-health-providers",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_health_providers",
+      "arguments": {}
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/health.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-setup-config/references/tracking-insights.md"
+    }
+  ]
+}

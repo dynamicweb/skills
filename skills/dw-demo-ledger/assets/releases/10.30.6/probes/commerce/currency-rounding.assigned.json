@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "commerce.currency-rounding.assigned",
+  "functionId": "commerce.currency-rounding",
+  "intent": {
+    "proves": "At least one currency uses a rounding definition.",
+    "level": "applied",
+    "scope": "all currencies"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_currencies",
+      "reason": "The currency projection is not proven to carry the rounding id; handler not implemented."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomCurrencies WHERE ISNULL(CurrencyRoundingId, N'') <> N''"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/products/internationalization/currencies.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

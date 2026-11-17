@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.jwt-authentication.authenticate-issues-token",
+  "functionId": "delivery.jwt-authentication",
+  "intent": {
+    "proves": "POST /dwapi/users/authenticate returns a token for the demo persona.",
+    "level": "behavioural",
+    "scope": "demo persona credentials supplied at runtime, never in the build"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-auth",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-auth",
+      "operation": "POST /dwapi/users/authenticate",
+      "reason": "No dwapi handler is implemented; needs a frontend credential supplied as runtime input and a measured response projection."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html"
+    }
+  ]
+}

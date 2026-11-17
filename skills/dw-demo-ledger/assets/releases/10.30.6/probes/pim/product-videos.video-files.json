@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "pim.product-videos.video-files",
+  "functionId": "pim.product-videos",
+  "intent": {
+    "proves": "At least one active product carries a video file asset.",
+    "level": "applied",
+    "scope": "active products of the declared product scope, every language; complete SQL enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-product-images",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_product_images",
+      "reason": "get_product_images reads one product at a time; no complete host enumeration of details."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(DISTINCT d.DetailProductId) FROM EcomDetails d WHERE d.DetailType = 0 AND (LOWER(d.DetailValue) LIKE N'%.mp4' OR LOWER(d.DetailValue) LIKE N'%.m4v' OR LOWER(d.DetailValue) LIKE N'%.mov' OR LOWER(d.DetailValue) LIKE N'%.webm' OR LOWER(d.DetailValue) LIKE N'%.mkv' OR LOWER(d.DetailValue) LIKE N'%.ogv' OR LOWER(d.DetailValue) LIKE N'%.avi') AND EXISTS (SELECT 1 FROM EcomProducts p WHERE p.ProductId = d.DetailProductId AND p.ProductActive = 1{inScope})"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/TOOLS.md (upload_product_videos, import_product_videos_from_urls)"
+    }
+  ]
+}

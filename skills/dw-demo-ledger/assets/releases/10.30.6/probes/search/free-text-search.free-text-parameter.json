@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "search.free-text-search.free-text-parameter",
+  "functionId": "search.free-text-search",
+  "intent": {
+    "proves": "The storefront query has a Contains or ContainsExtended expression bound to a search parameter.",
+    "level": "configured",
+    "scope": "expression tree of the query the catalog app reads"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-index-query-expressions",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_index_query_expressions",
+      "arguments": {},
+      "reason": "Needs the query id from the catalog app and an expression-tree projection; not implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/implementing/repositories/productsearch.html"
+    }
+  ]
+}

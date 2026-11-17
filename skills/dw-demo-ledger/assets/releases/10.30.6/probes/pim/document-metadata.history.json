@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "pim.document-metadata.history",
+  "functionId": "pim.document-metadata",
+  "intent": {
+    "proves": "A product keeps two dated versions of one document and shows the earlier one in its history.",
+    "level": "behavioural",
+    "scope": "products whose source documentation lists several versions of one document"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "DetailShowInHistory, DetailValidFrom and DetailValidTo exist (10.29.8 schema), but how the platform selects and renders a version history is not measured; no query may claim it yet."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    },
+    {
+      "kind": "source",
+      "ref": "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomDetails.DetailShowInHistory, DetailValidFrom, DetailValidTo"
+    }
+  ]
+}

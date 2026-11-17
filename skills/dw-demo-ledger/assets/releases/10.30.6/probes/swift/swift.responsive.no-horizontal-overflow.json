@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "swift.responsive.no-horizontal-overflow",
+  "functionId": "swift.responsive",
+  "intent": {
+    "proves": "Demo pages have no horizontal overflow at 390 px on a phone device profile.",
+    "level": "behavioural",
+    "scope": "the demo path pages, anonymous and signed in"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "file-overflow",
+      "surface": "file",
+      "status": "planned",
+      "handler": "browser-overflow",
+      "path": "scripts/overflow-probe.js",
+      "reason": "The overflow probe runs in a browser (dw-demo-swift scripts); no runner handler drives a browser."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/swift/create-content/responsive-pages.html"
+    },
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-swift/references/mobile-pass.md"
+    }
+  ]
+}

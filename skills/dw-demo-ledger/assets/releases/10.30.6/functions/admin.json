@@ -1,0 +1,793 @@
+{
+  "schema": 1,
+  "area": "admin",
+  "functions": [
+    {
+      "id": "admin.scheduled-tasks",
+      "area": "admin",
+      "name": "Scheduled tasks on the platform scheduler",
+      "description": "Recurring background work (index builds, feeds, integration jobs, clean-up) registered as scheduled tasks and run by the in-process scheduler; a failed active task shows on the Monitoring dashboard.",
+      "skill": "dw-extend-scheduled-tasks",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/scheduled-tasks.registered.json",
+        "probes/admin/scheduled-tasks.failed-active.json",
+        "probes/admin/scheduled-tasks.parent-zero.json",
+        "probes/admin/scheduled-tasks.scheduler-not-disabled.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/reports.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduled-task-settings.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-extend-scheduled-tasks/references/scheduler-rows-and-runs.md"
+        },
+        {
+          "kind": "release",
+          "ref": "skills/dw-demo-ledger/assets/releases/10.29.8/delta-review.json#admin.scheduled-tasks"
+        }
+      ]
+    },
+    {
+      "id": "admin.scheduled-task-subtasks",
+      "area": "admin",
+      "name": "Sequenced subtasks in one scheduled task",
+      "description": "A scheduled task whose add-in or activity subtasks run in a fixed order, the only reliable way to express a dependency between two jobs.",
+      "skill": "dw-extend-scheduled-tasks",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/scheduled-task-subtasks.has-subtasks.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-step-jobs",
+          "when": "every scheduled job of the build is one add-in with no dependency on another job"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-extend-scheduled-tasks/references/scheduler-rows-and-runs.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.scheduled-task-addins",
+      "area": "admin",
+      "name": "Scheduled task add-in types",
+      "description": "The add-in types a task can run: the shipped set (index build, assortments, clean-up, feed export, recurring orders and more) plus any custom BaseScheduledTaskAddIn. RunSqlScheduledTaskAddIn's own result is not evidence its SQL ran.",
+      "skill": "dw-extend-scheduled-tasks",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/scheduled-task-addins.types.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtasks.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/scheduledtaskaddins/run-sql.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-extend-scheduled-tasks/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.audit-trail",
+      "area": "admin",
+      "name": "Audit trail",
+      "description": "Who changed what and when, per object type, id, sub id and language. Off until /Globalsettings/Settings/Auditing/EnableAuditing is True; writes made through the Management API write no audit rows on measured builds.",
+      "skill": "dw-data-audit-trail",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "flag",
+          "id": "/Globalsettings/Settings/Auditing/EnableAuditing",
+          "expected": true
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/admin/audit-trail.enabled.json",
+        "probes/admin/audit-trail.rows.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-history-beat",
+          "when": "the demo shows no change-history beat (audit list or Review changes)"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/audit.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-data-audit-trail/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.command-log",
+      "area": "admin",
+      "name": "Command log",
+      "description": "Every command the system runs (saving a page, deleting a user) with who ran it, when and what changed. It is the API audit trail and carries foreign-key children; retention jobs leave it alone.",
+      "skill": "dw-data-access",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/command-log.rows.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/commandlog.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-setup-config/references/tracking-insights.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.event-viewer",
+      "area": "admin",
+      "name": "Event viewer",
+      "description": "System events (errors, warnings, information) stored in the database by category and action, with file logs for detail; the Monitoring dashboard error tiles read the same store.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/event-viewer.stored.json",
+        "probes/admin/event-viewer.errors-24h.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/eventviewer.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/logs.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-setup-config/references/tracking-insights.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.logging",
+      "area": "admin",
+      "name": "Log retention and minimum log level",
+      "description": "Automatic deletion of file and database logs older than a retention period, and the minimum level of events stored. GeneralLog and ScheduledTaskExecution have no default retention.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/logging.retention-effective.json",
+        "probes/admin/logging.retention-enabled.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "short-lived-host",
+          "when": "the demo host is torn down before the retention window passes"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/logRetention.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-setup-config/references/tracking-insights.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.log-event-notifications",
+      "area": "admin",
+      "name": "Event notifications",
+      "description": "Notifications that mail a recipient list, or send to a health monitoring service, when an event of the selected levels and category is stored. Email targets need working SMTP and a system email address.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/log-event-notifications.configured.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-monitoring-beat",
+          "when": "the demo shows no operations or monitoring beat"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/notifications.html"
+        }
+      ]
+    },
+    {
+      "id": "admin.health-checks",
+      "area": "admin",
+      "name": "Health checks",
+      "description": "Health providers (database indexes, user management, security settings, content data, ecommerce data, plus custom providers) that scan for broken references and risky settings; each check returns the query it ran.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/health-checks.providers.json",
+        "probes/admin/health-checks.ecommerce-clean.json",
+        "probes/admin/health-checks.content-clean.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/monitoring/health.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-setup-config/references/tracking-insights.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.dashboards",
+      "area": "admin",
+      "name": "Area dashboards outside Products",
+      "description": "Customisable dashboards with counter, list, graph and query widgets for Ecommerce, Marketing, Insights, Monitoring and Users. The Products dashboard is pim.dashboards.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/dashboards.custom.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-dashboard-beat",
+          "when": "the demo opens no dashboard outside Products"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/dashboards.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#admin.dashboards"
+        }
+      ]
+    },
+    {
+      "id": "admin.marketing-insights",
+      "area": "admin",
+      "name": "Marketing insights from visitor tracking",
+      "description": "The Marketing insights dashboard (visits, page views, traffic sources, top pages) read at query time from the Tracking tables; empty until tracking is enabled and visits are recorded.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/marketing-insights.sessions.json",
+        "probes/admin/marketing-insights.single-session-table.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-traffic-beat",
+          "when": "the demo shows no Marketing insights dashboard"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/insights/index.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-setup-config/references/tracking-insights.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.notification-subscribers",
+      "area": "admin",
+      "name": "Custom notification subscribers",
+      "description": "NotificationSubscriber classes discovered by reflection that react to platform events (page saved, order saved, product deleted); only some notification args can refuse an operation.",
+      "skill": "dw-extend-providers",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "customAssemblies"
+      ],
+      "checks": [
+        "probes/admin/notification-subscribers.listed.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-custom-code",
+          "when": "the build ships no custom assembly"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/addins.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-extend-providers/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.update-providers",
+      "area": "admin",
+      "name": "Custom database updates (UpdateProvider)",
+      "description": "An UpdateProvider that adds tables, columns or indexes; each applied update is recorded once in Updates by id.",
+      "skill": "dw-extend-providers",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "customAssemblies"
+      ],
+      "checks": [
+        "probes/admin/update-providers.applied.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-custom-code",
+          "when": "the build ships no custom assembly"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "skills/dw-extend-providers/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.addin-install",
+      "area": "admin",
+      "name": "Custom add-in assembly installed and loaded",
+      "description": "A custom .dll or .nupkg uploaded to System/AddIns/Local and activated; a reported install success does not prove the assembly loaded, so TypeLoadErrors.log is read.",
+      "skill": "dw-setup-cli",
+      "status": "candidate",
+      "requires": [],
+      "inputs": [
+        "customAssemblies"
+      ],
+      "checks": [
+        "probes/admin/addin-install.uploaded.json",
+        "probes/admin/addin-install.loaded.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-custom-code",
+          "when": "the build ships no custom assembly"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "source",
+          "ref": "skills/dw-setup-cli/references/addin-install.md"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-extend-admin-ui/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.app-store",
+      "area": "admin",
+      "name": "App store apps",
+      "description": "Payment, integration and custom add-ins installed and updated from the Apps area; an installed app is enabled at once.",
+      "skill": "dw-setup-cli",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/app-store.installed.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/apps/index.html"
+        }
+      ]
+    },
+    {
+      "id": "admin.admin-ui-extensions",
+      "area": "admin",
+      "name": "Admin UI extensions",
+      "description": "Own areas, sections, nodes and screens, screen injectors and action-menu items added from a custom assembly; discovery is automatic and fails silently.",
+      "skill": "dw-extend-admin-ui",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "adminAreas"
+      ],
+      "checks": [
+        "probes/admin/admin-ui-extensions.area-registered.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-custom-code",
+          "when": "the build ships no custom assembly"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/documentation/extending/administration-ui/index.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-extend-admin-ui/SKILL.md"
+        },
+        {
+          "kind": "release",
+          "ref": "delta-review.json#admin.admin-ui-extensions"
+        }
+      ]
+    },
+    {
+      "id": "admin.global-settings",
+      "area": "admin",
+      "name": "Global settings file integrity",
+      "description": "GlobalSettings.config holds the platform switches; GlobalSettingSave creates any key it is given, so a setting written to the wrong path reads back while the application keeps reading the real node.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/global-settings.single-node-keys.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/globalsettings.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-setup-config/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.email-sending",
+      "area": "admin",
+      "name": "Outgoing mail (SMTP and system email)",
+      "description": "A reachable mail server and a system sender address; mail-dependent sign-in is disabled, not degraded, when a send throws, and a failed send leaves a saved copy in the EmailHandler log folder.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/email-sending.server-set.json",
+        "probes/admin/email-sending.no-failed-sends.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-mail-flow",
+          "when": "no demo step sends mail (no magic link, order confirmation or notification)"
+        },
+        {
+          "id": "catalogue-does-not-use",
+          "when": "The catalogue the build reproduces shows no use of this function in its source documentation; the ruling's evidence names the source pages or census items reviewed."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/webhttp/smtp.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/solutionsettings.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-setup-config/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.license",
+      "area": "admin",
+      "name": "Solution licence",
+      "description": "The licence applied to the solution, with its SKU and email-recipient limits; Development and Staging licences do not run on public domains.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/license.installed.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/license.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-setup-config/SKILL.md"
+        },
+        {
+          "kind": "release",
+          "ref": "skills/dw-demo-ledger/assets/releases/10.29.8/delta-review.json#admin.license"
+        }
+      ]
+    },
+    {
+      "id": "admin.management-api-access",
+      "area": "admin",
+      "name": "Management API credentials",
+      "description": "API keys (static bearer bound to a user) and OAuth client-credential clients (service account) for machine access to /admin/api.",
+      "skill": "dw-setup-cli",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/management-api-access.credential.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/api-keys.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/oauth.html"
+        }
+      ]
+    },
+    {
+      "id": "admin.mcp-configurations",
+      "area": "admin",
+      "name": "MCP configurations for AI agents",
+      "description": "Credentials (API key, OAuth client, or Claude through dynamic client registration) and per-area tool grants for agents using the Truvio Commerce MCP server; locked tools need an explicit grant.",
+      "skill": "dw-demo-base",
+      "status": "documented",
+      "requires": [
+        {
+          "kind": "app",
+          "id": "Truvio.Commerce.MCP",
+          "expected": {
+            "min": "0.6.0-beta"
+          }
+        }
+      ],
+      "inputs": [],
+      "checks": [
+        "probes/admin/mcp-configurations.configuration.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-agent",
+          "when": "no AI agent or MCP client connects to the solution"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/mcp-configurations.html"
+        }
+      ]
+    },
+    {
+      "id": "admin.deployment-tool",
+      "area": "admin",
+      "name": "Deployment between solutions",
+      "description": "The built-in Deployment tool: destinations, data groups and DataItemProviders that compare and move settings, content and records to another solution, with no dependency ordering.",
+      "skill": "dw-setup-cli",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/deployment-tool.destination.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "single-environment",
+          "when": "the demo runs on one environment and nothing is deployed between solutions"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/developer/deployment.html"
+        }
+      ]
+    },
+    {
+      "id": "admin.feature-management",
+      "area": "admin",
+      "name": "Feature management toggles",
+      "description": "Switches for new, experimental or beta features; a feature here either becomes standard or is removed.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/feature-management.required-active.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-gated-feature",
+          "when": "the build uses no feature that Feature Management gates"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/feature-management.html"
+        }
+      ]
+    },
+    {
+      "id": "admin.hosting-ring",
+      "area": "admin",
+      "name": "Cloud release ring",
+      "description": "On Dynamicweb Cloud, the update mode (release ring or locked version) and ring; ring R0 is the newest milestone under soak, R1 current, R2 to R4 older.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "ring"
+      ],
+      "checks": [
+        "probes/admin/hosting-ring.ring.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "self-hosted",
+          "when": "the solution does not run in a supported Dynamicweb Cloud environment"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/system/hosting.html"
+        },
+        {
+          "kind": "source",
+          "ref": "skills/dw-setup-config/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "admin.export-import-configurations",
+      "area": "admin",
+      "name": "Export templates and import configurations",
+      "description": "Saved export templates (model, attributes, header mode) for product, order and user exports, and saved import field mappings that can be shared with permissions.",
+      "skill": "dw-integration-framework",
+      "status": "documented",
+      "requires": [],
+      "inputs": [],
+      "checks": [
+        "probes/admin/export-import-configurations.templates.json"
+      ],
+      "notApplicable": [
+        {
+          "id": "no-export-import-beat",
+          "when": "the demo exports or imports no data through the export and import tool"
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/export-templates.html"
+        },
+        {
+          "kind": "docs",
+          "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/administration/import-configurations.html"
+        }
+      ]
+    },
+    {
+      "id": "admin.database-index-health",
+      "area": "admin",
+      "name": "Database index health",
+      "description": "Report database index health in Insights Data Health.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/admin/database-index-health.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "skills/dw-demo-ledger/assets/releases/10.29.8/delta-review.json#admin.database-index-health"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    },
+    {
+      "id": "admin.page-performance-tracking",
+      "area": "admin",
+      "name": "Page performance tracking",
+      "description": "Record page view execution duration for performance dashboards.",
+      "skill": "dw-setup-config",
+      "status": "documented",
+      "requires": [],
+      "inputs": [
+        "expected"
+      ],
+      "checks": [
+        "probes/admin/page-performance-tracking.behaviour.json"
+      ],
+      "notApplicable": [],
+      "sources": [
+        {
+          "kind": "release",
+          "ref": "skills/dw-demo-ledger/assets/releases/10.29.8/delta-review.json#admin.page-performance-tracking"
+        },
+        {
+          "kind": "release",
+          "ref": "https://devopsservice.dynamicweb-cms.com/api/documentation/release/detailedinfo/2"
+        }
+      ]
+    }
+  ]
+}

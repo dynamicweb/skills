@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "id": "content.item-types.table-health-metadata",
+  "functionId": "content.item-types",
+  "intent": {
+    "proves": "No item type table in the database lacks its item type definition.",
+    "level": "stored-integrity",
+    "scope": "every item type returned by the table health read; complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 0
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-item-type-table-health",
+      "surface": "mcp",
+      "status": "implemented",
+      "handler": "mcp-count",
+      "operation": "get_item_type_table_health",
+      "arguments": {},
+      "projection": {
+        "filter": {
+          "field": "existsInMeta",
+          "op": "equals",
+          "value": false
+        }
+      }
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "reason": "Mismatch detection needs item type metadata, which is not a single SQL source."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/ItemTypeHealthTools.cs"
+    },
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/TOOLS.md (get_item_type_table_health)"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "orders.product-delivery-options.checkout-offers-allowed",
+  "functionId": "orders.product-delivery-options",
+  "intent": {
+    "proves": "Checkout of a restricted product offers only its allowed shipping methods.",
+    "level": "behavioural",
+    "scope": "one declared product per restricted method"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-cart",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-cart-read",
+      "reason": "No delivery read handler is implemented."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/212"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "id": "users.frontend-sign-in.persona-signs-in",
+  "functionId": "users.frontend-sign-in",
+  "intent": {
+    "proves": "A demo persona signs in through the storefront and is served a page as that user.",
+    "level": "behavioural",
+    "scope": "one persona per declared login type"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "eq",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-users-authenticate",
+      "surface": "dwapi",
+      "status": "implemented",
+      "handler": "dwapi-persona-sign-in",
+      "operation": "users/authenticate",
+      "arguments": {
+        "readAs": "users/info"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/user-accounts.html"
+    },
+    {
+      "kind": "measurement",
+      "ref": "A 10.30.6 Swift 2 host with sample-data personas, 2026-11-14: POST /dwapi/users/authenticate with each of three sample-data personas answered 200 with a token; GET /dwapi/users/info with that token answered 200 and named the same user id and user name."
+    }
+  ]
+}

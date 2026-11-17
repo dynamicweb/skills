@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "content.pages.exist",
+  "functionId": "content.pages",
+  "intent": {
+    "proves": "At least one page exists outside the recycle bin.",
+    "level": "configured",
+    "scope": "all pages in all websites"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-search-pages",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "search_pages",
+      "arguments": {},
+      "reason": "Search enumeration is not proven complete: observed search_pages returned 500 versus 502 stored pages, and cart paragraph search returned 15 versus 36 stored paragraphs. Complete scope traversal and deleted-row parity are required."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM Page WHERE PageDeleted = 0"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/content/pages.html"
+    },
+    {
+      "kind": "source",
+      "ref": "https://github.com/dynamicweb/MCP/blob/main/Content/Tools/ContentSearchTools.cs"
+    }
+  ]
+}

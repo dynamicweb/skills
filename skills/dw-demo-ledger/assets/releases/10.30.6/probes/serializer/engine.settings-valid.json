@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "serializer.engine.settings-valid",
+  "functionId": "serializer.engine",
+  "intent": {
+    "proves": "SerializerSettings answers 200 with a non-empty predicatesSummary.",
+    "level": "configured",
+    "scope": "the staged config as the running engine loads it"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "admin-api-admin-serializer-settings",
+      "surface": "admin-api",
+      "status": "planned",
+      "handler": "admin-serializer-settings",
+      "operation": "SerializerSettings",
+      "reason": "GET /Admin/Api/SerializerSettings is a read, but no reserved handler projects predicatesSummary."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "source",
+      "ref": "skills/dw-demo-base/references/serializer-reference.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/getting-started.md"
+    },
+    {
+      "kind": "source",
+      "ref": "Truvio.Commerce.Serializer:docs/configuration.md"
+    }
+  ]
+}

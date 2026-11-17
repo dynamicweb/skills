@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "integration.live-prices.enabled",
+  "functionId": "integration.live-prices",
+  "intent": {
+    "proves": "Live prices are enabled on an enabled instance.",
+    "level": "configured",
+    "scope": "all live integration settings files"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "file-content",
+      "surface": "file",
+      "status": "planned",
+      "handler": "file-content",
+      "path": "Files/System/LiveIntegration/*.Setup.xml",
+      "reason": "No reserved handler reads the EnableLivePrices setting."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/setup/live.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/integration/guides/plugin-unit-integration/bc-cloud.html"
+    },
+    {
+      "kind": "source",
+      "ref": "github.com/dynamicweb/DataIntegration.LiveIntegration Configuration/SettingsFileHandler.cs (settings file /Files/System/LiveIntegration/{instance}.Setup.xml)"
+    }
+  ]
+}

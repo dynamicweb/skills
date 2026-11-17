@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "commerce.discounts.conditioned",
+  "functionId": "commerce.discounts",
+  "intent": {
+    "proves": "At least one active discount carries a condition (user, group, customer number, shop, product, group, total, country, shipping, payment, quantity, field or voucher).",
+    "level": "applied",
+    "scope": "active discounts"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomDiscount WHERE DiscountActive = 1 AND (ISNULL(DiscountAccessUserId, N'') <> N'' OR ISNULL(DiscountAccessUserGroupId, N'') <> N'' OR ISNULL(DiscountAccessUserCustomerNumber, N'') <> N'' OR ISNULL(DiscountShopId, N'') <> N'' OR ISNULL(DiscountProductsAndGroups, N'') <> N'' OR ISNULL(DiscountOrderTotalPrice, 0) <> 0 OR ISNULL(DiscountCountryCode2, N'') <> N'' OR ISNULL(DiscountShippingId, N'') <> N'' OR ISNULL(DiscountPaymentId, N'') <> N'' OR ISNULL(DiscountProductQuantity, 0) <> 0 OR ISNULL(DiscountOrderFieldName, N'') <> N'' OR ISNULL(DiscountVoucherListId, 0) <> 0)"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/discounts/discounts.html"
+    },
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/commerce/promotions/index.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}

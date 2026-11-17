@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "commerce.lead-times.stored",
+  "functionId": "commerce.lead-times",
+  "intent": {
+    "proves": "At least one active product row, or one of its stock units, carries an expected delivery date.",
+    "level": "applied",
+    "scope": "all active product rows and their stock units"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-product-stock",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_product_stock",
+      "reason": "get_product_stock reads at most 100 named products; no whole-host enumeration."
+    },
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT COUNT(*) FROM EcomProducts p WHERE p.ProductActive = 1 AND (p.ProductExpectedDelivery IS NOT NULL OR EXISTS (SELECT 1 FROM EcomStockUnit s WHERE s.StockUnitProductId = p.ProductId AND ISNULL(s.StockUnitVariantId, N'') = ISNULL(p.ProductVariantId, N'') AND s.StockUnitExpectedDelivery IS NOT NULL))"
+    }
+  ],
+  "sources": [
+    {
+      "kind": "measurement",
+      "ref": "https://github.com/dynamicweb/skills/issues/210"
+    },
+    {
+      "kind": "source",
+      "ref": "INFORMATION_SCHEMA.COLUMNS on a 10.29.8 install (read-only): dbo.EcomProducts.ProductExpectedDelivery, dbo.EcomStockUnit.StockUnitExpectedDelivery"
+    }
+  ]
+}

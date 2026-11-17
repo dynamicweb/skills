@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "users.accounts.exists",
+  "functionId": "users.accounts",
+  "intent": {
+    "proves": "At least one account group (system account group type) exists with a customer number.",
+    "level": "configured",
+    "scope": "AccessUser rows of type 2 with AccessUserUserAndGroupType SystemAccount (value observed on a 10.29.x baseline database); complete enumeration"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "mcp-get-user-groups",
+      "surface": "mcp",
+      "status": "planned",
+      "handler": "mcp-count",
+      "operation": "get_user_groups",
+      "arguments": {},
+      "reason": "get_user_groups lists every group; the account type and customer number need a field projection the mcp-count handler does not perform."
+    },
+    {
+      "id": "sql-scalar",
+      "surface": "sql",
+      "status": "implemented",
+      "handler": "sql-scalar",
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE AccessUserType = 2 AND AccessUserUserAndGroupType = 'SystemAccount' AND ISNULL(AccessUserCustomerNumber,'') <> ''",
+      "localOnly": true
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/users/accounts.html"
+    }
+  ]
+}

@@ -50,6 +50,7 @@ must be characterized again. Record the installed package and loaded assembly ha
 | Groups, inputs, rules and outputs are version-owned; a page pins `ModelVersionId`. | Follow ownership joins and compare concrete IDs, not model names or active flags. |
 | Vendor Duplicate creates a new model from the active version, or the newest if none is active. | Verify model and version IDs; test Studio's within-model version copy separately. |
 | Settings save drops unknown `ModelVersionSetting` keys. | Keep custom ownership/spec metadata in a separate manifest and check supported settings after save. |
+| The Settings screen save also drops `card_page_id`, `custom_item_name` and `custom_item_number_prefix` [dw 10.29.8]. | Copy the JSON first, never save there on a configured model, restore and retest after a save ([model-and-inputs.md](model-and-inputs.md)). |
 
 Studio 0.7.0 changes neither the vendor schema nor its rule JSON. Its variable-behavior diagram
 is on by default, and BOM-grid row keys carry `id.stamp` to refuse stale edits. Neither change

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "delivery.jwt-authentication.token-refresh",
+  "functionId": "delivery.jwt-authentication",
+  "intent": {
+    "proves": "GET /dwapi/users/authenticate/refresh returns a new token for a valid bearer token.",
+    "level": "behavioural",
+    "scope": "token from the authenticate check"
+  },
+  "assertion": {
+    "kind": "scalar",
+    "op": "ge",
+    "value": 1
+  },
+  "bindings": [
+    {
+      "id": "dwapi-auth",
+      "surface": "dwapi",
+      "status": "planned",
+      "handler": "dwapi-auth",
+      "operation": "GET /dwapi/users/authenticate/refresh",
+      "reason": "No dwapi handler is implemented; needs a frontend credential supplied as runtime input and a measured response projection."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/documentation/headless/delivery-api/access.html"
+    }
+  ]
+}

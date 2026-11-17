@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "orders.order-numbering.ahead",
+  "functionId": "orders.order-numbering",
+  "intent": {
+    "proves": "The ORDER counter is not behind the highest numeric order id, so new orders get fresh ids.",
+    "level": "stored-integrity",
+    "scope": "the ORDER series against completed and open orders"
+  },
+  "assertion": {
+    "kind": "offenders"
+  },
+  "bindings": [
+    {
+      "id": "local-sql",
+      "surface": "sql",
+      "status": "planned",
+      "handler": "sql-scalar",
+      "localOnly": true,
+      "query": "SELECT NumberId FROM EcomNumbers WHERE NumberType = N'ORDER'",
+      "reason": "Comparing the counter with the numeric suffix of order ids needs the series prefix logic; the offender query is not yet written and proven."
+    }
+  ],
+  "sources": [
+    {
+      "kind": "docs",
+      "ref": "https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/commerce/advanced/auto-numbering.html"
+    },
+    {
+      "kind": "source",
+      "ref": "DW10 database schema (INFORMATION_SCHEMA of a local DW10 install) and Dynamicweb.Ecommerce 10.29.8"
+    }
+  ]
+}
