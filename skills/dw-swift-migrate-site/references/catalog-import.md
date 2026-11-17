@@ -26,6 +26,13 @@ listing page or embed structured data (`application/ld+json`, a hydration blob) 
 page; reading those is faster and more accurate than parsing HTML. Note the source platform, its
 languages, and whether listed prices include VAT.
 
+A source that runs on Dynamicweb (image URLs through `/Admin/Public/GetImage.ashx`, links like
+`Default.aspx?ID=`, media under `/Files/Images/`) serves its data as JSON under `/dwapi` and lists
+its own routes at `/dwapi/api.json`. Read that file and use its content and ecommerce routes
+(pages, paragraphs, groups, products, a product's related products) instead of crawling pages;
+keep the crawl delay. A database export through the `dw-pim-migrate-dw9` skill is the other
+option when the user can provide one.
+
 When the intake scope is a subset, propose categories that together cover every product shape
 the full catalog has: simple products, products with one variant dimension (sizes), products
 with several, and products with rich specifications. Report product, variant, and image counts
@@ -88,6 +95,11 @@ Create products and groups in the solution's **default ecommerce language**, eve
 website language differs. Rows in another language are invisible to the index and the
 navigation.
 
+A second ecommerce language needs its commerce columns too, not only translated texts: the
+frontend reads `ProductPrice`, `ProductNeverOutOfStock`, and stock from the row of the website's
+language. A language row with names and descriptions only renders add-to-cart disabled and puts
+every product in the lowest band of a price facet.
+
 ## Product ids and numbers
 
 Use the source's item numbers as product numbers, and make sure every product has one. Leave the
@@ -146,8 +158,17 @@ would otherwise create a stray group.
 - **Imports write straight to the database.** Products, groups, variant groups, and prices the
   running solution has already cached can keep showing old values. An activity can clear chosen
   cache services when it runs (its **Cache** tab); otherwise the application needs a restart.
-  Restarting affects everyone on the solution, so ask the user; do not work around a stale cache
-  with extra writes.
+  Prices are loaded into memory at application start, and product relations have their own
+  in-memory cache that an ecommerce cache clear does not empty: both can stay at their old values
+  until a restart. Restarting affects everyone on the solution, so run every import first and ask
+  the user for one restart before proving them; do not work around a stale cache with extra
+  writes.
+- **Related-product imports drop the sort order.** The bulk insert writes only the relation's key
+  columns; a sort-order column in the file is ignored. Set the order through the MCP relation tool
+  when it matters.
+- **Activity settings read through MCP return protected values as `***`.** When copying an
+  activity, replace them with the real value (for *Use strict primary key matching*, `True`)
+  before creating the new one.
 
 ## Proving an import
 

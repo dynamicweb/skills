@@ -3,6 +3,10 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.9.1]
+
+- `dw-swift-migrate-site` catalog import, platform facts from #197 (the rest of that PR is dropped in favour of 6.9.0's general approach): a Dynamicweb source is read through `/dwapi` (routes at `/dwapi/api.json`) instead of crawled; a second ecommerce language needs `ProductPrice`, `ProductNeverOutOfStock` and stock on its rows; prices and product relations stay cached until a restart, so plan one restart after all imports; related-product imports drop the sort order; activity settings read through MCP return protected values as `***`.
+
 ## [6.9.0]
 
 - `dw-swift-migrate-site`: build the original site's header and footer (or a planned one) with the chrome tool, adjust the generated colour schemes for the brand and check 4.5:1 contrast, side-list media skipped because another file had the path, size images by use (2x the shown width, at most 2560 px, never upscale, keep transparency), let `build_pages` specs set name, parent and menu visibility and rebuild a built page, keep the Swift 2 catalog's page structure while its layout is decided per site (with an optional group-specific detail page), choose each page's sections for its content instead of a fixed order, decide related products from the source and the data, and add checks: generated content is not copied as text, extractions are compared with rendered pages, phone measurements in the review loop, and import timing. The critic judges against the brief.
