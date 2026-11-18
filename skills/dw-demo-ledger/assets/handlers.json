@@ -48,6 +48,7 @@
     "get_email_campaigns",
     "get_field_types",
     "get_forms",
+    "get_grid_rows_by_page_id",
     "get_health_providers",
     "get_index_facets",
     "get_index_queries",
@@ -67,7 +68,10 @@
     "get_order_fields",
     "get_order_flows",
     "get_order_states",
+    "get_pages_by_parent_id",
+    "get_paragraphs_by_page_id",
     "get_payment_methods",
+    "get_product_index_status",
     "get_product_relation_groups",
     "get_rma_states",
     "get_roundings",
@@ -104,5 +108,17 @@
   ],
   "dwapiSignedInReadRoutes": [
     "users/info"
+  ],
+  "recipeWriteTools": [
+    "build_product_index",
+    "save_pages",
+    "set_page_item_fields",
+    "update_users",
+    "wait_for_product_index"
+  ],
+  "recipeAdminCommands": [
+    "UserImpersonateAdd",
+    "UserSetPassword",
+    "UsersAddToGroups"
   ]
 }

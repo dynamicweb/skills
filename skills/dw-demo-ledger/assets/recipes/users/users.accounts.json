@@ -1,0 +1,175 @@
+{
+  "schema": 1,
+  "id": "users.accounts",
+  "name": "Customer accounts, their users and the representatives who impersonate them",
+  "functions": ["users.accounts", "users.user-accounts", "users.user-groups", "swift.impersonation"],
+  "skill": "dw-commerce-b2b",
+  "inputs": {"section": "users.accounts", "required": ["groups"]},
+  "modes": {
+    "mcpOnly": {"usable": false, "reason": "No MCP tool documented in this repo sets a user-and-group type, a password or an impersonation grant, and the create_users, save_user_groups and assign_users_to_group argument shapes are not documented here; those bindings are planned."},
+    "hosted": {"usable": false, "reason": "The group type and the impersonation grant are read back only through local SQL in this repo; a hosted install verifies users and passwords but those steps stay BLOCKED until an MCP or Management API read of them is documented."},
+    "local": {"usable": true},
+    "layerDelivered": "verify"
+  },
+  "steps": [
+    {
+      "id": "groups",
+      "title": "Ensure each user group by name, with its customer number",
+      "forEach": "groups[*]",
+      "key": "{item.name}",
+      "find": {"bindings": [
+        {"id": "mcp-groups", "surface": "mcp", "status": "implemented", "operation": "get_user_groups", "arguments": {}, "rows": "data", "match": {"name": "{item.name}"}, "compare": {"customerNumber": "{item.customerNumber|null}"}, "produces": {"id": "id"}, "source": "skills/dw-demo-ledger/assets/releases/10.30.6/probes/users/user-groups.exists.json"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save", "surface": "mcp", "status": "planned", "reason": "save_user_groups members id, name, parentGroupId and customerNumber are documented (user-group-operations.md 17b) but the request member that carries the groups is not; read it from the tool's tools/list input schema, record it in that reference, then promote.", "source": "skills/dw-users-permissions/references/user-group-operations.md"},
+        {"id": "admin-save", "surface": "admin-api", "status": "planned", "reason": "GroupSave is a whole-entity save whose full model is assembled from get_user_groups and the stored row; no create model is documented, and a fragment blanks what it omits.", "source": "skills/dw-data-access/references/recipes-users.md"}
+      ],
+      "trap": "save_user_groups is a whole-entity save against the cache: a column outside its model is written back as the model default (it blanked AccessUserRedirectOnLogin).",
+      "source": "skills/dw-users-permissions/references/user-group-operations.md"
+    },
+    {
+      "id": "account-type",
+      "title": "Make each account group a root group of type SystemAccount",
+      "forEach": "groups[*]",
+      "key": "{item.name}",
+      "skipWhen": {"path": "item.kind", "notEquals": "account"},
+      "find": {"bindings": [
+        {"id": "sql-type", "surface": "sql", "status": "implemented", "localOnly": true, "query": "SELECT AccessUserId AS id, AccessUserParentId AS parentId, AccessUserUserAndGroupType AS groupType FROM AccessUser WHERE AccessUserId = @groupId", "parameters": {"groupId": "{step.groups.id}"}, "compare": {"groupType": "SystemAccount", "parentId": 0}, "produces": {"id": "id"}, "source": "skills/dw-data-access/references/recipes-users.md"}
+      ]},
+      "bindings": [
+        {"id": "admin-groupsave", "surface": "admin-api", "status": "planned", "reason": "The type is written only by a GroupSave full-model round trip (no MCP tool has a type member); the full model shape is not documented in this repo.", "source": "skills/dw-data-access/references/recipes-users.md"}
+      ],
+      "trap": "A B2B account group lists on the storefront CSR Accounts page only at root with the type SystemAccount; save_user_groups leaves the type NULL, which is right for a DC scoping group and wrong for an account.",
+      "source": "skills/dw-commerce-orders/references/order-lifecycle.md"
+    },
+    {
+      "id": "users",
+      "title": "Ensure each user by user name, carrying the account's customer number",
+      "forEach": "groups[*].users[*]",
+      "key": "{item.userName}",
+      "find": {"bindings": [
+        {"id": "mcp-usernames", "surface": "mcp", "status": "implemented", "operation": "get_users_by_usernames", "arguments": {"userNames": ["{item.userName}"]}, "rows": "data", "match": {"userName": "{item.userName}"}, "compare": {"customerNumber": "{parent.customerNumber|null}"}, "produces": {"id": "id"}, "source": "skills/dw-demo-ledger/assets/releases/10.30.6/probes/distribution/sample-data.buyer-persona.json"}
+      ]},
+      "bindings": [
+        {"id": "mcp-update", "surface": "mcp", "status": "implemented", "update": {"operation": "update_users", "arguments": {"users": [{"id": "{found.id}", "customerNumber": "{parent.customerNumber|null}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_users_by_usernames", "arguments": {"userNames": ["{item.userName}"]}, "rows": "data", "match": {"userName": "{item.userName}"}, "expect": {"customerNumber": "{parent.customerNumber|null}"}, "produces": {"id": "id"}, "source": "skills/dw-data-access/references/cache-invalidation.md"},
+          "source": "skills/dw-commerce-b2b/references/account-shape.md"},
+        {"id": "mcp-create", "surface": "mcp", "status": "planned", "reason": "create_users is named for creating logins with a customerNumber (dc-scoping.md) but its argument shape is not documented in this repo; read it from tools/list, record it, then promote.", "source": "skills/dw-commerce-b2b/references/dc-scoping.md"},
+        {"id": "admin-create", "surface": "admin-api", "status": "planned", "reason": "UserSave is documented only as a UserById round trip; no create model is documented.", "source": "skills/dw-users-permissions/references/user-group-operations.md"}
+      ],
+      "trap": "update_users is a whole-entity save from the cache: it writes back every modelled column from the cached value, so it reverts a SQL write made on the same row.",
+      "source": "skills/dw-users-permissions/references/user-group-operations.md"
+    },
+    {
+      "id": "passwords",
+      "title": "Set the password of each login this run created",
+      "forEach": "groups[*].users[*]",
+      "key": "{item.userName}",
+      "skipWhen": {"path": "item.passwordRef", "exists": false},
+      "after": {"step": "users", "states": ["CREATED"]},
+      "bindings": [
+        {"id": "admin-set-password", "surface": "admin-api", "status": "implemented", "create": {"operation": "UserSetPassword", "arguments": {"model": {"userId": "{step.users.id}", "password": "{secret.item.passwordRef}"}}},
+          "readBack": {"surface": "dwapi", "status": "implemented", "handler": "dwapi-sign-in", "operation": "users/authenticate", "arguments": {"username": "{item.userName}", "password": "{secret.item.passwordRef}"}, "rows": "$", "expect": {"signedIn": true}, "source": "skills/dw-data-access/references/recipes-users.md"},
+          "source": "skills/dw-data-access/references/recipes-users.md"}
+      ],
+      "trap": "create_users and UserSave set no password (UserSave accepts one and drops it); the key member of UserSetPassword is userId, not id. The password is set only when the login is created: no read returns it, so a re-run never rotates an existing persona's password.",
+      "source": "skills/dw-users-permissions/references/grant-mechanics.md"
+    },
+    {
+      "id": "membership",
+      "title": "Make each user a direct member of its group",
+      "forEach": "groups[*].users[*]",
+      "key": "{parent.name}/{item.userName}",
+      "find": {"bindings": [
+        {"id": "mcp-members", "surface": "mcp", "status": "planned", "reason": "get_users_by_group_id is named for listing an account's contacts but its argument name is not documented in this repo.", "operation": "get_users_by_group_id", "source": "skills/dw-commerce-b2b/references/account-shape.md"},
+        {"id": "sql-member", "surface": "sql", "status": "implemented", "localOnly": true, "query": "SELECT AccessUserGroupRelationUserId AS userId, AccessUserGroupRelationGroupId AS groupId FROM AccessUserGroupRelation WHERE AccessUserGroupRelationUserId = @userId AND AccessUserGroupRelationGroupId = @groupId", "parameters": {"userId": "{step.users[item.userName].id}", "groupId": "{step.groups[parent.name].id}"}, "source": "skills/dw-demo-ledger/assets/releases/10.30.6/probes/users/user-groups.membership.json"}
+      ]},
+      "bindings": [
+        {"id": "admin-add", "surface": "admin-api", "status": "implemented", "create": {"operation": "UsersAddToGroups", "arguments": {"GroupIds": ["{step.groups[parent.name].id}"], "Ids": ["{text:step.users[item.userName].id}"]}},
+          "readBack": {"surface": "sql", "status": "implemented", "localOnly": true, "query": "SELECT AccessUserGroupRelationUserId AS userId, AccessUserGroupRelationGroupId AS groupId FROM AccessUserGroupRelation WHERE AccessUserGroupRelationUserId = @userId AND AccessUserGroupRelationGroupId = @groupId", "parameters": {"userId": "{step.users[item.userName].id}", "groupId": "{step.groups[parent.name].id}"}, "source": "skills/dw-demo-ledger/assets/releases/10.30.6/probes/users/user-groups.membership.json"},
+          "source": "skills/dw-users-permissions/references/user-group-operations.md"},
+        {"id": "mcp-assign", "surface": "mcp", "status": "planned", "reason": "assign_users_to_group takes the pair directly, but its member names are not documented in this repo.", "source": "skills/dw-commerce-b2b/references/dc-scoping.md"}
+      ],
+      "trap": "UserGroupRelationSave is a list command: the single {GroupId, UserId} shape answers HTTP 200 'No items selected' and writes nothing.",
+      "source": "skills/dw-users-permissions/references/user-group-operations.md"
+    },
+    {
+      "id": "impersonation",
+      "title": "Grant each representative impersonation of each customer, in that direction",
+      "forEach": "impersonation[*]",
+      "key": "{item.impersonator}/{item.customer}",
+      "find": {"bindings": [
+        {"id": "mcp-impersonatable", "surface": "mcp", "status": "planned", "reason": "get_impersonatable_users needs an impersonator id input whose argument name is not documented in this repo.", "operation": "get_impersonatable_users", "source": "skills/dw-commerce-orders/references/order-lifecycle.md"},
+        {"id": "sql-grant", "surface": "sql", "status": "implemented", "localOnly": true, "query": "SELECT AccessUserSecondaryRelationUserId AS impersonatorId, AccessUserSecondaryRelationSecondaryUserId AS customerId FROM AccessUserSecondaryRelation WHERE AccessUserSecondaryRelationUserId = @impersonatorId AND AccessUserSecondaryRelationSecondaryUserId = @customerId", "parameters": {"impersonatorId": "{step.users[item.impersonator].id}", "customerId": "{step.users[item.customer].id}"}, "source": "skills/dw-data-access/scripts/Test-DwImpersonationGrant.ps1"}
+      ]},
+      "bindings": [
+        {"id": "admin-grant", "surface": "admin-api", "status": "implemented", "create": {"operation": "UserImpersonateAdd", "arguments": {"UserOrGroupId": "{step.users[item.impersonator].id}", "ICanImpersonateUsersOrGroups": true, "UserOrGroupIdsToAdd": ["{step.users[item.customer].id}"]}},
+          "readBack": {"surface": "sql", "status": "implemented", "localOnly": true, "query": "SELECT AccessUserSecondaryRelationUserId AS impersonatorId, AccessUserSecondaryRelationSecondaryUserId AS customerId FROM AccessUserSecondaryRelation WHERE AccessUserSecondaryRelationUserId = @impersonatorId AND AccessUserSecondaryRelationSecondaryUserId = @customerId", "parameters": {"impersonatorId": "{step.users[item.impersonator].id}", "customerId": "{step.users[item.customer].id}"}, "source": "skills/dw-data-access/scripts/Test-DwImpersonationGrant.ps1"},
+          "source": "skills/dw-users-permissions/references/user-group-operations.md"},
+        {"id": "mcp-grant", "surface": "mcp", "status": "planned", "reason": "add_impersonatable_users is named as the in-product grant (order-lifecycle.md) but its argument shape is not documented in this repo.", "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
+      ],
+      "trap": "One grant is one AccessUserSecondaryRelation row: UserId is the impersonator, SecondaryUserId the customer. The wrong direction is quiet: an empty impersonation bar, and the representative listed under 'Users that can impersonate this user' on the customer.",
+      "source": "skills/dw-commerce-orders/references/order-lifecycle.md"
+    }
+  ],
+  "debts": ["flush:Dynamicweb.Security.UserManagement.UserService", "index:Users/Users.index", "index:Secondary users/Users.index", "recycle"],
+  "verify": {
+    "checkIds": ["users.accounts.exists", "users.accounts.member-customer-number", "users.user-accounts.active-frontend-users", "users.user-groups.exists", "users.user-groups.membership", "swift.impersonation.grants-exist"],
+    "probes": [
+      {
+        "id": "users-carry-account-number",
+        "title": "Every user of an account carries the account's customer number",
+        "forEach": "groups[*].users[*]",
+        "skipWhen": {"path": "parent.kind", "notEquals": "account"},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "get_users_by_usernames", "arguments": {"userNames": ["{item.userName}"]}, "rows": "data", "match": {"userName": "{item.userName}"}, "assert": {"kind": "equals", "path": "customerNumber", "value": "{parent.customerNumber}"}, "source": "skills/dw-commerce-b2b/references/account-shape.md"}
+        ]
+      },
+      {
+        "id": "user-in-group",
+        "title": "Every user is a direct member of its group",
+        "forEach": "groups[*].users[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "planned", "reason": "get_users_by_group_id argument name is not documented in this repo.", "operation": "get_users_by_group_id", "source": "skills/dw-commerce-b2b/references/account-shape.md"},
+          {"surface": "sql", "status": "implemented", "localOnly": true, "query": "SELECT AccessUserGroupRelationUserId AS userId, AccessUserGroupRelationGroupId AS groupId FROM AccessUserGroupRelation WHERE AccessUserGroupRelationUserId = @userId AND AccessUserGroupRelationGroupId = @groupId", "parameters": {"userId": "{step.users[item.userName].id}", "groupId": "{step.groups[parent.name].id}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-demo-ledger/assets/releases/10.30.6/probes/users/user-groups.membership.json"}
+        ]
+      },
+      {
+        "id": "grant-direction",
+        "title": "Each grant reads impersonator to customer",
+        "forEach": "impersonation[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "sql", "status": "implemented", "localOnly": true, "query": "SELECT AccessUserSecondaryRelationUserId AS impersonatorId FROM AccessUserSecondaryRelation WHERE AccessUserSecondaryRelationUserId = @impersonatorId AND AccessUserSecondaryRelationSecondaryUserId = @customerId", "parameters": {"impersonatorId": "{step.users[item.impersonator].id}", "customerId": "{step.users[item.customer].id}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-data-access/scripts/Test-DwImpersonationGrant.ps1"}
+        ]
+      },
+      {
+        "id": "grant-not-reversed",
+        "title": "No grant reads customer to impersonator",
+        "forEach": "impersonation[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "sql", "status": "implemented", "localOnly": true, "query": "SELECT AccessUserSecondaryRelationUserId AS impersonatorId FROM AccessUserSecondaryRelation WHERE AccessUserSecondaryRelationUserId = @customerId AND AccessUserSecondaryRelationSecondaryUserId = @impersonatorId", "parameters": {"impersonatorId": "{step.users[item.impersonator].id}", "customerId": "{step.users[item.customer].id}"}, "assert": {"kind": "count", "op": "eq", "value": 0}, "source": "skills/dw-data-access/scripts/Test-DwImpersonationGrant.ps1"}
+        ]
+      },
+      {
+        "id": "persona-sign-in",
+        "title": "Each persona in DW_PERSONA_CREDENTIALS signs in and is served as itself",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-persona-sign-in", "operation": "users/authenticate", "arguments": {"readAs": "users/info"}, "assert": {"kind": "equals", "path": "value", "value": 1}, "source": "skills/dw-demo-ledger/references/contract.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [],
+  "traps": [
+    "No surface sets a password on create: create_users has no password member and UserSave drops one; UserSetPassword (key userId) sets it, and only a sign-in proves it.",
+    "An impersonation grant is not observable until the Users index is rebuilt: the user-index extender copies the relation onto the user documents, and nothing marks them dirty. Flush UserService and run a Full build of Users.index under both Users and Secondary users.",
+    "The CSR Accounts list shows an account group only at root with the user-and-group type SystemAccount; a DC scoping group wants the type left NULL.",
+    "A refusal on these surfaces arrives as HTTP 200 (status invalid, No items selected): assert the relation or the row, never the status.",
+    "UserDelete on a group id answers ok and deletes nothing; GroupDelete deletes groups."
+  ]
+}

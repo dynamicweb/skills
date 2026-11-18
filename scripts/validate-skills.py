@@ -1613,6 +1613,9 @@ def main() -> int:
     # PowerShell 7 supplies Test-Json, as in the shipped runner and this repo's CI.
     from validate_ledger import validate_ledgers
     errors.extend(validate_ledgers(SKILLS_DIR.parent))
+    # Recipes: the replayable form of a ledger function, checked against the same snapshots and allowlists.
+    from validate_recipes import validate_recipes
+    errors.extend(validate_recipes(SKILLS_DIR.parent))
 
     for w in warnings:
         print(f"WARN  {w}")

@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/dynamicweb/skills/skills/dw-demo-ledger/assets/recipe-input.schema.json",
+  "title": "Recipe input: the customer data one or more recipes apply",
+  "description": "One object with a section per recipe input section. A section is added here when a recipe needs it. No credential belongs in this file: a secret is named by a reference key whose value the runner reads from DW_RECIPE_SECRETS.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema"],
+  "properties": {
+    "schema": {"const": 1},
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Values the {build.*} tokens read when no ledger build file is supplied.",
+      "properties": {
+        "areaId": {"type": "integer", "minimum": 1},
+        "defaultLanguage": {"type": "string", "minLength": 1},
+        "pimShop": {"type": "string", "minLength": 1}
+      }
+    },
+    "users.accounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["groups"],
+      "properties": {
+        "groups": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "kind", "users"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "kind": {"enum": ["account", "staff"], "description": "account: a customer company (type SystemAccount, carries the customer number); staff: a group of representatives."},
+              "customerNumber": {"type": "string", "minLength": 1},
+              "users": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["userName"],
+                  "properties": {
+                    "userName": {"type": "string", "minLength": 1},
+                    "name": {"type": "string"},
+                    "email": {"type": "string"},
+                    "passwordRef": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$", "description": "A key of DW_RECIPE_SECRETS, never the password."}
+                  }
+                }
+              }
+            },
+            "if": {"properties": {"kind": {"const": "account"}}},
+            "then": {"required": ["customerNumber"]}
+          }
+        },
+        "impersonation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["impersonator", "customer"],
+            "properties": {
+              "impersonator": {"type": "string", "minLength": 1, "description": "userName of the representative who impersonates."},
+              "customer": {"type": "string", "minLength": 1, "description": "userName of the customer being impersonated."}
+            }
+          }
+        },
+        "assortmentIds": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "content.pages": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pages"],
+      "properties": {
+        "pages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["menuText", "urlName", "itemType"],
+            "properties": {
+              "menuText": {"type": "string", "minLength": 1, "description": "The natural key under the parent, unique in this file."},
+              "urlName": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+              "itemType": {"type": "string", "minLength": 1, "description": "Exact system name from get_item_types."},
+              "parent": {"type": "string", "minLength": 1, "description": "menuText of an earlier page in this list; absent for a page at the website root."},
+              "sort": {"type": "integer"},
+              "public": {"type": "boolean"},
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["sort", "definitionId", "container", "itemType"],
+                  "properties": {
+                    "sort": {"type": "integer"},
+                    "definitionId": {"type": "string", "minLength": 1, "description": "Exact id from get_row_definitions."},
+                    "container": {"type": "string", "minLength": 1, "description": "Exact name from get_layout_containers."},
+                    "itemType": {"type": "string", "minLength": 1}
+                  }
+                }
+              },
+              "paragraphs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["row", "column", "sort", "itemType"],
+                  "properties": {
+                    "row": {"type": "integer", "description": "sort of the page row the paragraph is placed in."},
+                    "column": {"type": "integer", "minimum": 1},
+                    "sort": {"type": "integer"},
+                    "itemType": {"type": "string", "minLength": 1},
+                    "template": {"type": "string", "minLength": 1, "description": "Exact value from get_paragraph_templates."},
+                    "fields": {"type": "object", "additionalProperties": {"type": "string"}, "description": "Item field values by system name, button fields as their full JSON text or empty."}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "assortmentIds": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}

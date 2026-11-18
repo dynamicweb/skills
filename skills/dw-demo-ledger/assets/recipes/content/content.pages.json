@@ -1,0 +1,147 @@
+{
+  "schema": 1,
+  "id": "content.pages",
+  "name": "Pages under a parent, their grid rows and paragraphs",
+  "functions": ["content.pages", "content.paragraphs", "content.grid-rows"],
+  "skill": "dw-content-modelling",
+  "inputs": {"section": "content.pages", "required": ["pages"]},
+  "modes": {
+    "mcpOnly": {"usable": false, "reason": "Pages are found, created, titled and pinned with MCP tools, and rows and paragraphs are verified with them, but the save_grid_rows and save_paragraphs request wrappers and the get_paragraph_item_field_values response are not documented in this repo; those bindings are planned."},
+    "hosted": {"usable": false, "reason": "Nothing here needs SQL, but rows, paragraphs and their item fields cannot be created until the planned MCP bindings are documented; on a hosted install pages apply and the rest verifies."},
+    "local": {"usable": true},
+    "layerDelivered": "verify"
+  },
+  "steps": [
+    {
+      "id": "pages",
+      "title": "Ensure each page under its parent by menu text",
+      "forEach": "pages[*]",
+      "key": "{item.menuText}",
+      "find": {"bindings": [
+        {"id": "mcp-children", "surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.pages[item.parent].id|0}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"menuText": "{item.menuText}"}, "produces": {"id": "id"}, "source": "skills/dw-swift-page-design/SKILL.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-create", "surface": "mcp", "status": "implemented", "create": {"operation": "save_pages", "arguments": {"pages": [{"id": 0, "areaId": "{build.areaId}", "parentPageId": "{step.pages[item.parent].id|0}", "menuText": "{item.menuText}", "urlName": "{item.urlName}", "itemType": "{item.itemType}", "active": true, "sort": "{item.sort|0}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.pages[item.parent].id|0}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"menuText": "{item.menuText}"}, "produces": {"id": "id"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"},
+          "source": "skills/dw-demo-swift/references/cheat-sheet.md"},
+        {"id": "admin-pagesave", "surface": "admin-api", "status": "planned", "reason": "PageSave is documented only as a round trip of a full GetPageById model; no create model is documented.", "source": "skills/dw-extend-mcp-tools/references/backend-mcp-server.md"}
+      ],
+      "trap": "The create path of save_pages answers id 0: the new page's id is read back by parent and menu text, never taken from the response. itemType goes on the create call; added later it mints no item.",
+      "source": "skills/dw-extend-mcp-tools/references/backend-mcp-server.md"
+    },
+    {
+      "id": "page-title",
+      "title": "Give each created page a Title equal to its menu text",
+      "forEach": "pages[*]",
+      "key": "{item.menuText}",
+      "after": {"step": "pages", "states": ["CREATED"]},
+      "bindings": [
+        {"id": "mcp-title", "surface": "mcp", "status": "implemented", "create": {"operation": "set_page_item_fields", "arguments": {"pageId": "{step.pages.id}", "fields": {"Title": "{item.menuText}"}}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.pages[item.parent].id|0}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"id": "{step.pages.id}"}, "expect": {"menuText": "{item.menuText}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"},
+          "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ],
+      "trap": "On an item-typed page every save re-derives the menu text from the item's title field, reorder_pages included, so the Title is the only durable label.",
+      "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"
+    },
+    {
+      "id": "page-slug",
+      "title": "Pin each created page's url name after the Title write",
+      "forEach": "pages[*]",
+      "key": "{item.menuText}",
+      "after": {"step": "page-title", "states": ["CREATED"]},
+      "bindings": [
+        {"id": "mcp-slug", "surface": "mcp", "status": "implemented", "create": {"operation": "save_pages", "arguments": {"pages": [{"id": "{step.pages.id}", "urlName": "{item.urlName}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.pages[item.parent].id|0}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"id": "{step.pages.id}"}, "expect": {"menuText": "{item.menuText}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"},
+          "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ],
+      "trap": "A Title write on a page without a pinned url name moves its address. save_pages persists urlName but no page read projects it, so the read-back checks the menu text and only the served URL proves the slug, after polling it to 200 for at least 15 seconds.",
+      "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"
+    },
+    {
+      "id": "rows",
+      "title": "Ensure each grid row on its page by sort, with its definition and container",
+      "forEach": "pages[*].rows[*]",
+      "key": "{parent.menuText}/{item.sort}",
+      "find": {"bindings": [
+        {"id": "mcp-rows", "surface": "mcp", "status": "implemented", "operation": "get_grid_rows_by_page_id", "arguments": {"pageId": "{step.pages[parent.menuText].id}"}, "rows": "data", "match": {"sort": "{item.sort}"}, "compare": {"definitionId": "{item.definitionId}", "container": "{item.container}"}, "produces": {"id": "id"}, "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save-row", "surface": "mcp", "status": "planned", "reason": "save_grid_rows members (id, pageId, container, definitionId, itemType, sort) are documented, but the repo writes the call both flat and as a list and never names the request member; read it from tools/list, record it, then promote.", "source": "skills/dw-swift-page-design/SKILL.md"},
+        {"id": "admin-copy-row", "surface": "admin-api", "status": "planned", "reason": "GridRowCopy {PageId, Id} needs a donor row and five normalising writes (paragraphs, spacing, template, sort, width); no single create shape is documented.", "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"}
+      ],
+      "trap": "container is load-bearing: a row saved under a container the layout does not render is stored, reads back, and puts nothing on the page while it answers HTTP 200. Take it from get_layout_containers.",
+      "source": "skills/dw-swift-page-design/SKILL.md"
+    },
+    {
+      "id": "paragraphs",
+      "title": "Ensure each paragraph in its row by sort, with its item type and column",
+      "forEach": "pages[*].paragraphs[*]",
+      "key": "{parent.menuText}/{item.row}/{item.sort}",
+      "find": {"bindings": [
+        {"id": "mcp-paragraphs", "surface": "mcp", "status": "implemented", "operation": "get_paragraphs_by_page_id", "arguments": {"pageId": "{step.pages[parent.menuText].id}"}, "rows": "data", "match": {"gridRowId": "{step.rows[parent.menuText,item.row].id}", "sort": "{item.sort}"}, "compare": {"itemType": "{item.itemType}", "gridRowColumn": "{item.column}"}, "produces": {"id": "id"}, "source": "skills/dw-extend-mcp-tools/references/backend-mcp-server.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save-paragraph", "surface": "mcp", "status": "planned", "reason": "save_paragraphs members (id, pageId, itemType, template, gridRowId, gridRowColumn, sort) are documented, but the request member is not; read it from tools/list, record it, then promote.", "source": "skills/dw-demo-swift/references/cheat-sheet.md"}
+      ],
+      "trap": "A cell renders exactly one paragraph, and the create path answers id 0 with the minted itemId; save_paragraphs does not map active before MCP 0.6.5.",
+      "source": "skills/dw-swift-page-design/SKILL.md"
+    },
+    {
+      "id": "paragraph-fields",
+      "title": "Write each paragraph's item fields, button fields blanked or full JSON",
+      "forEach": "pages[*].paragraphs[*]",
+      "key": "{parent.menuText}/{item.row}/{item.sort}",
+      "skipWhen": {"path": "item.fields", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-field-values", "surface": "mcp", "status": "planned", "reason": "get_paragraph_item_field_values takes paragraphId, but its response shape is not documented in this repo, so no field can be compared.", "operation": "get_paragraph_item_field_values", "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-set-fields", "surface": "mcp", "status": "planned", "reason": "set_paragraph_item_fields {paragraphId, fields: {SystemName: value}} is documented, but its read-back needs the undocumented get_paragraph_item_field_values response.", "source": "skills/dw-extend-mcp-tools/references/backend-mcp-server.md"}
+      ],
+      "trap": "set_paragraph_item_fields counts the fields it was asked to write, not the ones it matched: a misspelt system name answers succeeded. A bare create stores the item type's string defaults in button fields, which render a ConverterException inside an HTTP 200 page.",
+      "source": "skills/dw-swift-page-design/SKILL.md"
+    }
+  ],
+  "debts": [],
+  "verify": {
+    "checkIds": ["content.pages.exist", "content.paragraphs.visible", "content.paragraphs.item-instances", "content.grid-rows.rows", "content.grid-rows.container-set", "content.grid-rows.paragraph-placement"],
+    "probes": [
+      {
+        "id": "page-unique",
+        "title": "Each page exists exactly once under its parent",
+        "forEach": "pages[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.pages[item.parent].id|0}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"menuText": "{item.menuText}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-swift-page-design/SKILL.md"}
+        ]
+      },
+      {
+        "id": "row-container",
+        "title": "Each grid row carries the container the input names",
+        "forEach": "pages[*].rows[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "get_grid_rows_by_page_id", "arguments": {"pageId": "{step.pages[parent.menuText].id}"}, "rows": "data", "match": {"sort": "{item.sort}"}, "assert": {"kind": "equals", "path": "container", "value": "{item.container}"}, "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"}
+        ]
+      },
+      {
+        "id": "page-renders",
+        "title": "A public page answers 200 anonymously at its path, with no render error",
+        "forEach": "pages[*]",
+        "skipWhen": {"path": "item.public", "notEquals": true},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "planned", "reason": "fetch_frontend_page_html is not on the read allowlist, its argument name is not documented in this repo, and no rendered-markup assertion is implemented.", "operation": "fetch_frontend_page_html", "source": "skills/dw-swift-page-design/SKILL.md"},
+          {"surface": "dwapi", "status": "planned", "reason": "A page path is not a delivery route: the anonymous GET allowlist holds /dwapi routes only, and the navigation route's projection is not measured.", "source": "skills/dw-demo-ledger/references/contract.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [],
+  "traps": [
+    "Never carry a page id between runs or hosts: ids are minted per host and a deserialize re-mints them. Pages are found by parent and menu text at the point of use.",
+    "Read the item type, row definition, container and template names from get_item_types, get_row_definitions, get_layout_containers and get_paragraph_templates (areaId always passed); a misnamed argument answers only 'An error occurred invoking'.",
+    "On a multi-language website every save on the master creates the mirror with the structure and not the field values; write on the master, then set the mirror's values.",
+    "A URL answers 404 for several seconds after a correct save; poll it to 200 before reading a 404 as a failure."
+  ]
+}

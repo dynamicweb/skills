@@ -27,8 +27,8 @@ jobs:
         run: |
           pip install pyyaml
           python scripts/validate-skills.py
-      - name: Test ledger validation controls
-        run: python -m unittest discover -s scripts/tests -p test_validate_ledger.py
+      - name: Test ledger and recipe validation controls
+        run: python -m unittest discover -s scripts/tests -p "test_validate_*.py"
       - name: Parse shipped PowerShell scripts
         shell: pwsh
         run: |
@@ -52,7 +52,7 @@ jobs:
       - name: Verify manifest.json is current
         run: node scripts/build-manifest.mjs --check
 
-  # The ledger runner's red controls. Fixtures, fakes and mocks only: no host, no
+  # The ledger and recipe runners' red controls. Fixtures, fakes and mocks only: no host, no
   # database (the tempdb controls skip without LEDGER_TEST_SQLSERVER) and no credential.
   # Windows, because the runner's SQL surface is local-only and developed there.
   ledger-pester:
@@ -62,5 +62,5 @@ jobs:
       - name: Run ledger Pester suite
         shell: pwsh
         run: |
-          $result = Invoke-Pester skills/dw-demo-ledger/scripts/tests -PassThru -Output Detailed
+          $result = Invoke-Pester skills/dw-demo-ledger/scripts/tests, tests/Recipe.Tests.ps1 -PassThru -Output Detailed
           if ($result.Result -ne 'Passed' -or $result.PassedCount -eq 0) { exit 1 }

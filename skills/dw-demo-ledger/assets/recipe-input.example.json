@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "build": {"areaId": 1},
+  "users.accounts": {
+    "groups": [
+      {
+        "name": "Example Trading",
+        "kind": "account",
+        "customerNumber": "C-1001",
+        "users": [
+          {"userName": "buyer@example.invalid", "name": "Example Buyer", "email": "buyer@example.invalid", "passwordRef": "buyer"}
+        ]
+      },
+      {
+        "name": "Sales representatives",
+        "kind": "staff",
+        "users": [
+          {"userName": "rep@example.invalid", "name": "Example Representative", "email": "rep@example.invalid", "passwordRef": "rep"}
+        ]
+      }
+    ],
+    "impersonation": [
+      {"impersonator": "rep@example.invalid", "customer": "buyer@example.invalid"}
+    ]
+  },
+  "content.pages": {
+    "pages": [
+      {
+        "menuText": "About us",
+        "urlName": "about-us",
+        "itemType": "Swift-v2_Page",
+        "sort": 100,
+        "public": true,
+        "rows": [
+          {"sort": 1, "definitionId": "1Column", "container": "Grid", "itemType": "Swift-v2_Row"}
+        ],
+        "paragraphs": [
+          {"row": 1, "column": 1, "sort": 100, "itemType": "Swift-v2_Text", "template": "TextLeft.cshtml", "fields": {"Title": "About us", "Text": "<p>Who we are.</p>", "FirstButton": "", "SecondButton": ""}}
+        ]
+      },
+      {
+        "menuText": "Our history",
+        "urlName": "our-history",
+        "itemType": "Swift-v2_Page",
+        "parent": "About us",
+        "sort": 100
+      }
+    ]
+  }
+}

@@ -5,7 +5,7 @@ group: demo
 mcp: optional
 dynamo: false
 compatibility: Requires PowerShell 7.x and Git
-description: 'Select and check a release-pinned DW10 function ledger. Triggers: platform coverage, equivalent MCP/API probes, edition check locks, release capability changes. Use AFTER dw-demo-base.'
+description: 'Select and check a release-pinned DW10 function ledger, and replay a function from its recipe. Triggers: platform coverage, equivalent MCP/API probes, edition check locks, release capability changes, recipe for a function. Use AFTER dw-demo-base.'
 ---
 
 # Demo functionality ledger
@@ -35,6 +35,7 @@ The initial snapshot is a candidate until measured on its exact baseline. A diag
 - [Target capabilities schema](assets/target-capabilities.schema.json)
 - [Coverage map schema](assets/coverage.schema.json) and [handler and read-tool allowlists](assets/handlers.json)
 - [Release snapshots](assets/releases/): each directory contains its manifest.
+- [Recipe schema](assets/recipe.schema.json), [recipe input schema](assets/recipe-input.schema.json), [example input](assets/recipe-input.example.json) and [recipes](assets/recipes/)
 
 Distribution and Serializer are platform scope. Concrete layer carriage belongs to Distribution; foundational skills never link back into this demo skill.
 
@@ -47,6 +48,16 @@ For [dw 10.29.8] matrix fields, follow [the matrix contract](references/matrix-f
 The product edit layout and global field placement follow [the edit-layout contract](references/edit-layout.md): declare `editLayout` before building, limits as binding data.
 
 CPQ checks use [independent scope declarations and read-only observations](references/cpq-observations.md). Loaded runtime evidence and complete domain producers remain prerequisites to readiness.
+
+## Recipes
+
+A recipe is the replayable form of one ledger function: ordered steps found by natural key, the debts they owe (flush, index build, assortments, recycle) and how to verify them. It is data first, so an agent with MCP tools only can follow it by hand, and [Invoke-DwRecipe.ps1](scripts/Invoke-DwRecipe.ps1) runs the same file. Read [the recipe contract](references/recipes.md) before writing or running one. Recipes live under `assets/recipes/<area>/`, outside the release snapshots, and an empty `provenOn` means unproven. Look for one before building a function by hand:
+
+```powershell
+pwsh -NoProfile -File scripts/Find-DwRecipe.ps1 -Function users.accounts
+```
+
+Without `-Apply` a recipe writes nothing: on build path A, where a layer delivered the data, every object reports UNCHANGED and the probes verify it. With `-Apply` it creates and updates, reads every write back and pays its debts. Each recipe states whether it is usable MCP-only and on a hosted install; a step with no eligible binding is BLOCKED, never skipped.
 
 ## Scripts (scripts/)
 
@@ -68,6 +79,14 @@ CPQ checks use [independent scope declarations and read-only observations](refer
 | [Cpq.Receipts.ps1](scripts/Cpq.Receipts.ps1) | Validated receipt data | Distribution trust boundary and independent price/BOM red checks |
 | [tests/Cpq.Tests.ps1](scripts/tests/Cpq.Tests.ps1) | Isolated fixtures | CPQ positive and negative controls |
 | [tests/Receipts.Tests.ps1](scripts/tests/Receipts.Tests.ps1) | Producer-shaped fixtures; a Distribution checkout through `CPQ_DISTRIBUTION_ROOT` | Receipt reader verdicts, wrong price and BOM red controls |
+| [Invoke-DwRecipe.ps1](scripts/Invoke-DwRecipe.ps1) | Reads target; with -Apply writes the recipe's objects and pays its debts | Runs one recipe: find, apply, read back, debts, probes, ledger checks |
+| [Find-DwRecipe.ps1](scripts/Find-DwRecipe.ps1) | Reads recipes | Recipes for a function or area, their modes and proven state |
+| [Recipe.Core.ps1](scripts/Recipe.Core.ps1) | Definitions only | Paths, tokens, natural-key matching and binding selection |
+| [Recipe.Transport.ps1](scripts/Recipe.Transport.ps1) | Reads target when called | Allowlisted MCP, Management API, delivery and guarded local SQL reads |
+| [Recipe.Write.ps1](scripts/Recipe.Write.ps1) | Writes when called with -Apply | One allowlisted MCP or Management API write |
+| [Recipe.Steps.ps1](scripts/Recipe.Steps.ps1) | Writes through Recipe.Write.ps1 | Step engine and the STEP and check lines |
+| [Recipe.Verify.ps1](scripts/Recipe.Verify.ps1) | Reads target when called | Probes and the ledger check bridge |
+| [Recipe.Debts.ps1](scripts/Recipe.Debts.ps1) | Writes when called | Flush, index build, assortment build and recycle through shipped scripts |
 | [Ledger.Core.ps1](scripts/Ledger.Core.ps1) | Definitions only | Schema, digest, safe paths, selection and assertions |
 | [Ledger.Transport.ps1](scripts/Ledger.Transport.ps1) | Reads MCP/Admin when called | Discovery and observations using the shared API transport |
 | [Ledger.Observations.ps1](scripts/Ledger.Observations.ps1) | Reads collections/local XML when called | Tokens, filtered counts, authenticated API projection and scoped files |
