@@ -1,0 +1,167 @@
+{
+  "schema": 1,
+  "id": "commerce.customer-prices",
+  "name": "Default prices, quantity tiers, customer-group prices and account contract prices",
+  "functions": ["commerce.customer-prices", "commerce.default-price", "commerce.quantity-prices"],
+  "skill": "dw-commerce-b2b",
+  "inputs": {"section": "prices", "required": ["listPrices"]},
+  "modes": {
+    "mcpOnly": {"usable": true, "reason": "Every step has an MCP find, write and read-back (get_products_by_sku, patch_products_safe, get_user_groups, save_user_groups, get_prices_by_product_id, save_prices). The behavioural probes read the delivery API: no MCP tool returns the price a visitor or a signed-in user is charged, so an MCP-only run reports them OPEN."},
+    "hosted": {"usable": true, "reason": "Every step is MCP; the probes are delivery API reads; no SQL."},
+    "local": {"usable": true},
+    "layerDelivered": "verify"
+  },
+  "steps": [
+    {
+      "id": "list-price",
+      "title": "Give each priced product its default price (the product's own price)",
+      "forEach": "listPrices[*]",
+      "key": "{item.product}",
+      "find": {"bindings": [
+        {"id": "mcp-sku", "surface": "mcp", "status": "implemented", "operation": "get_products_by_sku", "arguments": {"skus": ["{item.product}"], "languageId": "{build.defaultLanguage|null}"}, "rows": "data", "match": {"number": "{item.product}", "variantId": ""}, "compare": {"defaultPrice": "{item.amount}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-catalog/references/catalog-publishing.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-patch", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-catalog/references/catalog-publishing.md",
+          "update": {"operation": "patch_products_safe", "arguments": {"products": [{"id": "{found.id}", "languageId": "{found.languageId}", "defaultPrice": "{item.amount}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_products_by_sku", "arguments": {"skus": ["{item.product}"], "languageId": "{build.defaultLanguage|null}"}, "rows": "data", "match": {"number": "{item.product}", "variantId": ""}, "expect": {"defaultPrice": "{item.amount}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-catalog/references/catalog-publishing.md"}},
+        {"id": "catalogue-create", "surface": "mcp", "status": "planned", "reason": "A product is created, grouped and indexed by the catalogue recipe; this recipe prices products that exist and never creates one.", "source": "skills/dw-commerce-catalog/references/catalog-publishing.md"}
+      ],
+      "trap": "The default price is the product's own field (patch_products_safe defaultPrice), not a price-matrix row; patch_products_safe writes only the members it is given.",
+      "source": "skills/dw-commerce-catalog/references/catalog-publishing.md"
+    },
+    {
+      "id": "customer-group",
+      "title": "Ensure the user group the group prices are scoped to",
+      "key": "{input.customerGroup}",
+      "skipWhen": {"path": "input.customerGroup", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-groups", "surface": "mcp", "status": "implemented", "operation": "get_user_groups", "arguments": {}, "rows": "data", "match": {"name": "{input.customerGroup}"}, "produces": {"id": "id"}, "source": "skills/dw-users-permissions/references/user-group-operations.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save", "surface": "mcp", "status": "implemented", "source": "skills/dw-users-permissions/references/user-group-operations.md",
+          "create": {"operation": "save_user_groups", "arguments": {"groups": [{"id": 0, "name": "{input.customerGroup}", "parentGroupId": 0}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_user_groups", "arguments": {}, "rows": "data", "match": {"name": "{input.customerGroup}"}, "produces": {"id": "id"}, "source": "skills/dw-users-permissions/references/user-group-operations.md"}}
+      ],
+      "trap": "A group price reaches the group's direct members only; the users.accounts recipe makes the buyer a direct member.",
+      "source": "skills/dw-commerce-b2b/references/dc-scoping.md"
+    },
+    {
+      "id": "tiers",
+      "title": "Write each quantity tier as an unscoped price row at its quantity",
+      "forEach": "tiers[*]",
+      "key": "{item.product}/{item.quantity}",
+      "find": {"bindings": [
+        {"id": "mcp-prices", "surface": "mcp", "status": "implemented", "operation": "get_prices_by_product_id", "arguments": {"productId": "{step.list-price[item.product].id}"}, "rows": "data", "match": {"quantity": "{item.quantity}", "currencyCode": "{input.currency|\"USD\"}", "variantId": null, "userId": null, "userGroupId": null, "userCustomerNumber": null, "customerGroupId": null, "shopId": null, "countryCode": null}, "compare": {"amount": "{item.amount}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-catalog/references/catalog-publishing.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-catalog/references/catalog-publishing.md",
+          "create": {"operation": "save_prices", "arguments": {"prices": [{"productId": "{step.list-price[item.product].id}", "currencyCode": "{input.currency|\"USD\"}", "quantity": "{item.quantity}", "amount": "{item.amount}"}]}},
+          "update": {"operation": "save_prices", "arguments": {"prices": [{"id": "{found.id}", "productId": "{step.list-price[item.product].id}", "currencyCode": "{input.currency|\"USD\"}", "quantity": "{item.quantity}", "amount": "{item.amount}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_prices_by_product_id", "arguments": {"productId": "{step.list-price[item.product].id}"}, "rows": "data", "match": {"quantity": "{item.quantity}", "currencyCode": "{input.currency|\"USD\"}", "variantId": null, "userId": null, "userGroupId": null, "userCustomerNumber": null, "customerGroupId": null, "shopId": null, "countryCode": null}, "expect": {"amount": "{item.amount}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-catalog/references/catalog-publishing.md"}}
+      ],
+      "trap": "A price row's scope is the set of members it carries; the read leaves out every null member, so a tier is found by stating each scope member null, or a contract row at the same quantity would match it.",
+      "source": "skills/dw-commerce-catalog/references/catalog-publishing.md"
+    },
+    {
+      "id": "group-prices",
+      "title": "Write each customer-group price as a row scoped to the user group",
+      "forEach": "groupPrices[*]",
+      "key": "{item.product}/{item.quantity|0}",
+      "find": {"bindings": [
+        {"id": "mcp-prices", "surface": "mcp", "status": "implemented", "operation": "get_prices_by_product_id", "arguments": {"productId": "{step.list-price[item.product].id}"}, "rows": "data", "match": {"quantity": "{item.quantity|0}", "currencyCode": "{input.currency|\"USD\"}", "userGroupId": "{text:step.customer-group[input.customerGroup].id}", "variantId": null, "userId": null, "userCustomerNumber": null, "customerGroupId": null, "shopId": null, "countryCode": null}, "compare": {"amount": "{item.amount}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-b2b/references/dc-scoping.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-b2b/references/dc-scoping.md",
+          "create": {"operation": "save_prices", "arguments": {"prices": [{"productId": "{step.list-price[item.product].id}", "currencyCode": "{input.currency|\"USD\"}", "quantity": "{item.quantity|0}", "amount": "{item.amount}", "userGroupId": "{text:step.customer-group[input.customerGroup].id}"}]}},
+          "update": {"operation": "save_prices", "arguments": {"prices": [{"id": "{found.id}", "productId": "{step.list-price[item.product].id}", "currencyCode": "{input.currency|\"USD\"}", "quantity": "{item.quantity|0}", "amount": "{item.amount}", "userGroupId": "{text:step.customer-group[input.customerGroup].id}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_prices_by_product_id", "arguments": {"productId": "{step.list-price[item.product].id}"}, "rows": "data", "match": {"quantity": "{item.quantity|0}", "currencyCode": "{input.currency|\"USD\"}", "userGroupId": "{text:step.customer-group[input.customerGroup].id}", "variantId": null, "userId": null, "userCustomerNumber": null, "customerGroupId": null, "shopId": null, "countryCode": null}, "expect": {"amount": "{item.amount}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-b2b/references/dc-scoping.md"}}
+      ],
+      "trap": "userGroupId is a user group (PriceUserGroupId); customerGroupId matches a customer number despite its name, and a user-group id there saves and matches nobody.",
+      "source": "skills/dw-commerce-b2b/references/dc-scoping.md"
+    },
+    {
+      "id": "contracts",
+      "title": "Write each account contract price as a row scoped to the account's customer number",
+      "forEach": "contracts[*]",
+      "key": "{item.account}/{item.product}/{item.quantity|0}",
+      "find": {"bindings": [
+        {"id": "mcp-prices", "surface": "mcp", "status": "implemented", "operation": "get_prices_by_product_id", "arguments": {"productId": "{step.list-price[item.product].id}"}, "rows": "data", "match": {"quantity": "{item.quantity|0}", "currencyCode": "{input.currency|\"USD\"}", "userCustomerNumber": "{item.account}", "variantId": null, "userId": null, "userGroupId": null, "customerGroupId": null, "shopId": null, "countryCode": null}, "compare": {"amount": "{item.amount}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-b2b/references/dc-scoping.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-b2b/references/dc-scoping.md",
+          "create": {"operation": "save_prices", "arguments": {"prices": [{"productId": "{step.list-price[item.product].id}", "currencyCode": "{input.currency|\"USD\"}", "quantity": "{item.quantity|0}", "amount": "{item.amount}", "userCustomerNumber": "{item.account}"}]}},
+          "update": {"operation": "save_prices", "arguments": {"prices": [{"id": "{found.id}", "productId": "{step.list-price[item.product].id}", "currencyCode": "{input.currency|\"USD\"}", "quantity": "{item.quantity|0}", "amount": "{item.amount}", "userCustomerNumber": "{item.account}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_prices_by_product_id", "arguments": {"productId": "{step.list-price[item.product].id}"}, "rows": "data", "match": {"quantity": "{item.quantity|0}", "currencyCode": "{input.currency|\"USD\"}", "userCustomerNumber": "{item.account}", "variantId": null, "userId": null, "userGroupId": null, "customerGroupId": null, "shopId": null, "countryCode": null}, "expect": {"amount": "{item.amount}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-b2b/references/dc-scoping.md"}}
+      ],
+      "trap": "Lowest matching price wins, not the most specific scope: a tier below the contract amount undercuts the contract for the account too.",
+      "source": "skills/dw-commerce-b2b/references/dc-scoping.md"
+    }
+  ],
+  "debts": [],
+  "verify": {
+    "checkIds": ["commerce.customer-prices.scoped", "commerce.default-price.priced-products", "commerce.quantity-prices.tiers"],
+    "probes": [
+      {
+        "id": "anonymous-list-price",
+        "title": "An anonymous visitor is served each product's default price",
+        "forEach": "listPrices[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-get", "operation": "ecommerce/products/{productId}", "arguments": {"productId": "{step.list-price[item.product].id}", "CurrencyCode": "{input.currency|\"USD\"}"}, "rows": "$", "assert": {"kind": "equals", "path": "price.price", "value": "{item.amount}"}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"},
+          {"surface": "mcp", "status": "planned", "reason": "No MCP tool returns the price a visitor or a signed-in user is charged: get_prices_by_product_id lists the stored rows, which the steps already read back, and force_price_recalculation prices an order without the frontend user's context.", "source": "skills/dw-extend-mcp-tools/references/tool-surface-gaps.md"}
+        ]
+      },
+      {
+        "id": "anonymous-tier",
+        "title": "An anonymous visitor is offered each quantity tier at its break",
+        "forEach": "tiers[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-get", "operation": "ecommerce/products/{productId}", "arguments": {"productId": "{step.list-price[item.product].id}", "CurrencyCode": "{input.currency|\"USD\"}"}, "rows": "prices", "match": {"quantity": "{item.quantity}"}, "assert": {"kind": "equals", "path": "price.price", "value": "{item.amount}"}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"},
+          {"surface": "mcp", "status": "planned", "reason": "No MCP tool returns the price a visitor or a signed-in user is charged: get_prices_by_product_id lists the stored rows, which the steps already read back, and force_price_recalculation prices an order without the frontend user's context.", "source": "skills/dw-extend-mcp-tools/references/tool-surface-gaps.md"}
+        ]
+      },
+      {
+        "id": "buyer-contract-price",
+        "title": "The signed-in buyer pays its account's contract price",
+        "forEach": "contracts[*]",
+        "skipWhen": [{"path": "item.account", "notEquals": "{input.buyer.account}"}, {"path": "item.quantity", "exists": true}],
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-signed-in-get", "operation": "ecommerce/products/{productId}", "arguments": {"productId": "{step.list-price[item.product].id}", "CurrencyCode": "{input.currency|\"USD\"}"}, "signIn": {"username": "{input.buyer.userName}", "password": "{secret.input.buyer.passwordRef}"}, "rows": "$", "assert": {"kind": "equals", "path": "price.price", "value": "{item.amount}"}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"},
+          {"surface": "mcp", "status": "planned", "reason": "No MCP tool returns the price a visitor or a signed-in user is charged: get_prices_by_product_id lists the stored rows, which the steps already read back, and force_price_recalculation prices an order without the frontend user's context.", "source": "skills/dw-extend-mcp-tools/references/tool-surface-gaps.md"}
+        ]
+      },
+      {
+        "id": "buyer-group-price",
+        "title": "The signed-in buyer, a member of the customer group, pays each group price",
+        "forEach": "groupPrices[*]",
+        "skipWhen": {"path": "item.quantity", "exists": true},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-signed-in-get", "operation": "ecommerce/products/{productId}", "arguments": {"productId": "{step.list-price[item.product].id}", "CurrencyCode": "{input.currency|\"USD\"}"}, "signIn": {"username": "{input.buyer.userName}", "password": "{secret.input.buyer.passwordRef}"}, "rows": "$", "assert": {"kind": "equals", "path": "price.price", "value": "{item.amount}"}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"},
+          {"surface": "mcp", "status": "planned", "reason": "No MCP tool returns the price a visitor or a signed-in user is charged: get_prices_by_product_id lists the stored rows, which the steps already read back, and force_price_recalculation prices an order without the frontend user's context.", "source": "skills/dw-extend-mcp-tools/references/tool-surface-gaps.md"}
+        ]
+      },
+      {
+        "id": "buyer-tier",
+        "title": "The signed-in buyer is offered each quantity tier at its break",
+        "forEach": "tiers[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-signed-in-get", "operation": "ecommerce/products/{productId}", "arguments": {"productId": "{step.list-price[item.product].id}", "CurrencyCode": "{input.currency|\"USD\"}"}, "signIn": {"username": "{input.buyer.userName}", "password": "{secret.input.buyer.passwordRef}"}, "rows": "prices", "match": {"quantity": "{item.quantity}"}, "assert": {"kind": "equals", "path": "price.price", "value": "{item.amount}"}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"},
+          {"surface": "mcp", "status": "planned", "reason": "No MCP tool returns the price a visitor or a signed-in user is charged: get_prices_by_product_id lists the stored rows, which the steps already read back, and force_price_recalculation prices an order without the frontend user's context.", "source": "skills/dw-extend-mcp-tools/references/tool-surface-gaps.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "commerce.customer-prices.1-verify.json (one default price WOULD-UPDATE, every price row WOULD-CREATE, probes FAIL), the first apply (default price updated, tier and group rows created, every probe that needed only those PASS in the same run, no debt), commerce.customer-prices.2-apply.json (contract created, 11 of 11), 3-verify and 4-apply-again (11 of 11, nothing written), 6-apply-update and 7-apply-restore (tier and contract updated in place and served at once, 11 of 11), 8-final-verify and 9-hosted-verify without SQL (11 of 11); 5-mcponly.json is 6 of 11, every step PASS and the five delivery probes OPEN. The anonymous visitor was served the default price and the tier, the signed-in buyer the contract, group and tier prices; a delivery API cart charged 8 at quantity 10 against a default of 10 for an anonymous visitor, and 7 to the buyer whose contract is 7."}
+  ],
+  "traps": [
+    "A price write needs no debt: the delivery API product read and the cart served a changed default price, a new or updated tier, group or contract row on the next request, with no cache flush, index build or recycle.",
+    "On 10.30.6 the stock cart honours an unscoped quantity tier (the 10.28 line ignored it), and the lowest matching price wins: a tier below a contract amount undercuts the contract for the account too.",
+    "The MCP price read leaves out every null member: a scope is matched by stating each scope member null, never by its absence alone.",
+    "customerGroupId on save_prices matches a customer number; a user group goes in userGroupId and reaches direct members only."
+  ]
+}

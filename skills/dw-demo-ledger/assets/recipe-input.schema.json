@@ -510,6 +510,59 @@
           "pattern": "^[A-Z]{3}$",
           "description": "One currency for every price and order row; default USD, the currency the Swift area serves."
         },
+        "listPrices": {
+          "type": "array",
+          "description": "The default price of each product this section prices: the product's own price, which a visitor without a better price pays. Name every product the tiers, groupPrices and contracts name; a producer fills it from catalogue.products[].listPrice.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "product",
+              "amount"
+            ],
+            "properties": {
+              "product": {
+                "type": "string",
+                "description": "product number"
+              },
+              "amount": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        },
+        "customerGroup": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the user group the groupPrices are scoped to. A group price reaches the group's direct members only."
+        },
+        "buyer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "userName",
+            "passwordRef",
+            "account"
+          ],
+          "description": "The persona the signed-in price probes sign in as: a direct member of customerGroup and a user of the account whose contracts are probed.",
+          "properties": {
+            "userName": {
+              "type": "string",
+              "minLength": 1
+            },
+            "passwordRef": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
+              "description": "A key of DW_RECIPE_SECRETS, never the password."
+            },
+            "account": {
+              "type": "string",
+              "minLength": 1,
+              "description": "customerNumber of the buyer's account"
+            }
+          }
+        },
         "tiers": {
           "type": "array",
           "items": {

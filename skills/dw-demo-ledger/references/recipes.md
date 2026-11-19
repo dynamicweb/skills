@@ -56,7 +56,8 @@ validator and the runner both refuse one. A password is named by a reference key
 
 A step carries `id`, `title`, `key` (its natural key template), optional `forEach`
 (`groups[*].users[*]`), optional `skipWhen` (one of `exists`, `equals`, `notEquals`, `contains` on
-an input path), optional `after` (run an item only when an earlier step reported one of the given
+an input path; the compared value may be an input token such as `{input.buyer.account}`; a list of
+conditions skips when any holds), optional `after` (run an item only when an earlier step reported one of the given
 states for the same key), `find` (read bindings), `bindings` (write bindings, in preference order),
 `trap` and `source` (the reference file the shapes come from).
 
@@ -76,7 +77,11 @@ this repository**, cited in `source`, and its read projection (the `rows` member
 names) is measured. Anything else is `status: planned` with a `reason`, and a planned binding never
 executes. When a named field is absent the runner fails loudly with "carries no field", never reads
 absence as a mismatch: the MCP read models leave out a member whose value is null, and some leave out
-a field their output schema declares. A recipe is proven only by a run recorded in `provenOn`.
+a field their output schema declares. Two exceptions follow from that omission. A `match`, `compare` or
+`expect` member the recipe sets to JSON `null` accepts an absent member (a price tier is found by
+stating each scope member null). A row that leaves out a member the natural key gives a value does not
+match (a contract row is not a tier); a misspelt key member then matches nothing, and the read-back
+after the write fails on it. A recipe is proven only by a run recorded in `provenOn`.
 
 Allowlists hold the line between data and code. An implemented MCP read must be on `mcpReadTools` (or
 `recipeRenderedReadTools`, the rendered-page summary), an
@@ -148,6 +153,13 @@ reads a failing subject again until it passes or the time is up, for a state the
 late or drops for a moment (a new URL answers 404 for seconds). A probe whose
 bindings are all planned cannot execute and is a NOTE, never a pass. The persona sign-in probe is the
 ledger's own handler, with credentials only from `DW_PERSONA_CREDENTIALS`.
+
+A delivery read is `dwapi-get` (anonymous, on `dwapiReadRoutes`) or `dwapi-signed-in-get` (on
+`recipeSignedInReadRoutes`), which signs in as the `signIn` `{username, password}` the binding names,
+the password a `{secret.*}` token, and sends the token for that one read only; neither is kept or
+printed. A `{name}` in the route takes the argument of that name (`ecommerce/products/{productId}`);
+the other arguments are the query. This is how a recipe proves what a visitor and a signed-in buyer
+are served, not only what is stored.
 
 `checkIds` run through [Invoke-DwLedgerChecks.ps1](../scripts/Invoke-DwLedgerChecks.ps1) when
 `-LedgerBuildFile` and `-Manifest` are given, under that runner's own rules (a clean checkout at the

@@ -46,5 +46,23 @@
         "sort": 100
       }
     ]
+  },
+  "prices": {
+    "currency": "USD",
+    "listPrices": [
+      {"product": "EX-100", "amount": 12},
+      {"product": "EX-200", "amount": 40}
+    ],
+    "tiers": [
+      {"product": "EX-100", "quantity": 10, "amount": 6}
+    ],
+    "customerGroup": "Example Trading",
+    "groupPrices": [
+      {"product": "EX-200", "amount": 36}
+    ],
+    "contracts": [
+      {"account": "C-1001", "product": "EX-100", "amount": 7}
+    ],
+    "buyer": {"userName": "buyer@example.invalid", "passwordRef": "buyer", "account": "C-1001"}
   }
 }

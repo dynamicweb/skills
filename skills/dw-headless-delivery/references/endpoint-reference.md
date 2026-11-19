@@ -141,6 +141,16 @@ GET /dwapi/ecommerce/products/{id}
 GET /dwapi/ecommerce/products/{id}/{variantId}
 ```
 
+The price is computed for the caller [dw 10.30.6]: anonymous, or the user of the
+`Authorization: Bearer` token. `price.price` is what one unit costs that caller (the lowest
+matching row: default price, unscoped tier, user-group or customer-number row), and `prices` lists
+the price-matrix rows offered to the caller, one per break, as `{quantity, price: {price}}` (a
+contract row without a quantity shows as `quantity: 0`). Query `CurrencyCode` picks the currency.
+A `save_prices` or `patch_products_safe` write is served on the next read, with no cache flush,
+index build or recycle; the cart (`POST /dwapi/ecommerce/carts/additems` with `currency`,
+`language` and `products: [{productId, quantity}]`) charges the same lowest matching row, the
+quantity tier included.
+
 ### Variants
 
 ```http

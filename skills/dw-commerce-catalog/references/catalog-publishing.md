@@ -135,6 +135,12 @@ The `PermissionLevel.Edit` gate is a Layer C entity check
 
 ## 2.11 Pricing — tier rows are NOT honored by the stock cart
 
+**Re-measured on DW 10.30.6: the stock cart honours an unscoped tier.** A product with a default
+price of 10 and a `save_prices` row `{quantity: 10, amount: 8}` (no scope) cost 10 per unit at
+quantity 1 and 8 per unit at quantity 10 in an anonymous delivery API cart, and the PDP model
+listed the tier. A signed-in buyer with a 7 contract row paid 7 at both quantities: the lowest
+matching row wins. The text below records the 10.28 line; check the build before planning around it.
+
 `EcomPrices` ships a `PriceQuantity` column that *looks* like quantity-break tier pricing — and the Dynamicweb documentation reinforces that read ("Customers receive the best applicable price for their order volume"). In practice the stock DW10 cart-line-add resolver picks the matching `PriceQuantity = 0` row first and stops. Tested with rows fully unscoped (no user group, no customer number, no shop scoping) — still doesn't honor qty breaks. Confirmed against the cart pricing path; the PDP price-tier *display* table works, the *cart charge* does not.
 
 **Surface-independence — this is the platform, not the surface.** This gotcha fires the same regardless of whether the tier rows were inserted via:
@@ -186,6 +192,24 @@ claiming either surface proves the other. `force_price_recalculation` lacks the 
 price context, so its default result is not evidence that an account price failed. For a stale
 imported value, follow [`dw-data-write-effects`](../../dw-data-write-effects/SKILL.md).
 Quantity/UOM boundaries remain separate from audience scope.
+
+### Measured shapes for a replayable price write [dw 10.30.6 · mcp 0.6.3-BETA]
+
+The `commerce.customer-prices` recipe in `dw-demo-ledger` binds these shapes:
+
+| Purpose | Call | Read projection |
+|---|---|---|
+| Find a product by number | `get_products_by_sku {skus: [<number>], languageId}` | `data[]` rows `{id, number, variantId: "", languageId, defaultPrice}`; one row per language layer and variant |
+| Default price | `patch_products_safe {products: [{id, languageId, defaultPrice}]}` | only the members given are written; read back with `get_products_by_sku` |
+| Price rows | `save_prices {prices: [{productId, currencyCode, quantity, amount, userGroupId \| userCustomerNumber}]}`; with `id` it updates that row | `get_prices_by_product_id {productId}` returns `data[]` rows `{id, productId, currencyCode, quantity, amount, isWithVat, discountPercentage, priority}` plus each scope member that is set |
+| Remove rows | `delete_prices {priceIds: [...]}` | |
+
+A price row's scope is the set of members it carries, and the read leaves out every null member
+(`variantId`, `userId`, `userGroupId`, `userCustomerNumber`, `customerGroupId`, `shopId`,
+`countryCode`). A tier is found by quantity, currency and every scope member null; a contract row
+written without a quantity reads back as `quantity: 0`. The product-scoped read showed every row
+straight after the write in these runs. What the visitor and the signed-in buyer are charged is read
+through the delivery API, see `dw-headless-delivery` `endpoint-reference.md` "Single product".
 
 For an older server whose tool schema lacks the required member, use the out-of-product fallback
 in [`recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md)

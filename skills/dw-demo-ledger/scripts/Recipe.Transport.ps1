@@ -2,7 +2,7 @@
 .SYNOPSIS
 READ-ONLY. Recipe target discovery and the reads a recipe names: MCP, Management API, delivery API and local SQL.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. Uses the shared transport (Dw.Api.psm1) and the ledger's local SQL guard (Ledger.Sql.ps1). Every read is on an allowlist in assets/handlers.json, checked before the call; an MCP call's top-level argument names are checked against the tool's own tools/list input schema, because a wrong name answers only a hintless invocation error. SQL is one guarded SELECT, run with parameters (never a token spliced into the text) inside a transaction that is always rolled back. A delivery read sends no credential except the sign-in a read-back names. The TLS bypass follows the runner's gate: a loopback base URL or -AllowSelfSignedCertificate. No response body is printed.
+PowerShell 7. Owning reference: ../references/recipes.md. Uses the shared transport (Dw.Api.psm1) and the ledger's local SQL guard (Ledger.Sql.ps1). Every read is on an allowlist in assets/handlers.json, checked before the call; an MCP call's top-level argument names are checked against the tool's own tools/list input schema, because a wrong name answers only a hintless invocation error. SQL is one guarded SELECT, run with parameters (never a token spliced into the text) inside a transaction that is always rolled back. A delivery read sends no credential except the sign-in a read-back names, or the bearer token of the signIn a dwapi-signed-in-get binding names (signed in for that read, never kept or printed). The TLS bypass follows the runner's gate: a loopback base URL or -AllowSelfSignedCertificate. No response body is printed.
 .EXAMPLE
 . ./Recipe.Transport.ps1
 #>
@@ -106,9 +106,25 @@ function Invoke-RecipeSignIn {
     if ($status -eq 200) { try { $answer = ConvertFrom-Json -InputObject ([string]$response.Content) -AsHashtable; $signedIn = $answer.token -is [string] -and [bool]$answer.token.Trim() } catch { $signedIn = $false } }
     return , @(@{signedIn = $signedIn; status = $status})
 }
+function Get-RecipeSignInToken {
+    # The bearer token of a sign-in a dwapi-signed-in-get binding names in signIn {username, password}. It stays
+    # in the caller; a refused sign-in is a fault that names no value.
+    param($Binding, $Context, $Registry)
+    $credential = Expand-RecipeValue $Binding.signIn $Context
+    if ($credential -isnot [Collections.IDictionary] -or -not $credential.username -or -not $credential.password) { throw (New-RecipeFault 'Runner input: a signed-in delivery read names no signIn username and password.') }
+    $body = @{username = $credential.username; password = $credential.password} | ConvertTo-Json -Compress
+    $route = @($Registry.dwapiSignInRoutes)[0]
+    $response = Invoke-WebRequest -Uri ($script:RecipeTarget.baseUrl + '/dwapi/' + $route) -Method Post -Body $body -ContentType 'application/json' -Headers @{Accept = 'application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
+    $token = $null
+    if ([int]$response.StatusCode -eq 200) { try { $token = (ConvertFrom-Json -InputObject ([string]$response.Content) -AsHashtable).token } catch { $token = $null } }
+    if ($token -isnot [string] -or -not $token.Trim()) { throw [UnauthorizedAccessException]::new("The signed-in delivery read could not sign in (HTTP $([int]$response.StatusCode)).") }
+    return $token
+}
 function Invoke-RecipeDeliveryGet {
-    # One anonymous GET on an allowlisted delivery route; {areaId} takes the build's area id.
-    param($Binding, $Context)
+    # One GET on an allowlisted delivery route: anonymous (dwapi-get), or as the user signIn names (dwapi-signed-in-get).
+    # {areaId} takes the build's area id; any other {name} in the route takes the argument of that name, and the
+    # remaining arguments are the query.
+    param($Binding, $Context, $Registry)
     $route = [string]$Binding.operation
     if ($route.Contains('{areaId}')) {
         $area = [string]$Context.build.areaId
@@ -116,11 +132,18 @@ function Invoke-RecipeDeliveryGet {
         $route = $route.Replace('{areaId}', $area)
     }
     $query = if ($Binding.arguments) { Expand-RecipeValue $Binding.arguments $Context } else { @{} }
+    foreach ($m in @([regex]::Matches($route, '\{(?<name>[A-Za-z][A-Za-z0-9]*)\}'))) {
+        $name = $m.Groups['name'].Value
+        if (-not $query.Contains($name) -or [string]::IsNullOrEmpty([string]$query[$name])) { throw (New-RecipeFault "Runner input: delivery route $($Binding.operation) needs the argument $name.") }
+        $route = $route.Replace($m.Value, [Uri]::EscapeDataString([string]$query[$name])); $query.Remove($name)
+    }
     $pairs = @(foreach ($k in @($query.Keys | Sort-Object)) { [Uri]::EscapeDataString($k) + '=' + [Uri]::EscapeDataString([string]$query[$k]) })
     $uri = $script:RecipeTarget.baseUrl + '/dwapi/' + $route + $(if ($pairs.Count) { '?' + ($pairs -join '&') })
-    $response = Invoke-WebRequest -Uri $uri -Method Get -Headers @{Accept = 'application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
+    $headers = @{Accept = 'application/json'}
+    if ($Binding.handler -eq 'dwapi-signed-in-get') { $headers.Authorization = 'Bearer ' + (Get-RecipeSignInToken $Binding $Context $Registry) }
+    $response = Invoke-WebRequest -Uri $uri -Method Get -Headers $headers -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
     $status = [int]$response.StatusCode
-    if ($status -in @(401, 403)) { throw [UnauthorizedAccessException]::new('Delivery read is not authorised without a credential.') }
+    if ($status -in @(401, 403)) { throw [UnauthorizedAccessException]::new("Delivery read is not authorised ($($Binding.handler)).") }
     if ($status -ne 200) { throw (New-RecipeFault "Delivery route $($Binding.operation) answered HTTP $status.") }
     return , (ConvertTo-RecipeData ([string]$response.Content))
 }
@@ -140,8 +163,8 @@ function Read-RecipeRows {
         'sql' { return , (Invoke-RecipeSqlRows $Binding $Context $Run.cap) }
         'dwapi' {
             if ($Binding.handler -eq 'dwapi-sign-in') { return , (Invoke-RecipeSignIn $Binding $Context) }
-            if ($Binding.handler -ne 'dwapi-get') { throw (New-RecipeFault "Delivery handler $($Binding.handler) is not a row read.") }
-            Invoke-RecipeDeliveryGet $Binding $Context
+            if ($Binding.handler -notin @('dwapi-get', 'dwapi-signed-in-get')) { throw (New-RecipeFault "Delivery handler $($Binding.handler) is not a row read.") }
+            Invoke-RecipeDeliveryGet $Binding $Context $Run.registry
         }
     }
     $rows = Get-RecipeValue $data $(if ($Binding.rows) { $Binding.rows } else { '$' })

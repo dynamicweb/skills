@@ -185,12 +185,22 @@ function Get-RecipeRowField {
 function Get-RecipeDifferences {
     # Field names whose row value differs from the expected value. Values are not returned: they may be personal data.
     param($Row, $Expected, [string]$Operation)
-    $names = @(foreach ($k in @($Expected.Keys)) { if (-not (Test-RecipeEqual (Get-RecipeRowField $Row $k $Operation) $Expected[$k])) { $k } })
+    $names = @(foreach ($k in @($Expected.Keys)) {
+        # An expected null is a statement that the member is empty, and the MCP read models leave out a null
+        # member: only there does absence read as null. A value the recipe expects still fails loudly when absent.
+        if ($null -eq $Expected[$k] -and -not (Get-RecipeValue $Row $k).found) { continue }
+        if (-not (Test-RecipeEqual (Get-RecipeRowField $Row $k $Operation) $Expected[$k])) { $k }
+    })
     return , $names
 }
 function Select-RecipeMatches {
     param([object[]]$Rows, $Match, [string]$Operation)
     if (-not $Match -or $Match.Count -eq 0) { return , @($Rows) }
+    # A row that leaves out a member the key gives a value is a row whose member is null, so it does not match:
+    # price rows of other scopes omit the scope member. A misspelt key member then matches nothing, and the
+    # read-back after a write fails on it, so the absence still shows.
+    $valued = @($Match.Keys | Where-Object { $null -ne $Match[$_] })
+    $Rows = @($Rows | Where-Object { $row = $_; -not @($valued | Where-Object { -not (Get-RecipeValue $row $_).found }).Count })
     $hits = foreach ($row in $Rows) {
         # Assigned, not wrapped in @(): the differences come back as one list object.
         $differs = Get-RecipeDifferences $row $Match $Operation
@@ -215,14 +225,17 @@ function Get-RecipeMapDifferences {
 }
 function Test-RecipeCondition {
     # skipWhen: exists, equals, notEquals or contains on one input path. Nothing else is evaluated.
+    # A list of conditions skips when any of them holds.
     param($Condition, $Context)
     if (-not $Condition) { return $false }
+    if ($Condition -is [Collections.IList]) { foreach ($c in $Condition) { if (Test-RecipeCondition $c $Context) { return $true } }; return $false }
     $value = Resolve-RecipeRootPath $Condition.path $Context
     $present = $value.found -and $null -ne $value.value
     if ($Condition.Contains('exists')) { return $present -eq [bool]$Condition.exists }
-    if ($Condition.Contains('equals')) { return $present -and (Test-RecipeEqual $value.value $Condition.equals) }
-    if ($Condition.Contains('notEquals')) { return -not ($present -and (Test-RecipeEqual $value.value $Condition.notEquals)) }
-    if ($Condition.Contains('contains')) { return $present -and ([string]$value.value).Contains([string]$Condition.contains, [StringComparison]::Ordinal) }
+    # The compared value may be a token of the input ({input.buyer.account}), never code.
+    if ($Condition.Contains('equals')) { return $present -and (Test-RecipeEqual $value.value (Expand-RecipeValue $Condition.equals $Context)) }
+    if ($Condition.Contains('notEquals')) { return -not ($present -and (Test-RecipeEqual $value.value (Expand-RecipeValue $Condition.notEquals $Context))) }
+    if ($Condition.Contains('contains')) { return $present -and ([string]$value.value).Contains([string](Expand-RecipeValue $Condition.contains $Context), [StringComparison]::Ordinal) }
     throw (New-RecipeFault 'A skipWhen condition states no operator.')
 }
 function Get-RecipeSurfaceFault {
@@ -248,7 +261,7 @@ function Get-RecipeSurfaceFault {
             if (-not $Capabilities.sql) { return 'SQL is not enabled (local install, -AllowSql with -SqlServer and -Database)' }
         }
         'dwapi' {
-            $routes = switch ($Binding.handler) { 'dwapi-get' { $Registry.dwapiReadRoutes } default { $Registry.dwapiSignInRoutes } }
+            $routes = switch ($Binding.handler) { 'dwapi-get' { $Registry.dwapiReadRoutes } 'dwapi-signed-in-get' { $Registry.recipeSignedInReadRoutes } default { $Registry.dwapiSignInRoutes } }
             if ($Operation -cnotin @($routes)) { return "delivery route $Operation is not on the allowlist for $($Binding.handler)" }
             if (-not $Capabilities.dwapi) { return 'the delivery API is not a permitted surface for this run' }
         }

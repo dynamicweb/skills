@@ -140,6 +140,12 @@ def produced(step):
     return names
 
 
+def conditions(skip_when):
+    """A skipWhen as a list of condition objects (one condition, or a list that skips when any holds)."""
+    items = skip_when if isinstance(skip_when, list) else [skip_when]
+    return [c for c in items if isinstance(c, dict)]
+
+
 def readable(binding, surfaces):
     return binding.get("status") == "implemented" and binding.get("surface") in surfaces
 
@@ -292,9 +298,11 @@ def validate_recipes(repo: Path) -> list[str]:
                 return None
 
             check_tokens(step.get("key"), "key")
-            cond = step.get("skipWhen")
-            if isinstance(cond, dict) and root_fault(cond.get("path", "")):
-                error(file, f"step {sid} skipWhen: {root_fault(cond.get('path', ''))}")
+            for cond in conditions(step.get("skipWhen")):
+                if root_fault(cond.get("path", "")):
+                    error(file, f"step {sid} skipWhen: {root_fault(cond.get('path', ''))}")
+                for value in (cond.get(k) for k in ("equals", "notEquals", "contains") if k in cond):
+                    check_tokens(value, "skipWhen")
             for b in (step.get("find") or {}).get("bindings", []):
                 check_binding(b, "read", f"step {sid} find", file, error, registry, tools, sql_jobs)
                 check_tokens({k: b.get(k) for k in ("arguments", "match", "compare", "compareMap", "parameters")}, "find")
@@ -315,18 +323,19 @@ def validate_recipes(repo: Path) -> list[str]:
             item, parent = scopes(section, probe.get("forEach"))
             if probe.get("forEach") and item is None:
                 error(file, f"probe {pid}: forEach {probe.get('forEach')} is not in section {section_name}")
-            cond = probe.get("skipWhen")
-            if isinstance(cond, dict):
+            for cond in conditions(probe.get("skipWhen")):
                 head, _, rest = (cond.get("path") or "").partition(".")
                 base = {"input": section, "item": item, "parent": parent}.get(head)
                 if base is None or schema_at(base, rest) is None:
                     error(file, f"probe {pid} skipWhen: {cond.get('path')} does not resolve in the input schema")
             for b in probe.get("bindings", []):
                 check_binding(b, "probe", f"probe {pid}", file, error, registry, tools, sql_jobs)
-                for path, text in strings({k: b.get(k) for k in ("arguments", "match", "parameters", "assert")}, f"probe {pid}"):
+                for path, text in strings({k: b.get(k) for k in ("arguments", "match", "parameters", "assert", "signIn")}, f"probe {pid}"):
                     for body in TOKEN_RE.findall(text):
                         if body.startswith("secret."):
-                            if b.get("handler") != "dwapi-sign-in" or not path.startswith(f"probe {pid}.arguments"):
+                            in_sign_in = (b.get("handler") == "dwapi-sign-in" and path.startswith(f"probe {pid}.arguments")) or \
+                                (b.get("handler") == "dwapi-signed-in-get" and path.startswith(f"probe {pid}.signIn"))
+                            if not in_sign_in:
                                 error(file, f"{path}: token {{{body}}} is a secret outside a sign-in probe's arguments")
                             continue
                         m = STEP_TOKEN_RE.match(body.split("|")[0].removeprefix("text:"))
@@ -386,7 +395,7 @@ def check_binding(b, kind, where, file, error, registry, tools, sql_jobs):
         error(file, f"{where}: Management API {operation} is not on adminReadQueries")
     if surface == "dwapi":
         handler = b.get("handler")
-        routes = registry.get("dwapiReadRoutes", []) if handler == "dwapi-get" else registry.get("dwapiSignInRoutes", [])
+        routes = {"dwapi-get": registry.get("dwapiReadRoutes", []), "dwapi-signed-in-get": registry.get("recipeSignedInReadRoutes", [])}.get(handler, registry.get("dwapiSignInRoutes", []))
         if operation not in routes:
             error(file, f"{where}: delivery route {operation} is not on the allowlist for {handler}")
         if handler == "dwapi-persona-sign-in" and (b.get("arguments") or {}).get("readAs") not in registry.get("dwapiSignedInReadRoutes", []):

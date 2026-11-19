@@ -230,6 +230,27 @@ Describe 'Recipe engine: paths, tokens and matching' {
     It 'fails loudly on a field the response does not carry, rather than reading it as a mismatch' {
         { Get-RecipeDifferences @{id = 1} @{customerNumber = 'C1'} 'get_user_groups' } | Should -Throw '*carries no field*'
     }
+    It 'reads an absent member as null only where the recipe expects null, so price rows of other scopes do not match' {
+        # The MCP price read leaves out every null scope member: a tier row has no userCustomerNumber member.
+        $tier = @{id = 'P1'; quantity = 10; amount = 6}
+        $contract = @{id = 'P2'; quantity = 0; amount = 7; userCustomerNumber = 'C-1'}
+        (Get-RecipeDifferences $tier @{quantity = 10; userCustomerNumber = $null} 'get_prices_by_product_id').Count | Should -Be 0
+        (Get-RecipeDifferences $contract @{userCustomerNumber = $null} 'get_prices_by_product_id') | Should -Be @('userCustomerNumber')
+        $hits = Select-RecipeMatches @($tier, $contract) @{userCustomerNumber = 'C-1'} 'get_prices_by_product_id'
+        @($hits).Count | Should -Be 1
+        $hits[0].id | Should -Be 'P2'
+        @(Select-RecipeMatches @($tier, $contract) @{quantity = 10; userCustomerNumber = $null} 'get_prices_by_product_id')[0].id | Should -Be 'P1'
+        { Get-RecipeDifferences $tier @{amount = 6; customerNumber = 'C1'} 'get_prices_by_product_id' } | Should -Throw '*carries no field*'
+    }
+    It 'skips on any of a list of conditions, and compares a condition with a token of the input' {
+        $ctx = @{input = @{buyer = @{account = 'C-1'}}; item = @{account = 'C-2'; quantity = 5}; results = @{}; secrets = @{}}
+        Test-RecipeCondition @{path = 'item.account'; notEquals = '{input.buyer.account}'} $ctx | Should -BeTrue
+        $ctx.item.account = 'C-1'
+        Test-RecipeCondition @{path = 'item.account'; notEquals = '{input.buyer.account}'} $ctx | Should -BeFalse
+        Test-RecipeCondition @(@{path = 'item.account'; notEquals = '{input.buyer.account}'}, @{path = 'item.quantity'; exists = $true}) $ctx | Should -BeTrue
+        $ctx.item.Remove('quantity')
+        Test-RecipeCondition @(@{path = 'item.account'; notEquals = '{input.buyer.account}'}, @{path = 'item.quantity'; exists = $true}) $ctx | Should -BeFalse
+    }
     It 'refuses a host, a machine path or a credential literal in a recipe' {
         @(Test-RecipeForbidden @{source = 'see https://example.invalid'}).Count | Should -Be 1
         @(Test-RecipeForbidden @{query = 'C:\temp\x'}).Count | Should -Be 1
@@ -259,6 +280,25 @@ Describe 'Recipe reads: the SQL guard and the sign-in read-back' {
         Should -Invoke Invoke-WebRequest -Times 1 -ParameterFilter { $Method -eq 'Post' -and $Uri -eq 'https://stub.invalid/dwapi/users/authenticate' -and $Body -match '"password":"pw-value-1"' }
         Mock Invoke-WebRequest { [pscustomobject]@{StatusCode = 401; Content = ''} }
         (Invoke-RecipeSignIn @{operation = 'users/authenticate'; arguments = @{username = 'u'; password = 'p'}} $ctx)[0].signedIn | Should -BeFalse
+    }
+    It 'reads a delivery route as the signed-in user, fills route placeholders from the arguments, and keeps the token' {
+        $script:RecipeTarget = @{baseUrl = 'https://stub.invalid'; insecure = $false}
+        $registry = @{dwapiSignInRoutes = @('users/authenticate')}
+        Mock Invoke-WebRequest { [pscustomobject]@{StatusCode = 200; Content = '{"token":"issued-token-value"}'} } -ParameterFilter { $Method -eq 'Post' }
+        Mock Invoke-WebRequest { [pscustomobject]@{StatusCode = 200; Content = '{"price":{"price":7}}'} } -ParameterFilter { $Method -eq 'Get' }
+        $ctx = @{input = @{buyer = @{userName = 'buyer@example.invalid'; passwordRef = 'buyer'}}; item = @{}; secrets = @{buyer = 'pw-value-1'}; results = @{}}
+        $binding = @{handler = 'dwapi-signed-in-get'; operation = 'ecommerce/products/{productId}'; arguments = @{productId = 'PROD 1'; CurrencyCode = 'USD'}; signIn = @{username = '{input.buyer.userName}'; password = '{secret.input.buyer.passwordRef}'}}
+        $data = Invoke-RecipeDeliveryGet $binding $ctx $registry
+        $data.price.price | Should -Be 7
+        ($data | ConvertTo-Json -Compress) | Should -Not -Match 'issued-token-value|pw-value-1'
+        Should -Invoke Invoke-WebRequest -Times 1 -ParameterFilter { $Method -eq 'Post' -and $Body -match '"password":"pw-value-1"' }
+        Should -Invoke Invoke-WebRequest -Times 1 -ParameterFilter { $Method -eq 'Get' -and $Uri -eq 'https://stub.invalid/dwapi/ecommerce/products/PROD%201?CurrencyCode=USD' -and $Headers.Authorization -eq 'Bearer issued-token-value' }
+        # An anonymous read sends no credential and needs every placeholder argument.
+        $data = Invoke-RecipeDeliveryGet @{handler = 'dwapi-get'; operation = 'ecommerce/products/{productId}'; arguments = @{productId = 'P2'}} $ctx $registry
+        Should -Invoke Invoke-WebRequest -Times 1 -ParameterFilter { $Method -eq 'Get' -and $Uri -eq 'https://stub.invalid/dwapi/ecommerce/products/P2' -and -not $Headers.Authorization }
+        { Invoke-RecipeDeliveryGet @{handler = 'dwapi-get'; operation = 'ecommerce/products/{productId}'; arguments = @{}} $ctx $registry } | Should -Throw '*needs the argument productId*'
+        Mock Invoke-WebRequest { [pscustomobject]@{StatusCode = 401; Content = ''} } -ParameterFilter { $Method -eq 'Post' }
+        { Invoke-RecipeDeliveryGet $binding $ctx $registry } | Should -Throw '*could not sign in*'
     }
 }
 

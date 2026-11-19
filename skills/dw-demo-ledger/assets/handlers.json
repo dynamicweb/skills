@@ -74,7 +74,9 @@
     "get_paragraph_item_field_values",
     "get_paragraphs_by_page_id",
     "get_payment_methods",
+    "get_prices_by_product_id",
     "get_product_index_status",
+    "get_products_by_sku",
     "get_product_relation_groups",
     "get_rma_states",
     "get_roundings",
@@ -119,9 +121,11 @@
     "assign_users_to_group",
     "build_product_index",
     "create_users",
+    "patch_products_safe",
     "save_grid_rows",
     "save_pages",
     "save_paragraphs",
+    "save_prices",
     "save_user_groups",
     "set_page_item_fields",
     "set_paragraph_item_fields",
@@ -131,6 +135,9 @@
   "recipeAdminCommands": [
     "UserImpersonateAdd",
     "UsersAddToGroups"
+  ],
+  "recipeSignedInReadRoutes": [
+    "ecommerce/products/{productId}"
   ],
   "recipeRenderedReadTools": [
     "fetch_frontend_page_html"
