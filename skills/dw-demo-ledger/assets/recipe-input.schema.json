@@ -988,6 +988,7 @@
       "properties": {
         "country": {"type": "string", "pattern": "^[A-Z]{2}$", "description": "The country the storefront sells to (ISO 3166-1 alpha-2): every method is related to it, because a method without the visitor's country is not offered."},
         "language": {"type": "string", "minLength": 1, "description": "The ecommerce language id the delivery API reads methods in (LanguageId), such as ENU."},
+        "hideForAnonymous": {"enum": ["", "cart", "cart-price"], "description": "What the Swift storefront hides from a visitor who is not signed in (the website setting Hide for anonymous users): empty shows everything, cart hides add to cart, cart-price hides prices and add to cart. Absent leaves the setting as it is."},
         "buyer": {"type": "object", "additionalProperties": false, "required": ["userName", "passwordRef"], "properties": {"userName": {"type": "string", "minLength": 1}, "passwordRef": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$", "description": "A key of DW_RECIPE_SECRETS, never the password."}}},
         "methods": {
           "type": "array",
