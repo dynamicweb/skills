@@ -1200,6 +1200,30 @@ Describe 'Find-DwRecipe' {
     }
 }
 
+Describe 'Shipped recipes against the platform shapes a whole-build set met' {
+    BeforeAll {
+        . (Join-Path $script:Source 'scripts/Recipe.Transport.ps1')
+        . (Join-Path $script:Source 'scripts/Recipe.Write.ps1')
+        . (Join-Path $script:Source 'scripts/Recipe.Steps.ps1')
+        $script:Registry = Read-LedgerJson (Join-Path $script:Source 'assets/handlers.json')
+        function Get-ShippedRecipe([string]$Area, [string]$Id) { Read-LedgerJson (Join-Path $script:Source "assets/recipes/$Area/$Id.json") (Join-Path $script:Source 'assets/recipe.schema.json') }
+        function New-StepRun($Section, [hashtable]$Results, [hashtable]$Cap) {
+            @{section = $Section; build = @{}; results = $Results; secrets = @{}; inputDir = $TestDrive; cap = $Cap; registry = $script:Registry; apply = $true; changed = $false; blocked = 0
+                lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); steps = [Collections.Generic.List[object]]::new()}
+        }
+    }
+    It 'asks completeness in the catalogue''s own shop when the build names no PIM shop' {
+        $probe = @((Get-ShippedRecipe 'pim' 'pim.identifiers').verify.probes | Where-Object id -eq 'completeness')[0]
+        $ctx = @{input = @{shop = 'SHOP1'}; item = @{number = 'P-1'; group = 'tools'}; build = @{areaId = 1}; secrets = @{}
+            results = @{products = @{'P-1' = @{state = 'UNCHANGED'; values = @{id = 'PROD1'}}}; models = @{tools = @{state = 'UNCHANGED'; values = @{id = 'MODEL1'}}}}}
+        $arguments = Expand-RecipeValue $probe.bindings[0].arguments $ctx
+        $arguments.shopId | Should -Be 'SHOP1'
+        $arguments.groupIds | Should -Be @('MODEL1')
+        $ctx.build.pimShop = 'PIMSHOP1'
+        (Expand-RecipeValue $probe.bindings[0].arguments $ctx).shopId | Should -Be 'PIMSHOP1'
+    }
+}
+
 Describe 'Invoke-DwRecipe debt modes: deferred, debts only, verification skipped' {
     BeforeEach {
         $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
