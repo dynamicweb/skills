@@ -102,7 +102,11 @@ function Resolve-RecipeToken {
     }
     if ($path -match '^secret\.(?<ref>.+)$') {
         $ref = Resolve-RecipeRootPath $Matches['ref'] $Context
-        if (-not $ref.found -or [string]::IsNullOrWhiteSpace([string]$ref.value)) { throw (New-RecipeFault "Runner input: token {$Body} names no secret reference.") }
+        if (-not $ref.found -or [string]::IsNullOrWhiteSpace([string]$ref.value)) {
+            # No reference in the input (a user without a password): the default, never a guessed secret.
+            if ($hasDefault) { return $default }
+            throw (New-RecipeFault "Runner input: token {$Body} names no secret reference.")
+        }
         if (-not $Context.secrets.Contains([string]$ref.value)) { throw (New-RecipeFault "Runner input: secret reference '$($ref.value)' is not a key of DW_RECIPE_SECRETS.") }
         return $Context.secrets[[string]$ref.value]
     }
@@ -120,6 +124,10 @@ function Resolve-RecipeToken {
             $key = $parts -join '/'
         }
         $results = $Context.results[$stepId]
+        if ($results -and $results.Contains($key) -and $results[$key].state -in @('WOULD-CREATE', 'BLOCKED')) {
+            # The object this value comes from does not exist yet: a verify run reports the item as one apply would create.
+            throw [Collections.Generic.KeyNotFoundException]::new("depends on $stepId '$key', which is $($results[$key].state.ToLowerInvariant())")
+        }
         if (-not $results -or -not $results.Contains($key) -or -not $results[$key].values) { throw (New-RecipeFault "Runner input: token {$Body}: step '$stepId' produced no value for '$key'.") }
         $value = Get-RecipeValue $results[$key].values $field
         if (-not $value.found) { throw (New-RecipeFault "Runner input: token {$Body}: step '$stepId' produced no '$field'.") }
@@ -190,6 +198,21 @@ function Select-RecipeMatches {
     }
     return , @($hits)
 }
+function Get-RecipeMapDifferences {
+    # compareMap / expectMap: rows that hold one name and one value each (item fields). Every name of the
+    # expected map must be exactly one row whose value equals it. The add-in leaves out a member whose value
+    # is null, so an absent value member reads as null here, and only here. Returns the differing names.
+    param([object[]]$Rows, $Spec, $Context)
+    $map = Expand-RecipeValue $Spec.from $Context
+    if ($map -isnot [Collections.IDictionary]) { throw (New-RecipeFault 'A compareMap or expectMap does not resolve to an object of names and values.') }
+    $names = foreach ($name in @($map.Keys)) {
+        $hits = @($Rows | Where-Object { [string](Get-RecipeValue $_ $Spec.key).value -ceq [string]$name })
+        if ($hits.Count -ne 1) { $name; continue }
+        $value = Get-RecipeValue $hits[0] $Spec.value
+        if (-not (Test-RecipeEqual $(if ($value.found) { $value.value } else { $null }) $map[$name])) { $name }
+    }
+    return , @($names)
+}
 function Test-RecipeCondition {
     # skipWhen: exists, equals, notEquals or contains on one input path. Nothing else is evaluated.
     param($Condition, $Context)
@@ -209,7 +232,8 @@ function Get-RecipeSurfaceFault {
     if ($Binding.surface -notin $Capabilities.surfaces) { return "$($Binding.surface) is not a permitted surface for this run" }
     switch ($Binding.surface) {
         'mcp' {
-            $list = if ($Kind -eq 'write') { $Registry.recipeWriteTools } else { $Registry.mcpReadTools }
+            # A rendered-page read (fetch_frontend_page_html) is a read with its own list; the ledger's read list holds get_ and list_ tools only.
+            $list = if ($Kind -eq 'write') { $Registry.recipeWriteTools } else { @($Registry.mcpReadTools) + @($Registry.recipeRenderedReadTools) }
             if ($Operation -cnotin @($list)) { return "MCP $Operation is not on the recipe $Kind allowlist" }
             if (-not $Capabilities.mcp) { return 'MCP is not connected (DW_MCP_TOKEN)' }
             if (-not $Capabilities.tools.Contains($Operation)) { return "MCP $Operation is not offered by this target's tools/list" }

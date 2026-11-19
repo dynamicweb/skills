@@ -145,12 +145,12 @@ def readable(binding, surfaces):
 
 
 def step_usable(step, surfaces, write_surfaces):
-    """True when the step has an implemented find (if it finds) and an implemented create binding
+    """True when the step has an implemented find (if it finds) and an implemented write binding
     whose write and read-back stay on the given surfaces."""
     find = step.get("find")
     if find and not any(readable(b, surfaces) for b in find.get("bindings", [])):
         return False
-    return any(b.get("status") == "implemented" and b.get("surface") in write_surfaces and "create" in b
+    return any(b.get("status") == "implemented" and b.get("surface") in write_surfaces and ("create" in b or "update" in b)
                and readable(b.get("readBack") or {}, surfaces) for b in step.get("bindings", []))
 
 
@@ -297,7 +297,7 @@ def validate_recipes(repo: Path) -> list[str]:
                 error(file, f"step {sid} skipWhen: {root_fault(cond.get('path', ''))}")
             for b in (step.get("find") or {}).get("bindings", []):
                 check_binding(b, "read", f"step {sid} find", file, error, registry, tools, sql_jobs)
-                check_tokens({k: b.get(k) for k in ("arguments", "match", "compare", "parameters")}, "find")
+                check_tokens({k: b.get(k) for k in ("arguments", "match", "compare", "compareMap", "parameters")}, "find")
             for b in step.get("bindings", []):
                 check_binding(b, "write", f"step {sid} {b.get('id')}", file, error, registry, tools, sql_jobs)
                 if "create" in b:
@@ -308,7 +308,7 @@ def validate_recipes(repo: Path) -> list[str]:
                 if rb:
                     check_binding(rb, "read", f"step {sid} {b.get('id')} readBack", file, error, registry, tools, sql_jobs)
                     check_tokens({k: rb.get(k) for k in ("arguments", "parameters")}, "readBack", allow_secret=True)
-                    check_tokens({k: rb.get(k) for k in ("match", "expect")}, "readBack")
+                    check_tokens({k: rb.get(k) for k in ("match", "expect", "expectMap")}, "readBack")
             earlier.append(sid)
         for probe in (doc.get("verify") or {}).get("probes", []):
             pid = probe.get("id")
@@ -325,6 +325,10 @@ def validate_recipes(repo: Path) -> list[str]:
                 check_binding(b, "probe", f"probe {pid}", file, error, registry, tools, sql_jobs)
                 for path, text in strings({k: b.get(k) for k in ("arguments", "match", "parameters", "assert")}, f"probe {pid}"):
                     for body in TOKEN_RE.findall(text):
+                        if body.startswith("secret."):
+                            if b.get("handler") != "dwapi-sign-in" or not path.startswith(f"probe {pid}.arguments"):
+                                error(file, f"{path}: token {{{body}}} is a secret outside a sign-in probe's arguments")
+                            continue
                         m = STEP_TOKEN_RE.match(body.split("|")[0].removeprefix("text:"))
                         if m and (m.group(1) not in step_ids or m.group(3) not in step_ids[m.group(1)]):
                             error(file, f"{path}: token {{{body}}} names a value no step produces")
@@ -376,7 +380,7 @@ def check_binding(b, kind, where, file, error, registry, tools, sql_jobs):
         if rb.get("status") != "implemented":
             error(file, f"{where}: an implemented write needs an implemented read-back")
         return
-    if surface == "mcp" and operation not in registry.get("mcpReadTools", []):
+    if surface == "mcp" and operation not in registry.get("mcpReadTools", []) + registry.get("recipeRenderedReadTools", []):
         error(file, f"{where}: MCP {operation} is not on mcpReadTools")
     if surface == "admin-api" and operation not in registry.get("adminReadQueries", []):
         error(file, f"{where}: Management API {operation} is not on adminReadQueries")

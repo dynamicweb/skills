@@ -11,6 +11,7 @@ impersonation relation. The permission store these grants are read against is
 - [17. Frontend user management — the Swift 2.4 UserGroups app](#17-frontend-user-management--the-swift-24-usergroups-app)
 - [17b. Write surfaces for users, groups and impersonation grants](#17b-write-surfaces-for-users-groups-and-impersonation-grants)
 - [17c. An impersonation grant is denormalised into the Users index](#17c-an-impersonation-grant-is-denormalised-into-the-users-index)
+- [17d. The MCP user, group and impersonation shapes, measured](#17d-the-mcp-user-group-and-impersonation-shapes-measured)
 - [Cross-references](#cross-references)
 
 ## 17. Frontend user management — the Swift 2.4 UserGroups app
@@ -251,7 +252,9 @@ concern owned by `dw-commerce-b2b`.)
 
 ## 17b. Write surfaces for users, groups and impersonation grants
 
-Per operation, the two surfaces and what each one actually writes. MCP tools are `snake_case`;
+Per operation, the two surfaces and what each one actually writes. Newer add-ins close most of the
+MCP gaps in this table: a password on create, the group type and the impersonation grant are MCP
+writes there, with the argument shapes in §17d. MCP tools are `snake_case`;
 Management API verbs are `PascalCase`, out of product, and the recipes for them live in
 [dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md`. Measured on 10.28.x.
 
@@ -335,6 +338,33 @@ be the full one.
 Measured: fifteen group-level grants deleted through `UserImpersonateDelete` and verified row by row
 in SQL, `UserService` flushed by verb, and the affected document still carried all fifteen grants
 minutes later; one Full build reduced it to the single surviving grant, with no restart.
+
+## 17d. The MCP user, group and impersonation shapes, measured
+
+Read from the add-in's own `tools/list` input schemas and by calling each tool on a site built from
+blank [dw 10.30.6 · mcp 0.6.3-BETA]. Every write takes a list under one member; every read answers
+`{count, data:[…]}` with the rows in `data`. A read model leaves out a member whose value is null,
+so an absent member is not proof the field does not exist.
+
+| Tool | Arguments | What it does and what reads it back |
+|---|---|---|
+| `create_users` | `{users:[{userName, name, email, customerNumber, password, userAndGroupType, active, …}]}` | `password` is the initial password, checked against the solution's complexity rules (a weak one rejects the user) and never returned; without it the login cannot sign in. Read back with `get_users_by_usernames` |
+| `update_users` | `{users:[{id, customerNumber, …}]}` | `id` is required and only the members sent are applied. No password member |
+| `get_users_by_usernames` | `{userNames:[…]}` | Rows carry `id`, `userName`, `name`, `email`, `customerNumber`, `active`, `userType`, `userAndGroupType` |
+| `save_user_groups` | `{groups:[{id, name, parentGroupId, customerNumber, userAndGroupType, …}]}` | `id` 0 creates; a member left out is left unchanged. `userAndGroupType` writes the group type (`SystemAccount` for a B2B account group) and must be a registered type |
+| `get_user_groups`, `get_user_groups_by_ids` | `{}`, `{ids:[…]}` | Rows carry `id`, `name`, `parentGroupId`, `customerNumber`, but **not the group type**, although the output schema declares it: no MCP read returns a group's user-and-group type. Verify it on the CSR Accounts page, or out of product ([dw-data-access](../../dw-data-access/SKILL.md) `references/recipes-users.md` §"Read a user group's type") |
+| `assign_users_to_group` | `{groupId, userIds:[…]}` | Integer ids. Read back with `get_users_by_group_id {groupId}`, whose rows are users |
+| `add_impersonatable_users` | `{userId, impersonatableUserIds:[…]}` (or `groupId` as the subject) | The subject is the impersonator and the listed users are the customers; one call wrote the grant in the right direction |
+| `get_impersonatable_users` | `{userId}` or `{groupId}`, optional `includeInheritance` | Rows are the users the subject may impersonate (`id`, `userName`). Ask with the customer as subject to prove the reverse direction is empty |
+| `can_impersonate` | `{userId, targetUserId}` | `true` or `false` |
+
+A wrong argument name now answers with the expected names ("unknown argument 'userIds'; expected
+'ids'") instead of the bare invocation error of older add-ins.
+
+Behaviour, not storage: after the grant, a `UserService` flush, a Full build of `Users.index` and a
+host recycle, the representative signed in through the delivery API (`/dwapi/users/authenticate`)
+and `/dwapi/users/impersonatees` listed the customer. On that site the index lived under the
+`Secondary users` repository only; `get_index_repositories` lists which repositories carry it.
 
 **Assert on the index document of the identity whose grant was REMOVED**, not only on the rendered
 surface of the identity whose grant was kept. A set-equality sweep over what a picker renders for

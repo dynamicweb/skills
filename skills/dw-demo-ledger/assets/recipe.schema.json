@@ -69,6 +69,16 @@
       "required": ["usable", "reason"],
       "properties": {"usable": {"type": "boolean"}, "reason": {"type": "string", "minLength": 1}}
     },
+    "mapSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "key", "value"],
+      "properties": {
+        "from": {"description": "A token or object resolving to {name: value}."},
+        "key": {"type": "string", "minLength": 1},
+        "value": {"type": "string", "minLength": 1}
+      }
+    },
     "condition": {
       "type": "object",
       "additionalProperties": false,
@@ -107,6 +117,8 @@
         "match": {"type": "object"},
         "compare": {"type": "object"},
         "expect": {"type": "object"},
+        "compareMap": {"$ref": "#/definitions/mapSpec"},
+        "expectMap": {"$ref": "#/definitions/mapSpec"},
         "produces": {"type": "object", "additionalProperties": {"type": "string"}},
         "assert": {
           "type": "object",
@@ -193,6 +205,7 @@
         "forEach": {"type": "string", "pattern": "^[A-Za-z0-9_]+(\\[\\*\\])?(\\.[A-Za-z0-9_]+(\\[\\*\\])?)*$"},
         "skipWhen": {"$ref": "#/definitions/condition"},
         "minimumSubjects": {"type": "integer", "minimum": 1},
+        "pollSeconds": {"type": "integer", "minimum": 1, "maximum": 120, "description": "Repeat a failing read until it passes or this many seconds pass, for a state the platform publishes late (a new URL)."},
         "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}}
       }
     }

@@ -2,7 +2,7 @@
 .SYNOPSIS
 WRITES: cache flushes, index builds, assortment builds and a host recycle that a recipe owes after it changed something.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. A debt is one of a fixed list, each paid by an existing shipped function or script, never by code from the recipe: flush:<service> is Clear-DwServiceCache; index:<repository>/<index> is Build-DwProductIndex.ps1 with the builder resolved from IndexBuildersByRepositoryAndIndexName, or on MCP build_product_index and wait_for_product_index gated on a non-zero documentCount; assortments is Invoke-DwAssortmentBuild.ps1 over the section's assortmentIds; recycle is Restart-DwHost.ps1 for a local host given -SolutionPath. A debt this run cannot pay is OPEN with the instruction that pays it, never skipped.
+PowerShell 7. Owning reference: ../references/recipes.md. A debt is one of a fixed list, each paid by an existing shipped function or script, never by code from the recipe: flush:<service> is Clear-DwServiceCache; index:<repository>/<index> is Build-DwProductIndex.ps1 with the builder resolved from IndexBuildersByRepositoryAndIndexName, or on MCP build_product_index and wait_for_product_index gated on a non-zero documentCount; assortments is Invoke-DwAssortmentBuild.ps1 over the section's assortmentIds; recycle is Restart-DwHost.ps1 for a local host given -SolutionPath. A debt this run cannot pay is OPEN with the instruction that pays it, never skipped; an index the target does not have (get_index_repositories) is a NOTE.
 .EXAMPLE
 . ./Recipe.Debts.ps1
 #>
@@ -48,6 +48,12 @@ function Invoke-RecipeDebt {
         }
         if ($Debt -match '^index:(?<repo>[^/]+)/(?<index>.+)$') {
             $repo = $Matches['repo']; $index = $Matches['index']
+            if (Test-RecipeMcpDebtTools @('get_index_repositories') $Run) {
+                # A recipe names every repository a platform may carry the index under; one this target lacks owes nothing.
+                $listed = Invoke-RecipeMcpCall 'get_index_repositories' @{} $Run.cap 60
+                $known = @(@((Get-RecipeValue $listed 'data').value) | Where-Object { [string]$_.repository -ceq $repo -and $index -cin @($_.indexes) })
+                if ($known.Count -eq 0) { $Run.lines.Add("NOTE ${name}: not owed, the target has no index $repo/$index"); return }
+            }
             if ($Run.cap.admin) {
                 $build = Get-RecipeIndexBuild $repo $index
                 if (-not $build) { Add-RecipeCheck $Run $name 'OPEN' "owed: the builder of $repo/$index is not one name or Full; build it with Build-DwProductIndex.ps1 -BuildName <builder>"; return }

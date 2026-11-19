@@ -65,17 +65,21 @@ states for the same key), `find` (read bindings), `bindings` (write bindings, in
 A read binding names a `surface` (`mcp`, `admin-api`, `sql` or `dwapi`), an `operation` and its
 `arguments`, `rows` (the member holding the rows; `$` for the response itself), `match` (the
 natural-key fields), optionally `compare` (the fields that must equal the input), `expect` (on a
-read-back), `produces` (values later steps use, by row path) and, on a probe, `assert`. A write
-binding names `create` and/or `update` (`{operation, arguments}`) and a `readBack` read binding.
+read-back), `produces` (values later steps use, by row path) and, on a probe, `assert`. For rows
+that each hold one name and one value (item fields), `compareMap` and `expectMap`
+(`{from, key, value}`) compare a whole map name by name: a missing name is a difference, so a
+misspelt field shows. A write binding names `create` and/or `update` (`{operation, arguments}`) and a
+`readBack` read binding.
 
 **`status: implemented` means the tool or command name and its argument shape are documented in
-this repository**, cited in `source`. Anything else is `status: planned` with a `reason`, and a
-planned binding never executes. The response projection (the `rows` member and field names) is not
-yet measured for most reads: the runner fails loudly with "carries no field" when a named field is
-absent, never reads absence as a mismatch, and a recipe stays unproven until a run on a release is
-recorded in `provenOn`.
+this repository**, cited in `source`, and its read projection (the `rows` member and the field
+names) is measured. Anything else is `status: planned` with a `reason`, and a planned binding never
+executes. When a named field is absent the runner fails loudly with "carries no field", never reads
+absence as a mismatch: the MCP read models leave out a member whose value is null, and some leave out
+a field their output schema declares. A recipe is proven only by a run recorded in `provenOn`.
 
-Allowlists hold the line between data and code. An implemented MCP read must be on `mcpReadTools`, an
+Allowlists hold the line between data and code. An implemented MCP read must be on `mcpReadTools` (or
+`recipeRenderedReadTools`, the rendered-page summary), an
 MCP write on `recipeWriteTools`, a Management API write on `recipeAdminCommands`, a delivery read on
 the ledger's delivery lists. The runner checks again before every call and refuses an operation off
 the list even when the target offers it, and it checks every MCP call's argument names against the
@@ -100,8 +104,11 @@ String values in arguments, match, compare, expect and parameters may hold token
 
 A whole-value token keeps its type, so an id stays a number; a token inside text becomes text.
 `{text:<token>}` makes a value text, for commands whose ids are strings. `{<token>|<JSON literal>}`
-gives a default used only when the path is absent, never when a step result is missing: a child
-page whose parent was not created is BLOCKED, never created at the website root.
+gives a default used only when the path is absent (a user without `passwordRef` gets `null`), never
+when a step result is missing: a child page whose parent was not created is never created at the
+website root. When the value comes from an object an earlier step reported WOULD-CREATE, a verify run
+reports the dependant WOULD-CREATE too ("depends on pages 'About us', which is would-create"); in an
+apply run it is BLOCKED.
 
 ## Steps: find, apply, read back
 
@@ -115,7 +122,7 @@ both run here writes, and the write is read back by natural key: a create can an
 can drop a field, so the response is never the evidence and the id comes from the read-back. An item
 with no eligible binding is BLOCKED with the reasons, and the run exits 1.
 
-A step without a find (a password) runs only behind `after`, for the items an earlier step created.
+A step without a find (a url name pin) runs only behind `after`, for the items an earlier step created or updated.
 
 ## Debts
 
@@ -125,7 +132,7 @@ paid by an existing shipped script or function, never by code from the recipe:
 | Debt | Paid by | Without the surface |
 |---|---|---|
 | `flush:<service>` | `Clear-DwServiceCache` (Management API) | OPEN: no MCP tool refreshes service caches |
-| `index:<repository>/<index>` | [Build-DwProductIndex.ps1](../../dw-data-access/scripts/Build-DwProductIndex.ps1), builder from `IndexBuildersByRepositoryAndIndexName`; else MCP `build_product_index` and `wait_for_product_index` with both names, gated on a non-zero `documentCount` from `get_product_index_status` | OPEN with the build to run |
+| `index:<repository>/<index>` | [Build-DwProductIndex.ps1](../../dw-data-access/scripts/Build-DwProductIndex.ps1), builder from `IndexBuildersByRepositoryAndIndexName`; else MCP `build_product_index` and `wait_for_product_index` with both names, gated on a non-zero `documentCount` from `get_product_index_status`. An index `get_index_repositories` does not list is a NOTE, not owed | OPEN with the build to run |
 | `assortments` | [Invoke-DwAssortmentBuild.ps1](../../dw-data-access/scripts/Invoke-DwAssortmentBuild.ps1) over the section's `assortmentIds` | OPEN when none are declared |
 | `recycle` | [Restart-DwHost.ps1](../../dw-demo-base/scripts/Restart-DwHost.ps1) for a loopback host given `-SolutionPath` | OPEN with the instruction (a hosted install recycles through its host) |
 
@@ -136,7 +143,9 @@ recipe again without `-Apply`: the steps report UNCHANGED and the probes decide.
 
 A probe reads through its first eligible binding and asserts `count` (with `op` eq, ge or le),
 `equals` or `contains` on the matching rows. Fewer observed subjects than `minimumSubjects` is FAIL,
-as in the ledger; a probe whose `forEach` finds no input item to verify is a NOTE. A probe whose
+as in the ledger; a probe whose `forEach` finds no input item to verify is a NOTE. `pollSeconds`
+reads a failing subject again until it passes or the time is up, for a state the platform publishes
+late or drops for a moment (a new URL answers 404 for seconds). A probe whose
 bindings are all planned cannot execute and is a NOTE, never a pass. The persona sign-in probe is the
 ledger's own handler, with credentials only from `DW_PERSONA_CREDENTIALS`.
 

@@ -31,6 +31,12 @@ function Find-RecipeObject {
     if (-not $select.binding) { throw (New-RecipeFault ('no eligible find binding: ' + ($select.reasons -join '; '))) }
     $binding = $select.binding
     $rows = Read-RecipeRows $binding $Context $Run
+    if ($binding.compareMap) {
+        # The object is the set of rows (an item's fields): no rows is absent, otherwise compare name by name.
+        if ($rows.Count -eq 0) { return @{state = 'CREATE'; row = $null; fields = @(); binding = $binding} }
+        $differs = Get-RecipeMapDifferences $rows $binding.compareMap $Context
+        return @{state = $(if ($differs.Count) { 'UPDATE' } else { 'UNCHANGED' }); row = $null; fields = $differs; binding = $binding}
+    }
     $hits = Select-RecipeMatches $rows (Expand-RecipeValue $binding.match $Context) $binding.operation
     if ($hits.Count -gt 1) { throw (New-RecipeFault "$($hits.Count) objects match the natural key; resolve the duplicates before applying") }
     if ($hits.Count -eq 0) { return @{state = 'CREATE'; row = $null; fields = @(); binding = $binding} }
@@ -72,6 +78,11 @@ function Invoke-RecipeStepItem {
     # Every write is read back. The response of the write is not evidence: a create can answer id 0 and a save can drop a field.
     $readBack = $write.binding.readBack
     $rows = Read-RecipeRows $readBack $Context $Run
+    if ($readBack.expectMap) {
+        $differs = Get-RecipeMapDifferences $rows $readBack.expectMap $Context
+        if ($differs.Count) { Add-RecipeCheck $Run $name 'FAIL' ('the read-back differs from the write in ' + ($differs -join ', ')); return }
+        Add-RecipeCheck $Run $name 'PASS'; return
+    }
     $hits = Select-RecipeMatches $rows (Expand-RecipeValue $readBack.match $Context) $readBack.operation
     if ($hits.Count -ne 1) { Add-RecipeCheck $Run $name 'FAIL' "the read-back found $($hits.Count) matching object(s), not one"; return }
     $differs = if ($readBack.expect) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $readBack.expect $Context) $readBack.operation } else { @() }
@@ -97,12 +108,20 @@ function Invoke-RecipeStep {
             if ($seen.Contains($key)) { throw (New-RecipeFault 'the input names this natural key twice') }
             $seen[$key] = $true
             Invoke-RecipeStepItem $Step $context $Run $key ([ref]$printed)
+        } catch [Collections.Generic.KeyNotFoundException] {
+            # A value this item needs comes from an object that does not exist yet.
+            if (-not $key) { $key = '(no key)' }
+            $state = if ($Run.apply) { 'BLOCKED' } else { 'WOULD-CREATE' }
+            $Run.results[$Step.id][$key] = @{state = $state; values = @{}}
+            if (-not $printed) { Add-RecipeStepLine $Run $Step.id $state $key }
+            if ($Run.apply) { Add-RecipeCheck $Run "$($Step.id)/$key" 'OPEN' ($_.Exception.Message + '; nothing to write to') }
+            else { Add-RecipeCheck $Run "$($Step.id)/$key" 'FAIL' ('absent: ' + $_.Exception.Message + '; apply would create it') }
         } catch {
             if (-not $key) { $key = '(no key)' }
             Write-Verbose $_.ScriptStackTrace
             if (-not $printed) {
                 Add-RecipeStepLine $Run $Step.id 'BLOCKED' $key
-                if ($Run.results[$Step.id].Contains($key)) { $Run.results[$Step.id][$key].state = 'BLOCKED' }
+                $Run.results[$Step.id][$key] = @{state = 'BLOCKED'; values = @{}}
             }
             # A named input or contract fault is printed; anything else may carry a response body, so it stays generic.
             $exception = $_.Exception

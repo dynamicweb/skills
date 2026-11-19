@@ -18,7 +18,11 @@ function Test-RecipeAssert {
         $ok = switch ($assert.op) { 'ge' { $n -ge $expected } 'le' { $n -le $expected } default { $n -eq $expected } }
         return $(if ($ok) { $null } else { "$n matching row(s), expected $($assert.op) $expected" })
     }
-    if ($hits.Count -eq 0) { return 'no row matches' }
+    if ($hits.Count -eq 0) {
+        # Name the fields that kept a single row out, never their values (a value may be personal data).
+        if (@($Rows).Count -eq 1 -and $Binding.match) { return 'no row matches: ' + ((Get-RecipeDifferences $Rows[0] (Expand-RecipeValue $Binding.match $Context) $Binding.operation) -join ', ') + ' differs' }
+        return 'no row matches'
+    }
     foreach ($row in $hits) {
         $value = Get-RecipeRowField $row $assert.path $Binding.operation
         $ok = if ($assert.kind -eq 'equals') { Test-RecipeEqual $value $expected } else { $null -ne $value -and ([string]$value).Contains([string]$expected, [StringComparison]::Ordinal) }
@@ -49,16 +53,25 @@ function Invoke-RecipeProbe {
                 $subjects += $observation.scanned
                 $rows = @(@{value = $observation.value})
                 if ($observation.offenders.Count) { $failures += "$($observation.offenders.Count) persona(s) did not sign in and read as themselves" }
+                $fault = Test-RecipeAssert $binding $rows $context
             } else {
                 $subjects++
                 $rows = Read-RecipeRows $binding $context $Run
+                $fault = Test-RecipeAssert $binding $rows $context
+                # A state the platform publishes late or drops for a moment (a new URL answers 404 for seconds) is read again until it passes or the poll ends.
+                $deadline = [DateTime]::UtcNow.AddSeconds([int]$Probe.pollSeconds)
+                while ($fault -and $Probe.pollSeconds -and [DateTime]::UtcNow -lt $deadline) {
+                    Start-Sleep -Milliseconds $Run.pollIntervalMs
+                    $rows = Read-RecipeRows $binding $context $Run
+                    $fault = Test-RecipeAssert $binding $rows $context
+                }
             }
-            $fault = Test-RecipeAssert $binding $rows $context
             if ($fault) { $failures += "subject ${index}: $fault" }
         } catch {
             Write-Verbose $_.ScriptStackTrace
             $exception = $_.Exception
-            if ($exception -is [InvalidOperationException] -or $exception -is [UnauthorizedAccessException]) { $open += "subject ${index}: " + $exception.Message }
+            if ($exception -is [Collections.Generic.KeyNotFoundException]) { $failures += "subject ${index}: absent, " + $exception.Message }
+            elseif ($exception -is [InvalidOperationException] -or $exception -is [UnauthorizedAccessException]) { $open += "subject ${index}: " + $exception.Message }
             elseif ($exception -is [ApplicationException]) { $failures += "subject ${index}: " + $exception.Message }
             else { $failures += "subject ${index}: the probe read failed; no response body is printed" }
         }

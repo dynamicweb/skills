@@ -87,6 +87,7 @@
               "parent": {"type": "string", "minLength": 1, "description": "menuText of an earlier page in this list; absent for a page at the website root."},
               "sort": {"type": "integer"},
               "public": {"type": "boolean"},
+              "path": {"type": "string", "pattern": "^/[A-Za-z0-9/_-]*$", "description": "The path the page answers at, language prefix included, when the input expects it to render publicly."},
               "rows": {
                 "type": "array",
                 "items": {

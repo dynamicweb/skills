@@ -1,6 +1,8 @@
 # Hermetic controls for the recipe runner (dw-demo-ledger Invoke-DwRecipe.ps1, Find-DwRecipe.ps1 and
 # the Recipe.*.ps1 helpers). The runner and its assets are copied into TestDrive beside a recording
-# stub of Dw.Api.psm1 and stub child scripts, so no host, database or network is reached.
+# stub of Dw.Api.psm1 and stub child scripts, so no host, database or network is reached. The stub
+# target answers in the shapes measured on a live site: lists under one member for writes,
+# {count, data} for reads, null members left out, and no group type on the MCP group reads.
 
 BeforeAll {
     . (Join-Path $PSScriptRoot 'TestHelpers.ps1')
@@ -30,12 +32,10 @@ function Invoke-DwApi { param($Command, $Body, $Method, $TimeoutSec, $RetryCount
 function Clear-DwServiceCache { param([string[]]$CacheTypeName, [switch]$All) Write-StubLog ("flush " + ($CacheTypeName -join ',')) }
 Export-ModuleMember -Function *
 '@
-        $child = @'
-Add-Content -LiteralPath $env:RECIPE_TEST_CHILDLOG -Value ("{0} {1}" -f (Split-Path -Leaf $PSCommandPath), ($args -join ' '))
-exit 0
-'@
+        # A shipped child script stub logs its arguments; no param block, so every argument is in $args.
+        $child = 'Add-Content -LiteralPath $env:RECIPE_TEST_CHILDLOG -Value ("{0} {1}" -f (Split-Path -Leaf $PSCommandPath), ($args -join '' ''))'
         foreach ($path in @('skills/dw-data-access/scripts/Build-DwProductIndex.ps1', 'skills/dw-data-access/scripts/Invoke-DwAssortmentBuild.ps1', 'skills/dw-demo-base/scripts/Restart-DwHost.ps1')) {
-            Set-Content -LiteralPath (Join-Path $root $path) -Value $child -Encoding utf8
+            Set-Content -LiteralPath (Join-Path $root $path) -Value ($child + "`nexit 0") -Encoding utf8
         }
         return $root
     }
@@ -44,49 +44,99 @@ exit 0
         return @{type = 'object'; properties = $p; required = $Required}
     }
     function New-Stub {
-        # A target: MCP tools with input schemas, pages, rows and users held in memory, a fake Management API.
-        param([hashtable]$Pages = @{}, [hashtable]$Rows = @{}, [object[]]$Groups = @(), [object[]]$Users = @())
+        # An in-memory target. Ids are minted from 100; every read is {count, data}; a null value is left out.
         $global:RecipeStub = @{
-            log = [Collections.Generic.List[string]]::new(); pages = $Pages; rows = $Rows; groups = $Groups; users = [Collections.Generic.List[object]]::new(); nextId = 100
+            log = [Collections.Generic.List[string]]::new(); nextId = 100
+            pages = [Collections.Generic.List[object]]::new(); rows = [Collections.Generic.List[object]]::new(); paragraphs = [Collections.Generic.List[object]]::new()
+            fields = @{}; groups = [Collections.Generic.List[object]]::new(); users = [Collections.Generic.List[object]]::new()
+            members = [Collections.Generic.List[object]]::new(); grants = [Collections.Generic.List[object]]::new()
+            repositories = @(@{repository = 'Secondary users'; indexes = @('Users.index')}); refuseButtons = $false; urlReadyAfter = 0
             tools = @{
-                get_pages_by_parent_id = Get-Schema @('parentId', 'areaId') @('parentId', 'areaId')
-                save_pages = Get-Schema @('pages') @('pages')
-                set_page_item_fields = Get-Schema @('pageId', 'fields') @('pageId', 'fields')
-                get_grid_rows_by_page_id = Get-Schema @('pageId') @('pageId')
-                get_paragraphs_by_page_id = Get-Schema @('pageId') @('pageId')
-                get_user_groups = Get-Schema @()
-                get_users_by_usernames = Get-Schema @('userNames') @('userNames')
-                update_users = Get-Schema @('users') @('users')
-                delete_pages = Get-Schema @('ids')
+                get_pages_by_parent_id = Get-Schema @('parentId', 'areaId') @('parentId'); save_pages = Get-Schema @('pages') @('pages')
+                get_page_item_field_values = Get-Schema @('pageId') @('pageId'); set_page_item_fields = Get-Schema @('pageId', 'fields') @('pageId', 'fields')
+                get_grid_rows_by_page_id = Get-Schema @('pageId') @('pageId'); save_grid_rows = Get-Schema @('gridRows') @('gridRows')
+                get_paragraphs_by_page_id = Get-Schema @('pageId') @('pageId'); save_paragraphs = Get-Schema @('paragraphs') @('paragraphs')
+                get_paragraph_item_field_values = Get-Schema @('paragraphId') @('paragraphId'); set_paragraph_item_fields = Get-Schema @('paragraphId', 'fields') @('paragraphId', 'fields')
+                fetch_frontend_page_html = Get-Schema @('path') @('path')
+                get_user_groups = Get-Schema @(); save_user_groups = Get-Schema @('groups') @('groups')
+                get_users_by_usernames = Get-Schema @('userNames') @('userNames'); create_users = Get-Schema @('users') @('users'); update_users = Get-Schema @('users') @('users')
+                get_users_by_group_id = Get-Schema @('groupId') @('groupId'); assign_users_to_group = Get-Schema @('groupId', 'userIds') @('groupId', 'userIds')
+                get_impersonatable_users = Get-Schema @('userId', 'groupId'); add_impersonatable_users = Get-Schema @('userId', 'impersonatableUserIds') @('impersonatableUserIds')
+                get_index_repositories = Get-Schema @(); delete_pages = Get-Schema @('ids')
             }
-            api = { param($Command, $Body) if ($Command -like 'IndexBuildersByRepositoryAndIndexName*') { return [pscustomobject]@{model = @{data = @(@{name = 'Users'})}} }; [pscustomobject]@{status = 'ok'} }
         }
-        foreach ($u in $Users) { $global:RecipeStub.users.Add($u) }
+        $global:RecipeStub.api = {
+            param($Command, $Body)
+            $s = $global:RecipeStub
+            if ($Command -like 'IndexBuildersByRepositoryAndIndexName*') { return [pscustomobject]@{model = @{data = @(@{name = 'Users'})}} }
+            if ($Command -match '^GroupById\?Id=(\d+)$') {
+                $g = @($s.groups | Where-Object { $_.id -eq [int]$Matches[1] })[0]
+                return [pscustomobject]@{model = @{id = $g.id; parentId = $g.parentGroupId; userAndGroupTypeSystemName = $g.type; customerNumber = $g.customerNumber}}
+            }
+            [pscustomobject]@{status = 'ok'}
+        }
         $global:RecipeStub.mcp = {
             param($Tool, $Arguments)
             $s = $global:RecipeStub
+            $ok = { param($n) @{structuredContent = @{succeeded = $n; failed = 0; errors = @()}} }
+            $mint = { $s.nextId++; $s.nextId }
+            $rowsOf = { param($fieldMap) , @(foreach ($k in $fieldMap.Keys) { $r = @{fieldSystemName = $k}; if ($null -ne $fieldMap[$k]) { $r.value = $fieldMap[$k] }; $r }) }
             $data = switch ($Tool) {
-                'get_pages_by_parent_id' { , @($s.pages.Values | Where-Object { $_.parentId -eq [int]$Arguments.parentId }) }
+                'get_pages_by_parent_id' { , @($s.pages | Where-Object { $_.parentPageId -eq [int]$Arguments.parentId }) }
                 'save_pages' {
                     foreach ($p in $Arguments.pages) {
-                        if ([int]$p.id -eq 0) { $s.nextId++; $s.pages[$s.nextId] = @{id = $s.nextId; parentId = [int]$p.parentPageId; menuText = $p.menuText} }
+                        if ([int]$p.id -eq 0) { $id = & $mint; $s.pages.Add(@{id = $id; parentPageId = [int]$p.parentPageId; menuText = $p.menuText; itemType = $p.itemType; sort = $p.sort}); $s.fields["page$id"] = [ordered]@{Title = $null} }
                     }
-                    # The create path answers the input model with id 0, as the platform does.
-                    return @{structuredContent = @{succeeded = 1; failed = 0; data = @(@{id = 0})}}
+                    return (& $ok 1)
                 }
-                'set_page_item_fields' { return @{structuredContent = @{succeeded = 1; failed = 0}} }
-                'get_grid_rows_by_page_id' { , @($s.rows.Values | Where-Object { $_.pageId -eq [int]$Arguments.pageId }) }
-                'get_paragraphs_by_page_id' { , @() }
-                'get_user_groups' { , @($s.groups) }
+                'get_page_item_field_values' { & $rowsOf $s.fields["page$($Arguments.pageId)"] }
+                'set_page_item_fields' { foreach ($k in $Arguments.fields.Keys) { $s.fields["page$($Arguments.pageId)"][$k] = $Arguments.fields[$k] }; return (& $ok 1) }
+                'get_grid_rows_by_page_id' { , @($s.rows | Where-Object { $_.pageId -eq [int]$Arguments.pageId }) }
+                'save_grid_rows' { foreach ($r in $Arguments.gridRows) { if ([int]$r.id -eq 0) { $s.rows.Add(@{id = (& $mint); pageId = [int]$r.pageId; sort = $r.sort; definitionId = $r.definitionId; container = $r.container}) } }; return (& $ok 1) }
+                'get_paragraphs_by_page_id' { , @($s.paragraphs | Where-Object { $_.pageId -eq [int]$Arguments.pageId }) }
+                'save_paragraphs' {
+                    foreach ($p in $Arguments.paragraphs) {
+                        if ([int]$p.id -eq 0) { $id = & $mint; $s.paragraphs.Add(@{id = $id; pageId = [int]$p.pageId; gridRowId = [int]$p.gridRowId; gridRowColumn = $p.gridRowColumn; sort = $p.sort; itemType = $p.itemType}); $s.fields["para$id"] = [ordered]@{Title = $null; Text = $null; FirstButton = 'default'} }
+                    }
+                    return (& $ok 1)
+                }
+                'get_paragraph_item_field_values' { & $rowsOf $s.fields["para$($Arguments.paragraphId)"] }
+                'set_paragraph_item_fields' {
+                    $failed = 0
+                    foreach ($k in $Arguments.fields.Keys) {
+                        if ($s.refuseButtons -and $k -like '*Button') { $failed++; continue }
+                        $s.fields["para$($Arguments.paragraphId)"][$k] = $Arguments.fields[$k]
+                    }
+                    return @{structuredContent = @{succeeded = $Arguments.fields.Count - $failed; failed = $failed}}
+                }
+                'fetch_frontend_page_html' {
+                    $s.fetches++
+                    $page = @($s.pages | Where-Object { "/en-us/$($_.menuText.ToLower().Replace(' ', '-'))" -eq $Arguments.path })[0]
+                    if (-not $page -or $s.fetches -le $s.urlReadyAfter) { return @{structuredContent = @{statusCode = 404; path = $Arguments.path}} }
+                    return @{structuredContent = @{statusCode = 200; title = $page.menuText; path = $Arguments.path}}
+                }
+                # The group read leaves the type out, as measured: only GroupById on the Management API returns it.
+                'get_user_groups' { , @($s.groups | ForEach-Object { @{id = $_.id; name = $_.name; parentGroupId = $_.parentGroupId; customerNumber = $_.customerNumber} }) }
+                'save_user_groups' {
+                    foreach ($g in $Arguments.groups) {
+                        if ([int]$g.id -eq 0) { $s.groups.Add(@{id = (& $mint); name = $g.name; parentGroupId = [int]$g.parentGroupId; customerNumber = $g.customerNumber; type = $null}) }
+                        else { $row = @($s.groups | Where-Object { $_.id -eq [int]$g.id })[0]; if ($g.Contains('userAndGroupType')) { $row.type = $g.userAndGroupType }; if ($g.Contains('customerNumber')) { $row.customerNumber = $g.customerNumber } }
+                    }
+                    return (& $ok 1)
+                }
                 'get_users_by_usernames' { , @($s.users | Where-Object { $_.userName -in $Arguments.userNames }) }
-                'update_users' {
-                    foreach ($u in $Arguments.users) { foreach ($row in $s.users) { if ($row.id -eq $u.id) { $row.customerNumber = $u.customerNumber } } }
-                    return @{structuredContent = @{succeeded = 1; failed = 0}}
-                }
+                'create_users' { foreach ($u in $Arguments.users) { $s.users.Add(@{id = (& $mint); userName = $u.userName; customerNumber = $u.customerNumber; hasPassword = [bool]$u.password}) }; return (& $ok 1) }
+                'update_users' { foreach ($u in $Arguments.users) { foreach ($row in $s.users) { if ($row.id -eq $u.id) { $row.customerNumber = $u.customerNumber } } }; return (& $ok 1) }
+                'get_users_by_group_id' { $ids = @($s.members | Where-Object { $_.groupId -eq [int]$Arguments.groupId } | ForEach-Object { $_.userId }); , @($s.users | Where-Object { $_.id -in $ids }) }
+                'assign_users_to_group' { foreach ($u in $Arguments.userIds) { $s.members.Add(@{groupId = [int]$Arguments.groupId; userId = [int]$u}) }; return (& $ok 1) }
+                'get_impersonatable_users' { $ids = @($s.grants | Where-Object { $_.from -eq [int]$Arguments.userId } | ForEach-Object { $_.to }); , @($s.users | Where-Object { $_.id -in $ids }) }
+                'add_impersonatable_users' { foreach ($u in $Arguments.impersonatableUserIds) { $s.grants.Add(@{from = [int]$Arguments.userId; to = [int]$u}) }; return (& $ok 1) }
+                'get_index_repositories' { , @($s.repositories) }
                 default { return @{isError = $true; content = @(@{text = 'unknown tool'})} }
             }
-            return @{structuredContent = @{data = $data}}
+            return @{structuredContent = @{count = @($data).Count; data = $data}}
         }
+        $global:RecipeStub.fetches = 0
     }
     function Write-Input([hashtable]$Section, [string]$Name, [hashtable]$Build = @{areaId = 1}) {
         $path = Join-Path $TestDrive ([guid]::NewGuid().ToString('n') + '.json')
@@ -97,13 +147,24 @@ exit 0
         param([string]$Root, [hashtable]$Arguments)
         $script:ChildLog = Join-Path $TestDrive ([guid]::NewGuid().ToString('n') + '.log')
         $env:RECIPE_TEST_CHILDLOG = $script:ChildLog
+        # No delivery reads leave the process: the hermetic runs permit MCP and the Management API only.
+        if (-not $Arguments.Contains('Surfaces') -and -not $Arguments.Contains('McpOnly')) { $Arguments.Surfaces = @('mcp', 'admin-api') }
         $out = & (Join-Path $Root 'skills/dw-demo-ledger/scripts/Invoke-DwRecipe.ps1') @Arguments *>&1 | ForEach-Object { "$_" }
         return @{lines = @($out); exit = $LASTEXITCODE}
     }
+    function Get-Writes { @($global:RecipeStub.log | Where-Object { $_ -match '^mcp (save_|set_|create_|update_|assign_|add_)|^api (UsersAddToGroups|UserImpersonateAdd|UserSetPassword)' }) }
     $script:PagesSection = @{pages = @(
-        @{menuText = 'About us'; urlName = 'about-us'; itemType = 'Swift-v2_Page'; public = $true; rows = @(@{sort = 1; definitionId = '1Column'; container = 'Grid'; itemType = 'Swift-v2_Row'})},
+        @{menuText = 'About us'; urlName = 'about-us'; itemType = 'Swift-v2_Page'; path = '/en-us/about-us'
+            rows = @(@{sort = 1; definitionId = '1Column'; container = 'Grid'; itemType = 'Swift-v2_Row'})
+            paragraphs = @(@{row = 1; column = 1; sort = 100; itemType = 'Swift-v2_Text'; fields = @{Title = 'About us'; Text = '<p>Copy.</p>'; FirstButton = ''}})},
         @{menuText = 'Our history'; urlName = 'our-history'; itemType = 'Swift-v2_Page'; parent = 'About us'}
     )}
+    $script:UsersSection = @{
+        groups = @(
+            @{name = 'Example Trading'; kind = 'account'; customerNumber = 'C-1001'; users = @(@{userName = 'buyer@example.invalid'; passwordRef = 'buyer'})},
+            @{name = 'Representatives'; kind = 'staff'; users = @(@{userName = 'rep@example.invalid'})})
+        impersonation = @(@{impersonator = 'rep@example.invalid'; customer = 'buyer@example.invalid'})
+    }
 }
 
 AfterAll {
@@ -113,6 +174,7 @@ AfterAll {
 
 Describe 'Recipe engine: paths, tokens and matching' {
     It 'walks a nested forEach and hands each item its enclosing item as parent' {
+        # Regression: a parameter named ForEach is the automatic enumerator inside a foreach loop.
         $section = @{groups = @(@{name = 'A'; users = @(@{userName = 'a1'}, @{userName = 'a2'})}, @{name = 'B'; users = @(@{userName = 'b1'})})}
         $items = Get-RecipeItems $section 'groups[*].users[*]'
         $items.Count | Should -Be 3
@@ -137,12 +199,18 @@ Describe 'Recipe engine: paths, tokens and matching' {
         $ctx.item = @{parent = 'About us'}
         Resolve-RecipeToken 'step.pages[item.parent].id|0' $ctx | Should -Be 10
     }
-    It 'reads a secret by reference from DW_RECIPE_SECRETS and refuses a missing one by key, not value' {
+    It 'names a dependency that apply would create, so a verify run reports the dependant as WOULD-CREATE' {
+        $ctx = @{item = @{parent = 'About us'}; results = @{pages = @{'About us' = @{state = 'WOULD-CREATE'; values = @{}}}}; secrets = @{}}
+        { Resolve-RecipeToken 'step.pages[item.parent].id|0' $ctx } | Should -Throw -ExceptionType ([Collections.Generic.KeyNotFoundException])
+    }
+    It 'reads a secret by reference from DW_RECIPE_SECRETS, takes a default only when no reference is given' {
         $secrets = Read-RecipeSecrets '{"buyer":"s3cret-value"}'
         $ctx = @{item = @{passwordRef = 'buyer'}; secrets = $secrets; results = @{}}
         Resolve-RecipeToken 'secret.item.passwordRef' $ctx | Should -Be 's3cret-value'
         $ctx.item.passwordRef = 'nobody'
-        { Resolve-RecipeToken 'secret.item.passwordRef' $ctx } | Should -Throw "*'nobody'*"
+        { Resolve-RecipeToken 'secret.item.passwordRef|null' $ctx } | Should -Throw "*'nobody'*"
+        $ctx.item = @{}
+        Resolve-RecipeToken 'secret.item.passwordRef|null' $ctx | Should -BeNullOrEmpty
         { Read-RecipeSecrets '["x"]' } | Should -Throw '*JSON object*'
     }
     It 'compares typed values, and an absent value as empty text' {
@@ -151,6 +219,13 @@ Describe 'Recipe engine: paths, tokens and matching' {
         Test-RecipeEqual 'Grid' 'grid' | Should -BeFalse
         Test-RecipeEqual $null '' | Should -BeTrue
         Test-RecipeEqual $null 0 | Should -BeFalse
+    }
+    It 'compares item-field rows name by name, an absent value member as null, a missing field as different' {
+        $rows = @(@{fieldSystemName = 'Title'; value = 'About'}, @{fieldSystemName = 'Subtitle'})
+        $spec = @{from = '{item.fields}'; key = 'fieldSystemName'; value = 'value'}
+        (Get-RecipeMapDifferences $rows $spec @{item = @{fields = @{Title = 'About'; Subtitle = ''}}}).Count | Should -Be 0
+        $differs = Get-RecipeMapDifferences $rows $spec @{item = @{fields = @{Title = 'Other'; Misspelt = 'x'}}}
+        @($differs | Sort-Object) | Should -Be @('Misspelt', 'Title')
     }
     It 'fails loudly on a field the response does not carry, rather than reading it as a mismatch' {
         { Get-RecipeDifferences @{id = 1} @{customerNumber = 'C1'} 'get_user_groups' } | Should -Throw '*carries no field*'
@@ -195,54 +270,52 @@ Describe 'Invoke-DwRecipe on content.pages' {
         $script:InputFile = Write-Input $script:PagesSection 'content.pages'
     }
 
-    It 'reports every object UNCHANGED and exits 0 on a host a layer already delivered (build path A)' {
-        New-Stub -Pages @{10 = @{id = 10; parentId = 0; menuText = 'About us'}; 11 = @{id = 11; parentId = 10; menuText = 'Our history'}} -Rows @{5 = @{id = 5; pageId = 10; sort = 1; definitionId = '1Column'; container = 'Grid'}}
-        $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile}
-        $r.lines | Should -Contain 'STEP pages UNCHANGED About us'
-        $r.lines | Should -Contain 'STEP pages UNCHANGED Our history'
-        $r.lines | Should -Contain 'STEP rows UNCHANGED About us/1'
-        $r.lines | Should -Contain 'PASS probe/page-unique'
-        $r.lines | Should -Contain 'PASS probe/row-container'
-        ($r.lines -match '^NOTE content\.pages: unproven').Count | Should -Be 1
-        ($r.lines -match '^NOTE probe/page-renders: planned').Count | Should -Be 1
-        ($r.lines -match '^NOTE ledger/content\.pages\.exist: run with the ledger').Count | Should -Be 1
-        $r.lines[-1] | Should -Be 'content.pages: 5 of 5 checks passed'
-        $r.exit | Should -Be 0
-        @($global:RecipeStub.log | Where-Object { $_ -match '^mcp (save_pages|set_page_item_fields)' }).Count | Should -Be 0
-    }
-
-    It 'writes nothing without -Apply on an empty host and reports what apply would do' {
+    It 'reports WOULD-CREATE for every object, dependants included, and writes nothing on an empty host' {
         New-Stub
         $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile}
-        $r.lines | Should -Contain 'STEP pages WOULD-CREATE About us'
-        ($r.lines -match '^FAIL pages/About us: absent; apply would create it').Count | Should -Be 1
-        # The child page's parent has no id yet, so it cannot even be looked for: BLOCKED, never skipped.
-        $r.lines | Should -Contain 'STEP pages BLOCKED Our history'
+        foreach ($line in @('STEP pages WOULD-CREATE About us', 'STEP pages WOULD-CREATE Our history', 'STEP page-title WOULD-CREATE About us', 'STEP rows WOULD-CREATE About us/1', 'STEP paragraphs WOULD-CREATE About us/1/100', 'STEP paragraph-fields WOULD-CREATE About us/1/100')) { $r.lines | Should -Contain $line }
+        ($r.lines -match '^FAIL pages/Our history: absent: depends on pages ''About us'', which is would-create').Count | Should -Be 1
+        ($r.lines -match '^STEP .* BLOCKED').Count | Should -Be 0
         $r.exit | Should -Be 1
-        @($global:RecipeStub.log | Where-Object { $_ -match '^mcp (save_|set_)' }).Count | Should -Be 0
+        Get-Writes | Should -BeNullOrEmpty
     }
 
-    It 'creates, reads the new id back by natural key (the create answers id 0) and passes it to the child' {
+    It 'creates everything, reads every write back, then a verify and a second apply change nothing (build path A)' {
         New-Stub
         $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true}
-        $r.lines | Should -Contain 'STEP pages CREATED About us'
-        $r.lines | Should -Contain 'PASS pages/About us'
-        $r.lines | Should -Contain 'STEP pages CREATED Our history'
-        $creates = @($global:RecipeStub.log | Where-Object { $_ -match '^mcp save_pages .*"id":0' })
-        $creates.Count | Should -Be 2
-        $creates[1] | Should -Match '"parentPageId":101'
-        $r.lines | Should -Contain 'STEP page-title CREATED About us'
-        $r.lines | Should -Contain 'STEP page-slug CREATED About us'
-        # Rows have only planned create bindings: the item is BLOCKED with the reason, and the run cannot pass.
-        $r.lines | Should -Contain 'STEP rows BLOCKED About us/1'
-        ($r.lines -match '^OPEN rows/About us/1: absent; no eligible create binding: .*planned').Count | Should -Be 1
+        foreach ($line in @('STEP pages CREATED About us', 'PASS pages/About us', 'STEP pages CREATED Our history', 'STEP page-title UPDATED About us', 'STEP page-slug CREATED About us', 'STEP rows CREATED About us/1', 'STEP paragraphs CREATED About us/1/100', 'STEP paragraph-fields UPDATED About us/1/100', 'PASS paragraph-fields/About us/1/100', 'PASS probe/page-renders')) { $r.lines | Should -Contain $line }
+        @($global:RecipeStub.log | Where-Object { $_ -match '^mcp save_pages .*"id":0' })[1] | Should -Match '"parentPageId":101'
+        $r.exit | Should -Be 0
+        $before = (Get-Writes).Count
+        $v = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile}
+        ($v.lines -match '^STEP ').Count | Should -Be (($v.lines -match '^STEP \S+ UNCHANGED ').Count)
+        $v.lines[-1] | Should -Match '^content\.pages: (\d+) of \1 checks passed$'
+        $v.exit | Should -Be 0
+        $a = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true}
+        $a.exit | Should -Be 0
+        (Get-Writes).Count | Should -Be $before
+    }
+
+    It 'polls a probe whose state the platform publishes late or drops for a moment' {
+        New-Stub
+        $global:RecipeStub.urlReadyAfter = 1
+        $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true}
+        $r.lines | Should -Contain 'PASS probe/page-renders'
+        $global:RecipeStub.fetches | Should -Be 2
+    }
+
+    It 'fails a field write the tool counts as failed, such as an empty button JSON' {
+        New-Stub
+        $global:RecipeStub.refuseButtons = $true
+        $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true}
+        ($r.lines -match '^FAIL paragraph-fields/About us/1/100: MCP set_paragraph_item_fields reported 1 failed item').Count | Should -Be 1
         $r.exit | Should -Be 1
     }
 
     It 'treats -WhatIf as verify-only even with -Apply' {
         New-Stub
         $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true; WhatIf = $true}
-        @($global:RecipeStub.log | Where-Object { $_ -match '^mcp save_pages' }).Count | Should -Be 0
+        Get-Writes | Should -BeNullOrEmpty
         $r.lines | Should -Contain 'STEP pages WOULD-CREATE About us'
     }
 
@@ -264,7 +337,9 @@ Describe 'Invoke-DwRecipe on content.pages' {
     }
 
     It 'blocks rather than writes when two objects match one natural key' {
-        New-Stub -Pages @{10 = @{id = 10; parentId = 0; menuText = 'About us'}; 12 = @{id = 12; parentId = 0; menuText = 'About us'}}
+        New-Stub
+        $global:RecipeStub.pages.Add(@{id = 10; parentPageId = 0; menuText = 'About us'; itemType = 'Swift-v2_Page'})
+        $global:RecipeStub.pages.Add(@{id = 12; parentPageId = 0; menuText = 'About us'; itemType = 'Swift-v2_Page'})
         $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true}
         $r.lines | Should -Contain 'STEP pages BLOCKED About us'
         ($r.lines -match '^OPEN pages/About us: 2 objects match the natural key').Count | Should -Be 1
@@ -284,14 +359,13 @@ Describe 'Invoke-DwRecipe on content.pages' {
     }
 
     It 'writes a report without values or tokens' {
-        New-Stub -Pages @{10 = @{id = 10; parentId = 0; menuText = 'About us'}; 11 = @{id = 11; parentId = 10; menuText = 'Our history'}} -Rows @{5 = @{id = 5; pageId = 10; sort = 1; definitionId = '1Column'; container = 'Grid'}}
+        New-Stub
         $report = Join-Path $TestDrive 'report.json'
-        $null = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; ReportPath = $report}
+        $null = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true; ReportPath = $report}
         $json = Get-Content -LiteralPath $report -Raw
         $data = $json | ConvertFrom-Json -AsHashtable
         $data.result | Should -Be 'PASS'
-        $data.mode | Should -Be 'verify'
-        $data.plannedProbes | Should -Contain 'page-renders'
+        $data.mode | Should -Be 'apply'
         $json | Should -Not -Match 'stub-mcp-token'
     }
 
@@ -310,44 +384,50 @@ Describe 'Invoke-DwRecipe on users.accounts' {
     BeforeEach {
         $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
         $env:DW_API_TOKEN = 'stub-api-token-0000'
+        $env:DW_RECIPE_SECRETS = '{"buyer":"Stub-Passw0rd-x"}'
         $script:Root = New-RecipeSandbox
-        $script:InputFile = Write-Input @{groups = @(@{name = 'Example Trading'; kind = 'account'; customerNumber = 'C-1001'; users = @(@{userName = 'buyer@example.invalid'; passwordRef = 'buyer'})})} 'users.accounts'
+        $script:InputFile = Write-Input $script:UsersSection 'users.accounts'
     }
 
-    It 'updates a differing user, reads it back, then pays the debts it can and states the ones it owes' {
-        New-Stub -Groups @(@{id = 50; name = 'Example Trading'; customerNumber = 'C-1001'}) -Users @(@{id = 60; userName = 'buyer@example.invalid'; customerNumber = 'OLD'})
+    It 'creates groups, the account type, users with a password, memberships and the grant, then pays and owes its debts' {
+        New-Stub
         $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true}
-        $r.lines | Should -Contain 'STEP groups UNCHANGED Example Trading'
-        $r.lines | Should -Contain 'STEP users UPDATED buyer@example.invalid'
-        $r.lines | Should -Contain 'PASS users/buyer@example.invalid'
-        @($global:RecipeStub.log | Where-Object { $_ -match '^mcp update_users .*"customerNumber":"C-1001"' }).Count | Should -Be 1
-        # The password is set only on create: an existing login is never re-passworded.
-        @($global:RecipeStub.log | Where-Object { $_ -match 'UserSetPassword' }).Count | Should -Be 0
-        # Group type and membership are read through local SQL only, which this run does not enable.
-        $r.lines | Should -Contain 'STEP account-type BLOCKED Example Trading'
-        ($r.lines -match '^OPEN account-type/Example Trading: no eligible find binding: .*SQL is not enabled').Count | Should -Be 1
+        foreach ($line in @('STEP groups CREATED Example Trading', 'STEP account-type UPDATED Example Trading', 'PASS account-type/Example Trading', 'STEP users CREATED buyer@example.invalid', 'STEP membership CREATED Example Trading/buyer@example.invalid', 'STEP impersonation CREATED rep@example.invalid/buyer@example.invalid', 'PASS probe/grant-direction', 'PASS probe/grant-not-reversed', 'PASS probe/user-in-group')) { $r.lines | Should -Contain $line }
+        # The password goes on create, only for a user that names one; the staff user is created without.
+        @($global:RecipeStub.users | Where-Object { $_.hasPassword }).userName | Should -Be 'buyer@example.invalid'
+        # The grant's subject is the impersonator.
+        $rep = @($global:RecipeStub.users | Where-Object userName -eq 'rep@example.invalid')[0].id
+        $global:RecipeStub.grants[0].from | Should -Be $rep
         $r.lines | Should -Contain 'PASS debt/flush:Dynamicweb.Security.UserManagement.UserService'
-        $r.lines | Should -Contain 'PASS debt/index:Users/Users.index'
+        ($r.lines -match '^NOTE debt/index:Users/Users.index: not owed, the target has no index').Count | Should -Be 1
+        $r.lines | Should -Contain 'PASS debt/index:Secondary users/Users.index'
         ($r.lines -match '^OPEN debt/recycle: owed: recycle the host').Count | Should -Be 1
-        $global:RecipeStub.log | Should -Contain 'flush Dynamicweb.Security.UserManagement.UserService'
         (Get-Content -LiteralPath $script:ChildLog) -join "`n" | Should -Match 'Build-DwProductIndex\.ps1 -Repository Secondary users -IndexName Users\.index -BuildName Users -SkipCacheFlush'
-        $r.lines | Should -Contain 'PASS probe/users-carry-account-number'
-        ($r.lines -match '^NOTE probe/grant-direction: no input item asks for it').Count | Should -Be 1
-        ($r.lines -match '^OPEN probe/persona-sign-in: .*DW_PERSONA_CREDENTIALS').Count | Should -Be 1
+        ($r.lines -match '^OPEN probe/persona-sign-in: .*dwapi is not a permitted surface').Count | Should -Be 1
+        ($r.lines -join "`n") | Should -Not -Match 'stub-api-token|stub-mcp-token|Stub-Passw0rd'
         $r.exit | Should -Be 1
-        ($r.lines -join "`n") | Should -Not -Match 'stub-api-token|stub-mcp-token'
     }
 
-    It 'runs no debt when nothing changed' {
-        New-Stub -Groups @(@{id = 50; name = 'Example Trading'; customerNumber = 'C-1001'}) -Users @(@{id = 60; userName = 'buyer@example.invalid'; customerNumber = 'C-1001'})
+    It 'changes nothing and runs no debt when a second apply finds every object in place' {
+        New-Stub
+        $null = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true}
+        $before = (Get-Writes).Count
         $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true}
-        $r.lines | Should -Contain 'STEP users UNCHANGED buyer@example.invalid'
+        ($r.lines -match '^STEP ').Count | Should -Be (($r.lines -match '^STEP \S+ UNCHANGED ').Count)
         ($r.lines -match '^NOTE users\.accounts: debts not run \(nothing changed\)').Count | Should -Be 1
-        @($global:RecipeStub.log | Where-Object { $_ -match '^flush' }).Count | Should -Be 0
+        (Get-Writes).Count | Should -Be $before
+    }
+
+    It 'blocks only the account type MCP-only, because no MCP group read returns the type' {
+        New-Stub
+        $null = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true}
+        $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; McpOnly = $true}
+        @($r.lines -match '^STEP \S+ BLOCKED ') | Should -Be @('STEP account-type BLOCKED Example Trading')
+        ($r.lines -match '^NOTE users\.accounts: declared not usable MCP-only').Count | Should -Be 1
     }
 
     It 'reports a write the Management API refuses with HTTP 200 as FAIL, not as success' {
-        New-Stub -Groups @(@{id = 50; name = 'Example Trading'; customerNumber = 'C-1001'}) -Users @(@{id = 60; userName = 'buyer@example.invalid'; customerNumber = 'C-1001'})
+        New-Stub
         . (Join-Path $script:Root 'skills/dw-demo-ledger/scripts/Recipe.Transport.ps1')
         . (Join-Path $script:Root 'skills/dw-demo-ledger/scripts/Recipe.Write.ps1')
         Import-Module (Join-Path $script:Root 'skills/dw-data-access/scripts/Dw.Api.psm1') -Force
@@ -366,8 +446,8 @@ Describe 'Find-DwRecipe' {
         $out = & $script:Find -Function users.user-groups
         $LASTEXITCODE | Should -Be 0
         $out[0] | Should -Match '^users\.accounts'
-        ($out -match '^\s+proven:\s+unproven$').Count | Should -Be 1
-        ($out -match '^\s+mcpOnly:\s+no - ').Count | Should -Be 1
+        ($out -match '^\s+proven:\s+').Count | Should -Be 1
+        ($out -match '^\s+hosted:\s+yes$').Count | Should -Be 1
     }
     It 'says plainly when no recipe delivers a function, and exits 0' {
         $out = & $script:Find -Function search.user-index

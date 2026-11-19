@@ -50,6 +50,7 @@
     "get_forms",
     "get_grid_rows_by_page_id",
     "get_health_providers",
+    "get_impersonatable_users",
     "get_index_facets",
     "get_index_queries",
     "get_index_repositories",
@@ -68,7 +69,9 @@
     "get_order_fields",
     "get_order_flows",
     "get_order_states",
+    "get_page_item_field_values",
     "get_pages_by_parent_id",
+    "get_paragraph_item_field_values",
     "get_paragraphs_by_page_id",
     "get_payment_methods",
     "get_product_index_status",
@@ -86,6 +89,7 @@
     "get_unique_audit_types",
     "get_units",
     "get_user_groups",
+    "get_users_by_group_id",
     "get_users_by_usernames",
     "get_vat_groups",
     "get_voucher_sets",
@@ -93,7 +97,8 @@
     "list_files"
   ],
   "adminReadQueries": [
-    "FeaturesAll"
+    "FeaturesAll",
+    "GroupById"
   ],
   "dwapiReadRoutes": [
     "content/areas",
@@ -110,15 +115,24 @@
     "users/info"
   ],
   "recipeWriteTools": [
+    "add_impersonatable_users",
+    "assign_users_to_group",
     "build_product_index",
+    "create_users",
+    "save_grid_rows",
     "save_pages",
+    "save_paragraphs",
+    "save_user_groups",
     "set_page_item_fields",
+    "set_paragraph_item_fields",
     "update_users",
     "wait_for_product_index"
   ],
   "recipeAdminCommands": [
     "UserImpersonateAdd",
-    "UserSetPassword",
     "UsersAddToGroups"
+  ],
+  "recipeRenderedReadTools": [
+    "fetch_frontend_page_html"
   ]
 }
