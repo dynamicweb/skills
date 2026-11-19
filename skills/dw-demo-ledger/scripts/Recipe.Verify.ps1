@@ -44,6 +44,8 @@ function Invoke-RecipeProbe {
         $Run.planned.Add($Probe.id); return
     }
     $subjects = 0; $failures = @(); $open = @(); $index = 0; $qualified = 0; $delivered = 0
+    # pollSeconds is the probe's whole budget, not each subject's: twelve subjects that never pass must not wait twelve times.
+    $pollDeadline = $null; $polled = $false
     foreach ($item in (Get-RecipeItems $Run.section $Probe.forEach)) {
         $index++
         $context = New-RecipeContext $Run $item
@@ -64,13 +66,16 @@ function Invoke-RecipeProbe {
                 $subjects++
                 $rows = Read-RecipeRows $binding $context $Run
                 $fault = Test-RecipeAssert $binding $rows $context
-                # A state the platform publishes late or drops for a moment (a new URL answers 404 for seconds) is read again until it passes or the poll ends.
-                $deadline = [DateTime]::UtcNow.AddSeconds([int]$Probe.pollSeconds)
-                while ($fault -and $Probe.pollSeconds -and [DateTime]::UtcNow -lt $deadline) {
+                # A state the platform publishes late or drops for a moment (a new URL answers 404 for seconds) is read again until it
+                # passes or the probe's poll budget is spent; once spent, a failing subject is read once.
+                if ($fault -and $Probe.pollSeconds -and -not $pollDeadline) { $pollDeadline = [DateTime]::UtcNow.AddSeconds([int]$Probe.pollSeconds) }
+                while ($fault -and $pollDeadline -and [DateTime]::UtcNow -lt $pollDeadline) {
+                    $polled = $true
                     Start-Sleep -Milliseconds $Run.pollIntervalMs
                     $rows = Read-RecipeRows $binding $context $Run
                     $fault = Test-RecipeAssert $binding $rows $context
                 }
+                if ($fault -and $polled) { $fault += " (read again for the probe's $($Probe.pollSeconds) s poll budget: $($binding.operation))" }
             }
             if ($fault -and $Probe.deliveredWith) {
                 # A subject a layer delivered in its own shape is not observable in this recipe's shape: said, not failed.

@@ -180,13 +180,21 @@ function Invoke-RecipeDeliveryGet {
     if ($status -ne 200) { throw (New-RecipeFault "Delivery route $($Binding.operation) answered HTTP $status.") }
     return , (ConvertTo-RecipeData ([string]$response.Content))
 }
+function Test-RecipeTimeout($Exception) {
+    # A call that ran out of time: an HttpClient timeout surfaces as a cancelled task or a TimeoutException, inner or outer.
+    for ($e = $Exception; $e; $e = $e.InnerException) {
+        if ($e -is [TimeoutException] -or $e -is [Threading.Tasks.TaskCanceledException] -or $e.Message -match '(?i)timed? ?out|Timeout of \d+') { return $true }
+    }
+    return $false
+}
 function Read-RecipeRows {
     # The rows one read binding returns, from the member its `rows` path names ('$' for the response itself).
     param($Binding, $Context, $Run)
     $operation = if ($Binding.surface -eq 'sql') { 'SELECT' } else { [string]$Binding.operation }
     $fault = Get-RecipeSurfaceFault $Binding $operation 'read' $Run.cap $Run.registry
     if ($fault) { throw (New-RecipeFault "Read refused before the call: $fault.") }
-    $data = switch ($Binding.surface) {
+    # Every read is bounded by its call's time limit; a read that times out is a FAIL naming what it waited for, never a hang.
+    $data = try { switch ($Binding.surface) {
         'mcp' { Invoke-RecipeMcpCall $operation (Expand-RecipeValue $Binding.arguments $Context) $Run.cap 60 }
         'admin-api' {
             $query = Expand-RecipeValue $Binding.arguments $Context
@@ -199,6 +207,9 @@ function Read-RecipeRows {
             if ($Binding.handler -notin @('dwapi-get', 'dwapi-signed-in-get')) { throw (New-RecipeFault "Delivery handler $($Binding.handler) is not a row read.") }
             Invoke-RecipeDeliveryGet $Binding $Context $Run.registry
         }
+    } } catch {
+        if (Test-RecipeTimeout $_.Exception) { throw (New-RecipeFailure "no answer from $($Binding.surface) $operation within its time limit") }
+        throw
     }
     $rows = Get-RecipeValue $data $(if ($Binding.rows) { $Binding.rows } else { '$' })
     if (-not $rows.found) { throw (New-RecipeFault "Response of '$operation' has no member '$($Binding.rows)'; the projection is not the one the recipe states.") }

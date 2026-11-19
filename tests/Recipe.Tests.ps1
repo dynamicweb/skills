@@ -234,6 +234,12 @@ Describe 'Recipe engine: paths, tokens and matching' {
         try { Resolve-RecipeToken 'step.categories[item.group].id' $ctx } catch { $thrown = $_.Exception }
         $thrown.Data['delivered'] | Should -BeFalse
     }
+    It 'names a read that ran out of time, so a step ends in a FAIL instead of waiting' {
+        . (Join-Path $script:Source 'scripts/Recipe.Transport.ps1')
+        Test-RecipeTimeout ([Threading.Tasks.TaskCanceledException]::new('canceled')) | Should -BeTrue
+        Test-RecipeTimeout ([Net.Http.HttpRequestException]::new('x', [TimeoutException]::new('late'))) | Should -BeTrue
+        Test-RecipeTimeout ([InvalidOperationException]::new('no such tool')) | Should -BeFalse
+    }
     It 'matches a member by its ending, ignoring case, and leaves out a row without the member' {
         . (Join-Path $script:Source 'scripts/Recipe.Steps.ps1')
         $rows = @(@{value = '/Files/Images/Layer/Products/A-1.PNG'}, @{value = '/Files/Images/a-1.png.bak'}, @{other = 1})
@@ -801,6 +807,34 @@ Describe 'Invoke-DwRecipe on a site a layer copy already delivered' {
         $a.lines | Should -Contain 'STEP members CREATED Example Trading/buyer@example.invalid'
         @($a.lines -match 'DELIVERED').Count | Should -Be 0
         $a.exit | Should -Be 0
+    }
+}
+
+Describe 'Invoke-DwRecipe probes never wait without bound' {
+    It 'spends pollSeconds once for the whole probe, not once per failing subject, and names what it waited for' {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
+        Remove-Item Env:DW_API_TOKEN -ErrorAction SilentlyContinue
+        $root = New-RecipeSandbox
+        $groups = @(1..6 | ForEach-Object { @{name = "Absent $_"; kind = 'account'; customerNumber = "C-$_"; users = @(@{userName = "u$_@example.invalid"})} })
+        $in = Write-Input @{groups = $groups} 'users.accounts'
+        $src = 'skills/x.md'
+        $recipe = @{schema = 1; id = 'users.accounts'; name = 'Poll'; functions = @('users.accounts'); skill = 'dw-users-permissions'; inputs = @{section = 'users.accounts'; required = @('groups')}
+            modes = @{mcpOnly = @{usable = $true; reason = 'MCP.'}; hosted = @{usable = $true; reason = 'No SQL.'}; local = @{usable = $true}; layerDelivered = 'verify'}
+            steps = @(@{id = 'groups'; title = 'Groups'; forEach = 'groups[*]'; key = '{item.name}'; bindings = @(); source = $src
+                    find = @{bindings = @(@{id = 'g'; surface = 'mcp'; status = 'implemented'; operation = 'get_user_groups'; arguments = @{}; rows = 'data'; match = @{name = '{item.name}'}; source = $src})}})
+            debts = @(); provenOn = @(); traps = @()
+            verify = @{checkIds = @(); probes = @(@{id = 'late'; title = 'Each group appears'; forEach = 'groups[*]'; minimumSubjects = 1; pollSeconds = 3
+                        bindings = @(@{surface = 'mcp'; status = 'implemented'; operation = 'get_user_groups'; arguments = @{}; rows = 'data'; match = @{name = '{item.name}'}; assert = @{kind = 'count'; op = 'eq'; value = 1}; source = $src})})}}
+        $file = Join-Path $TestDrive ([guid]::NewGuid().ToString('n') + '.json')
+        $recipe | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $file -Encoding utf8
+        New-Stub
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        $r = Invoke-Runner $root @{Recipe = $file; InputPath = $in}
+        $sw.Stop()
+        # Six subjects that never pass: one 3 s budget, not six (18 s and more).
+        $sw.Elapsed.TotalSeconds | Should -BeLessThan 12
+        @($r.lines -match '^FAIL probe/late: 6 failing: subject 1: .*read again for the probe''s 3 s poll budget: get_user_groups').Count | Should -Be 1
+        @($global:RecipeStub.log -match '^mcp get_user_groups').Count | Should -BeLessThan 16
     }
 }
 
