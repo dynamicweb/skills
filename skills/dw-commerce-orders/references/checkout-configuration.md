@@ -52,6 +52,19 @@ There is no `countryRelationKeys`, no `feeRulesSource` and no `defaultFee` on ei
 just as narrow — `get_shipping_methods_by_ids` projects no relation set, so the gate below cannot be run
 from MCP either.
 
+**Who may use a method [dw 10.30.6 · mcp 0.6.3-BETA].** The MCP models carry `allowAnonymousUsers`
+only; the customer-group scope (`userGroups`) is on the Management API model, with the country relation
+(see `recipes-commerce.md` "Method country binding"). The delivery API offers a method by group, not by
+the anonymous flag: `GET /dwapi/ecommerce/payments?LanguageId=&CountryCode=` (and `ecommerce/shippings`)
+left a method scoped to a customer group out for an anonymous visitor and offered it to a signed-in
+member, while a method with `allowAnonymousUsers: false` and no group was still offered to the anonymous
+visitor. The Swift checkout step lists the same set for a signed-in buyer. The cart does not enforce
+either: `PATCH /dwapi/ecommerce/carts/{secret}/payment/{id}` accepted a group-scoped method on an
+anonymous cart, so prove the offer on the read, never on the cart. A payment method's fee is a fee rule
+(`save_fees {fees: [{method: "PAY", methodId, name, valueAmount, feeType: "Fixed", active: true}]}`,
+inactive unless `active` is sent); the order carried it as `paymentFee`. The recipe
+`orders.payment-methods` in `dw-demo-ledger` binds all of it.
+
 So the split is: **use the MCP tools for name, description, activation and sorting**, which is most of a
 debrand, and **bind countries on each method's own admin screen**, because no tool binds them. Then verify
 on the served checkout as above, never on a method read, which passes whatever the relations are. The

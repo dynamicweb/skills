@@ -21,6 +21,7 @@ validator fails when this file and the recipes disagree, so do not edit it by ha
 | `content.page-seo` | content.page-seo, swift.header-footer, swift.website-settings | `debrand` | dw-content-modelling | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `content.pages` | content.pages, content.paragraphs, content.grid-rows | `content.pages` | dw-content-modelling | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `orders.completed-orders` | orders.completed-orders, orders.quotes, orders.favorite-lists, orders.order-numbering | `history` | dw-commerce-orders | no | no | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
+| `orders.payment-methods` | orders.payment-methods, orders.shipping-methods, swift.cart-checkout | `checkout` | dw-commerce-orders | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `pim.data-models` | pim.data-models, pim.field-scope, pim.field-display-groups, pim.completeness-rules | `catalogue` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `pim.identifiers` | pim.identifiers, pim.images, commerce.stock-levels | `catalogue` | dw-demo-pim | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `pim.workflow` | pim.workflow | `pim.workflow` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
@@ -33,13 +34,14 @@ A recipe set runs the recipes whose input section the customer data file holds, 
 
 1. `content.design-styles`
 2. `content.pages`
-3. `pim.data-models`
-4. `pim.identifiers`. After `pim.data-models`: Products are placed in the data models and write the spec fields that recipe creates.
-5. `pim.workflow`. After `pim.data-models`: The workflow is attached to data models that recipe creates.
-6. `users.accounts`
-7. `commerce.customer-prices`. After `pim.identifiers`: The list price is patched onto a product the catalogue created; this recipe finds products by number and creates none. After `users.accounts`: The customer group, the account's customer number and the buyer the probes sign in as are that recipe's objects.
-8. `orders.completed-orders`. After `users.accounts`: The orders, quotes and lists belong to the buyer that recipe creates with a password. After `pim.identifiers`: Order and quote lines name products the catalogue created. After `commerce.customer-prices`: A line is charged the buyer's price when it is added, and the order stores that total: prices first, or the history carries list prices.
-9. `content.page-seo`. Last: A de-brand replaces a forbidden text wherever it shows, so it runs after every recipe that writes text; the forbidden text must not appear in another section of the input, or the next apply writes it back and the set never settles.
+3. `orders.payment-methods`
+4. `pim.data-models`
+5. `pim.identifiers`. After `pim.data-models`: Products are placed in the data models and write the spec fields that recipe creates.
+6. `pim.workflow`. After `pim.data-models`: The workflow is attached to data models that recipe creates.
+7. `users.accounts`
+8. `commerce.customer-prices`. After `pim.identifiers`: The list price is patched onto a product the catalogue created; this recipe finds products by number and creates none. After `users.accounts`: The customer group, the account's customer number and the buyer the probes sign in as are that recipe's objects.
+9. `orders.completed-orders`. After `users.accounts`: The orders, quotes and lists belong to the buyer that recipe creates with a password. After `pim.identifiers`: Order and quote lines name products the catalogue created. After `commerce.customer-prices`: A line is charged the buyer's price when it is added, and the order stores that total: prices first, or the history carries list prices.
+10. `content.page-seo`. Last: A de-brand replaces a forbidden text wherever it shows, so it runs after every recipe that writes text; the forbidden text must not appear in another section of the input, or the next apply writes it back and the set never settles.
 
 ## What stays planned
 
@@ -62,6 +64,10 @@ work is done by hand or stays undone. Reasons as the recipes state them:
   - step order-date write (mcp): No MCP tool and no Management API command sets an order's date: create_orders and update_orders carry none and OrderSave stamps now. Out of product it is local SQL keyed on the order id, written last.
   - step favourites write (mcp): No MCP tool and no Management API command writes a favourite list (EcomCustomerFavoriteLists). The signed-in buyer creates one with POST /dwapi/ecommerce/favorites/lists {name, description, isDefault} and adds products with POST /dwapi/ecommerce/favorites/items/{listId} {productId, quantity, note}; a recipe writes through MCP or the Management API only.
   - MCP-only: The numbering, completion and quote reads are Management API (GetNumbers, NumberSave, GetOrderList: search_orders leaves quotes out and is_order_complete answers bare text); no MCP or Management API write creates a favourite list or backdates an order.
+- `orders.payment-methods`
+  - step payment-scope write (mcp): The MCP payment model carries no country relation and no user groups (save_payment_methods, get_payment_methods); the scope is the Management API PaymentSave or the method's admin screen.
+  - step shipping-scope write (mcp): The MCP shipping model carries no country relation, no user groups and no default fee (save_shipping_methods, get_shipping_methods); they are the Management API ShippingSave or the method's admin screen.
+  - MCP-only: The country relation and the customer-group scope are on the Management API models only (PaymentsAll / PaymentSave, ShippingsAll / ShippingSave); the MCP method models carry neither, nor a shipping method's fee.
 - `pim.data-models`
   - step categories find (mcp): No MCP read lists a category: get_product_category_fields returns the fields of CategoryFields categories, so a category without fields is invisible to it.
   - MCP-only: No MCP read lists a product category that has no fields yet (get_product_category_fields lists fields), so the category step needs the Management API read ProductCategoriesAll.
@@ -89,7 +95,9 @@ work is done by hand or stays undone. Reasons as the recipes state them:
 | `orders.completed-orders` | `orders.completed-orders` |
 | `orders.favorite-lists` | `orders.completed-orders` |
 | `orders.order-numbering` | `orders.completed-orders` |
+| `orders.payment-methods` | `orders.payment-methods` |
 | `orders.quotes` | `orders.completed-orders` |
+| `orders.shipping-methods` | `orders.payment-methods` |
 | `pim.completeness-rules` | `pim.data-models` |
 | `pim.data-models` | `pim.data-models` |
 | `pim.field-display-groups` | `pim.data-models` |
@@ -97,6 +105,7 @@ work is done by hand or stays undone. Reasons as the recipes state them:
 | `pim.identifiers` | `pim.identifiers` |
 | `pim.images` | `pim.identifiers` |
 | `pim.workflow` | `pim.workflow` |
+| `swift.cart-checkout` | `orders.payment-methods` |
 | `swift.header-footer` | `content.page-seo` |
 | `swift.impersonation` | `users.accounts` |
 | `swift.style-wiring` | `content.design-styles` |

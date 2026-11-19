@@ -1,0 +1,196 @@
+{
+  "schema": 1,
+  "id": "orders.payment-methods",
+  "name": "Checkout setup: the payment and shipping methods a storefront offers, who may use each, and their fees",
+  "functions": ["orders.payment-methods", "orders.shipping-methods", "swift.cart-checkout"],
+  "skill": "dw-commerce-orders",
+  "inputs": {"section": "checkout", "required": ["country", "language", "methods"]},
+  "modes": {
+    "mcpOnly": {"usable": false, "reason": "The country relation and the customer-group scope are on the Management API models only (PaymentsAll / PaymentSave, ShippingsAll / ShippingSave); the MCP method models carry neither, nor a shipping method's fee."},
+    "hosted": {"usable": true, "reason": "Every step is MCP or the Management API; the probes read the delivery API."},
+    "local": {"usable": true},
+    "layerDelivered": "verify"
+  },
+  "steps": [
+    {
+      "id": "groups",
+      "title": "Find each customer group a method is offered to",
+      "forEach": "methods[*].customerGroups[*]",
+      "key": "{item}",
+      "repeat": "reuse",
+      "find": {"bindings": [
+        {"id": "mcp-groups", "surface": "mcp", "status": "implemented", "operation": "get_user_groups", "arguments": {}, "rows": "data", "match": {"name": "{item}"}, "produces": {"id": "id"}, "source": "skills/dw-users-permissions/references/user-group-operations.md"}
+      ]},
+      "bindings": [],
+      "trap": "A customer group is created by the users.accounts recipe; this recipe only names it.",
+      "source": "skills/dw-users-permissions/references/user-group-operations.md"
+    },
+    {
+      "id": "payment-methods",
+      "title": "Ensure each payment method by name: active and the anonymous flag",
+      "forEach": "methods[*]",
+      "key": "{item.name}",
+      "skipWhen": {"path": "item.kind", "notEquals": "payment"},
+      "find": {"bindings": [
+        {"id": "mcp-payments", "surface": "mcp", "status": "implemented", "operation": "get_payment_methods", "arguments": {}, "rows": "data", "match": {"name": "{item.name}"}, "compare": {"active": "{item.active}", "allowAnonymousUsers": "{item.anonymous}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/checkout-configuration.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/checkout-configuration.md",
+          "create": {"operation": "save_payment_methods", "arguments": {"paymentMethods": [{"name": "{item.name}", "description": "{item.description|\"\"}", "active": "{item.active}", "allowAnonymousUsers": "{item.anonymous}", "termsCode": "{item.termsCode|\"\"}"}]}},
+          "update": {"operation": "save_payment_methods", "arguments": {"paymentMethods": [{"id": "{found.id}", "active": "{item.active}", "allowAnonymousUsers": "{item.anonymous}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_payment_methods", "arguments": {}, "rows": "data", "match": {"name": "{item.name}"}, "expect": {"active": "{item.active}", "allowAnonymousUsers": "{item.anonymous}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/checkout-configuration.md"}}
+      ],
+      "trap": "save_payment_methods creates only with a blank id (an id the table does not hold is refused) and takes the next number of the PAY series; a database whose series lags its rows overwrites a method in place, so read the census first.",
+      "source": "skills/dw-commerce-orders/references/checkout-configuration.md"
+    },
+    {
+      "id": "payment-scope",
+      "title": "Relate each payment method to the storefront country and scope it to its customer groups",
+      "forEach": "methods[*]",
+      "key": "{item.name}",
+      "skipWhen": {"path": "item.kind", "notEquals": "payment"},
+      "find": {"bindings": [
+        {"id": "admin-payments", "surface": "admin-api", "status": "implemented", "operation": "PaymentsAll", "arguments": {}, "rows": "model.data", "match": {"id": "{step.payment-methods[item.name].id}"}, "compare": {"countryRelationKeys": ["{input.country}|"], "userGroups": "{step.groups[item.customerGroups[*]].id|[]}"}, "source": "skills/dw-data-access/references/recipes-commerce.md"}
+      ]},
+      "bindings": [
+        {"id": "admin-save", "surface": "admin-api", "status": "implemented", "source": "skills/dw-data-access/references/recipes-commerce.md",
+          "update": {"operation": "PaymentSave", "arguments": {"Model": {"id": "{found.id}", "name": "{found.name}", "description": "{found.description|null}", "icon": "{found.icon|null}", "isActive": "{found.isActive|null}", "sorting": "{found.sorting|null}", "gatewayId": "{found.gatewayId|null}", "gatewayParameters": "{found.gatewayParameters|null}", "checkoutParameters": "{found.checkoutParameters|null}", "checkoutSystemName": "{found.checkoutSystemName|null}", "paymentAddInType": "{found.paymentAddInType|null}", "allowAnonymousUsers": "{found.allowAnonymousUsers|null}", "code": "{found.code|null}", "termsCode": "{found.termsCode|null}", "termsDescription": "{found.termsDescription|null}", "disableSavedCards": "{found.disableSavedCards|null}", "countryRelationKeys": ["{input.country}|"], "userGroups": "{step.groups[item.customerGroups[*]].id|[]}"}}},
+          "readBack": {"surface": "admin-api", "status": "implemented", "operation": "PaymentsAll", "arguments": {}, "rows": "model.data", "match": {"id": "{step.payment-methods[item.name].id}"}, "expect": {"countryRelationKeys": ["{input.country}|"], "userGroups": "{step.groups[item.customerGroups[*]].id|[]}"}, "source": "skills/dw-data-access/references/recipes-commerce.md"}},
+        {"id": "mcp-scope", "surface": "mcp", "status": "planned", "reason": "The MCP payment model carries no country relation and no user groups (save_payment_methods, get_payment_methods); the scope is the Management API PaymentSave or the method's admin screen.", "source": "skills/dw-commerce-orders/references/checkout-configuration.md"}
+      ],
+      "trap": "PaymentSave takes the whole model back: a member left out is saved empty. A method with no country relation is offered only to a read without CountryCode, so the storefront country filters it out.",
+      "source": "skills/dw-data-access/references/recipes-commerce.md"
+    },
+    {
+      "id": "payment-fee",
+      "title": "Put each payment method's fee on it as one fixed fee rule",
+      "forEach": "methods[*]",
+      "key": "{item.name}",
+      "skipWhen": [{"path": "item.kind", "notEquals": "payment"}, {"path": "item.fee", "exists": false}],
+      "find": {"bindings": [
+        {"id": "mcp-fees", "surface": "mcp", "status": "implemented", "operation": "get_fees_by_method", "arguments": {"method": "PAY", "methodId": "{step.payment-methods[item.name].id}"}, "rows": "data", "match": {"name": "{item.name}"}, "compare": {"valueAmount": "{item.fee}", "feeType": "Fixed", "active": true}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/checkout-configuration.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-fee", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/checkout-configuration.md",
+          "create": {"operation": "save_fees", "arguments": {"fees": [{"method": "PAY", "methodId": "{step.payment-methods[item.name].id}", "name": "{item.name}", "valueAmount": "{item.fee}", "feeType": "Fixed", "active": true}]}},
+          "update": {"operation": "save_fees", "arguments": {"fees": [{"id": "{found.id}", "valueAmount": "{item.fee}", "feeType": "Fixed", "active": true}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_fees_by_method", "arguments": {"method": "PAY", "methodId": "{step.payment-methods[item.name].id}"}, "rows": "data", "match": {"name": "{item.name}"}, "expect": {"valueAmount": "{item.fee}", "feeType": "Fixed", "active": true}, "source": "skills/dw-commerce-orders/references/checkout-configuration.md"}}
+      ],
+      "trap": "A new fee rule is inactive unless the save says active true.",
+      "source": "skills/dw-commerce-orders/references/checkout-configuration.md"
+    },
+    {
+      "id": "shipping-methods",
+      "title": "Ensure each shipping method by name: active and the anonymous flag",
+      "forEach": "methods[*]",
+      "key": "{item.name}",
+      "skipWhen": {"path": "item.kind", "notEquals": "shipping"},
+      "find": {"bindings": [
+        {"id": "mcp-shippings", "surface": "mcp", "status": "implemented", "operation": "get_shipping_methods", "arguments": {}, "rows": "data", "match": {"name": "{item.name}"}, "compare": {"active": "{item.active}", "allowAnonymousUsers": "{item.anonymous}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/checkout-configuration.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/checkout-configuration.md",
+          "create": {"operation": "save_shipping_methods", "arguments": {"shippingMethods": [{"name": "{item.name}", "description": "{item.description|\"\"}", "active": "{item.active}", "allowAnonymousUsers": "{item.anonymous}"}]}},
+          "update": {"operation": "save_shipping_methods", "arguments": {"shippingMethods": [{"id": "{found.id}", "active": "{item.active}", "allowAnonymousUsers": "{item.anonymous}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_shipping_methods", "arguments": {}, "rows": "data", "match": {"name": "{item.name}"}, "expect": {"active": "{item.active}", "allowAnonymousUsers": "{item.anonymous}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/checkout-configuration.md"}}
+      ],
+      "trap": "save_shipping_methods creates only with a blank id and takes the next number of the SHIP series; a series that lags its rows overwrites a method in place.",
+      "source": "skills/dw-commerce-orders/references/checkout-configuration.md"
+    },
+    {
+      "id": "shipping-scope",
+      "title": "Relate each shipping method to the storefront country, scope it to its customer groups and set its fee",
+      "forEach": "methods[*]",
+      "key": "{item.name}",
+      "skipWhen": {"path": "item.kind", "notEquals": "shipping"},
+      "find": {"bindings": [
+        {"id": "admin-shippings", "surface": "admin-api", "status": "implemented", "operation": "ShippingsAll", "arguments": {}, "rows": "model.data", "match": {"id": "{step.shipping-methods[item.name].id}"}, "compare": {"countryRelationKeys": ["{input.country}|"], "userGroups": "{step.groups[item.customerGroups[*]].id|[]}", "defaultFee": "{item.fee|0}", "feeRulesSource": "matrix"}, "source": "skills/dw-data-access/references/recipes-commerce.md"}
+      ]},
+      "bindings": [
+        {"id": "admin-save", "surface": "admin-api", "status": "implemented", "source": "skills/dw-data-access/references/recipes-commerce.md",
+          "update": {"operation": "ShippingSave", "arguments": {"Model": {"id": "{found.id}", "name": "{found.name}", "description": "{found.description|null}", "icon": "{found.icon|null}", "isActive": "{found.isActive|null}", "sorting": "{found.sorting|null}", "code": "{found.code|null}", "serviceSystemName": "{found.serviceSystemName|null}", "serviceParameters": "{found.serviceParameters|null}", "agentCode": "{found.agentCode|null}", "agentName": "{found.agentName|null}", "agentServiceCode": "{found.agentServiceCode|null}", "agentServiceDescription": "{found.agentServiceDescription|null}", "allowAnonymousUsers": "{found.allowAnonymousUsers|null}", "freeFeeAmount": "{found.freeFeeAmount|null}", "usePriceWithVat": "{found.usePriceWithVat|null}", "limitsUseLogic": "{found.limitsUseLogic|null}", "feeSelection": "{found.feeSelection|null}", "takeDiscountIntoAccount": "{found.takeDiscountIntoAccount|null}", "eligibleForFreeShipping": "{found.eligibleForFreeShipping|null}", "minWeight": "{found.minWeight|null}", "maxWeight": 0, "productFilterMode": "{found.productFilterMode|null}", "productIds": "{found.productIds|null}", "productGroupIds": "{found.productGroupIds|null}", "feeRulesSource": "matrix", "defaultFee": "{item.fee|0}", "countryRelationKeys": ["{input.country}|"], "userGroups": "{step.groups[item.customerGroups[*]].id|[]}"}}},
+          "readBack": {"surface": "admin-api", "status": "implemented", "operation": "ShippingsAll", "arguments": {}, "rows": "model.data", "match": {"id": "{step.shipping-methods[item.name].id}"}, "expect": {"countryRelationKeys": ["{input.country}|"], "userGroups": "{step.groups[item.customerGroups[*]].id|[]}", "defaultFee": "{item.fee|0}", "feeRulesSource": "matrix"}, "source": "skills/dw-data-access/references/recipes-commerce.md"}},
+        {"id": "mcp-scope", "surface": "mcp", "status": "planned", "reason": "The MCP shipping model carries no country relation, no user groups and no default fee (save_shipping_methods, get_shipping_methods); they are the Management API ShippingSave or the method's admin screen.", "source": "skills/dw-commerce-orders/references/checkout-configuration.md"}
+      ],
+      "trap": "With feeRulesSource matrix, maxWeight 0 and no fee rows, the cart charges defaultFee: a flat rate.",
+      "source": "skills/dw-data-access/references/recipes-commerce.md"
+    }
+  ],
+  "debts": [],
+  "verify": {
+    "checkIds": ["orders.payment-methods.active", "orders.shipping-methods.active", "swift.cart-checkout.cart-page", "swift.cart-checkout.checkout-page"],
+    "probes": [
+      {
+        "id": "anonymous-offered-payment",
+        "title": "A visitor who is not signed in is offered each active payment method open to anonymous visitors",
+        "forEach": "methods[*]",
+        "skipWhen": [{"path": "item.kind", "notEquals": "payment"}, {"path": "item.anonymous", "notEquals": true}, {"path": "item.active", "notEquals": true}],
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-get", "operation": "ecommerce/payments", "arguments": {"LanguageId": "{input.language}", "CountryCode": "{input.country}"}, "rows": "$", "match": {"name": "{item.name}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"}
+        ]
+      },
+      {
+        "id": "anonymous-not-offered-payment",
+        "title": "A visitor who is not signed in is not offered a payment method scoped to customer groups",
+        "forEach": "methods[*]",
+        "skipWhen": [{"path": "item.kind", "notEquals": "payment"}, {"path": "item.anonymous", "equals": true}, {"path": "item.customerGroups", "exists": false}],
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-get", "operation": "ecommerce/payments", "arguments": {"LanguageId": "{input.language}", "CountryCode": "{input.country}"}, "rows": "$", "match": {"name": "{item.name}"}, "assert": {"kind": "count", "op": "eq", "value": 0}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"}
+        ]
+      },
+      {
+        "id": "buyer-offered-payment",
+        "title": "The signed-in buyer is offered each active payment method",
+        "forEach": "methods[*]",
+        "skipWhen": [{"path": "item.kind", "notEquals": "payment"}, {"path": "item.active", "notEquals": true}, {"path": "input.buyer", "exists": false}],
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-signed-in-get", "operation": "ecommerce/payments", "arguments": {"LanguageId": "{input.language}", "CountryCode": "{input.country}"}, "signIn": {"username": "{input.buyer.userName}", "password": "{secret.input.buyer.passwordRef}"}, "rows": "$", "match": {"name": "{item.name}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"}
+        ]
+      },
+      {
+        "id": "anonymous-offered-shipping",
+        "title": "A visitor who is not signed in is offered each active shipping method open to anonymous visitors",
+        "forEach": "methods[*]",
+        "skipWhen": [{"path": "item.kind", "notEquals": "shipping"}, {"path": "item.anonymous", "notEquals": true}, {"path": "item.active", "notEquals": true}],
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-get", "operation": "ecommerce/shippings", "arguments": {"LanguageId": "{input.language}", "CountryCode": "{input.country}"}, "rows": "$", "match": {"name": "{item.name}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"}
+        ]
+      },
+      {
+        "id": "anonymous-not-offered-shipping",
+        "title": "A visitor who is not signed in is not offered a shipping method scoped to customer groups",
+        "forEach": "methods[*]",
+        "skipWhen": [{"path": "item.kind", "notEquals": "shipping"}, {"path": "item.anonymous", "equals": true}, {"path": "item.customerGroups", "exists": false}],
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-get", "operation": "ecommerce/shippings", "arguments": {"LanguageId": "{input.language}", "CountryCode": "{input.country}"}, "rows": "$", "match": {"name": "{item.name}"}, "assert": {"kind": "count", "op": "eq", "value": 0}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"}
+        ]
+      },
+      {
+        "id": "buyer-offered-shipping",
+        "title": "The signed-in buyer is offered each active shipping method",
+        "forEach": "methods[*]",
+        "skipWhen": [{"path": "item.kind", "notEquals": "shipping"}, {"path": "item.active", "notEquals": true}, {"path": "input.buyer", "exists": false}],
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-signed-in-get", "operation": "ecommerce/shippings", "arguments": {"LanguageId": "{input.language}", "CountryCode": "{input.country}"}, "signIn": {"username": "{input.buyer.userName}", "password": "{secret.input.buyer.passwordRef}"}, "rows": "$", "match": {"name": "{item.name}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "c1-verify: two payment and two shipping methods WOULD-CREATE, their scope and fee steps dependent on them (3 of 16). c2-apply created the four methods and the card fee rule; c2b-apply, after the nullable model members took a null default, related them to the country and scoped the two account methods to the customer group (16 of 16). c3-verify, a run with no SQL as on a hosted install, and c4-apply-again: 16 of 16, nothing written, no debt. c5-mcponly is 6 of 16: the scope steps need the Management API and the probes the delivery API. The probes saw the anonymous visitor offered the card and ground methods and not the two account methods, and the signed-in buyer offered all four. The buyer then completed two delivery API checkouts: the account methods (order total 7.00, no fees) and the card and ground methods (7.00 + 2.50 payment fee + 9.50 shipping fee = 19.00), each order carrying the chosen method ids."}
+  ],
+  "traps": [
+    "No debt: the delivery API offered a new or rescoped method on the next request, with no flush or recycle.",
+    "allowAnonymousUsers false alone does not hide a method from an anonymous visitor on the delivery API: GET ecommerce/payments offered an on-account method with the flag false to a visitor who was not signed in. Scope the method to customer groups; the group scope is what removes it.",
+    "A method with no country relation is offered only to a read without CountryCode; the storefront and GET ecommerce/payments with CountryCode drop it.",
+    "The delivery API cart does not enforce the offer: PATCH carts/{secret}/payment/{id} and shipping/{id} accepted a group-scoped method on an anonymous cart. Prove the offer on GET ecommerce/payments and ecommerce/shippings (and on the Swift checkout step, which lists the same set), not on the cart.",
+    "The Swift checkout lists the same payment methods as GET ecommerce/payments for that visitor (radio EcomCartPaymethodID), and charges the payment fee rule and the shipping method's default fee on the order.",
+    "PaymentSave and ShippingSave persist countryRelationKeys and userGroups on this release when sent the whole model back; a member left out is saved empty."
+  ]
+}

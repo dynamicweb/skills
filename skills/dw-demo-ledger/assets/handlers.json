@@ -52,6 +52,7 @@
     "get_email_campaign_templates",
     "get_email_campaign_top_folders",
     "get_email_campaigns",
+    "get_fees_by_method",
     "get_field_display_groups",
     "get_field_types",
     "get_fonts",
@@ -121,12 +122,16 @@
     "GetNumbers",
     "GetOrderList",
     "GroupById",
-    "ProductCategoriesAll"
+    "PaymentsAll",
+    "ProductCategoriesAll",
+    "ShippingsAll"
   ],
   "dwapiReadRoutes": [
     "content/areas",
+    "ecommerce/payments",
     "ecommerce/products/search",
     "ecommerce/products/{productId}",
+    "ecommerce/shippings",
     "feeds/GetFeedOutput",
     "frontend/navigations/{areaId}",
     "query"
@@ -166,13 +171,16 @@
     "save_areas",
     "save_button_styles",
     "save_color_schemes",
+    "save_fees",
     "save_field_display_group",
     "save_fonts",
     "save_grid_rows",
     "save_groups",
     "save_pages",
     "save_paragraphs",
+    "save_payment_methods",
     "save_prices",
+    "save_shipping_methods",
     "save_typographies",
     "save_user_groups",
     "set_item_field_values",
@@ -192,6 +200,8 @@
     "DataModelGroupSave",
     "Dynamicweb.Products.UI.Commands.Settings.WorkflowSaveCommand",
     "NumberSave",
+    "PaymentSave",
+    "ShippingSave",
     "UserImpersonateAdd",
     "UsersAddToGroups"
   ],
@@ -199,7 +209,9 @@
     "ecommerce/favorites/lists",
     "ecommerce/orders",
     "ecommerce/orders/search",
-    "ecommerce/products/{productId}"
+    "ecommerce/payments",
+    "ecommerce/products/{productId}",
+    "ecommerce/shippings"
   ],
   "recipeRenderedReadTools": [
     "fetch_frontend_page_html",

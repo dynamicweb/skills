@@ -116,5 +116,16 @@
     "favourites": [
       {"name": "Reorder list", "products": ["EX-100"]}
     ]
+  },
+  "checkout": {
+    "country": "US",
+    "language": "ENU",
+    "buyer": {"userName": "buyer@example.invalid", "passwordRef": "buyer"},
+    "methods": [
+      {"name": "Card", "kind": "payment", "active": true, "anonymous": true, "fee": 2.5},
+      {"name": "On account", "kind": "payment", "active": true, "anonymous": false, "customerGroups": ["Example Trading"], "termsCode": "NET30"},
+      {"name": "Ground", "kind": "shipping", "active": true, "anonymous": true, "fee": 9.5},
+      {"name": "Account freight", "kind": "shipping", "active": true, "anonymous": false, "customerGroups": ["Example Trading"]}
+    ]
   }
 }

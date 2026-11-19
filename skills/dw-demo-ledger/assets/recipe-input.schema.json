@@ -934,6 +934,36 @@
         }
       }
     },
+    "checkout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["country", "language", "methods"],
+      "description": "The payment and shipping methods a storefront checkout offers, who may use each, and the fee. Methods are found by name; a customer group is found by name and created by the users.accounts recipe. The buyer signs in for the per-visitor probes and must be a member of every customer group a method names.",
+      "properties": {
+        "country": {"type": "string", "pattern": "^[A-Z]{2}$", "description": "The country the storefront sells to (ISO 3166-1 alpha-2): every method is related to it, because a method without the visitor's country is not offered."},
+        "language": {"type": "string", "minLength": 1, "description": "The ecommerce language id the delivery API reads methods in (LanguageId), such as ENU."},
+        "buyer": {"type": "object", "additionalProperties": false, "required": ["userName", "passwordRef"], "properties": {"userName": {"type": "string", "minLength": 1}, "passwordRef": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$", "description": "A key of DW_RECIPE_SECRETS, never the password."}}},
+        "methods": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "kind", "active", "anonymous"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1, "description": "The method's display name, its natural key."},
+              "kind": {"enum": ["payment", "shipping"]},
+              "description": {"type": "string"},
+              "active": {"type": "boolean"},
+              "anonymous": {"type": "boolean", "description": "Whether a visitor who is not signed in may use it (allowAnonymousUsers)."},
+              "customerGroups": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Names of the customer groups whose members are offered the method; empty or absent offers it to every signed-in user."},
+              "fee": {"type": "number", "minimum": 0, "description": "A fixed fee in the shop currency: a shipping method's default fee, or a payment method's fee rule."},
+              "termsCode": {"type": "string", "description": "A payment method's terms code (on account: NET30)."}
+            }
+          }
+        }
+      }
+    },
     "brand": {
       "type": "object",
       "additionalProperties": false,
