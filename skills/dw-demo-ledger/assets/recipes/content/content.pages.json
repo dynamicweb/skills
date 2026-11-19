@@ -142,11 +142,21 @@
         "bindings": [
           {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{item.path}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "contains", "path": "title", "value": "{item.menuText}"}, "source": "skills/dw-swift-page-design/SKILL.md"}
         ]
+      },
+      {
+        "id": "page-render-clean",
+        "title": "Each page renders without an error the stored fields cannot show (an error dump, a missing image or icon file, text in its own background colour)",
+        "forEach": "pages[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "inspect_page_render", "arguments": {"pageId": "{step.pages[item.menuText].id}"}, "rows": "issues", "match": {"severity": "error"}, "assert": {"kind": "count", "op": "eq", "value": 0}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+        ]
       }
     ]
   },
   "provenOn": [
-    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "content.pages.1-verify.json (all WOULD-CREATE), content.pages.2-apply.json (12 of 12), content.pages.3-verify.json and content.pages.4-apply-again.json (10 of 10, nothing changed), content.pages.6-mcponly-apply.json (12 of 12 from empty, MCP only), content.pages.10-final-verify.json and content.pages.11-final-verify-mcponly.json (10 of 10); the pages answered HTTP 200 with the written copy and no ConverterException"}
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "content.pages.1-verify.json (all WOULD-CREATE), content.pages.2-apply.json (12 of 12), content.pages.3-verify.json and content.pages.4-apply-again.json (10 of 10, nothing changed), content.pages.6-mcponly-apply.json (12 of 12 from empty, MCP only), content.pages.10-final-verify.json and content.pages.11-final-verify-mcponly.json (10 of 10); the pages answered HTTP 200 with the written copy and no ConverterException"},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 9 of 9 with the new page-render-clean probe (inspect_page_render reports no error-severity issue); MCP-only 9 of 9."}
   ],
   "traps": [
     "Never carry a page id between runs or hosts: ids are minted per host and a deserialize re-mints them. Pages are found by parent and menu text at the point of use.",

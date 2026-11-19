@@ -289,6 +289,7 @@ back with no `value`).
 | `save_paragraphs` | `{paragraphs:[{id, pageId, itemType, template, gridRowId, gridRowColumn, sort, …}]}` | `template` is the bare file name from `get_paragraph_templates`. Read back with `get_paragraphs_by_page_id {pageId}` (`id`, `gridRowId`, `gridRowColumn`, `itemType`, `template`, `sort`) |
 | `set_paragraph_item_fields` | `{paragraphId, fields:{SystemName: "value"}}` | Read back with `get_paragraph_item_field_values {paragraphId}`: one row per field, `{fieldSystemName, value}` |
 | `fetch_frontend_page_html` | `{path}` | A summary, not the markup: `statusCode`, `title`, `h1Tags` and counts. It proves the page answers, not that a paragraph rendered without an error block |
+| `inspect_page_render` | `{pageId, compareWithPageId}` | Renders the page and answers `{pageId, url, statusCode, renderedAsAdministrator, title, outline: ["Row 1: …", "  col 1 [text]: …"], issues: [{severity, kind, paragraphId, gridRowId, message, fix}], sectionCount, imageCount}`. An `error` issue is what a stored-field read cannot show (an error dump, a missing image or icon file, text in its own background colour); `warning` issues are design feedback (no imagery, no heading). It answered `renderedAsAdministrator: false` [dw 10.30.6 · mcp 0.6.3-BETA] and [dw 10.30.6 · mcp 0.6.6-BETA] |
 
 A button field takes its full ButtonData JSON with a `Label` or a `Link`, or an empty string for no
 button: `set_paragraph_item_fields` refuses a ButtonData JSON with neither ("the button does not

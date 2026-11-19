@@ -217,6 +217,7 @@
   ],
   "recipeRenderedReadTools": [
     "fetch_frontend_page_html",
+    "inspect_page_render",
     "search_orders"
   ]
 }
