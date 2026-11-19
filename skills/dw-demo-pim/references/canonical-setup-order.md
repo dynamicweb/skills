@@ -8,6 +8,10 @@
 - [Product-completeness checklist — verify before declaring catalog done](#product-completeness-checklist--verify-before-declaring-catalog-done)
 - [Appendix: commerce-side order seeding (used by Swift customer-center demos)](#appendix-commerce-side-order-seeding-used-by-swift-customer-center-demos)
 
+> **A recipe exists: `pim.data-models`** ([recipe index](../../dw-demo-ledger/references/recipe-index.md)). Input: the `catalogue` section of the customer data file. It builds the folder, categories, data models, spec fields, display group and completeness rule and proves each model exists once and its display group reaches the storefront. It leaves nothing planned; it is not MCP-only. Run it with `Invoke-DwRecipeSet.ps1` ([Build from the library](../../dw-demo-base/references/orchestrator.md#build-from-the-library)); the procedure below stays the reference for hand work.
+>
+> **A recipe exists: `pim.identifiers`** ([recipe index](../../dw-demo-ledger/references/recipe-index.md)). Input: the `catalogue` section of the customer data file. It builds groups, products, specs, images and stock, pays the assortment and index builds, and proves each product is listed in its group with its image, specs and a completeness figure. It leaves documents, variants and bundles to the steps below. Run it with `Invoke-DwRecipeSet.ps1` ([Build from the library](../../dw-demo-base/references/orchestrator.md#build-from-the-library)); the procedure below stays the reference for hand work.
+
 > The canonical setup order for a Dynamicweb 10 PIM build. Each step depends on earlier ones — skipping or reordering causes rework. Loaded from `~/.claude/skills/dw-demo-pim/SKILL.md` "Where to find things" table. Cross-references out to `structural-model.md`, `governance.md`, `cache-invalidation.md`, `workflow.md`, `permissions-model.md`.
 
 **ID discipline for every MCP `create_*` / `save_*` step below — and the split is per tool, not per catalogue.** Some tools honour a caller-supplied business id and some have no id member at all, so a plan that assumes one rule for the whole catalogue breaks on the other half:

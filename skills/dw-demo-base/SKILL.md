@@ -40,6 +40,35 @@ The orchestrator abstraction (modes, the strictness
 gradient, acceptance criteria) is owned by [references/orchestrator.md](references/orchestrator.md).
 Every sister demo skill carries the same "how to run me" header and defers to that reference.
 
+## Build from the library first (before any prose build path)
+
+Customer-specific demo content is built by **recipes**: proven, replayable JSON documents in
+[`dw-demo-ledger`](../dw-demo-ledger/SKILL.md) that one command runs and verifies. Accounts and
+personas, pages, PIM data models, the catalogue, a PIM workflow, prices, order history, the brand
+styles and the de-brand all have one ([recipe index](../dw-demo-ledger/references/recipe-index.md)).
+Do not write a one-off script or walk a prose procedure for something a recipe covers. Once the host
+answers and MCP is live (the canonical flow below, or the scripted base build):
+
+1. **Write the customer data file**: one JSON file matching
+   [`recipe-input.schema.json`](../dw-demo-ledger/assets/recipe-input.schema.json); start from
+   [`recipe-input.example.json`](../dw-demo-ledger/assets/recipe-input.example.json). A branded demo
+   needs `brand` (from a brand kit with `ConvertFrom-DwBrandKit.ps1`), `users.accounts` (a buyer
+   with a password and a representative who may impersonate it: the persona floor), `catalogue`
+   and `prices` (a product is listed only once it has a price). Add `content.pages`, `history`,
+   `pim.workflow` and `debrand` when the storyline uses them.
+2. **Built from blank, and a layer generator is available to you?** Generate the rewritten layer
+   copy from the same data file and deliver it before the first delivery; the recipes then only
+   verify those sections (`-LayerDelivered <sections>`).
+3. **Otherwise run the set**: `Invoke-DwRecipeSet.ps1 -InputPath <file>` lists what it would
+   create; `-Apply` builds, pays the debts once and verifies. Exit 0 is built and proven.
+4. **Only what no recipe covers is built by hand.** `Find-DwRecipe.ps1 -Function <id>` answers
+   whether one exists; the index's "What stays planned" names the known hand work.
+5. **MCP tools only, no shell**: open each recipe in the index's run order and follow it with
+   [recipe-by-hand.md](../dw-demo-ledger/references/recipe-by-hand.md), using the `mcp` bindings.
+
+What changes per running mode, environment and build path is in
+[references/orchestrator.md](references/orchestrator.md) "Build from the library".
+
 ## Environment fork — local install vs hosted (online) install
 
 The canonical flow below assumes a **local install** (scaffold + SQL Express on the demo machine). When the engagement instead hands you a **site URL + Admin API bearer key** — a vendor-hosted/cloud install with no machine to scaffold on — the build forks to [`dw-demo-hosted`](../dw-demo-hosted/SKILL.md), which owns the deltas: which canonical steps to skip, the session-start probe (tool availability on hosted installs is **version-dependent** — MCP may or may not be exposed; always probe, never assume), the Management API recipe pack that substitutes for MCP/SQL recipes, and the shared-install discipline. Moving a demo that was built locally onto a hosted install is a **migration, not a deploy** — a separate playbook with its own failure modes, owned by [`dw-demo-hosted/references/publish-to-hosted.md`](../dw-demo-hosted/references/publish-to-hosted.md). The always-on rules (surface priority, guarded writes, customer-context, demo philosophy) apply in both modes.

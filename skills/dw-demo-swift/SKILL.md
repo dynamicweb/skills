@@ -35,6 +35,22 @@ documented order (gate every step, persist progress to `.demo/<slug>/flow-state.
 orchestrator abstraction (native command set and the standalone harness) is owned by
 [`../dw-demo-base/references/orchestrator.md`](../dw-demo-base/references/orchestrator.md).
 
+## Recipes first
+
+The storefront functions a Swift demo build repeats have proven recipes; run them from the customer
+data file with `Invoke-DwRecipeSet.ps1` ([dw-demo-base "Build from the library"](../dw-demo-base/references/orchestrator.md#build-from-the-library)) before the
+prose procedures below, which stay the reference for hand work and for what a recipe leaves open
+([recipe index](../dw-demo-ledger/references/recipe-index.md)).
+
+| Recipe | Input | What it builds and proves | What stays by hand |
+|---|---|---|---|
+| `content.design-styles` | `brand` | Logo, favicon and font files; fonts, typography, buttons and colour schemes under a net-new style id; the website wired to them; header and footer logo and row schemes. Probes: the generated sheets, fonts, logo and favicon are served, the storefront paths render. Owes a recycle | The custom brand sheet and head include (a theme layer or file deploy); the painted result in a browser (visual QA) |
+| `content.page-seo` | `debrand` | Every page text and website setting that still shows a former name, replaced and read back. Probes: the rendered title and headings exclude it | Website and shop names are reported, not renamed; mail templates are checked by hand |
+| `users.accounts` | `users.accounts` | Account and staff groups, the account type, users with passwords, memberships, assortment access, the impersonation grant. Probes: sign-in, membership, grant direction | Persona presentation and sign-in profiles ([references/customer-center.md](references/customer-center.md)) |
+| `commerce.customer-prices` | `prices` | Default prices, quantity tiers, group and contract prices. Probes: what the anonymous visitor and the signed-in buyer are charged | Discounts and vouchers |
+| `orders.completed-orders` | `history` | The order number prefix; the buyer's orders lined at the buyer's price, placed, completed and stated; quotes. Probes: the buyer's customer centre lists them | Order dates, the number counter, favourite lists, the reset (no MCP or Management API write) |
+| `content.pages` | `content.pages` | Pages under their parent, title and slug, grid rows, paragraphs and item fields. Probes: one page per key, the row container, the page renders | Designed page layout beyond rows and paragraphs |
+
 ## Step 0 — Load the Swift baseline (every Swift demo)
 
 Before any frontend work (templates, paragraphs, re-skin), load the Swift content baseline into the host's project DB. Swift demos depend on `Swift-v2_*` item types, Swift paragraph wiring, and the **content rows** (Area, Pages, grid-rows, paragraphs) that the baseline ships. `dw-demo-base` deliberately does NOT deserialize — that step lives here.

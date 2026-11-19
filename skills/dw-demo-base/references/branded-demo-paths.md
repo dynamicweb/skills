@@ -3,6 +3,13 @@
 > Three ways to reach a branded Dynamicweb 10 demo, what each one costs, and which one to take.
 > **Default: path A, YAML first.** Path B is the explicit alternative and stays valid; path C is
 > the floor. This file is the routing point every branding instruction in the corpus defers to.
+>
+> **Whichever path, the tool writes are recipes.** The brand, the de-brand, the personas, the
+> catalogue, the prices and the order history are written and verified by the recipe set from one
+> customer data file ([orchestrator.md](orchestrator.md) "Build from the library"): on path A the
+> sections the brand layer delivered run verify-only (`-LayerDelivered`), on paths B and C the set
+> applies them. The steps below are the reference for what the recipes do and for the hand work no
+> recipe covers.
 
 ## Contents
 

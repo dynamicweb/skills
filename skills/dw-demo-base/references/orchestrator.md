@@ -2,6 +2,7 @@
 
 ## Contents
 
+- [Build from the library](#build-from-the-library)
 - [The build path an orchestrator sequences](#the-build-path-an-orchestrator-sequences)
 - [Running modes](#running-modes)
 - [Standalone — the lightweight in-skill harness (no orchestrator)](#standalone--the-lightweight-in-skill-harness-no-orchestrator)
@@ -41,6 +42,75 @@ Every mode reads the **same** SKILL.md files; no skill is rewritten for an orche
 dispatcher or another agent framework that drives a build is an orchestrator in the same sense:
 it sequences the phases below, holds the one human gate, and reads the same acceptance criteria.
 Two orchestrators never drive the same build.
+
+## Build from the library
+
+Every orchestrator, and the skills alone, builds the customer-specific content from the recipe
+library before it reaches for any prose procedure. A recipe is the proven, replayable form of one
+platform function ([`dw-demo-ledger` recipes.md](../../dw-demo-ledger/references/recipes.md)); the
+[recipe index](../../dw-demo-ledger/references/recipe-index.md) lists each one with its input
+section, what it proves, its modes and what it leaves to hand work. The build is one customer data
+file and one command.
+
+### 1. Write the customer data file
+
+One JSON file, validated against
+[`recipe-input.schema.json`](../../dw-demo-ledger/assets/recipe-input.schema.json) (start from
+[`recipe-input.example.json`](../../dw-demo-ledger/assets/recipe-input.example.json)). Each
+section feeds one recipe; a section that is absent is simply not built. Keep it in the demo's
+`notes\` folder, never in `customer-context\`, and keep passwords out of it: a user names a
+`passwordRef` and the value goes in `DW_RECIPE_SECRETS`.
+
+| Section | Recipe | For a branded demo |
+|---|---|---|
+| `brand` | `content.design-styles`: fonts, typography, buttons, colour schemes, logo, favicon, header and footer rows | **Mandatory.** From a brand kit: `ConvertFrom-DwBrandKit.ps1 -KitPath <kit>/swift2 -OutPath <file>` |
+| `users.accounts` | `users.accounts`: account and staff groups, users with passwords, impersonation | **Mandatory**: one buyer, one representative who may impersonate it |
+| `catalogue` | `pim.data-models` (with `pimFolder`), then `pim.identifiers`: groups, products, specs, images, stock | **Mandatory** |
+| `prices` | `commerce.customer-prices`: list prices, tiers, group and contract prices | **Mandatory**: the storefront lists a product only once it has a price |
+| `content.pages` | `content.pages`: pages, rows, paragraphs, item fields | When the storyline visits a page the edition does not ship |
+| `history` | `orders.completed-orders`: numbering, orders, quotes | When the storyline shows a customer centre |
+| `pim.workflow` | `pim.workflow`: states, transitions, attached to data models | PIM stories |
+| `debrand` | `content.page-seo`: every place a former name shows, replaced | When stock or inherited content names another company. Never put a forbidden text in another section: the set refuses it |
+| `build` | none: `areaId`, `defaultLanguage`, `pimShop` the recipes read | Always |
+| `brandCopy` | none: the layer generator's storefront copy | When a layer generator builds the delivered copy |
+
+### 2. Deliver, then build what was not delivered
+
+- **Built from blank with a layer generator available** to the operator: generate a rewritten
+  copy of the edition's layers from the same data file and deliver it before the first delivery.
+  The sections it carried are then **verified, not written**:
+  `Invoke-DwRecipeSet.ps1 -InputPath <file> -Apply -LayerDelivered catalogue,prices,users.accounts`
+  runs those recipes verify-only and applies the rest.
+- **Otherwise** (an edition delivered as shipped, or a blank site and no generator): run
+  `Invoke-DwRecipeSet.ps1 -InputPath <file>` first (writes nothing, lists every WOULD-CREATE), then
+  `-Apply`. The set runs the recipes in the index's run order, pays the debts (cache flushes, index
+  and assortment builds, one recycle) once, and verifies every recipe again. Exit 0 means every
+  object is in place and every probe passed; the last line counts the recipes that passed. A
+  `DEBT OPEN recycle` line means the host must be recycled (host-lifecycle.md, or the hosted
+  route), then the set is run again without `-Apply`.
+- `-Only <ids>` and `-Skip <ids>` narrow a rerun; `-Only <id> -PayDebts -Apply` pays one recipe's
+  host debts on their own (an index or assortment build after a hand edit).
+
+### 3. Build by hand only what no recipe covers
+
+`Find-DwRecipe.ps1 -Function <id>` answers whether a recipe exists for a ledger function; "no
+recipe" means build it by hand from the owning skill. The index's "What stays planned" names the
+pieces a recipe leaves open (for example favourite lists and order dates, which no MCP or
+Management API write reaches). A script written for that hand work is proposed back as a recipe at
+fold-back ([`dw-demo-foldback`](../../dw-demo-foldback/SKILL.md)).
+
+### What changes per mode, environment and path
+
+| | What changes |
+|---|---|
+| Skills alone | The harness records a `recipes` step in `flow-state.json`; its gate is the set's exit 0, and the instructions-used map names the set's report |
+| `/demo:*` command set | `/demo:impact` produces the data file with the analysis; `/demo:build` runs the set after sign-off and its validation pass reads the set's summary before the acceptance criteria |
+| Local install | `-SolutionPath <solution>` lets the set recycle a loopback host itself; `-AllowSql -SqlServer -Database` adds optional read-only checks |
+| Hosted install (URL + API key) | Set `DW_BASE_URL`, `DW_API_TOKEN` and, when the install exposes it, `DW_MCP_TOKEN`; no SQL. A recipe whose index row says hosted `no` reports its blocked steps; the recycle stays OPEN with the hosted route ([`dw-demo-hosted`](../../dw-demo-hosted/SKILL.md)) |
+| Path A, YAML brand layer | The brand layer carries the brand: run the set with `-LayerDelivered brand` so `content.design-styles` verifies it, and apply the other sections |
+| Path B, deliver then tools | Run the set with `-Apply` over the delivered edition |
+| Path C, tools only from blank | Run the set with `-Apply`; nothing is layer-delivered |
+| MCP tools only (no shell) | Follow each recipe in run order with [recipe-by-hand.md](../../dw-demo-ledger/references/recipe-by-hand.md); a recipe whose index row says MCP-only `no` leaves the named steps for an operator with the Management API |
 
 ## The build path an orchestrator sequences
 
