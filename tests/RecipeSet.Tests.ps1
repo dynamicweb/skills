@@ -31,10 +31,16 @@ $state = if ($mode -eq 'apply') { if ($changed) { 'CREATED' } else { 'UNCHANGED'
 if ($mode -eq 'apply') { $null = $s.applied.Add($Recipe) }
 $steps = @(); $checks = @()
 if ($mode -ne 'debts') { $steps = @([ordered]@{step = 'one'; state = $state; key = 'k'}); $checks = @([ordered]@{name = 'one/k'; result = $(if ($state -like 'WOULD-*') { 'FAIL' } else { 'PASS' }); reason = $null}) }
-foreach ($d in @($DebtNames | Where-Object { $_ })) { $checks += [ordered]@{name = "debt/$d"; result = $(if ($s.debtResult.Contains($d)) { $s.debtResult[$d] } else { 'PASS' }); reason = 'stub'} }
+$notes = @()
+foreach ($d in @($DebtNames | Where-Object { $_ })) {
+    # A debt the target does not owe is a NOTE line and no check, as the runner reports an index the target lacks.
+    if ($s.debtNote.Contains($d)) { $notes += "NOTE debt/${d}: not owed, the target has no index"; continue }
+    $checks += [ordered]@{name = "debt/$d"; result = $(if ($s.debtResult.Contains($d)) { $s.debtResult[$d] } else { 'PASS' }); reason = 'stub'}
+}
 if ($mode -ne 'debts' -and -not $SkipVerify) { $checks += [ordered]@{name = 'probe/p'; result = $(if ($s.probeFail.Contains($Recipe)) { 'FAIL' } else { 'PASS' }); reason = $null} }
 $owed = if ($changed -and $Debts -eq 'Defer') { @($doc.debts) } else { @() }
 "STEP one $state k"
+foreach ($n in $notes) { $n }
 foreach ($c in $checks) { "$($c.result) $($c.name)" }
 $passed = @($checks | Where-Object { $_.result -eq 'PASS' }).Count
 "${Recipe}: $passed of $($checks.Count) checks passed"
@@ -48,7 +54,7 @@ exit 1
     }
     function New-SetStub {
         $global:SetStub = @{calls = [Collections.Generic.List[object]]::new(); applied = [Collections.Generic.HashSet[string]]::new(); settled = [Collections.Generic.HashSet[string]]::new()
-            debtResult = @{}; probeFail = [Collections.Generic.HashSet[string]]::new()}
+            debtResult = @{}; debtNote = [Collections.Generic.HashSet[string]]::new(); probeFail = [Collections.Generic.HashSet[string]]::new()}
     }
     function Write-SetInput([hashtable]$Extra = @{}, [string[]]$Drop = @()) {
         # The repository's example input: users.accounts, content.pages, checkout, prices, brand and history.
@@ -165,6 +171,16 @@ Describe 'Invoke-DwRecipeSet' {
         ($r.lines -match '^DEBT OPEN recycle').Count | Should -Be 1
         # Every recipe passes its checks; the set still fails, on the debt alone.
         ($r.lines -match "^recipe set: $n of $n recipes passed; a debt is not paid$").Count | Should -Be 1
+        $r.exit | Should -Be 1
+    }
+    It 'keeps a debt the target does not owe a NOTE when another debt of the same owner stays OPEN' {
+        # users.accounts owes a flush, two index builds and a recycle; the target lacks one index and the recycle stays open.
+        $null = $global:SetStub.debtNote.Add('index:Users/Users.index')
+        $global:SetStub.debtResult['recycle'] = 'OPEN'
+        $r = Invoke-Set $script:Root @{InputPath = (Write-SetInput); Apply = $true; Only = @('users.accounts')}
+        ($r.lines -match '^DEBT NOTE index:Users/Users\.index').Count | Should -Be 1
+        ($r.lines -match '^DEBT FAIL').Count | Should -Be 0
+        ($r.lines -match '^DEBT OPEN recycle').Count | Should -Be 1
         $r.exit | Should -Be 1
     }
     It 'pays a debt a later recipe names in debtsPaid before that recipe runs, and not again at the end' {

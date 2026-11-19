@@ -165,14 +165,16 @@ try {
         $arguments = $common.Clone() + $Extra
         $arguments.Recipe = $Id; $arguments.ReportPath = $report
         Write-SetLine "== $Id $Pass"
-        & $runner @arguments *>&1 | ForEach-Object { Write-SetLine "$_" }
+        $lines = [Collections.Generic.List[string]]::new()
+        & $runner @arguments *>&1 | ForEach-Object { $lines.Add("$_"); Write-SetLine "$_" }
         $exit = $LASTEXITCODE
         $doc = if (Test-Path -LiteralPath $report) { Get-Content -LiteralPath $report -Raw | ConvertFrom-Json -AsHashtable } else { @{steps = @(); checks = @(); debtsOwed = @(); passed = 0; total = 0; changed = $false} }
         $states = @{}
         foreach ($s in @($doc.steps)) { $states[$s.state] = 1 + [int]$states[$s.state] }
         $result = [ordered]@{pass = $Pass; exit = $exit; passed = [int]$doc.passed; total = [int]$doc.total; changed = [bool]$doc.changed
             created = [int]$states['CREATED']; updated = [int]$states['UPDATED']; unchanged = [int]$states['UNCHANGED']; blocked = [int]$states['BLOCKED']
-            wouldCreate = [int]$states['WOULD-CREATE']; wouldUpdate = [int]$states['WOULD-UPDATE']; debtsOwed = @($doc.debtsOwed | Where-Object { $_ }); checks = @($doc.checks)}
+            wouldCreate = [int]$states['WOULD-CREATE']; wouldUpdate = [int]$states['WOULD-UPDATE']; debtsOwed = @($doc.debtsOwed | Where-Object { $_ }); checks = @($doc.checks)
+            notes = @($lines | Where-Object { $_.StartsWith('NOTE debt/') })}
         $script:SetPass = $result
     }
     foreach ($id in $order) { $rows[$id] = [ordered]@{recipe = $id; section = $selected[$id].inputs.section; result = $null; reason = $null; passes = [Collections.Generic.List[object]]::new()} }
@@ -200,7 +202,10 @@ try {
                 $pass = $script:SetPass
                 foreach ($name in $names) {
                     $check = @($pass.checks | Where-Object { $_.name -eq "debt/$name" })[0]
-                    $state = if ($check) { $check.result } elseif ($pass.exit -eq 0) { 'NOTE' } else { 'FAIL' }
+                    # A debt the target does not owe (an index it does not carry) is a NOTE line, not a check: it stays a NOTE
+                    # when another debt of the same run failed or stayed open.
+                    $noted = @($pass.notes | Where-Object { $_.StartsWith("NOTE debt/${name}:") }).Count
+                    $state = if ($check) { $check.result } elseif ($noted -or $pass.exit -eq 0) { 'NOTE' } else { 'FAIL' }
                     $debtRows.Add([ordered]@{debt = $name; owner = $owner; when = $Why; result = $state; reason = $(if ($check) { $check.reason })})
                 }
             }
