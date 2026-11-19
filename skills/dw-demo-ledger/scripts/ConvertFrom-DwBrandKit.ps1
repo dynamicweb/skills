@@ -2,7 +2,7 @@
 .SYNOPSIS
 WRITES: one local input file (the brand section of a recipe input). Converts a brand kit's swift2 folder into the input of the content.design-styles recipe.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. Reads the swift2 folder a brand kit extractor writes (ColorSchemes/<slug>.json, Typography/<slug>.json, Buttons/<slug>.json, Fonts/*.json with their files, branding/ files, logo-fields.json, area.json) and writes the recipe input's brand section: the MCP style tools' camelCase members, enums by name (font weight 100-900 to Thin-Black, text transform 0-3 to None-Capitalize, button shape 0-2 to Squared-Rounded-Pill), and every file uploaded to /Files/Images/<AssetFolder>, the one archive folder the MCP upload writes, with the fonts' and logos' paths pointed there. File paths in the output are relative to the output file. With an existing -OutPath the other sections are kept and brand is replaced. No target, no network.
+PowerShell 7. Owning reference: ../references/recipes.md. Reads the swift2 folder a brand kit extractor writes (ColorSchemes/<slug>.json, Typography/<slug>.json, Buttons/<slug>.json, Fonts/*.json with their files, branding/ files, logo-fields.json, area.json) and writes the recipe input's brand section: the MCP style tools' camelCase members, enums by name (font weight 100-900 to Thin-Black, text transform 0-3 to None-Capitalize, button shape 0-2 to Squared-Rounded-Pill), and every file uploaded to /Files/Images/<AssetFolder>, the one archive folder the MCP upload writes, with the fonts' and logos' paths pointed there. Letter spacing is em, as Swift reads it: the kit measures it in px at the role's own font size (brand.tokens.json beside the swift2 folder: letterSpacing.heading at size.h1, body and button at size.base), so the em is that px over that size; without the tokens the swift2 value is kept. An em outside -0.06 to 0.3 crushes or scatters the text: it is clamped, with a warning line. File paths in the output are relative to the output file. With an existing -OutPath the other sections are kept and brand is replaced. No target, no network.
 .PARAMETER KitPath
 The kit's swift2 folder.
 .PARAMETER OutPath
@@ -48,6 +48,40 @@ function ConvertTo-KitEnum($Value, $Names, [string]$What) {
     $name = if ($Names -is [hashtable]) { $Names[$n] } elseif ($n -ge 0 -and $n -lt $Names.Count) { $Names[$n] }
     if (-not $name) { throw "The kit's $What value $n has no name." }
     return $name
+}
+function Get-KitTokenPx($Tokens, [string]$Path, [double]$Base) {
+    # A DTCG dimension in px ({value, unit}, "12px", "0.5rem" or a bare number), following one {reference}; else $null.
+    $node = $Tokens
+    foreach ($part in $Path.Split('.')) { if ($node -isnot [Collections.IDictionary] -or -not $node.Contains($part)) { return $null }; $node = $node[$part] }
+    $v = if ($node -is [Collections.IDictionary] -and $node.Contains('$value')) { $node['$value'] } else { $node }
+    if ($v -is [string] -and $v -match '^\{(.+)\}$') { return Get-KitTokenPx $Tokens $Matches[1] $Base }
+    $number = $null; $unit = 'px'
+    if ($v -is [Collections.IDictionary]) { $number = $v.value; if ($v.unit) { $unit = [string]$v.unit } }
+    elseif ($v -is [string] -and $v -match '^\s*(-?[\d.]+)\s*(px|rem|em)?\s*$') { $number = $Matches[1]; if ($Matches[2]) { $unit = $Matches[2] } }
+    elseif ($v -is [ValueType]) { $number = $v }
+    if ($null -eq $number) { return $null }
+    $n = [double]::Parse([string]$number, [Globalization.CultureInfo]::InvariantCulture)
+    if ($unit -in @('rem', 'em')) { return $n * $Base }
+    return $n
+}
+function ConvertTo-KitLetterSpacing([string]$Role, $Value, $Tokens, [double]$Base) {
+    # Swift reads letter spacing as em. The kit measured it in px at the role's own size; the swift2 file divides by
+    # the base size, which for a 45 px heading turns -2.25 px into -0.141 em and crushes it.
+    $sizes = @{Heading = 'typography.size.h1'; Paragraph = 'typography.size.base'; Button = 'typography.size.base'}
+    $tokenRole = @{Heading = 'heading'; Paragraph = 'body'; Button = 'button'}[$Role]
+    $em = [double]$Value
+    if ($Tokens) {
+        $px = Get-KitTokenPx $Tokens "typography.letterSpacing.$tokenRole" $Base
+        $size = Get-KitTokenPx $Tokens $sizes[$Role] $Base
+        if ($null -ne $px -and $size -gt 0) { $em = $px / $size }
+    }
+    $em = [Math]::Round($em, 4)
+    if ($em -lt -0.06 -or $em -gt 0.3) {
+        $clamped = [Math]::Min(0.3, [Math]::Max(-0.06, $em))
+        Write-Warning "typography ${Role}LetterSpacing: $em em is outside -0.06 to 0.3 and would crush or scatter the text; written as $clamped em. Check the kit's letter spacing and the role's font size."
+        $em = $clamped
+    }
+    return $em
 }
 function Get-RelativePath([string]$Full) { [IO.Path]::GetRelativePath($outDir, $Full).Replace('\', '/') }
 function Get-KitImageSize([string]$Path) {
@@ -113,6 +147,9 @@ foreach ($b in @(Get-ChildItem -LiteralPath (Join-Path $kit 'branding') -File -E
 }
 if ($files.Count) { $brand.assetFolder = $AssetFolder; $brand.files = $files.ToArray() }
 if ($fonts.Count) { $brand.fonts = $fonts.ToArray() }
+$tokensPath = Join-Path (Split-Path -Parent $kit) 'brand.tokens.json'
+$tokens = if (Test-Path -LiteralPath $tokensPath) { Read-KitJson $tokensPath }
+$basePx = if ($typography.BaseFontSize) { [double]$typography.BaseFontSize } else { 16.0 }
 $t = [ordered]@{}
 foreach ($k in @($typography.Keys)) {
     if ($k -in @('Id', 'Name') -or $null -eq $typography[$k]) { continue }
@@ -120,6 +157,7 @@ foreach ($k in @($typography.Keys)) {
     $value = switch -Wildcard ($k) {
         '*FontWeight' { ConvertTo-KitEnum $typography[$k] $weights $k }
         '*TextTransformation' { ConvertTo-KitEnum $typography[$k] $transforms $k }
+        '*LetterSpacing' { ConvertTo-KitLetterSpacing ($k -replace 'LetterSpacing$', '') $typography[$k] $tokens $basePx }
         default { $typography[$k] }
     }
     # A custom font id wins over the family name, as the generated sheet does: the role names one or the other.

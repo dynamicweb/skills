@@ -1089,6 +1089,30 @@ Describe 'ConvertFrom-DwBrandKit' {
         $b.layout[0].logo.Image | Should -Be '/Files/Images/fabrikam/fabrikam-logo.svg'
         $b.layout[0].logo.LogoWidth | Should -Be '210'
     }
+    It 'writes letter spacing in em at each role''s own size, and clamps an implausible em with a warning' {
+        $root = Join-Path $TestDrive 'kit3'; $kit = Join-Path $root 'swift2'
+        foreach ($d in 'ColorSchemes', 'Typography', 'Buttons') { $null = New-Item -ItemType Directory -Force (Join-Path $kit $d) }
+        @{Id = 'contoso'; Name = 'Contoso'; Schemes = @(@{Id = 'light'; Name = 'Light'; BackgroundColor = '#ffffff'; ForegroundColor = '#111111'; PrimaryButtonColor = '#0b5d4b'; SecondaryButtonColor = '#000000'})} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $kit 'ColorSchemes/contoso.json')
+        # As the extractor writes it: the px it measured over the base size, so a 45 px heading at -2.25 px reads -0.141.
+        @{Id = 'contoso'; Name = 'Contoso'; BaseFontSize = 16; BaseFontScale = 1.2; ParagraphFontWeight = 400; ParagraphLineHeight = 1.5; ParagraphLetterSpacing = 0.0125
+            HeadingFontWeight = 700; HeadingLineHeight = 1.2; HeadingLetterSpacing = -0.141; ButtonFontWeight = 600; ButtonLineHeight = 1.4; ButtonLetterSpacing = 0.05} | ConvertTo-Json | Set-Content (Join-Path $kit 'Typography/contoso.json')
+        @{Id = 'contoso'; Name = 'Contoso'; Shape = 1; PaddingX = 1; PaddingY = 0.5; BorderSize = 1} | ConvertTo-Json | Set-Content (Join-Path $kit 'Buttons/contoso.json')
+        $dim = { param($v, $u = 'px') @{'$type' = 'dimension'; '$value' = @{value = $v; unit = $u}} }
+        @{typography = @{size = @{base = (& $dim 16); h1 = (& $dim 45)}; letterSpacing = @{body = (& $dim 0.2); heading = (& $dim -2.25); button = '{typography.letterSpacing.spaced}'; spaced = (& $dim 0.05 'rem')}}} | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $root 'brand.tokens.json')
+        $out = Join-Path $TestDrive 'input3/recipe-input.json'
+        $null = New-Item -ItemType Directory -Force (Split-Path $out)
+        $lines = & (Join-Path $script:Source 'scripts/ConvertFrom-DwBrandKit.ps1') -KitPath $kit -OutPath $out 3>&1 | ForEach-Object { "$_" }
+        $t = (Read-LedgerJson $out (Join-Path $script:Source 'assets/recipe-input.schema.json')).brand.typography
+        $t.headingLetterSpacing | Should -Be -0.05
+        $t.paragraphLetterSpacing | Should -Be 0.0125
+        $t.buttonLetterSpacing | Should -Be 0.05
+        @(@($lines) -match 'LetterSpacing').Count | Should -Be 0
+        # Without the tokens the swift2 value is all there is: -0.141 em is clamped and said.
+        Remove-Item (Join-Path $root 'brand.tokens.json')
+        $lines = & (Join-Path $script:Source 'scripts/ConvertFrom-DwBrandKit.ps1') -KitPath $kit -OutPath $out 3>&1 | ForEach-Object { "$_" }
+        (Read-LedgerJson $out (Join-Path $script:Source 'assets/recipe-input.schema.json')).brand.typography.headingLetterSpacing | Should -Be -0.06
+        @(@($lines) -match 'typography HeadingLetterSpacing: -0\.141 em is outside -0\.06 to 0\.3.*written as -0\.06 em').Count | Should -Be 1
+    }
 }
 
 Describe 'Find-DwRecipe' {
