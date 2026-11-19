@@ -137,6 +137,13 @@ can drop a field, so the response is never the evidence and the id comes from th
 with no eligible binding is BLOCKED with the reasons, and the run exits 1.
 
 A step without a find (a url name pin) runs only behind `after`, for the items an earlier step created or updated.
+A step with a `scan` instead of a find finds places, not objects: every row its `binding` reads (all
+pages of the response with `page`) whose `field` holds the `text`, ignoring case, is one place named by
+its `identify` members (`STEP page-texts WOULD-UPDATE Fabrikam@122/PageField/0/MetaTitle`). Apply
+writes each place through the first update binding, whose arguments read the row as `{row.<member>}`
+and the text with every occurrence replaced as `{replaced:row.<member>}`; with `batch` one call
+carries every place, joined on that list member. Each place is read back and must no longer hold the
+text. A scan without write bindings reports each place OPEN with its `unwritable` reason.
 A step with an empty `bindings` list is a lookup: it finds an object another function owns (the
 header page a website selects) and produces values for later steps, and never writes. An absent
 object is WOULD-CREATE in a verify run and BLOCKED with apply, so its dependants stop too.
@@ -159,7 +166,8 @@ recipe again without `-Apply`: the steps report UNCHANGED and the probes decide.
 ## Verify: probes and ledger checks
 
 A probe reads through its first eligible binding and asserts `count` (with `op` eq, ge or le),
-`equals` or `contains` on the matching rows. Fewer observed subjects than `minimumSubjects` is FAIL,
+`equals`, `contains` or `excludes` (no text of the value, or of a list of texts or `{text}` objects,
+ignoring case) on the matching rows. Fewer observed subjects than `minimumSubjects` is FAIL,
 as in the ledger; a probe whose `forEach` finds no input item to verify is a NOTE. `pollSeconds`
 reads a failing subject again until it passes or the time is up, for a state the platform publishes
 late or drops for a moment (a new URL answers 404 for seconds). A probe whose

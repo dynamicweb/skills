@@ -168,6 +168,9 @@ def step_usable(step, surfaces, write_surfaces):
     """True when the step has an implemented find (if it finds) and an implemented write binding
     whose write and read-back stay on the given surfaces."""
     find = step.get("find")
+    if step.get("scan"):
+        # A scan reads through its own binding; a scan without write bindings reports and never writes.
+        find = {"bindings": [step["scan"].get("binding") or {}]}
     if find and not any(readable(b, surfaces) for b in find.get("bindings", [])):
         return False
     if not step.get("bindings"):
@@ -267,7 +270,7 @@ def validate_recipes(repo: Path) -> list[str]:
             item, parent = scopes(section, step.get("forEach"))
             if step.get("forEach") and item is None:
                 error(file, f"step {sid}: forEach {step.get('forEach')} is not in section {section_name}")
-            if not step.get("bindings") and not step.get("find"):
+            if not step.get("bindings") and not step.get("find") and not step.get("scan"):
                 error(file, f"step {sid}: a step without write bindings is a lookup and needs a find")
             after = (step.get("after") or {}).get("step")
             if after and after not in earlier:
@@ -281,7 +284,7 @@ def validate_recipes(repo: Path) -> list[str]:
                             error(file, f"step {sid} {path}: token {{{body}}} {fault}")
 
             def token_fault(body, allow_secret, allow_found):
-                for prefix in ("text:", "base64:", "bytes:"):
+                for prefix in ("text:", "base64:", "bytes:", "replaced:"):
                     if body.startswith(prefix):
                         body = body[len(prefix):]
                         break
@@ -313,6 +316,8 @@ def validate_recipes(repo: Path) -> list[str]:
                 head, _, rest = path.partition(".")
                 if head == "found":
                     return None if allow_found else "reads found outside an update"
+                if head == "row":
+                    return None if step.get("scan") else "reads row outside a scan step"
                 if head == "build":
                     return None if rest in BUILD_KEYS and rest in (build_schema.get("properties") or {}) else f"names an unknown build value {rest}"
                 base = {"input": section, "item": item, "parent": parent}.get(head)
@@ -328,6 +333,12 @@ def validate_recipes(repo: Path) -> list[str]:
                     error(file, f"step {sid} skipWhen: {root_fault(cond.get('path', ''))}")
                 for value in (cond.get(k) for k in ("equals", "notEquals", "contains") if k in cond):
                     check_tokens(value, "skipWhen")
+            scan = step.get("scan")
+            if isinstance(scan, dict):
+                check_binding(scan.get("binding") or {}, "read", f"step {sid} scan", file, error, registry, tools, sql_jobs)
+                check_tokens({"arguments": (scan.get("binding") or {}).get("arguments"), "text": scan.get("text"), "replacement": scan.get("replacement")}, "scan")
+                if not step.get("bindings") and not scan.get("unwritable"):
+                    error(file, f"step {sid}: a scan without write bindings states why in scan.unwritable")
             for b in (step.get("find") or {}).get("bindings", []):
                 check_binding(b, "read", f"step {sid} find", file, error, registry, tools, sql_jobs)
                 check_tokens({k: b.get(k) for k in ("arguments", "match", "compare", "compareMap", "parameters")}, "find")

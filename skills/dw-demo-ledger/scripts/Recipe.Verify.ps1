@@ -2,7 +2,7 @@
 .SYNOPSIS
 READ-ONLY. Recipe probes and the bridge to the ledger checks a recipe names.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. A probe reads through the first eligible binding and asserts count, equals or contains on the rows; fewer observed subjects than minimumSubjects is FAIL, mirroring the ledger rule; a probe whose forEach finds no input item to verify is a NOTE. A probe whose bindings are all planned cannot execute and is listed as a NOTE, never as a pass. The persona sign-in probe is the ledger's own handler (Ledger.Transport.ps1), with credentials only from DW_PERSONA_CREDENTIALS. The ledger check ids run through Invoke-DwLedgerChecks.ps1 only when a build file and manifest are supplied; otherwise they are listed for a ledger run.
+PowerShell 7. Owning reference: ../references/recipes.md. A probe reads through the first eligible binding and asserts count, equals, contains or excludes on the rows; fewer observed subjects than minimumSubjects is FAIL, mirroring the ledger rule; a probe whose forEach finds no input item to verify is a NOTE. A probe whose bindings are all planned cannot execute and is listed as a NOTE, never as a pass. The persona sign-in probe is the ledger's own handler (Ledger.Transport.ps1), with credentials only from DW_PERSONA_CREDENTIALS. The ledger check ids run through Invoke-DwLedgerChecks.ps1 only when a build file and manifest are supplied; otherwise they are listed for a ledger run.
 .EXAMPLE
 . ./Recipe.Verify.ps1
 #>
@@ -25,7 +25,13 @@ function Test-RecipeAssert {
     }
     foreach ($row in $hits) {
         $value = Get-RecipeRowField $row $assert.path $Binding.operation
-        $ok = if ($assert.kind -eq 'equals') { Test-RecipeEqual $value $expected } else { $null -ne $value -and ([string]$value).Contains([string]$expected, [StringComparison]::Ordinal) }
+        if ($assert.kind -eq 'excludes') {
+            # No text of the expected value (a text, or a list of texts or of {text} objects) in the value or any element of it, ignoring case.
+            $texts = @(foreach ($e in @($expected)) { if ($e -is [Collections.IDictionary]) { $e.text } else { $e } }) | Where-Object { $_ }
+            $held = @(foreach ($v in @($value)) { foreach ($t in $texts) { if (([string]$v).Contains([string]$t, [StringComparison]::OrdinalIgnoreCase)) { $t } } })
+            if ($held.Count) { return "$($assert.path) holds $($held.Count) excluded text(s)" }
+            continue
+        }        $ok = if ($assert.kind -eq 'equals') { Test-RecipeEqual $value $expected } else { $null -ne $value -and ([string]$value).Contains([string]$expected, [StringComparison]::Ordinal) }
         if (-not $ok) { return "$($assert.path) does not $($assert.kind -replace 'equals','equal') the expected value" }
     }
     return $null

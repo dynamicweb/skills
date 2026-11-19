@@ -96,6 +96,7 @@
     "get_stock_location_categories",
     "get_stock_locations",
     "get_track_and_traces",
+    "get_translatable_content",
     "get_typographies",
     "get_unique_audit_types",
     "get_units",
@@ -132,6 +133,7 @@
   "recipeWriteTools": [
     "add_impersonatable_users",
     "add_products_by_sku",
+    "apply_translation",
     "assign_completion_rules_to_groups",
     "assign_users_to_group",
     "build_product_index",

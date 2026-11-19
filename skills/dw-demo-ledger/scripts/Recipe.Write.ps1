@@ -8,11 +8,12 @@ PowerShell 7. Owning reference: ../references/recipes.md. Called only by the ste
 #>
 #Requires -Version 7.0
 function Invoke-RecipeWrite {
-    param($Binding, [string]$Action, $Context, $Run)
+    # -Arguments: arguments a scan step already expanded and batched; otherwise the binding's own, expanded here.
+    param($Binding, [string]$Action, $Context, $Run, $Arguments)
     $operation = [string]$Binding[$Action].operation
     $fault = Get-RecipeSurfaceFault $Binding $operation 'write' $Run.cap $Run.registry
     if ($fault) { throw (New-RecipeFault "Write refused before the call: $fault.") }
-    $arguments = Expand-RecipeValue $Binding[$Action].arguments $Context
+    $arguments = if ($null -ne $Arguments) { $Arguments } else { Expand-RecipeValue $Binding[$Action].arguments $Context }
     if ($Binding.surface -eq 'mcp') {
         $result = Invoke-RecipeMcpCall $operation $arguments $Run.cap 120
         # A batch save answers per-item counts; a failed item is a failed write whatever the call status says.

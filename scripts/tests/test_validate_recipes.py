@@ -146,6 +146,18 @@ class RecipeValidationTests(unittest.TestCase):
         del self.recipe["steps"][0]["find"]
         self.assertIn("is a lookup and needs a find", self.errors())
 
+    def test_scan_step_reads_row_and_states_why_it_cannot_write(self):
+        scan = {"id": "names", "title": "Names", "forEach": "pages[*]", "key": "{item.menuText}", "source": "skills/x.md",
+                "scan": {"binding": dict(PAGES_FIND, arguments={"parentId": 0}), "text": "{item.menuText}", "replacement": "{item.urlName}",
+                         "field": "menuText", "identify": ["id"]},
+                "bindings": []}
+        self.recipe["steps"].insert(0, scan)
+        self.assertIn("states why in scan.unwritable", self.errors())
+        scan["scan"]["unwritable"] = "Not measured."
+        self.assertEqual("", self.errors())
+        self.recipe["steps"][1]["bindings"][0]["create"]["arguments"]["pages"][0]["menuText"] = "{replaced:row.menuText}"
+        self.assertIn("reads row outside a scan step", self.errors())
+
     def test_file_tokens_resolve_against_the_input_schema(self):
         create = self.recipe["steps"][0]["bindings"][0]["create"]["arguments"]
         create["content"] = "{base64:item.urlName}"

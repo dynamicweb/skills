@@ -1064,8 +1064,38 @@
         }
       }
     },
-    "brandCopy": {
+    "debrand": {
       "type": "object",
+      "additionalProperties": false,
+      "required": ["forbidden"],
+      "description": "The names a website must no longer show and what replaces each; the content.page-seo recipe finds every place and replaces it where a write exists.",
+      "properties": {
+        "forbidden": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["text", "replacement"],
+            "properties": {
+              "text": {"type": "string", "minLength": 2, "description": "Matched ignoring case, as stored (an ampersand in rich text is &amp;)."},
+              "replacement": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "renderCheck": {
+          "type": "array",
+          "description": "Storefront paths whose rendered title and h1 headings must not show a forbidden text.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path"],
+            "properties": {"path": {"type": "string", "pattern": "^/[A-Za-z0-9/_-]*$"}}
+          }
+        }
+      }
+    },
+    "brandCopy": {      "type": "object",
       "additionalProperties": false,
       "required": [
         "companyName",

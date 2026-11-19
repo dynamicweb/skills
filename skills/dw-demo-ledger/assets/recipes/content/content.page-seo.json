@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "id": "content.page-seo",
+  "name": "Debrand: find every place a forbidden name shows, replace it where a write exists and report the rest",
+  "functions": ["content.page-seo", "swift.header-footer", "swift.website-settings"],
+  "skill": "dw-content-modelling",
+  "inputs": {"section": "debrand", "required": ["forbidden"]},
+  "modes": {
+    "mcpOnly": {"usable": true, "reason": "The scans read and the replacements write with MCP tools; the places no tool may write are reported, not skipped."},
+    "hosted": {"usable": true, "reason": "Nothing here needs SQL or a recycle."},
+    "local": {"usable": true},
+    "layerDelivered": "verify"
+  },
+  "steps": [
+    {
+      "id": "area",
+      "title": "Look up the website and its settings item",
+      "key": "{build.areaId}",
+      "find": {"bindings": [
+        {"id": "mcp-area", "surface": "mcp", "status": "implemented", "operation": "get_area_by_id", "arguments": {"areaId": "{build.areaId}"}, "rows": "$", "match": {"id": "{build.areaId}"}, "produces": {"itemType": "itemType", "itemId": "itemId"}, "source": "skills/dw-content-modelling/references/debrand-scan.md"}
+      ]},
+      "bindings": [],
+      "trap": "A lookup: the website must exist.",
+      "source": "skills/dw-content-modelling/references/debrand-scan.md"
+    },
+    {
+      "id": "page-texts",
+      "title": "Every page and paragraph text of the website: page titles, meta titles, headers and footers, item and nested item fields",
+      "forEach": "forbidden[*]",
+      "key": "{item.text}",
+      "scan": {
+        "binding": {"id": "mcp-texts", "surface": "mcp", "status": "implemented", "operation": "get_translatable_content", "arguments": {"areaId": "{build.areaId}", "take": 100}, "rows": "units", "source": "skills/dw-content-modelling/references/debrand-scan.md"},
+        "page": {"argument": "skip", "more": "hasMore", "next": "nextSkip", "max": 200},
+        "text": "{item.text}",
+        "replacement": "{item.replacement}",
+        "field": "sourceText",
+        "identify": ["pageId", "kind", "paragraphId", "fieldSystemName"],
+        "batch": "translations"
+      },
+      "bindings": [
+        {"id": "mcp-apply-text", "surface": "mcp", "status": "implemented", "source": "skills/dw-content-modelling/references/debrand-scan.md",
+          "update": {"operation": "apply_translation", "arguments": {"translations": [{"pageId": "{row.pageId}", "kind": "{row.kind}", "paragraphId": "{row.paragraphId}", "fieldSystemName": "{row.fieldSystemName}", "itemType": "{row.itemType|null}", "itemId": "{row.itemId|null}", "translatedText": "{replaced:row.sourceText}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_translatable_content", "arguments": {"pageId": "{row.pageId}", "take": 500}, "rows": "units", "source": "skills/dw-content-modelling/references/debrand-scan.md"}}
+      ],
+      "trap": "apply_translation writes the unit onto the page it names, so on the master language it is an in-place text write. Every place goes in one call (batch): written one call per unit, a paragraph Header write after a separate write of the page title answered success and read back unchanged. A page Title rewrites the menu text and, with no pinned url name, the page's address.",
+      "source": "skills/dw-content-modelling/references/debrand-scan.md"
+    },
+    {
+      "id": "website-texts",
+      "title": "The website settings texts: site name, social and meta fields of the Swift-v2_Master item",
+      "forEach": "forbidden[*]",
+      "key": "{item.text}",
+      "scan": {
+        "binding": {"id": "mcp-master", "surface": "mcp", "status": "implemented", "operation": "get_item_field_values", "arguments": {"itemType": "{step.area[build.areaId].itemType}", "itemId": "{step.area[build.areaId].itemId}"}, "rows": "data", "source": "skills/dw-content-modelling/references/debrand-scan.md"},
+        "text": "{item.text}",
+        "replacement": "{item.replacement}",
+        "field": "value",
+        "identify": ["fieldSystemName"]
+      },
+      "bindings": [
+        {"id": "mcp-set-master", "surface": "mcp", "status": "implemented", "source": "skills/dw-content-modelling/references/debrand-scan.md",
+          "update": {"operation": "set_item_field_values", "arguments": {"values": [{"itemType": "{step.area[build.areaId].itemType}", "itemId": "{step.area[build.areaId].itemId}", "fieldSystemName": "{row.fieldSystemName}", "value": "{replaced:row.value}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_item_field_values", "arguments": {"itemType": "{step.area[build.areaId].itemType}", "itemId": "{step.area[build.areaId].itemId}"}, "rows": "data", "source": "skills/dw-content-modelling/references/debrand-scan.md"}}
+      ],
+      "trap": "The storefront serves the website settings from its cache until the host recycles.",
+      "source": "skills/dw-content-modelling/references/debrand-scan.md"
+    },
+    {
+      "id": "website-name",
+      "title": "The website's own name",
+      "forEach": "forbidden[*]",
+      "key": "{item.text}",
+      "scan": {
+        "binding": {"id": "mcp-area-name", "surface": "mcp", "status": "implemented", "operation": "get_area_by_id", "arguments": {"areaId": "{build.areaId}"}, "rows": "$", "source": "skills/dw-content-modelling/references/debrand-scan.md"},
+        "text": "{item.text}",
+        "replacement": "{item.replacement}",
+        "field": "name",
+        "identify": ["id"],
+        "unwritable": "renaming a website breaks the serializer manifests whose file paths key off its name; the website settings' MetaSiteName carries the brand instead"
+      },
+      "bindings": [],
+      "source": "skills/dw-content-modelling/references/debrand-scan.md"
+    },
+    {
+      "id": "shop-names",
+      "title": "The names of the shops and channels",
+      "forEach": "forbidden[*]",
+      "key": "{item.text}",
+      "scan": {
+        "binding": {"id": "mcp-shops", "surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {}, "rows": "data", "source": "skills/dw-content-modelling/references/debrand-scan.md"},
+        "text": "{item.text}",
+        "replacement": "{item.replacement}",
+        "field": "name",
+        "identify": ["id"],
+        "unwritable": "a shop rename is reported for a person to make in the shop settings; no shop write is measured for this recipe"
+      },
+      "bindings": [],
+      "source": "skills/dw-content-modelling/references/debrand-scan.md"
+    }
+  ],
+  "debts": [],
+  "verify": {
+    "checkIds": ["content.page-seo.url-names-legal", "swift.header-footer.header-page", "swift.header-footer.footer-page"],
+    "probes": [
+      {
+        "id": "rendered-title",
+        "title": "No forbidden name in a rendered page's title",
+        "forEach": "renderCheck[*]",
+        "minimumSubjects": 1,
+        "pollSeconds": 20,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{item.path}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "excludes", "path": "title", "value": "{input.forbidden}"}, "source": "skills/dw-content-modelling/references/debrand-scan.md"}
+        ]
+      },
+      {
+        "id": "rendered-headings",
+        "title": "No forbidden name in a rendered page's h1 headings",
+        "forEach": "renderCheck[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{item.path}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "excludes", "path": "h1Tags", "value": "{input.forbidden}"}, "source": "skills/dw-content-modelling/references/debrand-scan.md"}
+        ]
+      },
+      {
+        "id": "mail-templates",
+        "title": "No forbidden name in the mail templates",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "planned", "operation": "read_file", "reason": "read_file reads one template at a time and is not a list or get tool on the read allowlist; the order and notification mail templates under /Files/Templates are checked by hand until a scan over a template folder is allowlisted", "source": "skills/dw-content-modelling/references/debrand-scan.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "a fictional forbidden name planted in a page's meta title, title, a paragraph header and title, a body text, a footer-like copyright paragraph and the website's MetaSiteName; content.page-seo.1-verify.json listed all seven places (4 of 12), content.page-seo.2-apply.json replaced them in one batched call and read each back (12 of 12), content.page-seo.3-verify.json, content.page-seo.4-apply-again.json and content.page-seo.5-mcponly-apply.json (7 of 7, nothing written); the rendered page and the home page then carried the name zero times"}
+  ],
+  "traps": [
+    "The forbidden names come from the input only; a recipe or test never carries a real name.",
+    "The scan matches ignoring case and replaces every occurrence in the field with the replacement as written, so a forbidden 'Fabrikam' also rewrites 'FABRIKAM'.",
+    "The scans read stored text: HTML entities stay encoded, so a forbidden name with '&' is written as '&amp;' to match a rich-text field.",
+    "A rendered page carries text no scan reads (a product name, a template literal, a translation key): the rendered probes cover the page title and h1 only, and a browser check of the whole page remains."
+  ]
+}

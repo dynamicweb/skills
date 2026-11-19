@@ -6,7 +6,8 @@ input, and the labels and slugs a save silently re-derives. A correct write the 
 not show (the caches a write does not cross, a paragraph that renders nothing, the per-listing query
 lever) is [`render-after-write.md`](render-after-write.md). Schema design is
 [`modelling-discipline.md`](modelling-discipline.md); the language-mirror half of every write is
-[`language-layers.md`](language-layers.md).
+[`language-layers.md`](language-layers.md). Finding and replacing a name across every page text of a website is
+[`debrand-scan.md`](debrand-scan.md).
 
 ## Contents
 

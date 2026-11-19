@@ -590,6 +590,79 @@ Describe 'Invoke-DwRecipe on a lookup step' {
     }
 }
 
+Describe 'Invoke-DwRecipe on scan steps' {
+    BeforeEach {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
+        Remove-Item Env:DW_API_TOKEN -ErrorAction SilentlyContinue
+        $script:Root = New-RecipeSandbox
+        $script:InputFile = Write-Input @{forbidden = @(@{text = 'Fabrikam'; replacement = 'Contoso'}); renderCheck = @(@{path = '/en-us/story'})} 'debrand'
+    }
+    It 'lists every place in verify, replaces them in one batched call, reads each back, reports an unwritable place OPEN, then finds nothing' {
+        New-Stub
+        $s = $global:RecipeStub
+        $s.tools.get_translatable_content = Get-Schema @('areaId', 'pageId', 'take', 'skip')
+        $s.tools.apply_translation = Get-Schema @('translations') @('translations')
+        $s.tools.get_shops = Get-Schema @()
+        $s.tools.get_area_by_id = Get-Schema @('areaId') @('areaId')
+        $s.tools.get_item_field_values = Get-Schema @('itemType', 'itemId') @('itemType', 'itemId')
+        $s.tools.set_item_field_values = Get-Schema @('values') @('values')
+        $s.units = [Collections.Generic.List[object]]::new()
+        foreach ($u in @(@{pageId = 7; kind = 'PageField'; paragraphId = 0; fieldSystemName = 'MetaTitle'; sourceText = 'FABRIKAM | Story'},
+                @{pageId = 7; kind = 'ParagraphItemField'; paragraphId = 3; fieldSystemName = 'Text'; sourceText = '<p>&copy; Fabrikam Ltd.</p>'},
+                @{pageId = 8; kind = 'ParagraphField'; paragraphId = 4; fieldSystemName = 'Header'; sourceText = 'Unrelated'})) { $s.units.Add($u) }
+        $s.master = @(@{fieldSystemName = 'MetaSiteName'; value = 'Shop'}, @{fieldSystemName = 'Favicon'})
+        $inner = $s.mcp
+        $s.mcp = {
+            param($Tool, $Arguments)
+            $s = $global:RecipeStub
+            switch ($Tool) {
+                # Two units per page of the read, so the scan has to follow hasMore.
+                'get_translatable_content' {
+                    $all = @($s.units | Where-Object { -not $Arguments.pageId -or $_.pageId -eq [int]$Arguments.pageId })
+                    $skip = [int]$Arguments.skip; $page = @($all | Select-Object -Skip $skip -First 2)
+                    return @{structuredContent = @{units = $page; hasMore = ($skip + 2 -lt $all.Count); nextSkip = $skip + 2}}
+                }
+                'apply_translation' {
+                    foreach ($t in $Arguments.translations) { foreach ($u in $s.units) { if ($u.pageId -eq [int]$t.pageId -and $u.kind -eq $t.kind -and $u.paragraphId -eq [int]$t.paragraphId -and $u.fieldSystemName -eq $t.fieldSystemName) { $u.sourceText = $t.translatedText } } }
+                    return @{structuredContent = @{succeeded = @($Arguments.translations).Count; failed = 0}}
+                }
+                'get_area_by_id' { return @{structuredContent = @{id = 1; name = 'Fabrikam web'; itemType = 'Swift-v2_Master'; itemId = '1'}} }
+                'get_item_field_values' { return @{structuredContent = @{data = $s.master}} }
+                'get_shops' { return @{structuredContent = @{count = 1; data = @(@{id = 'SHOP1'; name = 'Main'})}} }
+                'fetch_frontend_page_html' {
+                    $t = @($s.units | Where-Object { $_.fieldSystemName -eq 'MetaTitle' })[0].sourceText
+                    return @{structuredContent = @{statusCode = 200; title = $t; h1Tags = @('Story'); path = $Arguments.path}}
+                }
+                default { return (& $inner $Tool $Arguments) }
+            }
+        }.GetNewClosure()
+        $v = Invoke-Runner $script:Root @{Recipe = 'content.page-seo'; InputPath = $script:InputFile}
+        $v.lines | Should -Contain 'STEP page-texts WOULD-UPDATE Fabrikam@7/PageField/0/MetaTitle'
+        $v.lines | Should -Contain 'STEP page-texts WOULD-UPDATE Fabrikam@7/ParagraphItemField/3/Text'
+        $v.lines | Should -Contain 'STEP website-name WOULD-UPDATE Fabrikam@1'
+        ($v.lines -match '^FAIL website-name/Fabrikam@1: .*apply cannot: no write binding: renaming a website').Count | Should -Be 1
+        ($v.lines -match '^FAIL probe/rendered-title: .*excluded').Count | Should -Be 1
+        Get-Writes | Should -BeNullOrEmpty
+        $a = Invoke-Runner $script:Root @{Recipe = 'content.page-seo'; InputPath = $script:InputFile; Apply = $true}
+        @($s.log | Where-Object { $_ -like 'mcp apply_translation *' }).Count | Should -Be 1
+        $a.lines | Should -Contain 'PASS page-texts/Fabrikam@7/ParagraphItemField/3/Text'
+        $a.lines | Should -Contain 'STEP website-name BLOCKED Fabrikam@1'
+        ($a.lines -match '^OPEN website-name/Fabrikam@1: name at 1 holds the text').Count | Should -Be 1
+        $a.lines | Should -Contain 'PASS probe/rendered-title'
+        @($s.units.sourceText) | Should -Contain 'Contoso | Story'
+        @($s.units.sourceText) | Should -Contain '<p>&copy; Contoso Ltd.</p>'
+        $a.exit | Should -Be 1
+        $again = Invoke-Runner $script:Root @{Recipe = 'content.page-seo'; InputPath = $script:InputFile; Apply = $true}
+        $again.lines | Should -Contain 'STEP page-texts UNCHANGED Fabrikam'
+        @($s.log | Where-Object { $_ -like 'mcp apply_translation *' }).Count | Should -Be 1
+    }
+    It 'replaces every occurrence ignoring case, and refuses the replaced token outside a scan' {
+        $ctx = @{row = @{text = 'Fabrikam and FABRIKAM'}; replace = @{text = 'fabrikam'; with = 'Contoso'}; results = @{}; secrets = @{}}
+        Resolve-RecipeToken 'replaced:row.text' $ctx | Should -Be 'Contoso and Contoso'
+        { Resolve-RecipeToken 'replaced:row.text' @{row = @{text = 'x'}; results = @{}; secrets = @{}} } | Should -Throw '*outside a scan step*'
+    }
+}
+
 Describe 'ConvertFrom-DwBrandKit' {
     It 'turns a kit''s swift2 folder into a brand section the input schema accepts, enums by name and files under /Files/Images' {
         $kit = Join-Path $TestDrive 'kit/swift2'

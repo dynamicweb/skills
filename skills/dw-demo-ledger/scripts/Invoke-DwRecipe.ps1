@@ -58,7 +58,7 @@ param(
     [switch]$AllowSelfSignedCertificate
 )
 $ErrorActionPreference = 'Stop'
-foreach ($file in @('Ledger.Core.ps1', 'Ledger.Sql.ps1', 'Ledger.Transport.ps1', 'Recipe.Core.ps1', 'Recipe.Transport.ps1', 'Recipe.Write.ps1', 'Recipe.Steps.ps1', 'Recipe.Verify.ps1', 'Recipe.Debts.ps1')) { . (Join-Path $PSScriptRoot $file) }
+foreach ($file in @('Ledger.Core.ps1', 'Ledger.Sql.ps1', 'Ledger.Transport.ps1', 'Recipe.Core.ps1', 'Recipe.Transport.ps1', 'Recipe.Write.ps1', 'Recipe.Steps.ps1', 'Recipe.Scan.ps1', 'Recipe.Verify.ps1', 'Recipe.Debts.ps1')) { . (Join-Path $PSScriptRoot $file) }
 $assets = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
 $recipeId = $Recipe
 $run = @{lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); steps = [Collections.Generic.List[object]]::new(); planned = [Collections.Generic.List[string]]::new(); blocked = 0; changed = $false; results = @{}}
@@ -96,7 +96,7 @@ try {
     $run += @{recipeId = $recipeId; section = $section; build = $build; secrets = $secrets; cap = $cap; registry = $registry; apply = $applied; inputDir = (Split-Path -Parent (Resolve-Path -LiteralPath $InputPath).Path)
         baseUrl = $state.BaseUrl; apiToken = $state.ApiToken; mcpToken = $state.McpToken; solutionPath = $SolutionPath; ledgerBuild = $LedgerBuildFile; manifest = $Manifest; pollIntervalMs = 1000}
 
-    foreach ($step in $doc.steps) { Invoke-RecipeStep $step $run }
+    foreach ($step in $doc.steps) { if ($step.scan) { Invoke-RecipeScanStep $step $run } else { Invoke-RecipeStep $step $run } }
     if (@($doc.debts).Count) {
         if ($applied -and $run.changed) { foreach ($debt in $doc.debts) { Invoke-RecipeDebt $debt $run } }
         else { $run.lines.Add("NOTE ${recipeId}: debts not run ($(if ($applied) { 'nothing changed' } else { 'verify-only' })): " + ($doc.debts -join ', ')) }

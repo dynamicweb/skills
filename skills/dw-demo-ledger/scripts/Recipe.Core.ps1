@@ -98,10 +98,10 @@ function Read-RecipeSecrets {
     return $parsed
 }
 function Resolve-RecipeRootPath {
-    # input.x, item.x, parent.x, found.x and build.x against the context; @{found; value}.
+    # input.x, item.x, parent.x, found.x, build.x and row.x (the row a scan step writes) against the context; @{found; value}.
     param([string]$Path, $Context)
-    if ($Path -notmatch '^(?<root>input|item|parent|found|build)(\.(?<rest>.+))?$') { throw (New-RecipeFault "Token path '$Path' has an unknown root.") }
-    $base = switch ($Matches['root']) { 'input' { $Context.input } 'item' { $Context.item } 'parent' { $Context.parent } 'found' { $Context.found } 'build' { $Context.build } }
+    if ($Path -notmatch '^(?<root>input|item|parent|found|build|row)(\.(?<rest>.+))?$') { throw (New-RecipeFault "Token path '$Path' has an unknown root.") }
+    $base = switch ($Matches['root']) { 'input' { $Context.input } 'item' { $Context.item } 'parent' { $Context.parent } 'found' { $Context.found } 'build' { $Context.build } 'row' { $Context.row } }
     if ($null -eq $base) { return @{found = $false; value = $null} }
     return Get-RecipeValue $base $Matches['rest']
 }
@@ -121,6 +121,12 @@ function Resolve-RecipeToken {
     param([string]$Body, $Context)
     # text: makes the value text, for the commands whose ids are strings (UsersAddToGroups Ids answers 500 on numbers).
     if ($Body.StartsWith('text:')) { $value = Resolve-RecipeToken $Body.Substring(5) $Context; return $(if ($null -eq $value) { $null } else { [string]$value }) }
+    # replaced: is the value with every occurrence of the scan's text (ignoring case) replaced, for a scan step's write.
+    if ($Body.StartsWith('replaced:')) {
+        if (-not $Context.replace) { throw (New-RecipeFault "Token {$Body} is used outside a scan step.") }
+        $value = [string](Resolve-RecipeToken $Body.Substring(9) $Context)
+        return $value.Replace([string]$Context.replace.text, [string]$Context.replace.with, [StringComparison]::OrdinalIgnoreCase)
+    }
     # base64: and bytes: read the file the value names, relative to the input file: its content for an upload, its size to compare.
     if ($Body -match '^(?<kind>base64|bytes):(?<rest>.+)$') {
         $kind = $Matches['kind']
