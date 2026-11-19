@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from validate_recipes import validate_recipes
+from validate_recipes import render_index, validate_recipes
 
 SOURCE = Path(__file__).resolve().parents[2]
 
@@ -199,6 +199,33 @@ class RecipeValidationTests(unittest.TestCase):
     def test_recipe_lives_at_its_id(self):
         self.recipe["id"] = "test.other"
         self.assertIn("must live at recipes/test/test.other.json", self.errors())
+
+
+    def test_depends_on_names_a_recipe_its_debts_and_no_cycle(self):
+        self.recipe["dependsOn"] = [{"recipe": "test.missing", "why": "Needs it."}]
+        self.assertIn("dependsOn names test.missing, which is not a recipe", self.errors())
+        self.recipe["dependsOn"] = [{"recipe": "test.function", "why": "Itself."}]
+        self.assertIn("dependsOn names the recipe itself", self.errors())
+        other = copy.deepcopy(RECIPE)
+        other["id"], other["dependsOn"] = "test.other", [{"recipe": "test.function", "why": "Needs pages.", "debtsPaid": ["recycle"]}]
+        other["functions"] = ["test.function", "test.other"]
+        (self.assets / "recipes/test/test.other.json").write_text(json.dumps(other), encoding="utf-8")
+        self.recipe.pop("dependsOn")
+        errors = self.errors()
+        self.assertIn("debtsPaid names recycle, which test.function does not owe", errors)
+        self.recipe["dependsOn"] = [{"recipe": "test.other", "why": "A loop."}]
+        self.assertIn("dependsOn forms a cycle", self.errors())
+
+    def test_recipe_index_is_generated_and_checked(self):
+        refs = self.repo / "skills/dw-demo-ledger/references"
+        refs.mkdir(parents=True)
+        (refs / "recipes.md").write_text("# Recipes\n", encoding="utf-8")
+        self.assertIn("recipe-index.md: missing", self.errors())
+        (refs / "recipe-index.md").write_text(render_index({"test.function": self.recipe}), encoding="utf-8", newline="\n")
+        self.assertEqual("", self.errors())
+        self.recipe["name"] = "Renamed"
+        self.recipe["provenOn"] = [{"dwVersion": "1.0.0", "mcpVersion": "0.6.0", "date": "2026-01-01", "evidence": "run"}]
+        self.assertIn("recipe-index.md: out of date", self.errors())
 
 
 if __name__ == "__main__":

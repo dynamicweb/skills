@@ -18,6 +18,7 @@ and follow it by calling the named tools with the stated arguments, and
 - [Modes](#modes)
 - [Following a recipe by hand](#following-a-recipe-by-hand)
 - [Running a recipe](#running-a-recipe)
+- [Running a whole build](#running-a-whole-build)
 - [Output contract](#output-contract)
 - [Adding or promoting a recipe](#adding-or-promoting-a-recipe)
 
@@ -30,6 +31,7 @@ and follow it by calling the named tools with the stated arguments, and
 | [assets/recipe-input.schema.json](../assets/recipe-input.schema.json) | The customer data file: one section per recipe input section |
 | [assets/recipe-input.example.json](../assets/recipe-input.example.json) | A generic example input for both example recipes |
 | [assets/handlers.json](../assets/handlers.json) | The allowlists: `recipeWriteTools`, `recipeDeleteTools`, `recipeAdminCommands`, and the read lists the ledger shares |
+| [recipe-index.md](recipe-index.md) | Every recipe with its functions, input section, modes, proof, run order and what stays planned; generated, so it cannot drift |
 
 Recipes stay **outside** `assets/releases/<version>/`. The snapshot digest covers every file in a
 release directory, so a recipe added there would change the digest and break every consumer's lock.
@@ -49,6 +51,8 @@ A recipe names the release it was measured on in `provenOn` instead.
 | `verify` | `checkIds`: ledger checks of its functions; `probes`: behavioural reads with an assertion |
 | `provenOn` | `{dwVersion, mcpVersion, date, evidence}` per measured run; empty means unproven |
 | `traps` | Platform facts that bite this function, one per line |
+| `dependsOn` | Optional: `{recipe, why, debtsPaid}` per recipe whose objects this one needs; a recipe set runs that one first, and pays the named debts of it before this one runs |
+| `runsLast` | Optional: why a recipe set runs this recipe after every other one (the de-brand) |
 
 No field holds a host, a URL, a machine path, a credential or a customer name: the repository
 validator and the runner both refuse one. A password is named by a reference key in the input file
@@ -177,6 +181,11 @@ paid by an existing shipped script or function, never by code from the recipe:
 A debt the run cannot pay is OPEN, so the run exits 1 until it is paid. After paying it, run the
 recipe again without `-Apply`: the steps report UNCHANGED and the probes decide.
 
+`-Debts Defer` leaves the debts of a change to the caller and names them in the report
+(`debtsOwed`); `-Debts Only -Apply` runs no step and pays the debts (or `-DebtNames` of them) even
+though nothing changed: an index build, an assortment build, a flush or a recycle on its own.
+`-SkipVerify` runs no probe and no ledger check. The recipe set uses all three.
+
 ## Verify: probes and ledger checks
 
 A probe reads through its first eligible binding and asserts `count` (with `op` eq, ge or le),
@@ -215,7 +224,8 @@ disagrees.
 
 ## Following a recipe by hand
 
-An agent with MCP tools only follows the same file:
+An agent with MCP tools only follows the same file; [recipe-by-hand.md](recipe-by-hand.md) walks
+one recipe through with the calls it makes:
 
 1. Read the recipe and the input section it names. Confirm each tool a step needs is in `tools/list`
    and take the argument names from its input schema.
@@ -257,6 +267,52 @@ from the input's reference keys to their values (`{"buyer": "..."}`); `DW_PERSON
 ledger's persona list. `-McpOnly` restricts the run to MCP as the in-product agent would;
 `-AllowSql -SqlServer <local> -Database <name>` permits the local SQL reads. No token or secret is
 printed or written to the report.
+
+## Running a whole build
+
+[Invoke-DwRecipeSet.ps1](../scripts/Invoke-DwRecipeSet.ps1) runs every recipe the customer data
+file has a section for, in the order [recipe-index.md](recipe-index.md) prints (each recipe's
+`dependsOn` first, ties by id, `runsLast` at the end). Same contract as one recipe: without
+`-Apply` it writes nothing and runs each recipe once, verify-only.
+
+```powershell
+pwsh -NoProfile -File scripts/Invoke-DwRecipeSet.ps1 -InputPath ./recipe-input.json
+pwsh -NoProfile -File scripts/Invoke-DwRecipeSet.ps1 -InputPath ./recipe-input.json -Apply -ReportPath ./recipe-set-report.json
+```
+
+With `-Apply` it runs three passes:
+
+1. **Apply** every recipe in order with its debts deferred and no probes. A debt a later recipe
+   names in `dependsOn.debtsPaid` is paid just before that recipe.
+2. **Pay the debts once.** Owed debts are deduplicated across recipes (two recipes that owe the
+   same index build get one build, two that owe a recycle get one) and paid in the order
+   assortments, flushes, index builds, recycle, each through the recipe that owes it.
+3. **Verify** every recipe without `-Apply`: the steps report UNCHANGED and the probes decide.
+
+Paying at the end is safe for the recipes shipped today: no recipe's steps read what another
+recipe's debt refreshes. Prices, orders and workflows find products, users, groups and models by
+number or name through reads that do not go through an index or a cache a debt flushes; only the
+probes do (the storefront group list reads the product index, a buyer's sign-in and the
+impersonation list read the user service), and the probes run in pass 3. It is also the faster and
+the more correct order: the product index built once after the prices recipe carries the prices the
+storefront list needs, where a build after the catalogue would be built again. So no recipe declares
+`debtsPaid` yet; one that adds a step reading an index or a cached list another recipe changes must.
+
+| Option | Effect |
+|---|---|
+| `-Only <ids>` / `-Skip <ids>` | Run only, or leave out, these recipes. A dependency left out is a NOTE: its objects must already be on the site |
+| `-PayDebts` | With `-Apply`, pay every debt of the selected recipes in pass 2 even when nothing changed: the host primitives (index build, assortment build, flush, recycle) on their own, `-Only pim.identifiers -PayDebts -Apply` |
+| `-LayerDelivered <sections>` | Sections a layer already delivered: their recipes run verify-only in pass 1 even with `-Apply` (unless the recipe declares `layerDelivered: apply`) |
+| `-McpOnly`, `-AllowSql -SqlServer -Database`, `-SolutionPath`, `-LedgerBuildFile -Manifest`, connection | Passed to every recipe run, as for one recipe |
+
+Before anything runs, the set refuses a de-brand whose forbidden text another section of the
+input holds: the build would write it, the de-brand replace it, and the next apply write it back.
+Each recipe's own lines print under `== <recipe> <pass>`; then one summary table (steps of the
+apply pass as C created, U updated, = unchanged, B blocked, WC/WU would create/update; checks of
+the last pass; debts owed), one `DEBT <result> <debt> (<owner>, <when>)` line per debt paid, and
+last `recipe set: <n> of <m> recipes passed`. Exit 0 only when every selected recipe passed every
+pass and every debt was paid. A recipe that needs a recycle on a host the run cannot recycle leaves
+`DEBT OPEN recycle`: recycle it, then run the set again without `-Apply`.
 
 ## Output contract
 

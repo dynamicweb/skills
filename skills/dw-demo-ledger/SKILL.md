@@ -5,7 +5,7 @@ group: demo
 mcp: optional
 dynamo: false
 compatibility: Requires PowerShell 7.x and Git
-description: 'Select and check a release-pinned DW10 function ledger, and replay a function from its recipe. Triggers: platform coverage, equivalent MCP/API probes, edition check locks, release capability changes, recipe for a function. Use AFTER dw-demo-base.'
+description: 'Build a DW10 demo from one customer data file with replayable recipes, and select and check a release-pinned function ledger. Triggers: run the recipes, recipe for a function, platform coverage, equivalent MCP/API probes, edition check locks, release capability changes. Use AFTER dw-demo-base.'
 ---
 
 # Demo functionality ledger
@@ -59,6 +59,12 @@ pwsh -NoProfile -File scripts/Find-DwRecipe.ps1 -Function users.accounts
 
 Without `-Apply` a recipe writes nothing: on build path A, where a layer delivered the data, every object reports UNCHANGED and the probes verify it. With `-Apply` it creates and updates, reads every write back and pays its debts. Each recipe states whether it is usable MCP-only and on a hosted install; a step with no eligible binding is BLOCKED, never skipped.
 
+A whole build is one command over one customer data file: [Invoke-DwRecipeSet.ps1](scripts/Invoke-DwRecipeSet.ps1) runs every recipe the file has a section for, dependencies first, pays the debts once and verifies everything ([recipes.md](references/recipes.md) "Running a whole build"). `-Only pim.identifiers -PayDebts -Apply` runs the host primitives alone (index build, assortment build, flush, recycle). The [recipe index](references/recipe-index.md) lists every recipe, its input section, modes, proof, run order and what stays planned; an agent with MCP tools only follows a recipe by hand with [recipe-by-hand.md](references/recipe-by-hand.md).
+
+```powershell
+pwsh -NoProfile -File scripts/Invoke-DwRecipeSet.ps1 -InputPath ./recipe-input.json -Apply
+```
+
 ## Scripts (scripts/)
 
 | Script | Reads / writes | What it does |
@@ -80,6 +86,7 @@ Without `-Apply` a recipe writes nothing: on build path A, where a layer deliver
 | [tests/Cpq.Tests.ps1](scripts/tests/Cpq.Tests.ps1) | Isolated fixtures | CPQ positive and negative controls |
 | [tests/Receipts.Tests.ps1](scripts/tests/Receipts.Tests.ps1) | Producer-shaped fixtures; a Distribution checkout through `CPQ_DISTRIBUTION_ROOT` | Receipt reader verdicts, wrong price and BOM red controls |
 | [Invoke-DwRecipe.ps1](scripts/Invoke-DwRecipe.ps1) | Reads target; with -Apply writes the recipe's objects and pays its debts | Runs one recipe: find, apply, read back, debts, probes, ledger checks |
+| [Invoke-DwRecipeSet.ps1](scripts/Invoke-DwRecipeSet.ps1) | Reads target; with -Apply writes every selected recipe's objects and pays the debts once | A whole build from one input file: select, order, apply, pay, verify, one summary |
 | [Find-DwRecipe.ps1](scripts/Find-DwRecipe.ps1) | Reads recipes | Recipes for a function or area, their modes and proven state |
 | [Recipe.Core.ps1](scripts/Recipe.Core.ps1) | Definitions only | Paths, tokens, natural-key matching and binding selection |
 | [Recipe.Transport.ps1](scripts/Recipe.Transport.ps1) | Reads target when called | Allowlisted MCP, Management API, delivery and guarded local SQL reads |

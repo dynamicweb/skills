@@ -5,6 +5,7 @@
   "functions": ["content.page-seo", "swift.header-footer", "swift.website-settings"],
   "skill": "dw-content-modelling",
   "inputs": {"section": "debrand", "required": ["forbidden"]},
+  "runsLast": "A de-brand replaces a forbidden text wherever it shows, so it runs after every recipe that writes text; the forbidden text must not appear in another section of the input, or the next apply writes it back and the set never settles.",
   "modes": {
     "mcpOnly": {"usable": true, "reason": "The scans read and the replacements write with MCP tools; the places no tool may write are reported, not skipped."},
     "hosted": {"usable": true, "reason": "Nothing here needs SQL or a recycle."},

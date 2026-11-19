@@ -5,6 +5,10 @@
   "functions": ["commerce.customer-prices", "commerce.default-price", "commerce.quantity-prices"],
   "skill": "dw-commerce-b2b",
   "inputs": {"section": "prices", "required": ["listPrices"]},
+  "dependsOn": [
+    {"recipe": "pim.identifiers", "why": "The list price is patched onto a product the catalogue created; this recipe finds products by number and creates none."},
+    {"recipe": "users.accounts", "why": "The customer group, the account's customer number and the buyer the probes sign in as are that recipe's objects."}
+  ],
   "modes": {
     "mcpOnly": {"usable": true, "reason": "Every step has an MCP find, write and read-back (get_products_by_sku, patch_products_safe, get_user_groups, save_user_groups, get_prices_by_product_id, save_prices). The behavioural probes read the delivery API: no MCP tool returns the price a visitor or a signed-in user is charged, so an MCP-only run reports them OPEN."},
     "hosted": {"usable": true, "reason": "Every step is MCP; the probes are delivery API reads; no SQL."},

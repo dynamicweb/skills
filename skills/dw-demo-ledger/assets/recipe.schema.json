@@ -60,7 +60,23 @@
         }
       }
     },
-    "traps": {"type": "array", "items": {"type": "string", "minLength": 1}}
+    "traps": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "dependsOn": {
+      "description": "Recipes whose objects this one needs, so a recipe set runs them first. debtsPaid names debts of that recipe that must be paid before this one runs, because a step here reads what they refresh.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["recipe", "why"],
+        "properties": {
+          "recipe": {"type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z0-9-]+$"},
+          "why": {"type": "string", "minLength": 1},
+          "debtsPaid": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "runsLast": {"description": "Why a recipe set runs this recipe after every other one (a de-brand replaces text the others may write).", "type": "string", "minLength": 1}
   },
   "definitions": {
     "mode": {

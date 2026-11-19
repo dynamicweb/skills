@@ -5,6 +5,11 @@
   "functions": ["orders.completed-orders", "orders.quotes", "orders.favorite-lists", "orders.order-numbering"],
   "skill": "dw-commerce-orders",
   "inputs": {"section": "history", "required": ["buyer", "shop"]},
+  "dependsOn": [
+    {"recipe": "users.accounts", "why": "The orders, quotes and lists belong to the buyer that recipe creates with a password."},
+    {"recipe": "pim.identifiers", "why": "Order and quote lines name products the catalogue created."},
+    {"recipe": "commerce.customer-prices", "why": "A line is charged the buyer's price when it is added, and the order stores that total: prices first, or the history carries list prices."}
+  ],
   "modes": {
     "mcpOnly": {"usable": false, "reason": "The numbering, completion and quote reads are Management API (GetNumbers, NumberSave, GetOrderList: search_orders leaves quotes out and is_order_complete answers bare text); no MCP or Management API write creates a favourite list or backdates an order."},
     "hosted": {"usable": false, "reason": "No MCP or Management API write creates a favourite list, sets an order's date or the number counter, or creates an order state without a flow id. Every other step, the reset included, is MCP or Management API."},

@@ -869,3 +869,39 @@ Describe 'Find-DwRecipe' {
         $out | Should -Be 'no recipe for function search.user-index'
     }
 }
+
+Describe 'Invoke-DwRecipe debt modes: deferred, debts only, verification skipped' {
+    BeforeEach {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
+        $env:DW_API_TOKEN = 'stub-api-token-0000'
+        $env:DW_RECIPE_SECRETS = '{"buyer":"Stub-Passw0rd-x"}'
+        $script:Root = New-RecipeSandbox
+        $script:InputFile = Write-Input $script:UsersSection 'users.accounts'
+    }
+    It 'defers the debts of a change to the caller, names them in the report, and runs no probe with -SkipVerify' {
+        New-Stub
+        $report = Join-Path $TestDrive ([guid]::NewGuid().ToString('n') + '.json')
+        $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true; Debts = 'Defer'; SkipVerify = $true; ReportPath = $report}
+        ($r.lines -match '^NOTE users\.accounts: debts owed, deferred to the caller: flush:').Count | Should -Be 1
+        ($r.lines -match '^(PASS|FAIL|OPEN) (debt|probe|ledger)/').Count | Should -Be 0
+        @($global:RecipeStub.log | Where-Object { $_ -like 'flush *' }).Count | Should -Be 0
+        $json = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
+        $json.changed | Should -BeTrue
+        @($json.debtsOwed) | Should -Contain 'recycle'
+        $r.exit | Should -Be 0
+    }
+    It 'pays only the named debts with -Debts Only, runs no step, and refuses it without -Apply or for a debt the recipe does not owe' {
+        New-Stub
+        $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true; Debts = 'Only'; DebtNames = @('flush:Dynamicweb.Security.UserManagement.UserService'); SkipVerify = $true}
+        ($r.lines -match '^STEP ').Count | Should -Be 0
+        $r.lines | Should -Contain 'PASS debt/flush:Dynamicweb.Security.UserManagement.UserService'
+        ($r.lines -match 'debt/recycle').Count | Should -Be 0
+        (Get-Writes).Count | Should -Be 0
+        $r.exit | Should -Be 0
+        $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Debts = 'Only'}
+        ($r.lines -match '^FAIL recipe: Runner input: -Debts Only pays debts, which writes; add -Apply').Count | Should -Be 1
+        $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true; Debts = 'Only'; DebtNames = @('assortments')}
+        ($r.lines -match '^FAIL recipe: Runner input: users\.accounts owes no debt assortments').Count | Should -Be 1
+        $r.exit | Should -Be 1
+    }
+}

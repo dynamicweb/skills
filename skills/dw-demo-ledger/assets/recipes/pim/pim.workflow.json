@@ -5,6 +5,9 @@
   "functions": ["pim.workflow"],
   "skill": "dw-demo-pim",
   "inputs": {"section": "pim.workflow", "required": ["name", "states"]},
+  "dependsOn": [
+    {"recipe": "pim.data-models", "why": "The workflow is attached to data models that recipe creates."}
+  ],
   "modes": {
     "mcpOnly": {"usable": false, "reason": "No MCP tool creates a workflow or attaches one to a data model; the states and transitions are MCP."},
     "hosted": {"usable": true, "reason": "The workflow and the attachment are Management API commands, the states MCP tools; nothing needs SQL or a recycle."},

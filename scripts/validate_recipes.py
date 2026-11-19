@@ -216,7 +216,7 @@ def validate_recipes(repo: Path) -> list[str]:
                     error(example, fault)
             except ValueError as exc:
                 error(example, f"unreadable JSON ({exc})")
-    seen = {}
+    seen, docs = {}, {}
     for file in sorted(root.glob("*/*.json")):
         try:
             doc = json.loads(file.read_text(encoding="utf-8"))
@@ -230,6 +230,7 @@ def validate_recipes(repo: Path) -> list[str]:
         if rid in seen:
             error(file, f"duplicate recipe id {rid} (also {seen[rid]})")
         seen[rid] = file.name
+        docs[rid] = (file, doc)
         if file.stem != rid or file.parent.name != rid.split(".")[0]:
             error(file, f"recipe {rid} must live at recipes/{rid.split('.')[0]}/{rid}.json")
         for fault in forbidden_faults(doc):
@@ -420,7 +421,154 @@ def validate_recipes(repo: Path) -> list[str]:
             error(file, f"modes.mcpOnly.usable must be {str(mcp_only).lower()}: computed from the implemented MCP find, write and read-back bindings of every step")
         if (modes.get("hosted") or {}).get("usable") is not hosted:
             error(file, f"modes.hosted.usable must be {str(hosted).lower()}: computed from the implemented non-SQL find, write and read-back bindings of every step")
+    order_faults(docs, error)
+    index = repo / "skills/dw-demo-ledger/references/recipe-index.md"
+    if (repo / "skills/dw-demo-ledger/references/recipes.md").is_file() and docs:
+        expected = render_index({rid: doc for rid, (_, doc) in docs.items()})
+        actual = index.read_text(encoding="utf-8") if index.is_file() else None
+        if actual != expected:
+            errors.append(f"{index.relative_to(repo).as_posix()}: {'missing' if actual is None else 'out of date'}; "
+                          "regenerate it with python scripts/validate_recipes.py --write-index")
     return errors + run_powershell(repo, schema_jobs, sql_jobs)
+
+
+def order_faults(docs, error):
+    """dependsOn names existing recipes and their own debts, never itself or a recipe that runs last, without a cycle."""
+    for rid, (file, doc) in docs.items():
+        for dep in doc.get("dependsOn") or []:
+            target = dep.get("recipe")
+            if target == rid:
+                error(file, "dependsOn names the recipe itself")
+            elif target not in docs:
+                error(file, f"dependsOn names {target}, which is not a recipe")
+            else:
+                owed = docs[target][1].get("debts") or []
+                for debt in dep.get("debtsPaid") or []:
+                    if debt not in owed:
+                        error(file, f"dependsOn {target} debtsPaid names {debt}, which {target} does not owe")
+                if docs[target][1].get("runsLast"):
+                    error(file, f"dependsOn names {target}, which runs last")
+    try:
+        run_order({rid: doc for rid, (_, doc) in docs.items()})
+    except ValueError as exc:
+        error(next(iter(docs.values()))[0], str(exc))
+
+
+def run_order(docs):
+    """The order a recipe set runs: dependencies first, ties by id, runsLast recipes at the end (Invoke-DwRecipeSet.ps1 does the same)."""
+    ids = sorted(docs)
+    deps = {rid: {d.get("recipe") for d in docs[rid].get("dependsOn") or [] if d.get("recipe") in docs and d.get("recipe") != rid} for rid in ids}
+    for rid in ids:
+        if docs[rid].get("runsLast"):
+            deps[rid] |= {o for o in ids if o != rid and not docs[o].get("runsLast")}
+    order, done = [], set()
+    while len(order) < len(ids):
+        ready = [rid for rid in ids if rid not in done and deps[rid] <= done]
+        if not ready:
+            raise ValueError("dependsOn forms a cycle among " + ", ".join(rid for rid in ids if rid not in done))
+        order.append(ready[0])
+        done.add(ready[0])
+    return order
+
+
+def planned_bindings(doc):
+    out = []
+    for step in doc.get("steps") or []:
+        for b in (step.get("find") or {}).get("bindings") or []:
+            if b.get("status") == "planned":
+                out.append((f"step {step.get('id')} find", b))
+        for b in step.get("bindings") or []:
+            if b.get("status") == "planned":
+                out.append((f"step {step.get('id')} write", b))
+    for probe in (doc.get("verify") or {}).get("probes") or []:
+        for b in probe.get("bindings") or []:
+            if b.get("status") == "planned":
+                out.append((f"probe {probe.get('id')}", b))
+    return out
+
+
+def render_index(docs):
+    """references/recipe-index.md, generated from the recipes so it cannot drift."""
+    def cell(text):
+        return str(text).replace("|", "\\|").replace("\n", " ")
+
+    def yes(mode):
+        return "yes" if (mode or {}).get("usable") else "no"
+    order = run_order(docs)
+    lines = [
+        "# Recipe index",
+        "",
+        "Generated from `assets/recipes/` by `python scripts/validate_recipes.py --write-index`; the repository",
+        "validator fails when this file and the recipes disagree, so do not edit it by hand. The contract is",
+        "[recipes.md](recipes.md); a whole build runs through",
+        "[Invoke-DwRecipeSet.ps1](../scripts/Invoke-DwRecipeSet.ps1).",
+        "",
+        "## Contents",
+        "",
+        "- [Recipes](#recipes)",
+        "- [Run order](#run-order)",
+        "- [What stays planned](#what-stays-planned)",
+        "- [By function](#by-function)",
+        "",
+        "## Recipes",
+        "",
+        "| Recipe | Functions | Input section | Owner skill | MCP-only | Hosted | After a layer delivered it | Proven on |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for rid in sorted(docs):
+        d = docs[rid]
+        modes = d.get("modes") or {}
+        proven = "; ".join(f"dw {p.get('dwVersion')}, mcp {p.get('mcpVersion')}, {p.get('date')}" for p in d.get("provenOn") or []) or "unproven"
+        lines.append(f"| `{rid}` | {cell(', '.join(d.get('functions') or []))} | `{(d.get('inputs') or {}).get('section')}` | "
+                     f"{d.get('skill')} | {yes(modes.get('mcpOnly'))} | {yes(modes.get('hosted'))} | "
+                     f"{modes.get('layerDelivered')} | {cell(proven)} |")
+    lines += ["", "## Run order", "",
+              "A recipe set runs the recipes whose input section the customer data file holds, in this order",
+              "(dependencies first, ties by id, a recipe that runs last at the end):", ""]
+    for n, rid in enumerate(order, 1):
+        d = docs[rid]
+        parts = [f"After `{x.get('recipe')}`: {x.get('why')}" + (f" Pays first: {', '.join(x.get('debtsPaid'))}." if x.get("debtsPaid") else "")
+                 for x in d.get("dependsOn") or []]
+        if d.get("runsLast"):
+            parts.append("Last: " + d["runsLast"])
+        lines.append(f"{n}. `{rid}`" + (f". {cell(' '.join(parts))}" if parts else ""))
+    lines += ["", "## What stays planned", "",
+              "A planned binding never executes; its step is BLOCKED where no other binding serves it, and the",
+              "work is done by hand or stays undone. Reasons as the recipes state them:", ""]
+    for rid in sorted(docs):
+        d = docs[rid]
+        planned = planned_bindings(d)
+        modes = d.get("modes") or {}
+        mcp_only = (modes.get("mcpOnly") or {}).get("usable")
+        lines.append(f"- `{rid}`" + ("" if planned or not mcp_only else ": nothing planned"))
+        grouped = {}
+        for where, b in planned:
+            grouped.setdefault((b.get("surface"), b.get("reason", "")), []).append(where)
+        for (surface, reason), wheres in grouped.items():
+            lines.append(f"  - {', '.join(wheres)} ({surface}): {cell(reason)}")
+        if not mcp_only:
+            lines.append(f"  - MCP-only: {cell((modes.get('mcpOnly') or {}).get('reason', ''))}")
+    lines += ["", "## By function", "", "| Function | Recipe |", "|---|---|"]
+    by_function = {}
+    for rid, d in docs.items():
+        for fid in d.get("functions") or []:
+            by_function.setdefault(fid, []).append(rid)
+    for fid in sorted(by_function):
+        lines.append(f"| `{fid}` | {', '.join(f'`{r}`' for r in sorted(by_function[fid]))} |")
+    return "\n".join(lines) + "\n"
+
+
+def write_index(repo: Path) -> int:
+    root = repo / "skills/dw-demo-ledger/assets/recipes"
+    docs = {}
+    for file in sorted(root.glob("*/*.json")):
+        doc = json.loads(file.read_text(encoding="utf-8"))
+        docs[doc["id"]] = doc
+    target = repo / "skills/dw-demo-ledger/references/recipe-index.md"
+    target.write_text(render_index(docs), encoding="utf-8", newline="\n")
+    print(f"wrote {target.relative_to(repo).as_posix()} ({len(docs)} recipes)")
+    return 0
+
 
 
 def check_binding(b, kind, where, file, error, registry, tools, sql_jobs):
@@ -516,3 +664,10 @@ ConvertTo-Json -InputObject $failures -Compress
         return out
     except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
         return [f"recipe schema validation requires PowerShell 7 Test-Json ({exc})"]
+
+
+if __name__ == "__main__":
+    import sys
+    if "--write-index" in sys.argv[1:]:
+        sys.exit(write_index(Path(__file__).resolve().parents[1]))
+    print("usage: python scripts/validate_recipes.py --write-index (validation runs from validate-skills.py)")

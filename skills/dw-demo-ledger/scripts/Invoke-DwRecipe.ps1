@@ -33,14 +33,22 @@ Ledger build declaration with its lock; with -Manifest the recipe's ledger check
 Ledger release manifest for -LedgerBuildFile.
 .PARAMETER SolutionPath
 Local solution root; lets a recycle debt run Restart-DwHost.ps1.
+.PARAMETER Debts
+Run (default): pay the debts after a change. Defer: record them in the report as owed and leave them to the caller (Invoke-DwRecipeSet.ps1 pays them once for the whole set). Only: run no step, pay the debts even though nothing changed; needs -Apply.
+.PARAMETER DebtNames
+With -Debts Only, pay only these of the recipe's debts.
+.PARAMETER SkipVerify
+Run no probe and no ledger check; a later run without -Apply verifies.
 .PARAMETER ReportPath
-Optional JSON report: steps, checks and summary, no values.
+Optional JSON report: steps, checks, owed debts and summary, no values.
 .PARAMETER AllowSelfSignedCertificate
 Explicit TLS opt-in for a development endpoint that is not loopback.
 .EXAMPLE
 pwsh -NoProfile -File scripts/Invoke-DwRecipe.ps1 -Recipe users.accounts -InputPath ./recipe-input.json
 .EXAMPLE
 pwsh -NoProfile -File scripts/Invoke-DwRecipe.ps1 -Recipe content.pages -InputPath ./recipe-input.json -Apply -ReportPath ./recipe-report.json
+.EXAMPLE
+pwsh -NoProfile -File scripts/Invoke-DwRecipe.ps1 -Recipe pim.identifiers -InputPath ./recipe-input.json -Apply -Debts Only
 #>
 #Requires -Version 7.0
 [CmdletBinding(SupportsShouldProcess)]
@@ -54,6 +62,9 @@ param(
     [switch]$AllowSql, [string]$SqlServer, [string]$Database,
     [string]$LedgerBuildFile, [string]$Manifest,
     [string]$SolutionPath,
+    [ValidateSet('Run', 'Defer', 'Only')][string]$Debts = 'Run',
+    [string[]]$DebtNames,
+    [switch]$SkipVerify,
     [string]$ReportPath,
     [switch]$AllowSelfSignedCertificate
 )
@@ -61,7 +72,7 @@ $ErrorActionPreference = 'Stop'
 foreach ($file in @('Ledger.Core.ps1', 'Ledger.Sql.ps1', 'Ledger.Transport.ps1', 'Recipe.Core.ps1', 'Recipe.Transport.ps1', 'Recipe.Write.ps1', 'Recipe.Steps.ps1', 'Recipe.Scan.ps1', 'Recipe.Prune.ps1', 'Recipe.Verify.ps1', 'Recipe.Debts.ps1')) { . (Join-Path $PSScriptRoot $file) }
 $assets = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
 $recipeId = $Recipe
-$run = @{lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); steps = [Collections.Generic.List[object]]::new(); planned = [Collections.Generic.List[string]]::new(); blocked = 0; changed = $false; results = @{}}
+$run = @{lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); steps = [Collections.Generic.List[object]]::new(); planned = [Collections.Generic.List[string]]::new(); blocked = 0; changed = $false; results = @{}; deferred = @()}
 $applied = $false
 try {
     $recipePath = Resolve-RecipeFile $Recipe $assets
@@ -80,6 +91,10 @@ try {
     } elseif ($data.Contains('build')) { $build = $data.build }
     $secrets = Read-RecipeSecrets $env:DW_RECIPE_SECRETS
     $applied = $Apply -and $PSCmdlet.ShouldProcess("recipe $recipeId", 'apply the recipe writes')
+    $unknown = @($DebtNames | Where-Object { $_ -and $_ -cnotin @($doc.debts) })
+    if ($unknown.Count) { throw (New-RecipeFault "Runner input: $recipeId owes no debt $($unknown -join ', ').") }
+    if ($Debts -eq 'Only' -and -not $applied) { throw (New-RecipeFault 'Runner input: -Debts Only pays debts, which writes; add -Apply.') }
+    if ($Debts -eq 'Only' -and -not @($doc.debts).Count) { throw (New-RecipeFault "Runner input: $recipeId owes no debts.") }
     if (-not @($doc.provenOn).Count) { $run.lines.Add("NOTE ${recipeId}: unproven (provenOn is empty): no release has measured this recipe end to end") }
     $run.lines.Add("NOTE ${recipeId}: $(if ($applied) { 'apply' } else { 'verify-only, nothing is written' })")
     if ($McpOnly -and -not $doc.modes.mcpOnly.usable) { $run.lines.Add("NOTE ${recipeId}: declared not usable MCP-only: $($doc.modes.mcpOnly.reason)") }
@@ -96,13 +111,23 @@ try {
     $run += @{recipeId = $recipeId; section = $section; build = $build; secrets = $secrets; cap = $cap; registry = $registry; apply = $applied; inputDir = (Split-Path -Parent (Resolve-Path -LiteralPath $InputPath).Path)
         baseUrl = $state.BaseUrl; apiToken = $state.ApiToken; mcpToken = $state.McpToken; solutionPath = $SolutionPath; ledgerBuild = $LedgerBuildFile; manifest = $Manifest; pollIntervalMs = 1000}
 
-    foreach ($step in $doc.steps) { if ($step.scan) { Invoke-RecipeScanStep $step $run } elseif ($step.prune) { Invoke-RecipePruneStep $step $run } else { Invoke-RecipeStep $step $run } }
-    if (@($doc.debts).Count) {
-        if ($applied -and $run.changed) { foreach ($debt in $doc.debts) { Invoke-RecipeDebt $debt $run } }
-        else { $run.lines.Add("NOTE ${recipeId}: debts not run ($(if ($applied) { 'nothing changed' } else { 'verify-only' })): " + ($doc.debts -join ', ')) }
+    if ($Debts -eq 'Only') {
+        # The host primitives on their own: an index or assortment build, a flush or a recycle, owed or not.
+        $run.lines.Add("NOTE ${recipeId}: no step runs (-Debts Only)")
+        foreach ($debt in @($doc.debts | Where-Object { -not $DebtNames -or $_ -cin $DebtNames })) { Invoke-RecipeDebt $debt $run }
+    } else {
+        foreach ($step in $doc.steps) { if ($step.scan) { Invoke-RecipeScanStep $step $run } elseif ($step.prune) { Invoke-RecipePruneStep $step $run } else { Invoke-RecipeStep $step $run } }
+        if (@($doc.debts).Count) {
+            if ($applied -and $run.changed -and $Debts -eq 'Defer') { $run.deferred = @($doc.debts); $run.lines.Add("NOTE ${recipeId}: debts owed, deferred to the caller: " + ($doc.debts -join ', ')) }
+            elseif ($applied -and $run.changed) { foreach ($debt in $doc.debts) { Invoke-RecipeDebt $debt $run } }
+            else { $run.lines.Add("NOTE ${recipeId}: debts not run ($(if ($applied) { 'nothing changed' } else { 'verify-only' })): " + ($doc.debts -join ', ')) }
+        }
     }
-    foreach ($probe in @($doc.verify.probes)) { Invoke-RecipeProbe $probe $run }
-    Invoke-RecipeLedger $doc $run
+    if ($SkipVerify) { $run.lines.Add("NOTE ${recipeId}: probes and ledger checks not run (-SkipVerify): run the recipe again without -Apply to verify") }
+    else {
+        foreach ($probe in @($doc.verify.probes)) { Invoke-RecipeProbe $probe $run }
+        Invoke-RecipeLedger $doc $run
+    }
 } catch {
     Write-Verbose $_.ScriptStackTrace
     # A named contract or input fault is printed; anything else may carry a host, token or body, so it stays generic.
@@ -113,12 +138,13 @@ try {
 }
 $passed = @($run.checks | Where-Object { $_.result -eq 'PASS' }).Count
 $total = $run.checks.Count
-$ok = $total -gt 0 -and $passed -eq $total -and $run.blocked -eq 0
+# A debts-only run whose debts the target does not have (an index it does not carry) is a NOTE, not a check.
+$ok = ($total -gt 0 -or $Debts -eq 'Only') -and $passed -eq $total -and $run.blocked -eq 0
 foreach ($line in $run.lines) { Write-Output $line }
 Write-Output "${recipeId}: $passed of $total checks passed"
 if ($ReportPath) {
     $report = [ordered]@{schema = 1; recipe = $recipeId; generatedAt = [DateTimeOffset]::UtcNow.ToString('o'); mode = $(if ($applied) { 'apply' } else { 'verify' })
-        steps = $run.steps.ToArray(); checks = $run.checks.ToArray(); plannedProbes = $run.planned.ToArray(); blocked = $run.blocked; passed = $passed; total = $total; result = $(if ($ok) { 'PASS' } else { 'FAIL' })}
+        steps = $run.steps.ToArray(); checks = $run.checks.ToArray(); plannedProbes = $run.planned.ToArray(); changed = [bool]$run.changed; debtsOwed = @($run.deferred); blocked = $run.blocked; passed = $passed; total = $total; result = $(if ($ok) { 'PASS' } else { 'FAIL' })}
     [IO.File]::WriteAllText([IO.Path]::GetFullPath($ReportPath), ($report | ConvertTo-Json -Depth 10) + "`n", [Text.UTF8Encoding]::new($false))
 }
 if ($ok) { exit 0 }

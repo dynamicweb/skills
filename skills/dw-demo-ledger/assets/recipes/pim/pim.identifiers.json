@@ -5,6 +5,9 @@
   "functions": ["pim.identifiers", "pim.images", "commerce.stock-levels"],
   "skill": "dw-demo-pim",
   "inputs": {"section": "catalogue", "required": ["shop", "groups", "products"]},
+  "dependsOn": [
+    {"recipe": "pim.data-models", "why": "Products are placed in the data models and write the spec fields that recipe creates."}
+  ],
   "modes": {
     "mcpOnly": {"usable": true, "reason": "Every step finds, writes and reads back with MCP tools; the image files are read from the input folder by the runner."},
     "hosted": {"usable": true, "reason": "Nothing needs SQL; the index debts are paid through the Management API or the MCP index tools."},
