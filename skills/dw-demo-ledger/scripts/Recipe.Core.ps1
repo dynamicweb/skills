@@ -262,12 +262,10 @@ function Get-RecipeRowField {
     if (-not $value.found) { throw (New-RecipeFault "Response of '$Operation' carries no field '$Path'; the projection is not the one the recipe states.") }
     return , $value.value
 }
-function Test-RecipeEqualUnordered {
+function Test-RecipeEqualUnordered($Left, $Right) {
     # Two lists that hold the same elements as often, in any order (a state's next states, read back sorted by id).
-    param($Left, $Right)
     if (-not ($Left -is [Collections.IList] -and $Right -is [Collections.IList])) { return Test-RecipeEqual $Left $Right }
-    $sortKey = { if (Test-RecipeNumber $_) { '{0:R}' -f [double]$_ } else { [string]$_ } }
-    return Test-RecipeEqual @($Left | Sort-Object -CaseSensitive $sortKey) @($Right | Sort-Object -CaseSensitive $sortKey)
+    $by = { if (Test-RecipeNumber $_) { '{0:R}' -f [double]$_ } else { [string]$_ } }; return Test-RecipeEqual @($Left | Sort-Object -CaseSensitive $by) @($Right | Sort-Object -CaseSensitive $by)
 }
 function Get-RecipeDifferences {
     # Field names whose row value differs from the expected value. Values are not returned: they may be personal data.
@@ -277,9 +275,7 @@ function Get-RecipeDifferences {
         # An expected null is a statement that the member is empty, and the MCP read models leave out a null
         # member: only there does absence read as null. A value the recipe expects still fails loudly when absent.
         if ($null -eq $Expected[$k] -and -not (Get-RecipeValue $Row $k).found) { continue }
-        $actual = Get-RecipeRowField $Row $k $Operation
-        $equal = if ($k -cin @($Unordered)) { Test-RecipeEqualUnordered $actual $Expected[$k] } else { Test-RecipeEqual $actual $Expected[$k] }
-        if (-not $equal) { $k }
+        if (-not (& $(if ($k -cin @($Unordered)) { 'Test-RecipeEqualUnordered' } else { 'Test-RecipeEqual' }) (Get-RecipeRowField $Row $k $Operation) $Expected[$k])) { $k }
     })
     return , $names
 }
