@@ -48,11 +48,35 @@ function Find-RecipeObject {
     return @{state = $(if ($differs.Count) { 'UPDATE' } else { 'UNCHANGED' }); row = $hits[0]; fields = $differs; binding = $binding}
 }
 function Select-RecipeBindingMatches {
-    # The rows a read binding's match selects (as Select-RecipeMatches does), then matchSuffix.
+    # The rows a read binding's match selects: members named in ignoreCase compare as text ignoring case (a folder that
+    # exists with other letter case), every other member as Select-RecipeMatches does; then matchSuffix.
     param([object[]]$Rows, $Binding, $Context)
-    $hits = Select-RecipeMatches $Rows (Expand-RecipeValue $Binding.match $Context) $Binding.operation
+    $match = Expand-RecipeValue $Binding.match $Context
+    foreach ($k in @($Binding.ignoreCase)) {
+        if (-not $k -or -not $match -or -not $match.Contains($k)) { continue }
+        $want = [string]$match[$k]; $match.Remove($k)
+        $Rows = @($Rows | Where-Object { $v = Get-RecipeValue $_ $k; $v.found -and [string]::Equals([string]$v.value, $want, [StringComparison]::OrdinalIgnoreCase) })
+    }
+    $hits = Select-RecipeMatches $Rows $match $Binding.operation
     if ($Binding.matchSuffix) { $hits = Select-RecipeSuffixMatches $hits (Expand-RecipeValue $Binding.matchSuffix $Context) }
     return , @($hits)
+}
+function Update-RecipeSpelling {
+    # respell: once its step has run, every input text that starts with "from" in other letter case starts with "to"
+    # instead, so a folder that already exists as /Files/Images/Rhino keeps that spelling in every later write and read.
+    param($Recipe, $Run, [string]$StepId)
+    $spec = $Recipe.respell
+    if (-not $spec -or $spec.step -ne $StepId) { return }
+    $context = New-RecipeContext $Run @{item = $null; parent = $null}
+    try { $from = [string](Expand-RecipeValue $spec.from $context); $to = [string](Expand-RecipeValue $spec.to $context) } catch { return }
+    if (-not $from -or -not $to -or $from -ceq $to -or -not [string]::Equals($from, $to, [StringComparison]::OrdinalIgnoreCase)) { return }
+    $walk = {
+        param($node)
+        if ($node -is [Collections.IDictionary]) { foreach ($k in @($node.Keys)) { if ($node[$k] -is [string]) { if ($node[$k].StartsWith($from, [StringComparison]::OrdinalIgnoreCase)) { $node[$k] = $to + $node[$k].Substring($from.Length) } } else { & $walk $node[$k] } } }
+        elseif ($node -is [Collections.IList]) { for ($i = 0; $i -lt $node.Count; $i++) { if ($node[$i] -is [string]) { if ($node[$i].StartsWith($from, [StringComparison]::OrdinalIgnoreCase)) { $node[$i] = $to + $node[$i].Substring($from.Length) } } else { & $walk $node[$i] } } }
+    }
+    & $walk $Run.section
+    $Run.lines.Add("NOTE ${StepId}: the folder exists as $to; every later path of the input takes that spelling")
 }
 function Select-RecipeSuffixMatches {
     # matchSuffix: a row matches only when each named member's text ends with the given text, ignoring case: a file a

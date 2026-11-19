@@ -54,6 +54,7 @@ A recipe names the release it was measured on in `provenOn` instead.
 | `traps` | Platform facts that bite this function, one per line |
 | `dependsOn` | Optional: `{recipe, why, debtsPaid}` per recipe whose objects this one needs; a recipe set runs that one first, and pays the named debts of it before this one runs |
 | `runsLast` | Optional: why a recipe set runs this recipe after every other one (the de-brand) |
+| `respell` | Optional `{step, from, to}`: once that step has run, every input text that starts with `from` in other letter case starts with `to` instead. A folder that already exists as `/Files/Images/Rhino` for an input that says `rhino` keeps its real spelling in every later write, compare and read |
 
 No field holds a host, a URL, a machine path, a credential or a customer name: the repository
 validator and the runner both refuse one. A password is named by a reference key in the input file
@@ -75,8 +76,9 @@ natural-key fields), optionally `compare` (the fields that must equal the input)
 read-back), `produces` (values later steps use, by row path) and, on a probe, `assert`. For rows
 that each hold one name and one value (item fields), `compareMap` and `expectMap`
 (`{from, key, value}`) compare a whole map name by name: a missing name is a difference, so a
-misspelt field shows. A write binding names `create` and/or `update` (`{operation, arguments}`) and a
-`readBack` read binding.
+misspelt field shows. `ignoreCase` lists `match` members compared ignoring letter case (a folder
+name the host stores in its own case). A write binding names `create` and/or `update`
+(`{operation, arguments}`) and a `readBack` read binding.
 
 **`status: implemented` means the tool or command name and its argument shape are documented in
 this repository**, cited in `source`, and its read projection (the `rows` member and the field

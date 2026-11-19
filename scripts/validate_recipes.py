@@ -462,6 +462,9 @@ def validate_recipes(repo: Path) -> list[str]:
                 error(file, f"provenOn mcp {p.get('mcpVersion')} modes must be mcpOnly {str(on_mcp).lower()}, hosted {str(on_hosted).lower()}: computed from the bindings proven on that version")
         if any(binding_since(b) for b in all_bindings(doc)) and not any(isinstance(p, dict) and isinstance(p.get("modes"), dict) for p in doc.get("provenOn") or []):
             error(file, "a binding carries mcpSince, so a provenOn entry states the modes proven on its version")
+        respell = doc.get("respell") or {}
+        if respell and respell.get("step") not in [s.get("id") for s in steps]:
+            error(file, f"respell names step {respell.get('step')}, which is not a step")
     order_faults(docs, error)
     index = repo / "skills/dw-demo-ledger/references/recipe-index.md"
     if (repo / "skills/dw-demo-ledger/references/recipes.md").is_file() and docs:

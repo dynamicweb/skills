@@ -17,7 +17,7 @@ validator fails when this file and the recipes disagree, so do not edit it by ha
 | Recipe | Functions | Input section | Owner skill | MCP-only | Hosted | After a layer delivered it | Proven on |
 |---|---|---|---|---|---|---|---|
 | `commerce.customer-prices` | commerce.customer-prices, commerce.default-price, commerce.quantity-prices | `prices` | dw-commerce-b2b | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
-| `content.design-styles` | content.design-styles, swift.style-wiring, swift.website-settings | `brand` | dw-swift-building | yes | yes | both | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
+| `content.design-styles` | content.design-styles, swift.style-wiring, swift.website-settings | `brand` | dw-swift-building | yes | yes | both | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 | `content.page-seo` | content.page-seo, swift.header-footer, swift.website-settings | `debrand` | dw-content-modelling | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 | `content.pages` | content.pages, content.paragraphs, content.grid-rows | `content.pages` | dw-content-modelling | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 | `orders.completed-orders` | orders.completed-orders, orders.quotes, orders.favorite-lists, orders.order-numbering | `history` | dw-commerce-orders | no | no | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |

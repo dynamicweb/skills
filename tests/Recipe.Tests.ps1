@@ -48,7 +48,7 @@ Export-ModuleMember -Function *
         $global:RecipeStub = @{
             log = [Collections.Generic.List[string]]::new(); nextId = 100
             pages = [Collections.Generic.List[object]]::new(); rows = [Collections.Generic.List[object]]::new(); paragraphs = [Collections.Generic.List[object]]::new()
-            fields = @{}; groups = [Collections.Generic.List[object]]::new(); users = [Collections.Generic.List[object]]::new()
+            fields = @{}; groups = [Collections.Generic.List[object]]::new(); users = [Collections.Generic.List[object]]::new(); files = [Collections.Generic.List[object]]::new()
             members = [Collections.Generic.List[object]]::new(); grants = [Collections.Generic.List[object]]::new()
             repositories = @(@{repository = 'Secondary users'; indexes = @('Users.index')}); refuseButtons = $false; urlReadyAfter = 0
             tools = @{
@@ -63,6 +63,7 @@ Export-ModuleMember -Function *
                 get_users_by_group_id = Get-Schema @('groupId') @('groupId'); assign_users_to_group = Get-Schema @('groupId', 'userIds') @('groupId', 'userIds')
                 get_impersonatable_users = Get-Schema @('userId', 'groupId'); add_impersonatable_users = Get-Schema @('userId', 'impersonatableUserIds') @('impersonatableUserIds')
                 get_index_repositories = Get-Schema @(); delete_pages = Get-Schema @('ids')
+                list_files = Get-Schema @('path') @('path'); create_folder = Get-Schema @('path') @('path'); upload_file = Get-Schema @('path', 'content', 'isBase64', 'overwrite') @('path', 'content')
             }
         }
         $global:RecipeStub.api = {
@@ -137,6 +138,18 @@ Export-ModuleMember -Function *
                 'get_impersonatable_users' { $ids = @($s.grants | Where-Object { $_.from -eq [int]$Arguments.userId } | ForEach-Object { $_.to }); , @($s.users | Where-Object { $_.id -in $ids }) }
                 'add_impersonatable_users' { foreach ($u in $Arguments.impersonatableUserIds) { $s.grants.Add(@{from = [int]$Arguments.userId; to = [int]$u}) }; return (& $ok 1) }
                 'get_index_repositories' { , @($s.repositories) }
+                # A case-insensitive file system, as on Windows: a row echoes the parent as asked and the name as stored.
+                'list_files' {
+                    $parent = $Arguments.path.TrimEnd('/')
+                    , @($s.files | Where-Object { [string]::Equals(($_.path -replace '/[^/]+$', ''), $parent, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { @{name = ($_.path -split '/')[-1]; path = $parent + '/' + ($_.path -split '/')[-1]; isDirectory = $_.isDirectory; byteSize = [int]$_.byteSize} })
+                }
+                'create_folder' { if (-not @($s.files | Where-Object { [string]::Equals($_.path, $Arguments.path, [StringComparison]::OrdinalIgnoreCase) }).Count) { $s.files.Add(@{path = $Arguments.path; isDirectory = $true; byteSize = 0}) }; return (& $ok 1) }
+                'upload_file' {
+                    $hit = @($s.files | Where-Object { [string]::Equals($_.path, $Arguments.path, [StringComparison]::OrdinalIgnoreCase) })[0]
+                    $size = [Convert]::FromBase64String($Arguments.content).Length
+                    if ($hit) { $hit.byteSize = $size } else { $s.files.Add(@{path = $Arguments.path; isDirectory = $false; byteSize = $size}) }
+                    return (& $ok 1)
+                }
                 default { return @{isError = $true; content = @(@{text = 'unknown tool'})} }
             }
             return @{structuredContent = @{count = @($data).Count; data = $data}}
@@ -788,6 +801,53 @@ Describe 'Invoke-DwRecipe on a site a layer copy already delivered' {
         $a.lines | Should -Contain 'STEP members CREATED Example Trading/buyer@example.invalid'
         @($a.lines -match 'DELIVERED').Count | Should -Be 0
         $a.exit | Should -Be 0
+    }
+}
+
+Describe 'Invoke-DwRecipe on an asset folder that exists in other letter case' {
+    BeforeEach {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
+        Remove-Item Env:DW_API_TOKEN -ErrorAction SilentlyContinue
+        $script:Root = New-RecipeSandbox
+        $example = Get-Content -LiteralPath (Join-Path $script:Source 'assets/recipe-input.example.json') -Raw | ConvertFrom-Json -AsHashtable
+        $brand = $example.brand
+        $brand.assetFolder = 'rhino'; $brand.favicon = '/Files/Images/rhino/rhino-favicon.png'
+        $brand.files = @(@{file = 'kit/rhino-favicon.png'; name = 'rhino-favicon.png'})
+        $script:InputFile = Write-Input $brand 'brand'
+        $null = New-Item -ItemType Directory -Force (Join-Path $TestDrive 'kit')
+        [IO.File]::WriteAllBytes((Join-Path $TestDrive 'kit/rhino-favicon.png'), [byte[]](1..7))
+        $src = 'skills/x.md'
+        $folderRead = @{surface = 'mcp'; status = 'implemented'; operation = 'list_files'; arguments = @{path = '/Files/Images'}; rows = 'data'; match = @{name = '{input.assetFolder}'; isDirectory = $true}; ignoreCase = @('name'); produces = @{path = 'path'}; source = $src}
+        $fileRead = @{surface = 'mcp'; status = 'implemented'; operation = 'list_files'; arguments = @{path = '{step.folder[input.assetFolder].path}'}; rows = 'data'; match = @{name = '{item.name}'; isDirectory = $false}; ignoreCase = @('name'); source = $src}
+        $recipe = @{schema = 1; id = 'content.design-styles'; name = 'Folder'; functions = @('content.design-styles'); skill = 'dw-swift-building'; inputs = @{section = 'brand'; required = @('id')}
+            modes = @{mcpOnly = @{usable = $true; reason = 'MCP.'}; hosted = @{usable = $true; reason = 'No SQL.'}; local = @{usable = $true}; layerDelivered = 'both'}
+            respell = @{step = 'folder'; from = '/Files/Images/{input.assetFolder}/'; to = '{step.folder[input.assetFolder].path}/'}
+            steps = @(
+                @{id = 'folder'; title = 'Folder'; key = '{input.assetFolder}'; find = @{bindings = @($folderRead)}; source = $src
+                    bindings = @(@{id = 'mk'; surface = 'mcp'; status = 'implemented'; source = $src; create = @{operation = 'create_folder'; arguments = @{path = '/Files/Images/{input.assetFolder}'}}; readBack = $folderRead})},
+                @{id = 'files'; title = 'Files'; forEach = 'files[*]'; key = '{item.name}'; find = @{bindings = @($fileRead + @{compare = @{byteSize = '{bytes:item.file}'}})}; source = $src
+                    bindings = @(@{id = 'up'; surface = 'mcp'; status = 'implemented'; source = $src; create = @{operation = 'upload_file'; arguments = @{path = '{step.folder[input.assetFolder].path}/{item.name}'; content = '{base64:item.file}'; isBase64 = $true; overwrite = $true}}; readBack = ($fileRead + @{expect = @{byteSize = '{bytes:item.file}'}})})},
+                @{id = 'favicon'; title = 'The favicon file the input names'; key = 'favicon'; source = $src
+                    find = @{bindings = @(@{surface = 'mcp'; status = 'implemented'; operation = 'list_files'; arguments = @{path = '{step.folder[input.assetFolder].path}'}; rows = 'data'; match = @{path = '{input.favicon}'}; source = $src})}
+                    bindings = @(@{id = 'up'; surface = 'mcp'; status = 'implemented'; source = $src; create = @{operation = 'create_folder'; arguments = @{path = '{input.favicon}'}}; readBack = @{surface = 'mcp'; status = 'implemented'; operation = 'list_files'; arguments = @{path = '/Files/Images'}; rows = 'data'; source = $src}})})
+            debts = @(); provenOn = @(); traps = @(); verify = @{checkIds = @(); probes = @()}}
+        $script:RecipeFile = Join-Path $TestDrive ([guid]::NewGuid().ToString('n') + '.json')
+        $recipe | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $script:RecipeFile -Encoding utf8
+    }
+    It 'finds the folder ignoring case, never creates a second one, and writes and reads every later path in its real spelling' {
+        New-Stub
+        $global:RecipeStub.files.Add(@{path = '/Files/Images/Rhino'; isDirectory = $true; byteSize = 0})
+        $a = Invoke-Runner $script:Root @{Recipe = $script:RecipeFile; InputPath = $script:InputFile; Apply = $true}
+        $a.lines | Should -Contain 'STEP folder UNCHANGED rhino'
+        @($a.lines -match '^NOTE folder: the folder exists as /Files/Images/Rhino/').Count | Should -Be 1
+        $a.lines | Should -Contain 'STEP files CREATED rhino-favicon.png'
+        $a.lines | Should -Contain 'PASS files/rhino-favicon.png'
+        # The favicon path of the input now names the folder as it is spelt: the existing file is found, nothing else is made.
+        $a.lines | Should -Contain 'STEP favicon UNCHANGED favicon'
+        $a.exit | Should -Be 0
+        @(Get-Writes | Where-Object { $_ -like 'mcp create_folder*' }).Count | Should -Be 0
+        @($global:RecipeStub.log | Where-Object { $_ -like 'mcp upload_file*/Files/Images/Rhino/rhino-favicon.png*' }).Count | Should -Be 1
+        @($global:RecipeStub.files | Where-Object { $_.isDirectory }).Count | Should -Be 1
     }
 }
 

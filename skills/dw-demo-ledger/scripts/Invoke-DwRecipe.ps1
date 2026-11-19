@@ -116,7 +116,10 @@ try {
         $run.lines.Add("NOTE ${recipeId}: no step runs (-Debts Only)")
         foreach ($debt in @($doc.debts | Where-Object { -not $DebtNames -or $_ -cin $DebtNames })) { Invoke-RecipeDebt $debt $run }
     } else {
-        foreach ($step in $doc.steps) { if ($step.scan) { Invoke-RecipeScanStep $step $run } elseif ($step.prune) { Invoke-RecipePruneStep $step $run } else { Invoke-RecipeStep $step $run } }
+        foreach ($step in $doc.steps) {
+            if ($step.scan) { Invoke-RecipeScanStep $step $run } elseif ($step.prune) { Invoke-RecipePruneStep $step $run } else { Invoke-RecipeStep $step $run }
+            Update-RecipeSpelling $doc $run $step.id
+        }
         if (@($doc.debts).Count) {
             if ($applied -and $run.changed -and $Debts -eq 'Defer') { $run.deferred = @($doc.debts); $run.lines.Add("NOTE ${recipeId}: debts owed, deferred to the caller: " + ($doc.debts -join ', ')) }
             elseif ($applied -and $run.changed) { foreach ($debt in $doc.debts) { Invoke-RecipeDebt $debt $run } }

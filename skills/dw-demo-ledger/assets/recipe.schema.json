@@ -77,7 +77,18 @@
         }
       }
     },
-    "runsLast": {"description": "Why a recipe set runs this recipe after every other one (a de-brand replaces text the others may write).", "type": "string", "minLength": 1}
+    "runsLast": {"description": "Why a recipe set runs this recipe after every other one (a de-brand replaces text the others may write).", "type": "string", "minLength": 1},
+    "respell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "from", "to"],
+      "description": "Once the step has run, every text of the input section that starts with from in other letter case starts with to instead: a folder that already exists with other letter case keeps its real spelling in every later write, compare and read.",
+      "properties": {
+        "step": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "from": {"type": "string", "minLength": 1},
+        "to": {"type": "string", "minLength": 1}
+      }
+    }
   },
   "definitions": {
     "mode": {
@@ -138,6 +149,7 @@
         "localOnly": {"type": "boolean"},
         "rows": {"type": "string"},
         "match": {"type": "object"},
+        "ignoreCase": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "description": "match members compared as text ignoring case, for a name the platform stores with its own letter case (a folder)."},
         "matchSuffix": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "minLength": 1}, "description": "A row matches only when each named member's text ends with the given text, ignoring case (a file a layer stored under its own folder, found by its file name). A row without the member does not match."},
         "compare": {"type": "object"},
         "expect": {"type": "object"},

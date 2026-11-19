@@ -11,6 +11,7 @@
     "local": {"usable": true},
     "layerDelivered": "both"
   },
+  "respell": {"step": "folder", "from": "/Files/Images/{input.assetFolder}/", "to": "{step.folder[input.assetFolder].path}/"},
   "steps": [
     {
       "id": "folder",
@@ -18,14 +19,14 @@
       "key": "{input.assetFolder}",
       "skipWhen": {"path": "input.assetFolder", "exists": false},
       "find": {"bindings": [
-        {"id": "mcp-images", "surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "/Files/Images"}, "rows": "data", "match": {"name": "{input.assetFolder}", "isDirectory": true}, "produces": {"path": "path"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+        {"id": "mcp-images", "surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "/Files/Images"}, "rows": "data", "match": {"name": "{input.assetFolder}", "isDirectory": true}, "ignoreCase": ["name"], "produces": {"path": "path"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
       ]},
       "bindings": [
         {"id": "mcp-create-folder", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/brand-style-writes.md",
           "create": {"operation": "create_folder", "arguments": {"path": "/Files/Images/{input.assetFolder}"}},
-          "readBack": {"surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "/Files/Images"}, "rows": "data", "match": {"name": "{input.assetFolder}", "isDirectory": true}, "produces": {"path": "path"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "/Files/Images"}, "rows": "data", "match": {"name": "{input.assetFolder}", "isDirectory": true}, "ignoreCase": ["name"], "produces": {"path": "path"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
       ],
-      "trap": "list_files on a folder that does not exist answers an error, not an empty list, so the folder is found from its parent.",
+      "trap": "list_files on a folder that does not exist answers an error, not an empty list, so the folder is found from its parent. The folder is found ignoring letter case (a layer copy may have made /Files/Images/Rhino for an input that says rhino), and its real spelling then replaces the input's in every later path (respell): the files are uploaded into it, and the fonts, favicon and logo name it as it is.",
       "source": "skills/dw-swift-building/references/brand-style-writes.md"
     },
     {
@@ -34,13 +35,13 @@
       "forEach": "files[*]",
       "key": "{item.name}",
       "find": {"bindings": [
-        {"id": "mcp-list", "surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "{step.folder[input.assetFolder].path}"}, "rows": "data", "match": {"name": "{item.name}", "isDirectory": false}, "compare": {"byteSize": "{bytes:item.file}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+        {"id": "mcp-list", "surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "{step.folder[input.assetFolder].path}"}, "rows": "data", "match": {"name": "{item.name}", "isDirectory": false}, "ignoreCase": ["name"], "compare": {"byteSize": "{bytes:item.file}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
       ]},
       "bindings": [
         {"id": "mcp-upload", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/brand-style-writes.md",
           "create": {"operation": "upload_file", "arguments": {"path": "{step.folder[input.assetFolder].path}/{item.name}", "content": "{base64:item.file}", "isBase64": true, "overwrite": true}},
           "update": {"operation": "upload_file", "arguments": {"path": "{step.folder[input.assetFolder].path}/{item.name}", "content": "{base64:item.file}", "isBase64": true, "overwrite": true}},
-          "readBack": {"surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "{step.folder[input.assetFolder].path}"}, "rows": "data", "match": {"name": "{item.name}", "isDirectory": false}, "expect": {"byteSize": "{bytes:item.file}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "{step.folder[input.assetFolder].path}"}, "rows": "data", "match": {"name": "{item.name}", "isDirectory": false}, "ignoreCase": ["name"], "expect": {"byteSize": "{bytes:item.file}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
       ],
       "trap": "upload_file writes only under /Files/Images and /Files/Files/Integration; a font file a kit addresses under Templates/Designs/Swift-v2/Custom/fonts is uploaded to the asset folder instead and its font's filePath names that path. A changed file with the same size is not seen: rename it.",
       "source": "skills/dw-swift-building/references/brand-style-writes.md"
@@ -286,9 +287,11 @@
   },
   "provenOn": [
     {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "content.design-styles.1-verify.json (every style WOULD-CREATE, the wiring WOULD-UPDATE, 5 of 33), content.design-styles.2-apply.json (33 of 34, the recycle debt OPEN), recycle, content.design-styles.3-verify.json and content.design-styles.4-apply-again.json (33 of 33, nothing written, no debt run), content.design-styles.5-mcponly-apply.json (33 of 33, MCP only); in a browser the home page and the product list linked the three brand sheets and the new favicon, painted the header row and the primary button in the brand primary, rendered body and headings in the self-hosted family with both faces loaded, and inlined the brand logo"},
-    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 33 of 33 in every verify, the recycle paid by the operator; MCP-only 33 of 33 with the recycle OPEN."}
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 33 of 33 in every verify, the recycle paid by the operator; MCP-only 33 of 33 with the recycle OPEN."},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "an input whose assetFolder and paths spell the brand folder in lower case while it exists in mixed case: verify 33 of 33, the folder found ignoring case, every file, font, favicon and logo path respelled, nothing to write (the previous release: folder WOULD-CREATE, files WOULD-CREATE, fonts WOULD-UPDATE, 23 of 33). From empty on a fresh input: 33 of 33 after the recycle, apply again nothing written."}
   ],
   "traps": [
+    "An asset folder that exists in other letter case than the input names it is the same folder on the host: matched ignoring case, it is used as it is spelt there, never created a second time, and every file, font, favicon and logo path takes that spelling.",
     "Write a net-new style id (the kit slug), never the shipped default: a later re-stage of the theme layer reverts default, and other websites may bind it.",
     "The MCP style tools take camelCase members and enum names; a kit's style files carry PascalCase members and enum numbers (the stored model format). ConvertFrom-DwBrandKit.ps1 maps one onto the other.",
     "A typography that names a custom font for one role and a hosted family for another emits its @font-face rules before the hosted family's @import, and a browser drops an @import that follows other rules: that role falls back to the browser default. Self-host every role's face, or none.",
