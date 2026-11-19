@@ -870,6 +870,39 @@ Describe 'Invoke-DwRecipe on a prune step' {
 }
 
 Describe 'ConvertFrom-DwBrandKit' {
+    BeforeAll {
+        function New-PngHeader([int]$Width, [int]$Height) {
+            # The signature and IHDR chunk a PNG opens with: all the converter reads for the size.
+            $b = [byte[]](0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52) + [BitConverter]::GetBytes([int]$Width)[3..0] + [BitConverter]::GetBytes([int]$Height)[3..0] + [byte[]](8, 6, 0, 0, 0, 0, 0, 0, 0)
+            return , [byte[]]$b
+        }
+    }
+    It 'splits a RenderCheck list that pwsh -File passed as one text, writes LogoWidth, and warns about an icon-shaped logo' {
+        $kit = Join-Path $TestDrive 'kit2/swift2'
+        foreach ($d in 'ColorSchemes', 'Typography', 'Buttons', 'branding') { $null = New-Item -ItemType Directory -Force (Join-Path $kit $d) }
+        @{Id = 'contoso'; Name = 'Contoso'; Schemes = @(@{Id = 'light'; Name = 'Light'; BackgroundColor = '#ffffff'; ForegroundColor = '#111111'; PrimaryButtonColor = '#0b5d4b'; SecondaryButtonColor = '#000000'})} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $kit 'ColorSchemes/contoso.json')
+        @{Id = 'contoso'; Name = 'Contoso'; BaseFontSize = 16; BaseFontScale = 1.2; ParagraphFontWeight = 400; ParagraphLineHeight = 1.5; HeadingFontWeight = 700; HeadingLineHeight = 1.2; ButtonFontWeight = 600; ButtonLineHeight = 1.4} | ConvertTo-Json | Set-Content (Join-Path $kit 'Typography/contoso.json')
+        @{Id = 'contoso'; Name = 'Contoso'; Shape = 1; PaddingX = 1; PaddingY = 0.5; BorderSize = 1} | ConvertTo-Json | Set-Content (Join-Path $kit 'Buttons/contoso.json')
+        [IO.File]::WriteAllBytes((Join-Path $kit 'branding/contoso-logo.png'), (New-PngHeader 420 96))
+        [IO.File]::WriteAllBytes((Join-Path $kit 'branding/contoso-social.png'), (New-PngHeader 48 48))
+        @{headerDesktop = @{Id = '/Files/Images/branding/contoso-logo.png'; Name = 'contoso-logo.png'}; headerMobile = @{Id = '/Files/Images/branding/contoso-logo.png'; Name = 'contoso-logo.png'; Width = 120}
+            footerDesktop = @{Id = '/Files/Images/branding/contoso-social.png'; Name = 'contoso-social.png'}; footerMobile = $null; favicon = $null} | ConvertTo-Json | Set-Content (Join-Path $kit 'logo-fields.json')
+        $out = Join-Path $TestDrive 'input2/recipe-input.json'
+        $null = New-Item -ItemType Directory -Force (Split-Path $out)
+        @{schema = 1; build = @{areaId = 1}} | ConvertTo-Json | Set-Content $out
+        # As an operator's shell hands it over: one argument holding the quoted list.
+        $lines = & pwsh -NoProfile -File (Join-Path $script:Source 'scripts/ConvertFrom-DwBrandKit.ps1') -KitPath $kit -OutPath $out -RenderCheck "'/en-us/home','/en-us/shop'" 2>&1 | ForEach-Object { "$_" }
+        $LASTEXITCODE | Should -Be 0
+        $b = (Read-LedgerJson $out (Join-Path $script:Source 'assets/recipe-input.schema.json')).brand
+        @($b.renderCheck.path) | Should -Be @('/en-us/home', '/en-us/shop')
+        @($b.layout | Where-Object { $_.slot -eq 'HeaderDesktop' })[0].logo.LogoWidth | Should -Be '210'
+        @($b.layout | Where-Object { $_.slot -eq 'HeaderMobile' })[0].logo.LogoWidth | Should -Be '120'
+        ($lines -match 'logo slot FooterDesktop: contoso-social\.png is only 48x48 px.*square').Count | Should -Be 1
+        ($lines -match 'logo slot Header').Count | Should -Be 0
+        & (Join-Path $script:Source 'scripts/ConvertFrom-DwBrandKit.ps1') -KitPath $kit -OutPath $out -RenderCheck '/en-us/home, /en-us/shop' -WarningAction SilentlyContinue | Out-Null
+        @((Get-Content $out -Raw | ConvertFrom-Json).brand.renderCheck.path) | Should -Be @('/en-us/home', '/en-us/shop')
+        { & (Join-Path $script:Source 'scripts/ConvertFrom-DwBrandKit.ps1') -KitPath $kit -OutPath $out -RenderCheck 'en-us/home' -WarningAction SilentlyContinue } | Should -Throw '*not a storefront path*'
+    }
     It 'turns a kit''s swift2 folder into a brand section the input schema accepts, enums by name and files under /Files/Images' {
         $kit = Join-Path $TestDrive 'kit/swift2'
         foreach ($d in 'ColorSchemes', 'Typography', 'Buttons', 'Fonts', 'branding') { $null = New-Item -ItemType Directory -Force (Join-Path $kit $d) }
@@ -902,6 +935,7 @@ Describe 'ConvertFrom-DwBrandKit' {
         @($b.files.file) | Should -Contain '../kit/swift2/Fonts/fabrikam-body-400.woff2'
         $b.layout[0].slot | Should -Be 'HeaderDesktop'
         $b.layout[0].logo.Image | Should -Be '/Files/Images/fabrikam/fabrikam-logo.svg'
+        $b.layout[0].logo.LogoWidth | Should -Be '210'
     }
 }
 

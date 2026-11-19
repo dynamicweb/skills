@@ -10,7 +10,11 @@ The recipe input file to write; created when absent.
 .PARAMETER AssetFolder
 Folder under /Files/Images for the kit's files; default the kit slug.
 .PARAMETER RenderCheck
-Storefront paths that must still answer 200 after the re-skin, such as /en-us/home.
+Storefront paths that must still answer 200 after the re-skin, such as /en-us/home. A list, or one comma-separated text: through pwsh -File a list arrives as one argument, so "/a,/b" and "'/a','/b'" are split here.
+.PARAMETER LogoWidth
+LogoWidth written on the desktop header and footer logos; default 210, the kit sheet's desktop logo clamp. A slot in logo-fields.json that names its own Width keeps it.
+.PARAMETER MobileLogoWidth
+LogoWidth written on the mobile header and footer logos; default 150, the kit sheet's clamp below md, so the mobile header keeps room for its links.
 .EXAMPLE
 pwsh -NoProfile -File scripts/ConvertFrom-DwBrandKit.ps1 -KitPath ./brand-kit/acme/swift2 -OutPath ./recipe-input.json -RenderCheck /en-us/home
 #>
@@ -20,7 +24,9 @@ param(
     [Parameter(Mandatory)][string]$KitPath,
     [Parameter(Mandatory)][string]$OutPath,
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9_-]*$')][string]$AssetFolder,
-    [string[]]$RenderCheck = @()
+    [string[]]$RenderCheck = @(),
+    [ValidateRange(16, 1200)][int]$LogoWidth = 210,
+    [ValidateRange(16, 1200)][int]$MobileLogoWidth = 150
 )
 $ErrorActionPreference = 'Stop'
 $kit = (Resolve-Path -LiteralPath $KitPath).Path
@@ -44,6 +50,41 @@ function ConvertTo-KitEnum($Value, $Names, [string]$What) {
     return $name
 }
 function Get-RelativePath([string]$Full) { [IO.Path]::GetRelativePath($outDir, $Full).Replace('\', '/') }
+function Get-KitImageSize([string]$Path) {
+    # Pixel width and height of a PNG, GIF, JPEG or SVG (width/height or viewBox), else $null. No image library.
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    $be = { param($i, $n) $v = 0; for ($k = 0; $k -lt $n; $k++) { $v = $v * 256 + $bytes[$i + $k] }; $v }
+    if ($bytes.Length -ge 24 -and $bytes[0] -eq 0x89 -and $bytes[1] -eq 0x50) { return @((& $be 16 4), (& $be 20 4)) }
+    if ($bytes.Length -ge 10 -and $bytes[0] -eq 0x47 -and $bytes[1] -eq 0x49) { return @(($bytes[6] + 256 * $bytes[7]), ($bytes[8] + 256 * $bytes[9])) }
+    if ($bytes.Length -ge 4 -and $bytes[0] -eq 0xFF -and $bytes[1] -eq 0xD8) {
+        $i = 2
+        while ($i + 9 -lt $bytes.Length -and $bytes[$i] -eq 0xFF) {
+            $marker = $bytes[$i + 1]
+            if ($marker -in 0xC0, 0xC1, 0xC2) { return @((& $be ($i + 7) 2), (& $be ($i + 5) 2)) }
+            $i += 2 + (& $be ($i + 2) 2)
+        }
+        return $null
+    }
+    $text = [Text.Encoding]::UTF8.GetString($bytes, 0, [Math]::Min($bytes.Length, 4096))
+    if ($text -match '<svg\b[^>]*>') {
+        $tag = $Matches[0]
+        if ($tag -match '\bwidth="(\d+(\.\d+)?)(px)?"' ) { $w = [double]$Matches[1]; if ($tag -match '\bheight="(\d+(\.\d+)?)(px)?"') { return @($w, [double]$Matches[1]) } }
+        if ($tag -match '\bviewBox="\s*[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)\s*"') { return @([double]$Matches[1], [double]$Matches[2]) }
+    }
+    return $null
+}
+function Test-KitLogo([string]$Slot, [string]$Name) {
+    # A warning, not a refusal: a kit can rank a social-media icon or a favicon as a logo. The operator looks.
+    $local = Join-Path (Join-Path $kit 'branding') $Name
+    if (-not (Test-Path -LiteralPath $local)) { return }
+    $size = Get-KitImageSize $local
+    if (-not $size -or $size[0] -le 0 -or $size[1] -le 0) { return }
+    $w = $size[0]; $h = $size[1]; $ratio = $w / $h
+    $why = @()
+    if ([Math]::Max($w, $h) -lt 100) { $why += "only $([int]$w)x$([int]$h) px, smaller than a plausible logo" }
+    if ($ratio -ge 0.8 -and $ratio -le 1.25) { $why += "square ($([int]$w)x$([int]$h)), shaped like an icon rather than a wordmark" }
+    if ($why.Count) { Write-Warning "logo slot ${Slot}: $Name is $($why -join ' and '); check that the kit ranked the brand logo here and not a social or app icon." }
+}
 
 $schemes = Get-KitOne 'ColorSchemes'
 $typography = Get-KitOne 'Typography'
@@ -98,11 +139,16 @@ if (Test-Path -LiteralPath $logos) {
         if ($null -eq $v) { continue }
         # A SelectedImage object names the path in Id; a file field takes the path as text.
         $path = if ($v -is [Collections.IDictionary]) { $v.Id } else { $v }
-        [ordered]@{slot = $slots[$k]; logo = [ordered]@{Image = (& $toArchive $path); LogoName = $brand.name}}
+        $width = if ($v -is [Collections.IDictionary] -and $v.Width) { [string]$v.Width } elseif ($k -like '*Mobile') { [string]$MobileLogoWidth } else { [string]$LogoWidth }
+        Test-KitLogo $slots[$k] (Split-Path -Leaf ([string]$path))
+        [ordered]@{slot = $slots[$k]; logo = [ordered]@{Image = (& $toArchive $path); LogoName = $brand.name; LogoWidth = $width}}
     })
     if ($layout.Count) { $brand.layout = $layout }
 }
-if ($RenderCheck.Count) { $brand.renderCheck = @($RenderCheck | ForEach-Object { @{path = $_} }) }
+# Through pwsh -File a list arrives as one text ("'/a','/b'"): split on commas and drop the quotes around each path.
+$paths = @($RenderCheck | ForEach-Object { ([string]$_).Split(',') } | ForEach-Object { $_.Trim().Trim("'", '"').Trim() } | Where-Object { $_ })
+foreach ($p in $paths) { if (-not $p.StartsWith('/')) { throw "RenderCheck path '$p' is not a storefront path starting with /." } }
+if ($paths.Count) { $brand.renderCheck = @($paths | ForEach-Object { @{path = $_} }) }
 $doc = if (Test-Path -LiteralPath $out) { Read-KitJson $out } else { [ordered]@{schema = 1} }
 $doc['brand'] = $brand
 [IO.File]::WriteAllText($out, ($doc | ConvertTo-Json -Depth 20) + "`n", [Text.UTF8Encoding]::new($false))
