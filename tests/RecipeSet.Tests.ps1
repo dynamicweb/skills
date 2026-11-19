@@ -51,7 +51,7 @@ exit 1
             debtResult = @{}; probeFail = [Collections.Generic.HashSet[string]]::new()}
     }
     function Write-SetInput([hashtable]$Extra = @{}, [string[]]$Drop = @()) {
-        # The repository's example input: users.accounts, content.pages, prices, brand and history.
+        # The repository's example input: users.accounts, content.pages, checkout, prices, brand and history.
         $data = Get-Content -LiteralPath (Join-Path $script:Source 'assets/recipe-input.example.json') -Raw | ConvertFrom-Json -AsHashtable
         foreach ($k in $Drop) { $data.Remove($k) }
         foreach ($k in $Extra.Keys) { $data[$k] = $Extra[$k] }
@@ -64,6 +64,31 @@ exit 1
         return @{lines = @($out); exit = $LASTEXITCODE}
     }
     function Get-Calls([string]$Mode) { @($global:SetStub.calls | Where-Object { -not $Mode -or $_.mode -eq $Mode }) }
+    function Get-RecipeDocs {
+        $docs = @{}
+        foreach ($f in Get-ChildItem -LiteralPath (Join-Path $script:Source 'assets/recipes') -Recurse -Filter '*.json') {
+            $d = Get-Content -LiteralPath $f.FullName -Raw | ConvertFrom-Json -AsHashtable
+            $docs[$d.id] = $d
+        }
+        return $docs
+    }
+    function Get-SelectedIds([string]$InputPath) {
+        # The recipes the set must select: every recipe whose input section the file holds. Derived from the
+        # recipes themselves, so a recipe added later is expected without editing a count here.
+        $sections = @((Get-Content -LiteralPath $InputPath -Raw | ConvertFrom-Json -AsHashtable).Keys)
+        $docs = Get-RecipeDocs
+        return @($docs.Keys | Where-Object { $docs[$_].inputs.section -in $sections } | Sort-Object)
+    }
+    function Assert-DependencyOrder([string[]]$Ids) {
+        # Every recipe runs after each recipe it depends on that the run includes; a run-last recipe is last.
+        $docs = Get-RecipeDocs
+        foreach ($id in $Ids) {
+            foreach ($dep in @($docs[$id].dependsOn)) {
+                if ($dep -and $dep.recipe -in $Ids) { [array]::IndexOf($Ids, $dep.recipe) | Should -BeLessThan ([array]::IndexOf($Ids, $id)) -Because "$id depends on $($dep.recipe)" }
+            }
+            if ($docs[$id].runsLast) { $Ids[-1] | Should -Be $id }
+        }
+    }
 }
 
 AfterAll { Remove-Variable -Name SetStub -Scope Global -ErrorAction SilentlyContinue }
@@ -72,18 +97,29 @@ Describe 'Invoke-DwRecipeSet' {
     BeforeEach { $script:Root = New-SetSandbox; New-SetStub }
 
     It 'without -Apply runs every recipe the input has a section for once, verify-only, dependencies first' {
-        $r = Invoke-Set $script:Root @{InputPath = (Write-SetInput)}
+        $in = Write-SetInput
+        $expected = Get-SelectedIds $in
+        $expected | Should -Contain 'orders.payment-methods'
+        $r = Invoke-Set $script:Root @{InputPath = $in}
         $calls = Get-Calls
-        @($calls | ForEach-Object { $_.recipe }) | Should -Be @('content.design-styles', 'content.pages', 'users.accounts', 'commerce.customer-prices', 'orders.completed-orders')
+        $ran = @($calls | ForEach-Object { $_.recipe })
+        @($ran | Sort-Object) | Should -Be $expected
+        @($ran | Select-Object -Unique).Count | Should -Be $ran.Count
+        Assert-DependencyOrder $ran
+        # The checkout scopes methods to the account groups users.accounts creates, and signs in as its buyer.
+        [array]::IndexOf($ran, 'users.accounts') | Should -BeLessThan ([array]::IndexOf($ran, 'orders.payment-methods'))
         @($calls | Where-Object { $_.mode -ne 'verify' }).Count | Should -Be 0
         ($r.lines -match '^NOTE commerce\.customer-prices: depends on pim\.identifiers, which this run does not include').Count | Should -Be 1
-        $r.lines | Should -Contain 'recipe set: 0 of 5 recipes passed'
+        $r.lines | Should -Contain "recipe set: 0 of $($expected.Count) recipes passed"
         $r.exit | Should -Be 1
     }
     It 'with -Apply applies in order with debts deferred, pays each owed debt once (recycle last), then verifies every recipe' {
-        $r = Invoke-Set $script:Root @{InputPath = (Write-SetInput); Apply = $true}
+        $in = Write-SetInput
+        $n = (Get-SelectedIds $in).Count
+        $r = Invoke-Set $script:Root @{InputPath = $in; Apply = $true}
         $apply = Get-Calls 'apply'
-        $apply.Count | Should -Be 5
+        $apply.Count | Should -Be $n
+        Assert-DependencyOrder @($apply | ForEach-Object { $_.recipe })
         @($apply | Where-Object { -not ($_.defer -and $_.skipVerify) }).Count | Should -Be 0
         $debts = Get-Calls 'debts'
         # users.accounts owes a flush, two index builds and a recycle; content.design-styles a recycle: one recycle, after the rest.
@@ -95,17 +131,19 @@ Describe 'Invoke-DwRecipeSet' {
         $firstDebt = $all.IndexOf($debts[0]); $lastApply = $all.IndexOf($apply[-1]); $firstVerify = $all.IndexOf((Get-Calls 'verify')[0])
         $firstDebt | Should -BeGreaterThan $lastApply
         $firstVerify | Should -BeGreaterThan $all.IndexOf($debts[-1])
-        (Get-Calls 'verify').Count | Should -Be 5
-        $r.lines | Should -Contain 'recipe set: 5 of 5 recipes passed'
+        (Get-Calls 'verify').Count | Should -Be $n
+        $r.lines | Should -Contain "recipe set: $n of $n recipes passed"
         ($r.lines -match '^DEBT PASS recycle').Count | Should -Be 1
         $r.exit | Should -Be 0
     }
     It 'pays no debt when a second apply changes nothing, and still verifies' {
-        foreach ($id in @('content.design-styles', 'content.pages', 'users.accounts', 'commerce.customer-prices', 'orders.completed-orders')) { $null = $global:SetStub.settled.Add($id) }
-        $r = Invoke-Set $script:Root @{InputPath = (Write-SetInput); Apply = $true}
+        $in = Write-SetInput
+        $ids = Get-SelectedIds $in
+        foreach ($id in $ids) { $null = $global:SetStub.settled.Add($id) }
+        $r = Invoke-Set $script:Root @{InputPath = $in; Apply = $true}
         (Get-Calls 'debts').Count | Should -Be 0
         $r.lines | Should -Contain 'NOTE recipe set: no debt owed'
-        (Get-Calls 'verify').Count | Should -Be 5
+        (Get-Calls 'verify').Count | Should -Be $ids.Count
         $r.exit | Should -Be 0
     }
     It 'pays every debt of the selected recipes with -PayDebts even when nothing changed, and nothing without -Apply' {
@@ -121,9 +159,12 @@ Describe 'Invoke-DwRecipeSet' {
     }
     It 'fails the set when a debt stays OPEN, and names it' {
         $global:SetStub.debtResult['recycle'] = 'OPEN'
-        $r = Invoke-Set $script:Root @{InputPath = (Write-SetInput); Apply = $true}
+        $in = Write-SetInput
+        $n = (Get-SelectedIds $in).Count
+        $r = Invoke-Set $script:Root @{InputPath = $in; Apply = $true}
         ($r.lines -match '^DEBT OPEN recycle').Count | Should -Be 1
-        ($r.lines -match '^recipe set: 5 of 5 recipes passed; a debt is not paid$').Count | Should -Be 1
+        # Every recipe passes its checks; the set still fails, on the debt alone.
+        ($r.lines -match "^recipe set: $n of $n recipes passed; a debt is not paid$").Count | Should -Be 1
         $r.exit | Should -Be 1
     }
     It 'pays a debt a later recipe names in debtsPaid before that recipe runs, and not again at the end' {
@@ -161,11 +202,13 @@ Describe 'Invoke-DwRecipeSet' {
     It 'runs the de-brand last, and fails a recipe whose verify pass fails while the others pass' {
         $global:SetStub.probeFail.Add('content.pages') | Out-Null
         $in = Write-SetInput @{debrand = @{forbidden = @(@{text = 'Northwind Legacy'; replacement = 'Contoso'})}}
+        $n = (Get-SelectedIds $in).Count
         $r = Invoke-Set $script:Root @{InputPath = $in; Apply = $true; McpOnly = $true; ApiToken = 'stub-api-token-0000'}
         @(Get-Calls 'apply' | ForEach-Object { $_.recipe })[-1] | Should -Be 'content.page-seo'
+        Assert-DependencyOrder @(Get-Calls 'apply' | ForEach-Object { $_.recipe })
         @(Get-Calls | Where-Object { -not $_.mcpOnly }).Count | Should -Be 0
         ($r.lines -match '^\s*content\.pages\s.*FAIL\s+failed in: verify').Count | Should -Be 1
-        $r.lines | Should -Contain 'recipe set: 5 of 6 recipes passed'
+        $r.lines | Should -Contain "recipe set: $($n - 1) of $n recipes passed"
         ($r.lines -join "`n") | Should -Not -Match 'stub-api-token'
         $r.exit | Should -Be 1
     }

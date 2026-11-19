@@ -5,6 +5,9 @@
   "functions": ["orders.payment-methods", "orders.shipping-methods", "swift.cart-checkout"],
   "skill": "dw-commerce-orders",
   "inputs": {"section": "checkout", "required": ["country", "language", "methods"]},
+  "dependsOn": [
+    {"recipe": "users.accounts", "why": "The customer groups a method is scoped to, and the signed-in buyer whose offer the probes read, are created by that recipe; this one only names them."}
+  ],
   "modes": {
     "mcpOnly": {"usable": false, "reason": "The country relation and the customer-group scope are on the Management API models only (PaymentsAll / PaymentSave, ShippingsAll / ShippingSave); the MCP method models carry neither, nor a shipping method's fee."},
     "hosted": {"usable": true, "reason": "Every step is MCP or the Management API; the probes read the delivery API."},

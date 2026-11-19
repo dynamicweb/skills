@@ -34,13 +34,13 @@ A recipe set runs the recipes whose input section the customer data file holds, 
 
 1. `content.design-styles`
 2. `content.pages`
-3. `orders.payment-methods`
-4. `pim.data-models`
-5. `pim.identifiers`. After `pim.data-models`: Products are placed in the data models and write the spec fields that recipe creates.
-6. `pim.workflow`. After `pim.data-models`: The workflow is attached to data models that recipe creates.
-7. `users.accounts`
-8. `commerce.customer-prices`. After `pim.identifiers`: The list price is patched onto a product the catalogue created; this recipe finds products by number and creates none. After `users.accounts`: The customer group, the account's customer number and the buyer the probes sign in as are that recipe's objects.
-9. `orders.completed-orders`. After `users.accounts`: The orders, quotes and lists belong to the buyer that recipe creates with a password. After `pim.identifiers`: Order and quote lines name products the catalogue created. After `commerce.customer-prices`: A line is charged the buyer's price when it is added, and the order stores that total: prices first, or the history carries list prices.
+3. `pim.data-models`
+4. `pim.identifiers`. After `pim.data-models`: Products are placed in the data models and write the spec fields that recipe creates.
+5. `pim.workflow`. After `pim.data-models`: The workflow is attached to data models that recipe creates.
+6. `users.accounts`
+7. `commerce.customer-prices`. After `pim.identifiers`: The list price is patched onto a product the catalogue created; this recipe finds products by number and creates none. After `users.accounts`: The customer group, the account's customer number and the buyer the probes sign in as are that recipe's objects.
+8. `orders.completed-orders`. After `users.accounts`: The orders, quotes and lists belong to the buyer that recipe creates with a password. After `pim.identifiers`: Order and quote lines name products the catalogue created. After `commerce.customer-prices`: A line is charged the buyer's price when it is added, and the order stores that total: prices first, or the history carries list prices.
+9. `orders.payment-methods`. After `users.accounts`: The customer groups a method is scoped to, and the signed-in buyer whose offer the probes read, are created by that recipe; this one only names them.
 10. `content.page-seo`. Last: A de-brand replaces a forbidden text wherever it shows, so it runs after every recipe that writes text; the forbidden text must not appear in another section of the input, or the next apply writes it back and the set never settles.
 
 ## What stays planned
