@@ -103,6 +103,7 @@
     "list_files"
   ],
   "adminReadQueries": [
+    "DataModelGroupById",
     "FeaturesAll",
     "GroupById",
     "ProductCategoriesAll"
@@ -130,6 +131,7 @@
     "create_category_fields",
     "create_data_models",
     "create_or_update_completeness_rules",
+    "create_or_update_workflow_states",
     "create_users",
     "patch_data_models",
     "patch_products_safe",
@@ -146,6 +148,8 @@
     "wait_for_product_index"
   ],
   "recipeAdminCommands": [
+    "DataModelGroupSave",
+    "Dynamicweb.Products.UI.Commands.Settings.WorkflowSaveCommand",
     "UserImpersonateAdd",
     "UsersAddToGroups"
   ],

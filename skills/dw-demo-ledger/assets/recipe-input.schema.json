@@ -505,6 +505,55 @@
         }
       }
     },
+    "pim.workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "states"
+      ],
+      "description": "Optional. The product workflow the pim.workflow recipe builds: its states with the states each may move to, attached to data models by name.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "states": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Unique among the workflows of the solution."
+              },
+              "next": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Names of the states this state may move to; each is a state of this workflow."
+              }
+            }
+          }
+        },
+        "dataModels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Names of the data models (a catalogue top group's name) the workflow is attached to."
+        }
+      }
+    },
     "prices": {
       "type": "object",
       "additionalProperties": false,
