@@ -44,7 +44,7 @@ function Find-RecipeObject {
         if ($layer) { return $layer }
         return @{state = 'CREATE'; row = $null; fields = @(); binding = $binding}
     }
-    $differs = if ($binding.compare) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $binding.compare $Context) $binding.operation } else { @() }
+    $differs = if ($binding.compare) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $binding.compare $Context) $binding.operation $binding.unordered } else { @() }
     return @{state = $(if ($differs.Count) { 'UPDATE' } else { 'UNCHANGED' }); row = $hits[0]; fields = $differs; binding = $binding}
 }
 function Select-RecipeBindingMatches {
@@ -174,7 +174,7 @@ function Invoke-RecipeStepItem {
     }
     $hits = Select-RecipeBindingMatches $rows $readBack $Context
     if ($hits.Count -ne 1) { Add-RecipeCheck $Run $name 'FAIL' "the read-back found $($hits.Count) matching object(s), not one"; return }
-    $differs = if ($readBack.expect) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $readBack.expect $Context) $readBack.operation } else { @() }
+    $differs = if ($readBack.expect) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $readBack.expect $Context) $readBack.operation $readBack.unordered } else { @() }
     $result.values = Get-RecipeProduced $hits[0] $readBack.produces $readBack.operation $result.values
     if ($differs.Count) { Add-RecipeCheck $Run $name 'FAIL' ('the read-back differs from the write in ' + ($differs -join ', ')); return }
     Add-RecipeCheck $Run $name 'PASS'

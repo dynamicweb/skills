@@ -53,15 +53,15 @@
       "forEach": "states[*]",
       "key": "{item.name}",
       "find": {"bindings": [
-        {"id": "mcp-transitions", "surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data[*].states", "match": {"name": "{item.name}"}, "compare": {"nextStateIds": "{step.states[item.next[*]].id|[]}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+        {"id": "mcp-transitions", "surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data[*].states", "match": {"name": "{item.name}"}, "compare": {"nextStateIds": "{step.states[item.next[*]].id|[]}"}, "unordered": ["nextStateIds"], "source": "skills/dw-pim-modelling/references/model-writes.md"}
       ]},
       "bindings": [
         {"id": "mcp-next", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
           "create": {"operation": "create_or_update_workflow_states", "arguments": {"models": [{"id": "{step.states.id}", "name": "{item.name}", "nextStateIds": "{step.states[item.next[*]].id|[]}"}]}},
           "update": {"operation": "create_or_update_workflow_states", "arguments": {"models": [{"id": "{step.states.id}", "name": "{item.name}", "nextStateIds": "{step.states[item.next[*]].id|[]}"}]}},
-          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data[*].states", "match": {"name": "{item.name}"}, "expect": {"nextStateIds": "{step.states[item.next[*]].id|[]}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data[*].states", "match": {"name": "{item.name}"}, "expect": {"nextStateIds": "{step.states[item.next[*]].id|[]}"}, "unordered": ["nextStateIds"], "source": "skills/dw-pim-modelling/references/model-writes.md"}}
       ],
-      "trap": "nextStateIds can only name states that exist, so the transitions are a second pass after every state is created; the list is compared in input order.",
+      "trap": "nextStateIds can only name states that exist, so the transitions are a second pass after every state is created. get_workflow_states lists a state's next states sorted by id, not in the order they were saved, so the list is compared in any order (unordered).",
       "source": "skills/dw-pim-modelling/references/model-writes.md"
     },
     {

@@ -1244,6 +1244,22 @@ Describe 'Shipped recipes against the platform shapes a whole-build set met' {
         $ctx.build.pimShop = 'PIMSHOP1'
         (Expand-RecipeValue $probe.bindings[0].arguments $ctx).shopId | Should -Be 'PIMSHOP1'
     }
+    It 'compares a state''s next states in any order, as get_workflow_states lists them sorted by id, and still sees a missing one' {
+        $step = @((Get-ShippedRecipe 'pim' 'pim.workflow').steps | Where-Object id -eq 'transitions')[0]
+        $step.bindings[0].readBack.unordered | Should -Contain 'nextStateIds'
+        function Read-RecipeRows { param($Binding, $Context, $Run) , @(@{id = 2; name = 'Review'; nextStateIds = @(1, 3)}) }
+        $run = New-StepRun @{} @{} @{surfaces = @('mcp'); mcp = $true; tools = @{get_workflow_states = @{type = 'object'; properties = @{}}}}
+        $ctx = @{input = @{}; item = @{name = 'Review'; next = @('Copy', 'Draft')}; secrets = @{}; key = 'Review'
+            results = @{states = @{Draft = @{state = 'UNCHANGED'; values = @{id = 1}}; Copy = @{state = 'UNCHANGED'; values = @{id = 3}}}}}
+        (Find-RecipeObject $step $ctx $run).state | Should -Be 'UNCHANGED'
+        $ctx.item.next = @('Copy')
+        $found = Find-RecipeObject $step $ctx $run
+        $found.state | Should -Be 'UPDATE'
+        $found.fields | Should -Be @('nextStateIds')
+        # Each element as often: a list with a repeated id is not the same set.
+        Test-RecipeEqualUnordered @(1, 3, 3) @(3, 1, 1) | Should -BeFalse
+        Test-RecipeEqualUnordered @(10, 2) @(2, 10) | Should -BeTrue
+    }
 }
 
 Describe 'Invoke-DwRecipe debt modes: deferred, debts only, verification skipped' {

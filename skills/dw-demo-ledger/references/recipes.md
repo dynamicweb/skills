@@ -77,7 +77,8 @@ read-back), `produces` (values later steps use, by row path) and, on a probe, `a
 that each hold one name and one value (item fields), `compareMap` and `expectMap`
 (`{from, key, value}`) compare a whole map name by name: a missing name is a difference, so a
 misspelt field shows. `ignoreCase` lists `match` members compared ignoring letter case (a folder
-name the host stores in its own case). A write binding names `create` and/or `update`
+name the host stores in its own case). `unordered` lists `compare` or `expect` members whose list is compared in
+any order, each element as often (a state's next states, which the read lists sorted by id). A write binding names `create` and/or `update`
 (`{operation, arguments}`) and a `readBack` read binding.
 
 **`status: implemented` means the tool or command name and its argument shape are documented in
