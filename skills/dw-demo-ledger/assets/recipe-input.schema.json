@@ -106,6 +106,15 @@
                         "csr"
                       ],
                       "description": "buyer: the persona a signed-in check signs in as; accountAdmin: the account's administrator; user: a customer contact; csr: a representative who impersonates customers. Default user in an account, csr in a staff group."
+                    },
+                    "actsFor": {
+                      "type": "array",
+                      "maxItems": 1,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "description": "The customer number of another account this buyer may act for (Switch account). Only the buyer carries it, and it names at most one account. No recipe writes it yet: a producer that delivers the accounts as serialized data reads it."
                     }
                   }
                 }
