@@ -467,7 +467,17 @@ def mcp_registry() -> tuple[set[str], set[str], Path] | None:
     except json.JSONDecodeError as e:
         err(f"{rel(path)}: invalid JSON ({e})")
         return None
-    return set(doc.get("tools", {})), set(doc.get("notTools", [])), path
+    tools = set(doc.get("tools", {}))
+    # A name another supported release registers is a real tool too (a newer server adds tools, and a
+    # skill that cites one names the release); the file in play still supplies notTools.
+    try:
+        for version in json.loads(MCP_TOOLS_INDEX.read_text(encoding=ENCODING)).get("supported") or []:
+            other = MCP_TOOLS_DIR / f"{version}.json"
+            if other != path and other.is_file():
+                tools |= set(json.loads(other.read_text(encoding=ENCODING)).get("tools", {}))
+    except json.JSONDecodeError:
+        pass
+    return tools, set(doc.get("notTools", [])), path
 
 
 def tool_tokens(line: str) -> list[str]:

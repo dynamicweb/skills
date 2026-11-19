@@ -23,6 +23,7 @@ validator fails when this file and the recipes disagree, so do not edit it by ha
 | `orders.completed-orders` | orders.completed-orders, orders.quotes, orders.favorite-lists, orders.order-numbering | `history` | dw-commerce-orders | no | no | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `orders.payment-methods` | orders.payment-methods, orders.shipping-methods, swift.cart-checkout | `checkout` | dw-commerce-orders | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `pim.data-models` | pim.data-models, pim.field-scope, pim.field-display-groups, pim.completeness-rules | `catalogue` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
+| `pim.documents` | pim.documents | `catalogue` | dw-demo-pim | no | no | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 (MCP-only yes, hosted yes) |
 | `pim.identifiers` | pim.identifiers, pim.images, commerce.stock-levels | `catalogue` | dw-demo-pim | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `pim.workflow` | pim.workflow | `pim.workflow` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `users.accounts` | users.accounts, users.user-accounts, users.user-groups, swift.impersonation | `users.accounts` | dw-commerce-b2b | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 (MCP-only yes, hosted yes); dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 (MCP-only yes, hosted yes) |
@@ -36,12 +37,13 @@ A recipe set runs the recipes whose input section the customer data file holds, 
 2. `content.pages`
 3. `pim.data-models`
 4. `pim.identifiers`. After `pim.data-models`: Products are placed in the data models and write the spec fields that recipe creates.
-5. `pim.workflow`. After `pim.data-models`: The workflow is attached to data models that recipe creates.
-6. `users.accounts`
-7. `commerce.customer-prices`. After `pim.identifiers`: The list price is patched onto a product the catalogue created; this recipe finds products by number and creates none. After `users.accounts`: The customer group, the account's customer number and the buyer the probes sign in as are that recipe's objects.
-8. `orders.completed-orders`. After `users.accounts`: The orders, quotes and lists belong to the buyer that recipe creates with a password. After `pim.identifiers`: Order and quote lines name products the catalogue created. After `commerce.customer-prices`: A line is charged the buyer's price when it is added, and the order stores that total: prices first, or the history carries list prices.
-9. `orders.payment-methods`. After `users.accounts`: The customer groups a method is scoped to, and the signed-in buyer whose offer the probes read, are created by that recipe; this one only names them.
-10. `content.page-seo`. Last: A de-brand replaces a forbidden text wherever it shows, so it runs after every recipe that writes text; the forbidden text must not appear in another section of the input, or the next apply writes it back and the set never settles.
+5. `pim.documents`. After `pim.identifiers`: The documents are attached to the products that recipe creates.
+6. `pim.workflow`. After `pim.data-models`: The workflow is attached to data models that recipe creates.
+7. `users.accounts`
+8. `commerce.customer-prices`. After `pim.identifiers`: The list price is patched onto a product the catalogue created; this recipe finds products by number and creates none. After `users.accounts`: The customer group, the account's customer number and the buyer the probes sign in as are that recipe's objects.
+9. `orders.completed-orders`. After `users.accounts`: The orders, quotes and lists belong to the buyer that recipe creates with a password. After `pim.identifiers`: Order and quote lines name products the catalogue created. After `commerce.customer-prices`: A line is charged the buyer's price when it is added, and the order stores that total: prices first, or the history carries list prices.
+10. `orders.payment-methods`. After `users.accounts`: The customer groups a method is scoped to, and the signed-in buyer whose offer the probes read, are created by that recipe; this one only names them.
+11. `content.page-seo`. Last: A de-brand replaces a forbidden text wherever it shows, so it runs after every recipe that writes text; the forbidden text must not appear in another section of the input, or the next apply writes it back and the set never settles.
 
 ## What stays planned
 
@@ -71,6 +73,8 @@ work is done by hand or stays undone. Reasons as the recipes state them:
 - `pim.data-models`
   - step categories find (mcp): No MCP read lists a category: get_product_category_fields returns the fields of CategoryFields categories, so a category without fields is invisible to it.
   - MCP-only: No MCP read lists a product category that has no fields yet (get_product_category_fields lists fields), so the category step needs the Management API read ProductCategoriesAll.
+- `pim.documents`
+  - MCP-only: On MCP 0.6.3 (the oldest proven release) no MCP tool and no recipe Management API command creates a product asset category, so a new category is made in the admin screen; an existing one is found over MCP and the files and documents are written over MCP. From MCP 0.6.6 save_product_asset_categories creates it and every step runs MCP-only (see provenOn).
 - `pim.identifiers`: nothing planned
 - `pim.workflow`
   - step workflow write (mcp): No MCP tool creates a workflow: create_or_update_workflow_states refuses workflowId 0.
@@ -99,6 +103,7 @@ work is done by hand or stays undone. Reasons as the recipes state them:
 | `orders.shipping-methods` | `orders.payment-methods` |
 | `pim.completeness-rules` | `pim.data-models` |
 | `pim.data-models` | `pim.data-models` |
+| `pim.documents` | `pim.documents` |
 | `pim.field-display-groups` | `pim.data-models` |
 | `pim.field-scope` | `pim.data-models` |
 | `pim.identifiers` | `pim.identifiers` |

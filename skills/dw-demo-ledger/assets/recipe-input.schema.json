@@ -341,6 +341,37 @@
           "minLength": 1,
           "description": "Id of the storefront shop the groups are created in (pim.identifiers recipe)."
         },
+        "documentCategories": {
+          "type": "array",
+          "description": "Product asset categories for documents, one per document kind (pim.documents recipe): a FileSelector category with its file-type filter.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "name",
+              "extensions"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9]*$",
+                "maxLength": 40,
+                "description": "The category's system name and natural key; letters and digits only."
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Display name in the default language."
+              },
+              "extensions": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(,[a-z0-9]+)*$",
+                "description": "Comma-separated file extensions the category accepts, e.g. pdf."
+              }
+            }
+          }
+        },
         "assortmentIds": {
           "type": "array",
           "maxItems": 1,
@@ -489,11 +520,17 @@
                   "properties": {
                     "path": {
                       "type": "string",
-                      "minLength": 1
+                      "minLength": 1,
+                      "description": "The document file, relative to the input file (pim.documents uploads it under /Files/Images)."
                     },
                     "name": {
                       "type": "string",
                       "minLength": 1
+                    },
+                    "category": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "key of the documentCategories entry the document is filed under (pim.documents recipe); a document without one is left to the layer."
                     }
                   }
                 }

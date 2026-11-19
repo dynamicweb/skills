@@ -76,14 +76,16 @@ invoking".
 | Tool | Arguments | Answer |
 |---|---|---|
 | `create_or_update_completeness_rules` | `{models: [{id, name, excludeVariants, fieldSystemNames}]}`, `id: 0` creates | `{succeeded, failed, items: [{success, ruleId, ruleName}]}` |
-| `get_completion_rules` | `{}` | `{count, data: [{id, name, description, excludeVariants, fields: [{systemName, ...}]}]}` |
+| `get_completion_rules` | `{}` | up to MCP 0.6.3 `{count, data: [{id, name, description, excludeVariants, fields: [{systemName, ...}]}]}`; from 0.6.6 `{count, note, data: [{id, name, description, excludeVariants, fieldSystemNames}]}` |
 | `assign_completion_rules_to_groups` | `{requests: [{groupId, ruleIds, languageIds}]}` | per-item counts |
 | `get_completion_rule_assignments_for_groups` | `{groupIds}` | `{count, data: [{id, rules: [{ruleId, ruleName}], languageIds}]}` |
 | `get_completeness_status` | `{productId, shopId, groupIds}` | `{productId, shopId, value}` |
 | `calculate_product_completeness_for_products` | `{productIds, ruleIds, groupIds}` | `{count, data: [{productId, value, fieldStatuses: [{fieldSystemName, languageId, hasValue}]}]}` |
 
-- The rule read returns the fields as objects (`fields[].systemName`), in the order written, and
-  includes standard fields such as `ProductName`.
+- The rule read returns the fields in the order written, including standard fields such as
+  `ProductName`: as objects (`fields[].systemName`) up to MCP 0.6.3, as the `fieldSystemNames` list the
+  write takes from 0.6.6 (the `fields` member is gone from the rows and the output schema). A reader that
+  must serve both checks the `tools/list` output schema for `fields` first.
 - `assign_completion_rules_to_groups` replaces the group's whole assignment.
 - `get_completeness_status` answers `value: -1` when no rule reaches the product through the shop or
   the groups passed; with the rule assigned to the product's data model it answers the percentage
@@ -129,6 +131,8 @@ the product's `customFields`.
 | `add_product_image` | `{request: {productId, filePath, groupId, name, setAsPrimary}}` | the detail `{detailId, value, isPrimary, name}` for a file already in the archive |
 | `get_product_images` | `{productId}` | `{data: [{detailId, value, isPrimary, sortOrder, name}]}`, the asset category not projected |
 | `set_product_primary_image` | `{request: {productId, detailId}}` | a sentence, not JSON |
+| `get_product_asset_categories` | `{}` | `{count, data: [{id, name, systemName, allowedExtensions, controlType, inheritance, defaultUploadFolder, isSystemGroup}]}`; `name` in the default language |
+| `save_product_asset_categories` (MCP 0.6.6) | `{categories: [{id, systemName, name, languageId, controlType, extensions, inheritance, defaultUploadFolder}]}` | no `id` creates (`systemName` required, unique ignoring case); an existing `id` updates and keeps every member left out. `extensions` is comma-separated (`pdf`) and replaces the list |
 | `assign_groups_to_assortment` | `{relations: [{assortmentId, groupId, excluded}]}` | per-item counts |
 | `get_assortment_relations_by_group_id` | `{groupId}` | `{data: [{assortmentId, relationType, groupId, excluded}]}` |
 | `build_assortments` | `{requests: [{assortmentId}]}` | per-item counts once built; `get_assortments` then shows a new `lastBuildDate` and `rebuildRequired: false` |
@@ -139,7 +143,12 @@ the product's `customFields`.
   file name that already exists** ("File already exists and will not be overwritten"), so a rebuild
   or a file two products share fails it. Upload the file once with `upload_file`, find it with
   `list_files`, and attach it per product with `add_product_image`. A document goes the same way
-  with the asset category's id as `groupId`.
+  with the asset category's id as `groupId`: a PDF in a category whose extensions allow `pdf` is
+  accepted, `get_product_images` lists it among the images without its category, and
+  `GET /dwapi/ecommerce/products/{id}` lists it under `assetCategories[]` by the category's
+  `systemName` (`assets[].value` is the file path) with no debt. MCP 0.6.6 accepts a re-upload under
+  the same file name in `upload_product_images`; the upload-once pattern serves both releases.
+  `upload_file` also writes under `/Files/Videos` and `/Files/Digital assets` [dw 10.30.6 · mcp 0.6.6-BETA].
 - `upload_product_images` makes a product's first image primary on its own; `add_product_image`
   leaves the product without a primary image until `set_product_primary_image` names one.
 - While any assortment is active (`has_active_assortments`), the storefront lists only products of an
