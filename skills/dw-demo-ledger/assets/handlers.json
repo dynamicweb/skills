@@ -96,7 +96,6 @@
     "get_roundings",
     "get_scheduled_task_add_in_types",
     "get_scheduled_tasks",
-    "search_orders",
     "get_shipping_methods",
     "get_shops",
     "get_stock_groups",
@@ -198,6 +197,7 @@
     "ecommerce/products/{productId}"
   ],
   "recipeRenderedReadTools": [
-    "fetch_frontend_page_html"
+    "fetch_frontend_page_html",
+    "search_orders"
   ]
 }
