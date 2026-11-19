@@ -95,6 +95,10 @@ section feeds one recipe; a section that is absent is simply not built. Keep it 
 
 ### 3. Build by hand only what no recipe covers
 
+This is the larger model's part of the chain: the set run itself can be handed to the smallest
+model, and the custom work (templates, what the set reports BLOCKED or planned) to a larger one.
+The build ends with a verify of the set, all PASS, and the brief's checks.
+
 `Find-DwRecipe.ps1 -Function <id>` answers whether a recipe exists for a ledger function; "no
 recipe" means build it by hand from the owning skill. The index's "What stays planned" names the
 pieces a recipe leaves open (for example favourite lists and order dates, which no MCP or

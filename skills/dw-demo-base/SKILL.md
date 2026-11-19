@@ -42,6 +42,28 @@ Every sister demo skill carries the same "how to run me" header and defers to th
 
 ## Build from the library first (before any write)
 
+**The build chain, the same for every brand:**
+
+1. **One set run**: verify, then `-Apply`, from the customer data file. Any model can run it
+   blind; it needs nothing but the file.
+2. **The larger model builds only what the set reports it does not cover**: a BLOCKED line's
+   reason, the index's "What stays planned", and the custom storefront work (templates).
+3. **A final verify of the set** (all PASS) plus the brief's checks.
+
+What every branded build writes goes in the data file, so step 1 writes it:
+
+| Build writes | Data file |
+|---|---|
+| Colours, fonts, logo, favicon | `brand` (`ConvertFrom-DwBrandKit.ps1`) |
+| Pages and their copy, standard pages too (restate the page, row and paragraph to change its copy) | `content.pages` |
+| A former name left in stock content | `debrand` |
+| Accounts, personas, grants, passwords | `users.accounts` (passwords: `users.frontend-sign-in`) |
+| Prices or add to cart hidden from guests | `checkout.hideForAnonymous` |
+| Guest payment and shipping | `checkout.methods[].anonymous`, `customerGroups` |
+| Catalogue, prices, order history | `catalogue`, `prices`, `history` |
+
+No recipe yet: product relations (accessory, related, spare part) and footer shortcut pages; the
+larger model makes them in step 2.
 **The first step of every build, once MCP answers, is one verify run of the recipe set. No write
 by hand, by MCP tool or by script comes before it.** It writes nothing:
 
