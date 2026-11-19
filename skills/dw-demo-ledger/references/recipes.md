@@ -86,7 +86,8 @@ after the write fails on it. A recipe is proven only by a run recorded in `prove
 Allowlists hold the line between data and code. An implemented MCP read must be on `mcpReadTools` (or
 `recipeRenderedReadTools`, the rendered-page summary), an
 MCP write on `recipeWriteTools`, a Management API write on `recipeAdminCommands`, a delivery read on
-the ledger's delivery lists. The runner checks again before every call and refuses an operation off
+the ledger's delivery lists (a `{name}` in a delivery route other than `{areaId}` takes the argument of
+that name, which then leaves the query). The runner checks again before every call and refuses an operation off
 the list even when the target offers it, and it checks every MCP call's argument names against the
 tool's own `tools/list` input schema, because a wrong name answers only "An error occurred invoking".
 SQL is read-only: one guarded `SELECT` (the ledger's own guard), local installs only
@@ -108,8 +109,14 @@ String values in arguments, match, compare, expect and parameters may hold token
 | `{secret.<path>}` | The value of the reference key at `<path>` in `DW_RECIPE_SECRETS`; write and read-back arguments only |
 
 A whole-value token keeps its type, so an id stays a number; a token inside text becomes text.
+A `[*]` in a path maps the rest of the path over every element (or every value of an object) and
+returns one flat list: `data[*].dataModels[*].dataModels` as a read's `rows` gathers the models of
+every folder of every shop, and `fields[*].systemName` in `compare` is a rule's field list. Text
+around one list-valued token fans out into a list (`"P|{step.categories.id}|{item.specFields[*].key}"`
+is one text per spec field), spliced into an enclosing list; lists compare element by element, in
+order.
 `{text:<token>}` makes a value text, for commands whose ids are strings. `{<token>|<JSON literal>}`
-gives a default used only when the path is absent (a user without `passwordRef` gets `null`), never
+(or `{<token>|<input path>}`, such as `{step.models[item.parent].name|item.name}`) gives a default used only when the path is absent (a user without `passwordRef` gets `null`), never
 when a step result is missing: a child page whose parent was not created is never created at the
 website root. When the value comes from an object an earlier step reported WOULD-CREATE, a verify run
 reports the dependant WOULD-CREATE too ("depends on pages 'About us', which is would-create"); in an

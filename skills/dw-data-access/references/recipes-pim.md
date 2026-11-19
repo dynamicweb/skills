@@ -30,6 +30,7 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Creating a Dynamic Workspace: `DynamicStructureSave` then `DynamicStructureLevelSave`](#creating-a-dynamic-workspace-dynamicstructuresave-then-dynamicstructurelevelsave)
 - [Collapsing a custom field back into its standard](#collapsing-a-custom-field-back-into-its-standard)
 - [Product verb and tool traps measured on a live host](#product-verb-and-tool-traps-measured-on-a-live-host)
+- [The PIM workflow container and the data-model group save](#the-pim-workflow-container-and-the-data-model-group-save)
 
 ## Writing a standard `EcomProducts` scalar the MCP model omits
 
@@ -544,3 +545,26 @@ each names its own, and every "do instead" ends with a read that is not the call
 | Management API | `ProductAssetByProductKey` with `ProductVariantId` | the master's asset rows [dw 10.28.10] | Seen on one build only: the parameter was ignored and the variant's own asset rows were not listed [dw 10.28.10]. A later build honours it and lists the variant's own rows (`onMaster: false`) beside the inherited master rows (`onMaster: true`) [dw 10.28.11]. | Read the `onMaster` flag of each row. When only master rows come back for a variant known to carry its own, list them through `ProductAssetByAssetValueAndProductId`; `ProductAssetMetadataSave` with `VariantId` in the model writes them. |
 | MCP, Management API | `get_product_category_fields` with no arguments; `ProductCategoriesAll` with the default `categoryType` | `count: 0` / `totalCount: 0` | The zero is correct for the default filter. Product category fields are stored as `PropertyFields` categories (`EcomProductCategory.CategoryType = 1`; the enum is `CategoryFields` 0, `PropertyFields` 1, `SystemFields` 2), and both lists default to `CategoryFields`. | List them with `GET /Admin/Api/ProductCategoriesAll?CategoryType=PropertyFields` [dw 10.28.11]. Check the `get_product_category_fields` schema for a type member before trusting its count. `patch_products_safe` writes `ProductCategory\|<category>\|<field>` values and echoes only global fields: confirm by re-reading the product. |
 | Management API | `GET ProductCatalogGroupsSortList` | 500 `Serialization of System.Type is not supported` (`$.Model.SaveCommandType`) | The read verb is broken; `ProductCatalogGroupsSaveSort` works. | Write the order with `ProductCatalogGroupsSaveSort` and read it back on the rendered menu, which is the only reader of the order. |
+
+## The PIM workflow container and the data-model group save
+
+Measured on a live install [dw 10.30.6].
+
+- **The short command name `WorkflowSave` is the content workflow.** Two admin assemblies ship a
+  `WorkflowSaveCommand`, `WorkflowDeleteCommand` and `WorkflowByIdQuery`; the short names resolve to
+  the content ones, so `POST /Admin/Api/WorkflowSave` answers ok and writes an `AccessWorkflow` row
+  that `WorkflowsAll` lists, and the PIM `Workflow` table stays empty. Addressed by its full type
+  name the PIM command creates the container:
+  `POST /Admin/Api/Dynamicweb.Products.UI.Commands.Settings.WorkflowSaveCommand {"Model": {"Id": 0, "Name": "<name>"}}`
+  answers `{status: "ok", model: {id, name, statesCount, inUse}}`, and `GET WorkflowAll` (a name
+  only the PIM assembly has) lists it. MCP `get_workflow_states` reads it too, with its states
+  nested; MCP `create_or_update_workflow_states` then adds the states, which need the existing id.
+- **`ProductCategoriesAll`** lists the `CategoryFields` categories as `model.data[{id, name,
+  categoryType, fieldsCount}]`, a category without fields included; it is the read that finds a
+  category before its first field exists (no MCP read does). `ProductCategoryFieldsByCategoryId?CategoryId=`
+  lists one category's fields with `fieldDisplayGroupIds`.
+- **`DataModelGroupSave` is a whole-entity save.** `{Model: {Id, ShopId, LanguageId, Name, WorkflowId}}`
+  answers ok, sets the workflow, and clears the model's category (`ProductCategoryId` NULL). Send
+  the model `DataModelGroupById?Id=` returned with only the workflow changed, then read it back;
+  MCP `patch_data_models` restores a cleared category without touching the workflow.
+

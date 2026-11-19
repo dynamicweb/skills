@@ -14,7 +14,8 @@ import subprocess
 from pathlib import Path
 
 TOKEN_RE = re.compile(r"\{([^{}]+)\}")
-STEP_TOKEN_RE = re.compile(r"^step\.([a-z][a-z0-9-]*)(?:\[([^\]]+)\])?\.([A-Za-z0-9_.]+)$")
+DEFAULT_PATH_RE = re.compile(r"^(input|item|parent|build)(\.[A-Za-z0-9_]+(\[(\d+|\*)\])?)+$")
+STEP_TOKEN_RE = re.compile(r"^step\.([a-z][a-z0-9-]*)(?:\[((?:[^\[\]]|\[\*\])+)\])?\.([A-Za-z0-9_.]+)$")
 FORBIDDEN = (
     (re.compile(r"(?i)\b[a-z][a-z0-9+.-]*://"), "a URL or host"),
     (re.compile(r"(?i)\b(localhost|\d{1,3}(\.\d{1,3}){3})(:\d+)?\b"), "a host or address"),
@@ -268,7 +269,10 @@ def validate_recipes(repo: Path) -> list[str]:
                     try:
                         json.loads(default)
                     except ValueError:
-                        return "has a default that is not a JSON literal"
+                        if not DEFAULT_PATH_RE.match(default):
+                            return "has a default that is neither a JSON literal nor an input path"
+                        if root_fault(default):
+                            return root_fault(default)
                 if path.startswith("secret."):
                     return None if allow_secret else "is a secret outside a write or read-back argument"
                 m = STEP_TOKEN_RE.match(path)

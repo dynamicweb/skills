@@ -2,7 +2,7 @@
 .SYNOPSIS
 READ-ONLY. Recipe paths, token substitution, natural-key matching and binding selection; definitions only.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. Dot-sourced after Ledger.Core.ps1 (Read-LedgerJson). A path is dotted members with [n] or [*]; a token is {root.path} with the roots input, item, parent, step, found, build and secret, an optional |<JSON literal> default and an optional text: prefix that makes the value text. Whole-value substitution keeps the value's type; a token inside text becomes text. Nothing in a recipe is evaluated as code: comparisons are equals, contains and exists only. A secret is read from DW_RECIPE_SECRETS and never printed.
+PowerShell 7. Owning reference: ../references/recipes.md. Dot-sourced after Ledger.Core.ps1 (Read-LedgerJson). A path is dotted members with [n] or [*]; a token is {root.path} with the roots input, item, parent, step, found, build and secret, an optional |<JSON literal or input path> default and an optional text: prefix that makes the value text. Whole-value substitution keeps the value's type; a token inside text becomes text. Nothing in a recipe is evaluated as code: comparisons are equals, contains and exists only. A secret is read from DW_RECIPE_SECRETS and never printed.
 .EXAMPLE
 . ./Recipe.Core.ps1
 #>
@@ -35,18 +35,34 @@ function Get-RecipeMember {
 }
 function Get-RecipeValue {
     # A dotted path with optional [n] indexes; '$' is the object itself. @{found; value}.
+    # A [*] level maps the rest of the path over every element (the values of an object) and returns them as one
+    # list; an element without the rest is left out, and a list the rest returns is flattened into it (rows of rows).
     param($Object, [string]$Path)
     if ([string]::IsNullOrEmpty($Path) -or $Path -eq '$') { return @{found = $true; value = $Object} }
+    $parts = $Path.Split('.')
     $current = $Object
-    foreach ($part in $Path.Split('.')) {
-        if ($part -notmatch '^(?<name>[^\[\]]+)(\[(?<index>\d+)\])?$') { throw (New-RecipeFault "Path '$Path' is not a dotted member path.") }
+    for ($i = 0; $i -lt $parts.Count; $i++) {
+        if ($parts[$i] -notmatch '^(?<name>[^\[\]]+)(\[(?<index>\d+|\*)\])?$') { throw (New-RecipeFault "Path '$Path' is not a dotted member path.") }
+        $index = $Matches['index']
         $member = Get-RecipeMember $current $Matches['name']
         if (-not $member.found) { return @{found = $false; value = $null} }
         $current = $member.value
-        if ($Matches['index']) {
-            $index = [int]$Matches['index']
-            if ($current -isnot [Collections.IList] -or $index -ge $current.Count) { return @{found = $false; value = $null} }
-            $current = $current[$index]
+        if ($index -eq '*') {
+            $elements = if ($current -is [Collections.IDictionary]) { @($current.Values) } elseif ($current -is [Collections.IList]) { @($current) } else { return @{found = $false; value = $null} }
+            $rest = ($parts | Select-Object -Skip ($i + 1)) -join '.'
+            $out = [Collections.Generic.List[object]]::new()
+            foreach ($element in $elements) {
+                if (-not $rest) { $out.Add($element); continue }
+                $value = Get-RecipeValue $element $rest
+                if (-not $value.found) { continue }
+                if ($value.value -is [Collections.IList]) { foreach ($x in $value.value) { $out.Add($x) } } else { $out.Add($value.value) }
+            }
+            return @{found = $true; value = $out.ToArray()}
+        }
+        if ($index) {
+            $at = [int]$index
+            if ($current -isnot [Collections.IList] -or $at -ge $current.Count) { return @{found = $false; value = $null} }
+            $current = $current[$at]
         }
     }
     return @{found = $true; value = $current}
@@ -98,7 +114,10 @@ function Resolve-RecipeToken {
     $bar = $Body.IndexOf('|')
     if ($bar -ge 0) {
         $path = $Body.Substring(0, $bar); $hasDefault = $true
-        try { $default = ConvertFrom-Json -InputObject $Body.Substring($bar + 1) -AsHashtable -NoEnumerate } catch { throw (New-RecipeFault "Token {$Body} has a default that is not a JSON literal.") }
+        $literal = $Body.Substring($bar + 1)
+        # A default is a JSON literal, or an input path read only when the default applies ({step.models[item.parent].name|item.name}).
+        if ($literal -match '^(input|item|parent|build)(\.[A-Za-z0-9_]+(\[(\d+|\*)\])?)+$') { $value = Resolve-RecipeRootPath $literal $Context; $default = if ($value.found) { $value.value } else { $null } }
+        else { try { $default = ConvertFrom-Json -InputObject $literal -AsHashtable -NoEnumerate } catch { throw (New-RecipeFault "Token {$Body} has a default that is neither a JSON literal nor an input path.") } }
     }
     if ($path -match '^secret\.(?<ref>.+)$') {
         $ref = Resolve-RecipeRootPath $Matches['ref'] $Context
@@ -110,12 +129,18 @@ function Resolve-RecipeToken {
         if (-not $Context.secrets.Contains([string]$ref.value)) { throw (New-RecipeFault "Runner input: secret reference '$($ref.value)' is not a key of DW_RECIPE_SECRETS.") }
         return $Context.secrets[[string]$ref.value]
     }
-    if ($path -match '^step\.(?<step>[a-z][a-z0-9-]*)(\[(?<key>[^\]]+)\])?\.(?<field>.+)$') {
+    if ($path -match '^step\.(?<step>[a-z][a-z0-9-]*)(\[(?<key>(?:[^\[\]]|\[\*\])+)\])?\.(?<field>.+)$') {
         $field = $Matches['field']; $stepId = $Matches['step']; $key = $Context.key
         if ($Matches['key']) {
             $parts = [Collections.Generic.List[string]]::new()
             foreach ($p in $Matches['key'].Split(',')) {
                 $v = Resolve-RecipeRootPath $p.Trim() $Context
+                if ($v.found -and $v.value -is [Collections.IList]) {
+                    # One key path that is a list ({step.states[item.next[*]].id}) maps to the list of the values of those keys.
+                    if ($Matches['key'].Contains(',')) { throw (New-RecipeFault "Token {$Body}: a list-valued key cannot be combined with another key path.") }
+                    $one = $Body.Substring(0, $Body.IndexOf('[')) + '[item].' + $field
+                    return , @(foreach ($element in $v.value) { $inner = $Context.Clone(); $inner.item = $element; Resolve-RecipeToken $one $inner })
+                }
                 if ($v.found -and $null -ne $v.value) { $parts.Add([string]$v.value); continue }
                 # The default applies only when the key itself is absent, never when a named result is missing.
                 if ($hasDefault) { return , $default }
@@ -131,24 +156,38 @@ function Resolve-RecipeToken {
         if (-not $results -or -not $results.Contains($key) -or -not $results[$key].values) { throw (New-RecipeFault "Runner input: token {$Body}: step '$stepId' produced no value for '$key'.") }
         $value = Get-RecipeValue $results[$key].values $field
         if (-not $value.found) { throw (New-RecipeFault "Runner input: token {$Body}: step '$stepId' produced no '$field'.") }
-        return $value.value
+        # The comma keeps a one-element list a list (a return unrolls it).
+        return , $value.value
     }
     $value = Resolve-RecipeRootPath $path $Context
-    if ($value.found -and $null -ne $value.value) { return $value.value }
-    if ($hasDefault) { return $default }
+    if ($value.found -and $null -ne $value.value) { return , $value.value }
+    if ($hasDefault) { return , $default }
     throw (New-RecipeFault "Runner input: token {$Body} does not resolve.")
 }
 function Expand-RecipeValue {
     # Deep copy with every token substituted. A whole-value token keeps its type (numbers stay numbers).
+    # Text around one list-valued token ({item.specFields[*].key}) fans out: one text per element, and in a list
+    # those texts take the template's place, so "ProductCategory|{step.categories.id}|{item.specFields[*].key}" is a list.
     param($Value, $Context)
     if ($Value -is [string]) {
         if ($Value -match '^\{(?<body>[^{}]+)\}$') { return , (Resolve-RecipeToken $Matches['body'] $Context) }
-        $text = [Text.StringBuilder]::new(); $at = 0
-        foreach ($m in [regex]::Matches($Value, '\{(?<body>[^{}]+)\}')) {
-            $null = $text.Append($Value.Substring($at, $m.Index - $at)).Append([string](Resolve-RecipeToken $m.Groups['body'].Value $Context))
-            $at = $m.Index + $m.Length
+        $tokens = @([regex]::Matches($Value, '\{(?<body>[^{}]+)\}'))
+        if (-not $tokens.Count) { return $Value }
+        $values = @(foreach ($m in $tokens) { , (Resolve-RecipeToken $m.Groups['body'].Value $Context) })
+        $lists = @(for ($i = 0; $i -lt $values.Count; $i++) { if ($values[$i] -is [Collections.IList]) { $i } })
+        if ($lists.Count -gt 1) { throw (New-RecipeFault "Text '$Value' holds more than one list-valued token.") }
+        $render = {
+            param($Element)
+            $text = [Text.StringBuilder]::new(); $at = 0
+            for ($i = 0; $i -lt $tokens.Count; $i++) {
+                $part = if ($lists.Count -and $i -eq $lists[0]) { $Element } else { $values[$i] }
+                $null = $text.Append($Value.Substring($at, $tokens[$i].Index - $at)).Append([string]$part)
+                $at = $tokens[$i].Index + $tokens[$i].Length
+            }
+            $text.Append($Value.Substring($at)).ToString()
         }
-        return $text.Append($Value.Substring($at)).ToString()
+        if (-not $lists.Count) { return (& $render $null) }
+        return , @(foreach ($element in $values[$lists[0]]) { & $render $element })
     }
     if ($Value -is [Collections.IDictionary]) {
         # A hashtable, because the shared transport takes MCP arguments as one.
@@ -156,7 +195,13 @@ function Expand-RecipeValue {
         foreach ($k in $Value.Keys) { $copy[$k] = Expand-RecipeValue $Value[$k] $Context }
         return $copy
     }
-    if ($Value -is [Collections.IList]) { return , @(foreach ($x in $Value) { , (Expand-RecipeValue $x $Context) }) }
+    if ($Value -is [Collections.IList]) {
+        return , @(foreach ($x in $Value) {
+            $expanded = Expand-RecipeValue $x $Context
+            # A text element that fanned out is spliced in; any other value stays one element.
+            if ($x -is [string] -and $expanded -is [Collections.IList] -and $x -notmatch '^\{[^{}]+\}$') { $expanded } else { , $expanded }
+        })
+    }
     return $Value
 }
 function Test-RecipeNumber($Value) {
@@ -167,6 +212,12 @@ function Test-RecipeEqual {
     param($Left, $Right)
     # A stored NULL and an empty text are the same absent value: a column read back as one may be written as the other.
     if ($null -eq $Left -or $null -eq $Right) { return [string]::IsNullOrEmpty([string]$Left) -and [string]::IsNullOrEmpty([string]$Right) }
+    # Lists (a display group's field ids, a rule's fields) are equal element by element, in order.
+    if ($Left -is [Collections.IList] -or $Right -is [Collections.IList]) {
+        if (-not ($Left -is [Collections.IList] -and $Right -is [Collections.IList]) -or $Left.Count -ne $Right.Count) { return $false }
+        for ($i = 0; $i -lt $Left.Count; $i++) { if (-not (Test-RecipeEqual $Left[$i] $Right[$i])) { return $false } }
+        return $true
+    }
     if ((Test-RecipeNumber $Left) -or (Test-RecipeNumber $Right)) {
         $a = 0.0; $b = 0.0; $inv = [Globalization.CultureInfo]::InvariantCulture
         return [double]::TryParse([string]$Left, [Globalization.NumberStyles]::Float, $inv, [ref]$a) -and
@@ -180,7 +231,7 @@ function Get-RecipeRowField {
     param($Row, [string]$Path, [string]$Operation)
     $value = Get-RecipeValue $Row $Path
     if (-not $value.found) { throw (New-RecipeFault "Response of '$Operation' carries no field '$Path'; the projection is not the one the recipe states.") }
-    return $value.value
+    return , $value.value
 }
 function Get-RecipeDifferences {
     # Field names whose row value differs from the expected value. Values are not returned: they may be personal data.

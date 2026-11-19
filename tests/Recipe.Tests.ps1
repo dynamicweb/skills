@@ -213,6 +213,54 @@ Describe 'Recipe engine: paths, tokens and matching' {
         Resolve-RecipeToken 'secret.item.passwordRef|null' $ctx | Should -BeNullOrEmpty
         { Read-RecipeSecrets '["x"]' } | Should -Throw '*JSON object*'
     }
+    It 'flattens a [*] level across nested lists and object values, leaving out elements without the rest' {
+        # get_shops nests models under folders under shops; a shop of type Shop has no dataModels at all.
+        $shops = @{data = @(@{dataModels = @(@{name = 'F'; dataModels = @(@{id = 'G1'}, @{id = 'G2'})})}, @{topLevelProductGroups = @()}, @{dataModels = @(@{name = 'E'; dataModels = @(@{id = 'G3'})})})}
+        $models = (Get-RecipeValue $shops 'data[*].dataModels[*].dataModels').value
+        $models.Count | Should -Be 3
+        $models[2].id | Should -Be 'G3'
+        (Get-RecipeValue $shops 'data[*].dataModels').value.Count | Should -Be 2
+        (Get-RecipeValue @{groups = @{a = @{id = 1}; b = @{id = 2}}} 'groups[*].id').value | Sort-Object | Should -Be @(1, 2)
+        (Get-RecipeValue @{data = 'text'} 'data[*].x').found | Should -BeFalse
+    }
+    It 'fans text around one list-valued token out into a list, spliced into an enclosing list' {
+        $ctx = @{item = @{key = 'k'; specFields = @(@{key = 'a'}, @{key = 'b'})}; results = @{categories = @{k = @{state = 'UNCHANGED'; values = @{id = 'cat'}}}}; secrets = @{}; key = 'k'}
+        $value = Expand-RecipeValue @{one = 'P|{step.categories.id}|{item.specFields[*].key}'; many = @('ProductName', 'P|{item.specFields[*].key}'); ids = @('{step.categories.id}')} $ctx
+        $value.one | Should -Be @('P|cat|a', 'P|cat|b')
+        $value.many | Should -Be @('ProductName', 'P|a', 'P|b')
+        $value.ids | Should -Be @('cat')
+        { Expand-RecipeValue '{item.specFields[*].key}-{item.specFields[*].key}' $ctx } | Should -Throw '*more than one list-valued token*'
+    }
+    It 'keeps a one-element list a list through a token and a row field' {
+        $ctx = @{item = @{specFields = @(@{key = 'a'})}; results = @{}; secrets = @{}; key = 'k'}
+        $value = Expand-RecipeValue @{ids = 'P|{item.specFields[*].key}'; whole = '{item.specFields[*].key}'} $ctx
+        , $value.ids | Should -BeOfType [Array]
+        $value.ids.Count | Should -Be 1
+        , $value.whole | Should -BeOfType [Array]
+        $row = @{languageIds = @('ENU'); rules = @(@{ruleId = 7})}
+        Get-RecipeDifferences $row (Expand-RecipeValue @{languageIds = @('ENU'); 'rules[*].ruleId' = @('{item.n}')} @{item = @{n = 7}; results = @{}; secrets = @{}}) 'read' | Should -BeNullOrEmpty
+    }
+    It 'maps a list-valued step key to the list of the values of those keys' {
+        $ctx = @{item = @{next = @('B', 'C')}; results = @{states = @{B = @{state = 'UNCHANGED'; values = @{id = 2}}; C = @{state = 'CREATED'; values = @{id = 3}}}}; secrets = @{}; key = 'A'}
+        (Expand-RecipeValue @{ids = '{step.states[item.next[*]].id|[]}'} $ctx).ids | Should -Be @(2, 3)
+        $ctx.item = @{}
+        , (Expand-RecipeValue @{ids = '{step.states[item.next[*]].id|[]}'} $ctx).ids | Should -BeOfType [Array]
+        $ctx.item = @{next = @('D')}; $ctx.results.states.D = @{state = 'WOULD-CREATE'; values = @{}}
+        { Expand-RecipeValue '{step.states[item.next[*]].id}' $ctx } | Should -Throw -ExceptionType ([Collections.Generic.KeyNotFoundException])
+    }
+    It 'compares lists element by element and in order' {
+        Test-RecipeEqual @('a', 'b') @('a', 'b') | Should -BeTrue
+        Test-RecipeEqual @('a', 'b') @('b', 'a') | Should -BeFalse
+        Test-RecipeEqual @(5) @('5') | Should -BeTrue
+        Test-RecipeEqual @('a') 'a' | Should -BeFalse
+    }
+    It 'takes an input path as a default, read only when the key is absent' {
+        $ctx = @{item = @{name = 'Tools'}; results = @{models = @{top = @{state = 'UNCHANGED'; values = @{name = 'Top'}}}}; secrets = @{}; key = 'x'}
+        Resolve-RecipeToken 'step.models[item.parent].name|item.name' $ctx | Should -Be 'Tools'
+        $ctx.item.parent = 'top'
+        Resolve-RecipeToken 'step.models[item.parent].name|item.name' $ctx | Should -Be 'Top'
+        { Resolve-RecipeToken 'item.missing|not json' $ctx } | Should -Throw '*neither a JSON literal nor an input path*'
+    }
     It 'compares typed values, and an absent value as empty text' {
         Test-RecipeEqual 5 '5' | Should -BeTrue
         Test-RecipeEqual 5 5.0 | Should -BeTrue

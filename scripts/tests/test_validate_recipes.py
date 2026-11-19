@@ -100,6 +100,16 @@ class RecipeValidationTests(unittest.TestCase):
         self.recipe["steps"][0]["find"]["bindings"][0]["arguments"]["areaId"] = "{secret.item.menuText}"
         self.assertIn("is a secret outside a write or read-back argument", self.errors())
 
+    def test_token_defaults_and_list_paths(self):
+        args = self.recipe["steps"][0]["find"]["bindings"][0]["arguments"]
+        args["parentId"] = "{step.pages[item.parent].id|item.menuText}"
+        args["areaId"] = "{item.rows[*].sort}"
+        self.assertEqual("", self.errors())
+        args["parentId"] = "{step.pages[item.parent].id|item.nothing}"
+        self.assertIn("does not resolve in the input schema", self.errors())
+        args["parentId"] = "{step.pages[item.parent].id|not a path}"
+        self.assertIn("neither a JSON literal nor an input path", self.errors())
+
     def test_sql_is_a_parameterised_single_select(self):
         self.recipe["steps"][0]["find"]["bindings"].insert(0, {
             "surface": "sql", "status": "implemented", "localOnly": True, "source": "skills/x.md",
