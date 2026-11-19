@@ -235,7 +235,18 @@
           "required": ["bindings"],
           "properties": {
             "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}},
-            "delivered": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}, "description": "The shape a layer copy delivers the object in, under keys this recipe does not write. Read only when the find matched nothing; one matching row or more makes the item DELIVERED: never written, and its produces (from exactly one row) feed later steps."}
+            "delivered": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}, "description": "The shape a layer copy delivers the object in, under keys this recipe does not write. Read only when the find matched nothing; one matching row or more makes the item DELIVERED: never written, and its produces (from exactly one row) feed later steps."},
+            "conflict": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["reason", "bindings"],
+              "description": "An object the input does not own that a create would collide with (a page that already answers at the input's path). Read only when the find and find.delivered matched nothing and the item is not skipped by skipWhen; one matching row blocks the item: nothing is written and the check is OPEN with the reason.",
+              "properties": {
+                "reason": {"type": "string", "minLength": 20},
+                "skipWhen": {"$ref": "#/definitions/skipWhen"},
+                "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}}
+              }
+            }
           }
         },
         "deliveredWith": {"$ref": "#/definitions/deliveredWith"},

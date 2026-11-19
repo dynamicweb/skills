@@ -19,13 +19,15 @@
       "key": "{item.menuText}",
       "find": {"bindings": [
         {"id": "mcp-children", "surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.pages[item.parent].id|0}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"menuText": "{item.menuText}"}, "compare": {"itemType": "{item.itemType}"}, "produces": {"id": "id"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
-      ]},
+      ], "conflict": {"reason": "another page already answers at the input's path, so a new page would be served at the path with -1 and the old page would keep the address (and every link to it); point the input at that page, or remove or move the other page first", "skipWhen": {"path": "item.path", "exists": false}, "bindings": [
+        {"id": "mcp-path-owner", "surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{item.path}"}, "rows": "$", "match": {"statusCode": 200}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ]}},
       "bindings": [
         {"id": "mcp-create", "surface": "mcp", "status": "implemented", "source": "skills/dw-content-modelling/references/page-paragraph-writes.md",
           "create": {"operation": "save_pages", "arguments": {"pages": [{"id": 0, "areaId": "{build.areaId}", "parentPageId": "{step.pages[item.parent].id|0}", "menuText": "{item.menuText}", "urlName": "{item.urlName}", "itemType": "{item.itemType}", "active": true, "sort": "{item.sort|null}"}]}},
           "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.pages[item.parent].id|0}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"menuText": "{item.menuText}"}, "expect": {"itemType": "{item.itemType}"}, "produces": {"id": "id"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}}
       ],
-      "trap": "itemType goes on the create call; changing it later deletes the page's item and its field values. The page id is read back by parent and menu text, never carried between runs or hosts.",
+      "trap": "itemType goes on the create call; changing it later deletes the page's item and its field values. The page id is read back by parent and menu text, never carried between runs or hosts. A url name another page already holds is not refused: the new page is served at <path>-1 and the save answers success, so before a create the step reads the input's path (find.conflict) and blocks the item when another page answers there; a base sample page in a navigation folder can own a root path.",
       "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"
     },
     {
@@ -141,6 +143,17 @@
         "pollSeconds": 20,
         "bindings": [
           {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{item.path}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "contains", "path": "title", "value": "{item.menuText}"}, "source": "skills/dw-swift-page-design/SKILL.md"}
+        ]
+      },
+      {
+        "id": "page-path",
+        "title": "Each page is served at the input's path, not at a path the platform suffixed (-1) because another page holds it",
+        "forEach": "pages[*]",
+        "skipWhen": {"path": "item.path", "exists": false},
+        "minimumSubjects": 1,
+        "pollSeconds": 20,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "/Default.aspx?ID={step.pages[item.menuText].id}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "equals", "path": "finalPath", "value": "{item.path}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
         ]
       },
       {

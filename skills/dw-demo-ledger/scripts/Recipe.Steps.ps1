@@ -42,6 +42,8 @@ function Find-RecipeObject {
     if ($hits.Count -eq 0) {
         $layer = Find-RecipeDelivered $Step $Context $Run
         if ($layer) { return $layer }
+        $conflict = Find-RecipeConflict $Step $Context $Run
+        if ($conflict) { return $conflict }
         return @{state = 'CREATE'; row = $null; fields = @(); binding = $binding}
     }
     $differs = if ($binding.compare) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $binding.compare $Context) $binding.operation $binding.unordered } else { @() }
@@ -107,6 +109,19 @@ function Find-RecipeDelivered {
     # Values are produced only from one row: several rows prove the delivery, not which one a dependant reads.
     return @{state = 'DELIVERED'; row = $(if ($hits.Count -eq 1) { $hits[0] }); fields = @(); binding = $binding}
 }
+function Find-RecipeConflict {
+    # find.conflict: an object the input does not own that a create would collide with (another page already answers at
+    # the input's path, so a new one would answer at <path>-1). $null when there is none; otherwise the item is blocked.
+    param($Step, $Context, $Run)
+    $spec = $Step.find.conflict
+    if (-not $spec -or (Test-RecipeCondition $spec.skipWhen $Context)) { return $null }
+    $select = Select-RecipeRead $spec.bindings $Run.cap $Run.registry
+    if (-not $select.binding) { throw (New-RecipeFault ('no eligible find.conflict binding, so a create could collide unseen: ' + ($select.reasons -join '; '))) }
+    $rows = Read-RecipeRows $select.binding $Context $Run
+    $hits = Select-RecipeBindingMatches $rows $select.binding $Context
+    if ($hits.Count -eq 0) { return $null }
+    return @{state = 'CONFLICT'; row = $null; fields = @(); binding = $select.binding; reason = [string]$spec.reason}
+}
 function Get-RecipeDeliveredOwner {
     # deliveredWith: the object this item belongs to, when a layer delivered it ("categories 'tools'"), else $null.
     param($Step, $Context, $Run, [string]$Key)
@@ -137,6 +152,12 @@ function Invoke-RecipeStepItem {
     }
     if ($found.state -eq 'DELIVERED') {
         Set-RecipeDelivered $Run $Step $Key "a layer delivered it under its own keys ($($found.binding.operation))" -Observed; $Printed.Value = $true; return
+    }
+    if ($found.state -eq 'CONFLICT') {
+        # Never written, in a verify run or an apply: the input and the site disagree about who owns this, and a person decides.
+        $result.state = 'BLOCKED'
+        Add-RecipeStepLine $Run $Step.id 'BLOCKED' $Key; $Printed.Value = $true
+        Add-RecipeCheck $Run $name 'OPEN' ("absent under its natural key, and a create would collide ($($found.binding.operation)): $($found.reason); nothing is written"); return
     }
     if ($found.state -eq 'UNCHANGED') {
         Add-RecipeStepLine $Run $Step.id 'UNCHANGED' $Key; $Printed.Value = $true

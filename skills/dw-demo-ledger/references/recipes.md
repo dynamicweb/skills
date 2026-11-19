@@ -195,6 +195,7 @@ delivery itself, per object, with no flag:
 |---|---|
 | `find.delivered` | Read bindings in the copy's shape, read only when the find matched nothing. One matching row or more is the object the copy delivered: `STEP <step> DELIVERED <key>` and a passing check. It is never written; values come from it (`produces`) only when exactly one row matched |
 | `deliveredWith` `{step, key}` | The object this item belongs to (`key` defaults to the item's own key). When that object is DELIVERED, an item that would be created or changed is DELIVERED too: a NOTE, not a check, and nothing is written into the layer's object. An item found equal still passes |
+| `find.conflict` `{reason, skipWhen, bindings}` | Read only when the find and `find.delivered` matched nothing: an object the input does not own that a create would collide with (another page already answers at the input's path, so a new page would be served at the path with -1). A matching row blocks the item, in a verify run and an apply: `STEP <step> BLOCKED <key>`, an OPEN check with the reason, nothing written |
 | `matchSuffix` `{member: text}` | A read matches only rows whose member ends with the text, ignoring case: a file the copy stored under its own folder, found by its file name |
 
 A token that reads a DELIVERED object that produced no value makes its item DELIVERED as well; on a

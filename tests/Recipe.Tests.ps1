@@ -86,7 +86,7 @@ Export-ModuleMember -Function *
                 'get_pages_by_parent_id' { , @($s.pages | Where-Object { $_.parentPageId -eq [int]$Arguments.parentId }) }
                 'save_pages' {
                     foreach ($p in $Arguments.pages) {
-                        if ([int]$p.id -eq 0) { $id = & $mint; $s.pages.Add(@{id = $id; parentPageId = [int]$p.parentPageId; menuText = $p.menuText; itemType = $p.itemType; sort = $p.sort}); $s.fields["page$id"] = [ordered]@{Title = $null} }
+                        if ([int]$p.id -eq 0) { $id = & $mint; $s.pages.Add(@{id = $id; parentPageId = [int]$p.parentPageId; menuText = $p.menuText; urlName = $p.urlName; itemType = $p.itemType; sort = $p.sort}); $s.fields["page$id"] = [ordered]@{Title = $null} }
                     }
                     return (& $ok 1)
                 }
@@ -110,11 +110,15 @@ Export-ModuleMember -Function *
                     }
                     return @{structuredContent = @{succeeded = $Arguments.fields.Count - $failed; failed = $failed}}
                 }
+                # A page is served at /en-us/<url name or menu text>; a later page whose address an earlier page holds is
+                # served at <address>-1, as measured. /Default.aspx?ID=<id> lands on the page's served path (finalPath).
                 'fetch_frontend_page_html' {
                     $s.fetches++
-                    $page = @($s.pages | Where-Object { "/en-us/$($_.menuText.ToLower().Replace(' ', '-'))" -eq $Arguments.path })[0]
-                    if (-not $page -or $s.fetches -le $s.urlReadyAfter) { return @{structuredContent = @{statusCode = 404; path = $Arguments.path}} }
-                    return @{structuredContent = @{statusCode = 200; title = $page.menuText; path = $Arguments.path}}
+                    $base = { param($p) '/en-us/' + $(if ($p.urlName) { $p.urlName } else { $p.menuText.ToLower().Replace(' ', '-') }) }
+                    $served = { param($p) $b = & $base $p; $n = @($s.pages | Where-Object { $_.id -lt $p.id -and (& $base $_) -eq $b }).Count; if ($n) { "$b-$n" } else { $b } }
+                    $page = if ($Arguments.path -match '^/Default\.aspx\?ID=(\d+)$') { @($s.pages | Where-Object { $_.id -eq [int]$Matches[1] })[0] } else { @($s.pages | Where-Object { (& $served $_) -eq $Arguments.path })[0] }
+                    if (-not $page -or $s.fetches -le $s.urlReadyAfter) { return @{structuredContent = @{statusCode = 404; path = $Arguments.path; finalPath = $Arguments.path}} }
+                    return @{structuredContent = @{statusCode = 200; title = $page.menuText; path = $Arguments.path; finalPath = (& $served $page)}}
                 }
                 # The rendered outline of a page by id, with the issues a stored-field read cannot show; a clean page has none.
                 'inspect_page_render' {
@@ -535,10 +539,40 @@ Describe 'Invoke-DwRecipe on content.pages' {
 
     It 'polls a probe whose state the platform publishes late or drops for a moment' {
         New-Stub
-        $global:RecipeStub.urlReadyAfter = 1
+        # Fetch 1 is the path check before the create; fetch 2 the probe's first read (404), fetch 3 its poll; fetch 4 the page-path probe.
+        $global:RecipeStub.urlReadyAfter = 2
         $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true}
         $r.lines | Should -Contain 'PASS probe/page-renders'
-        $global:RecipeStub.fetches | Should -Be 2
+        $r.lines | Should -Contain 'PASS probe/page-path'
+        $global:RecipeStub.fetches | Should -Be 4
+    }
+
+    It 'blocks a page whose path another page already answers at, instead of creating a sibling served at its path with -1' {
+        New-Stub
+        # A sample page in a navigation folder holds the address the input gives its own page.
+        $global:RecipeStub.pages.Add(@{id = 60; parentPageId = 59; menuText = 'About the shop'; urlName = 'about-us'; itemType = 'Swift-v2_Page'})
+        $v = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile}
+        $v.lines | Should -Contain 'STEP pages BLOCKED About us'
+        ($v.lines -match '^OPEN pages/About us: absent under its natural key, and a create would collide \(fetch_frontend_page_html\): another page already answers at the input''s path').Count | Should -Be 1
+        $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true}
+        $r.lines | Should -Contain 'STEP pages BLOCKED About us'
+        @($global:RecipeStub.pages | Where-Object menuText -eq 'About us').Count | Should -Be 0
+        @($global:RecipeStub.log -match '^mcp save_pages ').Count | Should -Be 0
+        $r.exit | Should -Be 1
+    }
+
+    It 'RED CONTROL: fails a page served at its path with -1, which the title probe alone passes' {
+        New-Stub
+        $global:RecipeStub.pages.Add(@{id = 60; parentPageId = 59; menuText = 'About us sample'; urlName = 'about-us'; itemType = 'Swift-v2_Page'})
+        $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true}
+        $r.lines | Should -Contain 'STEP pages BLOCKED About us'
+        # The sibling a run before the path check made: the same menu text at the root, served at about-us-1.
+        $global:RecipeStub.pages.Add(@{id = 70; parentPageId = 0; menuText = 'About us'; urlName = 'about-us'; itemType = 'Swift-v2_Page'})
+        $v = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile}
+        $v.lines | Should -Contain 'STEP pages UNCHANGED About us'
+        $v.lines | Should -Contain 'PASS probe/page-renders'
+        ($v.lines -match '^FAIL probe/page-path: 1 failing: subject 1: finalPath does not equal the expected value').Count | Should -Be 1
+        $v.exit | Should -Be 1
     }
 
     It 'fails a field write the tool counts as failed, such as an empty button JSON' {
