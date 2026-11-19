@@ -113,7 +113,8 @@
     ]
   },
   "provenOn": [
-    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "pim.workflow.1-verify.json (all WOULD-CREATE), pim.workflow.2-apply.json (10 of 10 from empty), pim.workflow.3-verify.json and pim.workflow.4-apply-again.json (10 of 10, nothing written), pim.workflow.5-mcponly.json (the attachment BLOCKED as declared); the transitions read back as WorkflowGoToState rows and the attached data model kept its category and completeness rule (pim.data-models.6-verify-after-workflow.json, 16 of 16)"}
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "pim.workflow.1-verify.json (all WOULD-CREATE), pim.workflow.2-apply.json (10 of 10 from empty), pim.workflow.3-verify.json and pim.workflow.4-apply-again.json (10 of 10, nothing written), pim.workflow.5-mcponly.json (the attachment BLOCKED as declared); the transitions read back as WorkflowGoToState rows and the attached data model kept its category and completeness rule (pim.data-models.6-verify-after-workflow.json, 16 of 16)"},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 10 of 10; MCP-only 0 of 10, no MCP tool creates a workflow (still on 0.6.6)."}
   ],
   "traps": [
     "A workflow attached to a data model governs the products in it; the states, their transitions and the attachment are separate writes, and only the states and transitions have MCP tools.",

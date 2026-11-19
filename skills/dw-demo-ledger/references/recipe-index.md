@@ -16,16 +16,16 @@ validator fails when this file and the recipes disagree, so do not edit it by ha
 
 | Recipe | Functions | Input section | Owner skill | MCP-only | Hosted | After a layer delivered it | Proven on |
 |---|---|---|---|---|---|---|---|
-| `commerce.customer-prices` | commerce.customer-prices, commerce.default-price, commerce.quantity-prices | `prices` | dw-commerce-b2b | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
-| `content.design-styles` | content.design-styles, swift.style-wiring, swift.website-settings | `brand` | dw-swift-building | yes | yes | both | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
-| `content.page-seo` | content.page-seo, swift.header-footer, swift.website-settings | `debrand` | dw-content-modelling | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
+| `commerce.customer-prices` | commerce.customer-prices, commerce.default-price, commerce.quantity-prices | `prices` | dw-commerce-b2b | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
+| `content.design-styles` | content.design-styles, swift.style-wiring, swift.website-settings | `brand` | dw-swift-building | yes | yes | both | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
+| `content.page-seo` | content.page-seo, swift.header-footer, swift.website-settings | `debrand` | dw-content-modelling | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 | `content.pages` | content.pages, content.paragraphs, content.grid-rows | `content.pages` | dw-content-modelling | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
-| `orders.completed-orders` | orders.completed-orders, orders.quotes, orders.favorite-lists, orders.order-numbering | `history` | dw-commerce-orders | no | no | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
-| `orders.payment-methods` | orders.payment-methods, orders.shipping-methods, swift.cart-checkout | `checkout` | dw-commerce-orders | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
-| `pim.data-models` | pim.data-models, pim.field-scope, pim.field-display-groups, pim.completeness-rules | `catalogue` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
+| `orders.completed-orders` | orders.completed-orders, orders.quotes, orders.favorite-lists, orders.order-numbering | `history` | dw-commerce-orders | no | no | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
+| `orders.payment-methods` | orders.payment-methods, orders.shipping-methods, swift.cart-checkout | `checkout` | dw-commerce-orders | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
+| `pim.data-models` | pim.data-models, pim.field-scope, pim.field-display-groups, pim.completeness-rules | `catalogue` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 | `pim.documents` | pim.documents | `catalogue` | dw-demo-pim | no | no | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 (MCP-only yes, hosted yes) |
-| `pim.identifiers` | pim.identifiers, pim.images, commerce.stock-levels | `catalogue` | dw-demo-pim | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
-| `pim.workflow` | pim.workflow | `pim.workflow` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
+| `pim.identifiers` | pim.identifiers, pim.images, commerce.stock-levels | `catalogue` | dw-demo-pim | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
+| `pim.workflow` | pim.workflow | `pim.workflow` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 | `users.accounts` | users.accounts, users.user-accounts, users.user-groups, swift.impersonation | `users.accounts` | dw-commerce-b2b | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 (MCP-only yes, hosted yes); dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 (MCP-only yes, hosted yes) |
 
 ## Run order
@@ -67,8 +67,8 @@ work is done by hand or stays undone. Reasons as the recipes state them:
   - step favourites write (mcp): No MCP tool and no Management API command writes a favourite list (EcomCustomerFavoriteLists). The signed-in buyer creates one with POST /dwapi/ecommerce/favorites/lists {name, description, isDefault} and adds products with POST /dwapi/ecommerce/favorites/items/{listId} {productId, quantity, note}; a recipe writes through MCP or the Management API only.
   - MCP-only: The numbering, completion and quote reads are Management API (GetNumbers, NumberSave, GetOrderList: search_orders leaves quotes out and is_order_complete answers bare text); no MCP or Management API write creates a favourite list or backdates an order.
 - `orders.payment-methods`
-  - step payment-scope write (mcp): The MCP payment model carries no country relation and no user groups (save_payment_methods, get_payment_methods); the scope is the Management API PaymentSave or the method's admin screen.
-  - step shipping-scope write (mcp): The MCP shipping model carries no country relation, no user groups and no default fee (save_shipping_methods, get_shipping_methods); they are the Management API ShippingSave or the method's admin screen.
+  - step payment-scope write (mcp): Up to MCP 0.6.3 the MCP payment model carries no country relation and no user groups; from 0.6.6 save_payment_methods and get_payment_methods carry countryCodes (country and country\|region), still no user groups. The group scope is the Management API PaymentSave or the method's admin screen, and that whole-model save writes the country relation in the same call, so an MCP country write alone would not make the step MCP-only.
+  - step shipping-scope write (mcp): The MCP shipping model carries no user groups and no default fee (save_shipping_methods, get_shipping_methods), and up to MCP 0.6.3 no country relation (0.6.6 adds countryCodes); the group scope and default fee are the Management API ShippingSave or the method's admin screen, whose whole-model save writes the country relation in the same call.
   - MCP-only: The country relation and the customer-group scope are on the Management API models only (PaymentsAll / PaymentSave, ShippingsAll / ShippingSave); the MCP method models carry neither, nor a shipping method's fee.
 - `pim.data-models`
   - step categories find (mcp): No MCP read lists a category: get_product_category_fields returns the fields of CategoryFields categories, so a category without fields is invisible to it.
