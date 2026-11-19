@@ -319,6 +319,17 @@ Describe 'Recipe engine: paths, tokens and matching' {
         { Get-RecipeDifferences @{id = 't'} @{paragraphCustomFontId = 'brand-400'} 'get_typographies' } | Should -Throw '*carries no field*'
         { Get-RecipeDifferences @{id = 't'} @{paragraphLetterSpacing = 0} 'get_typographies' } | Should -Throw '*carries no field*'
     }
+    It 'handles a repeated natural key once in a reuse step, and refuses it in any other step' {
+        . (Join-Path $script:Source 'scripts/Recipe.Steps.ps1')
+        $run = @{section = @{orders = @(@{lines = @(@{product = 'A'}, @{product = 'B'})}, @{lines = @(@{product = 'A'})})}; results = @{}; secrets = @{}; build = @{}; apply = $false
+            lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); steps = [Collections.Generic.List[object]]::new(); blocked = 0}
+        Mock Invoke-RecipeStepItem { $Run.results[$Step.id][$Key] = @{state = 'UNCHANGED'; values = @{}} }
+        Invoke-RecipeStep @{id = 'products'; forEach = 'orders[*].lines[*]'; key = '{item.product}'; repeat = 'reuse'} $run
+        Should -Invoke Invoke-RecipeStepItem -Times 2 -Exactly
+        $run.checks.Count | Should -Be 0
+        Invoke-RecipeStep @{id = 'strict'; forEach = 'orders[*].lines[*]'; key = '{item.product}'} $run
+        @($run.checks | Where-Object { $_.name -eq 'strict/A' -and $_.reason -match 'natural key twice' }).Count | Should -Be 1
+    }
     It 'refuses a host, a machine path or a credential literal in a recipe' {
         @(Test-RecipeForbidden @{source = 'see https://example.invalid'}).Count | Should -Be 1
         @(Test-RecipeForbidden @{query = 'C:\temp\x'}).Count | Should -Be 1

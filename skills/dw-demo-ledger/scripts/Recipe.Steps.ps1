@@ -106,7 +106,11 @@ function Invoke-RecipeStep {
                 $prior = $Run.results[$Step.after.step]
                 if (-not $prior -or -not $prior.Contains($key) -or $prior[$key].state -notin @($Step.after.states)) { continue }
             }
-            if ($seen.Contains($key)) { throw (New-RecipeFault 'the input names this natural key twice') }
+            if ($seen.Contains($key)) {
+                # A step that resolves a shared object (a product several lines name) handles each key once.
+                if ($Step.repeat -eq 'reuse') { continue }
+                throw (New-RecipeFault 'the input names this natural key twice')
+            }
             $seen[$key] = $true
             Invoke-RecipeStepItem $Step $context $Run $key ([ref]$printed)
         } catch [Collections.Generic.KeyNotFoundException] {

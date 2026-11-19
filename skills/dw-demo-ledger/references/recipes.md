@@ -57,7 +57,8 @@ validator and the runner both refuse one. A password is named by a reference key
 A step carries `id`, `title`, `key` (its natural key template), optional `forEach`
 (`groups[*].users[*]`), optional `skipWhen` (one of `exists`, `equals`, `notEquals`, `contains` on
 an input path; the compared value may be an input token such as `{input.buyer.account}`; a list of
-conditions skips when any holds), optional `after` (run an item only when an earlier step reported one of the given
+conditions skips when any holds), optional `repeat: "reuse"` (an item whose key an earlier item of the
+step already handled is skipped, for a shared object such as a product several order lines name), optional `after` (run an item only when an earlier step reported one of the given
 states for the same key), `find` (read bindings), `bindings` (write bindings, in preference order),
 `trap` and `source` (the reference file the shapes come from).
 

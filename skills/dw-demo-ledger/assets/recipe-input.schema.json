@@ -704,6 +704,81 @@
       "additionalProperties": false,
       "description": "Orders, quotes, carts and favourite lists. The owner (user) defaults to the buyer persona and must be a customer user. Line prices default to the price the owner's account gets at that quantity. daysAgo counts back from the day the data is applied.",
       "properties": {
+        "buyer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "userName",
+            "passwordRef"
+          ],
+          "description": "The buyer persona: the default owner of every order, quote and list, and the user the signed-in history probes sign in as.",
+          "properties": {
+            "userName": {
+              "type": "string",
+              "minLength": 1
+            },
+            "passwordRef": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
+              "description": "A key of DW_RECIPE_SECRETS, never the password."
+            }
+          }
+        },
+        "shop": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Id of the shop the orders and quotes are placed in (the storefront's shop)."
+        },
+        "orderStates": {
+          "type": "array",
+          "description": "The order state each history state is set to, by state name in the order flow (completed: Completed, open: New, rejected: Rejected on a default flow).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "name"
+            ],
+            "properties": {
+              "state": {
+                "enum": [
+                  "completed",
+                  "open",
+                  "rejected"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "numbering": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "prefix"
+          ],
+          "description": "The order number series (EcomNumbers ORDER): a new order is numbered prefix + counter + postFix. A blank site numbers ORDER1, ORDER2.",
+          "properties": {
+            "prefix": {
+              "type": "string"
+            },
+            "postFix": {
+              "type": "string"
+            },
+            "counter": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "The last number used; the next order takes counter + 1."
+            }
+          }
+        },
+        "reset": {
+          "type": "boolean",
+          "description": "Return the history to the seeded state before a demo: remove the buyer's orders, quotes and carts the input does not name."
+        },
         "orders": {
           "type": "array",
           "items": {

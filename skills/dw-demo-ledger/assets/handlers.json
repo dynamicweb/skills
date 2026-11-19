@@ -73,6 +73,7 @@
     "get_order_contexts",
     "get_order_fields",
     "get_order_flows",
+    "get_order_lines",
     "get_order_states",
     "get_page_item_field_values",
     "get_pages_by_parent_id",
@@ -88,6 +89,7 @@
     "get_roundings",
     "get_scheduled_task_add_in_types",
     "get_scheduled_tasks",
+    "search_orders",
     "get_shipping_methods",
     "get_shops",
     "get_stock_groups",
@@ -108,6 +110,8 @@
   "adminReadQueries": [
     "DataModelGroupById",
     "FeaturesAll",
+    "GetNumbers",
+    "GetOrderList",
     "GroupById",
     "ProductCategoriesAll"
   ],
@@ -127,15 +131,19 @@
   ],
   "recipeWriteTools": [
     "add_impersonatable_users",
+    "add_products_by_sku",
     "assign_completion_rules_to_groups",
     "assign_users_to_group",
     "build_product_index",
+    "complete_order",
+    "convert_cart_to_order",
     "create_categories",
     "create_category_fields",
     "create_data_models",
     "create_folder",
     "create_or_update_completeness_rules",
     "create_or_update_workflow_states",
+    "create_orders",
     "create_users",
     "patch_data_models",
     "patch_products_safe",
@@ -151,6 +159,7 @@
     "save_typographies",
     "save_user_groups",
     "set_item_field_values",
+    "set_order_state",
     "set_page_item_fields",
     "set_paragraph_item_fields",
     "update_category_fields",
@@ -161,10 +170,14 @@
   "recipeAdminCommands": [
     "DataModelGroupSave",
     "Dynamicweb.Products.UI.Commands.Settings.WorkflowSaveCommand",
+    "NumberSave",
     "UserImpersonateAdd",
     "UsersAddToGroups"
   ],
   "recipeSignedInReadRoutes": [
+    "ecommerce/favorites/lists",
+    "ecommerce/orders",
+    "ecommerce/orders/search",
     "ecommerce/products/{productId}"
   ],
   "recipeRenderedReadTools": [

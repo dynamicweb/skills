@@ -64,7 +64,6 @@
       {"account": "C-1001", "product": "EX-100", "amount": 7}
     ],
     "buyer": {"userName": "buyer@example.invalid", "passwordRef": "buyer", "account": "C-1001"}
-
   },
   "brand": {
     "id": "contoso",
@@ -95,6 +94,27 @@
     "renderCheck": [{"path": "/en-us/home"}],
     "layout": [
       {"slot": "HeaderDesktop", "logo": {"Image": "/Files/Images/contoso/contoso-logo.svg", "LogoName": "Contoso"}, "rows": [{"sort": 4, "colorScheme": "primary"}]}
+    ]
+  },
+  "history": {
+    "buyer": {"userName": "buyer@example.invalid", "passwordRef": "buyer"},
+    "shop": "SHOP1",
+    "orderStates": [
+      {"state": "completed", "name": "Completed"},
+      {"state": "rejected", "name": "Rejected"},
+      {"state": "open", "name": "New"}
+    ],
+    "numbering": {"prefix": "EX-"},
+    "orders": [
+      {"reference": "EX-PO-001", "daysAgo": 30, "state": "completed", "lines": [{"product": "EX-100", "quantity": 12}, {"product": "EX-200", "quantity": 2}]},
+      {"reference": "EX-PO-002", "daysAgo": 10, "state": "rejected", "lines": [{"product": "EX-200", "quantity": 1}]},
+      {"reference": "EX-PO-003", "daysAgo": 1, "state": "open", "lines": [{"product": "EX-100", "quantity": 5}]}
+    ],
+    "quotes": [
+      {"reference": "EX-Q-001", "daysAgo": 3, "state": "QuoteSent", "comment": "Quote for 100 units", "lines": [{"product": "EX-100", "quantity": 100}]}
+    ],
+    "favourites": [
+      {"name": "Reorder list", "products": ["EX-100"]}
     ]
   }
 }

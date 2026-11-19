@@ -141,6 +141,19 @@ def produced(step):
     return names
 
 
+def inline_refs(node, definitions):
+    """The input schema with each local #/definitions/<name> reference replaced by its definition, so a
+    path through a shared definition (an order's lines) resolves."""
+    if isinstance(node, dict):
+        ref = node.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/definitions/") and ref[14:] in definitions:
+            return inline_refs(definitions[ref[14:]], definitions)
+        return {k: inline_refs(v, definitions) for k, v in node.items()}
+    if isinstance(node, list):
+        return [inline_refs(v, definitions) for v in node]
+    return node
+
+
 def conditions(skip_when):
     """A skipWhen as a list of condition objects (one condition, or a list that skips when any holds)."""
     items = skip_when if isinstance(skip_when, list) else [skip_when]
@@ -177,6 +190,7 @@ def validate_recipes(repo: Path) -> list[str]:
     try:
         registry = json.loads((assets / "handlers.json").read_text(encoding="utf-8"))
         input_schema = json.loads((assets / "recipe-input.schema.json").read_text(encoding="utf-8"))
+        input_schema = inline_refs(input_schema, input_schema.get("definitions") or {})
     except (OSError, ValueError) as exc:
         return [f"recipe validation cannot read handlers.json or recipe-input.schema.json ({exc})"]
     releases = load_releases(assets, error)

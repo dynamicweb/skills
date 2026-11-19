@@ -180,6 +180,7 @@
         "forEach": {"type": "string", "pattern": "^[A-Za-z0-9_]+(\\[\\*\\])?(\\.[A-Za-z0-9_]+(\\[\\*\\])?)*$"},
         "key": {"type": "string", "minLength": 1},
         "skipWhen": {"$ref": "#/definitions/skipWhen"},
+        "repeat": {"enum": ["reuse"], "description": "reuse: an item whose natural key an earlier item of this step already handled is skipped, for a shared object several items name (a product on several order lines)."},
         "after": {
           "type": "object",
           "additionalProperties": false,
