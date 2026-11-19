@@ -29,7 +29,7 @@ and follow it by calling the named tools with the stated arguments, and
 | [assets/recipe.schema.json](../assets/recipe.schema.json) | The recipe schema (draft 7) |
 | [assets/recipe-input.schema.json](../assets/recipe-input.schema.json) | The customer data file: one section per recipe input section |
 | [assets/recipe-input.example.json](../assets/recipe-input.example.json) | A generic example input for both example recipes |
-| [assets/handlers.json](../assets/handlers.json) | The allowlists: `recipeWriteTools`, `recipeAdminCommands`, and the read lists the ledger shares |
+| [assets/handlers.json](../assets/handlers.json) | The allowlists: `recipeWriteTools`, `recipeDeleteTools`, `recipeAdminCommands`, and the read lists the ledger shares |
 
 Recipes stay **outside** `assets/releases/<version>/`. The snapshot digest covers every file in a
 release directory, so a recipe added there would change the digest and break every consumer's lock.
@@ -86,7 +86,8 @@ after the write fails on it. A recipe is proven only by a run recorded in `prove
 
 Allowlists hold the line between data and code. An implemented MCP read must be on `mcpReadTools` (or
 `recipeRenderedReadTools`, the rendered-page summary), an
-MCP write on `recipeWriteTools`, a Management API write on `recipeAdminCommands`, a delivery read on
+MCP write on `recipeWriteTools`, an MCP delete on `recipeDeleteTools`, a Management API write on
+`recipeAdminCommands`, a delivery read on
 the ledger's delivery lists (a `{name}` in a delivery route other than `{areaId}` takes the argument of
 that name, which then leaves the query). The runner checks again before every call and refuses an operation off
 the list even when the target offers it, and it checks every MCP call's argument names against the
@@ -106,6 +107,7 @@ String values in arguments, match, compare, expect and parameters may hold token
 | `{step.<id>.<field>}` | A value an earlier step produced for the same natural key |
 | `{step.<id>[<path>,<path>].<field>}` | The same for the key built from those paths, joined with `/` |
 | `{found.<path>}` | The row the find matched (update arguments only) |
+| `{scope}`, `{row.<path>}` | In a prune step: the owner being read, and the row being deleted |
 | `{build.areaId}` | `areaId`, `defaultLanguage`, `pimShop` from the ledger build file, else the input's `build` |
 | `{secret.<path>}` | The value of the reference key at `<path>` in `DW_RECIPE_SECRETS`; write and read-back arguments only |
 | `{base64:<token>}`, `{bytes:<token>}`, `{basename:<token>}` | The content (base64), size or file name of the file the value names, relative to the input file; a rooted path or one outside that folder is refused |
@@ -144,6 +146,18 @@ writes each place through the first update binding, whose arguments read the row
 and the text with every occurrence replaced as `{replaced:row.<member>}`; with `batch` one call
 carries every place, joined on that list member. Each place is read back and must no longer hold the
 text. A scan without write bindings reports each place OPEN with its `unwritable` reason.
+A step with a `prune` removes what the input does not name: the reset before a demo. Its `scope.values`
+is a token naming, from the input, the owners whose rows may go (the buyer the history names); a scope
+that resolves to nothing (no value, an empty text, an empty list or the id 0) refuses the step before any
+read. For each scope value the `binding` reads the set, its arguments carrying `{scope}` (a read that does
+not pass it is refused), and its `match` selects rows. Every row must carry `scope.member` equal to the
+scope value: one row outside the scope refuses the whole item and nothing is deleted, so a read that
+ignores its filter cannot widen the delete. A row whose `keep.field` equals one of `keep.values` (the
+input's natural keys) stays; a row without the field is unnamed and goes. More than `max` rows refuses
+the item. Without `-Apply` each row is `STEP reset WOULD-DELETE buyer@example.invalid@CART7`; with it
+each is removed through the first eligible binding that declares `delete` (its operation on
+`recipeDeleteTools`, MCP only, its arguments reading the row as `{row.<member>}`) and read back: the
+binding's `readBack` must no longer return the row. Nothing to remove is UNCHANGED.
 A step with an empty `bindings` list is a lookup: it finds an object another function owns (the
 header page a website selects) and produces values for later steps, and never writes. An absent
 object is WOULD-CREATE in a verify run and BLOCKED with apply, so its dependants stop too.
@@ -247,7 +261,7 @@ printed or written to the report.
 ## Output contract
 
 ```text
-STEP <step> <CREATED|UPDATED|UNCHANGED|BLOCKED|WOULD-CREATE|WOULD-UPDATE> <natural key>
+STEP <step> <CREATED|UPDATED|DELETED|UNCHANGED|BLOCKED|WOULD-CREATE|WOULD-UPDATE|WOULD-DELETE> <natural key>
 PASS <check>
 FAIL <check>: <reason>
 OPEN <check>: <reason>

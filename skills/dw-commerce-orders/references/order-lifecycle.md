@@ -108,6 +108,7 @@ binds these shapes. The order's reference is its purchase order number, the only
 | State | `set_order_state {id, stateId}` | `search_orders`, `stateId` |
 | A quote | `create_orders {orders: [{shopId, userId, purchaseOrderNumber, orderType: "Quote", stateId, customerComment}]}`, lines as above | `search_orders` leaves quotes out; the Management API `GetOrderList` with `OrderType=Quote` lists them |
 | Remove one | `delete_order {id, hardDelete: true}` for a cart or an open order; `{id, force: true}` soft-deletes a completed one (state Deleted, recoverable) | gone from `search_orders` and the buyer's delivery API list at once |
+| Reset to the seeded set | `search_orders {request: {userId, pageSize}}` (orders and carts) and the Management API `GetOrderList?OrderType=Quote&UserId=<id>` (quotes; `UserId` is the filter it honours, `CustomerId` and the like are ignored), then `delete_order {id, force: true}` for each row whose `purchaseOrderNumber` the history does not name | `force: true` soft-deletes a cart, an open order, a completed order and a quote alike; every soft-deleted order leaves both reads and the buyer's delivery API lists at once |
 
 The buyer sees a **completed** order in `GET /dwapi/ecommerce/orders` (an open one is not listed), a quote
 in `GET /dwapi/ecommerce/orders/search?Type=quote`, and a favourite list in

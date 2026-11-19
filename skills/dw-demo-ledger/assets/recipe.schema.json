@@ -163,11 +163,12 @@
         "source": {"type": "string", "minLength": 1},
         "create": {"$ref": "#/definitions/operation"},
         "update": {"$ref": "#/definitions/operation"},
+        "delete": {"$ref": "#/definitions/operation", "description": "A prune step's removal of one row; the arguments read the row as {row.<member>}. The operation must be on recipeDeleteTools."},
         "readBack": {"$ref": "#/definitions/read"}
       },
       "allOf": [
         {"$ref": "#/definitions/plannedRule"},
-        {"if": {"properties": {"status": {"const": "implemented"}}, "required": ["status"]}, "then": {"required": ["readBack"], "anyOf": [{"required": ["create"]}, {"required": ["update"]}]}}
+        {"if": {"properties": {"status": {"const": "implemented"}}, "required": ["status"]}, "then": {"required": ["readBack"], "anyOf": [{"required": ["create"]}, {"required": ["update"]}, {"required": ["delete"]}]}}
       ]
     },
     "step": {
@@ -217,11 +218,40 @@
             "batch": {"type": "string", "minLength": 1, "description": "The list member of the update arguments: with batch, one call carries every place of the item, for a tool whose contract is one call per batch."}
           }
         },
-        "bindings": {"type": "array", "items": {"$ref": "#/definitions/write"}, "description": "Write bindings in preference order. Empty for a lookup step, which finds and produces values and never writes; a lookup needs a find."},
+        "prune": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scope", "binding", "keep", "identify", "max"],
+          "description": "A prune step: per scope value, every row the read returns (and its match selects) that the input does not name is removed through the delete binding. Refused when the scope is empty, when a row is outside the scope, or when more than max rows would go.",
+          "properties": {
+            "scope": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["values", "member"],
+              "properties": {
+                "values": {"type": "string", "pattern": "^\\{[^{}]+\\}$", "description": "A token naming, from the input, the owners whose rows may be removed (one value or a list); the read takes each as {scope}."},
+                "member": {"type": "string", "minLength": 1, "description": "The row member that must equal the scope value; a row without it or with another value refuses the item."}
+              }
+            },
+            "binding": {"$ref": "#/definitions/read"},
+            "keep": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["field", "values"],
+              "properties": {
+                "field": {"type": "string", "minLength": 1, "description": "The row member holding the natural key."},
+                "values": {"type": "string", "pattern": "^\\{[^{}]+\\}$", "description": "A token for the natural keys the input names; those rows are kept."}
+              }
+            },
+            "identify": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            "max": {"type": "integer", "minimum": 1, "maximum": 1000, "description": "More rows to remove than this refuses the item."}
+          }
+        },
+        "bindings": {"type": "array", "items": {"$ref": "#/definitions/write"}, "description": "Write bindings in preference order. Empty for a lookup step, which finds and produces values and never writes; a lookup needs a find. A prune step's bindings declare delete."},
         "trap": {"type": "string"},
         "source": {"type": "string", "minLength": 1}
       },
-      "anyOf": [{"required": ["find"]}, {"required": ["after"]}, {"required": ["scan"]}]
+      "anyOf": [{"required": ["find"]}, {"required": ["after"]}, {"required": ["scan"]}, {"required": ["prune"]}]
     },
     "probe": {
       "type": "object",

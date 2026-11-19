@@ -176,12 +176,15 @@ def step_usable(step, surfaces, write_surfaces):
     if step.get("scan"):
         # A scan reads through its own binding; a scan without write bindings reports and never writes.
         find = {"bindings": [step["scan"].get("binding") or {}]}
+    if step.get("prune"):
+        # A prune reads its set through its own binding and removes through a delete binding.
+        find = {"bindings": [step["prune"].get("binding") or {}]}
     if find and not any(readable(b, surfaces) for b in find.get("bindings", [])):
         return False
     if not step.get("bindings"):
         # A lookup step finds and never writes: its find is all it needs.
         return bool(find)
-    return any(b.get("status") == "implemented" and b.get("surface") in write_surfaces and ("create" in b or "update" in b)
+    return any(b.get("status") == "implemented" and b.get("surface") in write_surfaces and ("create" in b or "update" in b or "delete" in b)
                and readable(b.get("readBack") or {}, surfaces) for b in step.get("bindings", []))
 
 
@@ -275,8 +278,20 @@ def validate_recipes(repo: Path) -> list[str]:
             item, parent = scopes(section, step.get("forEach"))
             if step.get("forEach") and item is None:
                 error(file, f"step {sid}: forEach {step.get('forEach')} is not in section {section_name}")
-            if not step.get("bindings") and not step.get("find") and not step.get("scan"):
+            if not step.get("bindings") and not step.get("find") and not step.get("scan") and not step.get("prune"):
                 error(file, f"step {sid}: a step without write bindings is a lookup and needs a find")
+            prune = step.get("prune")
+            if isinstance(prune, dict):
+                if not step.get("bindings"):
+                    error(file, f"step {sid}: a prune step needs a delete binding (planned with its reason when none exists)")
+                for b in step.get("bindings", []):
+                    if b.get("status") == "implemented" and ("create" in b or "update" in b or "delete" not in b):
+                        error(file, f"step {sid} {b.get('id')}: a prune step's implemented binding declares delete only")
+                if "{scope" not in json.dumps((prune.get("binding") or {}).get("arguments") or {}):
+                    error(file, f"step {sid}: the prune read must pass {{scope}} in its arguments")
+            for b in step.get("bindings", []):
+                if "delete" in b and not isinstance(prune, dict):
+                    error(file, f"step {sid} {b.get('id')}: only a prune step deletes")
             after = (step.get("after") or {}).get("step")
             if after and after not in earlier:
                 error(file, f"step {sid}: after names {after}, which is not an earlier step")
@@ -322,7 +337,9 @@ def validate_recipes(repo: Path) -> list[str]:
                 if head == "found":
                     return None if allow_found else "reads found outside an update"
                 if head == "row":
-                    return None if step.get("scan") else "reads row outside a scan step"
+                    return None if step.get("scan") or step.get("prune") else "reads row outside a scan or prune step"
+                if head == "scope":
+                    return None if step.get("prune") else "reads scope outside a prune step"
                 if head == "build":
                     return None if rest in BUILD_KEYS and rest in (build_schema.get("properties") or {}) else f"names an unknown build value {rest}"
                 base = {"input": section, "item": item, "parent": parent}.get(head)
@@ -344,6 +361,10 @@ def validate_recipes(repo: Path) -> list[str]:
                 check_tokens({"arguments": (scan.get("binding") or {}).get("arguments"), "text": scan.get("text"), "replacement": scan.get("replacement")}, "scan")
                 if not step.get("bindings") and not scan.get("unwritable"):
                     error(file, f"step {sid}: a scan without write bindings states why in scan.unwritable")
+            if isinstance(prune, dict):
+                check_binding(prune.get("binding") or {}, "read", f"step {sid} prune", file, error, registry, tools, sql_jobs)
+                check_tokens({"arguments": (prune.get("binding") or {}).get("arguments"), "match": (prune.get("binding") or {}).get("match"),
+                              "scope": (prune.get("scope") or {}).get("values"), "keep": (prune.get("keep") or {}).get("values")}, "prune")
             for b in (step.get("find") or {}).get("bindings", []):
                 check_binding(b, "read", f"step {sid} find", file, error, registry, tools, sql_jobs)
                 check_tokens({k: b.get(k) for k in ("arguments", "match", "compare", "compareMap", "parameters")}, "find")
@@ -353,6 +374,8 @@ def validate_recipes(repo: Path) -> list[str]:
                     check_tokens(b["create"].get("arguments"), "create", allow_secret=True)
                 if "update" in b:
                     check_tokens(b["update"].get("arguments"), "update", allow_secret=True, allow_found=True)
+                if "delete" in b:
+                    check_tokens(b["delete"].get("arguments"), "delete")
                 rb = b.get("readBack")
                 if rb:
                     check_binding(rb, "read", f"step {sid} {b.get('id')} readBack", file, error, registry, tools, sql_jobs)
@@ -404,7 +427,7 @@ def check_binding(b, kind, where, file, error, registry, tools, sql_jobs):
     """Allowlists, registry names, SQL shape and the members an implemented binding needs."""
     surface, status = b.get("surface"), b.get("status")
     operation = b.get("operation") or (b.get("create") or {}).get("operation") or (b.get("update") or {}).get("operation")
-    ops = [o for o in [b.get("operation"), (b.get("create") or {}).get("operation"), (b.get("update") or {}).get("operation")] if o]
+    ops = [o for o in [b.get("operation"), (b.get("create") or {}).get("operation"), (b.get("update") or {}).get("operation"), (b.get("delete") or {}).get("operation")] if o]
     if surface == "mcp" and tools is not None:
         for op in ops:
             if op not in tools:
@@ -423,9 +446,12 @@ def check_binding(b, kind, where, file, error, registry, tools, sql_jobs):
         return
     if kind == "write":
         lists = {"mcp": registry.get("recipeWriteTools", []), "admin-api": registry.get("recipeAdminCommands", [])}
-        for op in ops:
+        for op in [o for o in [(b.get("create") or {}).get("operation"), (b.get("update") or {}).get("operation")] if o]:
             if op not in lists.get(surface, []):
                 error(file, f"{where}: {surface} {op} is not on the recipe write allowlist")
+        removal = (b.get("delete") or {}).get("operation")
+        if removal and (surface != "mcp" or removal not in registry.get("recipeDeleteTools", [])):
+            error(file, f"{where}: {surface} {removal} is not on recipeDeleteTools (a recipe deletes through MCP only)")
         rb = b.get("readBack") or {}
         if rb.get("status") != "implemented":
             error(file, f"{where}: an implemented write needs an implemented read-back")

@@ -7,7 +7,7 @@
   "inputs": {"section": "history", "required": ["buyer", "shop"]},
   "modes": {
     "mcpOnly": {"usable": false, "reason": "The numbering, completion and quote reads are Management API (GetNumbers, NumberSave, GetOrderList: search_orders leaves quotes out and is_order_complete answers bare text); no MCP or Management API write creates a favourite list or backdates an order."},
-    "hosted": {"usable": false, "reason": "No MCP or Management API write creates a favourite list, sets an order's date or the number counter, or creates an order state without a flow id; the reset needs a step that selects what the input does not name. Every other step is MCP or Management API."},
+    "hosted": {"usable": false, "reason": "No MCP or Management API write creates a favourite list, sets an order's date or the number counter, or creates an order state without a flow id. Every other step, the reset included, is MCP or Management API."},
     "local": {"usable": true},
     "layerDelivered": "verify"
   },
@@ -232,15 +232,42 @@
     },
     {
       "id": "reset",
-      "title": "Return the history to the seeded state: remove the buyer's orders, quotes and carts the input does not name",
+      "title": "Return the history to the seeded state: remove the buyer's orders and carts the input does not name",
       "key": "{input.buyer.userName}",
       "skipWhen": {"path": "input.reset", "notEquals": true},
-      "find": {"bindings": [
-        {"id": "rehearsal-orders", "surface": "mcp", "status": "planned", "reason": "A recipe step finds what the input names and cannot select what it does not. By hand: search_orders {request: {userId}} for orders and carts and GetOrderList OrderType Quote for quotes, then delete_order for each id whose purchaseOrderNumber the input does not name: hardDelete true for a cart or an open order, force true (a reversible soft delete) for a completed one. The buyer's delivery API list drops it at once.", "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
-      ]},
+      "prune": {
+        "scope": {"values": "{step.buyer[input.buyer.userName].id}", "member": "customerAccessUserId"},
+        "binding": {"id": "mcp-search", "surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{scope}", "pageSize": 200}}, "rows": "data", "source": "skills/dw-commerce-orders/references/order-lifecycle.md"},
+        "keep": {"field": "purchaseOrderNumber", "values": "{input.orders[*].reference|[]}"},
+        "identify": ["id"],
+        "max": 50
+      },
       "bindings": [
-        {"id": "delete-order", "surface": "mcp", "status": "planned", "reason": "delete_order removes one order by id; the selection above has no recipe step.", "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
+        {"id": "delete-order", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/order-lifecycle.md",
+          "delete": {"operation": "delete_order", "arguments": {"id": "{row.id}", "force": true}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{scope}", "pageSize": 200}}, "rows": "data", "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}}
       ],
+      "trap": "search_orders lists the buyer's orders and carts and leaves quotes and soft-deleted orders out; force true soft-deletes a cart, an open order and a completed one alike (reversible), and the row leaves the read at once.",
+      "source": "skills/dw-commerce-orders/references/order-lifecycle.md"
+    },
+    {
+      "id": "reset-quotes",
+      "title": "Return the quotes to the seeded state: remove the buyer's quotes the input does not name",
+      "key": "{input.buyer.userName}",
+      "skipWhen": {"path": "input.reset", "notEquals": true},
+      "prune": {
+        "scope": {"values": "{step.buyer[input.buyer.userName].id}", "member": "customerAccessUserId"},
+        "binding": {"id": "admin-quotes", "surface": "admin-api", "status": "implemented", "operation": "GetOrderList", "arguments": {"OrderType": "Quote", "UserId": "{scope}", "PageSize": 1000}, "rows": "model.data", "source": "skills/dw-commerce-orders/references/order-lifecycle.md"},
+        "keep": {"field": "purchaseOrderNumber", "values": "{input.quotes[*].reference|[]}"},
+        "identify": ["id"],
+        "max": 50
+      },
+      "bindings": [
+        {"id": "delete-quote", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/order-lifecycle.md",
+          "delete": {"operation": "delete_order", "arguments": {"id": "{row.id}", "force": true}},
+          "readBack": {"surface": "admin-api", "status": "implemented", "operation": "GetOrderList", "arguments": {"OrderType": "Quote", "UserId": "{scope}", "PageSize": 1000}, "rows": "model.data", "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}}
+      ],
+      "trap": "GetOrderList honours UserId and ignores CustomerId and the like, so the scope check on customerAccessUserId is what keeps another buyer's quote out; a quote soft-deleted with delete_order leaves GetOrderList at once.",
       "source": "skills/dw-commerce-orders/references/order-lifecycle.md"
     }
   ],
@@ -289,7 +316,8 @@
     ]
   },
   "provenOn": [
-    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "orders.completed-orders.1-verify.json (numbering WOULD-UPDATE, orders, lines and quote WOULD-CREATE, the favourite list a delivery-API fixture UNCHANGED), 2-apply.json (series prefix set, three orders and a quote created, lined, placed and stated; the order dates OPEN as planned) and 2b-apply.json after the completion read was rebuilt on search_orders (30 of 30), 3-verify and 4-apply-again (30 of 30, nothing written), 6-hosted-verify without SQL (30 of 30); 5-mcponly.json is 23 of 30 (numbering and quotes need the Management API, the favourite list and the probes the delivery API); 7-verify-reset.json reports the reset OPEN as planned. The signed-in buyer was served both completed orders, the quote and the favourite list; the orders took RCPC-4 to RCPC-6 from the series after the step, a blank series having numbered ORDER1; a rehearsal order force-deleted with delete_order left the buyer's list at once."}
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "orders.completed-orders.1-verify.json (numbering WOULD-UPDATE, orders, lines and quote WOULD-CREATE, the favourite list a delivery-API fixture UNCHANGED), 2-apply.json (series prefix set, three orders and a quote created, lined, placed and stated; the order dates OPEN as planned) and 2b-apply.json after the completion read was rebuilt on search_orders (30 of 30), 3-verify and 4-apply-again (30 of 30, nothing written), 6-hosted-verify without SQL (30 of 30); 5-mcponly.json is 23 of 30 (numbering and quotes need the Management API, the favourite list and the probes the delivery API); 7-verify-reset.json reports the reset OPEN as planned. The signed-in buyer was served both completed orders, the quote and the favourite list; the orders took RCPC-4 to RCPC-6 from the series after the step, a blank series having numbered ORDER1; a rehearsal order force-deleted with delete_order left the buyer's list at once."},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "The reset as two prune steps, scoped to the buyer the history names: r1-verify listed four stale carts WOULD-DELETE and r2-apply soft-deleted them (35 of 35); two orders the buyer then placed through the delivery API cart (additems, payment, shipping, createOrder) were listed WOULD-DELETE and nothing else by r3-verify (31 of 33), removed by r4-apply (33 of 33) and absent from r5-verify (32 of 32): the buyer's delivery API order list was back to the two seeded completed orders and search_orders to the three seeded orders, untouched. A rehearsal quote was listed by r6-verify and removed by r7-apply (32 of 32). r8-mcponly is 24 of 32: the order and cart reset runs MCP-only, the quote reset needs the Management API read."}
   ],
   "traps": [
     "No debt: the delivery API listed a completed order, a quote and a list on the next request, and the next converted order took the new prefix.",
@@ -297,6 +325,8 @@
     "create_orders leaves the order's customer number empty; the buyer's delivery API list finds it by user id (RetrieveMode useUserId), a customer-number list does not.",
     "A blank site numbers orders ORDER1, ORDER2: the ORDER series prefix is ORDER and its counter 0.",
     "An order's id changes when its cart is converted; its reference (purchase order number) is the only key that survives.",
-    "The delivery API lists a buyer's completed orders only, and quotes only through ecommerce/orders/search with Type quote."
+    "The delivery API lists a buyer's completed orders only, and quotes only through ecommerce/orders/search with Type quote.",
+    "The reset removes by soft delete (delete_order force true): reversible, and gone at once from search_orders, GetOrderList and the buyer's delivery API lists. It is scoped to the buyer's user id; an order of another user, or a read that ignored its filter, refuses the reset with nothing deleted.",
+    "A buyer's delivery API checkout (carts/create with languageId, countryCode and currencyCode, then carts/additems, PATCH payment and shipping, createOrder) completes the order at once and numbers it from the series, with no purchase order number, so the reset finds it unnamed; the cart becomes the order and leaves no cart behind."
   ]
 }

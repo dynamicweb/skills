@@ -2,7 +2,7 @@
 .SYNOPSIS
 WRITES: the one MCP tool call or Management API command a recipe binding names, when the runner applies.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. Called only by the step engine, only with -Apply, and only for an operation on recipeWriteTools or recipeAdminCommands in assets/handlers.json (checked again here, before the call). A recipe never writes through SQL. A write's own status is not its evidence: an error result or a refusal stops the item, and a success is still read back by the step engine. No argument value, token or response body is printed.
+PowerShell 7. Owning reference: ../references/recipes.md. Called only by the step engine, only with -Apply, and only for an operation on recipeWriteTools, recipeDeleteTools (a prune step's delete) or recipeAdminCommands in assets/handlers.json (checked again here, before the call). A recipe never writes through SQL. A write's own status is not its evidence: an error result or a refusal stops the item, and a success is still read back by the step engine. No argument value, token or response body is printed.
 .EXAMPLE
 . ./Recipe.Write.ps1
 #>
@@ -11,7 +11,7 @@ function Invoke-RecipeWrite {
     # -Arguments: arguments a scan step already expanded and batched; otherwise the binding's own, expanded here.
     param($Binding, [string]$Action, $Context, $Run, $Arguments)
     $operation = [string]$Binding[$Action].operation
-    $fault = Get-RecipeSurfaceFault $Binding $operation 'write' $Run.cap $Run.registry
+    $fault = Get-RecipeSurfaceFault $Binding $operation $(if ($Action -eq 'delete') { 'delete' } else { 'write' }) $Run.cap $Run.registry
     if ($fault) { throw (New-RecipeFault "Write refused before the call: $fault.") }
     $arguments = if ($null -ne $Arguments) { $Arguments } else { Expand-RecipeValue $Binding[$Action].arguments $Context }
     if ($Binding.surface -eq 'mcp') {

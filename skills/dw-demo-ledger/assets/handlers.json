@@ -183,6 +183,9 @@
     "upload_file",
     "wait_for_product_index"
   ],
+  "recipeDeleteTools": [
+    "delete_order"
+  ],
   "recipeAdminCommands": [
     "DataModelGroupSave",
     "Dynamicweb.Products.UI.Commands.Settings.WorkflowSaveCommand",

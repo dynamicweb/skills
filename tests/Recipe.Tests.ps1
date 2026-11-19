@@ -721,6 +721,103 @@ Describe 'Invoke-DwRecipe on scan steps' {
     }
 }
 
+Describe 'Invoke-DwRecipe on a prune step' {
+    BeforeEach {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
+        Remove-Item Env:DW_API_TOKEN -ErrorAction SilentlyContinue
+        $script:Root = New-RecipeSandbox
+        $script:History = @{buyer = @{userName = 'buyer@example.invalid'; passwordRef = 'buyer'}; shop = 'SHOP1'; reset = $true
+            orders = @(@{reference = 'PO-1'; daysAgo = 3; state = 'completed'; lines = @(@{product = 'P-1'; quantity = 1})})}
+        $script:InputFile = Write-Input $script:History 'history'
+        $read = @{surface = 'mcp'; status = 'implemented'; operation = 'search_orders'; arguments = @{request = @{userId = '{scope}'; pageSize = 200}}; rows = 'data'; source = 'skills/x.md'}
+        $script:Recipe = @{schema = 1; id = 'orders.completed-orders'; name = 'Reset'; functions = @('orders.completed-orders'); skill = 'dw-commerce-orders'; inputs = @{section = 'history'; required = @('buyer')}
+            modes = @{mcpOnly = @{usable = $true; reason = 'MCP.'}; hosted = @{usable = $true; reason = 'No SQL.'}; local = @{usable = $true}; layerDelivered = 'verify'}
+            steps = @(
+                @{id = 'buyer'; title = 'Find the buyer'; key = '{input.buyer.userName}'; find = @{bindings = @(@{surface = 'mcp'; status = 'implemented'; operation = 'get_users_by_usernames'; arguments = @{userNames = @('{input.buyer.userName}')}; rows = 'data'; match = @{userName = '{input.buyer.userName}'}; produces = @{id = 'id'}; source = 'skills/x.md'})}; bindings = @(); source = 'skills/x.md'},
+                @{id = 'reset'; title = 'Remove what the input does not name'; key = '{input.buyer.userName}'; skipWhen = @{path = 'input.reset'; notEquals = $true}
+                    prune = @{scope = @{values = '{step.buyer[input.buyer.userName].id}'; member = 'customerAccessUserId'}; binding = $read; keep = @{field = 'purchaseOrderNumber'; values = '{input.orders[*].reference|[]}'}; identify = @('id'); max = 5}
+                    bindings = @(@{id = 'delete-order'; surface = 'mcp'; status = 'implemented'; source = 'skills/x.md'; delete = @{operation = 'delete_order'; arguments = @{id = '{row.id}'; force = $true}}; readBack = $read})
+                    source = 'skills/x.md'})
+            debts = @(); verify = @{checkIds = @(); probes = @()}; provenOn = @(); traps = @()}
+        function Save-Recipe { $path = Join-Path $TestDrive ([guid]::NewGuid().ToString('n') + '.json'); $script:Recipe | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $path -Encoding utf8; return $path }
+        function New-OrderStub {
+            New-Stub
+            $s = $global:RecipeStub
+            $s.tools.search_orders = Get-Schema @('request') @('request'); $s.tools.delete_order = Get-Schema @('id', 'hardDelete', 'force') @('id')
+            $s.users.Add(@{id = 7; userName = 'buyer@example.invalid'}); $s.ignoreFilter = $false
+            $s.orders = [Collections.Generic.List[object]]::new()
+            # The seeded order, two rehearsal orders and a cart of the buyer (a cart has no reference: the member is left out), and another buyer's order.
+            foreach ($o in @(@{id = 'ORDER1'; purchaseOrderNumber = 'PO-1'; customerAccessUserId = 7}, @{id = 'ORDER2'; purchaseOrderNumber = 'REHEARSAL'; customerAccessUserId = 7},
+                    @{id = 'ORDER3'; purchaseOrderNumber = ''; customerAccessUserId = 7}, @{id = 'CART1'; customerAccessUserId = 7}, @{id = 'ORDER9'; purchaseOrderNumber = 'OTHER'; customerAccessUserId = 8})) { $s.orders.Add($o) }
+            $inner = $s.mcp
+            $s.mcp = {
+                param($Tool, $Arguments)
+                $s = $global:RecipeStub
+                switch ($Tool) {
+                    'search_orders' { $rows = @($s.orders | Where-Object { $s.ignoreFilter -or $_.customerAccessUserId -eq [int]$Arguments.request.userId }); return @{structuredContent = @{count = $rows.Count; total = $rows.Count; data = $rows}} }
+                    'delete_order' { $o = @($s.orders | Where-Object { $_.id -eq $Arguments.id })[0]; [void]$s.orders.Remove($o); return @{structuredContent = @{order = $o; forceDeleted = $true}} }
+                    default { return (& $inner $Tool $Arguments) }
+                }
+            }.GetNewClosure()
+        }
+        function Get-Deletes { @($global:RecipeStub.log | Where-Object { $_ -like 'mcp delete_order *' }) }
+    }
+    It 'lists what it would delete within the scope, deletes exactly that and reads it back, then finds nothing to delete' {
+        New-OrderStub
+        $file = Save-Recipe
+        $v = Invoke-Runner $script:Root @{Recipe = $file; InputPath = $script:InputFile}
+        @($v.lines -match '^STEP reset WOULD-DELETE ') | Should -Be @('STEP reset WOULD-DELETE buyer@example.invalid@ORDER2', 'STEP reset WOULD-DELETE buyer@example.invalid@ORDER3', 'STEP reset WOULD-DELETE buyer@example.invalid@CART1')
+        ($v.lines -match '^FAIL reset/buyer@example.invalid@ORDER2: the input does not name it; apply would delete it').Count | Should -Be 1
+        Get-Deletes | Should -BeNullOrEmpty
+        $v.exit | Should -Be 1
+        $a = Invoke-Runner $script:Root @{Recipe = $file; InputPath = $script:InputFile; Apply = $true}
+        $a.lines | Should -Contain 'STEP reset DELETED buyer@example.invalid@CART1'
+        $a.lines | Should -Contain 'PASS reset/buyer@example.invalid@ORDER3'
+        (Get-Deletes).Count | Should -Be 3
+        @($global:RecipeStub.log | Where-Object { $_ -like 'mcp delete_order *' }) -join ' ' | Should -Match '"force":true'
+        @($global:RecipeStub.orders.id) | Should -Be @('ORDER1', 'ORDER9')
+        $a.exit | Should -Be 0
+        $again = Invoke-Runner $script:Root @{Recipe = $file; InputPath = $script:InputFile; Apply = $true}
+        $again.lines | Should -Contain 'STEP reset UNCHANGED buyer@example.invalid'
+        (Get-Deletes).Count | Should -Be 3
+        $again.exit | Should -Be 0
+    }
+    It 'refuses an empty scope before any read and deletes nothing' {
+        New-OrderStub
+        $global:RecipeStub.users[0].id = 0
+        $a = Invoke-Runner $script:Root @{Recipe = (Save-Recipe); InputPath = $script:InputFile; Apply = $true}
+        $a.lines | Should -Contain 'STEP reset BLOCKED buyer@example.invalid'
+        ($a.lines -match '^OPEN reset/buyer@example.invalid: refused: the prune scope is empty').Count | Should -Be 1
+        @($global:RecipeStub.log | Where-Object { $_ -like 'mcp search_orders *' }) | Should -BeNullOrEmpty
+        Get-Deletes | Should -BeNullOrEmpty
+        $a.exit | Should -Be 1
+    }
+    It 'refuses the whole set when the read returns a row outside the scope, and a read that does not pass the scope' {
+        New-OrderStub
+        $global:RecipeStub.ignoreFilter = $true
+        $a = Invoke-Runner $script:Root @{Recipe = (Save-Recipe); InputPath = $script:InputFile; Apply = $true}
+        ($a.lines -match '^FAIL reset/buyer@example.invalid: refused: 1 row\(s\) of .search_orders. are outside the scope').Count | Should -Be 1
+        Get-Deletes | Should -BeNullOrEmpty
+        $global:RecipeStub.ignoreFilter = $false
+        $script:Recipe.steps[1].prune.binding = @{surface = 'mcp'; status = 'implemented'; operation = 'search_orders'; arguments = @{request = @{pageSize = 200}}; rows = 'data'; source = 'skills/x.md'}
+        $b = Invoke-Runner $script:Root @{Recipe = (Save-Recipe); InputPath = $script:InputFile; Apply = $true}
+        ($b.lines -match '^OPEN reset/buyer@example.invalid: refused: the prune read does not pass \{scope\}').Count | Should -Be 1
+        Get-Deletes | Should -BeNullOrEmpty
+    }
+    It 'refuses more rows than max, and a delete tool off recipeDeleteTools' {
+        New-OrderStub
+        $script:Recipe.steps[1].prune.max = 2
+        $a = Invoke-Runner $script:Root @{Recipe = (Save-Recipe); InputPath = $script:InputFile; Apply = $true}
+        ($a.lines -match '^FAIL reset/buyer@example.invalid: refused: 3 row\(s\) to remove, more than prune.max 2').Count | Should -Be 1
+        $script:Recipe.steps[1].prune.max = 5
+        $script:Recipe.steps[1].bindings[0].delete.operation = 'delete_pages'
+        $b = Invoke-Runner $script:Root @{Recipe = (Save-Recipe); InputPath = $script:InputFile; Apply = $true}
+        ($b.lines -match '^OPEN reset/buyer@example.invalid@ORDER2: .*MCP delete_pages is not on the recipe delete allowlist').Count | Should -Be 1
+        Get-Deletes | Should -BeNullOrEmpty
+        @($global:RecipeStub.log | Where-Object { $_ -like 'mcp delete_pages *' }) | Should -BeNullOrEmpty
+    }
+}
+
 Describe 'ConvertFrom-DwBrandKit' {
     It 'turns a kit''s swift2 folder into a brand section the input schema accepts, enums by name and files under /Files/Images' {
         $kit = Join-Path $TestDrive 'kit/swift2'

@@ -163,7 +163,30 @@ class RecipeValidationTests(unittest.TestCase):
         scan["scan"]["unwritable"] = "Not measured."
         self.assertEqual("", self.errors())
         self.recipe["steps"][1]["bindings"][0]["create"]["arguments"]["pages"][0]["menuText"] = "{replaced:row.menuText}"
-        self.assertIn("reads row outside a scan step", self.errors())
+        self.assertIn("reads row outside a scan or prune step", self.errors())
+
+    def test_prune_step_is_scoped_and_deletes_through_the_delete_allowlist(self):
+        read = dict(PAGES_FIND, arguments={"parentId": "{scope}"})
+        read.pop("match"); read.pop("produces")
+        prune = {"id": "reset", "title": "Remove what the input does not name", "forEach": "pages[*]", "key": "{item.menuText}",
+                 "source": "skills/x.md",
+                 "prune": {"scope": {"values": "{step.pages[item.menuText].id}", "member": "parentPageId"}, "binding": read,
+                           "keep": {"field": "menuText", "values": "{input.pages[*].menuText}"}, "identify": ["id"], "max": 10},
+                 "bindings": [{"id": "delete", "surface": "mcp", "status": "implemented", "source": "skills/x.md",
+                               "delete": {"operation": "delete_order", "arguments": {"id": "{row.id}"}}, "readBack": dict(read)}]}
+        self.recipe["steps"].append(prune)
+        self.assertEqual("", self.errors())
+        prune["bindings"][0]["delete"]["operation"] = "delete_pages"
+        self.assertIn("is not on recipeDeleteTools", self.errors())
+        prune["bindings"][0]["delete"]["operation"] = "delete_order"
+        prune["prune"]["binding"]["arguments"] = {"parentId": 0}
+        self.assertIn("must pass {scope} in its arguments", self.errors())
+        prune["prune"]["binding"]["arguments"] = {"parentId": "{scope}"}
+        prune["bindings"][0]["create"] = {"operation": "save_pages", "arguments": {"pages": []}}
+        self.assertIn("declares delete only", self.errors())
+        del prune["bindings"][0]["create"]
+        self.recipe["steps"][0]["find"]["bindings"][0]["arguments"]["areaId"] = "{scope}"
+        self.assertIn("reads scope outside a prune step", self.errors())
 
     def test_file_tokens_resolve_against_the_input_schema(self):
         create = self.recipe["steps"][0]["bindings"][0]["create"]["arguments"]

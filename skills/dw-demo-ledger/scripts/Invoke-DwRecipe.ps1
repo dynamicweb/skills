@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-WRITES: the objects a recipe ensures, only with -Apply; without it the run only reads and reports.
+WRITES: the objects a recipe ensures, and deletes what a prune step removes, only with -Apply; without it the run only reads and reports.
 .DESCRIPTION
 PowerShell 7. Owning reference: ../references/recipes.md. Runs one recipe (assets/recipes/<area>/<id>.json) against one customer data file. The recipe and the input are validated against their schemas first. Each step finds its objects by natural key through the first binding the target offers (MCP tools/list, then the Management API, then local SQL for reads), so a verify-only run on a host a layer already delivered reports every object UNCHANGED: that is how build path A uses a recipe. With -Apply, absent objects are created and differing ones updated, every write is read back, and the debts run when anything changed. A step with no eligible binding is BLOCKED with the reason. Then the probes run, and the recipe's ledger check ids run through Invoke-DwLedgerChecks.ps1 when -LedgerBuildFile and -Manifest are given.
-Output lines: STEP <step> <CREATED|UPDATED|UNCHANGED|BLOCKED|WOULD-CREATE|WOULD-UPDATE> <natural key>; PASS <check>; FAIL <check>: <reason>; OPEN <check>: <reason>; NOTE lines that are not checks; and last "<recipe id>: n of m checks passed". Exit 0 only when every check passed and nothing is BLOCKED.
+Output lines: STEP <step> <CREATED|UPDATED|DELETED|UNCHANGED|BLOCKED|WOULD-CREATE|WOULD-UPDATE|WOULD-DELETE> <natural key>; PASS <check>; FAIL <check>: <reason>; OPEN <check>: <reason>; NOTE lines that are not checks; and last "<recipe id>: n of m checks passed". Exit 0 only when every check passed and nothing is BLOCKED.
 Connection: parameter, then DW_BASE_URL / DW_API_TOKEN / DW_MCP_TOKEN, then launchSettings.json discovery (Dw.Api.psm1). Secrets the input names by reference come from DW_RECIPE_SECRETS (a JSON object); persona probes read DW_PERSONA_CREDENTIALS. No token, secret or response body is printed or written to the report. The TLS bypass applies to a loopback base URL or after -AllowSelfSignedCertificate.
 .PARAMETER Recipe
 Recipe id (users.accounts) or path to a recipe file.
@@ -58,7 +58,7 @@ param(
     [switch]$AllowSelfSignedCertificate
 )
 $ErrorActionPreference = 'Stop'
-foreach ($file in @('Ledger.Core.ps1', 'Ledger.Sql.ps1', 'Ledger.Transport.ps1', 'Recipe.Core.ps1', 'Recipe.Transport.ps1', 'Recipe.Write.ps1', 'Recipe.Steps.ps1', 'Recipe.Scan.ps1', 'Recipe.Verify.ps1', 'Recipe.Debts.ps1')) { . (Join-Path $PSScriptRoot $file) }
+foreach ($file in @('Ledger.Core.ps1', 'Ledger.Sql.ps1', 'Ledger.Transport.ps1', 'Recipe.Core.ps1', 'Recipe.Transport.ps1', 'Recipe.Write.ps1', 'Recipe.Steps.ps1', 'Recipe.Scan.ps1', 'Recipe.Prune.ps1', 'Recipe.Verify.ps1', 'Recipe.Debts.ps1')) { . (Join-Path $PSScriptRoot $file) }
 $assets = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
 $recipeId = $Recipe
 $run = @{lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); steps = [Collections.Generic.List[object]]::new(); planned = [Collections.Generic.List[string]]::new(); blocked = 0; changed = $false; results = @{}}
@@ -96,7 +96,7 @@ try {
     $run += @{recipeId = $recipeId; section = $section; build = $build; secrets = $secrets; cap = $cap; registry = $registry; apply = $applied; inputDir = (Split-Path -Parent (Resolve-Path -LiteralPath $InputPath).Path)
         baseUrl = $state.BaseUrl; apiToken = $state.ApiToken; mcpToken = $state.McpToken; solutionPath = $SolutionPath; ledgerBuild = $LedgerBuildFile; manifest = $Manifest; pollIntervalMs = 1000}
 
-    foreach ($step in $doc.steps) { if ($step.scan) { Invoke-RecipeScanStep $step $run } else { Invoke-RecipeStep $step $run } }
+    foreach ($step in $doc.steps) { if ($step.scan) { Invoke-RecipeScanStep $step $run } elseif ($step.prune) { Invoke-RecipePruneStep $step $run } else { Invoke-RecipeStep $step $run } }
     if (@($doc.debts).Count) {
         if ($applied -and $run.changed) { foreach ($debt in $doc.debts) { Invoke-RecipeDebt $debt $run } }
         else { $run.lines.Add("NOTE ${recipeId}: debts not run ($(if ($applied) { 'nothing changed' } else { 'verify-only' })): " + ($doc.debts -join ', ')) }
