@@ -14,6 +14,7 @@ import subprocess
 from pathlib import Path
 
 TOKEN_RE = re.compile(r"\{([^{}]+)\}")
+SCHEMA_PATH_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\[\*\])?(\.[A-Za-z_][A-Za-z0-9_]*(\[\*\])?)*$")
 DEFAULT_PATH_RE = re.compile(r"^(input|item|parent|build)(\.[A-Za-z0-9_]+(\[(\d+|\*)\])?)+$")
 STEP_TOKEN_RE = re.compile(r"^step\.([a-z][a-z0-9-]*)(?:\[((?:[^\[\]]|\[(?:\*|\d+)\])+)\])?\.([A-Za-z0-9_.]+)$")
 FORBIDDEN = (
@@ -59,12 +60,20 @@ def load_releases(assets, error):
 
 
 def mcp_tool_names(repo):
+    """{version: tool names} for every supported registry version. A recipe binding may name a tool of any of
+    them: the runner checks each binding against the target's own tools/list and falls to the next binding."""
     index = repo / "scripts/mcp-tools/index.json"
     try:
-        current = json.loads(index.read_text(encoding="utf-8"))["current"]
-        return set(json.loads((repo / "scripts/mcp-tools" / f"{current}.json").read_text(encoding="utf-8")).get("tools", {}))
-    except (OSError, ValueError, KeyError):
+        supported = json.loads(index.read_text(encoding="utf-8"))["supported"]
+        return {v: set(json.loads((repo / "scripts/mcp-tools" / f"{v}.json").read_text(encoding="utf-8")).get("tools", {})) for v in supported}
+    except (OSError, ValueError, KeyError, TypeError):
         return None
+
+
+def binding_since(binding):
+    """The MCP version a binding is first proven on (mcpSince), else None: proven on every version."""
+    since = binding.get("mcpSince")
+    return version_key(since) if isinstance(since, str) else None
 
 
 def strings(value, where="$"):
@@ -165,13 +174,18 @@ def conditions(skip_when):
     return [c for c in items if isinstance(c, dict)]
 
 
-def readable(binding, surfaces):
+def readable(binding, surfaces, version=None):
+    # A binding first proven on a newer MCP version (mcpSince) does not count for an older one.
+    since = binding_since(binding)
+    if since is not None and (version is None or since > version):
+        return False
     return binding.get("status") == "implemented" and binding.get("surface") in surfaces
 
 
-def step_usable(step, surfaces, write_surfaces):
+def step_usable(step, surfaces, write_surfaces, version=None):
     """True when the step has an implemented find (if it finds) and an implemented write binding
-    whose write and read-back stay on the given surfaces."""
+    whose write and read-back stay on the given surfaces, counting only the bindings proven on the
+    MCP version given (None: only bindings without mcpSince)."""
     find = step.get("find")
     if step.get("scan"):
         # A scan reads through its own binding; a scan without write bindings reports and never writes.
@@ -179,13 +193,20 @@ def step_usable(step, surfaces, write_surfaces):
     if step.get("prune"):
         # A prune reads its set through its own binding and removes through a delete binding.
         find = {"bindings": [step["prune"].get("binding") or {}]}
-    if find and not any(readable(b, surfaces) for b in find.get("bindings", [])):
+    if find and not any(readable(b, surfaces, version) for b in find.get("bindings", [])):
         return False
     if not step.get("bindings"):
         # A lookup step finds and never writes: its find is all it needs.
         return bool(find)
-    return any(b.get("status") == "implemented" and b.get("surface") in write_surfaces and ("create" in b or "update" in b or "delete" in b)
-               and readable(b.get("readBack") or {}, surfaces) for b in step.get("bindings", []))
+    return any(readable(b, write_surfaces, version) and ("create" in b or "update" in b or "delete" in b)
+               and readable(b.get("readBack") or {}, surfaces, version) for b in step.get("bindings", []))
+
+
+def computed_modes(steps, version):
+    """(mcpOnly, hosted) from the bindings proven on the MCP version given."""
+    mcp_only = bool(steps) and all(step_usable(s, {"mcp"}, {"mcp"}, version) for s in steps)
+    hosted = bool(steps) and all(step_usable(s, {"mcp", "admin-api", "dwapi"}, {"mcp", "admin-api"}, version) for s in steps)
+    return mcp_only, hosted
 
 
 def validate_recipes(repo: Path) -> list[str]:
@@ -414,13 +435,25 @@ def validate_recipes(repo: Path) -> list[str]:
                                     error(file, f"{path}: token {{{body}}} names an unknown build value")
                             elif base is None or schema_at(base, rest) is None:
                                 error(file, f"{path}: token {{{body}}} does not resolve in the input schema")
+        # modes are the conservative truth: the oldest MCP version the recipe is proven on (unproven: only the
+        # bindings without mcpSince). A provenOn entry may state the modes proven on its own version.
         modes = doc.get("modes") or {}
-        mcp_only = bool(steps) and all(step_usable(s, {"mcp"}, {"mcp"}) for s in steps)
-        hosted = bool(steps) and all(step_usable(s, {"mcp", "admin-api", "dwapi"}, {"mcp", "admin-api"}) for s in steps)
+        mcp_versions = [version_key(p.get("mcpVersion") or "") for p in doc.get("provenOn") or [] if isinstance(p, dict)]
+        oldest = min(mcp_versions) if mcp_versions else None
+        mcp_only, hosted = computed_modes(steps, oldest)
         if (modes.get("mcpOnly") or {}).get("usable") is not mcp_only:
-            error(file, f"modes.mcpOnly.usable must be {str(mcp_only).lower()}: computed from the implemented MCP find, write and read-back bindings of every step")
+            error(file, f"modes.mcpOnly.usable must be {str(mcp_only).lower()}: computed from the implemented MCP find, write and read-back bindings of every step proven on the oldest provenOn MCP version")
         if (modes.get("hosted") or {}).get("usable") is not hosted:
-            error(file, f"modes.hosted.usable must be {str(hosted).lower()}: computed from the implemented non-SQL find, write and read-back bindings of every step")
+            error(file, f"modes.hosted.usable must be {str(hosted).lower()}: computed from the implemented non-SQL find, write and read-back bindings of every step proven on the oldest provenOn MCP version")
+        for p in doc.get("provenOn") or []:
+            stated = p.get("modes") if isinstance(p, dict) else None
+            if not isinstance(stated, dict):
+                continue
+            on_mcp, on_hosted = computed_modes(steps, version_key(p.get("mcpVersion") or ""))
+            if stated.get("mcpOnly") is not on_mcp or stated.get("hosted") is not on_hosted:
+                error(file, f"provenOn mcp {p.get('mcpVersion')} modes must be mcpOnly {str(on_mcp).lower()}, hosted {str(on_hosted).lower()}: computed from the bindings proven on that version")
+        if any(binding_since(b) for b in all_bindings(doc)) and not any(isinstance(p, dict) and isinstance(p.get("modes"), dict) for p in doc.get("provenOn") or []):
+            error(file, "a binding carries mcpSince, so a provenOn entry states the modes proven on its version")
     order_faults(docs, error)
     index = repo / "skills/dw-demo-ledger/references/recipe-index.md"
     if (repo / "skills/dw-demo-ledger/references/recipes.md").is_file() and docs:
@@ -430,6 +463,21 @@ def validate_recipes(repo: Path) -> list[str]:
             errors.append(f"{index.relative_to(repo).as_posix()}: {'missing' if actual is None else 'out of date'}; "
                           "regenerate it with python scripts/validate_recipes.py --write-index")
     return errors + run_powershell(repo, schema_jobs, sql_jobs)
+
+
+def all_bindings(doc):
+    """Every binding of a recipe: find, write, read-back, scan, prune and probe."""
+    for step in doc.get("steps") or []:
+        yield from (step.get("find") or {}).get("bindings", [])
+        for b in step.get("bindings", []):
+            yield b
+            if b.get("readBack"):
+                yield b["readBack"]
+        for part in ("scan", "prune"):
+            if isinstance(step.get(part), dict) and step[part].get("binding"):
+                yield step[part]["binding"]
+    for probe in (doc.get("verify") or {}).get("probes", []):
+        yield from probe.get("bindings", [])
 
 
 def order_faults(docs, error):
@@ -487,6 +535,13 @@ def planned_bindings(doc):
     return out
 
 
+def proven_modes(p):
+    m = p.get("modes")
+    if not isinstance(m, dict):
+        return ""
+    return f" (MCP-only {'yes' if m.get('mcpOnly') else 'no'}, hosted {'yes' if m.get('hosted') else 'no'})"
+
+
 def render_index(docs):
     """references/recipe-index.md, generated from the recipes so it cannot drift."""
     def cell(text):
@@ -518,7 +573,7 @@ def render_index(docs):
     for rid in sorted(docs):
         d = docs[rid]
         modes = d.get("modes") or {}
-        proven = "; ".join(f"dw {p.get('dwVersion')}, mcp {p.get('mcpVersion')}, {p.get('date')}" for p in d.get("provenOn") or []) or "unproven"
+        proven = "; ".join(f"dw {p.get('dwVersion')}, mcp {p.get('mcpVersion')}, {p.get('date')}" + proven_modes(p) for p in d.get("provenOn") or []) or "unproven"
         lines.append(f"| `{rid}` | {cell(', '.join(d.get('functions') or []))} | `{(d.get('inputs') or {}).get('section')}` | "
                      f"{d.get('skill')} | {yes(modes.get('mcpOnly'))} | {yes(modes.get('hosted'))} | "
                      f"{modes.get('layerDelivered')} | {cell(proven)} |")
@@ -577,9 +632,23 @@ def check_binding(b, kind, where, file, error, registry, tools, sql_jobs):
     operation = b.get("operation") or (b.get("create") or {}).get("operation") or (b.get("update") or {}).get("operation")
     ops = [o for o in [b.get("operation"), (b.get("create") or {}).get("operation"), (b.get("update") or {}).get("operation"), (b.get("delete") or {}).get("operation")] if o]
     if surface == "mcp" and tools is not None:
+        since = b.get("mcpSince")
+        known = set().union(*tools.values()) if tools else set()
+        if since is not None:
+            versions = [v for v in tools if version_key(v) == version_key(since)]
+            if not versions:
+                error(file, f"{where}: mcpSince {since} has no scripts/mcp-tools registry file")
+            else:
+                known = tools[versions[0]]
         for op in ops:
-            if op not in tools:
-                error(file, f"{where}: {op} is not in the MCP tool registry")
+            if op not in known:
+                error(file, f"{where}: {op} is not in the MCP tool registry" + (f" of {since}" if since else ""))
+    if surface != "mcp" and (b.get("mcpSince") or b.get("requiresSchema")):
+        error(file, f"{where}: mcpSince and requiresSchema gate MCP bindings only")
+    for side, paths in (b.get("requiresSchema") or {}).items():
+        for path in paths or []:
+            if not SCHEMA_PATH_RE.match(path):
+                error(file, f"{where}: requiresSchema {side} path {path} is not a dotted member path")
     if surface == "sql":
         if kind == "write":
             error(file, f"{where}: SQL never writes in a recipe")

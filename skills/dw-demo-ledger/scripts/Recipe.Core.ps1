@@ -331,6 +331,7 @@ function Get-RecipeSurfaceFault {
             if ($Operation -cnotin @($list)) { return "MCP $Operation is not on the recipe $Kind allowlist" }
             if (-not $Capabilities.mcp) { return 'MCP is not connected (DW_MCP_TOKEN)' }
             if (-not $Capabilities.tools.Contains($Operation)) { return "MCP $Operation is not offered by this target's tools/list" }
+            if ($Binding.requiresSchema) { $gap = Get-RecipeSchemaGap $Binding.requiresSchema $Operation $Capabilities; if ($gap) { return $gap } }
         }
         'admin-api' {
             if ($Kind -eq 'delete') { return 'a recipe deletes through MCP only (recipeDeleteTools)' }

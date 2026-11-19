@@ -49,7 +49,7 @@ A recipe names the release it was measured on in `provenOn` instead.
 | `steps` | Ordered steps; each finds its objects by natural key, then creates or updates and reads back |
 | `debts` | What the platform is owed after a change: `flush:<service>`, `index:<repository>/<index>`, `assortments`, `recycle` |
 | `verify` | `checkIds`: ledger checks of its functions; `probes`: behavioural reads with an assertion |
-| `provenOn` | `{dwVersion, mcpVersion, date, evidence}` per measured run; empty means unproven |
+| `provenOn` | `{dwVersion, mcpVersion, date, evidence}` per measured run, optionally `modes` proven on that release; empty means unproven |
 | `traps` | Platform facts that bite this function, one per line |
 | `dependsOn` | Optional: `{recipe, why, debtsPaid}` per recipe whose objects this one needs; a recipe set runs that one first, and pays the named debts of it before this one runs |
 | `runsLast` | Optional: why a recipe set runs this recipe after every other one (the de-brand) |
@@ -87,6 +87,17 @@ a field their output schema declares. Two exceptions follow from that omission. 
 stating each scope member null). A row that leaves out a member the natural key gives a value does not
 match (a contract row is not a tier); a misspelt key member then matches nothing, and the read-back
 after the write fails on it. A recipe is proven only by a run recorded in `provenOn`.
+
+Server releases add tools and members, and some change a read's shape. Bindings run in preference
+order and the runner takes the first one the target can serve, so a recipe that binds a newer tool keeps
+working on an older server through the binding after it. Where only a member tells the releases apart,
+an MCP binding names it in `requiresSchema` (`{"input": ["models[*].countryCodes"]}` for an argument,
+`{"output": ["data[*].fields"]}` for a member of the structured result): the binding runs only when the
+target's own `tools/list` schema carries every member named, otherwise the runner falls to the next
+binding with the reason. The schema decides, never a version number. `mcpSince` (`"0.6.6"`) records the
+add-in release a binding is first proven on; the runner ignores it, and the validator counts the binding
+only for that release and later (see [Modes](#modes)). Tool names resolve against every supported
+registry under `scripts/mcp-tools/` (generated from a `tools/list` capture per release).
 
 Allowlists hold the line between data and code. An implemented MCP read must be on `mcpReadTools` (or
 `recipeRenderedReadTools`, the rendered-page summary), an
@@ -220,7 +231,11 @@ lock commit); otherwise each is listed as a NOTE to run with the ledger.
 | The in-product agent (MCP tools only, no shell) | Follow the recipe by hand; `modes.mcpOnly` says whether every step has an implemented MCP find, write and read-back |
 
 The validator computes `mcpOnly` and `hosted` from the bindings and refuses a declaration that
-disagrees.
+disagrees. `modes` is the conservative truth: it counts only the bindings proven on the oldest MCP
+release in `provenOn` (a binding with a later `mcpSince` does not count). A `provenOn` entry may state
+`modes: {mcpOnly, hosted}` for its own release, computed the same way with that release's bindings; a
+recipe with an `mcpSince` binding must state them on at least one entry. The index lists the modes per
+release.
 
 ## Following a recipe by hand
 

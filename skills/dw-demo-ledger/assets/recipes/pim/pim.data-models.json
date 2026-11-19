@@ -105,15 +105,20 @@
       "key": "{item.key}",
       "skipWhen": {"path": "item.specFields", "exists": false},
       "find": {"bindings": [
-        {"id": "mcp-rules", "surface": "mcp", "status": "implemented", "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "compare": {"excludeVariants": true, "fields[*].systemName": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}
+        {"id": "mcp-rules", "surface": "mcp", "status": "implemented", "requiresSchema": {"output": ["data[*].fields"]}, "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "compare": {"excludeVariants": true, "fields[*].systemName": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"},
+        {"id": "mcp-rules-names", "surface": "mcp", "status": "implemented", "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "compare": {"excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}
       ]},
       "bindings": [
         {"id": "mcp-rule", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md",
           "create": {"operation": "create_or_update_completeness_rules", "arguments": {"models": [{"id": 0, "name": "{item.name} complete", "excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}]}},
           "update": {"operation": "create_or_update_completeness_rules", "arguments": {"models": [{"id": "{found.id}", "name": "{item.name} complete", "excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}]}},
-          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "expect": {"excludeVariants": true, "fields[*].systemName": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}}
+          "readBack": {"surface": "mcp", "status": "implemented", "requiresSchema": {"output": ["data[*].fields"]}, "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "expect": {"excludeVariants": true, "fields[*].systemName": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}},
+        {"id": "mcp-rule-names", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md",
+          "create": {"operation": "create_or_update_completeness_rules", "arguments": {"models": [{"id": 0, "name": "{item.name} complete", "excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}]}},
+          "update": {"operation": "create_or_update_completeness_rules", "arguments": {"models": [{"id": "{found.id}", "name": "{item.name} complete", "excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "expect": {"excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}}
       ],
-      "trap": "get_completion_rules returns each rule's fields as objects (fields[].systemName), not the fieldSystemNames list the write takes.",
+      "trap": "The rule read changed shape between server releases: up to 0.6.3 get_completion_rules returns each rule's fields as objects (fields[].systemName); from 0.6.6 its rows carry only the fieldSystemNames list the write takes. Each read is gated on the tools/list output schema listing fields[] (requiresSchema), so a server without it takes the fieldSystemNames binding.",
       "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"
     },
     {

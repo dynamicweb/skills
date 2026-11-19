@@ -50,7 +50,7 @@ class RecipeValidationTests(unittest.TestCase):
             shutil.copyfile(assets_src / name, self.assets / name)
         (self.repo / "skills/dw-demo-ledger/SKILL.md").write_text("---\nname: dw-demo-ledger\n---\n", encoding="utf-8")
         (self.repo / "scripts/mcp-tools").mkdir(parents=True)
-        for name in ("index.json", "0.6.0.json"):
+        for name in ("index.json", "0.6.0.json", "0.6.6.json"):
             shutil.copyfile(SOURCE / "scripts/mcp-tools" / name, self.repo / "scripts/mcp-tools" / name)
         release = self.assets / "releases/1.0.0"
         (release / "functions").mkdir(parents=True)
@@ -86,6 +86,46 @@ class RecipeValidationTests(unittest.TestCase):
         self.assertIn("not on the recipe write allowlist", self.errors())
         self.recipe["steps"][0]["bindings"][0]["create"]["operation"] = "save_page_invented"
         self.assertIn("not in the MCP tool registry", self.errors())
+
+    def test_mcp_since_binding_counts_only_from_its_version(self):
+        # A write only a newer server can read back: the conservative modes stay those of the oldest proven
+        # version, and the provenOn entry of the newer version states the modes proven there.
+        step = self.recipe["steps"][0]
+        step["bindings"][0]["status"] = "planned"
+        step["bindings"][0]["reason"] = "No read projects it on the older server."
+        step["bindings"].append(dict(copy.deepcopy(step["bindings"][0]), id="mcp-newer", status="implemented", mcpSince="0.6.6"))
+        step["bindings"][1].pop("reason")
+        self.recipe["modes"]["mcpOnly"]["usable"] = False
+        self.recipe["modes"]["hosted"]["usable"] = False
+        older = {"dwVersion": "1.0.0", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "run"}
+        newer = dict(older, mcpVersion="0.6.6-BETA", modes={"mcpOnly": True, "hosted": True})
+        self.recipe["provenOn"] = [older, newer]
+        self.assertEqual("", self.errors())
+        newer["modes"]["mcpOnly"] = False
+        self.assertIn("provenOn mcp 0.6.6-BETA modes must be mcpOnly true, hosted true", self.errors())
+        newer.pop("modes")
+        self.assertIn("a binding carries mcpSince, so a provenOn entry states the modes", self.errors())
+        newer["modes"] = {"mcpOnly": True, "hosted": True}
+        self.recipe["modes"]["mcpOnly"]["usable"] = True
+        self.assertIn("modes.mcpOnly.usable must be false", self.errors())
+        self.recipe["modes"]["mcpOnly"]["usable"] = False
+        step["bindings"][1]["mcpSince"] = "0.6.9"
+        self.assertIn("mcpSince 0.6.9 has no scripts/mcp-tools registry file", self.errors())
+
+    def test_schema_gate_and_since_are_mcp_only_and_take_member_paths(self):
+        find = self.recipe["steps"][0]["find"]["bindings"][0]
+        find["requiresSchema"] = {"output": ["data[*].fields"]}
+        self.assertEqual("", self.errors())
+        find["requiresSchema"] = {"output": ["data[0].fields"]}
+        self.assertIn("is not a dotted member path", self.errors())
+        find["requiresSchema"] = {"output": ["data[*].fields"]}
+        find["surface"] = "admin-api"
+        self.assertIn("mcpSince and requiresSchema gate MCP bindings only", self.errors())
+
+    def test_a_tool_of_any_supported_registry_is_known(self):
+        # save_product_asset_categories is registered from 0.6.6 only; a binding may name it.
+        self.recipe["steps"][0]["bindings"][0]["create"]["operation"] = "save_product_asset_categories"
+        self.assertNotIn("not in the MCP tool registry", self.errors())
 
     def test_read_off_the_read_allowlist(self):
         self.recipe["steps"][0]["find"]["bindings"][0]["operation"] = "search_pages"

@@ -56,7 +56,8 @@
           "dwVersion": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+"},
           "mcpVersion": {"type": "string", "minLength": 1},
           "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
-          "evidence": {"type": "string", "minLength": 1}
+          "evidence": {"type": "string", "minLength": 1},
+          "modes": {"type": "object", "additionalProperties": false, "required": ["mcpOnly", "hosted"], "description": "The modes proven on this entry's MCP version, where they differ from the conservative top-level modes (the oldest proven version); the validator computes them from the bindings and their mcpSince.", "properties": {"mcpOnly": {"type": "boolean"}, "hosted": {"type": "boolean"}}}
         }
       }
     },
@@ -127,7 +128,8 @@
         "status": {"enum": ["implemented", "planned"]},
         "reason": {"type": "string", "minLength": 1},
         "source": {"type": "string", "minLength": 1},
-        "handler": {"enum": ["dwapi-get", "dwapi-signed-in-get", "dwapi-sign-in", "dwapi-persona-sign-in"]},
+        "mcpSince": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+", "description": "MCP only: the add-in version this binding is first proven on. Read by the validator alone (modes per provenOn version); the runner never compares versions."},
+        "requiresSchema": {"type": "object", "additionalProperties": false, "minProperties": 1, "description": "MCP only: the binding runs only when its tool's tools/list schema carries every member named (input: the arguments; output: the structured result), as dotted paths with [*] for array items; otherwise the runner falls to the next binding.", "properties": {"input": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}, "output": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}}},        "handler": {"enum": ["dwapi-get", "dwapi-signed-in-get", "dwapi-sign-in", "dwapi-persona-sign-in"]},
         "signIn": {"type": "object", "additionalProperties": false, "required": ["username", "password"], "description": "dwapi-signed-in-get only: the user the read signs in as; the password is a {secret.*} token.", "properties": {"username": {"type": "string", "minLength": 1}, "password": {"type": "string", "pattern": "^\\{secret\\.[^{}]+\\}$"}}},
         "operation": {"type": "string"},
         "arguments": {"type": "object"},
@@ -180,7 +182,9 @@
         "create": {"$ref": "#/definitions/operation"},
         "update": {"$ref": "#/definitions/operation"},
         "delete": {"$ref": "#/definitions/operation", "description": "A prune step's removal of one row; the arguments read the row as {row.<member>}. The operation must be on recipeDeleteTools."},
-        "readBack": {"$ref": "#/definitions/read"}
+        "readBack": {"$ref": "#/definitions/read"},
+        "mcpSince": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+", "description": "MCP only: the add-in version this binding is first proven on. Read by the validator alone (modes per provenOn version); the runner never compares versions."},
+        "requiresSchema": {"type": "object", "additionalProperties": false, "minProperties": 1, "description": "MCP only: the binding runs only when its tool's tools/list schema carries every member named (input: the arguments; output: the structured result), as dotted paths with [*] for array items; otherwise the runner falls to the next binding.", "properties": {"input": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}, "output": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}}}
       },
       "allOf": [
         {"$ref": "#/definitions/plannedRule"},

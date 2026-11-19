@@ -19,12 +19,12 @@ function ConvertTo-RecipeData {
 function Get-RecipeCapabilities {
     # What this run may use: surfaces in preference order, the MCP tools offered (with their input schemas), Admin, SQL.
     param([string[]]$Surfaces, [switch]$McpOnly, [string]$McpToken, [string]$ApiToken, [switch]$AllowSql, [string]$SqlServer, [string]$Database)
-    $cap = @{surfaces = @($(if ($McpOnly) { 'mcp' } else { $Surfaces })); mcp = $false; tools = @{}; admin = $false; sql = $false; dwapi = $false; sqlServer = $SqlServer; database = $Database; errors = @()}
+    $cap = @{surfaces = @($(if ($McpOnly) { 'mcp' } else { $Surfaces })); mcp = $false; tools = @{}; outputs = @{}; admin = $false; sql = $false; dwapi = $false; sqlServer = $SqlServer; database = $Database; errors = @()}
     if ('mcp' -in $cap.surfaces -and $McpToken) {
         try {
             # Assigned first: Get-DwMcpTools returns its list as one object, and @() around the call would wrap it again.
             $listed = Get-DwMcpTools
-            foreach ($tool in $listed) { $cap.tools[[string]$tool.name] = ConvertTo-RecipeData $tool.inputSchema }
+            foreach ($tool in $listed) { $cap.tools[[string]$tool.name] = ConvertTo-RecipeData $tool.inputSchema; $cap.outputs[[string]$tool.name] = ConvertTo-RecipeData $tool.outputSchema }
             $cap.mcp = $true
         } catch { $cap.errors += 'MCP tools/list failed; MCP bindings are unavailable.' }
     }
@@ -36,6 +36,36 @@ function Get-RecipeCapabilities {
         $cap.sql = $true
     }
     return $cap
+}
+function Test-RecipeSchemaMember {
+    # True when a JSON schema carries the dotted member path (a [*] level steps into the array's items).
+    param($Schema, [string]$Path)
+    $node = $Schema
+    foreach ($part in $Path.Split('.')) {
+        if ($part -notmatch '^(?<name>[A-Za-z_][A-Za-z0-9_]*)(?<all>\[\*\])?$') { throw (New-RecipeFault "requiresSchema path '$Path' is not a dotted member path.") }
+        if ($node -isnot [Collections.IDictionary] -or $node.properties -isnot [Collections.IDictionary] -or -not $node.properties.Contains($Matches['name'])) { return $false }
+        $node = $node.properties[$Matches['name']]
+        if ($Matches['all']) {
+            if ($node -isnot [Collections.IDictionary] -or $node.items -isnot [Collections.IDictionary]) { return $false }
+            $node = $node.items
+        }
+    }
+    return $true
+}
+function Get-RecipeSchemaGap {
+    # requiresSchema: $null when the target's tools/list schema of the operation carries every member named,
+    # otherwise the reason the binding cannot run here. The schema decides, never a version number: a newer
+    # server that adds a member serves the binding, an older one falls to the next binding.
+    param($Requires, [string]$Operation, $Capabilities)
+    if (-not $Requires) { return $null }
+    foreach ($side in @('input', 'output')) {
+        if (-not $Requires.Contains($side)) { continue }
+        $schema = if ($side -eq 'input') { $Capabilities.tools[$Operation] } elseif ($Capabilities.outputs) { $Capabilities.outputs[$Operation] }
+        foreach ($path in @($Requires[$side])) {
+            if (-not (Test-RecipeSchemaMember $schema ([string]$path))) { return "MCP $Operation's tools/list $side schema carries no member '$path'" }
+        }
+    }
+    return $null
 }
 function Assert-RecipeArguments {
     # The tool's own input schema names its arguments; a recipe that names others is refused before the call.

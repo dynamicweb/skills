@@ -57,7 +57,7 @@ Export-ModuleMember -Function *
                 get_grid_rows_by_page_id = Get-Schema @('pageId') @('pageId'); save_grid_rows = Get-Schema @('gridRows') @('gridRows')
                 get_paragraphs_by_page_id = Get-Schema @('pageId') @('pageId'); save_paragraphs = Get-Schema @('paragraphs') @('paragraphs')
                 get_paragraph_item_field_values = Get-Schema @('paragraphId') @('paragraphId'); set_paragraph_item_fields = Get-Schema @('paragraphId', 'fields') @('paragraphId', 'fields')
-                fetch_frontend_page_html = Get-Schema @('path') @('path')
+                fetch_frontend_page_html = Get-Schema @('path') @('path'); inspect_page_render = Get-Schema @('pageId', 'compareWithPageId') @('pageId')
                 get_user_groups = Get-Schema @(); save_user_groups = Get-Schema @('groups') @('groups')
                 get_users_by_usernames = Get-Schema @('userNames') @('userNames'); create_users = Get-Schema @('users') @('users'); update_users = Get-Schema @('users') @('users')
                 get_users_by_group_id = Get-Schema @('groupId') @('groupId'); assign_users_to_group = Get-Schema @('groupId', 'userIds') @('groupId', 'userIds')
@@ -114,6 +114,11 @@ Export-ModuleMember -Function *
                     $page = @($s.pages | Where-Object { "/en-us/$($_.menuText.ToLower().Replace(' ', '-'))" -eq $Arguments.path })[0]
                     if (-not $page -or $s.fetches -le $s.urlReadyAfter) { return @{structuredContent = @{statusCode = 404; path = $Arguments.path}} }
                     return @{structuredContent = @{statusCode = 200; title = $page.menuText; path = $Arguments.path}}
+                }
+                # The rendered outline of a page by id, with the issues a stored-field read cannot show; a clean page has none.
+                'inspect_page_render' {
+                    $page = @($s.pages | Where-Object { $_.id -eq [int]$Arguments.pageId })[0]
+                    return @{structuredContent = @{pageId = [int]$Arguments.pageId; statusCode = $(if ($page) { 200 } else { 404 }); outline = @(); issues = @($s.renderIssues)}}
                 }
                 # The group read leaves the type out, as measured: only GroupById on the Management API returns it.
                 'get_user_groups' { , @($s.groups | ForEach-Object { @{id = $_.id; name = $_.name; parentGroupId = $_.parentGroupId; customerNumber = $_.customerNumber} }) }
@@ -353,6 +358,48 @@ Describe 'Recipe engine: paths, tokens and matching' {
         @(Test-RecipeForbidden @{query = 'C:\temp\x'}).Count | Should -Be 1
         @(Test-RecipeForbidden @{arguments = @{password = 'literal'}}).Count | Should -Be 1
         @(Test-RecipeForbidden @{arguments = @{password = '{secret.item.passwordRef}'}}).Count | Should -Be 0
+    }
+}
+
+Describe 'Recipe bindings gated on the target tools/list schema (requiresSchema)' {
+    BeforeAll {
+        . (Join-Path $script:Source 'scripts/Recipe.Transport.ps1')
+        $script:GateRegistry = @{mcpReadTools = @('get_completion_rules'); recipeRenderedReadTools = @(); recipeWriteTools = @('save_payment_methods')}
+        # The rule read as two server releases answer it: the older one lists each rule's fields as objects,
+        # the newer one only the field system names.
+        $script:OlderRules = @{type = 'object'; properties = @{data = @{type = 'array'; items = @{type = 'object'; properties = @{
+            fields = @{type = 'array'; items = @{type = 'object'; properties = @{systemName = @{type = 'string'}}}}; fieldSystemNames = @{type = 'array'}}}}}}
+        $script:NewerRules = @{type = 'object'; properties = @{data = @{type = 'array'; items = @{type = 'object'; properties = @{fieldSystemNames = @{type = 'array'}}}}}}
+        $script:RuleReads = @(
+            @{id = 'objects'; surface = 'mcp'; status = 'implemented'; operation = 'get_completion_rules'; arguments = @{}; requiresSchema = @{output = @('data[*].fields')}},
+            @{id = 'names'; surface = 'mcp'; status = 'implemented'; operation = 'get_completion_rules'; arguments = @{}})
+        function New-GateCap([hashtable]$Tools, [hashtable]$Outputs) { @{surfaces = @('mcp'); mcp = $true; tools = $Tools; outputs = $Outputs} }
+    }
+    It 'takes the binding whose output member the server lists, and falls to the next one where it does not' {
+        $older = Select-RecipeRead $script:RuleReads (New-GateCap @{get_completion_rules = @{type = 'object'; properties = @{}}} @{get_completion_rules = $script:OlderRules}) $script:GateRegistry
+        $older.binding.id | Should -Be 'objects'
+        $newer = Select-RecipeRead $script:RuleReads (New-GateCap @{get_completion_rules = @{type = 'object'; properties = @{}}} @{get_completion_rules = $script:NewerRules}) $script:GateRegistry
+        $newer.binding.id | Should -Be 'names'
+        $newer.reasons | Should -Be @("MCP get_completion_rules's tools/list output schema carries no member 'data[*].fields'")
+    }
+    It 'reads a capability set without output schemas, or a tool without one, as lacking the member' {
+        (Select-RecipeRead $script:RuleReads @{surfaces = @('mcp'); mcp = $true; tools = @{get_completion_rules = @{}}} $script:GateRegistry).binding.id | Should -Be 'names'
+        (Select-RecipeRead $script:RuleReads (New-GateCap @{get_completion_rules = @{}} @{get_completion_rules = $null}) $script:GateRegistry).binding.id | Should -Be 'names'
+    }
+    It 'gates a write on an input member, so an older server takes the fallback write' {
+        $read = @{surface = 'mcp'; status = 'implemented'; operation = 'get_completion_rules'; arguments = @{}}
+        $writes = @(
+            @{id = 'mcp-country'; surface = 'mcp'; status = 'implemented'; requiresSchema = @{input = @('models[*].countryCodes')}; create = @{operation = 'save_payment_methods'; arguments = @{}}; readBack = $read},
+            @{id = 'mcp-plain'; surface = 'mcp'; status = 'implemented'; create = @{operation = 'save_payment_methods'; arguments = @{}}; readBack = $read})
+        $with = @{type = 'object'; properties = @{models = @{type = 'array'; items = @{type = 'object'; properties = @{name = @{}; countryCodes = @{type = 'array'}}}}}}
+        $without = @{type = 'object'; properties = @{models = @{type = 'array'; items = @{type = 'object'; properties = @{name = @{}}}}}}
+        (Select-RecipeWrite $writes 'create' (New-GateCap @{save_payment_methods = $with; get_completion_rules = @{}} @{}) $script:GateRegistry).binding.id | Should -Be 'mcp-country'
+        $old = Select-RecipeWrite $writes 'create' (New-GateCap @{save_payment_methods = $without; get_completion_rules = @{}} @{}) $script:GateRegistry
+        $old.binding.id | Should -Be 'mcp-plain'
+        $old.reasons[0] | Should -Match "input schema carries no member 'models\[\*\]\.countryCodes'"
+    }
+    It 'refuses a path that is not a dotted member path' {
+        { Test-RecipeSchemaMember @{} 'data[0].x' } | Should -Throw '*not a dotted member path*'
     }
 }
 
