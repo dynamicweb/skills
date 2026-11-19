@@ -2,7 +2,7 @@
 .SYNOPSIS
 READ-ONLY. Recipe paths, token substitution, natural-key matching and binding selection; definitions only.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. Dot-sourced after Ledger.Core.ps1 (Read-LedgerJson). A path is dotted members with [n] or [*]; a token is {root.path} with the roots input, item, parent, step, found, build and secret, an optional |<JSON literal or input path> default and an optional text: prefix that makes the value text. Whole-value substitution keeps the value's type; a token inside text becomes text. Nothing in a recipe is evaluated as code: comparisons are equals, contains and exists only. A secret is read from DW_RECIPE_SECRETS and never printed.
+PowerShell 7. Owning reference: ../references/recipes.md. Dot-sourced after Ledger.Core.ps1 (Read-LedgerJson). A path is dotted members with [n] or [*]; a token is {root.path} with the roots input, item, parent, step, found, build and secret, an optional |<JSON literal or input path> default, an optional text: prefix that makes the value text, and base64: or bytes: prefixes that read the file the value names relative to the input file (never outside its folder). Whole-value substitution keeps the value's type; a token inside text becomes text. Nothing in a recipe is evaluated as code: comparisons are equals, contains and exists only. A secret is read from DW_RECIPE_SECRETS and never printed.
 .EXAMPLE
 . ./Recipe.Core.ps1
 #>
@@ -105,11 +105,29 @@ function Resolve-RecipeRootPath {
     if ($null -eq $base) { return @{found = $false; value = $null} }
     return Get-RecipeValue $base $Matches['rest']
 }
+function Resolve-RecipeInputFile {
+    # A file the input names by a path relative to the input file; never a rooted path or one that leaves that folder.
+    param([string]$Path, $Context)
+    if (-not $Context.inputDir) { throw (New-RecipeFault 'Runner input: a file token needs the input file''s folder.') }
+    if ([string]::IsNullOrWhiteSpace($Path) -or [IO.Path]::IsPathRooted($Path)) { throw (New-RecipeFault "Runner input: file '$Path' is not a path relative to the input file.") }
+    $root = [IO.Path]::GetFullPath($Context.inputDir).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    $full = [IO.Path]::GetFullPath((Join-Path $root $Path))
+    if (-not $full.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) { throw (New-RecipeFault "Runner input: file '$Path' is outside the input file's folder.") }
+    if (-not (Test-Path -LiteralPath $full -PathType Leaf)) { throw (New-RecipeFault "Runner input: file '$Path' does not exist beside the input file.") }
+    return $full
+}
 function Resolve-RecipeToken {
     # The value of one token body; throws a fault that names the token when it does not resolve.
     param([string]$Body, $Context)
     # text: makes the value text, for the commands whose ids are strings (UsersAddToGroups Ids answers 500 on numbers).
     if ($Body.StartsWith('text:')) { $value = Resolve-RecipeToken $Body.Substring(5) $Context; return $(if ($null -eq $value) { $null } else { [string]$value }) }
+    # base64: and bytes: read the file the value names, relative to the input file: its content for an upload, its size to compare.
+    if ($Body -match '^(?<kind>base64|bytes):(?<rest>.+)$') {
+        $kind = $Matches['kind']
+        $file = Resolve-RecipeInputFile ([string](Resolve-RecipeToken $Matches['rest'] $Context)) $Context
+        if ($kind -eq 'bytes') { return [long](Get-Item -LiteralPath $file).Length }
+        return [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
+    }
     $path = $Body; $default = $null; $hasDefault = $false
     $bar = $Body.IndexOf('|')
     if ($bar -ge 0) {

@@ -64,5 +64,37 @@
       {"account": "C-1001", "product": "EX-100", "amount": 7}
     ],
     "buyer": {"userName": "buyer@example.invalid", "passwordRef": "buyer", "account": "C-1001"}
+
+  },
+  "brand": {
+    "id": "contoso",
+    "name": "Contoso",
+    "defaultColorScheme": "light",
+    "colorSchemes": [
+      {"id": "light", "name": "Light", "backgroundColor": "#FFFFFF", "foregroundColor": "#1B2A27", "primaryButtonColor": "#0B5D4B", "secondaryButtonColor": "#C2410C"},
+      {"id": "dark", "name": "Dark", "backgroundColor": "#0B2E26", "foregroundColor": "#F3F7F5", "primaryButtonColor": "#F3F7F5", "secondaryButtonColor": "#F59E0B"},
+      {"id": "primary", "name": "Primary", "backgroundColor": "#0B5D4B", "foregroundColor": "#FFFFFF", "primaryButtonColor": "#FFFFFF", "secondaryButtonColor": "#F59E0B"}
+    ],
+    "assetFolder": "contoso",
+    "files": [
+      {"file": "brand-kit/branding/contoso-logo.svg", "name": "contoso-logo.svg"},
+      {"file": "brand-kit/branding/contoso-favicon.png", "name": "contoso-favicon.png"},
+      {"file": "brand-kit/Fonts/contoso-sans-400.woff2", "name": "contoso-sans-400.woff2"}
+    ],
+    "fonts": [
+      {"id": "contoso-sans-400", "name": "Contoso Sans 400", "family": "Contoso Sans", "filePath": "/Files/Images/contoso/contoso-sans-400.woff2", "weight": "Regular", "style": "normal"}
+    ],
+    "typography": {
+      "baseFontSize": 16, "baseFontScale": 1.2,
+      "paragraphCustomFontId": "contoso-sans-400", "paragraphFontWeight": "Regular", "paragraphLineHeight": 1.6,
+      "headingCustomFontId": "contoso-sans-400", "headingFontWeight": "Regular", "headingLineHeight": 1.2,
+      "buttonCustomFontId": "contoso-sans-400", "buttonFontWeight": "Regular", "buttonLineHeight": 1.4, "buttonTextTransformation": "Uppercase"
+    },
+    "buttonStyle": {"shape": "Rounded", "borderSize": 1, "paddingX": 1.5, "paddingY": 0.7},
+    "favicon": "/Files/Images/contoso/contoso-favicon.png",
+    "renderCheck": [{"path": "/en-us/home"}],
+    "layout": [
+      {"slot": "HeaderDesktop", "logo": {"Image": "/Files/Images/contoso/contoso-logo.svg", "LogoName": "Contoso"}, "rows": [{"sort": 4, "colorScheme": "primary"}]}
+    ]
   }
 }

@@ -1,0 +1,297 @@
+{
+  "schema": 1,
+  "id": "content.design-styles",
+  "name": "Brand apply: colour schemes, typography, self-hosted fonts, buttons, logo, favicon and their wiring to the website, header and footer",
+  "functions": ["content.design-styles", "swift.style-wiring", "swift.website-settings"],
+  "skill": "dw-swift-building",
+  "inputs": {"section": "brand", "required": ["id", "name", "colorSchemes", "typography", "buttonStyle"]},
+  "modes": {
+    "mcpOnly": {"usable": true, "reason": "Every step finds, writes and reads back with MCP tools; files land under /Files/Images, the one archive folder upload_file writes."},
+    "hosted": {"usable": true, "reason": "Nothing here needs SQL. The favicon is served from the cached website until a recycle, which a hosted install gets from its host."},
+    "local": {"usable": true},
+    "layerDelivered": "both"
+  },
+  "steps": [
+    {
+      "id": "folder",
+      "title": "Ensure the brand's asset folder under /Files/Images",
+      "key": "{input.assetFolder}",
+      "skipWhen": {"path": "input.assetFolder", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-images", "surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "/Files/Images"}, "rows": "data", "match": {"name": "{input.assetFolder}", "isDirectory": true}, "produces": {"path": "path"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-create-folder", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/brand-style-writes.md",
+          "create": {"operation": "create_folder", "arguments": {"path": "/Files/Images/{input.assetFolder}"}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "/Files/Images"}, "rows": "data", "match": {"name": "{input.assetFolder}", "isDirectory": true}, "produces": {"path": "path"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
+      ],
+      "trap": "list_files on a folder that does not exist answers an error, not an empty list, so the folder is found from its parent.",
+      "source": "skills/dw-swift-building/references/brand-style-writes.md"
+    },
+    {
+      "id": "files",
+      "title": "Upload each logo, favicon and font file, matched by name and compared by size",
+      "forEach": "files[*]",
+      "key": "{item.name}",
+      "find": {"bindings": [
+        {"id": "mcp-list", "surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "{step.folder[input.assetFolder].path}"}, "rows": "data", "match": {"name": "{item.name}", "isDirectory": false}, "compare": {"byteSize": "{bytes:item.file}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-upload", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/brand-style-writes.md",
+          "create": {"operation": "upload_file", "arguments": {"path": "{step.folder[input.assetFolder].path}/{item.name}", "content": "{base64:item.file}", "isBase64": true, "overwrite": true}},
+          "update": {"operation": "upload_file", "arguments": {"path": "{step.folder[input.assetFolder].path}/{item.name}", "content": "{base64:item.file}", "isBase64": true, "overwrite": true}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "{step.folder[input.assetFolder].path}"}, "rows": "data", "match": {"name": "{item.name}", "isDirectory": false}, "expect": {"byteSize": "{bytes:item.file}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
+      ],
+      "trap": "upload_file writes only under /Files/Images and /Files/Files/Integration; a font file a kit addresses under Templates/Designs/Swift-v2/Custom/fonts is uploaded to the asset folder instead and its font's filePath names that path. A changed file with the same size is not seen: rename it.",
+      "source": "skills/dw-swift-building/references/brand-style-writes.md"
+    },
+    {
+      "id": "fonts",
+      "title": "Register each self-hosted face as a design-system font",
+      "forEach": "fonts[*]",
+      "key": "{item.id}",
+      "find": {"bindings": [
+        {"id": "mcp-fonts", "surface": "mcp", "status": "implemented", "operation": "get_fonts", "arguments": {}, "rows": "data", "match": {"id": "{item.id}"}, "compare": {"name": "{item.name}", "family": "{item.family}", "filePath": "{item.filePath}", "weight": "{item.weight}", "style": "{item.style}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save-font", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/brand-style-writes.md",
+          "create": {"operation": "save_fonts", "arguments": {"fonts": [{"id": "{item.id}", "name": "{item.name}", "family": "{item.family}", "filePath": "{item.filePath}", "weight": "{item.weight}", "style": "{item.style}"}]}},
+          "update": {"operation": "save_fonts", "arguments": {"fonts": [{"id": "{item.id}", "name": "{item.name}", "family": "{item.family}", "filePath": "{item.filePath}", "weight": "{item.weight}", "style": "{item.style}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_fonts", "arguments": {}, "rows": "data", "match": {"id": "{item.id}"}, "expect": {"family": "{item.family}", "filePath": "{item.filePath}", "weight": "{item.weight}", "style": "{item.style}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
+      ],
+      "trap": "A font save overwrites the whole font. The generated typography sheet emits one @font-face per custom font a role names, with font-display swap and the filePath as served.",
+      "source": "skills/dw-swift-building/references/brand-style-writes.md"
+    },
+    {
+      "id": "typography",
+      "title": "Ensure the brand typography, every field sent because a save overwrites the whole object",
+      "forEach": "typography",
+      "key": "{input.id}",
+      "find": {"bindings": [
+        {"id": "mcp-typographies", "surface": "mcp", "status": "implemented", "operation": "get_typographies", "arguments": {}, "rows": "data", "match": {"id": "{input.id}"},
+          "compare": {"name": "{input.name}", "baseFontSize": "{item.baseFontSize}", "baseFontScale": "{item.baseFontScale}",
+            "paragraphFont": "{item.paragraphFont|null}", "paragraphCustomFontId": "{item.paragraphCustomFontId|null}", "paragraphFontStyle": "{item.paragraphFontStyle|null}", "paragraphFontWeight": "{item.paragraphFontWeight}", "paragraphLineHeight": "{item.paragraphLineHeight}", "paragraphLetterSpacing": "{item.paragraphLetterSpacing|0}", "paragraphTextTransformation": "{item.paragraphTextTransformation|\"None\"}",
+            "headingFont": "{item.headingFont|null}", "headingCustomFontId": "{item.headingCustomFontId|null}", "headingFontStyle": "{item.headingFontStyle|null}", "headingFontWeight": "{item.headingFontWeight}", "headingLineHeight": "{item.headingLineHeight}", "headingLetterSpacing": "{item.headingLetterSpacing|0}", "headingTextTransformation": "{item.headingTextTransformation|\"None\"}",
+            "buttonFont": "{item.buttonFont|null}", "buttonCustomFontId": "{item.buttonCustomFontId|null}", "buttonFontStyle": "{item.buttonFontStyle|null}", "buttonFontWeight": "{item.buttonFontWeight}", "buttonLineHeight": "{item.buttonLineHeight}", "buttonLetterSpacing": "{item.buttonLetterSpacing|0}", "buttonTextTransformation": "{item.buttonTextTransformation|\"None\"}"},
+          "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save-typography", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/brand-style-writes.md",
+          "create": {"operation": "save_typographies", "arguments": {"typographies": [{"id": "{input.id}", "name": "{input.name}", "baseFontSize": "{item.baseFontSize}", "baseFontScale": "{item.baseFontScale}",
+            "paragraphFont": "{item.paragraphFont|null}", "paragraphCustomFontId": "{item.paragraphCustomFontId|null}", "paragraphFontStyle": "{item.paragraphFontStyle|null}", "paragraphFontWeight": "{item.paragraphFontWeight}", "paragraphLineHeight": "{item.paragraphLineHeight}", "paragraphLetterSpacing": "{item.paragraphLetterSpacing|0}", "paragraphTextTransformation": "{item.paragraphTextTransformation|\"None\"}",
+            "headingFont": "{item.headingFont|null}", "headingCustomFontId": "{item.headingCustomFontId|null}", "headingFontStyle": "{item.headingFontStyle|null}", "headingFontWeight": "{item.headingFontWeight}", "headingLineHeight": "{item.headingLineHeight}", "headingLetterSpacing": "{item.headingLetterSpacing|0}", "headingTextTransformation": "{item.headingTextTransformation|\"None\"}",
+            "buttonFont": "{item.buttonFont|null}", "buttonCustomFontId": "{item.buttonCustomFontId|null}", "buttonFontStyle": "{item.buttonFontStyle|null}", "buttonFontWeight": "{item.buttonFontWeight}", "buttonLineHeight": "{item.buttonLineHeight}", "buttonLetterSpacing": "{item.buttonLetterSpacing|0}", "buttonTextTransformation": "{item.buttonTextTransformation|\"None\"}"}]}},
+          "update": {"operation": "save_typographies", "arguments": {"typographies": [{"id": "{input.id}", "name": "{input.name}", "baseFontSize": "{item.baseFontSize}", "baseFontScale": "{item.baseFontScale}",
+            "paragraphFont": "{item.paragraphFont|null}", "paragraphCustomFontId": "{item.paragraphCustomFontId|null}", "paragraphFontStyle": "{item.paragraphFontStyle|null}", "paragraphFontWeight": "{item.paragraphFontWeight}", "paragraphLineHeight": "{item.paragraphLineHeight}", "paragraphLetterSpacing": "{item.paragraphLetterSpacing|0}", "paragraphTextTransformation": "{item.paragraphTextTransformation|\"None\"}",
+            "headingFont": "{item.headingFont|null}", "headingCustomFontId": "{item.headingCustomFontId|null}", "headingFontStyle": "{item.headingFontStyle|null}", "headingFontWeight": "{item.headingFontWeight}", "headingLineHeight": "{item.headingLineHeight}", "headingLetterSpacing": "{item.headingLetterSpacing|0}", "headingTextTransformation": "{item.headingTextTransformation|\"None\"}",
+            "buttonFont": "{item.buttonFont|null}", "buttonCustomFontId": "{item.buttonCustomFontId|null}", "buttonFontStyle": "{item.buttonFontStyle|null}", "buttonFontWeight": "{item.buttonFontWeight}", "buttonLineHeight": "{item.buttonLineHeight}", "buttonLetterSpacing": "{item.buttonLetterSpacing|0}", "buttonTextTransformation": "{item.buttonTextTransformation|\"None\"}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_typographies", "arguments": {}, "rows": "data", "match": {"id": "{input.id}"},
+            "expect": {"baseFontSize": "{item.baseFontSize}", "paragraphFont": "{item.paragraphFont|null}", "paragraphCustomFontId": "{item.paragraphCustomFontId|null}", "paragraphFontWeight": "{item.paragraphFontWeight}", "paragraphLineHeight": "{item.paragraphLineHeight}", "headingFont": "{item.headingFont|null}", "headingCustomFontId": "{item.headingCustomFontId|null}", "headingFontWeight": "{item.headingFontWeight}", "headingLineHeight": "{item.headingLineHeight}", "buttonFont": "{item.buttonFont|null}", "buttonCustomFontId": "{item.buttonCustomFontId|null}", "buttonFontWeight": "{item.buttonFontWeight}", "buttonLineHeight": "{item.buttonLineHeight}"},
+            "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
+      ],
+      "trap": "An unsent line height is stored as 0 and the sheet emits line-height 0, so every line height is required. The tool takes enum values as their names (Regular, Uppercase) or as numeric text, never as JSON numbers, and reads them back as names.",
+      "source": "skills/dw-swift-building/references/brand-style-writes.md"
+    },
+    {
+      "id": "buttons",
+      "title": "Ensure the brand button style: shape by name, border and padding",
+      "forEach": "buttonStyle",
+      "key": "{input.id}",
+      "find": {"bindings": [
+        {"id": "mcp-buttons", "surface": "mcp", "status": "implemented", "operation": "get_button_styles", "arguments": {}, "rows": "data", "match": {"id": "{input.id}"}, "compare": {"name": "{input.name}", "shape": "{item.shape}", "borderSize": "{item.borderSize}", "paddingX": "{item.paddingX}", "paddingY": "{item.paddingY}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save-button", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/brand-style-writes.md",
+          "create": {"operation": "save_button_styles", "arguments": {"buttonStyles": [{"id": "{input.id}", "name": "{input.name}", "shape": "{item.shape}", "borderSize": "{item.borderSize}", "paddingX": "{item.paddingX}", "paddingY": "{item.paddingY}"}]}},
+          "update": {"operation": "save_button_styles", "arguments": {"buttonStyles": [{"id": "{input.id}", "name": "{input.name}", "shape": "{item.shape}", "borderSize": "{item.borderSize}", "paddingX": "{item.paddingX}", "paddingY": "{item.paddingY}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_button_styles", "arguments": {}, "rows": "data", "match": {"id": "{input.id}"}, "expect": {"shape": "{item.shape}", "borderSize": "{item.borderSize}", "paddingX": "{item.paddingX}", "paddingY": "{item.paddingY}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
+      ],
+      "trap": "Button colours are not here: they come from the colour schemes (primaryButtonColor, secondaryButtonColor).",
+      "source": "skills/dw-swift-building/references/brand-style-writes.md"
+    },
+    {
+      "id": "schemes",
+      "title": "Ensure each colour scheme in the brand's group, keeping Swift's scheme ids",
+      "forEach": "colorSchemes[*]",
+      "key": "{input.id}/{item.id}",
+      "find": {"bindings": [
+        {"id": "mcp-schemes", "surface": "mcp", "status": "implemented", "operation": "get_color_schemes", "arguments": {}, "rows": "data", "match": {"groupId": "{input.id}", "id": "{item.id}"}, "compare": {"name": "{item.name}", "backgroundColor": "{item.backgroundColor}", "foregroundColor": "{item.foregroundColor}", "primaryButtonColor": "{item.primaryButtonColor}", "secondaryButtonColor": "{item.secondaryButtonColor}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save-scheme", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/brand-style-writes.md",
+          "create": {"operation": "save_color_schemes", "arguments": {"colorSchemes": [{"groupId": "{input.id}", "groupName": "{input.name}", "id": "{item.id}", "name": "{item.name}", "backgroundColor": "{item.backgroundColor}", "foregroundColor": "{item.foregroundColor}", "primaryButtonColor": "{item.primaryButtonColor}", "secondaryButtonColor": "{item.secondaryButtonColor}"}]}},
+          "update": {"operation": "save_color_schemes", "arguments": {"colorSchemes": [{"groupId": "{input.id}", "id": "{item.id}", "name": "{item.name}", "backgroundColor": "{item.backgroundColor}", "foregroundColor": "{item.foregroundColor}", "primaryButtonColor": "{item.primaryButtonColor}", "secondaryButtonColor": "{item.secondaryButtonColor}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_color_schemes", "arguments": {}, "rows": "data", "match": {"groupId": "{input.id}", "id": "{item.id}"}, "expect": {"backgroundColor": "{item.backgroundColor}", "foregroundColor": "{item.foregroundColor}", "primaryButtonColor": "{item.primaryButtonColor}", "secondaryButtonColor": "{item.secondaryButtonColor}"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
+      ],
+      "trap": "Rows paint by scheme id, so the brand group keeps Swift's seven ids; a renamed id leaves every row unpainted with no error. Colours are stored as written, so the input's case is the compared case.",
+      "source": "skills/dw-swift-building/references/brand-style-writes.md"
+    },
+    {
+      "id": "area",
+      "title": "Wire the website to the brand's scheme group, default scheme, typography and button style",
+      "key": "{build.areaId}",
+      "find": {"bindings": [
+        {"id": "mcp-area", "surface": "mcp", "status": "implemented", "operation": "get_area_by_id", "arguments": {"areaId": "{build.areaId}"}, "rows": "$", "match": {"id": "{build.areaId}"}, "compare": {"colorSchemeGroupId": "{input.id}", "colorSchemeId": "{input.defaultColorScheme|\"light\"}", "typographyId": "{input.id}", "buttonStyleId": "{input.id}"}, "produces": {"itemType": "itemType", "itemId": "itemId"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save-area", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/brand-style-writes.md",
+          "update": {"operation": "save_areas", "arguments": {"areas": [{"id": "{build.areaId}", "colorSchemeGroupId": "{input.id}", "colorSchemeId": "{input.defaultColorScheme|\"light\"}", "typographyId": "{input.id}", "buttonStyleId": "{input.id}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_area_by_id", "arguments": {"areaId": "{build.areaId}"}, "rows": "$", "match": {"id": "{build.areaId}"}, "expect": {"colorSchemeGroupId": "{input.id}", "typographyId": "{input.id}", "buttonStyleId": "{input.id}"}, "produces": {"itemType": "itemType", "itemId": "itemId"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}}
+      ],
+      "trap": "save_areas changes only the fields it is sent, so the four style fields go in one call and nothing else of the website moves.",
+      "source": "skills/dw-swift-building/references/brand-style-writes.md"
+    },
+    {
+      "id": "favicon",
+      "title": "Set the website favicon on its Swift-v2_Master settings item",
+      "key": "{build.areaId}",
+      "skipWhen": {"path": "input.favicon", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-master-fields", "surface": "mcp", "status": "implemented", "operation": "get_item_field_values", "arguments": {"itemType": "{step.area.itemType}", "itemId": "{step.area.itemId}"}, "rows": "data", "compareMap": {"from": {"Favicon": "{input.favicon}"}, "key": "fieldSystemName", "value": "value"}, "source": "skills/dw-data-access/references/recipes-swift.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-set-favicon", "surface": "mcp", "status": "implemented", "source": "skills/dw-data-access/references/recipes-swift.md",
+          "update": {"operation": "set_item_field_values", "arguments": {"values": [{"itemType": "{step.area.itemType}", "itemId": "{step.area.itemId}", "fieldSystemName": "Favicon", "value": "{input.favicon}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_item_field_values", "arguments": {"itemType": "{step.area.itemType}", "itemId": "{step.area.itemId}"}, "rows": "data", "expectMap": {"from": {"Favicon": "{input.favicon}"}, "key": "fieldSystemName", "value": "value"}, "source": "skills/dw-data-access/references/recipes-swift.md"}}
+      ],
+      "trap": "The item read shows the new favicon at once, but the storefront serves the cached website (old favicon link) until the host recycles; a save_areas call does not refresh it.",
+      "source": "skills/dw-data-access/references/recipes-swift.md"
+    },
+    {
+      "id": "slots",
+      "title": "Look up the header or footer page the website selects for each slot",
+      "forEach": "layout[*]",
+      "key": "{item.slot}",
+      "find": {"bindings": [
+        {"id": "mcp-master-slot", "surface": "mcp", "status": "implemented", "operation": "get_item_field_values", "arguments": {"itemType": "{step.area[build.areaId].itemType}", "itemId": "{step.area[build.areaId].itemId}"}, "rows": "data", "match": {"fieldSystemName": "{item.slot}"}, "produces": {"pageId": "value"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+      ]},
+      "bindings": [],
+      "trap": "A lookup: selecting the header and footer pages is swift.header-footer's work. The page-select fields hold the page id as text, which the page tools accept.",
+      "source": "skills/dw-swift-building/references/brand-style-writes.md"
+    },
+    {
+      "id": "logo-paragraph",
+      "title": "Look up the logo paragraph on each slot page",
+      "forEach": "layout[*]",
+      "key": "{item.slot}",
+      "skipWhen": {"path": "item.logo", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-slot-paragraphs", "surface": "mcp", "status": "implemented", "operation": "get_paragraphs_by_page_id", "arguments": {"pageId": "{step.slots.pageId}"}, "rows": "data", "match": {"itemType": "Swift-v2_Logo"}, "produces": {"id": "id"}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+      ]},
+      "bindings": [],
+      "trap": "A slot page with two logo paragraphs blocks the item: the recipe cannot tell which one the brand means.",
+      "source": "skills/dw-swift-building/references/brand-style-writes.md"
+    },
+    {
+      "id": "logo",
+      "title": "Write the logo image and name on each slot's logo paragraph",
+      "forEach": "layout[*]",
+      "key": "{item.slot}",
+      "skipWhen": {"path": "item.logo", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-logo-fields", "surface": "mcp", "status": "implemented", "operation": "get_paragraph_item_field_values", "arguments": {"paragraphId": "{step.logo-paragraph.id}"}, "rows": "data", "compareMap": {"from": "{item.logo}", "key": "fieldSystemName", "value": "value"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-set-logo", "surface": "mcp", "status": "implemented", "source": "skills/dw-content-modelling/references/page-paragraph-writes.md",
+          "update": {"operation": "set_paragraph_item_fields", "arguments": {"paragraphId": "{step.logo-paragraph.id}", "fields": "{item.logo}"}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_paragraph_item_field_values", "arguments": {"paragraphId": "{step.logo-paragraph.id}"}, "rows": "data", "expectMap": {"from": "{item.logo}", "key": "fieldSystemName", "value": "value"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}}
+      ],
+      "trap": "Swift-v2_Logo.Image is a file field: it takes the archive path as text and must name a file that exists, so the upload runs first. An SVG logo is inlined into the page, so it takes the scheme's colours only through its own fills.",
+      "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"
+    },
+    {
+      "id": "slot-rows",
+      "title": "Paint each named row of a slot page with a brand scheme",
+      "forEach": "layout[*].rows[*]",
+      "key": "{parent.slot}/{item.sort}",
+      "find": {"bindings": [
+        {"id": "mcp-slot-rows", "surface": "mcp", "status": "implemented", "operation": "get_grid_rows_by_page_id", "arguments": {"pageId": "{step.slots[parent.slot].pageId}"}, "rows": "data", "match": {"sort": "{item.sort}"}, "compare": {"colorSchemeId": "{item.colorScheme}"}, "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-paint-row", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/grid-rows-and-binding.md",
+          "update": {"operation": "save_grid_rows", "arguments": {"gridRows": [{"id": "{found.id}", "colorSchemeId": "{item.colorScheme}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_grid_rows_by_page_id", "arguments": {"pageId": "{step.slots[parent.slot].pageId}"}, "rows": "data", "match": {"sort": "{item.sort}"}, "expect": {"colorSchemeId": "{item.colorScheme}"}, "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"}}
+      ],
+      "trap": "A row names a scheme id, resolved in the website's scheme group: wire the area first, or the row paints from the old group.",
+      "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"
+    }
+  ],
+  "debts": ["recycle"],
+  "verify": {
+    "checkIds": ["content.design-styles.website-styles-set", "swift.style-wiring.typography-defined", "swift.style-wiring.buttons-defined", "swift.style-wiring.area-wired", "swift.style-wiring.stylesheets-emitted", "swift.website-settings.master-bound", "swift.website-settings.front-page-healthy"],
+    "probes": [
+      {
+        "id": "scheme-sheet-served",
+        "title": "The generated colour scheme sheet of the brand group is served",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "/Files/System/Styles/ColorSchemes/{input.id}.css"}, "rows": "$", "assert": {"kind": "equals", "path": "statusCode", "value": 200}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+        ]
+      },
+      {
+        "id": "typography-sheet-served",
+        "title": "The generated typography sheet is served",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "/Files/System/Styles/Typography/{input.id}.css"}, "rows": "$", "assert": {"kind": "equals", "path": "statusCode", "value": 200}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+        ]
+      },
+      {
+        "id": "button-sheet-served",
+        "title": "The generated button sheet is served",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "/Files/System/Styles/Buttons/{input.id}.css"}, "rows": "$", "assert": {"kind": "equals", "path": "statusCode", "value": 200}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+        ]
+      },
+      {
+        "id": "font-files-served",
+        "title": "Each self-hosted font file answers 200 at the path its font names",
+        "forEach": "fonts[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{item.filePath}"}, "rows": "$", "assert": {"kind": "equals", "path": "statusCode", "value": 200}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+        ]
+      },
+      {
+        "id": "logo-served",
+        "title": "Each slot's logo image answers 200",
+        "forEach": "layout[*]",
+        "skipWhen": {"path": "item.logo", "exists": false},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{item.logo.Image}"}, "rows": "$", "assert": {"kind": "equals", "path": "statusCode", "value": 200}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+        ]
+      },
+      {
+        "id": "favicon-served",
+        "title": "The favicon answers 200",
+        "skipWhen": {"path": "input.favicon", "exists": false},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{input.favicon}"}, "rows": "$", "assert": {"kind": "equals", "path": "statusCode", "value": 200}, "source": "skills/dw-swift-building/references/brand-style-writes.md"}
+        ]
+      },
+      {
+        "id": "pages-render",
+        "title": "Each storefront path the input names still answers 200 after the re-skin",
+        "forEach": "renderCheck[*]",
+        "minimumSubjects": 1,
+        "pollSeconds": 30,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{item.path}"}, "rows": "$", "assert": {"kind": "equals", "path": "statusCode", "value": 200}, "source": "skills/dw-swift-page-design/SKILL.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "content.design-styles.1-verify.json (every style WOULD-CREATE, the wiring WOULD-UPDATE, 5 of 33), content.design-styles.2-apply.json (33 of 34, the recycle debt OPEN), recycle, content.design-styles.3-verify.json and content.design-styles.4-apply-again.json (33 of 33, nothing written, no debt run), content.design-styles.5-mcponly-apply.json (33 of 33, MCP only); in a browser the home page and the product list linked the three brand sheets and the new favicon, painted the header row and the primary button in the brand primary, rendered body and headings in the self-hosted family with both faces loaded, and inlined the brand logo"}
+  ],
+  "traps": [
+    "Write a net-new style id (the kit slug), never the shipped default: a later re-stage of the theme layer reverts default, and other websites may bind it.",
+    "The MCP style tools take camelCase members and enum names; a kit's style files carry PascalCase members and enum numbers (the stored model format). ConvertFrom-DwBrandKit.ps1 maps one onto the other.",
+    "A typography that names a custom font for one role and a hosted family for another emits its @font-face rules before the hosted family's @import, and a browser drops an @import that follows other rules: that role falls back to the browser default. Self-host every role's face, or none.",
+    "No MCP read returns the served head or a computed style: the probes prove the generated sheets, fonts and logo answer 200, and the head links and the painted colours are proven in a browser (dw-demo-base visual QA).",
+    "The custom brand sheet and head include of a kit (Swift-v2/Custom) cannot be written over MCP: upload_file writes only under /Files/Images and /Files/Files/Integration. They stay with the theme layer or a file deploy."
+  ]
+}

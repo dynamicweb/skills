@@ -157,6 +157,9 @@ def step_usable(step, surfaces, write_surfaces):
     find = step.get("find")
     if find and not any(readable(b, surfaces) for b in find.get("bindings", [])):
         return False
+    if not step.get("bindings"):
+        # A lookup step finds and never writes: its find is all it needs.
+        return bool(find)
     return any(b.get("status") == "implemented" and b.get("surface") in write_surfaces and ("create" in b or "update" in b)
                and readable(b.get("readBack") or {}, surfaces) for b in step.get("bindings", []))
 
@@ -250,6 +253,8 @@ def validate_recipes(repo: Path) -> list[str]:
             item, parent = scopes(section, step.get("forEach"))
             if step.get("forEach") and item is None:
                 error(file, f"step {sid}: forEach {step.get('forEach')} is not in section {section_name}")
+            if not step.get("bindings") and not step.get("find"):
+                error(file, f"step {sid}: a step without write bindings is a lookup and needs a find")
             after = (step.get("after") or {}).get("step")
             if after and after not in earlier:
                 error(file, f"step {sid}: after names {after}, which is not an earlier step")
@@ -262,8 +267,10 @@ def validate_recipes(repo: Path) -> list[str]:
                             error(file, f"step {sid} {path}: token {{{body}}} {fault}")
 
             def token_fault(body, allow_secret, allow_found):
-                if body.startswith("text:"):
-                    body = body[5:]
+                for prefix in ("text:", "base64:", "bytes:"):
+                    if body.startswith(prefix):
+                        body = body[len(prefix):]
+                        break
                 path, _, default = body.partition("|")
                 if default:
                     try:

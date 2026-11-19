@@ -107,6 +107,7 @@ String values in arguments, match, compare, expect and parameters may hold token
 | `{found.<path>}` | The row the find matched (update arguments only) |
 | `{build.areaId}` | `areaId`, `defaultLanguage`, `pimShop` from the ledger build file, else the input's `build` |
 | `{secret.<path>}` | The value of the reference key at `<path>` in `DW_RECIPE_SECRETS`; write and read-back arguments only |
+| `{base64:<token>}`, `{bytes:<token>}` | The content (base64) or size of the file the value names, relative to the input file; a rooted path or one outside that folder is refused |
 
 A whole-value token keeps its type, so an id stays a number; a token inside text becomes text.
 A `[*]` in a path maps the rest of the path over every element (or every value of an object) and
@@ -135,6 +136,9 @@ can drop a field, so the response is never the evidence and the id comes from th
 with no eligible binding is BLOCKED with the reasons, and the run exits 1.
 
 A step without a find (a url name pin) runs only behind `after`, for the items an earlier step created or updated.
+A step with an empty `bindings` list is a lookup: it finds an object another function owns (the
+header page a website selects) and produces values for later steps, and never writes. An absent
+object is WOULD-CREATE in a verify run and BLOCKED with apply, so its dependants stop too.
 
 ## Debts
 
@@ -215,6 +219,14 @@ Verify only (writes nothing), then apply:
 ```powershell
 pwsh -NoProfile -File scripts/Invoke-DwRecipe.ps1 -Recipe content.pages -InputPath ./recipe-input.json
 pwsh -NoProfile -File scripts/Invoke-DwRecipe.ps1 -Recipe content.pages -InputPath ./recipe-input.json -Apply -ReportPath ./recipe-report.json
+```
+
+A brand kit's `swift2/` folder (brand-kit-extractor) becomes the `brand` section of the input
+without hand work; the converter maps the kit's numeric enums to the names the MCP style tools take
+and points every file at `/Files/Images/<assetFolder>`:
+
+```powershell
+pwsh -NoProfile -File scripts/ConvertFrom-DwBrandKit.ps1 -KitPath ./brand-kit/acme/swift2 -OutPath ./recipe-input.json -RenderCheck /en-us/home, /en-us/shop
 ```
 
 Set `DW_BASE_URL` and `DW_MCP_TOKEN` and/or `DW_API_TOKEN`. `DW_RECIPE_SECRETS` is a JSON object

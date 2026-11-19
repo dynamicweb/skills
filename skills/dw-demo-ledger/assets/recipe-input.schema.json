@@ -839,6 +839,156 @@
         }
       }
     },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "colorSchemes", "typography", "buttonStyle"],
+      "description": "The brand kit the content.design-styles recipe applies: colour schemes, typography, self-hosted fonts, button style, files, favicon and the header and footer slots. Names are the MCP style tools' own (camelCase, enums by name). A brand-kit-extractor swift2/ folder converts to this section with ConvertFrom-DwBrandKit.ps1, which maps its numeric enums to these names.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+          "description": "The id of the colour scheme group, the typography and the button style (the kit slug). Never 'default': the shipped styles stay as they are."
+        },
+        "name": {"type": "string", "minLength": 1, "description": "Display name of the scheme group, the typography and the button style."},
+        "defaultColorScheme": {"type": "string", "minLength": 1, "description": "The scheme id the website paints with; default light."},
+        "colorSchemes": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Swift's seven scheme ids (light, lightgrey1, lightgrey2, dark, darksubtle, primary, secondary) keep every row's data-dw-colorscheme resolving; colours as #rrggbb, compared as written.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "backgroundColor", "foregroundColor", "primaryButtonColor", "secondaryButtonColor"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+              "name": {"type": "string", "minLength": 1},
+              "backgroundColor": {"$ref": "#/definitions/hex"},
+              "foregroundColor": {"$ref": "#/definitions/hex"},
+              "primaryButtonColor": {"$ref": "#/definitions/hex"},
+              "secondaryButtonColor": {"$ref": "#/definitions/hex"}
+            }
+          }
+        },
+        "assetFolder": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+          "description": "Folder under /Files/Images that receives files[]; MCP uploads land under /Files/Images only."
+        },
+        "files": {
+          "type": "array",
+          "description": "Logo, favicon and font files to upload to /Files/Images/<assetFolder>/<name>; matched by name and compared by size.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "name"],
+            "properties": {
+              "file": {"type": "string", "minLength": 1, "description": "Path relative to this input file."},
+              "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*\\.[A-Za-z0-9]+$"}
+            }
+          }
+        },
+        "fonts": {
+          "type": "array",
+          "description": "Self-hosted faces (save_fonts), one per weight and style; a typography names them by id.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "family", "filePath", "weight", "style"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"},
+              "name": {"type": "string", "minLength": 1},
+              "family": {"type": "string", "minLength": 1},
+              "filePath": {"type": "string", "pattern": "^/Files/Images/.+\\.(woff2|woff|ttf|otf)$", "description": "Archive path of an uploaded file, normally /Files/Images/<assetFolder>/<files[].name>."},
+              "weight": {"$ref": "#/definitions/fontWeight"},
+              "style": {"enum": ["normal", "italic"]}
+            }
+          }
+        },
+        "typography": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baseFontSize", "baseFontScale", "paragraphFontWeight", "paragraphLineHeight", "headingFontWeight", "headingLineHeight", "buttonFontWeight", "buttonLineHeight"],
+          "description": "A typography save overwrites the whole object. A role names a family (paragraphFont, from a font host) or a fonts[] id (paragraphCustomFontId). Every line height is required: an unset one is written as line-height 0.",
+          "properties": {
+            "baseFontSize": {"type": "integer", "minimum": 1},
+            "baseFontScale": {"type": "number", "exclusiveMinimum": 0},
+            "paragraphFont": {"type": "string", "minLength": 1},
+            "paragraphCustomFontId": {"type": "string", "minLength": 1},
+            "paragraphFontStyle": {"enum": ["normal", "italic"]},
+            "paragraphFontWeight": {"$ref": "#/definitions/fontWeight"},
+            "paragraphLineHeight": {"type": "number", "exclusiveMinimum": 0},
+            "paragraphLetterSpacing": {"type": "number"},
+            "paragraphTextTransformation": {"$ref": "#/definitions/textTransform"},
+            "headingFont": {"type": "string", "minLength": 1},
+            "headingCustomFontId": {"type": "string", "minLength": 1},
+            "headingFontStyle": {"enum": ["normal", "italic"]},
+            "headingFontWeight": {"$ref": "#/definitions/fontWeight"},
+            "headingLineHeight": {"type": "number", "exclusiveMinimum": 0},
+            "headingLetterSpacing": {"type": "number"},
+            "headingTextTransformation": {"$ref": "#/definitions/textTransform"},
+            "buttonFont": {"type": "string", "minLength": 1},
+            "buttonCustomFontId": {"type": "string", "minLength": 1},
+            "buttonFontStyle": {"enum": ["normal", "italic"]},
+            "buttonFontWeight": {"$ref": "#/definitions/fontWeight"},
+            "buttonLineHeight": {"type": "number", "exclusiveMinimum": 0},
+            "buttonLetterSpacing": {"type": "number"},
+            "buttonTextTransformation": {"$ref": "#/definitions/textTransform"}
+          }
+        },
+        "buttonStyle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["shape", "borderSize", "paddingX", "paddingY"],
+          "properties": {
+            "shape": {"enum": ["Squared", "Rounded", "Pill"]},
+            "borderSize": {"type": "number", "minimum": 0},
+            "paddingX": {"type": "number", "minimum": 0, "description": "rem"},
+            "paddingY": {"type": "number", "minimum": 0, "description": "rem"}
+          }
+        },
+        "favicon": {"type": "string", "pattern": "^/Files/.+\\.(png|ico|svg)$", "description": "Archive path of the favicon, normally an uploaded file."},
+        "renderCheck": {
+          "type": "array",
+          "description": "Storefront paths that must still answer 200 after the re-skin, such as the home page and a product list.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path"],
+            "properties": {"path": {"type": "string", "pattern": "^/[A-Za-z0-9/_-]*$"}}
+          }
+        },
+        "layout": {
+          "type": "array",
+          "description": "The header and footer pages the website selects, by their Swift-v2_Master slot: the logo on each and the colour scheme of its rows.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["slot"],
+            "properties": {
+              "slot": {"enum": ["HeaderDesktop", "HeaderMobile", "FooterDesktop", "FooterMobile"]},
+              "logo": {
+                "type": "object",
+                "additionalProperties": {"type": "string"},
+                "description": "Swift-v2_Logo field values by system name: Image (archive path), LogoName, LogoWidth."
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["sort", "colorScheme"],
+                  "properties": {
+                    "sort": {"type": "integer", "description": "sort of an existing row of the slot page."},
+                    "colorScheme": {"type": "string", "minLength": 1, "description": "A colorSchemes[].id."}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "brandCopy": {
       "type": "object",
       "additionalProperties": false,
@@ -960,6 +1110,9 @@
     }
   },
   "definitions": {
+    "hex": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+    "fontWeight": {"enum": ["Thin", "ExtraLight", "Light", "Regular", "Medium", "SemiBold", "Bold", "ExtraBold", "Black"]},
+    "textTransform": {"enum": ["None", "Uppercase", "Lowercase", "Capitalize"]},
     "lines": {
       "type": "array",
       "minItems": 1,

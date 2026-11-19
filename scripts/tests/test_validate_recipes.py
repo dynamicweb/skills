@@ -138,6 +138,22 @@ class RecipeValidationTests(unittest.TestCase):
         self.assertIn("needs an implemented read-back", errors)
         self.assertIn("recipe schema validation failed", errors)
 
+    def test_lookup_step_needs_a_find_and_keeps_the_modes(self):
+        lookup = {"id": "parent", "title": "Find the parent", "forEach": "pages[*]", "key": "{item.menuText}",
+                  "source": "skills/x.md", "find": {"bindings": [dict(PAGES_FIND, arguments={"parentId": 0})]}, "bindings": []}
+        self.recipe["steps"].insert(0, lookup)
+        self.assertEqual("", self.errors())
+        del self.recipe["steps"][0]["find"]
+        self.assertIn("is a lookup and needs a find", self.errors())
+
+    def test_file_tokens_resolve_against_the_input_schema(self):
+        create = self.recipe["steps"][0]["bindings"][0]["create"]["arguments"]
+        create["content"] = "{base64:item.urlName}"
+        create["size"] = "{bytes:item.urlName}"
+        self.assertEqual("", self.errors())
+        create["content"] = "{base64:item.logoFile}"
+        self.assertIn("does not resolve in the input schema", self.errors())
+
     def test_recipe_lives_at_its_id(self):
         self.recipe["id"] = "test.other"
         self.assertIn("must live at recipes/test/test.other.json", self.errors())

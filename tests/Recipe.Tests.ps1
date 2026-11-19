@@ -299,6 +299,26 @@ Describe 'Recipe engine: paths, tokens and matching' {
         $ctx.item.Remove('quantity')
         Test-RecipeCondition @(@{path = 'item.account'; notEquals = '{input.buyer.account}'}, @{path = 'item.quantity'; exists = $true}) $ctx | Should -BeFalse
     }
+    It 'reads a file the input names, relative to the input file, as base64 or as its size, and never outside that folder' {
+        $dir = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
+        $null = New-Item -ItemType Directory -Force (Join-Path $dir 'kit')
+        [IO.File]::WriteAllBytes((Join-Path $dir 'kit/logo.svg'), [byte[]](60, 115, 118, 103, 62))
+        Set-Content -LiteralPath (Join-Path $TestDrive 'outside.txt') -Value 'x'
+        $ctx = @{item = @{file = 'kit/logo.svg'}; results = @{}; secrets = @{}; inputDir = $dir}
+        Resolve-RecipeToken 'base64:item.file' $ctx | Should -Be 'PHN2Zz4='
+        Resolve-RecipeToken 'bytes:item.file' $ctx | Should -Be 5
+        $ctx.item.file = '../outside.txt'
+        { Resolve-RecipeToken 'base64:item.file' $ctx } | Should -Throw '*outside the input file*'
+        $ctx.item.file = (Join-Path $TestDrive 'outside.txt')
+        { Resolve-RecipeToken 'bytes:item.file' $ctx } | Should -Throw '*not a path relative*'
+        $ctx.item.file = 'kit/absent.svg'
+        { Resolve-RecipeToken 'bytes:item.file' $ctx } | Should -Throw '*does not exist*'
+    }
+    It 'reads a typography member the read model leaves out as equal to an expected null, and to nothing else' {
+        (Get-RecipeDifferences @{id = 't'; paragraphFont = 'Inter'} @{paragraphFont = 'Inter'; paragraphCustomFontId = $null; headingFontStyle = $null} 'get_typographies').Count | Should -Be 0
+        { Get-RecipeDifferences @{id = 't'} @{paragraphCustomFontId = 'brand-400'} 'get_typographies' } | Should -Throw '*carries no field*'
+        { Get-RecipeDifferences @{id = 't'} @{paragraphLetterSpacing = 0} 'get_typographies' } | Should -Throw '*carries no field*'
+    }
     It 'refuses a host, a machine path or a credential literal in a recipe' {
         @(Test-RecipeForbidden @{source = 'see https://example.invalid'}).Count | Should -Be 1
         @(Test-RecipeForbidden @{query = 'C:\temp\x'}).Count | Should -Be 1
@@ -525,6 +545,73 @@ Describe 'Invoke-DwRecipe on users.accounts' {
         $binding = @{surface = 'admin-api'; status = 'implemented'; create = @{operation = 'UsersAddToGroups'; arguments = @{GroupIds = @(50); Ids = @('60')}}}
         { Invoke-RecipeWrite $binding 'create' @{results = @{}; secrets = @{}} $run } | Should -Throw "*answered status 'invalid'*"
         Remove-Module Dw.Api -ErrorAction SilentlyContinue
+    }
+}
+
+Describe 'Invoke-DwRecipe on a lookup step' {
+    BeforeEach {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
+        Remove-Item Env:DW_API_TOKEN -ErrorAction SilentlyContinue
+        $script:Root = New-RecipeSandbox
+        $script:InputFile = Write-Input @{pages = @(@{menuText = 'Header / Footer'; urlName = 'header-footer'; itemType = 'Swift-v2_Page'})} 'content.pages'
+        $find = @{id = 'mcp-root'; surface = 'mcp'; status = 'implemented'; operation = 'get_pages_by_parent_id'; arguments = @{parentId = 0; areaId = '{build.areaId}'}; rows = 'data'; match = @{menuText = '{item.menuText}'}; produces = @{id = 'id'}; source = 'skills/x.md'}
+        $recipe = @{schema = 1; id = 'content.pages'; name = 'Lookup'; functions = @('content.pages'); skill = 'dw-content-modelling'; inputs = @{section = 'content.pages'; required = @('pages')}
+            modes = @{mcpOnly = @{usable = $true; reason = 'MCP.'}; hosted = @{usable = $true; reason = 'No SQL.'}; local = @{usable = $true}; layerDelivered = 'verify'}
+            steps = @(@{id = 'folder'; title = 'Find the folder'; forEach = 'pages[*]'; key = '{item.menuText}'; find = @{bindings = @($find)}; bindings = @(); source = 'skills/x.md'})
+            debts = @(); verify = @{checkIds = @(); probes = @()}; provenOn = @(); traps = @()}
+        $script:RecipeFile = Join-Path $TestDrive ([guid]::NewGuid().ToString('n') + '.json')
+        $recipe | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $script:RecipeFile -Encoding utf8
+    }
+    It 'finds an existing object, writes nothing, and blocks an absent one instead of creating it' {
+        New-Stub
+        $r = Invoke-Runner $script:Root @{Recipe = $script:RecipeFile; InputPath = $script:InputFile}
+        $r.lines | Should -Contain 'STEP folder WOULD-CREATE Header / Footer'
+        ($r.lines -match 'a lookup step never writes').Count | Should -Be 1
+        $a = Invoke-Runner $script:Root @{Recipe = $script:RecipeFile; InputPath = $script:InputFile; Apply = $true}
+        $a.lines | Should -Contain 'STEP folder BLOCKED Header / Footer'
+        $a.exit | Should -Be 1
+        Get-Writes | Should -BeNullOrEmpty
+        $global:RecipeStub.pages.Add(@{id = 89; parentPageId = 0; menuText = 'Header / Footer'})
+        $f = Invoke-Runner $script:Root @{Recipe = $script:RecipeFile; InputPath = $script:InputFile; Apply = $true}
+        $f.lines | Should -Contain 'STEP folder UNCHANGED Header / Footer'
+        $f.exit | Should -Be 0
+        Get-Writes | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'ConvertFrom-DwBrandKit' {
+    It 'turns a kit''s swift2 folder into a brand section the input schema accepts, enums by name and files under /Files/Images' {
+        $kit = Join-Path $TestDrive 'kit/swift2'
+        foreach ($d in 'ColorSchemes', 'Typography', 'Buttons', 'Fonts', 'branding') { $null = New-Item -ItemType Directory -Force (Join-Path $kit $d) }
+        $scheme = {param($id) @{Id = $id; Name = $id; GroupId = 'fabrikam'; BackgroundColor = '#ffffff'; ForegroundColor = '#1a1a1a'; PrimaryButtonColor = '#0b5d4b'; SecondaryButtonColor = '#000000'; CustomColors = @()}}
+        @{Id = 'fabrikam'; Name = 'Fabrikam'; Schemes = @((& $scheme 'light'), (& $scheme 'dark'))} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $kit 'ColorSchemes/fabrikam.json')
+        @{Id = 'fabrikam'; Name = 'Fabrikam'; BaseFontSize = 16; BaseFontScale = 1.2; ParagraphFont = 'Body Sans'; ParagraphCustomFontId = 'fabrikam-body-400'; ParagraphFontWeight = 400; ParagraphLineHeight = 1.5; ParagraphTextTransformation = 0
+            HeadingFont = 'Display'; HeadingCustomFontId = $null; HeadingFontWeight = 700; HeadingLineHeight = 1.2; HeadingTextTransformation = 1; ButtonFont = 'Body Sans'; ButtonFontWeight = 600; ButtonLineHeight = 1.4} | ConvertTo-Json | Set-Content (Join-Path $kit 'Typography/fabrikam.json')
+        @{Id = 'fabrikam'; Name = 'Fabrikam'; Shape = 2; PaddingX = 1.5; PaddingY = 0.75; BorderSize = 1} | ConvertTo-Json | Set-Content (Join-Path $kit 'Buttons/fabrikam.json')
+        @{Id = 'fabrikam-body-400'; Name = 'Body 400'; Family = 'Body Sans'; FilePath = '/Files/Templates/Designs/Swift-v2/Custom/fonts/fabrikam-body-400.woff2'; Style = 'normal'; Weight = 400} | ConvertTo-Json | Set-Content (Join-Path $kit 'Fonts/fabrikam-body-400.json')
+        Set-Content (Join-Path $kit 'Fonts/fabrikam-body-400.woff2') 'font'
+        Set-Content (Join-Path $kit 'branding/fabrikam-logo.svg') '<svg/>'
+        @{headerDesktop = @{Id = '/Files/Images/branding/fabrikam-logo.svg'; Name = 'fabrikam-logo.svg'}; headerMobile = $null; footerDesktop = $null; footerMobile = $null; favicon = $null} | ConvertTo-Json | Set-Content (Join-Path $kit 'logo-fields.json')
+        @{saveAreas = @{ColorSchemeId = 'light'}} | ConvertTo-Json | Set-Content (Join-Path $kit 'area.json')
+        $out = Join-Path $TestDrive 'input/recipe-input.json'
+        $null = New-Item -ItemType Directory -Force (Split-Path $out)
+        @{schema = 1; build = @{areaId = 1}} | ConvertTo-Json | Set-Content $out
+        & (Join-Path $script:Source 'scripts/ConvertFrom-DwBrandKit.ps1') -KitPath $kit -OutPath $out -RenderCheck '/en-us/home' | Should -Match '2 schemes, 1 fonts, 2 files, 1 logo slots'
+        $doc = Read-LedgerJson $out (Join-Path $script:Source 'assets/recipe-input.schema.json')
+        $doc.build.areaId | Should -Be 1
+        $b = $doc.brand
+        $b.id | Should -Be 'fabrikam'
+        $b.typography.paragraphFontWeight | Should -Be 'Regular'
+        $b.typography.headingTextTransformation | Should -Be 'Uppercase'
+        $b.typography.buttonFontWeight | Should -Be 'SemiBold'
+        $b.typography.Contains('paragraphFont') | Should -BeFalse
+        $b.typography.headingFont | Should -Be 'Display'
+        $b.buttonStyle.shape | Should -Be 'Pill'
+        $b.fonts[0].filePath | Should -Be '/Files/Images/fabrikam/fabrikam-body-400.woff2'
+        $b.fonts[0].weight | Should -Be 'Regular'
+        @($b.files.file) | Should -Contain '../kit/swift2/Fonts/fabrikam-body-400.woff2'
+        $b.layout[0].slot | Should -Be 'HeaderDesktop'
+        $b.layout[0].logo.Image | Should -Be '/Files/Images/fabrikam/fabrikam-logo.svg'
     }
 }
 

@@ -93,7 +93,7 @@ try {
     $registry = Read-LedgerJson (Join-Path $assets 'handlers.json')
     $cap = Get-RecipeCapabilities -Surfaces $Surfaces -McpOnly:$McpOnly -McpToken $state.McpToken -ApiToken $state.ApiToken -AllowSql:$AllowSql -SqlServer $SqlServer -Database $Database
     foreach ($e in $cap.errors) { $run.lines.Add("NOTE ${recipeId}: $e") }
-    $run += @{recipeId = $recipeId; section = $section; build = $build; secrets = $secrets; cap = $cap; registry = $registry; apply = $applied
+    $run += @{recipeId = $recipeId; section = $section; build = $build; secrets = $secrets; cap = $cap; registry = $registry; apply = $applied; inputDir = (Split-Path -Parent (Resolve-Path -LiteralPath $InputPath).Path)
         baseUrl = $state.BaseUrl; apiToken = $state.ApiToken; mcpToken = $state.McpToken; solutionPath = $SolutionPath; ledgerBuild = $LedgerBuildFile; manifest = $Manifest; pollIntervalMs = 1000}
 
     foreach ($step in $doc.steps) { Invoke-RecipeStep $step $run }

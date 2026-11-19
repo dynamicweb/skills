@@ -195,7 +195,7 @@
           "required": ["bindings"],
           "properties": {"bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}}}
         },
-        "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/write"}},
+        "bindings": {"type": "array", "items": {"$ref": "#/definitions/write"}, "description": "Write bindings in preference order. Empty for a lookup step, which finds and produces values and never writes; a lookup needs a find."},
         "trap": {"type": "string"},
         "source": {"type": "string", "minLength": 1}
       },

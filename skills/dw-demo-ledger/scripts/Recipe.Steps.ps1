@@ -21,7 +21,7 @@ function Add-RecipeStepLine {
 }
 function New-RecipeContext {
     param($Run, $Item)
-    return @{input = $Run.section; item = $Item.item; parent = $Item.parent; build = $Run.build; results = $Run.results; secrets = $Run.secrets; key = $null; found = $null}
+    return @{input = $Run.section; item = $Item.item; parent = $Item.parent; build = $Run.build; results = $Run.results; secrets = $Run.secrets; inputDir = $Run.inputDir; key = $null; found = $null}
 }
 function Find-RecipeObject {
     # @{state = UNCHANGED | UPDATE | CREATE; row; fields} from the step's find, or $null when the step has none.
@@ -59,7 +59,8 @@ function Invoke-RecipeStepItem {
     }
     $action = if ($found.state -eq 'CREATE') { 'create' } else { 'update' }
     $what = if ($action -eq 'create') { 'absent' } else { 'differs from the input in ' + ($found.fields -join ', ') }
-    $write = Select-RecipeWrite $Step.bindings $action $Run.cap $Run.registry
+    # A step without write bindings is a lookup: it finds and produces values, and an absent object stops its dependants.
+    $write = if (@($Step.bindings).Count) { Select-RecipeWrite $Step.bindings $action $Run.cap $Run.registry } else { @{binding = $null; reasons = @('a lookup step never writes; the object must exist before this recipe runs')} }
     if (-not $Run.apply) {
         $result.state = if ($action -eq 'create') { 'WOULD-CREATE' } else { 'WOULD-UPDATE' }
         Add-RecipeStepLine $Run $Step.id $result.state $Key; $Printed.Value = $true
