@@ -147,13 +147,14 @@
       },
       {
         "id": "page-path",
-        "title": "Each page is served at the input's path, not at a path the platform suffixed (-1) because another page holds it",
+        "title": "Each page is served at the input's path, not at a path the platform suffixed (-1) because another page holds it (a server whose fetch follows the redirect reports finalPath; an older one answers 301 and names the target)",
         "forEach": "pages[*]",
         "skipWhen": {"path": "item.path", "exists": false},
         "minimumSubjects": 1,
         "pollSeconds": 20,
         "bindings": [
-          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "/Default.aspx?ID={step.pages[item.menuText].id}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "equals", "path": "finalPath", "value": "{item.path}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "requiresSchema": {"output": ["finalPath"]}, "arguments": {"path": "/Default.aspx?ID={step.pages[item.menuText].id}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "equals", "path": "finalPath", "value": "{item.path}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"},
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "/Default.aspx?ID={step.pages[item.menuText].id}"}, "rows": "$", "match": {"statusCode": 301}, "assert": {"kind": "equals", "path": "error", "value": "Page redirects to: {item.path}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
         ]
       },
       {

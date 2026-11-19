@@ -24,7 +24,7 @@ function Connect-Dw { param($BaseUrl, $ApiToken, $McpToken, $SqlConnection, $Sol
     Write-StubLog 'Connect-Dw'
     @{BaseUrl = $(if ($BaseUrl) { $BaseUrl } else { 'https://stub.invalid' }); ApiToken = $(if ($ApiToken) { $ApiToken } else { $env:DW_API_TOKEN }); McpToken = $(if ($McpToken) { $McpToken } else { $env:DW_MCP_TOKEN }); SkipCert = $false} }
 function Assert-DwConnection { $true }
-function Get-DwMcpTools { , @($global:RecipeStub.tools.Keys | ForEach-Object { [pscustomobject]@{name = $_; inputSchema = $global:RecipeStub.tools[$_]} }) }
+function Get-DwMcpTools { , @($global:RecipeStub.tools.Keys | ForEach-Object { [pscustomobject]@{name = $_; inputSchema = $global:RecipeStub.tools[$_]; outputSchema = $(if ($global:RecipeStub.outputs) { $global:RecipeStub.outputs[$_] })} }) }
 function Invoke-DwMcp { param($Tool, [hashtable]$Arguments, [switch]$Raw, $TimeoutSec)
     Write-StubLog ("mcp $Tool " + ($Arguments | ConvertTo-Json -Compress -Depth 10)); & $global:RecipeStub.mcp $Tool $Arguments }
 function Invoke-DwApi { param($Command, $Body, $Method, $TimeoutSec, $RetryCount, $RetryDelayMs)
@@ -51,6 +51,8 @@ Export-ModuleMember -Function *
             fields = @{}; groups = [Collections.Generic.List[object]]::new(); users = [Collections.Generic.List[object]]::new(); files = [Collections.Generic.List[object]]::new()
             members = [Collections.Generic.List[object]]::new(); grants = [Collections.Generic.List[object]]::new()
             repositories = @(@{repository = 'Secondary users'; indexes = @('Users.index')}); refuseButtons = $false; urlReadyAfter = 0
+            # The output schemas a target lists; fetch_frontend_page_html reports finalPath on a server that follows redirects.
+            outputs = @{fetch_frontend_page_html = @{type = 'object'; properties = @{statusCode = @{type = 'integer'}; finalPath = @{type = @('string', 'null')}}}}
             tools = @{
                 get_pages_by_parent_id = Get-Schema @('parentId', 'areaId') @('parentId'); save_pages = Get-Schema @('pages') @('pages')
                 get_page_item_field_values = Get-Schema @('pageId') @('pageId'); set_page_item_fields = Get-Schema @('pageId', 'fields') @('pageId', 'fields')
@@ -117,6 +119,8 @@ Export-ModuleMember -Function *
                     $base = { param($p) '/en-us/' + $(if ($p.urlName) { $p.urlName } else { $p.menuText.ToLower().Replace(' ', '-') }) }
                     $served = { param($p) $b = & $base $p; $n = @($s.pages | Where-Object { $_.id -lt $p.id -and (& $base $_) -eq $b }).Count; if ($n) { "$b-$n" } else { $b } }
                     $page = if ($Arguments.path -match '^/Default\.aspx\?ID=(\d+)$') { @($s.pages | Where-Object { $_.id -eq [int]$Matches[1] })[0] } else { @($s.pages | Where-Object { (& $served $_) -eq $Arguments.path })[0] }
+                    # An older server does not follow the redirect: it answers 301 and names the target in error.
+                    if ($page -and $s.noFollow -and $Arguments.path -like '/Default.aspx*') { return @{structuredContent = @{statusCode = 301; path = $Arguments.path; error = 'Page redirects to: ' + (& $served $page)}} }
                     if (-not $page -or $s.fetches -le $s.urlReadyAfter) { return @{structuredContent = @{statusCode = 404; path = $Arguments.path; finalPath = $Arguments.path}} }
                     return @{structuredContent = @{statusCode = 200; title = $page.menuText; path = $Arguments.path; finalPath = (& $served $page)}}
                 }
@@ -573,6 +577,13 @@ Describe 'Invoke-DwRecipe on content.pages' {
         $v.lines | Should -Contain 'PASS probe/page-renders'
         ($v.lines -match '^FAIL probe/page-path: 1 failing: subject 1: finalPath does not equal the expected value').Count | Should -Be 1
         $v.exit | Should -Be 1
+        # A server whose fetch does not follow the redirect (no finalPath in its output schema) answers 301 and names the target.
+        $global:RecipeStub.noFollow = $true; $global:RecipeStub.outputs = @{}
+        $old = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile}
+        ($old.lines -match '^FAIL probe/page-path: 1 failing: subject 1: error does not equal the expected value').Count | Should -Be 1
+        $global:RecipeStub.pages.RemoveAt(0)
+        $fixed = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile}
+        $fixed.lines | Should -Contain 'PASS probe/page-path'
     }
 
     It 'fails a field write the tool counts as failed, such as an empty button JSON' {
