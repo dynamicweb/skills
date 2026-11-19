@@ -50,7 +50,7 @@ function Assert-RecipeArguments {
 }
 function Invoke-RecipeMcpCall {
     # One MCP tool call; the structured result as hashtables. An error result never reads as data.
-    param([string]$Operation, $Arguments, $Capabilities, [int]$TimeoutSec = 120)
+    param([string]$Operation, $Arguments, $Capabilities, [int]$TimeoutSec = 120, [switch]$AllowText)
     Assert-RecipeArguments $Operation $Arguments $Capabilities
     $raw = Invoke-DwMcp -Tool $Operation -Arguments $Arguments -Raw -TimeoutSec $TimeoutSec
     if ($raw.isError) {
@@ -58,7 +58,10 @@ function Invoke-RecipeMcpCall {
         throw (New-RecipeFailure "MCP $Operation answered an error result.")
     }
     if ($raw.structuredContent) { return , (ConvertTo-RecipeData $raw.structuredContent) }
-    return , (ConvertTo-RecipeData ((@($raw.content | ForEach-Object { $_.text })) -join "`n"))
+    $text = (@($raw.content | ForEach-Object { $_.text })) -join "`n"
+    # A write may answer a sentence ("Primary image updated ..."); its read-back is the evidence, so the text is no data.
+    if ($AllowText) { try { return , (ConvertTo-RecipeData $text) } catch { return @{} } }
+    return , (ConvertTo-RecipeData $text)
 }
 function Invoke-RecipeSqlRows {
     # One guarded local SELECT with named parameters; every column of every row. Nothing is ever committed.

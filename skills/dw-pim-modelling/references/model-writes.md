@@ -14,6 +14,7 @@ invoking".
 - [Completeness rules and their assignment](#completeness-rules-and-their-assignment)
 - [Workflow states](#workflow-states)
 - [Products in a data model](#products-in-a-data-model)
+- [Storefront groups, products, images and assortments](#storefront-groups-products-images-and-assortments)
 
 ## Categories and spec fields
 
@@ -110,3 +111,40 @@ invoking".
 
 A category field value is written with its full system name as the custom field id and reads back in
 the product's `customFields`.
+
+## Storefront groups, products, images and assortments
+
+| Tool | Arguments | Answer or rows |
+|---|---|---|
+| `save_groups` | `{groups: [{id, name, description, shopId, parentGroupId, languageId}]}` | the saved groups; a caller-supplied `id` is kept |
+| `get_groups` | `{languageId}` | `{count, data: [{id, name, shopId, parentGroupId, type, categoryId, ...}]}`, data models included |
+| `create_products` | `{products: [{number, name, shortDescription, longDescription, seoTitle, seoDescription, isActive, languageId}]}` | the created products with their minted id (`PROD<n>`) |
+| `get_products_by_sku` | `{skus, languageId}` | `{data: [{id, number, name, shortDescription, longDescription, isActive, stock, ...}]}` with an empty `customFields` |
+| `get_products_by_ids` | `{ids, languageId}` | the same rows, with `customFields: [{id, value}]` including category field values |
+| `assign_products_to_group` | `{relations: [{productId, groupId, isPrimary}]}` | per-item counts |
+| `get_groups_for_product` | `{productId}` | `{data: [group]}`: the storefront groups and the data model |
+| `upload_file` | `{path, content, isBase64, overwrite}` | `{operation, path, success, byteSize}`; only under `/Files/Images` and `/Files/Files/Integration` |
+| `list_files` | `{path}` | `{data: [{name, path, isDirectory, byteSize}]}` |
+| `upload_product_images` | `{requests: [{productId, fileName, base64Content, groupId, setAsPrimary}]}` | `{items: [{savedPath, detailId, isPrimary}]}`; saves under `/Files/Images/<fileName>` |
+| `add_product_image` | `{request: {productId, filePath, groupId, name, setAsPrimary}}` | the detail `{detailId, value, isPrimary, name}` for a file already in the archive |
+| `get_product_images` | `{productId}` | `{data: [{detailId, value, isPrimary, sortOrder, name}]}`, the asset category not projected |
+| `set_product_primary_image` | `{request: {productId, detailId}}` | a sentence, not JSON |
+| `assign_groups_to_assortment` | `{relations: [{assortmentId, groupId, excluded}]}` | per-item counts |
+| `get_assortment_relations_by_group_id` | `{groupId}` | `{data: [{assortmentId, relationType, groupId, excluded}]}` |
+| `build_assortments` | `{requests: [{assortmentId}]}` | per-item counts once built; `get_assortments` then shows a new `lastBuildDate` and `rebuildRequired: false` |
+
+- `create_products` sets no price, EAN or weight; the price is a price write, and EAN and weight
+  are product columns no MCP product write takes.
+- `upload_product_images` takes images only (jpg, jpeg, png, gif, webp, avif, svg) and **refuses a
+  file name that already exists** ("File already exists and will not be overwritten"), so a rebuild
+  or a file two products share fails it. Upload the file once with `upload_file`, find it with
+  `list_files`, and attach it per product with `add_product_image`. A document goes the same way
+  with the asset category's id as `groupId`.
+- `upload_product_images` makes a product's first image primary on its own; `add_product_image`
+  leaves the product without a primary image until `set_product_primary_image` names one.
+- While any assortment is active (`has_active_assortments`), the storefront lists only products of an
+  assortment the visitor may see, although the delivery API query returns them. An assortment that
+  does not include subgroups covers only the groups related to it, so relate every group.
+- A spec value written with `patch_products_safe` reaches the product index only after the product
+  and category-field value service caches are refreshed; rebuild the index after that refresh.
+

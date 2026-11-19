@@ -2,7 +2,7 @@
 .SYNOPSIS
 WRITES: cache flushes, index builds, assortment builds and a host recycle that a recipe owes after it changed something.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. A debt is one of a fixed list, each paid by an existing shipped function or script, never by code from the recipe: flush:<service> is Clear-DwServiceCache; index:<repository>/<index> is Build-DwProductIndex.ps1 with the builder resolved from IndexBuildersByRepositoryAndIndexName, or on MCP build_product_index and wait_for_product_index gated on a non-zero documentCount; assortments is Invoke-DwAssortmentBuild.ps1 over the section's assortmentIds; recycle is Restart-DwHost.ps1 for a local host given -SolutionPath. A debt this run cannot pay is OPEN with the instruction that pays it, never skipped; an index the target does not have (get_index_repositories) is a NOTE.
+PowerShell 7. Owning reference: ../references/recipes.md. A debt is one of a fixed list, each paid by an existing shipped function or script, never by code from the recipe: flush:<service> is Clear-DwServiceCache; index:<repository>/<index> is Build-DwProductIndex.ps1 with the builder resolved from IndexBuildersByRepositoryAndIndexName, or on MCP build_product_index and wait_for_product_index gated on a non-zero documentCount; assortments is Invoke-DwAssortmentBuild.ps1 over the section's assortmentIds, or on MCP build_assortments gated on each last build date moving; recycle is Restart-DwHost.ps1 for a local host given -SolutionPath. A debt this run cannot pay is OPEN with the instruction that pays it, never skipped; an index the target does not have (get_index_repositories) is a NOTE.
 .EXAMPLE
 . ./Recipe.Debts.ps1
 #>
@@ -27,6 +27,22 @@ function Invoke-RecipeMcpIndexBuild {
     $status = Invoke-RecipeMcpCall 'get_product_index_status' $arguments $Run.cap 60
     $count = Get-RecipeValue $status 'documentCount'
     return ($count.found -and (Test-RecipeNumber $count.value) -and $count.value -gt 0)
+}
+function Invoke-RecipeMcpAssortmentBuild {
+    # build_assortments over the ids, then get_assortments: every id listed, no rebuild owed, and a last build date that moved.
+    param([string[]]$Ids, $Run)
+    $before = @{}
+    foreach ($row in @((Get-RecipeValue (Invoke-RecipeMcpCall 'get_assortments' @{} $Run.cap 60) 'data').value)) { $before[[string]$row.id] = [string]$row.lastBuildDate }
+    $answer = Invoke-RecipeMcpCall 'build_assortments' @{requests = @($Ids | ForEach-Object { @{assortmentId = $_} })} $Run.cap 900
+    $failed = Get-RecipeValue $answer 'failed'
+    if ($failed.found -and (Test-RecipeNumber $failed.value) -and $failed.value -gt 0) { return $false }
+    $after = @{}
+    foreach ($row in @((Get-RecipeValue (Invoke-RecipeMcpCall 'get_assortments' @{} $Run.cap 60) 'data').value)) { $after[[string]$row.id] = $row }
+    foreach ($id in $Ids) {
+        $row = $after[[string]$id]
+        if (-not $row -or $row.rebuildRequired -or -not $row.lastBuildDate -or [string]$row.lastBuildDate -eq $before[[string]$id]) { return $false }
+    }
+    return $true
 }
 function Test-RecipeMcpDebtTools {
     param([string[]]$Tools, $Run)
@@ -72,6 +88,12 @@ function Invoke-RecipeDebt {
         if ($Debt -eq 'assortments') {
             $ids = @((Get-RecipeValue $Run.section 'assortmentIds').value | Where-Object { $_ })
             if (-not $ids.Count) { Add-RecipeCheck $Run $name 'OPEN' 'owed: the input section declares no assortmentIds; flag and build them with Invoke-DwAssortmentBuild.ps1'; return }
+            if (-not $Run.cap.admin) {
+                if (-not (Test-RecipeMcpDebtTools @('build_assortments', 'get_assortments') $Run)) { Add-RecipeCheck $Run $name 'OPEN' 'owed: no surface here builds assortments; run Invoke-DwAssortmentBuild.ps1 (Management API) or build_assortments'; return }
+                # The in-product build answers when it is done; its evidence is each assortment's lastBuildDate moving with no rebuild left owed.
+                if (Invoke-RecipeMcpAssortmentBuild $ids $Run) { Add-RecipeCheck $Run $name 'PASS' } else { Add-RecipeCheck $Run $name 'FAIL' 'after build_assortments an assortment still owes a rebuild or kept its last build date' }
+                return
+            }
             $arguments = @('-AssortmentId') + $ids + @('-Apply', '-SkipCountGate', '-BaseUrl', $Run.baseUrl)
             $code = Invoke-RecipeChildScript (Join-Path $data 'Invoke-DwAssortmentBuild.ps1') $arguments $Run
             if ($code -eq 0) { Add-RecipeCheck $Run $name 'PASS' } else { Add-RecipeCheck $Run $name 'FAIL' 'Invoke-DwAssortmentBuild.ps1 did not finish the build' }
@@ -80,7 +102,8 @@ function Invoke-RecipeDebt {
         if ($Debt -eq 'recycle') {
             $local = [regex]::Match([string]$Run.baseUrl, '^https?://(localhost|127\.0\.0\.1):(?<port>\d+)')
             if (-not ($Run.solutionPath -and $local.Success)) {
-                Add-RecipeCheck $Run $name 'OPEN' 'owed: recycle the host (a local install: dw-demo-base Restart-DwHost.ps1, or pass -SolutionPath here; a hosted install: the hosting recycle), then run this recipe again without -Apply'; return
+                # No Management API command or MCP tool recycles the application; on Dynamicweb Cloud the control file recycles it.
+                Add-RecipeCheck $Run $name 'OPEN' 'owed: recycle the host (a local install: dw-demo-base Restart-DwHost.ps1, or pass -SolutionPath here; a Dynamicweb Cloud install: upload Files/System/CloudHosting/recycle.txt and see it consumed; any other hosted install: the operator recycles the application pool; no Management API command or MCP tool recycles the application), then run this recipe again without -Apply'; return
             }
             $arguments = @('-Action', 'Restart', '-Port', $local.Groups['port'].Value, '-SolutionPath', $Run.solutionPath, '-Reason', "recipe $($Run.recipeId) owes a recycle")
             $code = Invoke-RecipeChildScript (Join-Path $PSScriptRoot '../../dw-demo-base/scripts/Restart-DwHost.ps1') $arguments $Run

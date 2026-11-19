@@ -321,6 +321,20 @@
           "minLength": 1,
           "description": "Name of the data-model folder under the PIM shop that holds one data model per top group (pim.model recipe)."
         },
+        "shop": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Id of the storefront shop the groups are created in (pim.identifiers recipe)."
+        },
+        "assortmentIds": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "The existing storefront assortment every catalogue group joins (one id); the assortments debt builds it. Without it a site with active assortments lists none of the products."
+        },
         "groups": {
           "type": "array",
           "minItems": 1,

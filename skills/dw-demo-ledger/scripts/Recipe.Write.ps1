@@ -15,7 +15,7 @@ function Invoke-RecipeWrite {
     if ($fault) { throw (New-RecipeFault "Write refused before the call: $fault.") }
     $arguments = if ($null -ne $Arguments) { $Arguments } else { Expand-RecipeValue $Binding[$Action].arguments $Context }
     if ($Binding.surface -eq 'mcp') {
-        $result = Invoke-RecipeMcpCall $operation $arguments $Run.cap 120
+        $result = Invoke-RecipeMcpCall $operation $arguments $Run.cap 120 -AllowText
         # A batch save answers per-item counts; a failed item is a failed write whatever the call status says.
         $failed = Get-RecipeValue $result 'failed'
         if ($failed.found -and (Test-RecipeNumber $failed.value) -and $failed.value -gt 0) { throw (New-RecipeFailure "MCP $operation reported $($failed.value) failed item(s).") }

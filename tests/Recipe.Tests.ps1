@@ -248,6 +248,24 @@ Describe 'Recipe engine: paths, tokens and matching' {
         $ctx.item = @{next = @('D')}; $ctx.results.states.D = @{state = 'WOULD-CREATE'; values = @{}}
         { Expand-RecipeValue '{step.states[item.next[*]].id}' $ctx } | Should -Throw -ExceptionType ([Collections.Generic.KeyNotFoundException])
     }
+    It 'walks the entries of an object as key and value items' {
+        $items = Get-RecipeItems @{products = @(@{number = 'N1'; specs = @{Voltage = '18 V'}})} 'products[*].specs[*]'
+        $items.Count | Should -Be 1
+        $items[0].item.key | Should -Be 'Voltage'
+        $items[0].item.value | Should -Be '18 V'
+        $items[0].parent.number | Should -Be 'N1'
+    }
+    It 'reads an input file by a path relative to the input file and refuses one that leaves its folder' {
+        $dir = Join-Path $TestDrive 'input'; $null = New-Item -ItemType Directory -Force (Join-Path $dir 'images')
+        [IO.File]::WriteAllBytes((Join-Path $dir 'images/a.png'), [byte[]](1, 2, 3))
+        $ctx = @{item = 'images/a.png'; inputDir = $dir; results = @{}; secrets = @{}}
+        Resolve-RecipeToken 'basename:item' $ctx | Should -Be 'a.png'
+        Resolve-RecipeToken 'base64:item' $ctx | Should -Be 'AQID'
+        $ctx.item = '../outside.png'
+        { Resolve-RecipeToken 'base64:item' $ctx } | Should -Throw '*outside the input file*'
+        $ctx.item = 'C:/x.png'
+        { Resolve-RecipeToken 'base64:item' $ctx } | Should -Throw '*relative to the input file*'
+    }
     It 'compares lists element by element and in order' {
         Test-RecipeEqual @('a', 'b') @('a', 'b') | Should -BeTrue
         Test-RecipeEqual @('a', 'b') @('b', 'a') | Should -BeFalse
@@ -379,6 +397,13 @@ Describe 'Recipe reads: the SQL guard and the sign-in read-back' {
         Mock Invoke-WebRequest { [pscustomobject]@{StatusCode = 401; Content = ''} } -ParameterFilter { $Method -eq 'Post' }
         { Invoke-RecipeDeliveryGet $binding $ctx $registry } | Should -Throw '*could not sign in*'
     }
+    It 'takes a write that answers a sentence as no data, and a read that does as a fault' {
+        function Invoke-DwMcp { param($Tool, $Arguments, [switch]$Raw, $TimeoutSec) @{isError = $false; content = @(@{type = 'text'; text = 'Primary image updated for product PROD5.'})} }
+        $cap = @{tools = @{}}
+        $answer = Invoke-RecipeMcpCall 'set_product_primary_image' @{request = @{}} $cap 30 -AllowText
+        $answer.Count | Should -Be 0
+        { Invoke-RecipeMcpCall 'get_product_images' @{} $cap 30 } | Should -Throw '*not JSON*'
+    }
 }
 
 Describe 'Invoke-DwRecipe on content.pages' {
@@ -496,6 +521,39 @@ Describe 'Invoke-DwRecipe on content.pages' {
         $r.lines[-1] | Should -Be 'content.pages: 0 of 1 checks passed'
         $r.exit | Should -Be 1
         $global:RecipeStub.log.Count | Should -Be 0
+    }
+}
+
+Describe 'Recipe debts: the in-product assortment build and the hosted recycle' {
+    BeforeAll {
+        . (Join-Path $script:Source 'scripts/Recipe.Steps.ps1')
+        . (Join-Path $script:Source 'scripts/Recipe.Debts.ps1')
+        $script:Registry = @{mcpReadTools = @('get_assortments', 'get_index_repositories'); recipeWriteTools = @('build_assortments')}
+        function New-DebtRun([string[]]$Ids) {
+            @{lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); section = @{assortmentIds = $Ids}
+                cap = @{surfaces = @('mcp'); mcp = $true; admin = $false; tools = @{get_assortments = @{}; build_assortments = @{}}}; registry = $script:Registry; baseUrl = 'https://stub.invalid'}
+        }
+    }
+    It 'builds assortments through MCP and passes only when each last build date moved with no rebuild owed' {
+        $global:AssortmentDate = 'd1'
+        function Invoke-RecipeMcpCall { param($Operation, $Arguments, $Capabilities, $TimeoutSec, [switch]$AllowText)
+            if ($Operation -eq 'build_assortments') { $global:AssortmentDate = 'd2'; return @{succeeded = 1; failed = 0} }
+            return @{data = @(@{id = 'A1'; rebuildRequired = $false; lastBuildDate = $global:AssortmentDate})} }
+        $run = New-DebtRun @('A1')
+        Invoke-RecipeDebt 'assortments' $run
+        $run.checks[0].result | Should -Be 'PASS'
+        function Invoke-RecipeMcpCall { param($Operation, $Arguments, $Capabilities, $TimeoutSec, [switch]$AllowText)
+            if ($Operation -eq 'build_assortments') { return @{succeeded = 1; failed = 0} }
+            return @{data = @(@{id = 'A1'; rebuildRequired = $false; lastBuildDate = 'unchanged'})} }
+        $run = New-DebtRun @('A1')
+        Invoke-RecipeDebt 'assortments' $run
+        $run.checks[0].result | Should -Be 'FAIL'
+    }
+    It 'leaves a hosted recycle OPEN and names the routes that exist' {
+        $run = New-DebtRun @()
+        Invoke-RecipeDebt 'recycle' $run
+        $run.checks[0].result | Should -Be 'OPEN'
+        $run.checks[0].reason | Should -Match 'CloudHosting/recycle.txt'
     }
 }
 

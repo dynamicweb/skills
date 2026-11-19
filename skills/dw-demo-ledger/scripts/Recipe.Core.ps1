@@ -81,7 +81,9 @@ function Get-RecipeItems {
             if (-not $member.found -or $null -eq $member.value) { continue }
             if (-not $all) { $next.Add(@{item = $member.value; parent = $c.parent; root = $c.root}); continue }
             # The enclosing item of a [*] level is its parent; the section itself is nobody's parent.
-            foreach ($x in @($member.value)) { $next.Add(@{item = $x; parent = $(if ($c.root) { $null } else { $c.item }); root = $false}) }
+            # A [*] over an object (a product's specs) walks its entries as {key, value} items.
+            $elements = if ($member.value -is [Collections.IDictionary]) { @(foreach ($k in @($member.value.Keys)) { @{key = [string]$k; value = $member.value[$k]} }) } else { @($member.value) }
+            foreach ($x in $elements) { $next.Add(@{item = $x; parent = $(if ($c.root) { $null } else { $c.item }); root = $false}) }
         }
         $contexts = $next.ToArray()
     }
@@ -134,6 +136,8 @@ function Resolve-RecipeToken {
         if ($kind -eq 'bytes') { return [long](Get-Item -LiteralPath $file).Length }
         return [Convert]::ToBase64String([IO.File]::ReadAllBytes($file))
     }
+    # basename: the file name of a file the input names, for a target that stores the file under its own name.
+    if ($Body -match '^basename:(?<rest>.+)$') { return [IO.Path]::GetFileName((Resolve-RecipeInputFile ([string](Resolve-RecipeToken $Matches['rest'] $Context)) $Context)) }
     $path = $Body; $default = $null; $hasDefault = $false
     $bar = $Body.IndexOf('|')
     if ($bar -ge 0) {
@@ -153,7 +157,7 @@ function Resolve-RecipeToken {
         if (-not $Context.secrets.Contains([string]$ref.value)) { throw (New-RecipeFault "Runner input: secret reference '$($ref.value)' is not a key of DW_RECIPE_SECRETS.") }
         return $Context.secrets[[string]$ref.value]
     }
-    if ($path -match '^step\.(?<step>[a-z][a-z0-9-]*)(\[(?<key>(?:[^\[\]]|\[\*\])+)\])?\.(?<field>.+)$') {
+    if ($path -match '^step\.(?<step>[a-z][a-z0-9-]*)(\[(?<key>(?:[^\[\]]|\[(?:\*|\d+)\])+)\])?\.(?<field>.+)$') {
         $field = $Matches['field']; $stepId = $Matches['step']; $key = $Context.key
         if ($Matches['key']) {
             $parts = [Collections.Generic.List[string]]::new()

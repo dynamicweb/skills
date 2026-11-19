@@ -15,7 +15,7 @@ from pathlib import Path
 
 TOKEN_RE = re.compile(r"\{([^{}]+)\}")
 DEFAULT_PATH_RE = re.compile(r"^(input|item|parent|build)(\.[A-Za-z0-9_]+(\[(\d+|\*)\])?)+$")
-STEP_TOKEN_RE = re.compile(r"^step\.([a-z][a-z0-9-]*)(?:\[((?:[^\[\]]|\[\*\])+)\])?\.([A-Za-z0-9_.]+)$")
+STEP_TOKEN_RE = re.compile(r"^step\.([a-z][a-z0-9-]*)(?:\[((?:[^\[\]]|\[(?:\*|\d+)\])+)\])?\.([A-Za-z0-9_.]+)$")
 FORBIDDEN = (
     (re.compile(r"(?i)\b[a-z][a-z0-9+.-]*://"), "a URL or host"),
     (re.compile(r"(?i)\b(localhost|\d{1,3}(\.\d{1,3}){3})(:\d+)?\b"), "a host or address"),
@@ -103,7 +103,8 @@ def schema_at(schema, path):
     (a field map) accepts any member below it."""
     node = schema
     for part in [p for p in path.split(".") if p]:
-        name = part.replace("[*]", "")
+        indexed = re.search(r"\[(\*|\d+)\]$", part)
+        name = re.sub(r"\[(\*|\d+)\]$", "", part)
         if not isinstance(node, dict):
             return None
         props = node.get("properties")
@@ -113,8 +114,12 @@ def schema_at(schema, path):
             node = node["additionalProperties"]
         else:
             return None
-        if part.endswith("[*]"):
-            node = node.get("items") if isinstance(node, dict) else None
+        if indexed:
+            if isinstance(node, dict) and "items" not in node and isinstance(node.get("additionalProperties"), dict):
+                # A [*] over an object walks its entries as {key, value} items.
+                node = {"type": "object", "properties": {"key": {"type": "string"}, "value": node["additionalProperties"]}}
+            else:
+                node = node.get("items") if isinstance(node, dict) else None
     return node
 
 
@@ -284,7 +289,7 @@ def validate_recipes(repo: Path) -> list[str]:
                             error(file, f"step {sid} {path}: token {{{body}}} {fault}")
 
             def token_fault(body, allow_secret, allow_found):
-                for prefix in ("text:", "base64:", "bytes:", "replaced:"):
+                for prefix in ("text:", "base64:", "bytes:", "replaced:", "basename:"):
                     if body.startswith(prefix):
                         body = body[len(prefix):]
                         break
@@ -374,11 +379,11 @@ def validate_recipes(repo: Path) -> list[str]:
                             if not in_sign_in:
                                 error(file, f"{path}: token {{{body}}} is a secret outside a sign-in probe's arguments")
                             continue
-                        m = STEP_TOKEN_RE.match(body.split("|")[0].removeprefix("text:"))
+                        m = STEP_TOKEN_RE.match(body.split("|")[0].removeprefix("text:").removeprefix("basename:").removeprefix("base64:").removeprefix("bytes:"))
                         if m and (m.group(1) not in step_ids or m.group(3) not in step_ids[m.group(1)]):
                             error(file, f"{path}: token {{{body}}} names a value no step produces")
                         elif not m:
-                            head, _, rest = body.split("|")[0].removeprefix("text:").partition(".")
+                            head, _, rest = body.split("|")[0].removeprefix("text:").removeprefix("basename:").removeprefix("base64:").removeprefix("bytes:").partition(".")
                             base = {"input": section, "item": item, "parent": parent}.get(head)
                             if head == "build":
                                 if rest not in BUILD_KEYS:

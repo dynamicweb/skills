@@ -108,7 +108,7 @@ String values in arguments, match, compare, expect and parameters may hold token
 | `{found.<path>}` | The row the find matched (update arguments only) |
 | `{build.areaId}` | `areaId`, `defaultLanguage`, `pimShop` from the ledger build file, else the input's `build` |
 | `{secret.<path>}` | The value of the reference key at `<path>` in `DW_RECIPE_SECRETS`; write and read-back arguments only |
-| `{base64:<token>}`, `{bytes:<token>}` | The content (base64) or size of the file the value names, relative to the input file; a rooted path or one outside that folder is refused |
+| `{base64:<token>}`, `{bytes:<token>}`, `{basename:<token>}` | The content (base64), size or file name of the file the value names, relative to the input file; a rooted path or one outside that folder is refused |
 
 A whole-value token keeps its type, so an id stays a number; a token inside text becomes text.
 A `[*]` in a path maps the rest of the path over every element (or every value of an object) and
@@ -157,8 +157,8 @@ paid by an existing shipped script or function, never by code from the recipe:
 |---|---|---|
 | `flush:<service>` | `Clear-DwServiceCache` (Management API) | OPEN: no MCP tool refreshes service caches |
 | `index:<repository>/<index>` | [Build-DwProductIndex.ps1](../../dw-data-access/scripts/Build-DwProductIndex.ps1), builder from `IndexBuildersByRepositoryAndIndexName`; else MCP `build_product_index` and `wait_for_product_index` with both names, gated on a non-zero `documentCount` from `get_product_index_status`. An index `get_index_repositories` does not list is a NOTE, not owed | OPEN with the build to run |
-| `assortments` | [Invoke-DwAssortmentBuild.ps1](../../dw-data-access/scripts/Invoke-DwAssortmentBuild.ps1) over the section's `assortmentIds` | OPEN when none are declared |
-| `recycle` | [Restart-DwHost.ps1](../../dw-demo-base/scripts/Restart-DwHost.ps1) for a loopback host given `-SolutionPath` | OPEN with the instruction (a hosted install recycles through its host) |
+| `assortments` | [Invoke-DwAssortmentBuild.ps1](../../dw-data-access/scripts/Invoke-DwAssortmentBuild.ps1) over the section's `assortmentIds`; else MCP `build_assortments`, gated on each assortment's `lastBuildDate` moving with no rebuild owed (`get_assortments`) | OPEN when none are declared |
+| `recycle` | [Restart-DwHost.ps1](../../dw-demo-base/scripts/Restart-DwHost.ps1) for a loopback host given `-SolutionPath` | OPEN with the instruction: no Management API command or MCP tool recycles the application; Dynamicweb Cloud consumes `Files/System/CloudHosting/recycle.txt`, any other hosted install needs its operator |
 
 A debt the run cannot pay is OPEN, so the run exits 1 until it is paid. After paying it, run the
 recipe again without `-Apply`: the steps report UNCHANGED and the probes decide.

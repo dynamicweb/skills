@@ -110,6 +110,13 @@ class RecipeValidationTests(unittest.TestCase):
         args["parentId"] = "{step.pages[item.parent].id|not a path}"
         self.assertIn("neither a JSON literal nor an input path", self.errors())
 
+    def test_file_tokens_and_object_entries(self):
+        args = self.recipe["steps"][0]["find"]["bindings"][0]["arguments"]
+        args["areaId"] = "{basename:item.urlName}"
+        self.assertEqual("", self.errors())
+        args["areaId"] = "{base64:item.nothing}"
+        self.assertIn("does not resolve in the input schema", self.errors())
+
     def test_sql_is_a_parameterised_single_select(self):
         self.recipe["steps"][0]["find"]["bindings"].insert(0, {
             "surface": "sql", "status": "implemented", "localOnly": True, "source": "skills/x.md",
