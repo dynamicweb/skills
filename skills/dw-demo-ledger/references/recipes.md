@@ -79,7 +79,9 @@ that each hold one name and one value (item fields), `compareMap` and `expectMap
 misspelt field shows. `ignoreCase` lists `match` members compared ignoring letter case (a folder
 name the host stores in its own case). `unordered` lists `compare` or `expect` members whose list is compared in
 any order, each element as often (a state's next states, which the read lists sorted by id). A write binding names `create` and/or `update`
-(`{operation, arguments}`) and a `readBack` read binding.
+(`{operation, arguments}`) and a `readBack` read binding. An operation may state `resave` (why one save is
+measured not to settle): when the read-back still differs, the runner says so in a NOTE, saves once more and
+reads back again, and that second read-back decides.
 
 **`status: implemented` means the tool or command name and its argument shape are documented in
 this repository**, cited in `source`, and its read projection (the `rows` member and the field

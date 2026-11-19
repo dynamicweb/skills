@@ -166,18 +166,29 @@ function Invoke-RecipeStepItem {
     Add-RecipeStepLine $Run $Step.id $result.state $Key; $Printed.Value = $true
     # Every write is read back. The response of the write is not evidence: a create can answer id 0 and a save can drop a field.
     $readBack = $write.binding.readBack
-    $rows = Read-RecipeRows $readBack $Context $Run
-    if ($readBack.expectMap) {
-        $differs = Get-RecipeMapDifferences $rows $readBack.expectMap $Context
-        if ($differs.Count) { Add-RecipeCheck $Run $name 'FAIL' ('the read-back differs from the write in ' + ($differs -join ', ')); return }
-        Add-RecipeCheck $Run $name 'PASS'; return
+    $check = Read-RecipeWriteBack $readBack $Context $Run
+    # resave: a save the platform is measured to settle only on a second call (it removes one stored row per key, so a
+    # key stored twice survives the first save). Said in a NOTE; the second read-back is the evidence, and it may still fail.
+    $resave = $write.binding[$action].resave
+    if ($check.differs -and $check.differs.Count -and $resave) {
+        $Run.lines.Add("NOTE ${name}: the read-back differed in $($check.differs -join ', ') after one save; saved once more, as declared: $resave")
+        Invoke-RecipeWrite $write.binding $action $Context $Run
+        $check = Read-RecipeWriteBack $readBack $Context $Run
     }
-    $hits = Select-RecipeBindingMatches $rows $readBack $Context
-    if ($hits.Count -ne 1) { Add-RecipeCheck $Run $name 'FAIL' "the read-back found $($hits.Count) matching object(s), not one"; return }
-    $differs = if ($readBack.expect) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $readBack.expect $Context) $readBack.operation $readBack.unordered } else { @() }
-    $result.values = Get-RecipeProduced $hits[0] $readBack.produces $readBack.operation $result.values
-    if ($differs.Count) { Add-RecipeCheck $Run $name 'FAIL' ('the read-back differs from the write in ' + ($differs -join ', ')); return }
+    if ($check.fault) { Add-RecipeCheck $Run $name 'FAIL' $check.fault; return }
+    if ($check.row) { $result.values = Get-RecipeProduced $check.row $readBack.produces $readBack.operation $result.values }
+    if ($check.differs.Count) { Add-RecipeCheck $Run $name 'FAIL' ('the read-back differs from the write in ' + ($check.differs -join ', ') + $(if ($resave) { ' after a second save' })); return }
     Add-RecipeCheck $Run $name 'PASS'
+}
+function Read-RecipeWriteBack {
+    # The read-back of one write: @{fault; row; differs}. A fault is a read-back that found no single object.
+    param($ReadBack, $Context, $Run)
+    $rows = Read-RecipeRows $ReadBack $Context $Run
+    if ($ReadBack.expectMap) { return @{fault = $null; row = $null; differs = (Get-RecipeMapDifferences $rows $ReadBack.expectMap $Context)} }
+    $hits = Select-RecipeBindingMatches $rows $ReadBack $Context
+    if ($hits.Count -ne 1) { return @{fault = "the read-back found $($hits.Count) matching object(s), not one"; row = $null; differs = @()} }
+    $differs = if ($ReadBack.expect) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $ReadBack.expect $Context) $ReadBack.operation $ReadBack.unordered } else { @() }
+    return @{fault = $null; row = $hits[0]; differs = $differs}
 }
 function Invoke-RecipeStep {
     param($Step, $Run)

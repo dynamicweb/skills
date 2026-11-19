@@ -181,7 +181,11 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["operation", "arguments"],
-      "properties": {"operation": {"type": "string", "minLength": 1}, "arguments": {"type": "object"}}
+      "properties": {
+        "operation": {"type": "string", "minLength": 1},
+        "arguments": {"type": "object"},
+        "resave": {"type": "string", "minLength": 20, "description": "Why one save is measured not to settle: when the read-back differs after the write, the runner says so in a NOTE, saves once more and reads back again; that second read-back is the evidence."}
+      }
     },
     "write": {
       "type": "object",

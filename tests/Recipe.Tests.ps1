@@ -1260,6 +1260,51 @@ Describe 'Shipped recipes against the platform shapes a whole-build set met' {
         Test-RecipeEqualUnordered @(1, 3, 3) @(3, 1, 1) | Should -BeFalse
         Test-RecipeEqualUnordered @(10, 2) @(2, 10) | Should -BeTrue
     }
+    It 'saves a payment method''s country relation once more when a duplicated stored key survives the first save, and says so' {
+        $step = @((Get-ShippedRecipe 'orders' 'orders.payment-methods').steps | Where-Object id -eq 'payment-scope')[0]
+        # The platform removes one stored relation per key per save, as measured: a key stored twice needs two saves.
+        $state = @{saves = 0; method = @{id = 'PAY9'; name = 'Pay on account'; isActive = $true; countryRelationKeys = @('US|', 'DK|', 'GB|', 'DK|'); userGroups = @()}}
+        function Invoke-DwApi { param($Command, $Body, $Method, $TimeoutSec, $RetryCount, $RetryDelayMs)
+            if ($Command -like 'PaymentsAll*') { return @{model = @{data = @($state.method)}} }
+            if ($Command -ne 'PaymentSave') { throw "unexpected $Command" }
+            $state.saves++
+            $want = @($Body.Model.countryRelationKeys)
+            $kept = [Collections.Generic.List[string]]::new([string[]]@($state.method.countryRelationKeys))
+            foreach ($k in @($kept | Where-Object { $_ -notin $want } | Select-Object -Unique)) { $null = $kept.Remove($k) }
+            foreach ($k in $want) { if ($k -notin $kept) { $kept.Add($k) } }
+            $state.method.countryRelationKeys = $kept.ToArray(); $state.method.userGroups = @($Body.Model.userGroups)
+            return @{status = 'ok'}
+        }
+        $section = @{country = 'US'; language = 'ENU'; methods = @(@{name = 'Pay on account'; kind = 'payment'; active = $true; anonymous = $false})}
+        $results = @{'payment-methods' = @{'Pay on account' = @{state = 'UNCHANGED'; values = @{id = 'PAY9'}}}; groups = @{}}
+        $run = New-StepRun $section $results @{surfaces = @('admin-api'); admin = $true; tools = @{}}
+        Invoke-RecipeStep $step $run
+        $state.saves | Should -Be 2
+        $state.method.countryRelationKeys | Should -Be @('US|')
+        $run.lines | Should -Contain 'STEP payment-scope UPDATED Pay on account'
+        @($run.lines -match '^NOTE payment-scope/Pay on account: the read-back differed in countryRelationKeys after one save; saved once more, as declared: PaymentSave removes').Count | Should -Be 1
+        $run.lines | Should -Contain 'PASS payment-scope/Pay on account'
+        # A relation without a duplicate settles on the first save: one save, no note.
+        $state.saves = 0; $state.method.countryRelationKeys = @('US|', 'DK|')
+        $run = New-StepRun $section $results @{surfaces = @('admin-api'); admin = $true; tools = @{}}
+        Invoke-RecipeStep $step $run
+        $state.saves | Should -Be 1
+        @($run.lines -match '^NOTE ').Count | Should -Be 0
+        $run.lines | Should -Contain 'PASS payment-scope/Pay on account'
+    }
+    It 'RED CONTROL: a save that still differs after the declared second save FAILs and says so' {
+        $step = @((Get-ShippedRecipe 'orders' 'orders.payment-methods').steps | Where-Object id -eq 'payment-scope')[0]
+        $state = @{saves = 0; method = @{id = 'PAY9'; name = 'Pay on account'; isActive = $true; countryRelationKeys = @('US|', 'DK|'); userGroups = @()}}
+        function Invoke-DwApi { param($Command, $Body, $Method, $TimeoutSec, $RetryCount, $RetryDelayMs)
+            if ($Command -like 'PaymentsAll*') { return @{model = @{data = @($state.method)}} }
+            $state.saves++; return @{status = 'ok'}
+        }
+        $section = @{country = 'US'; language = 'ENU'; methods = @(@{name = 'Pay on account'; kind = 'payment'; active = $true; anonymous = $false})}
+        $run = New-StepRun $section @{'payment-methods' = @{'Pay on account' = @{state = 'UNCHANGED'; values = @{id = 'PAY9'}}}; groups = @{}} @{surfaces = @('admin-api'); admin = $true; tools = @{}}
+        Invoke-RecipeStep $step $run
+        $state.saves | Should -Be 2
+        @($run.lines -match '^FAIL payment-scope/Pay on account: the read-back differs from the write in countryRelationKeys after a second save$').Count | Should -Be 1
+    }
 }
 
 Describe 'Invoke-DwRecipe debt modes: deferred, debts only, verification skipped' {
