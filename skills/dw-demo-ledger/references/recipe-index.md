@@ -27,6 +27,7 @@ validator fails when this file and the recipes disagree, so do not edit it by ha
 | `pim.identifiers` | pim.identifiers, pim.images, commerce.stock-levels | `catalogue` | dw-demo-pim | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `pim.workflow` | pim.workflow | `pim.workflow` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 | `users.accounts` | users.accounts, users.user-accounts, users.user-groups, swift.impersonation | `users.accounts` | dw-commerce-b2b | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 (MCP-only yes, hosted yes); dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 (MCP-only yes, hosted yes) |
+| `users.frontend-sign-in` | users.frontend-sign-in | `users.accounts` | dw-users-permissions | no | yes | apply | dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 
 ## Run order
 
@@ -43,7 +44,8 @@ A recipe set runs the recipes whose input section the customer data file holds, 
 8. `commerce.customer-prices`. After `pim.identifiers`: The list price is patched onto a product the catalogue created; this recipe finds products by number and creates none. After `users.accounts`: The customer group, the account's customer number and the buyer the probes sign in as are that recipe's objects.
 9. `orders.completed-orders`. After `users.accounts`: The orders, quotes and lists belong to the buyer that recipe creates with a password. After `pim.identifiers`: Order and quote lines name products the catalogue created. After `commerce.customer-prices`: A line is charged the buyer's price when it is added, and the order stores that total: prices first, or the history carries list prices.
 10. `orders.payment-methods`. After `users.accounts`: The customer groups a method is scoped to, and the signed-in buyer whose offer the probes read, are created by that recipe; this one only names them.
-11. `content.page-seo`. Last: A de-brand replaces a forbidden text wherever it shows, so it runs after every recipe that writes text; the forbidden text must not appear in another section of the input, or the next apply writes it back and the set never settles.
+11. `users.frontend-sign-in`. After `users.accounts`: The users are that recipe's objects; this one only makes each sign in with its own password, which create_users sets only on create.
+12. `content.page-seo`. Last: A de-brand replaces a forbidden text wherever it shows, so it runs after every recipe that writes text; the forbidden text must not appear in another section of the input, or the next apply writes it back and the set never settles.
 
 ## What stays planned
 
@@ -82,6 +84,9 @@ work is done by hand or stays undone. Reasons as the recipes state them:
   - step attach write (mcp): No MCP tool sets a data model's workflow: patch_data_models takes name, description, type and categoryId.
   - MCP-only: No MCP tool creates a workflow or attaches one to a data model; the states and transitions are MCP.
 - `users.accounts`: nothing planned
+- `users.frontend-sign-in`
+  - step password write (mcp): No MCP tool sets a password on an existing user: create_users takes one on create only and update_users has no password member (MCP 0.6.6 answers unknown member users[0].password).
+  - MCP-only: No MCP tool sets a password on an existing user: update_users has no password member (0.6.6 refuses one), so the password step needs the Management API command UserSetPassword.
 
 ## By function
 
@@ -116,5 +121,6 @@ work is done by hand or stays undone. Reasons as the recipes state them:
 | `swift.style-wiring` | `content.design-styles` |
 | `swift.website-settings` | `content.design-styles`, `content.page-seo` |
 | `users.accounts` | `users.accounts` |
+| `users.frontend-sign-in` | `users.frontend-sign-in` |
 | `users.user-accounts` | `users.accounts` |
 | `users.user-groups` | `users.accounts` |

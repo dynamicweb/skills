@@ -69,7 +69,7 @@ The child page `Our history` with `parent: "About us"` then finds with `parentId
 A copy built from the same customer data file already holds the catalogue, prices, users and
 history. Never write them a second time: find every object first, and treat a `find.delivered` match
 as there. The recipes that still write after a copy are `content.design-styles`, `content.pages`,
-`content.page-seo`, `users.accounts` and `orders.payment-methods`.
+`content.page-seo`, `users.accounts`, `users.frontend-sign-in` and `orders.payment-methods`.
 
 ## Passwords
 
@@ -79,9 +79,10 @@ No MCP tool sets a password on an existing user. `create_users` takes one on cre
 that sets it on an existing user is the Management API command `UserSetPassword`
 (`{"model": {"userId": <id>, "password": <the secret>}}`, key `userId`), proven on 10.30.6: the new
 password signs in through `POST /dwapi/users/authenticate` at once and the old one no longer does.
-It needs the Management API key; an agent with MCP tools only cannot do it. So a user with a
-`passwordRef` is created by `users.accounts` (with its password) before any copy is delivered, or
-gets `UserSetPassword` afterwards; never copy a hash with SQL, and never delete and recreate the
+It needs the Management API key; an agent with MCP tools only cannot do it. The recipe
+`users.frontend-sign-in` does it: it signs each user with a `passwordRef` in with the input's
+password and sets it with `UserSetPassword` only for a user that does not sign in, so a persona a
+layer copy delivered without a password gets one, and a run never rotates a working one; never copy a hash with SQL, and never delete and recreate the
 user (its id changes, and every order, price and grant that names it breaks).
 
 ## After the steps

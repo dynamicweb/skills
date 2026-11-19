@@ -389,7 +389,9 @@ def validate_recipes(repo: Path) -> list[str]:
                               "scope": (prune.get("scope") or {}).get("values"), "keep": (prune.get("keep") or {}).get("values")}, "prune")
             for b in (step.get("find") or {}).get("bindings", []) + (step.get("find") or {}).get("delivered", []):
                 check_binding(b, "read", f"step {sid} find", file, error, registry, tools, sql_jobs)
-                check_tokens({k: b.get(k) for k in ("arguments", "match", "matchSuffix", "compare", "compareMap", "parameters")}, "find")
+                # A sign-in find reads with the password the input names by reference; any other find never sees a secret.
+                check_tokens({"arguments": b.get("arguments")}, "find", allow_secret=b.get("handler") == "dwapi-sign-in")
+                check_tokens({k: b.get(k) for k in ("match", "matchSuffix", "compare", "compareMap", "parameters")}, "find")
             with_step = (step.get("deliveredWith") or {}).get("step")
             if with_step and with_step not in earlier:
                 error(file, f"step {sid}: deliveredWith names {with_step}, which is not an earlier step")

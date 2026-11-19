@@ -63,10 +63,11 @@ brand kit with `ConvertFrom-DwBrandKit.ps1`). Then act on its summary table, row
 
 **After a delivered layer copy** (catalogue, prices, users and history from the generator): the
 recipes that still write are `content.design-styles` (brand), `content.pages`, `content.page-seo`
-(de-brand), `users.accounts` (accounts and grants) and `orders.payment-methods` (checkout).
+(de-brand), `users.accounts` (accounts and grants), `users.frontend-sign-in` (the personas'
+passwords) and `orders.payment-methods` (checkout).
 `pim.data-models`, `pim.identifiers`, `commerce.customer-prices` and `orders.completed-orders`
 report `=` or `D` and write nothing. No flag is needed for that. A user the copy delivered gets its
-password from the Management API `UserSetPassword`, not from a recipe and not from SQL
+password from `users.frontend-sign-in` (the Management API `UserSetPassword`), never from SQL
 ([recipe-by-hand.md](../dw-demo-ledger/references/recipe-by-hand.md) "Passwords").
 
 **MCP tools only, no shell**: do the same in the index's run order with

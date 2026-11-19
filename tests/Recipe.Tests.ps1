@@ -815,6 +815,36 @@ Describe 'Invoke-DwRecipe on a site a layer copy already delivered' {
     }
 }
 
+Describe 'Invoke-DwRecipe on users.frontend-sign-in' {
+    It 'sets the password only of a user that does not sign in with it, reads it back as a sign-in, and then writes nothing' {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'; $env:DW_API_TOKEN = 'stub-api-token-0000'
+        $env:DW_RECIPE_SECRETS = '{"buyer":"Stub-Passw0rd-x"}'
+        $root = New-RecipeSandbox
+        $in = Write-Input @{groups = @(@{name = 'Example Trading'; kind = 'account'; customerNumber = 'C-1001'; users = @(@{userName = 'buyer@example.invalid'; passwordRef = 'buyer'}, @{userName = 'nopass@example.invalid'})})} 'users.accounts'
+        New-Stub
+        # A user a layer copy delivered: it exists, and nothing signs in with the input's password until it is set.
+        $global:RecipeStub.users.Add(@{id = 70; userName = 'buyer@example.invalid'}); $global:RecipeStub.users.Add(@{id = 71; userName = 'nopass@example.invalid'})
+        $global:RecipeStub.passwordSet = $false
+        $api = $global:RecipeStub.api
+        $global:RecipeStub.api = { param($Command, $Body) if ($Command -eq 'UserSetPassword') { $global:RecipeStub.passwordSet = ($Body.model.userId -eq 70 -and $Body.model.password -eq 'Stub-Passw0rd-x') }; & $api $Command $Body }.GetNewClosure()
+        Mock Invoke-WebRequest { if ($global:RecipeStub.passwordSet) { [pscustomobject]@{StatusCode = 200; Content = '{"token":"t"}'} } else { [pscustomobject]@{StatusCode = 401; Content = ''} } }
+        $v = Invoke-Runner $root @{Recipe = 'users.frontend-sign-in'; InputPath = $in; Surfaces = @('mcp', 'admin-api', 'dwapi')}
+        $v.lines | Should -Contain 'STEP password WOULD-CREATE buyer@example.invalid'
+        @($v.lines -match 'nopass@example.invalid').Count | Should -Be 0
+        $a = Invoke-Runner $root @{Recipe = 'users.frontend-sign-in'; InputPath = $in; Surfaces = @('mcp', 'admin-api', 'dwapi'); Apply = $true}
+        $a.lines | Should -Contain 'STEP password CREATED buyer@example.invalid'
+        $a.lines | Should -Contain 'PASS probe/persona-sign-in'
+        $a.exit | Should -Be 0
+        @($global:RecipeStub.log -match '^api UserSetPassword').Count | Should -Be 1
+        ($a.lines -join "`n") | Should -Not -Match 'Stub-Passw0rd-x'
+        $again = Invoke-Runner $root @{Recipe = 'users.frontend-sign-in'; InputPath = $in; Surfaces = @('mcp', 'admin-api', 'dwapi'); Apply = $true}
+        $again.lines | Should -Contain 'STEP password UNCHANGED buyer@example.invalid'
+        @($global:RecipeStub.log -match '^api UserSetPassword').Count | Should -Be 1
+        $m = Invoke-Runner $root @{Recipe = 'users.frontend-sign-in'; InputPath = $in; McpOnly = $true}
+        @($m.lines -match '^NOTE users.frontend-sign-in: declared not usable MCP-only').Count | Should -Be 1
+    }
+}
+
 Describe 'Invoke-DwRecipe probes never wait without bound' {
     It 'spends pollSeconds once for the whole probe, not once per failing subject, and names what it waited for' {
         $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
