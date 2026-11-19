@@ -126,13 +126,14 @@ Export-ModuleMember -Function *
                 'save_user_groups' {
                     foreach ($g in $Arguments.groups) {
                         if ([int]$g.id -eq 0) { $s.groups.Add(@{id = (& $mint); name = $g.name; parentGroupId = [int]$g.parentGroupId; customerNumber = $g.customerNumber; type = $null}) }
-                        else { $row = @($s.groups | Where-Object { $_.id -eq [int]$g.id })[0]; if ($g.Contains('userAndGroupType')) { $row.type = $g.userAndGroupType }; if ($g.Contains('customerNumber')) { $row.customerNumber = $g.customerNumber } }
+                        else { $row = @($s.groups | Where-Object { $_.id -eq [int]$g.id })[0]; if ($g.Contains('userAndGroupType')) { $row.type = $g.userAndGroupType }; if ($null -ne $g.customerNumber) { $row.customerNumber = $g.customerNumber } }
                     }
                     return (& $ok 1)
                 }
                 'get_users_by_usernames' { , @($s.users | Where-Object { $_.userName -in $Arguments.userNames }) }
                 'create_users' { foreach ($u in $Arguments.users) { $s.users.Add(@{id = (& $mint); userName = $u.userName; customerNumber = $u.customerNumber; hasPassword = [bool]$u.password}) }; return (& $ok 1) }
-                'update_users' { foreach ($u in $Arguments.users) { foreach ($row in $s.users) { if ($row.id -eq $u.id) { $row.customerNumber = $u.customerNumber } } }; return (& $ok 1) }
+                # Only non-null members are applied, as measured: a null customer number leaves the stored one in place.
+                'update_users' { foreach ($u in $Arguments.users) { foreach ($row in $s.users) { if ($row.id -eq $u.id -and $null -ne $u.customerNumber) { $row.customerNumber = $u.customerNumber } } }; return (& $ok 1) }
                 'get_users_by_group_id' { $ids = @($s.members | Where-Object { $_.groupId -eq [int]$Arguments.groupId } | ForEach-Object { $_.userId }); , @($s.users | Where-Object { $_.id -in $ids }) }
                 'assign_users_to_group' { foreach ($u in $Arguments.userIds) { $s.members.Add(@{groupId = [int]$Arguments.groupId; userId = [int]$u}) }; return (& $ok 1) }
                 'get_impersonatable_users' { $ids = @($s.grants | Where-Object { $_.from -eq [int]$Arguments.userId } | ForEach-Object { $_.to }); , @($s.users | Where-Object { $_.id -in $ids }) }
@@ -697,6 +698,27 @@ Describe 'Invoke-DwRecipe on users.accounts' {
         $again = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; McpOnly = $true}
         $again.lines | Should -Contain 'STEP account-type UNCHANGED Example Trading'
         ($again.lines -match '^NOTE users\.accounts: declared not usable MCP-only').Count | Should -Be 0
+    }
+
+    It 'clears a customer number the input does not give, with an empty text: update_users and save_user_groups ignore a null' {
+        New-Stub
+        # A layer delivered the staff group and the representative with a customer's number.
+        $global:RecipeStub.groups.Add(@{id = 80; name = 'Representatives'; parentGroupId = 0; customerNumber = 'C-1001'; type = $null})
+        $global:RecipeStub.users.Add(@{id = 90; userName = 'rep@example.invalid'; customerNumber = 'C-1001'; hasPassword = $false})
+        $verify = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile}
+        ($verify.lines -match '^FAIL users/rep@example\.invalid: differs from the input in customerNumber; apply would update it').Count | Should -Be 1
+        $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true}
+        $r.lines | Should -Contain 'STEP groups UPDATED Representatives'
+        $r.lines | Should -Contain 'PASS groups/Representatives'
+        $r.lines | Should -Contain 'STEP users UPDATED rep@example.invalid'
+        $r.lines | Should -Contain 'PASS users/rep@example.invalid'
+        @($global:RecipeStub.users | Where-Object id -eq 90)[0].customerNumber | Should -BeExactly ''
+        @($global:RecipeStub.groups | Where-Object id -eq 80)[0].customerNumber | Should -BeExactly ''
+        # The account keeps its number: only an input without one is cleared.
+        @($global:RecipeStub.users | Where-Object userName -eq 'buyer@example.invalid')[0].customerNumber | Should -Be 'C-1001'
+        $again = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile}
+        $again.lines | Should -Contain 'STEP users UNCHANGED rep@example.invalid'
+        $again.lines | Should -Contain 'STEP groups UNCHANGED Representatives'
     }
 
     It 'reports a write the Management API refuses with HTTP 200 as FAIL, not as success' {

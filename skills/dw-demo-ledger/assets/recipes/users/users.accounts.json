@@ -23,10 +23,10 @@
       "bindings": [
         {"id": "mcp-save", "surface": "mcp", "status": "implemented", "source": "skills/dw-users-permissions/references/user-group-operations.md",
           "create": {"operation": "save_user_groups", "arguments": {"groups": [{"id": 0, "name": "{item.name}", "parentGroupId": 0, "customerNumber": "{item.customerNumber|null}"}]}},
-          "update": {"operation": "save_user_groups", "arguments": {"groups": [{"id": "{found.id}", "customerNumber": "{item.customerNumber|null}"}]}},
+          "update": {"operation": "save_user_groups", "arguments": {"groups": [{"id": "{found.id}", "customerNumber": "{item.customerNumber|\"\"}"}]}},
           "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_user_groups", "arguments": {}, "rows": "data", "match": {"name": "{item.name}"}, "expect": {"customerNumber": "{item.customerNumber|null}"}, "produces": {"id": "id"}, "source": "skills/dw-users-permissions/references/user-group-operations.md"}}
       ],
-      "trap": "save_user_groups creates with id 0 and updates by id; a member left out is left unchanged.",
+      "trap": "save_user_groups creates with id 0 and updates by id; a member left out or sent null is left unchanged, so a group the input gives no customer number is cleared with an empty text (measured on MCP 0.6.6).",
       "source": "skills/dw-users-permissions/references/user-group-operations.md"
     },
     {
@@ -65,10 +65,10 @@
       "bindings": [
         {"id": "mcp-users", "surface": "mcp", "status": "implemented", "source": "skills/dw-users-permissions/references/user-group-operations.md",
           "create": {"operation": "create_users", "arguments": {"users": [{"userName": "{item.userName}", "name": "{item.name|null}", "email": "{item.email|null}", "customerNumber": "{parent.customerNumber|null}", "password": "{secret.item.passwordRef|null}"}]}},
-          "update": {"operation": "update_users", "arguments": {"users": [{"id": "{found.id}", "customerNumber": "{parent.customerNumber|null}"}]}},
+          "update": {"operation": "update_users", "arguments": {"users": [{"id": "{found.id}", "customerNumber": "{parent.customerNumber|\"\"}"}]}},
           "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_users_by_usernames", "arguments": {"userNames": ["{item.userName}"]}, "rows": "data", "match": {"userName": "{item.userName}"}, "expect": {"customerNumber": "{parent.customerNumber|null}"}, "produces": {"id": "id"}, "source": "skills/dw-users-permissions/references/user-group-operations.md"}}
       ],
-      "trap": "The password goes on create_users and only there: no read returns it and update_users has no password member, so a re-run never rotates an existing persona's password, and only a sign-in proves it.",
+      "trap": "The password goes on create_users and only there: no read returns it and update_users has no password member, so a re-run never rotates an existing persona's password, and only a sign-in proves it. update_users applies only non-null members: a user the input gives no customer number (a staff user a layer delivered with a customer's number) is cleared with an empty text, never with null, which leaves the number in place (measured on MCP 0.6.6).",
       "source": "skills/dw-users-permissions/references/user-group-operations.md"
     },
     {
