@@ -120,8 +120,8 @@ Export-ModuleMember -Function *
                     $page = @($s.pages | Where-Object { $_.id -eq [int]$Arguments.pageId })[0]
                     return @{structuredContent = @{pageId = [int]$Arguments.pageId; statusCode = $(if ($page) { 200 } else { 404 }); outline = @(); issues = @($s.renderIssues)}}
                 }
-                # The group read leaves the type out, as measured: only GroupById on the Management API returns it.
-                'get_user_groups' { , @($s.groups | ForEach-Object { @{id = $_.id; name = $_.name; parentGroupId = $_.parentGroupId; customerNumber = $_.customerNumber} }) }
+                # The group read returns the type once it is set and leaves the member out while it is null, as measured.
+                'get_user_groups' { , @($s.groups | ForEach-Object { $row = @{id = $_.id; name = $_.name; parentGroupId = $_.parentGroupId; customerNumber = $_.customerNumber}; if ($_.type) { $row.userAndGroupType = $_.type }; $row }) }
                 'save_user_groups' {
                     foreach ($g in $Arguments.groups) {
                         if ([int]$g.id -eq 0) { $s.groups.Add(@{id = (& $mint); name = $g.name; parentGroupId = [int]$g.parentGroupId; customerNumber = $g.customerNumber; type = $null}) }
@@ -642,12 +642,16 @@ Describe 'Invoke-DwRecipe on users.accounts' {
         (Get-Writes).Count | Should -Be $before
     }
 
-    It 'blocks only the account type MCP-only, because no MCP group read returns the type' {
+    It 'writes and reads the account type MCP-only: a group without the type matches nothing, the MCP binding sets it' {
         New-Stub
-        $null = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true}
-        $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; McpOnly = $true}
-        @($r.lines -match '^STEP \S+ BLOCKED ') | Should -Be @('STEP account-type BLOCKED Example Trading')
-        ($r.lines -match '^NOTE users\.accounts: declared not usable MCP-only').Count | Should -Be 1
+        $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true; McpOnly = $true}
+        @($r.lines -match '^STEP \S+ BLOCKED ').Count | Should -Be 0
+        $r.lines | Should -Contain 'STEP account-type CREATED Example Trading'
+        @($global:RecipeStub.log -match '^api ').Count | Should -Be 0
+        @($global:RecipeStub.groups | Where-Object { $_.name -eq 'Example Trading' })[0].type | Should -Be 'SystemAccount'
+        $again = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; McpOnly = $true}
+        $again.lines | Should -Contain 'STEP account-type UNCHANGED Example Trading'
+        ($again.lines -match '^NOTE users\.accounts: declared not usable MCP-only').Count | Should -Be 0
     }
 
     It 'reports a write the Management API refuses with HTTP 200 as FAIL, not as success' {

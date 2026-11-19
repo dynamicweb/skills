@@ -25,7 +25,7 @@ validator fails when this file and the recipes disagree, so do not edit it by ha
 | `pim.data-models` | pim.data-models, pim.field-scope, pim.field-display-groups, pim.completeness-rules | `catalogue` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `pim.identifiers` | pim.identifiers, pim.images, commerce.stock-levels | `catalogue` | dw-demo-pim | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `pim.workflow` | pim.workflow | `pim.workflow` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
-| `users.accounts` | users.accounts, users.user-accounts, users.user-groups, swift.impersonation | `users.accounts` | dw-commerce-b2b | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
+| `users.accounts` | users.accounts, users.user-accounts, users.user-groups, swift.impersonation | `users.accounts` | dw-commerce-b2b | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 (MCP-only yes, hosted yes); dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 (MCP-only yes, hosted yes) |
 
 ## Run order
 
@@ -76,8 +76,7 @@ work is done by hand or stays undone. Reasons as the recipes state them:
   - step workflow write (mcp): No MCP tool creates a workflow: create_or_update_workflow_states refuses workflowId 0.
   - step attach write (mcp): No MCP tool sets a data model's workflow: patch_data_models takes name, description, type and categoryId.
   - MCP-only: No MCP tool creates a workflow or attaches one to a data model; the states and transitions are MCP.
-- `users.accounts`
-  - MCP-only: Every write is an MCP tool, but no MCP read projects a group's user-and-group type (get_user_groups and get_user_groups_by_ids leave userAndGroupType out), so the SystemAccount type is read back only through Management API GroupById or local SQL.
+- `users.accounts`: nothing planned
 
 ## By function
 
