@@ -65,6 +65,12 @@
                 "type": "string",
                 "minLength": 1
               },
+              "assortmentIds": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {"type": "string", "minLength": 1},
+                "description": "Assortments the group's members may see. A product in an assortment is served to a signed-in user only when one of the user's groups holds a permission on it; allowAnonymousUsers covers the anonymous visitor only."
+              },
               "users": {
                 "type": "array",
                 "items": {

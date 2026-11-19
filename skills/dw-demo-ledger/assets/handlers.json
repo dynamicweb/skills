@@ -34,6 +34,7 @@
   },
   "mcpReadTools": [
     "get_adjustment_discounts",
+    "get_assortment_permissions",
     "get_app_configurations",
     "get_area_by_id",
     "get_assortment_relations_by_group_id",
@@ -138,6 +139,7 @@
   ],
   "recipeWriteTools": [
     "add_impersonatable_users",
+    "assign_permissions_to_assortment",
     "add_product_image",
     "add_products_by_sku",
     "apply_translation",

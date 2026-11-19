@@ -87,6 +87,7 @@
       "trap": "UserGroupRelationSave is a list command: the single {GroupId, UserId} shape answers HTTP 200 'No items selected' and writes nothing; UsersAddToGroups wants Ids as strings.",
       "source": "skills/dw-users-permissions/references/user-group-operations.md"
     },
+    {"id": "assortment-access", "title": "Grant each group the assortments its members may see", "forEach": "groups[*].assortmentIds[*]", "key": "{parent.name}/{item}", "find": {"bindings": [{"id": "mcp-permissions", "surface": "mcp", "status": "implemented", "operation": "get_assortment_permissions", "arguments": {"assortmentId": "{item}"}, "rows": "data", "match": {"userId": "{step.groups[parent.name].id}"}, "source": "skills/dw-commerce-b2b/references/dc-scoping.md"}]}, "bindings": [{"id": "mcp-assign", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-b2b/references/dc-scoping.md", "create": {"operation": "assign_permissions_to_assortment", "arguments": {"permissions": [{"assortmentId": "{item}", "userId": "{step.groups[parent.name].id}"}]}}, "readBack": {"id": "mcp-permissions", "surface": "mcp", "status": "implemented", "operation": "get_assortment_permissions", "arguments": {"assortmentId": "{item}"}, "rows": "data", "match": {"userId": "{step.groups[parent.name].id}"}, "source": "skills/dw-commerce-b2b/references/dc-scoping.md"}}], "trap": "A product in an assortment is served to a signed-in user only when one of the user's groups holds a permission on that assortment; allowAnonymousUsers covers the anonymous visitor only, so a buyer of an account without the grant gets 404 for a product the anonymous visitor is served. The grant is served on the next request, no debt. It cannot be removed in place: remove_permissions_from_assortment answers success and deletes nothing.", "source": "skills/dw-commerce-b2b/references/dc-scoping.md"},
     {
       "id": "impersonation",
       "title": "Grant each representative impersonation of each customer, in that direction",
@@ -162,7 +163,8 @@
     ]
   },
   "provenOn": [
-    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "users.accounts.1-verify.json (all WOULD-CREATE), users.accounts.2-apply.json (15 of 16; the recycle owed), users.accounts.3-verify.json and users.accounts.4-apply-again.json (13 of 13, nothing changed) after the recycle, users.accounts.10-final-verify.json (13 of 13) on MCP, Management API and delivery API; users.accounts.5-mcponly.json is 11 of 13 (account type and persona sign-in need the Management API and the delivery API); the representative was then served the customer by /dwapi/users/impersonatees"}
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "users.accounts.1-verify.json (all WOULD-CREATE), users.accounts.2-apply.json (15 of 16; the recycle owed), users.accounts.3-verify.json and users.accounts.4-apply-again.json (13 of 13, nothing changed) after the recycle, users.accounts.10-final-verify.json (13 of 13) on MCP, Management API and delivery API; users.accounts.5-mcponly.json is 11 of 13 (account type and persona sign-in need the Management API and the delivery API); the representative was then served the customer by /dwapi/users/impersonatees"},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh input: the account's buyer was answered 404 for the products of the storefront assortment the anonymous visitor was served, until the assortment-access grant (assign_permissions_to_assortment, measured by a direct call and read back by get_assortment_permissions) made the next request serve the buyer its contract and group prices with no debt; the set's apply-again, verify and MCP-only runs then reported the step UNCHANGED (14 of 14; 12 of 14 MCP-only, the account type and persona sign-in as declared)"}
   ],
   "traps": [
     "The password is set by create_users only (UserSave accepts one and drops it; update_users has none); a sign-in is the only proof.",
@@ -170,6 +172,7 @@
     "No MCP group read returns the user-and-group type, although save_user_groups writes it; read it with Management API GroupById (model.userAndGroupTypeSystemName) or local SQL.",
     "The CSR Accounts list shows an account group only at root with the type SystemAccount; a DC scoping group wants the type left empty.",
     "A refusal on the Management API arrives as HTTP 200 (status invalid, No items selected): assert the relation, never the status.",
-    "The MCP read models leave out a member whose value is null: an absent field is not proof the field does not exist."
+    "The MCP read models leave out a member whose value is null: an absent field is not proof the field does not exist.",
+    "A buyer whose account holds no permission on the assortment a product is in is served 404 for that product on the delivery API, while the anonymous visitor is served it: name the assortments in groups[].assortmentIds."
   ]
 }
