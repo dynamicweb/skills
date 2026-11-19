@@ -11,9 +11,9 @@ Customer data file matching assets/recipe-input.schema.json.
 .PARAMETER Apply
 Write. Without it, or with -WhatIf, nothing is written.
 .PARAMETER Only
-Run only these recipe ids (their input sections must be present).
+Run only these recipe ids (their input sections must be present). A list, or one comma-separated text: through pwsh -File a list arrives as one argument, so "a,b" and "'a','b'" are split here.
 .PARAMETER Skip
-Leave these recipe ids out.
+Leave these recipe ids out. A list, or one comma-separated text.
 .PARAMETER PayDebts
 With -Apply, pay every debt of the selected recipes once, even when nothing changed.
 .PARAMETER LayerDelivered
@@ -69,6 +69,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Ledger.Core.ps1')
 . (Join-Path $PSScriptRoot 'Recipe.Core.ps1')
 $assets = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
+$Only = Split-LedgerList $Only; $Skip = Split-LedgerList $Skip; $LayerDelivered = Split-LedgerList $LayerDelivered
 $runner = Join-Path $PSScriptRoot 'Invoke-DwRecipe.ps1'
 
 function Get-RecipeSetOrder {

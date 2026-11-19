@@ -20,7 +20,7 @@ MCP credential, otherwise DW_MCP_TOKEN.
 .PARAMETER McpOnly
 Use the MCP tools only, as the in-product agent would.
 .PARAMETER Surfaces
-Permitted surfaces in preference order. Default mcp, admin-api, dwapi, sql.
+Permitted surfaces in preference order: mcp, admin-api, dwapi, sql (the default, all four). A list, or one comma-separated text.
 .PARAMETER AllowSql
 Permit local SQL reads; needs -SqlServer and -Database of a local install. SQL never writes.
 .PARAMETER SqlServer
@@ -36,7 +36,7 @@ Local solution root; lets a recycle debt run Restart-DwHost.ps1.
 .PARAMETER Debts
 Run (default): pay the debts after a change. Defer: record them in the report as owed and leave them to the caller (Invoke-DwRecipeSet.ps1 pays them once for the whole set). Only: run no step, pay the debts even though nothing changed; needs -Apply.
 .PARAMETER DebtNames
-With -Debts Only, pay only these of the recipe's debts.
+With -Debts Only, pay only these of the recipe's debts. A list, or one comma-separated text.
 .PARAMETER SkipVerify
 Run no probe and no ledger check; a later run without -Apply verifies.
 .PARAMETER ReportPath
@@ -58,7 +58,7 @@ param(
     [switch]$Apply,
     [string]$BaseUrl, [string]$ApiToken, [string]$McpToken,
     [switch]$McpOnly,
-    [ValidateSet('mcp', 'admin-api', 'dwapi', 'sql')][string[]]$Surfaces = @('mcp', 'admin-api', 'dwapi', 'sql'),
+    [string[]]$Surfaces = @('mcp', 'admin-api', 'dwapi', 'sql'),
     [switch]$AllowSql, [string]$SqlServer, [string]$Database,
     [string]$LedgerBuildFile, [string]$Manifest,
     [string]$SolutionPath,
@@ -75,6 +75,10 @@ $recipeId = $Recipe
 $run = @{lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); steps = [Collections.Generic.List[object]]::new(); planned = [Collections.Generic.List[string]]::new(); blocked = 0; changed = $false; results = @{}; deferred = @()}
 $applied = $false
 try {
+    # Through pwsh -File a list arrives as one text: split it here, as every list parameter is.
+    $Surfaces = Split-LedgerList $Surfaces; $DebtNames = Split-LedgerList $DebtNames
+    $bad = @($Surfaces | Where-Object { $_ -cnotin @('mcp', 'admin-api', 'dwapi', 'sql') })
+    if ($bad.Count -or -not $Surfaces.Count) { throw (New-RecipeFault "Runner input: -Surfaces takes mcp, admin-api, dwapi and sql, not '$($bad -join ', ')'.") }
     $recipePath = Resolve-RecipeFile $Recipe $assets
     $doc = Read-LedgerJson $recipePath (Join-Path $assets 'recipe.schema.json')
     $recipeId = $doc.id

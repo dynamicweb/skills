@@ -197,6 +197,15 @@ Describe 'Invoke-DwRecipeSet' {
         ($r.lines -match '^== users\.accounts debts \(before orders\.completed-orders\)').Count | Should -Be 1
         $r.exit | Should -Be 0
     }
+    It 'splits -Only, -Skip and -LayerDelivered that pwsh -File passed as one comma-separated text' {
+        # As an operator's shell hands it over: one argument holding the list, quoted or not.
+        $r = Invoke-Set $script:Root @{InputPath = (Write-SetInput); Only = @("'users.accounts','content.pages'"); Skip = @('content.pages'); LayerDelivered = @('users.accounts, brand')}
+        ($r.lines -match '^FAIL recipe set').Count | Should -Be 0
+        @(Get-Calls | ForEach-Object { $_.recipe } | Select-Object -Unique) | Should -Be @('users.accounts')
+        New-SetStub
+        $r = Invoke-Set $script:Root @{InputPath = (Write-SetInput); Only = @('users.accounts,content.pages')}
+        @(Get-Calls | ForEach-Object { $_.recipe } | Sort-Object -Unique) | Should -Be @('content.pages', 'users.accounts')
+    }
     It 'leaves out -Skip recipes, refuses an unknown id, and runs a layer-delivered section verify-only' {
         $r = Invoke-Set $script:Root @{InputPath = (Write-SetInput); Apply = $true; Skip = @('orders.completed-orders'); LayerDelivered = @('content.pages')}
         @(Get-Calls | Where-Object { $_.recipe -eq 'orders.completed-orders' }).Count | Should -Be 0

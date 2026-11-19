@@ -234,6 +234,11 @@ Describe 'Recipe engine: paths, tokens and matching' {
         try { Resolve-RecipeToken 'step.categories[item.group].id' $ctx } catch { $thrown = $_.Exception }
         $thrown.Data['delivered'] | Should -BeFalse
     }
+    It 'splits a list parameter that arrives as one comma-separated, quoted text' {
+        $one = Split-LedgerList @("'a.b','c.d'"); $one | Should -Be @('a.b', 'c.d')
+        $two = Split-LedgerList @('a.b, c.d', 'e'); $two | Should -Be @('a.b', 'c.d', 'e')
+        (Split-LedgerList @()).Count | Should -Be 0
+    }
     It 'names a read that ran out of time, so a step ends in a FAIL instead of waiting' {
         . (Join-Path $script:Source 'scripts/Recipe.Transport.ps1')
         Test-RecipeTimeout ([Threading.Tasks.TaskCanceledException]::new('canceled')) | Should -BeTrue
@@ -1184,6 +1189,17 @@ Describe 'Invoke-DwRecipe debt modes: deferred, debts only, verification skipped
         $json.changed | Should -BeTrue
         @($json.debtsOwed) | Should -Contain 'recycle'
         $r.exit | Should -Be 0
+    }
+    It 'splits -DebtNames and -Surfaces that pwsh -File passed as one comma-separated text, and refuses an unknown surface' {
+        New-Stub
+        $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Apply = $true; Debts = 'Only'; SkipVerify = $true
+            DebtNames = @("'flush:Dynamicweb.Security.UserManagement.UserService','index:Secondary users/Users.index'"); Surfaces = @('mcp, admin-api')}
+        $r.lines | Should -Contain 'PASS debt/flush:Dynamicweb.Security.UserManagement.UserService'
+        ($r.lines -match 'debt/recycle').Count | Should -Be 0
+        ($r.lines -match 'owes no debt').Count | Should -Be 0
+        $r.exit | Should -Be 0
+        $r = Invoke-Runner $script:Root @{Recipe = 'users.accounts'; InputPath = $script:InputFile; Surfaces = @('mcp,ftp')}
+        ($r.lines -match "^FAIL recipe: Runner input: -Surfaces takes mcp, admin-api, dwapi and sql, not 'ftp'").Count | Should -Be 1
     }
     It 'pays only the named debts with -Debts Only, runs no step, and refuses it without -Apply or for a debt the recipe does not owe' {
         New-Stub

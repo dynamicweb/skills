@@ -40,11 +40,15 @@ param(
     [string]$ApiToken=$env:DW_API_TOKEN,
     [string]$McpToken=$env:DW_MCP_TOKEN,
     [string]$SqlServer,[string]$Database,[string]$FilesPath,
-    [ValidateSet('mcp','admin-api','dwapi','file','sql')][string[]]$Surfaces=@('mcp','admin-api','dwapi','file','sql'),
+    [string[]]$Surfaces=@('mcp','admin-api','dwapi','file','sql'),
     [switch]$DiagnosticVersionMismatch,[switch]$AllowSelfSignedCertificate
 )
 $ErrorActionPreference='Stop'
 foreach($file in @('Ledger.Core.ps1','Ledger.Observations.ps1','Ledger.Repositories.ps1','Ledger.Sql.ps1','Cpq.Json.ps1','Cpq.Read.ps1','Cpq.Observations.ps1','Pim.Fields.ps1','Pim.Queries.ps1','Pim.Matrix.ps1','Pim.Layout.ps1','Ledger.Transport.ps1','Ledger.Facts.ps1','Ledger.Execute.ps1','Ledger.Run.ps1')){. (Join-Path $PSScriptRoot $file)}
+# Through pwsh -File a list arrives as one text: split it, then hold it to the surfaces there are.
+$Surfaces=Split-LedgerList $Surfaces
+$unknownSurfaces=@($Surfaces|Where-Object{$_ -cnotin @('mcp','admin-api','dwapi','file','sql')})
+if($unknownSurfaces.Count -or -not $Surfaces.Count){throw [IO.InvalidDataException]::new("-Surfaces takes mcp, admin-api, dwapi, file and sql, not '$($unknownSurfaces -join ', ')'.")}
 $script:LedgerMcpCache=@{};$script:LedgerStoredFields=$null;$script:LedgerPimLayout=@{};$script:LedgerTarget=$null
 $assets=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
 # Everything the run loads: the skill itself and the shared transport it imports.
