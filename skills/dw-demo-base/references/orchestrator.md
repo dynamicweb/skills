@@ -78,9 +78,11 @@ section feeds one recipe; a section that is absent is simply not built. Keep it 
 
 - **Built from blank with a layer generator available** to the operator: generate a rewritten
   copy of the edition's layers from the same data file and deliver it before the first delivery.
-  The sections it carried are then **verified, not written**:
-  `Invoke-DwRecipeSet.ps1 -InputPath <file> -Apply -LayerDelivered catalogue,prices,users.accounts`
-  runs those recipes verify-only and applies the rest.
+  Then run the set exactly as below, with no flag: each recipe recognises what the copy delivered
+  (`=` UNCHANGED, or `D` DELIVERED where the copy keys an object its own way) and writes none of
+  it again; brand, pages, de-brand, accounts and checkout are still applied. `-LayerDelivered
+  <sections>` remains for leaving a section untouched altogether (an MCP-only run cannot tell a
+  layer's categories from its own).
 - **Otherwise** (an edition delivered as shipped, or a blank site and no generator): run
   `Invoke-DwRecipeSet.ps1 -InputPath <file>` first (writes nothing, lists every WOULD-CREATE), then
   `-Apply`. The set runs the recipes in the index's run order, pays the debts (cache flushes, index
@@ -107,7 +109,7 @@ fold-back ([`dw-demo-foldback`](../../dw-demo-foldback/SKILL.md)).
 | `/demo:*` command set | `/demo:impact` produces the data file with the analysis; `/demo:build` runs the set after sign-off and its validation pass reads the set's summary before the acceptance criteria |
 | Local install | `-SolutionPath <solution>` lets the set recycle a loopback host itself; `-AllowSql -SqlServer -Database` adds optional read-only checks |
 | Hosted install (URL + API key) | Set `DW_BASE_URL`, `DW_API_TOKEN` and, when the install exposes it, `DW_MCP_TOKEN`; no SQL. A recipe whose index row says hosted `no` reports its blocked steps; the recycle stays OPEN with the hosted route ([`dw-demo-hosted`](../../dw-demo-hosted/SKILL.md)) |
-| Path A, YAML brand layer | The brand layer carries the brand: run the set with `-LayerDelivered brand` so `content.design-styles` verifies it, and apply the other sections |
+| Path A, YAML brand layer | The brand layer carries the brand: run the set with `-LayerDelivered brand` so `content.design-styles` verifies it, and apply the other sections. A data copy (catalogue, prices, users, history) needs no flag |
 | Path B, deliver then tools | Run the set with `-Apply` over the delivered edition |
 | Path C, tools only from blank | Run the set with `-Apply`; nothing is layer-delivered |
 | MCP tools only (no shell) | Follow each recipe in run order with [recipe-by-hand.md](../../dw-demo-ledger/references/recipe-by-hand.md); a recipe whose index row says MCP-only `no` leaves the named steps for an operator with the Management API |

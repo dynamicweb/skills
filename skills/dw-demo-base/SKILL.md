@@ -40,35 +40,39 @@ The orchestrator abstraction (modes, the strictness
 gradient, acceptance criteria) is owned by [references/orchestrator.md](references/orchestrator.md).
 Every sister demo skill carries the same "how to run me" header and defers to that reference.
 
-## Build from the library first (before any prose build path)
+## Build from the library first (before any write)
 
-Customer-specific demo content is built by **recipes**: proven, replayable JSON documents in
-[`dw-demo-ledger`](../dw-demo-ledger/SKILL.md) that one command runs and verifies. Accounts and
-personas, pages, PIM data models, the catalogue, a PIM workflow, prices, order history, the brand
-styles and the de-brand all have one ([recipe index](../dw-demo-ledger/references/recipe-index.md)).
-Do not write a one-off script or walk a prose procedure for something a recipe covers. Once the host
-answers and MCP is live (the canonical flow below, or the scripted base build):
+**The first step of every build, once MCP answers, is one verify run of the recipe set. No write
+by hand, by MCP tool or by script comes before it.** It writes nothing:
 
-1. **Write the customer data file**: one JSON file matching
-   [`recipe-input.schema.json`](../dw-demo-ledger/assets/recipe-input.schema.json); start from
-   [`recipe-input.example.json`](../dw-demo-ledger/assets/recipe-input.example.json). A branded demo
-   needs `brand` (from a brand kit with `ConvertFrom-DwBrandKit.ps1`), `users.accounts` (a buyer
-   with a password and a representative who may impersonate it: the persona floor), `catalogue`
-   and `prices` (a product is listed only once it has a price). Add `content.pages`, `history`,
-   `pim.workflow` and `debrand` when the storyline uses them.
-2. **Built from blank, and a layer generator is available to you?** Generate the rewritten layer
-   copy from the same data file and deliver it before the first delivery; the recipes then only
-   verify those sections (`-LayerDelivered <sections>`).
-3. **Otherwise run the set**: `Invoke-DwRecipeSet.ps1 -InputPath <file>` lists what it would
-   create; `-Apply` builds, pays the debts once and verifies. Exit 0 is built and proven.
-4. **Only what no recipe covers is built by hand.** `Find-DwRecipe.ps1 -Function <id>` answers
-   whether one exists; the index's "What stays planned" names the known hand work.
-5. **MCP tools only, no shell**: open each recipe in the index's run order and follow it with
-   [recipe-by-hand.md](../dw-demo-ledger/references/recipe-by-hand.md), using the `mcp` bindings.
+```powershell
+pwsh -NoProfile -File <skills>/dw-demo-ledger/scripts/Invoke-DwRecipeSet.ps1 -InputPath <customer data file>
+```
 
-What changes per running mode, environment and build path is in
+No data file yet: write it first, one JSON file matching
+[`recipe-input.schema.json`](../dw-demo-ledger/assets/recipe-input.schema.json) (start from
+[`recipe-input.example.json`](../dw-demo-ledger/assets/recipe-input.example.json); `brand` from a
+brand kit with `ConvertFrom-DwBrandKit.ps1`). Then act on its summary table, row by row:
+
+| Steps column says | Do |
+|---|---|
+| `WC` or `WU` above 0 | Run the same command with `-Apply`. Exit 0 is built and proven |
+| only `=` and `D` | Done. `D` is data a layer copy delivered: never write it again, by hand or otherwise |
+| `B` above 0 | Read the BLOCKED line's reason; fix the input or the grant, run again |
+| What you need has no recipe | `Find-DwRecipe.ps1 -Function <id>`; build by hand only that |
+
+**After a delivered layer copy** (catalogue, prices, users and history from the generator): the
+recipes that still write are `content.design-styles` (brand), `content.pages`, `content.page-seo`
+(de-brand), `users.accounts` (accounts and grants) and `orders.payment-methods` (checkout).
+`pim.data-models`, `pim.identifiers`, `commerce.customer-prices` and `orders.completed-orders`
+report `=` or `D` and write nothing. No flag is needed for that. A user the copy delivered gets its
+password from the Management API `UserSetPassword`, not from a recipe and not from SQL
+([recipe-by-hand.md](../dw-demo-ledger/references/recipe-by-hand.md) "Passwords").
+
+**MCP tools only, no shell**: do the same in the index's run order with
+[recipe-by-hand.md](../dw-demo-ledger/references/recipe-by-hand.md): find first, write only what is
+absent, never a second copy of what is there. Modes, environments and paths:
 [references/orchestrator.md](references/orchestrator.md) "Build from the library".
-
 ## Environment fork — local install vs hosted (online) install
 
 The canonical flow below assumes a **local install** (scaffold + SQL Express on the demo machine). When the engagement instead hands you a **site URL + Admin API bearer key** — a vendor-hosted/cloud install with no machine to scaffold on — the build forks to [`dw-demo-hosted`](../dw-demo-hosted/SKILL.md), which owns the deltas: which canonical steps to skip, the session-start probe (tool availability on hosted installs is **version-dependent** — MCP may or may not be exposed; always probe, never assume), the Management API recipe pack that substitutes for MCP/SQL recipes, and the shared-install discipline. Moving a demo that was built locally onto a hosted install is a **migration, not a deploy** — a separate playbook with its own failure modes, owned by [`dw-demo-hosted/references/publish-to-hosted.md`](../dw-demo-hosted/references/publish-to-hosted.md). The always-on rules (surface priority, guarded writes, customer-context, demo philosophy) apply in both modes.

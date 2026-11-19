@@ -15,8 +15,8 @@ user to run `/demo:impact` and sign off first. The build never runs on an unappr
 From the signed-off analysis, build the demo moments using the right skills:
 
 - **Recipes first.** Write the customer data file and run `dw-demo-ledger`
-  `scripts/Invoke-DwRecipeSet.ps1 -InputPath <file>`, then with `-Apply` (sections a layer already
-  delivered go in `-LayerDelivered`). It builds and verifies accounts, pages, data models, the
+  `scripts/Invoke-DwRecipeSet.ps1 -InputPath <file>` before any other write, then with `-Apply`
+  (what a layer copy already delivered reports `=` or `D` and is not written again; no flag). It builds and verifies accounts, pages, data models, the
   catalogue, prices, order history, brand styles and the de-brand in one run
   (`dw-demo-base/references/orchestrator.md` "Build from the library"). Only what no recipe covers
   (`Find-DwRecipe.ps1 -Function <id>`) is built by hand below; its summary table is part of the
