@@ -138,6 +138,7 @@
         "localOnly": {"type": "boolean"},
         "rows": {"type": "string"},
         "match": {"type": "object"},
+        "matchSuffix": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "minLength": 1}, "description": "A row matches only when each named member's text ends with the given text, ignoring case (a file a layer stored under its own folder, found by its file name). A row without the member does not match."},
         "compare": {"type": "object"},
         "expect": {"type": "object"},
         "compareMap": {"$ref": "#/definitions/mapSpec"},
@@ -215,8 +216,12 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["bindings"],
-          "properties": {"bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}}}
+          "properties": {
+            "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}},
+            "delivered": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}, "description": "The shape a layer copy delivers the object in, under keys this recipe does not write. Read only when the find matched nothing; one matching row or more makes the item DELIVERED: never written, and its produces (from exactly one row) feed later steps."}
+          }
         },
+        "deliveredWith": {"$ref": "#/definitions/deliveredWith"},
         "scan": {
           "type": "object",
           "additionalProperties": false,
@@ -273,6 +278,16 @@
       },
       "anyOf": [{"required": ["find"]}, {"required": ["after"]}, {"required": ["scan"]}, {"required": ["prune"]}]
     },
+    "deliveredWith": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step"],
+      "description": "The earlier step whose object this item belongs to. When a layer delivered that object (DELIVERED), an item that would be created or changed is DELIVERED instead and never written; an item found equal still passes. On a probe, a failing subject of a delivered object is a NOTE.",
+      "properties": {
+        "step": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "key": {"type": "string", "minLength": 1, "description": "The owner's natural key as a token template; default: this step's own key."}
+      }
+    },
     "probe": {
       "type": "object",
       "additionalProperties": false,
@@ -283,6 +298,7 @@
         "forEach": {"type": "string", "pattern": "^[A-Za-z0-9_]+(\\[\\*\\])?(\\.[A-Za-z0-9_]+(\\[\\*\\])?)*$"},
         "skipWhen": {"$ref": "#/definitions/skipWhen"},
         "minimumSubjects": {"type": "integer", "minimum": 1},
+        "deliveredWith": {"allOf": [{"$ref": "#/definitions/deliveredWith"}, {"required": ["key"]}]},
         "pollSeconds": {"type": "integer", "minimum": 1, "maximum": 120, "description": "Repeat a failing read until it passes or this many seconds pass, for a state the platform publishes late (a new URL)."},
         "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}}
       }

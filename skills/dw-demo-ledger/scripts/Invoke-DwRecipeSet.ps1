@@ -173,7 +173,7 @@ try {
         foreach ($s in @($doc.steps)) { $states[$s.state] = 1 + [int]$states[$s.state] }
         $result = [ordered]@{pass = $Pass; exit = $exit; passed = [int]$doc.passed; total = [int]$doc.total; changed = [bool]$doc.changed
             created = [int]$states['CREATED']; updated = [int]$states['UPDATED']; unchanged = [int]$states['UNCHANGED']; blocked = [int]$states['BLOCKED']
-            wouldCreate = [int]$states['WOULD-CREATE']; wouldUpdate = [int]$states['WOULD-UPDATE']; debtsOwed = @($doc.debtsOwed | Where-Object { $_ }); checks = @($doc.checks)
+            wouldCreate = [int]$states['WOULD-CREATE']; wouldUpdate = [int]$states['WOULD-UPDATE']; delivered = [int]$states['DELIVERED']; debtsOwed = @($doc.debtsOwed | Where-Object { $_ }); checks = @($doc.checks)
             notes = @($lines | Where-Object { $_.StartsWith('NOTE debt/') })}
         $script:SetPass = $result
     }
@@ -263,7 +263,7 @@ $table = foreach ($row in $rows.Values) {
     $last = if ($passes.Count) { $passes[-1] }
     [pscustomobject][ordered]@{
         Recipe = $row.recipe; Section = $row.section
-        Steps = $(if ($first) { 'C{0} U{1} ={2} B{3} WC{4} WU{5}' -f $first.created, $first.updated, $first.unchanged, $first.blocked, $first.wouldCreate, $first.wouldUpdate } else { '-' })
+        Steps = $(if ($first) { 'C{0} U{1} ={2} B{3} WC{4} WU{5} D{6}' -f $first.created, $first.updated, $first.unchanged, $first.blocked, $first.wouldCreate, $first.wouldUpdate, $first.delivered } else { '-' })
         Checks = $(if ($last) { "$($last.passed)/$($last.total)" } else { '-' })
         Debts = $(if ($first -and @($first.debtsOwed).Count) { @($first.debtsOwed).Count } else { 0 })
         Result = $row.result

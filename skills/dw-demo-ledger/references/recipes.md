@@ -13,6 +13,7 @@ and follow it by calling the named tools with the stated arguments, and
 - [Bindings and the honesty rule](#bindings-and-the-honesty-rule)
 - [Tokens](#tokens)
 - [Steps: find, apply, read back](#steps-find-apply-read-back)
+- [A site a layer copy already delivered](#a-site-a-layer-copy-already-delivered)
 - [Debts](#debts)
 - [Verify: probes and ledger checks](#verify-probes-and-ledger-checks)
 - [Modes](#modes)
@@ -177,6 +178,31 @@ A step with an empty `bindings` list is a lookup: it finds an object another fun
 header page a website selects) and produces values for later steps, and never writes. An absent
 object is WOULD-CREATE in a verify run and BLOCKED with apply, so its dependants stop too.
 
+## A site a layer copy already delivered
+
+A demo can start from a rewritten sample-data layer copy that already holds the catalogue, prices,
+orders and users of the same customer data file. The copy keys some objects its own way: its spec
+fields keep the layer's field ids and categories, its groups their own ids, its images their own
+folder, its orders their reference instead of the purchase order number. A recipe recognises that
+delivery itself, per object, with no flag:
+
+| Member | Effect |
+|---|---|
+| `find.delivered` | Read bindings in the copy's shape, read only when the find matched nothing. One matching row or more is the object the copy delivered: `STEP <step> DELIVERED <key>` and a passing check. It is never written; values come from it (`produces`) only when exactly one row matched |
+| `deliveredWith` `{step, key}` | The object this item belongs to (`key` defaults to the item's own key). When that object is DELIVERED, an item that would be created or changed is DELIVERED too: a NOTE, not a check, and nothing is written into the layer's object. An item found equal still passes |
+| `matchSuffix` `{member: text}` | A read matches only rows whose member ends with the text, ignoring case: a file the copy stored under its own folder, found by its file name |
+
+A token that reads a DELIVERED object that produced no value makes its item DELIVERED as well; on a
+probe, a failing subject of a delivered object is a NOTE (`n subject(s) a layer delivered in its own
+shape`). So on such a site a plain set run reports the copy's objects DELIVERED, writes none of them
+a second time, and still builds what the copy lacks (the brand, the pages, the de-brand, the
+accounts' passwords and checkout). The copy's own shape is verified by the ledger checks of its
+build lock. The shared natural keys: products by number, prices by scope and quantity (a group or
+contract price without a quantity at quantity 1), users by user name. What a copy keys its own way
+and a recipe cannot read in its own shape (a category that is not a CategoryFields category, an
+order reference no MCP write sets) is what `find.delivered` names. MCP-only has no category read, so
+it cannot tell a layer's category from a recipe's.
+
 ## Debts
 
 Debts run once, after the steps, only with `-Apply` and only when a step changed something. Each is
@@ -226,7 +252,7 @@ lock commit); otherwise each is listed as a NOTE to run with the ledger.
 | Running mode: skills alone or the `/demo:*` command set | The same file and the same runner; a build plan names the recipe id |
 | Local install | All surfaces; SQL reads only with `-AllowSql -SqlServer -Database` |
 | Hosted install (URL + API key, no SQL) | MCP and Management API only; `modes.hosted` says whether every step has a non-SQL path |
-| Build path A: a layer delivered by the serializer | Run without `-Apply`: every object reports UNCHANGED, the probes verify (`layerDelivered: verify`) |
+| Build path A: a layer delivered by the serializer | Run the set as for a blank site: the objects the layer delivered report UNCHANGED or, where it keyed them its own way, DELIVERED, and nothing is written twice ([above](#a-site-a-layer-copy-already-delivered)) |
 | Build path B: deserialize, then tools | Run with `-Apply`, then without it after paying the debts |
 | The in-product agent (MCP tools only, no shell) | Follow the recipe by hand; `modes.mcpOnly` says whether every step has an implemented MCP find, write and read-back |
 
@@ -317,13 +343,13 @@ storefront list needs, where a build after the catalogue would be built again. S
 |---|---|
 | `-Only <ids>` / `-Skip <ids>` | Run only, or leave out, these recipes. A dependency left out is a NOTE: its objects must already be on the site |
 | `-PayDebts` | With `-Apply`, pay every debt of the selected recipes in pass 2 even when nothing changed: the host primitives (index build, assortment build, flush, recycle) on their own, `-Only pim.identifiers -PayDebts -Apply` |
-| `-LayerDelivered <sections>` | Sections a layer already delivered: their recipes run verify-only in pass 1 even with `-Apply` (unless the recipe declares `layerDelivered: apply`) |
+| `-LayerDelivered <sections>` | Sections a layer already delivered: their recipes run verify-only in pass 1 even with `-Apply` (unless the recipe declares `layerDelivered: apply`). Not needed to avoid a second copy (each recipe recognises a delivery itself); use it to leave a delivered section untouched altogether, such as an MCP-only run that cannot read a layer's categories |
 | `-McpOnly`, `-AllowSql -SqlServer -Database`, `-SolutionPath`, `-LedgerBuildFile -Manifest`, connection | Passed to every recipe run, as for one recipe |
 
 Before anything runs, the set refuses a de-brand whose forbidden text another section of the
 input holds: the build would write it, the de-brand replace it, and the next apply write it back.
 Each recipe's own lines print under `== <recipe> <pass>`; then one summary table (steps of the
-apply pass as C created, U updated, = unchanged, B blocked, WC/WU would create/update; checks of
+apply pass as C created, U updated, = unchanged, B blocked, WC/WU would create/update, D delivered by a layer; checks of
 the last pass; debts owed), one `DEBT <result> <debt> (<owner>, <when>)` line per debt paid, and
 last `recipe set: <n> of <m> recipes passed`. Exit 0 only when every selected recipe passed every
 pass and every debt was paid. A recipe that needs a recycle on a host the run cannot recycle leaves
@@ -332,7 +358,7 @@ pass and every debt was paid. A recipe that needs a recycle on a host the run ca
 ## Output contract
 
 ```text
-STEP <step> <CREATED|UPDATED|DELETED|UNCHANGED|BLOCKED|WOULD-CREATE|WOULD-UPDATE|WOULD-DELETE> <natural key>
+STEP <step> <CREATED|UPDATED|DELETED|UNCHANGED|DELIVERED|BLOCKED|WOULD-CREATE|WOULD-UPDATE|WOULD-DELETE> <natural key>
 PASS <check>
 FAIL <check>: <reason>
 OPEN <check>: <reason>

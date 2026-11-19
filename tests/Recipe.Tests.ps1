@@ -208,6 +208,27 @@ Describe 'Recipe engine: paths, tokens and matching' {
         $ctx = @{item = @{parent = 'About us'}; results = @{pages = @{'About us' = @{state = 'WOULD-CREATE'; values = @{}}}}; secrets = @{}}
         { Resolve-RecipeToken 'step.pages[item.parent].id|0' $ctx } | Should -Throw -ExceptionType ([Collections.Generic.KeyNotFoundException])
     }
+    It 'reads a value a layer delivery produced, and marks a dependant of an unread delivered object as delivered' {
+        $ctx = @{item = @{group = 'tools'}; results = @{categories = @{tools = @{state = 'DELIVERED'; values = @{id = 'layer_cat'}}}}; secrets = @{}}
+        Resolve-RecipeToken 'step.categories[item.group].id' $ctx | Should -Be 'layer_cat'
+        $ctx.results.categories.tools.values = @{}
+        $thrown = $null
+        try { Resolve-RecipeToken 'step.categories[item.group].id' $ctx } catch { $thrown = $_.Exception }
+        $thrown | Should -BeOfType ([Collections.Generic.KeyNotFoundException])
+        $thrown.Data['delivered'] | Should -BeTrue
+        $thrown.Message | Should -BeLike '*a layer delivered under its own keys*'
+        $ctx.results.categories.tools.state = 'WOULD-CREATE'
+        try { Resolve-RecipeToken 'step.categories[item.group].id' $ctx } catch { $thrown = $_.Exception }
+        $thrown.Data['delivered'] | Should -BeFalse
+    }
+    It 'matches a member by its ending, ignoring case, and leaves out a row without the member' {
+        . (Join-Path $script:Source 'scripts/Recipe.Steps.ps1')
+        $rows = @(@{value = '/Files/Images/Layer/Products/A-1.PNG'}, @{value = '/Files/Images/a-1.png.bak'}, @{other = 1})
+        $hits = Select-RecipeSuffixMatches $rows @{value = '/a-1.png'}
+        $hits.Count | Should -Be 1
+        $hits[0].value | Should -Be '/Files/Images/Layer/Products/A-1.PNG'
+        (Select-RecipeSuffixMatches $rows @{}).Count | Should -Be 3
+    }
     It 'reads a secret by reference from DW_RECIPE_SECRETS, takes a default only when no reference is given' {
         $secrets = Read-RecipeSecrets '{"buyer":"s3cret-value"}'
         $ctx = @{item = @{passwordRef = 'buyer'}; secrets = $secrets; results = @{}}
@@ -696,6 +717,77 @@ Describe 'Invoke-DwRecipe on a lookup step' {
         $f.lines | Should -Contain 'STEP folder UNCHANGED Header / Footer'
         $f.exit | Should -Be 0
         Get-Writes | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'Invoke-DwRecipe on a site a layer copy already delivered' {
+    BeforeEach {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
+        Remove-Item Env:DW_API_TOKEN -ErrorAction SilentlyContinue
+        $script:Root = New-RecipeSandbox
+        $script:InputFile = Write-Input @{groups = @(
+                @{name = 'Example Trading'; kind = 'account'; customerNumber = 'C-1001'; users = @(@{userName = 'buyer@example.invalid'})},
+                @{name = 'Fresh Account'; kind = 'account'; customerNumber = 'C-2002'; users = @(@{userName = 'new@example.invalid'})})} 'users.accounts'
+        $src = 'skills/x.md'
+        $groupRead = @{surface = 'mcp'; status = 'implemented'; operation = 'get_user_groups'; arguments = @{}; rows = 'data'; produces = @{id = 'id'}; source = $src}
+        $primary = $groupRead + @{id = 'by-name'; match = @{name = '{item.name}'}}
+        # The copy named the account its own way; its customer number is the key both share.
+        $layer = $groupRead + @{id = 'by-number'; match = @{customerNumber = '{item.customerNumber}'}}
+        $memberRead = @{surface = 'mcp'; status = 'implemented'; operation = 'get_users_by_group_id'; arguments = @{groupId = '{step.groups[parent.name].id}'}; rows = 'data'; match = @{userName = '{item.userName}'}; source = $src}
+        $recipe = @{schema = 1; id = 'users.accounts'; name = 'Delivered'; functions = @('users.accounts'); skill = 'dw-users-permissions'; inputs = @{section = 'users.accounts'; required = @('groups')}
+            modes = @{mcpOnly = @{usable = $true; reason = 'MCP.'}; hosted = @{usable = $true; reason = 'No SQL.'}; local = @{usable = $true}; layerDelivered = 'verify'}
+            steps = @(
+                @{id = 'groups'; title = 'Groups'; forEach = 'groups[*]'; key = '{item.name}'; find = @{bindings = @($primary); delivered = @($layer)}; source = $src
+                    bindings = @(@{id = 'save'; surface = 'mcp'; status = 'implemented'; source = $src; create = @{operation = 'save_user_groups'; arguments = @{groups = @(@{id = 0; name = '{item.name}'; parentGroupId = 0; customerNumber = '{item.customerNumber}'})}}; readBack = $primary})},
+                @{id = 'users'; title = 'Users'; forEach = 'groups[*].users[*]'; key = '{item.userName}'; source = $src; bindings = @()
+                    find = @{bindings = @(@{id = 'u'; surface = 'mcp'; status = 'implemented'; operation = 'get_users_by_usernames'; arguments = @{userNames = @('{item.userName}')}; rows = 'data'; match = @{userName = '{item.userName}'}; produces = @{id = 'id'}; source = $src})}},
+                @{id = 'members'; title = 'Members'; forEach = 'groups[*].users[*]'; key = '{parent.name}/{item.userName}'; deliveredWith = @{step = 'groups'; key = '{parent.name}'}; find = @{bindings = @($memberRead)}; source = $src
+                    bindings = @(@{id = 'assign'; surface = 'mcp'; status = 'implemented'; source = $src; create = @{operation = 'assign_users_to_group'; arguments = @{groupId = '{step.groups[parent.name].id}'; userIds = @('{step.users[item.userName].id}')}}; readBack = $memberRead})})
+            debts = @(); provenOn = @(); traps = @()
+            verify = @{checkIds = @(); probes = @(@{id = 'named'; title = 'Each group carries the input name'; forEach = 'groups[*]'; minimumSubjects = 1; deliveredWith = @{step = 'groups'; key = '{item.name}'}
+                        bindings = @(@{surface = 'mcp'; status = 'implemented'; operation = 'get_user_groups'; arguments = @{}; rows = 'data'; match = @{name = '{item.name}'}; assert = @{kind = 'count'; op = 'eq'; value = 1}; source = $src})})}}
+        $script:RecipeFile = Join-Path $TestDrive ([guid]::NewGuid().ToString('n') + '.json')
+        $recipe | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $script:RecipeFile -Encoding utf8
+    }
+    It 'reports the delivered objects DELIVERED and never writes them, while it still builds what the copy lacks' {
+        New-Stub
+        $global:RecipeStub.groups.Add(@{id = 50; name = 'Example Trading Ltd'; parentGroupId = 0; customerNumber = 'C-1001'})
+        $global:RecipeStub.users.Add(@{id = 60; userName = 'buyer@example.invalid'}); $global:RecipeStub.users.Add(@{id = 61; userName = 'new@example.invalid'})
+        $v = Invoke-Runner $script:Root @{Recipe = $script:RecipeFile; InputPath = $script:InputFile}
+        $v.lines | Should -Contain 'STEP groups DELIVERED Example Trading'
+        $v.lines | Should -Contain 'PASS groups/Example Trading'
+        $v.lines | Should -Contain 'STEP members DELIVERED Example Trading/buyer@example.invalid'
+        @($v.lines -match '^NOTE members/Example Trading/buyer@example.invalid: belongs to groups ''Example Trading'', which a layer delivered; not written').Count | Should -Be 1
+        @($v.lines -match '^(PASS|FAIL|OPEN) members/Example Trading').Count | Should -Be 0
+        $v.lines | Should -Contain 'STEP groups WOULD-CREATE Fresh Account'
+        $v.exit | Should -Be 1
+        Get-Writes | Should -BeNullOrEmpty
+        $a = Invoke-Runner $script:Root @{Recipe = $script:RecipeFile; InputPath = $script:InputFile; Apply = $true}
+        $a.lines | Should -Contain 'STEP groups CREATED Fresh Account'
+        $a.lines | Should -Contain 'STEP members CREATED Fresh Account/new@example.invalid'
+        $a.lines | Should -Contain 'STEP members DELIVERED Example Trading/buyer@example.invalid'
+        @($a.lines -match '^NOTE probe/named: 1 subject\(s\) a layer delivered').Count | Should -Be 1
+        $a.lines | Should -Contain 'PASS probe/named'
+        $a.exit | Should -Be 0
+        $writes = Get-Writes
+        @($writes -match 'Example Trading').Count | Should -Be 0
+        @($writes -match '"groupId":50').Count | Should -Be 0
+        @($global:RecipeStub.groups | Where-Object { $_.customerNumber -eq 'C-1001' }).Count | Should -Be 1
+        $global:RecipeStub.log.Clear()
+        $again = Invoke-Runner $script:Root @{Recipe = $script:RecipeFile; InputPath = $script:InputFile; Apply = $true}
+        $again.lines | Should -Contain 'STEP groups DELIVERED Example Trading'
+        $again.lines | Should -Contain 'STEP groups UNCHANGED Fresh Account'
+        $again.exit | Should -Be 0
+        Get-Writes | Should -BeNullOrEmpty
+    }
+    It 'never reads the delivered shape when the find matched, so a from-blank build is unchanged' {
+        New-Stub
+        $global:RecipeStub.users.Add(@{id = 60; userName = 'buyer@example.invalid'}); $global:RecipeStub.users.Add(@{id = 61; userName = 'new@example.invalid'})
+        $a = Invoke-Runner $script:Root @{Recipe = $script:RecipeFile; InputPath = $script:InputFile; Apply = $true}
+        $a.lines | Should -Contain 'STEP groups CREATED Example Trading'
+        $a.lines | Should -Contain 'STEP members CREATED Example Trading/buyer@example.invalid'
+        @($a.lines -match 'DELIVERED').Count | Should -Be 0
+        $a.exit | Should -Be 0
     }
 }
 

@@ -178,10 +178,10 @@ function Resolve-RecipeToken {
             $key = $parts -join '/'
         }
         $results = $Context.results[$stepId]
-        if ($results -and $results.Contains($key) -and $results[$key].state -in @('WOULD-CREATE', 'BLOCKED')) {
-            # The object this value comes from does not exist yet: a verify run reports the item as one apply would create.
-            throw [Collections.Generic.KeyNotFoundException]::new("depends on $stepId '$key', which is $($results[$key].state.ToLowerInvariant())")
-        }
+        $prior = if ($results -and $results.Contains($key)) { $results[$key] }
+        # The object this value comes from does not exist yet (a verify run reports the item as one apply would create), or a layer delivered it and it was not read under its own keys (the dependant is the layer's too).
+        if ($prior.state -in @('WOULD-CREATE', 'BLOCKED') -or ($prior.state -eq 'DELIVERED' -and -not ($prior.values -and (Get-RecipeValue $prior.values $field).found))) {
+            $missing = [Collections.Generic.KeyNotFoundException]::new("depends on $stepId '$key', which " + $(if ($prior.state -eq 'DELIVERED') { 'a layer delivered under its own keys' } else { "is $($prior.state.ToLowerInvariant())" })); $missing.Data['delivered'] = $prior.state -eq 'DELIVERED'; throw $missing }
         if (-not $results -or -not $results.Contains($key) -or -not $results[$key].values) { throw (New-RecipeFault "Runner input: token {$Body}: step '$stepId' produced no value for '$key'.") }
         $value = Get-RecipeValue $results[$key].values $field
         if (-not $value.found) { throw (New-RecipeFault "Runner input: token {$Body}: step '$stepId' produced no '$field'.") }

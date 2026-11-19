@@ -71,6 +71,19 @@
       "source": "skills/dw-commerce-orders/references/order-states-and-quotes.md"
     },
     {
+      "id": "owners",
+      "title": "Find the user who owns each order: its user, else the buyer",
+      "forEach": "orders[*]",
+      "key": "{item.reference}",
+      "find": {"bindings": [
+        {"id": "mcp-user", "surface": "mcp", "status": "implemented", "operation": "get_users_by_usernames", "arguments": {"userNames": ["{item.user|input.buyer.userName}"]}, "rows": "data", "match": {"userName": "{item.user|input.buyer.userName}"}, "produces": {"id": "id"}, "source": "skills/dw-users-permissions/references/user-group-operations.md"}
+      ]},
+      "bindings": [
+        {"id": "accounts-recipe", "surface": "mcp", "status": "planned", "reason": "The owners are created by the users.accounts recipe; this recipe gives existing users a history.", "source": "skills/dw-users-permissions/references/user-group-operations.md"}
+      ],
+      "trap": "An order of another user than the buyer names it in user; it must be a customer user the customer-centre page shows the order to.",
+      "source": "skills/dw-users-permissions/references/user-group-operations.md"
+    },    {
       "id": "order-products",
       "title": "Find each product an order line names",
       "forEach": "orders[*].lines[*]",
@@ -90,14 +103,16 @@
       "forEach": "orders[*]",
       "key": "{item.reference}",
       "find": {"bindings": [
-        {"id": "mcp-search", "surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.buyer[input.buyer.userName].id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
+        {"id": "mcp-search", "surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.owners.id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
+      ], "delivered": [
+        {"id": "layer-reference", "surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.owners.id}", "pageSize": 200}}, "rows": "data", "match": {"reference": "{item.reference}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
       ]},
       "bindings": [
         {"id": "mcp-create", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/order-lifecycle.md",
-          "create": {"operation": "create_orders", "arguments": {"orders": [{"shopId": "{input.shop}", "userId": "{step.buyer[input.buyer.userName].id}", "purchaseOrderNumber": "{item.reference}", "orderType": "Cart"}]}},
-          "readBack": {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.buyer[input.buyer.userName].id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}}
+          "create": {"operation": "create_orders", "arguments": {"orders": [{"shopId": "{input.shop}", "userId": "{step.owners.id}", "purchaseOrderNumber": "{item.reference}", "orderType": "Cart"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.owners.id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}}
       ],
-      "trap": "An order is found again only by its reference: convert_cart_to_order gives it a new id, so no step keeps the cart id.",
+      "trap": "An order is found again only by its reference: convert_cart_to_order gives it a new id, so no step keeps the cart id. No MCP write sets the order reference (OrderReference), so this recipe keys an order on the purchase order number; a layer copy that keyed it on its reference is that delivery (find.delivered, DELIVERED): never written a second time, and its lines are checked and never added to.",
       "source": "skills/dw-commerce-orders/references/order-lifecycle.md"
     },
     {
@@ -105,6 +120,7 @@
       "title": "Put each line on its order, priced at what the buyer's account pays unless the line states a price",
       "forEach": "orders[*].lines[*]",
       "key": "{parent.reference}/{item.product}",
+      "deliveredWith": {"step": "orders", "key": "{parent.reference}"},
       "find": {"bindings": [
         {"id": "mcp-lines", "surface": "mcp", "status": "implemented", "operation": "get_order_lines", "arguments": {"orderId": "{step.orders[parent.reference].id}"}, "rows": "data", "match": {"productId": "{step.order-products[item.product].id}"}, "compare": {"quantity": "{item.quantity}"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
       ]},
@@ -121,13 +137,14 @@
       "title": "Place each order: convert the cart, which numbers it from the series",
       "forEach": "orders[*]",
       "key": "{item.reference}",
+      "deliveredWith": {"step": "orders"},
       "find": {"bindings": [
-        {"id": "mcp-search", "surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.buyer[input.buyer.userName].id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "compare": {"isCart": false}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
+        {"id": "mcp-search", "surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.owners.id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "compare": {"isCart": false}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
       ]},
       "bindings": [
         {"id": "mcp-convert", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/order-lifecycle.md",
           "update": {"operation": "convert_cart_to_order", "arguments": {"id": "{found.id}"}},
-          "readBack": {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.buyer[input.buyer.userName].id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "expect": {"isCart": false}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}}
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.owners.id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "expect": {"isCart": false}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}}
       ],
       "trap": "convert_cart_to_order takes the next number of the ORDER series; create_orders with orderType Order can collide on the number.",
       "source": "skills/dw-commerce-orders/references/order-lifecycle.md"
@@ -137,14 +154,15 @@
       "title": "Complete each order that is not open, so the buyer's order history lists it",
       "forEach": "orders[*]",
       "key": "{item.reference}",
+      "deliveredWith": {"step": "orders"},
       "skipWhen": {"path": "item.state", "equals": "open"},
       "find": {"bindings": [
-        {"id": "mcp-completed", "surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.buyer[input.buyer.userName].id}", "completedStatus": "Completed", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
+        {"id": "mcp-completed", "surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.owners.id}", "completedStatus": "Completed", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
       ]},
       "bindings": [
         {"id": "mcp-complete", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/order-lifecycle.md",
           "create": {"operation": "complete_order", "arguments": {"id": "{step.placed.id}"}},
-          "readBack": {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.buyer[input.buyer.userName].id}", "completedStatus": "Completed", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}}
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.owners.id}", "completedStatus": "Completed", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}}
       ],
       "trap": "Only search_orders with completedStatus Completed tells a completed order from an open one (completedDate is the only completion member it returns, and is_order_complete answers bare text). The delivery API order list shows completed orders only; complete_order keeps the state, so the state is set after it.",
       "source": "skills/dw-commerce-orders/references/order-lifecycle.md"
@@ -154,13 +172,14 @@
       "title": "Set each order's state",
       "forEach": "orders[*]",
       "key": "{item.reference}",
+      "deliveredWith": {"step": "orders"},
       "find": {"bindings": [
-        {"id": "mcp-search", "surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.buyer[input.buyer.userName].id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "compare": {"stateId": "{step.order-states[item.state].id}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
+        {"id": "mcp-search", "surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.owners.id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "compare": {"stateId": "{step.order-states[item.state].id}"}, "produces": {"id": "id"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
       ]},
       "bindings": [
         {"id": "mcp-state", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/order-lifecycle.md",
           "update": {"operation": "set_order_state", "arguments": {"id": "{found.id}", "stateId": "{step.order-states[item.state].id}"}},
-          "readBack": {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.buyer[input.buyer.userName].id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "expect": {"stateId": "{step.order-states[item.state].id}"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}}
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.owners.id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "expect": {"stateId": "{step.order-states[item.state].id}"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}}
       ],
       "source": "skills/dw-commerce-orders/references/order-lifecycle.md"
     },
@@ -190,16 +209,31 @@
       "source": "skills/dw-commerce-catalog/references/catalog-publishing.md"
     },
     {
+      "id": "quote-owners",
+      "title": "Find the user who owns each quote: its user, else the buyer",
+      "forEach": "quotes[*]",
+      "key": "{item.reference}",
+      "find": {"bindings": [
+        {"id": "mcp-user", "surface": "mcp", "status": "implemented", "operation": "get_users_by_usernames", "arguments": {"userNames": ["{item.user|input.buyer.userName}"]}, "rows": "data", "match": {"userName": "{item.user|input.buyer.userName}"}, "produces": {"id": "id"}, "source": "skills/dw-users-permissions/references/user-group-operations.md"}
+      ]},
+      "bindings": [
+        {"id": "accounts-recipe", "surface": "mcp", "status": "planned", "reason": "The owners are created by the users.accounts recipe; this recipe gives existing users a history.", "source": "skills/dw-users-permissions/references/user-group-operations.md"}
+      ],
+      "trap": "A quote of another user than the buyer names it in user; it must be a customer user the customer-centre page shows the quote to.",
+      "source": "skills/dw-users-permissions/references/user-group-operations.md"
+    },    {
       "id": "quotes",
       "title": "Ensure each quote for the buyer in its quote state, keyed by its reference",
       "forEach": "quotes[*]",
       "key": "{item.reference}",
       "find": {"bindings": [
         {"id": "admin-quotes", "surface": "admin-api", "status": "implemented", "operation": "GetOrderList", "arguments": {"OrderType": "Quote", "PageSize": 1000}, "rows": "model.data", "match": {"purchaseOrderNumber": "{item.reference}"}, "compare": {"stateId": "{item.state}"}, "produces": {"id": "id"}, "source": "skills/dw-data-access/references/recipes-commerce-orders.md"}
+      ], "delivered": [
+        {"id": "layer-reference", "surface": "admin-api", "status": "implemented", "operation": "GetOrderList", "arguments": {"OrderType": "Quote", "PageSize": 1000}, "rows": "model.data", "match": {"reference": "{item.reference}"}, "produces": {"id": "id"}, "source": "skills/dw-data-access/references/recipes-commerce-orders.md"}
       ]},
       "bindings": [
         {"id": "mcp-quote", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/order-lifecycle.md",
-          "create": {"operation": "create_orders", "arguments": {"orders": [{"shopId": "{input.shop}", "userId": "{step.buyer[input.buyer.userName].id}", "purchaseOrderNumber": "{item.reference}", "orderType": "Quote", "stateId": "{item.state}", "customerComment": "{item.comment|null}"}]}},
+          "create": {"operation": "create_orders", "arguments": {"orders": [{"shopId": "{input.shop}", "userId": "{step.quote-owners.id}", "purchaseOrderNumber": "{item.reference}", "orderType": "Quote", "stateId": "{item.state}", "customerComment": "{item.comment|null}"}]}},
           "update": {"operation": "set_order_state", "arguments": {"id": "{found.id}", "stateId": "{item.state}"}},
           "readBack": {"surface": "admin-api", "status": "implemented", "operation": "GetOrderList", "arguments": {"OrderType": "Quote", "PageSize": 1000}, "rows": "model.data", "match": {"purchaseOrderNumber": "{item.reference}"}, "expect": {"stateId": "{item.state}"}, "produces": {"id": "id"}, "source": "skills/dw-data-access/references/recipes-commerce-orders.md"}}
       ],
@@ -211,6 +245,7 @@
       "title": "Put each line on its quote",
       "forEach": "quotes[*].lines[*]",
       "key": "{parent.reference}/{item.product}",
+      "deliveredWith": {"step": "quotes", "key": "{parent.reference}"},
       "find": {"bindings": [
         {"id": "mcp-lines", "surface": "mcp", "status": "implemented", "operation": "get_order_lines", "arguments": {"orderId": "{step.quotes[parent.reference].id}"}, "rows": "data", "match": {"productId": "{step.quote-products[item.product].id}"}, "compare": {"quantity": "{item.quantity}"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
       ]},
@@ -284,7 +319,8 @@
         "id": "buyer-sees-orders",
         "title": "The signed-in buyer's order history lists each completed or rejected order",
         "forEach": "orders[*]",
-        "skipWhen": {"path": "item.state", "equals": "open"},
+        "skipWhen": [{"path": "item.state", "equals": "open"}, {"path": "item.user", "exists": true}],
+        "deliveredWith": {"step": "orders", "key": "{item.reference}"},
         "minimumSubjects": 1,
         "bindings": [
           {"surface": "dwapi", "status": "implemented", "handler": "dwapi-signed-in-get", "operation": "ecommerce/orders", "arguments": {"PageSize": 100}, "signIn": {"username": "{input.buyer.userName}", "password": "{secret.input.buyer.passwordRef}"}, "rows": "orders", "match": {"purchaseOrderNumber": "{item.reference}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"}
@@ -294,6 +330,8 @@
         "id": "buyer-sees-quotes",
         "title": "The signed-in buyer sees each quote",
         "forEach": "quotes[*]",
+        "skipWhen": {"path": "item.user", "exists": true},
+        "deliveredWith": {"step": "quotes", "key": "{item.reference}"},
         "minimumSubjects": 1,
         "bindings": [
           {"surface": "dwapi", "status": "implemented", "handler": "dwapi-signed-in-get", "operation": "ecommerce/orders/search", "arguments": {"Type": "quote", "PageSize": 100}, "signIn": {"username": "{input.buyer.userName}", "password": "{secret.input.buyer.passwordRef}"}, "rows": "orders", "match": {"purchaseOrderNumber": "{item.reference}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"}
@@ -313,9 +351,10 @@
         "title": "Each order placed after the numbering step carries the series prefix",
         "forEach": "orders[*]",
         "skipWhen": {"path": "input.numbering", "exists": false},
+        "deliveredWith": {"step": "orders", "key": "{item.reference}"},
         "minimumSubjects": 1,
         "bindings": [
-          {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.buyer[input.buyer.userName].id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "assert": {"kind": "contains", "path": "id", "value": "{input.numbering.prefix}"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
+          {"surface": "mcp", "status": "implemented", "operation": "search_orders", "arguments": {"request": {"userId": "{step.owners[item.reference].id}", "pageSize": 200}}, "rows": "data", "match": {"purchaseOrderNumber": "{item.reference}"}, "assert": {"kind": "contains", "path": "id", "value": "{input.numbering.prefix}"}, "source": "skills/dw-commerce-orders/references/order-lifecycle.md"}
         ]
       }
     ]
@@ -323,7 +362,8 @@
   "provenOn": [
     {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "orders.completed-orders.1-verify.json (numbering WOULD-UPDATE, orders, lines and quote WOULD-CREATE, the favourite list a delivery-API fixture UNCHANGED), 2-apply.json (series prefix set, three orders and a quote created, lined, placed and stated; the order dates OPEN as planned) and 2b-apply.json after the completion read was rebuilt on search_orders (30 of 30), 3-verify and 4-apply-again (30 of 30, nothing written), 6-hosted-verify without SQL (30 of 30); 5-mcponly.json is 23 of 30 (numbering and quotes need the Management API, the favourite list and the probes the delivery API); 7-verify-reset.json reports the reset OPEN as planned. The signed-in buyer was served both completed orders, the quote and the favourite list; the orders took RCPC-4 to RCPC-6 from the series after the step, a blank series having numbered ORDER1; a rehearsal order force-deleted with delete_order left the buyer's list at once."},
     {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "The reset as two prune steps, scoped to the buyer the history names: r1-verify listed four stale carts WOULD-DELETE and r2-apply soft-deleted them (35 of 35); two orders the buyer then placed through the delivery API cart (additems, payment, shipping, createOrder) were listed WOULD-DELETE and nothing else by r3-verify (31 of 33), removed by r4-apply (33 of 33) and absent from r5-verify (32 of 32): the buyer's delivery API order list was back to the two seeded completed orders and search_orders to the three seeded orders, untouched. A rehearsal quote was listed by r6-verify and removed by r7-apply (32 of 32). r8-mcponly is 24 of 32: the order and cart reset runs MCP-only, the quote reset needs the Management API read."},
-    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 22 of 22 (the order dates OPEN in the apply as planned); MCP-only 17 of 22, numbering and quotes need the Management API."}
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 22 of 22 (the order dates OPEN in the apply as planned); MCP-only 17 of 22, numbering and quotes need the Management API."},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "the same delivered-copy site: the six orders and the quote the copy keyed on their reference DELIVERED through find.delivered (one order owned by its user, not the buyer), their 13 lines checked UNCHANGED, placed, completed and state DELIVERED, no WOULD-CREATE; -Apply wrote only the order number prefix the copy does not carry (orders 6, quotes 1, lines 13 before and after). From empty [mcp 0.6.6-BETA]: 25 of 25, apply again nothing written."}
   ],
   "traps": [
     "No debt: the delivery API listed a completed order, a quote and a list on the next request, and the next converted order took the new prefix.",

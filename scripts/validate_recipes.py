@@ -148,7 +148,7 @@ def scopes(section_schema, for_each):
 
 def produced(step):
     names = set()
-    for b in (step.get("find") or {}).get("bindings", []):
+    for b in (step.get("find") or {}).get("bindings", []) + (step.get("find") or {}).get("delivered", []):
         names |= set((b.get("produces") or {}))
     for b in step.get("bindings", []):
         names |= set(((b.get("readBack") or {}).get("produces") or {}))
@@ -387,9 +387,14 @@ def validate_recipes(repo: Path) -> list[str]:
                 check_binding(prune.get("binding") or {}, "read", f"step {sid} prune", file, error, registry, tools, sql_jobs)
                 check_tokens({"arguments": (prune.get("binding") or {}).get("arguments"), "match": (prune.get("binding") or {}).get("match"),
                               "scope": (prune.get("scope") or {}).get("values"), "keep": (prune.get("keep") or {}).get("values")}, "prune")
-            for b in (step.get("find") or {}).get("bindings", []):
+            for b in (step.get("find") or {}).get("bindings", []) + (step.get("find") or {}).get("delivered", []):
                 check_binding(b, "read", f"step {sid} find", file, error, registry, tools, sql_jobs)
-                check_tokens({k: b.get(k) for k in ("arguments", "match", "compare", "compareMap", "parameters")}, "find")
+                check_tokens({k: b.get(k) for k in ("arguments", "match", "matchSuffix", "compare", "compareMap", "parameters")}, "find")
+            with_step = (step.get("deliveredWith") or {}).get("step")
+            if with_step and with_step not in earlier:
+                error(file, f"step {sid}: deliveredWith names {with_step}, which is not an earlier step")
+            if with_step and with_step in earlier:
+                check_tokens((step.get("deliveredWith") or {}).get("key"), "deliveredWith")
             for b in step.get("bindings", []):
                 check_binding(b, "write", f"step {sid} {b.get('id')}", file, error, registry, tools, sql_jobs)
                 if "create" in b:
@@ -407,6 +412,9 @@ def validate_recipes(repo: Path) -> list[str]:
         for probe in (doc.get("verify") or {}).get("probes", []):
             pid = probe.get("id")
             item, parent = scopes(section, probe.get("forEach"))
+            with_step = (probe.get("deliveredWith") or {}).get("step")
+            if with_step and with_step not in step_ids:
+                error(file, f"probe {pid}: deliveredWith names {with_step}, which is not a step")
             if probe.get("forEach") and item is None:
                 error(file, f"probe {pid}: forEach {probe.get('forEach')} is not in section {section_name}")
             for cond in conditions(probe.get("skipWhen")):
@@ -469,6 +477,7 @@ def all_bindings(doc):
     """Every binding of a recipe: find, write, read-back, scan, prune and probe."""
     for step in doc.get("steps") or []:
         yield from (step.get("find") or {}).get("bindings", [])
+        yield from (step.get("find") or {}).get("delivered", [])
         for b in step.get("bindings", []):
             yield b
             if b.get("readBack"):

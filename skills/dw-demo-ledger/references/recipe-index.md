@@ -16,15 +16,15 @@ validator fails when this file and the recipes disagree, so do not edit it by ha
 
 | Recipe | Functions | Input section | Owner skill | MCP-only | Hosted | After a layer delivered it | Proven on |
 |---|---|---|---|---|---|---|---|
-| `commerce.customer-prices` | commerce.customer-prices, commerce.default-price, commerce.quantity-prices | `prices` | dw-commerce-b2b | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
+| `commerce.customer-prices` | commerce.customer-prices, commerce.default-price, commerce.quantity-prices | `prices` | dw-commerce-b2b | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `content.design-styles` | content.design-styles, swift.style-wiring, swift.website-settings | `brand` | dw-swift-building | yes | yes | both | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 | `content.page-seo` | content.page-seo, swift.header-footer, swift.website-settings | `debrand` | dw-content-modelling | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 | `content.pages` | content.pages, content.paragraphs, content.grid-rows | `content.pages` | dw-content-modelling | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
-| `orders.completed-orders` | orders.completed-orders, orders.quotes, orders.favorite-lists, orders.order-numbering | `history` | dw-commerce-orders | no | no | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
+| `orders.completed-orders` | orders.completed-orders, orders.quotes, orders.favorite-lists, orders.order-numbering | `history` | dw-commerce-orders | no | no | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `orders.payment-methods` | orders.payment-methods, orders.shipping-methods, swift.cart-checkout | `checkout` | dw-commerce-orders | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
-| `pim.data-models` | pim.data-models, pim.field-scope, pim.field-display-groups, pim.completeness-rules | `catalogue` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
+| `pim.data-models` | pim.data-models, pim.field-scope, pim.field-display-groups, pim.completeness-rules | `catalogue` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `pim.documents` | pim.documents | `catalogue` | dw-demo-pim | no | no | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 (MCP-only yes, hosted yes) |
-| `pim.identifiers` | pim.identifiers, pim.images, commerce.stock-levels | `catalogue` | dw-demo-pim | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
+| `pim.identifiers` | pim.identifiers, pim.images, commerce.stock-levels | `catalogue` | dw-demo-pim | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 |
 | `pim.workflow` | pim.workflow | `pim.workflow` | dw-demo-pim | no | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 |
 | `users.accounts` | users.accounts, users.user-accounts, users.user-groups, swift.impersonation | `users.accounts` | dw-commerce-b2b | yes | yes | verify | dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19; dw 10.30.6, mcp 0.6.3-BETA, 2026-11-19 (MCP-only yes, hosted yes); dw 10.30.6, mcp 0.6.6-BETA, 2026-11-19 (MCP-only yes, hosted yes) |
 
@@ -62,6 +62,7 @@ work is done by hand or stays undone. Reasons as the recipes state them:
   - step counter write (admin-api): NumberSave answers ok and keeps the stored counter (sent 5000, read back 1); no MCP tool reaches EcomNumbers, so the counter moves only by placing orders or by a local SQL update.
   - step buyer write (mcp): The buyer, its account and its password are created by the users.accounts recipe; this recipe gives an existing buyer a history.
   - step order-states write (mcp): create_order_state needs the id of the order flow the state belongs to, which the input does not name; build the flow with the order-states reference, then name the state here.
+  - step owners write, step quote-owners write (mcp): The owners are created by the users.accounts recipe; this recipe gives existing users a history.
   - step order-products write, step quote-products write (mcp): Products are created by the catalogue recipe; a history only names them.
   - step order-date write (mcp): No MCP tool and no Management API command sets an order's date: create_orders and update_orders carry none and OrderSave stamps now. Out of product it is local SQL keyed on the order id, written last.
   - step favourites write (mcp): No MCP tool and no Management API command writes a favourite list (EcomCustomerFavoriteLists). The signed-in buyer creates one with POST /dwapi/ecommerce/favorites/lists {name, description, isDefault} and adds products with POST /dwapi/ecommerce/favorites/items/{listId} {productId, quantity, note}; a recipe writes through MCP or the Management API only.

@@ -43,7 +43,7 @@ function Invoke-RecipeProbe {
         $Run.lines.Add("NOTE ${name}: planned, not executed: " + (@($Probe.bindings | ForEach-Object { $_.reason }) -join '; '))
         $Run.planned.Add($Probe.id); return
     }
-    $subjects = 0; $failures = @(); $open = @(); $index = 0; $qualified = 0
+    $subjects = 0; $failures = @(); $open = @(); $index = 0; $qualified = 0; $delivered = 0
     foreach ($item in (Get-RecipeItems $Run.section $Probe.forEach)) {
         $index++
         $context = New-RecipeContext $Run $item
@@ -72,11 +72,17 @@ function Invoke-RecipeProbe {
                     $fault = Test-RecipeAssert $binding $rows $context
                 }
             }
+            if ($fault -and $Probe.deliveredWith) {
+                # A subject a layer delivered in its own shape is not observable in this recipe's shape: said, not failed.
+                $owner = $Run.results[$Probe.deliveredWith.step]; $ownerKey = [string](Expand-RecipeValue $Probe.deliveredWith.key $context)
+                if ($owner -and $owner.Contains($ownerKey) -and $owner[$ownerKey].state -eq 'DELIVERED') { $delivered++; continue }
+            }
             if ($fault) { $failures += "subject ${index}: $fault" }
         } catch {
             Write-Verbose $_.ScriptStackTrace
             $exception = $_.Exception
-            if ($exception -is [Collections.Generic.KeyNotFoundException]) { $failures += "subject ${index}: absent, " + $exception.Message }
+            if ($exception -is [Collections.Generic.KeyNotFoundException] -and $exception.Data['delivered']) { $delivered++ }
+            elseif ($exception -is [Collections.Generic.KeyNotFoundException]) { $failures += "subject ${index}: absent, " + $exception.Message }
             elseif ($exception -is [InvalidOperationException] -or $exception -is [UnauthorizedAccessException]) { $open += "subject ${index}: " + $exception.Message }
             elseif ($exception -is [ApplicationException]) { $failures += "subject ${index}: " + $exception.Message }
             else { $failures += "subject ${index}: the probe read failed; no response body is printed" }
@@ -84,6 +90,11 @@ function Invoke-RecipeProbe {
     }
     # The input asks nothing of this probe (no item, or every item skipped): there is nothing to verify, and it is said.
     if ($Probe.forEach -and $qualified -eq 0) { $Run.lines.Add("NOTE ${name}: no input item asks for it ($($Probe.forEach))"); return }
+    if ($delivered) {
+        $Run.lines.Add("NOTE ${name}: $delivered subject(s) a layer delivered in its own shape, not observable in this recipe's shape")
+        $subjects -= $delivered
+        if (-not $failures.Count -and -not $open.Count -and $subjects -le 0) { return }
+    }
     if ($failures.Count) { Add-RecipeCheck $Run $name 'FAIL' ("$($failures.Count) failing: " + $failures[0]); return }
     if ($open.Count) { Add-RecipeCheck $Run $name 'OPEN' ("$($open.Count) not observable: " + $open[0]); return }
     if ($subjects -lt $Probe.minimumSubjects) { Add-RecipeCheck $Run $name 'FAIL' "$subjects subject(s), below the minimum of $($Probe.minimumSubjects)"; return }

@@ -2,7 +2,7 @@
 .SYNOPSIS
 WRITES: through Recipe.Write.ps1, and only with -Apply. Runs one recipe step: find by natural key, create or update, read back.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. Per item: find the object by its natural key (more than one match blocks the item); equal fields are UNCHANGED, different fields UPDATE, no match CREATE. Without -Apply the item reports WOULD-CREATE or WOULD-UPDATE and nothing is written. With -Apply the first binding whose write and read-back can both run here writes, and the write is read back and compared with the expected fields: a status is never the evidence. An item with no eligible binding is BLOCKED with the reason, never skipped. Every item is one check named <step>/<natural key>.
+PowerShell 7. Owning reference: ../references/recipes.md. Per item: find the object by its natural key (more than one match blocks the item); equal fields are UNCHANGED, different fields UPDATE, no match CREATE. Without -Apply the item reports WOULD-CREATE or WOULD-UPDATE and nothing is written. With -Apply the first binding whose write and read-back can both run here writes, and the write is read back and compared with the expected fields: a status is never the evidence. An item with no eligible binding is BLOCKED with the reason, never skipped. Every item is one check named <step>/<natural key>. A layer copy that delivered the object under its own keys is found by the step's find.delivered read (only when the find matched nothing) and reported DELIVERED, never written; an item of a delivered object (deliveredWith) that would be created or changed is DELIVERED too, a NOTE and not a check.
 .EXAMPLE
 . ./Recipe.Steps.ps1
 #>
@@ -37,11 +37,69 @@ function Find-RecipeObject {
         $differs = Get-RecipeMapDifferences $rows $binding.compareMap $Context
         return @{state = $(if ($differs.Count) { 'UPDATE' } else { 'UNCHANGED' }); row = $null; fields = $differs; binding = $binding}
     }
-    $hits = Select-RecipeMatches $rows (Expand-RecipeValue $binding.match $Context) $binding.operation
+    $hits = Select-RecipeBindingMatches $rows $binding $Context
     if ($hits.Count -gt 1) { throw (New-RecipeFault "$($hits.Count) objects match the natural key; resolve the duplicates before applying") }
-    if ($hits.Count -eq 0) { return @{state = 'CREATE'; row = $null; fields = @(); binding = $binding} }
+    if ($hits.Count -eq 0) {
+        $layer = Find-RecipeDelivered $Step $Context $Run
+        if ($layer) { return $layer }
+        return @{state = 'CREATE'; row = $null; fields = @(); binding = $binding}
+    }
     $differs = if ($binding.compare) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $binding.compare $Context) $binding.operation } else { @() }
     return @{state = $(if ($differs.Count) { 'UPDATE' } else { 'UNCHANGED' }); row = $hits[0]; fields = $differs; binding = $binding}
+}
+function Select-RecipeBindingMatches {
+    # The rows a read binding's match selects (as Select-RecipeMatches does), then matchSuffix.
+    param([object[]]$Rows, $Binding, $Context)
+    $hits = Select-RecipeMatches $Rows (Expand-RecipeValue $Binding.match $Context) $Binding.operation
+    if ($Binding.matchSuffix) { $hits = Select-RecipeSuffixMatches $hits (Expand-RecipeValue $Binding.matchSuffix $Context) }
+    return , @($hits)
+}
+function Select-RecipeSuffixMatches {
+    # matchSuffix: a row matches only when each named member's text ends with the given text, ignoring case: a file a
+    # layer stored under its own folder is found by its file name. A row without the member does not match.
+    param([object[]]$Rows, $Suffix)
+    if (-not $Suffix -or $Suffix.Count -eq 0) { return , @($Rows) }
+    $hits = foreach ($row in $Rows) {
+        $ok = $true
+        foreach ($k in @($Suffix.Keys)) {
+            $v = Get-RecipeValue $row $k
+            if (-not $v.found -or -not ([string]$v.value).EndsWith([string]$Suffix[$k], [StringComparison]::OrdinalIgnoreCase)) { $ok = $false; break }
+        }
+        if ($ok) { , $row }
+    }
+    return , @($hits)
+}
+function Find-RecipeDelivered {
+    # find.delivered: the shape a layer copy delivers the object in, under keys this recipe does not write. Read only
+    # when the find matched nothing; one matching row or more is the object the layer delivered. $null when absent.
+    param($Step, $Context, $Run)
+    if (-not $Step.find.delivered) { return $null }
+    $select = Select-RecipeRead $Step.find.delivered $Run.cap $Run.registry
+    if (-not $select.binding) { return $null }
+    $binding = $select.binding
+    $rows = Read-RecipeRows $binding $Context $Run
+    $hits = Select-RecipeBindingMatches $rows $binding $Context
+    if ($hits.Count -eq 0) { return $null }
+    # Values are produced only from one row: several rows prove the delivery, not which one a dependant reads.
+    return @{state = 'DELIVERED'; row = $(if ($hits.Count -eq 1) { $hits[0] }); fields = @(); binding = $binding}
+}
+function Get-RecipeDeliveredOwner {
+    # deliveredWith: the object this item belongs to, when a layer delivered it ("categories 'tools'"), else $null.
+    param($Step, $Context, $Run, [string]$Key)
+    if (-not $Step.deliveredWith) { return $null }
+    $ownerKey = if ($Step.deliveredWith.key) { [string](Expand-RecipeValue $Step.deliveredWith.key $Context) } else { $Key }
+    $owner = $Run.results[$Step.deliveredWith.step]
+    if ($owner -and $owner.Contains($ownerKey) -and $owner[$ownerKey].state -eq 'DELIVERED') { return "$($Step.deliveredWith.step) '$ownerKey'" }
+    return $null
+}
+function Set-RecipeDelivered {
+    # An object a layer owns: reported, never written. Observed under the layer's keys it is a passing check;
+    # one that hangs off a delivered object is a NOTE, because nothing of it was read in this recipe's shape.
+    param($Run, $Step, [string]$Key, [string]$Why, [switch]$Observed)
+    if (-not $Run.results[$Step.id].Contains($Key)) { $Run.results[$Step.id][$Key] = @{state = 'DELIVERED'; values = @{}} } else { $Run.results[$Step.id][$Key].state = 'DELIVERED' }
+    Add-RecipeStepLine $Run $Step.id 'DELIVERED' $Key
+    if ($Observed) { Add-RecipeCheck $Run "$($Step.id)/$Key" 'PASS' }
+    $Run.lines.Add("NOTE $($Step.id)/${Key}: $Why; not written")
 }
 function Invoke-RecipeStepItem {
     param($Step, $Context, $Run, [string]$Key, [ref]$Printed)
@@ -53,10 +111,16 @@ function Invoke-RecipeStepItem {
         $Context.found = $found.row
         $result.values = Get-RecipeProduced $found.row $found.binding.produces $found.binding.operation
     }
+    if ($found.state -eq 'DELIVERED') {
+        Set-RecipeDelivered $Run $Step $Key "a layer delivered it under its own keys ($($found.binding.operation))" -Observed; $Printed.Value = $true; return
+    }
     if ($found.state -eq 'UNCHANGED') {
         Add-RecipeStepLine $Run $Step.id 'UNCHANGED' $Key; $Printed.Value = $true
         Add-RecipeCheck $Run $name 'PASS'; return
     }
+    # What a layer delivered stays the layer's: an item that would be created in it or changed is reported, not written.
+    $owner = Get-RecipeDeliveredOwner $Step $Context $Run $Key
+    if ($owner) { Set-RecipeDelivered $Run $Step $Key "belongs to $owner, which a layer delivered"; $Printed.Value = $true; return }
     $action = if ($found.state -eq 'CREATE') { 'create' } else { 'update' }
     $what = if ($action -eq 'create') { 'absent' } else { 'differs from the input in ' + ($found.fields -join ', ') }
     # A step without write bindings is a lookup: it finds and produces values, and an absent object stops its dependants.
@@ -84,7 +148,7 @@ function Invoke-RecipeStepItem {
         if ($differs.Count) { Add-RecipeCheck $Run $name 'FAIL' ('the read-back differs from the write in ' + ($differs -join ', ')); return }
         Add-RecipeCheck $Run $name 'PASS'; return
     }
-    $hits = Select-RecipeMatches $rows (Expand-RecipeValue $readBack.match $Context) $readBack.operation
+    $hits = Select-RecipeBindingMatches $rows $readBack $Context
     if ($hits.Count -ne 1) { Add-RecipeCheck $Run $name 'FAIL' "the read-back found $($hits.Count) matching object(s), not one"; return }
     $differs = if ($readBack.expect) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $readBack.expect $Context) $readBack.operation } else { @() }
     $result.values = Get-RecipeProduced $hits[0] $readBack.produces $readBack.operation $result.values
@@ -114,8 +178,10 @@ function Invoke-RecipeStep {
             $seen[$key] = $true
             Invoke-RecipeStepItem $Step $context $Run $key ([ref]$printed)
         } catch [Collections.Generic.KeyNotFoundException] {
-            # A value this item needs comes from an object that does not exist yet.
             if (-not $key) { $key = '(no key)' }
+            # A value this item needs comes from an object a layer delivered under its own keys: the layer owns this one too.
+            if ($_.Exception.Data['delivered']) { if (-not $printed) { Set-RecipeDelivered $Run $Step $key $_.Exception.Message }; continue }
+            # A value this item needs comes from an object that does not exist yet.
             $state = if ($Run.apply) { 'BLOCKED' } else { 'WOULD-CREATE' }
             $Run.results[$Step.id][$key] = @{state = $state; values = @{}}
             if (-not $printed) { Add-RecipeStepLine $Run $Step.id $state $key }

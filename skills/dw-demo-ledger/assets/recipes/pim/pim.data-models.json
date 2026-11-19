@@ -36,6 +36,8 @@
       "find": {"bindings": [
         {"id": "mcp-categories", "surface": "mcp", "status": "planned", "reason": "No MCP read lists a category: get_product_category_fields returns the fields of CategoryFields categories, so a category without fields is invisible to it.", "source": "skills/dw-pim-modelling/references/model-writes.md"},
         {"id": "admin-categories", "surface": "admin-api", "status": "implemented", "operation": "ProductCategoriesAll", "arguments": {}, "rows": "model.data", "match": {"name": "{item.name}"}, "produces": {"id": "id"}, "source": "skills/dw-data-access/references/recipes-pim.md"}
+      ], "delivered": [
+        {"id": "layer-model-category", "surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{item.name}"}, "produces": {"id": "categoryId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
       ]},
       "bindings": [
         {"id": "mcp-create-category", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
@@ -51,6 +53,7 @@
       "forEach": "groups[*]",
       "key": "{item.key}",
       "skipWhen": {"path": "item.parent", "exists": true},
+      "deliveredWith": {"step": "categories"},
       "find": {"bindings": [
         {"id": "mcp-shops", "surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{item.name}"}, "compare": {"categoryId": "{step.categories.id}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
       ]},
@@ -68,6 +71,7 @@
       "title": "Ensure each spec field in its top group's category, the same in every language and variant",
       "forEach": "groups[*].specFields[*]",
       "key": "{parent.key}/{item.key}",
+      "deliveredWith": {"step": "categories", "key": "{parent.key}"},
       "find": {"bindings": [
         {"id": "mcp-fields", "surface": "mcp", "status": "implemented", "operation": "get_product_category_fields", "arguments": {}, "rows": "data", "match": {"systemName": "ProductCategory|{step.categories[parent.key].id}|{item.key}"}, "compare": {"allowChangesAcrossLanguages": false, "allowChangesAcrossVariants": false}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
       ]},
@@ -86,6 +90,7 @@
       "forEach": "groups[*]",
       "key": "{item.key}",
       "skipWhen": {"path": "item.specFields", "exists": false},
+      "deliveredWith": {"step": "categories"},
       "find": {"bindings": [
         {"id": "mcp-display-groups", "surface": "mcp", "status": "implemented", "operation": "get_field_display_groups", "arguments": {}, "rows": "data", "match": {"systemName": "{step.categories.id}"}, "compare": {"name": "{item.name}", "availableInFrontend": true, "fieldIdsList": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
       ]},
@@ -104,6 +109,7 @@
       "forEach": "groups[*]",
       "key": "{item.key}",
       "skipWhen": {"path": "item.specFields", "exists": false},
+      "deliveredWith": {"step": "categories"},
       "find": {"bindings": [
         {"id": "mcp-rules", "surface": "mcp", "status": "implemented", "requiresSchema": {"output": ["data[*].fields"]}, "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "compare": {"excludeVariants": true, "fields[*].systemName": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"},
         {"id": "mcp-rules-names", "surface": "mcp", "status": "implemented", "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "compare": {"excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}
@@ -127,6 +133,7 @@
       "forEach": "groups[*]",
       "key": "{item.key}",
       "skipWhen": {"path": "item.specFields", "exists": false},
+      "deliveredWith": {"step": "categories"},
       "find": {"bindings": [
         {"id": "mcp-assignments", "surface": "mcp", "status": "implemented", "operation": "get_completion_rule_assignments_for_groups", "arguments": {"groupIds": ["{step.models.id}"]}, "rows": "data", "match": {"id": "{step.models.id}"}, "compare": {"rules[*].ruleId": ["{step.rule.id}"], "languageIds": ["{build.defaultLanguage}"]}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}
       ]},
@@ -159,6 +166,7 @@
         "title": "Each top group's display group is offered to the storefront",
         "forEach": "groups[*]",
         "skipWhen": {"path": "item.specFields", "exists": false},
+        "deliveredWith": {"step": "categories", "key": "{item.key}"},
         "minimumSubjects": 1,
         "bindings": [
           {"surface": "mcp", "status": "implemented", "operation": "get_field_display_groups", "arguments": {"frontendOnly": true}, "rows": "data", "match": {"systemName": "{step.categories[item.key].id}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
@@ -168,11 +176,12 @@
   },
   "provenOn": [
     {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "pim.data-models.1-verify.json (all WOULD-CREATE), pim.data-models.2-apply.json (16 of 16 from empty), pim.data-models.3-verify.json and pim.data-models.4-apply-again.json (16 of 16, nothing written), pim.data-models.5-mcponly.json (categories BLOCKED as declared); a hyphenated group key stored its category without the hyphen and was found by name; the catalogue recipe proved the display group on the delivery API and a completeness figure on its products"},
-    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 15 of 15. On 0.6.6 get_completion_rules rows carry only fieldSystemNames; the read gated on fields[] (requiresSchema) falls to the fieldSystemNames binding, and a separate 0.6.3 run created two rules from empty through the fields[] read-back (15 of 15, apply-again nothing written). MCP-only 1 of 15: the categories have no MCP read, as declared."}
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 15 of 15. On 0.6.6 get_completion_rules rows carry only fieldSystemNames; the read gated on fields[] (requiresSchema) falls to the fieldSystemNames binding, and a separate 0.6.3 run created two rules from empty through the fields[] read-back (15 of 15, apply-again nothing written). MCP-only 1 of 15: the categories have no MCP read, as declared."},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "a site whose catalogue a rewritten sample-data layer copy delivered from the same input (spec fields in the layer's categories, which ProductCategoriesAll and get_product_category_fields do not list): set verify 8 of 8, the three categories found through their data models and DELIVERED, their 11 fields, display groups, rules and assignments DELIVERED, no WOULD-CREATE; set -Apply wrote nothing (category fields 22, field values 44, rules 3, display groups 1 before and after). From empty on a fresh input [mcp 0.6.6-BETA]: verify all WOULD-CREATE, apply, verify 15 of 15, apply again nothing written, no DELIVERED row."}
   ],
   "traps": [
     "A top group is one data model and one product category; subgroups carry no spec fields. Data model names must be unique across the PIM shop's folders, because the models are found by name.",
-    "On a build whose data models came from a sample-data layer the categories and fields carry the layer's slot ids, so this recipe verifies only a build it applied; check the layer build with the ledger checks.",
+    "A layer copy keeps its own category ids, field ids and rule names and binds its data models to categories the category reads do not list (no CategoryFields category). The category step then finds the category through the data model of the group's name (find.delivered) and reports it DELIVERED; the fields, display group, rule and assignment of a delivered category that this recipe would create or change are DELIVERED too and never written, and the layer's own ledger checks verify them. MCP-only has no category read, so it cannot tell a layer's category from its own.",
     "A product scores completeness only through a rule assigned to a group it sits in: get_completeness_status answers -1 when no rule applies. The catalogue recipe proves the figure on its products."
   ]
 }
