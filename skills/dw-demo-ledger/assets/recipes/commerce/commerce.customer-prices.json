@@ -149,11 +149,11 @@
       },
       {
         "id": "buyer-tier",
-        "title": "The signed-in buyer is offered each quantity tier at its break",
+        "title": "The signed-in buyer is offered each quantity tier at its break: the tier row is among the rows served at that quantity, beside any contract or group row of the buyer there (the lowest is charged; buyer-contract-price proves that one)",
         "forEach": "tiers[*]",
         "minimumSubjects": 1,
         "bindings": [
-          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-signed-in-get", "operation": "ecommerce/products/{productId}", "arguments": {"productId": "{step.list-price[item.product].id}", "CurrencyCode": "{input.currency|\"USD\"}"}, "signIn": {"username": "{input.buyer.userName}", "password": "{secret.input.buyer.passwordRef}"}, "rows": "prices", "match": {"quantity": "{item.quantity}"}, "assert": {"kind": "equals", "path": "price.price", "value": "{item.amount}"}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"},
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-signed-in-get", "operation": "ecommerce/products/{productId}", "arguments": {"productId": "{step.list-price[item.product].id}", "CurrencyCode": "{input.currency|\"USD\"}"}, "signIn": {"username": "{input.buyer.userName}", "password": "{secret.input.buyer.passwordRef}"}, "rows": "prices", "match": {"quantity": "{item.quantity}", "price.price": "{item.amount}"}, "assert": {"kind": "count", "op": "ge", "value": 1}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"},
           {"surface": "mcp", "status": "planned", "reason": "No MCP tool returns the price a visitor or a signed-in user is charged: get_prices_by_product_id lists the stored rows, which the steps already read back, and force_price_recalculation prices an order without the frontend user's context.", "source": "skills/dw-extend-mcp-tools/references/tool-surface-gaps.md"}
         ]
       }
@@ -169,6 +169,7 @@
     "On 10.30.6 the stock cart honours an unscoped quantity tier (the 10.28 line ignored it), and the lowest matching price wins: a tier below a contract amount undercuts the contract for the account too.",
     "The MCP price read leaves out every null member: a scope is matched by stating each scope member null, never by its absence alone.",
     "customerGroupId on save_prices matches a customer number; a user group goes in userGroupId and reaches direct members only.",
-    "A group or contract price without a quantity is written at quantity 1, the natural key a layer copy writes too (a price row applies from its quantity, so 1 and 0 serve the same buyer), so a copy's rows are found and not written a second time. A row an earlier build wrote at quantity 0 is not found at 1: remove it, or state quantity 0 in the input."
+    "A group or contract price without a quantity is written at quantity 1, the natural key a layer copy writes too (a price row applies from its quantity, so 1 and 0 serve the same buyer), so a copy's rows are found and not written a second time. A row an earlier build wrote at quantity 0 is not found at 1: remove it, or state quantity 0 in the input.",
+    "The delivery API product read lists every price row that applies to the signed-in user at a quantity, each with its own price: with a contract tier and an unscoped tier at the same break (11 at 25.55 and at 36.5, measured on 10.30.8) both are in prices, and price.price at the top is the lowest. A probe that holds every row at a break to one amount fails on the other row; the tier probe asks for its own row among them."
   ]
 }

@@ -1346,6 +1346,32 @@ Describe 'Shipped recipes against the platform shapes a whole-build set met' {
         $run.checks.Count | Should -Be 0
         Remove-Variable -Name CompletenessScores -Scope Global
     }
+    It 'finds the buyer''s tier row among the rows served at its break, beside the buyer''s own lower contract row there' {
+        . (Join-Path $script:Source 'scripts/Recipe.Verify.ps1')
+        $probe = @((Get-ShippedRecipe 'commerce' 'commerce.customer-prices').verify.probes | Where-Object id -eq 'buyer-tier')[0]
+        # The signed-in product read as measured on 10.30.8: every row that applies at a quantity, the account's contract
+        # tier and the unscoped tier side by side, each with its own price.
+        $global:BuyerRows = @{
+            PROD41 = @(@{quantity = 1; price = @{price = 26.6}}, @{quantity = 1; price = @{price = 38}}, @{quantity = 11; price = @{price = 25.55}}, @{quantity = 11; price = @{price = 36.5}}, @{quantity = 22; price = @{price = 24.43}}, @{quantity = 22; price = @{price = 34.9}})
+            PROD44 = @(@{quantity = 1; price = @{price = 14.7}}, @{quantity = 1; price = @{price = 21}}, @{quantity = 80; price = @{price = 18.9}}, @{quantity = 80; price = @{price = 18.9}})
+        }
+        function Read-RecipeRows { param($Binding, $Context, $Run) , @($global:BuyerRows[[string](Expand-RecipeValue $Binding.arguments $Context).productId]) }
+        $section = @{currency = 'USD'; buyer = @{userName = 'buyer@example.invalid'; passwordRef = 'buyer'; account = 'C-1'}
+            tiers = @(@{product = 'DECK'; quantity = 11; amount = 36.5}, @{product = 'DECK'; quantity = 22; amount = 34.9}, @{product = 'ROPE'; quantity = 80; amount = 18.9})}
+        $results = @{'list-price' = @{DECK = @{state = 'UNCHANGED'; values = @{id = 'PROD41'}}; ROPE = @{state = 'UNCHANGED'; values = @{id = 'PROD44'}}}}
+        $cap = @{surfaces = @('dwapi'); dwapi = $true; mcp = $false; tools = @{}}
+        $newRun = { $r = New-StepRun $section $results $cap; $r.planned = [Collections.Generic.List[string]]::new(); $r.pollIntervalMs = 1; $r }
+        $run = & $newRun
+        Invoke-RecipeProbe $probe $run
+        # A tier priced as another row at the same break (the rope at 80) holds as well.
+        $run.lines | Should -Contain 'PASS probe/buyer-tier'
+        # RED CONTROL: the buyer is not served the tier row at 22 (only the contract row): the probe fails on that break.
+        $global:BuyerRows.PROD41 = @($global:BuyerRows.PROD41 | Where-Object { -not ($_.quantity -eq 22 -and $_.price.price -eq 34.9) })
+        $run = & $newRun
+        Invoke-RecipeProbe $probe $run
+        @($run.lines -match '^FAIL probe/buyer-tier: 1 failing: subject 2: 0 matching row\(s\), expected ge 1').Count | Should -Be 1
+        Remove-Variable -Name BuyerRows -Scope Global
+    }
     It 'compares a state''s next states in any order, as get_workflow_states lists them sorted by id, and still sees a missing one' {
         $step = @((Get-ShippedRecipe 'pim' 'pim.workflow').steps | Where-Object id -eq 'transitions')[0]
         $step.bindings[0].readBack.unordered | Should -Contain 'nextStateIds'
