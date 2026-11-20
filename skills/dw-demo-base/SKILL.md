@@ -45,8 +45,10 @@ Every sister demo skill carries the same "how to run me" header and defers to th
 **The build chain, the same for every brand:**
 
 1. **One set run**: verify, apply once, pay debts, final verify, from the customer data file.
-   It is mechanical: delegate it to a sub-session or subagent on the small tier, if your agent
-   has one, and read its report.
+   It is mechanical. **When your agent can start a subagent or sub-session, start one for it and
+   name the small tier's model in that call**; a call without a model inherits yours and saves
+   nothing. Read the brief's custom work while it runs, then read its report. Run the set
+   yourself only when your agent has no such mechanism, and say in the hand-in which model ran it.
 2. **The orchestrator (mid tier or above) builds what the set reports it does not cover**: a
    BLOCKED line's reason, the index's "What stays planned", and the custom storefront work.
 3. **A final verify of the set** (all PASS) plus the brief's checks, by the orchestrator.

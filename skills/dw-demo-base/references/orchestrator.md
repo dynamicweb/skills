@@ -353,8 +353,8 @@ takes when starting a subagent or sub-session) and take the fastest, cheapest as
 standard general-purpose model as mid, the deepest-reasoning as top. With one model available, every tier is that model.
 Non-normative examples: in Claude Code a subagent takes a model through its definition's
 `model:` field or the model option of the call that starts it, and `/model` lists the choices;
-in the Codex CLI a sub-session is `codex exec -m <model> "<brief>"`, and `/model` lists the
-choices.
+in the Codex CLI the call that starts a sub-agent takes a `model` (left empty, it inherits the
+caller's), a sub-session is `codex exec -m <model> "<brief>"`, and `/model` lists the choices.
 
 Place the tier by the *kind* of work, not by the phase name:
 
@@ -386,11 +386,26 @@ hand-over where a second session received only the first one's report was unreli
 repaired what was reported and stopped, leaving the brief's custom work unbuilt. One orchestrating
 session that ran or delegated the set and kept ownership of the brief was complete each time.
 
-**Do not delegate** when your agent has no sub-session or subagent mechanism, or when the set is so
-small (one or two sections) that writing the brief costs more than the run: run it inline, in the
-same order, under the same rules.
+**Delegating is the default, not an option.** When your agent can start a subagent or sub-session,
+the set run goes to one. Run it inline, in the same order and under the same rules, only when your
+agent has no such mechanism or the set is one or two sections.
 
-**Give the delegate** (a sub-session or subagent on the small tier, if your agent has one):
+**Name the model in the call that starts the delegate.** Resolve the small tier first ("Model
+tier" above), then pass that model explicitly. A subagent started with no model, or an empty one,
+inherits the orchestrator's model: that is a second copy of yourself, not a delegation, and it
+saves neither time nor price. Measured on two first builds of one brief on two providers
+[dw 10.30 · swift 2.5]: both orchestrators had read this section, one ran the set itself on the
+top tier and the other started three subagents that all inherited its own model.
+
+**Work while it runs.** Start the delegate in the background where your agent allows it, and use
+the wait for what needs no write: read the brief's custom work, the owning skills and the site's
+templates. Make no write to the site until the delegate's apply has ended; two writers on one
+site invalidate the set's read-backs.
+
+**Say who ran it.** The hand-in names the model that ran the set and the model that built the
+rest, so the next build can check the split was real.
+
+**Give the delegate** (a sub-session or subagent on the small tier):
 
 - the absolute paths of the customer data file, the skills checkout and a folder for its logs and
   reports;
