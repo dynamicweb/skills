@@ -2,7 +2,7 @@
 .SYNOPSIS
 READ-ONLY. Recipe target discovery and the reads a recipe names: MCP, Management API, delivery API and local SQL.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. Uses the shared transport (Dw.Api.psm1) and the ledger's local SQL guard (Ledger.Sql.ps1). Every read is on an allowlist in assets/handlers.json, checked before the call; an MCP call's top-level argument names are checked against the tool's own tools/list input schema, because a wrong name answers only a hintless invocation error. SQL is one guarded SELECT, run with parameters (never a token spliced into the text) inside a transaction that is always rolled back. A delivery read sends no credential except the sign-in a read-back names, or the bearer token of the signIn a dwapi-signed-in-get binding names (signed in for that read, never kept or printed). The TLS bypass follows the runner's gate: a loopback base URL or -AllowSelfSignedCertificate. No response body is printed.
+PowerShell 7. Owning reference: ../references/recipes.md. Uses the shared transport (Dw.Api.psm1) and the ledger's local SQL guard (Ledger.Sql.ps1). Every read is on an allowlist in assets/handlers.json, checked before the call; an MCP call's argument names, nested members included, are checked against the tool's own tools/list input schema, because a wrong name answers only an invocation error (an older server refuses a member it does not list). SQL is one guarded SELECT, run with parameters (never a token spliced into the text) inside a transaction that is always rolled back. A delivery read sends no credential except the sign-in a read-back names, or the bearer token of the signIn a dwapi-signed-in-get binding names (signed in for that read, never kept or printed). The TLS bypass follows the runner's gate: a loopback base URL or -AllowSelfSignedCertificate. No response body is printed; an MCP error result's own message is, as one line of at most 300 characters with the values of credential-named arguments and token-shaped text masked.
 .EXAMPLE
 . ./Recipe.Transport.ps1
 #>
@@ -67,25 +67,61 @@ function Get-RecipeSchemaGap {
     }
     return $null
 }
+function Get-RecipeUnknownMembers {
+    # The members of a value that its schema node does not list, as dotted paths with [*] for array items. Only a
+    # node that lists its properties is checked; an open object (a field map) is not. A server that refuses an
+    # unlisted member answers a call error, so a member an older server lacks is named here, before the call.
+    param($Value, $Schema, [string]$Path)
+    if ($Schema -isnot [Collections.IDictionary]) { return }
+    if ($Value -is [Collections.IDictionary]) {
+        if ($Schema.properties -isnot [Collections.IDictionary]) { return }
+        foreach ($k in @($Value.Keys)) {
+            $at = if ($Path) { "$Path.$k" } else { [string]$k }
+            if (-not $Schema.properties.Contains([string]$k)) { $at; continue }
+            Get-RecipeUnknownMembers $Value[$k] $Schema.properties[[string]$k] $at
+        }
+    } elseif ($Value -is [Collections.IList] -and $Value -isnot [string]) {
+        foreach ($v in $Value) { Get-RecipeUnknownMembers $v $Schema.items "$Path[*]" }
+    }
+}
 function Assert-RecipeArguments {
-    # The tool's own input schema names its arguments; a recipe that names others is refused before the call.
+    # The tool's own input schema names its arguments, nested members included; a recipe that names others is refused before the call.
     param([string]$Operation, $Arguments, $Capabilities)
     $schema = $Capabilities.tools[$Operation]
     if ($schema -isnot [Collections.IDictionary] -or $schema.properties -isnot [Collections.IDictionary]) { return }
-    $unknown = @($Arguments.Keys | Where-Object { -not $schema.properties.Contains([string]$_) })
+    $unknown = @(Get-RecipeUnknownMembers $Arguments $schema '' | Select-Object -Unique)
     $missing = @(@($schema.required) | Where-Object { $_ -and -not $Arguments.Contains([string]$_) })
     if ($unknown.Count -or $missing.Count) {
         throw (New-RecipeFault ("MCP $Operation arguments disagree with its tools/list input schema" + $(if ($unknown.Count) { '; not in the schema: ' + ($unknown -join ', ') }) + $(if ($missing.Count) { '; required and absent: ' + ($missing -join ', ') }) + '.'))
     }
 }
+function Format-RecipeMcpError {
+    # The message of an MCP error result, as one bounded line: the tool's own words ("Shop 'X' not found") say what to
+    # fix. Values of credential-named arguments and token-shaped text are masked, so a secret the call carried is not printed.
+    param($Raw, $Arguments)
+    $text = ((@($Raw.content | ForEach-Object { $_.text }) -join ' ') -replace '\s+', ' ').Trim()
+    if (-not $text) { return '' }
+    $secrets = [Collections.Generic.List[string]]::new()
+    $collect = {
+        param($node)
+        if ($node -is [Collections.IDictionary]) { foreach ($k in @($node.Keys)) { if ([string]$k -match '(?i)password|pwd|secret|token|apikey' -and $node[$k] -is [string] -and $node[$k].Length -ge 4) { $secrets.Add($node[$k]) } else { & $collect $node[$k] } } }
+        elseif ($node -is [Collections.IList] -and $node -isnot [string]) { foreach ($x in $node) { & $collect $x } }
+    }
+    & $collect $Arguments
+    foreach ($s in $secrets) { $text = $text.Replace($s, '***') }
+    $text = $text -replace '(?i)Bearer\s+\S+', 'Bearer ***' -replace '(?i)\b(claude|mcp)\.[0-9a-f]{20,}', '***'
+    if ($text.Length -gt 300) { $text = $text.Substring(0, 300) + '...' }
+    return $text.TrimEnd('.')
+}
 function Invoke-RecipeMcpCall {
-    # One MCP tool call; the structured result as hashtables. An error result never reads as data.
+    # One MCP tool call; the structured result as hashtables. An error result never reads as data; its message is printed.
     param([string]$Operation, $Arguments, $Capabilities, [int]$TimeoutSec = 120, [switch]$AllowText)
     Assert-RecipeArguments $Operation $Arguments $Capabilities
     $raw = Invoke-DwMcp -Tool $Operation -Arguments $Arguments -Raw -TimeoutSec $TimeoutSec
     if ($raw.isError) {
-        if ((@($raw.content | ForEach-Object { $_.text }) -join ' ') -match '(?i)not allowed|access denied|unauthorized|forbidden') { throw [UnauthorizedAccessException]::new("MCP $Operation was refused for this key.") }
-        throw (New-RecipeFailure "MCP $Operation answered an error result.")
+        $message = Format-RecipeMcpError $raw $Arguments
+        if ($message -match '(?i)not allowed|access denied|unauthorized|forbidden') { throw [UnauthorizedAccessException]::new("MCP $Operation was refused for this key: $message") }
+        throw (New-RecipeFailure ("MCP $Operation answered an error result" + $(if ($message) { ": $message" } else { ' with no message' }) + '.'))
     }
     if ($raw.structuredContent) { return , (ConvertTo-RecipeData $raw.structuredContent) }
     $text = (@($raw.content | ForEach-Object { $_.text })) -join "`n"

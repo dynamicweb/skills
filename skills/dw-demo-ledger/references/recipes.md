@@ -111,8 +111,13 @@ MCP write on `recipeWriteTools`, an MCP delete on `recipeDeleteTools`, a Managem
 `recipeAdminCommands`, a delivery read on
 the ledger's delivery lists (a `{name}` in a delivery route other than `{areaId}` takes the argument of
 that name, which then leaves the query). The runner checks again before every call and refuses an operation off
-the list even when the target offers it, and it checks every MCP call's argument names against the
-tool's own `tools/list` input schema, because a wrong name answers only "An error occurred invoking".
+the list even when the target offers it, and it checks every MCP call's argument names, nested members
+included (`pages[*].shortCut`), against the tool's own `tools/list` input schema, because a wrong name
+answers only "An error occurred invoking" and an older server refuses a member it does not list. A member
+an older server lacks belongs in `requiresSchema`, so the binding falls through with the reason instead.
+An MCP error result fails the item with the tool's own message ("MCP get_completeness_status answered an
+error result: ... Shop 'PIM' not found"), one line of at most 300 characters, with the values of
+credential-named arguments and token-shaped text masked.
 SQL is read-only: one guarded `SELECT` (the ledger's own guard), local installs only
 (`localOnly: true`), values passed as named `@parameters`, run in a transaction that is rolled back.
 A recipe never writes through SQL.

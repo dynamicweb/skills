@@ -12,7 +12,7 @@ function New-RecipeFault([string]$Message) {
     return [InvalidOperationException]::new($Message)
 }
 function New-RecipeFailure([string]$Message) {
-    # The target answered and the answer is a failure (FAIL); the text names the operation, never a response body.
+    # The target answered and the answer is a failure (FAIL); the text names the operation, never a response body (an MCP error result's own message, masked and bounded, is not a body).
     return [ApplicationException]::new($Message)
 }
 function Resolve-RecipeFile {

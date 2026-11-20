@@ -500,6 +500,33 @@ Describe 'Recipe reads: the SQL guard and the sign-in read-back' {
         Mock Invoke-WebRequest { [pscustomobject]@{StatusCode = 401; Content = ''} } -ParameterFilter { $Method -eq 'Post' }
         { Invoke-RecipeDeliveryGet $binding $ctx $registry } | Should -Throw '*could not sign in*'
     }
+    It 'prints an MCP error result''s own message, bounded and with a credential argument masked' {
+        $cap = @{tools = @{get_completeness_status = @{type = 'object'; properties = @{productId = @{}; shopId = @{}}}; create_users = @{type = 'object'; properties = @{users = @{type = 'array'}}}}}
+        function Invoke-DwMcp { param($Tool, $Arguments, [switch]$Raw, $TimeoutSec) @{isError = $true; content = @(@{type = 'text'; text = "An error occurred invoking 'get_completeness_status':`n Shop 'PIM' not found."})} }
+        { Invoke-RecipeMcpCall 'get_completeness_status' @{productId = 'PROD1'; shopId = 'PIM'} $cap 30 } | Should -Throw "MCP get_completeness_status answered an error result: An error occurred invoking 'get_completeness_status': Shop 'PIM' not found."
+        # The tool echoes what it was given: a password value is masked, and a long message is cut.
+        function Invoke-DwMcp { param($Tool, $Arguments, [switch]$Raw, $TimeoutSec) @{isError = $true; content = @(@{type = 'text'; text = 'User buyer@example.invalid with password Pw-Value-123 is invalid; ' + ('x' * 400)})} }
+        $err = { Invoke-RecipeMcpCall 'create_users' @{users = @(@{userName = 'buyer@example.invalid'; password = 'Pw-Value-123'})} $cap 30 } | Should -Throw -PassThru
+        $err.Exception | Should -BeOfType [ApplicationException]
+        $err.Exception.Message | Should -Not -Match 'Pw-Value-123'
+        $err.Exception.Message | Should -Match 'password \*\*\* is invalid'
+        $err.Exception.Message.Length | Should -BeLessThan 380
+        function Invoke-DwMcp { param($Tool, $Arguments, [switch]$Raw, $TimeoutSec) @{isError = $true; content = @()} }
+        { Invoke-RecipeMcpCall 'get_completeness_status' @{productId = 'PROD1'; shopId = 'S'} $cap 30 } | Should -Throw 'MCP get_completeness_status answered an error result with no message.'
+    }
+    It 'refuses a nested member the tool''s input schema does not list, before the call (an older server refuses it)' {
+        # save_pages as the MCP add-in 0.6.3-BETA lists it: no shortCut on a page.
+        $pages = @{type = 'object'; properties = @{pages = @{type = 'array'; items = @{type = 'object'; properties = @{id = @{}; menuText = @{}; urlName = @{}}}}}}
+        $cap = @{tools = @{save_pages = $pages; set_page_item_fields = @{type = 'object'; properties = @{pageId = @{}; fields = @{type = 'object'}}}}}
+        function Invoke-DwMcp { param($Tool, $Arguments, [switch]$Raw, $TimeoutSec) throw 'no call may be made' }
+        $err = { Invoke-RecipeMcpCall 'save_pages' @{pages = @(@{id = 0; menuText = 'Warranty'; shortCut = 'Default.aspx?ID=5'})} $cap 30 } | Should -Throw -PassThru
+        $err.Exception | Should -BeOfType [InvalidOperationException]
+        $err.Exception.Message | Should -Be 'MCP save_pages arguments disagree with its tools/list input schema; not in the schema: pages[*].shortCut.'
+        # An open object (a field map) is the input's to fill: its members are not checked.
+        function Invoke-DwMcp { param($Tool, $Arguments, [switch]$Raw, $TimeoutSec) @{structuredContent = @{succeeded = 1; failed = 0}} }
+        (Invoke-RecipeMcpCall 'set_page_item_fields' @{pageId = 5; fields = @{AnyField = 'x'}} $cap 30).succeeded | Should -Be 1
+        (Invoke-RecipeMcpCall 'save_pages' @{pages = @(@{id = 0; menuText = 'Warranty'})} $cap 30).succeeded | Should -Be 1
+    }
     It 'takes a write that answers a sentence as no data, and a read that does as a fault' {
         function Invoke-DwMcp { param($Tool, $Arguments, [switch]$Raw, $TimeoutSec) @{isError = $false; content = @(@{type = 'text'; text = 'Primary image updated for product PROD5.'})} }
         $cap = @{tools = @{}}
@@ -1498,10 +1525,18 @@ Describe 'Invoke-DwRecipe on content.pages: adopting the page at the input path,
         function New-SiteStub {
             # A sample base: the footer column folder Help and info (60) holds the page Delivery (50), served at
             # /en-us/delivery because the folder leaves its segment out; Delivery has two rows and a paragraph in each.
+            # The page model as the MCP add-in 0.6.6-BETA lists it (save_pages input, page reads); -Older drops
+            # shortCut from both, as 0.6.3-BETA lists them.
+            param([switch]$Older)
             New-Stub
             $s = $global:RecipeStub
             foreach ($t in @('get_navigation_structure', 'get_pages_by_area_id')) { $s.tools[$t] = Get-Schema @('areaId') @('areaId') }
             $s.tools.get_pages_by_ids = Get-Schema @('pageIds') @('pageIds')
+            $members = @('id', 'areaId', 'parentPageId', 'menuText', 'metaTitle', 'itemType', 'titleFieldSystemName', 'itemId', 'layoutTemplate', 'active', 'published', 'masterPageId', 'urlName', 'navigationTag', 'showInMenu', 'sort', 'treeSection')
+            if (-not $Older) { $members += 'shortCut' }
+            $page = Get-Schema $members
+            $s.tools.save_pages = @{type = 'object'; required = @('pages'); properties = @{pages = @{type = 'array'; items = $page}}}
+            $s.outputs.get_pages_by_parent_id = @{type = 'object'; properties = @{count = @{type = 'integer'}; data = @{type = 'array'; items = $page}}}
             $s.pages.Add(@{id = 60; parentPageId = 0; menuText = 'Help and info'; urlName = 'help-and-info'; itemType = ''; active = $true})
             $s.pages.Add(@{id = 50; parentPageId = 60; menuText = 'Delivery'; urlName = 'delivery'; itemType = 'Swift-v2_Page'; active = $true})
             $s.fields['page50'] = [ordered]@{Title = 'Delivery'}
@@ -1622,6 +1657,20 @@ Describe 'Invoke-DwRecipe on content.pages: adopting the page at the input path,
         $c = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = (Write-Input @{pages = @($page)} 'content.pages'); Apply = $true}
         ($c.lines -match '^OPEN footer-links/Delivery: .*the page itself already sits in this footer column').Count | Should -Be 1
         @($global:RecipeStub.pages | Where-Object { $_.shortCut -eq 'Default.aspx?ID=50' }) | Should -BeNullOrEmpty
+    }
+    It 'blocks a footer link on a server whose page model carries no shortCut, naming the member, and sends no save it would refuse' {
+        # Measured on a first build: 0.6.3-BETA lists no shortCut on save_pages or the page reads, refuses the
+        # unlisted member with an invocation error and creates nothing; the run printed only "answered an error result".
+        New-SiteStub -Older
+        $warranty = @{menuText = 'Warranty'; urlName = 'warranty'; itemType = 'Swift-v2_Page'; path = '/en-us/warranty'; footer = 'Help and info'}
+        $in = Write-Input @{pages = @($warranty)} 'content.pages'
+        $a = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $in; Apply = $true}
+        $a.lines | Should -Contain 'STEP pages CREATED Warranty'
+        $a.lines | Should -Contain 'STEP footer-links BLOCKED Warranty'
+        @($a.lines -match "^OPEN footer-links/Warranty: no eligible find binding: MCP get_pages_by_parent_id's tools/list output schema carries no member 'data\[\*\]\.shortCut'").Count | Should -Be 1
+        @($global:RecipeStub.log | Where-Object { $_ -like 'mcp save_pages *shortCut*' }) | Should -BeNullOrEmpty
+        @($global:RecipeStub.pages | Where-Object { $_.parentPageId -eq 60 }).Count | Should -Be 1
+        $a.exit | Should -Not -Be 0
     }
 }
 

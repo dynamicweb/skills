@@ -2,7 +2,7 @@
 .SYNOPSIS
 WRITES: the one MCP tool call or Management API command a recipe binding names, when the runner applies.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. Called only by the step engine, only with -Apply, and only for an operation on recipeWriteTools, recipeDeleteTools (a prune step's delete) or recipeAdminCommands in assets/handlers.json (checked again here, before the call). A recipe never writes through SQL. A write's own status is not its evidence: an error result or a refusal stops the item, and a success is still read back by the step engine. No argument value, token or response body is printed.
+PowerShell 7. Owning reference: ../references/recipes.md. Called only by the step engine, only with -Apply, and only for an operation on recipeWriteTools, recipeDeleteTools (a prune step's delete) or recipeAdminCommands in assets/handlers.json (checked again here, before the call). A recipe never writes through SQL. A write's own status is not its evidence: an error result or a refusal stops the item, and a success is still read back by the step engine. No argument value, token or response body is printed; an MCP error result's own message is (Recipe.Transport.ps1 masks credential values in it).
 .EXAMPLE
 . ./Recipe.Write.ps1
 #>
