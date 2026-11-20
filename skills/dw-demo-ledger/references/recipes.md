@@ -393,6 +393,10 @@ last `recipe set: <n> of <m> recipes passed`. Exit 0 only when every selected re
 pass and every debt was paid. A recipe that needs a recycle on a host the run cannot recycle leaves
 `DEBT OPEN recycle`: recycle it, then run the set again without `-Apply`.
 
+The run is mechanical, so a demo build's orchestrator delegates it to the small tier and keeps the
+brief: [dw-demo-base orchestrator.md](../../dw-demo-base/references/orchestrator.md) "Delegating
+the recipe set".
+
 ## Output contract
 
 ```text

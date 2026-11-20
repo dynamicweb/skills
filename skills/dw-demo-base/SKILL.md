@@ -44,11 +44,16 @@ Every sister demo skill carries the same "how to run me" header and defers to th
 
 **The build chain, the same for every brand:**
 
-1. **One set run**: verify, then `-Apply`, from the customer data file. Any model can run it
-   blind; it needs nothing but the file.
-2. **The larger model builds only what the set reports it does not cover**: a BLOCKED line's
-   reason, the index's "What stays planned", and the custom storefront work (templates).
-3. **A final verify of the set** (all PASS) plus the brief's checks.
+1. **One set run**: verify, apply once, pay debts, final verify, from the customer data file.
+   It is mechanical: delegate it to a sub-session or subagent on the small tier, if your agent
+   has one, and read its report.
+2. **The orchestrator (mid tier or above) builds what the set reports it does not cover**: a
+   BLOCKED line's reason, the index's "What stays planned", and the custom storefront work.
+3. **A final verify of the set** (all PASS) plus the brief's checks, by the orchestrator.
+
+Delegating step 1 never ends the orchestrator's work: it owns the whole brief and the hand-in.
+Tiers, what to give the delegate, what to demand back and how to read it:
+[orchestrator.md](references/orchestrator.md) "Model tier" and "Delegating the recipe set".
 
 What every branded build writes goes in the data file, so step 1 writes it:
 
@@ -67,7 +72,7 @@ What every branded build writes goes in the data file, so step 1 writes it:
 | Catalogue, prices, order history | `catalogue`, `prices`, `history` |
 
 No recipe yet: product relations (accessory, related, spare part) and header menu placement; the
-larger model makes them in step 2.
+orchestrator makes them in step 2.
 **The first step of every build, once MCP answers, is one verify run of the recipe set. No write
 by hand, by MCP tool or by script comes before it.** It writes nothing:
 

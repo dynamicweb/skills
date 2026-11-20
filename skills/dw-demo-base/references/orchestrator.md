@@ -11,6 +11,7 @@
 - [Strictness gradient — one human pause, automated quality elsewhere (every mode)](#strictness-gradient--one-human-pause-automated-quality-elsewhere-every-mode)
 - [Dispatched sessions: the brief carries the execution authority](#dispatched-sessions-the-brief-carries-the-execution-authority)
 - [Model tier — a dial on the orchestrator, never a fork of the skills](#model-tier--a-dial-on-the-orchestrator-never-a-fork-of-the-skills)
+- [Delegating the recipe set — the orchestrator keeps the brief](#delegating-the-recipe-set--the-orchestrator-keeps-the-brief)
 - [Discovery prompts (impact-analysis input)](#discovery-prompts-impact-analysis-input)
 - [Acceptance criteria (the shared definition of PASS)](#acceptance-criteria-the-shared-definition-of-pass)
 - ["How to run me" header — the convention every demo skill carries](#how-to-run-me-header--the-convention-every-demo-skill-carries)
@@ -95,9 +96,10 @@ section feeds one recipe; a section that is absent is simply not built. Keep it 
 
 ### 3. Build by hand only what no recipe covers
 
-This is the larger model's part of the chain: the set run itself can be handed to the smallest
-model, and the custom work (templates, what the set reports BLOCKED or planned) to a larger one.
-The build ends with a verify of the set, all PASS, and the brief's checks.
+This is the orchestrator's part of the chain, at the mid tier or above: the set run itself is
+delegated to the small tier ("Delegating the recipe set" below), and the custom work (templates,
+what the set reports BLOCKED or planned) stays with the orchestrator. The build ends with a verify
+of the set, all PASS, and the brief's checks.
 
 `Find-DwRecipe.ps1 -Function <id>` answers whether a recipe exists for a ledger function; "no
 recipe" means build it by hand from the owning skill. The index's "What stays planned" names the
@@ -266,7 +268,7 @@ does not. Exactly one phase blocks on a human: the impact sign-off.
 | Polish | None | freeform |
 
 **Flexibility — a demo is not a product, so the gates have escape hatches.** For a fast throwaway
-demo, drop the depth: skip the offered fix pass, or put a cheaper model on scaffold verification
+demo, drop the depth: skip the offered fix pass, or put the small tier on scaffold verification
 (see "Model tier" below). The one gate that never lifts is the impact sign-off
 — that is the decision a demo lives or dies on. Polish stays free in every mode.
 
@@ -338,20 +340,94 @@ skill frontmatter carries no model gate (agents have `model:`; skills do not), s
 scheme would rest on convention alone — and a forked recipe drifts the moment one copy is folded
 back and the other is not. The corpus already pays for exactly one source of truth per recipe.
 
-The tier decision belongs one layer up, in the thing that already has the field for it: the
-orchestrator's agent definitions (`model:` frontmatter). Place it by the *kind* of work, not by the phase name:
+The tier decision belongs one layer up, in the orchestrator: the session that drives the build
+and the sub-sessions or subagents it starts. These skills name three tiers and no model:
+
+- **top**: the provider's deepest-reasoning model. Design, the brief's unique ask, judging.
+- **mid**: the default builder. Builds the brief past the recipe set; the lowest tier that does.
+- **small**: the provider's fastest, cheapest model. Mechanical, scripted work.
+
+**Resolve the tiers from your own environment.** A tier is a role, not a product: map it to
+whatever the agent you run in offers. Read its model list (its model picker or the option it
+takes when starting a subagent or sub-session) and take the fastest, cheapest as small, the
+standard general-purpose model as mid, the deepest-reasoning as top. With one model available, every tier is that model.
+Non-normative examples: in Claude Code a subagent takes a model through its definition's
+`model:` field or the model option of the call that starts it, and `/model` lists the choices;
+in the Codex CLI a sub-session is `codex exec -m <model> "<brief>"`, and `/model` lists the
+choices.
+
+Place the tier by the *kind* of work, not by the phase name:
 
 | Work | Tier | Why |
 |---|---|---|
-| Mechanical sweeps — validator runs, the integrity sweep, visual-QA detectors, scrub passes | Cheapest (Haiku-class) | the verdict is deterministic; the script holds the judgment, the model only runs it |
-| Documented recipe execution — MCP/Management API recipes that end in a verification gate | Mid (Sonnet-class) | the recipe *is* the plan, and the gate catches drift before it compounds |
-| The fresh-context validator in the automated loop | Mid, top for a high-stakes demo | its whole value is catching what the builder rationalised past |
-| Impact analysis, brand/taste calls, the visual-QA human sign-off, authoring a fold-back | Top (Opus-class) | judgment under ambiguity, where no mechanical check exists to fall back on |
+| Mechanical sweeps — validator runs, the recipe set run, the integrity sweep, visual-QA detectors, scrub passes | small | the verdict is deterministic; the script holds the judgment, the model only runs it |
+| Building the rest of the brief — what the set does not cover, hand-followed recipes, custom templates | mid | the brief and the owning skills are the plan, and the final verify catches drift before the hand-in |
+| The fresh-context validator in the automated loop | mid, top for a high-stakes demo | its whole value is catching what the builder rationalised past |
+| Impact analysis, the brief's unique ask, brand/taste calls, the visual-QA human sign-off, authoring a fold-back | top | judgment under ambiguity, where no mechanical check exists to fall back on |
+
+Measured on demo builds from blank sites, judged blind [dw 10.30 · swift 2.5]: the small
+tier ran the recipe set from a customer data file (verify, apply, pay debts, final verify) on four
+builds in 7 to 9 minutes for about 3 US cents each, with no hand writes and the same result as the
+larger tiers. Alone it could not build the rest of a brief (it duplicated data, hid prices and
+built no custom work). The mid tier built the rest to a good standard; the top tier held one more
+acceptance check at about three times the minutes and cost.
 
 The rule that keeps this honest: **what a cheaper model cannot be trusted to remember, encode in
 a script or a detector — not in a longer prose rule.** A gate written as a validator holds at
 every tier; the same gate written as three more paragraphs of prose holds only at the top one,
 and silently stops holding when someone dials the tier down for cost.
+
+## Delegating the recipe set — the orchestrator keeps the brief
+
+The orchestrating session owns the whole brief and the hand-in. The recipe set run is the part to
+delegate: it is mechanical, and the small tier runs it as well as any tier for a fraction of the
+time and price ("Model tier" above). **Delegating it never ends the orchestrator's own work.** A
+hand-over where a second session received only the first one's report was unreliable: once it
+repaired what was reported and stopped, leaving the brief's custom work unbuilt. One orchestrating
+session that ran or delegated the set and kept ownership of the brief was complete each time.
+
+**Do not delegate** when your agent has no sub-session or subagent mechanism, or when the set is so
+small (one or two sections) that writing the brief costs more than the run: run it inline, in the
+same order, under the same rules.
+
+**Give the delegate** (a sub-session or subagent on the small tier, if your agent has one):
+
+- the absolute paths of the customer data file, the skills checkout and a folder for its logs and
+  reports;
+- the environment, set in its process and never pasted into the brief: `DW_BASE_URL`,
+  `DW_MCP_TOKEN` or `DW_API_TOKEN`, `DW_RECIPE_SECRETS`, `DW_PERSONA_CREDENTIALS`; plus
+  `-SolutionPath <solution>` for a loopback host it may recycle and `-AllowSelfSignedCertificate`
+  for a local self-signed one;
+- the run order, each run's output saved to a log and `-ReportPath <folder>/<run>.json`:
+  1. **verify**: `Invoke-DwRecipeSet.ps1 -InputPath <file>`;
+  2. **apply once**: the same with `-Apply`;
+  3. **pay debts**: for each `DEBT OPEN` or `DEBT FAIL` line, `-Only <owner> -PayDebts -Apply`
+     once;
+  4. **final verify**: step 1 again;
+- the rules: no write by hand (no MCP write tool, no SQL, no admin UI), no edit to the data file
+  or a recipe, no fix and no retry outside that order. A failure is reported, not repaired.
+
+**Demand back**: the log and report path of every run, the final summary table as printed, every
+row whose Result is not PASS and every FAIL, OPEN, BLOCKED and `DEBT` line verbatim with its
+reason, the last line (`recipe set: <n> of <m> recipes passed`) and each run's exit code.
+
+**Read the report**, then act on it yourself:
+
+| Reported | Means | Orchestrator's next step |
+|---|---|---|
+| PASS | built, read back and proven | nothing |
+| DELIVERED (`D`) | a layer copy delivered it | nothing; never write it again |
+| SKIPPED | `-Skip`, or the section lacks a required member | intended: nothing; else fix the input and re-run that recipe |
+| BLOCKED (`B`) | no eligible binding, a collision, or a blocked dependency | input or grant: fix it and re-run that recipe; no binding: build it by hand from the owning skill |
+| FAIL | an observation disagrees | read the reason; fix the input or the grant and re-run that recipe; a defect in the recipe itself is fold-back material, and the hand build covers it meanwhile |
+| OPEN | an observation could not be made, or a debt is unpaid | pay the debt (`-Only <owner> -PayDebts -Apply`, or the recycle it names), then verify that recipe |
+| NOT RUN | the run stopped before the recipe | fix the fault the log names and re-run |
+
+**Re-run one recipe instead of fixing by hand**: `Invoke-DwRecipeSet.ps1 -InputPath <file> -Only
+<id>`, then with `-Apply`. A hand fix to an object a recipe owns is undone or flagged by the next
+apply and leaves the final verify proving the wrong thing; build by hand only what no recipe covers.
+Then build the rest of the brief, run the final verify of the set yourself, and run the brief's
+checks: that is the hand-in, and it is the orchestrator's.
 
 ## Discovery prompts (impact-analysis input)
 

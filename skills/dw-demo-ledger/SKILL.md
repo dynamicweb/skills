@@ -65,6 +65,11 @@ A whole build is one command over one customer data file: [Invoke-DwRecipeSet.ps
 pwsh -NoProfile -File scripts/Invoke-DwRecipeSet.ps1 -InputPath ./recipe-input.json -Apply
 ```
 
+The set run is mechanical: in a demo build the orchestrating session hands it to a sub-session or
+subagent on the small tier, if its agent has one, and keeps the rest of the brief. What to give
+the delegate, what to demand back and how to read its report:
+[dw-demo-base orchestrator.md](../dw-demo-base/references/orchestrator.md) "Delegating the recipe set".
+
 ## Scripts (scripts/)
 
 | Script | Reads / writes | What it does |
