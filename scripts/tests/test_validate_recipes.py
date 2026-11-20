@@ -227,6 +227,11 @@ class RecipeValidationTests(unittest.TestCase):
         del prune["bindings"][0]["create"]
         self.recipe["steps"][0]["find"]["bindings"][0]["arguments"]["areaId"] = "{scope}"
         self.assertIn("reads scope outside a prune step", self.errors())
+        del self.recipe["steps"][0]["find"]["bindings"][0]["arguments"]["areaId"]
+        prune["prune"]["delivered"] = {"steps": ["pages"], "own": "menuText"}
+        self.assertEqual("", self.errors())
+        prune["prune"]["delivered"]["steps"] = ["later"]
+        self.assertIn("prune.delivered names later, which is not an earlier step", self.errors())
 
     def test_retire_step_updates_only_and_keeps_what_earlier_steps_produced(self):
         read = dict(PAGES_FIND, arguments={"parentId": "{step.pages[item.menuText].id}"})

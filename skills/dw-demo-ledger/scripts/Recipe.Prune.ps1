@@ -2,7 +2,7 @@
 .SYNOPSIS
 WRITES: deletes, through Recipe.Write.ps1 and only with -Apply. Runs one prune step: the rows a scoped read returns that the input does not name are removed.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. A prune step resolves its scope first: prune.scope.values names, from the input, the owners whose rows may be removed (the buyer accounts a history names). A scope that resolves to nothing (no value, an empty text, an empty list or the id 0) refuses the step before any read. For each scope value the step reads through prune.binding, whose arguments must carry {scope}, and keeps the rows its match selects. Every row must carry prune.scope.member equal to that scope value; one row outside the scope refuses the whole item and nothing is deleted. A row whose prune.keep.field equals one of prune.keep.values (the input's natural keys) is kept; the remainder is the set to remove, named by its identify members. More than prune.max rows refuses the item. Without -Apply each row reports WOULD-DELETE and fails with where it is. With -Apply each row is removed through the first eligible delete binding (on recipeDeleteTools), whose arguments read the row as {row.<member>}, and the read-back must no longer return it. A set with nothing to remove is UNCHANGED.
+PowerShell 7. Owning reference: ../references/recipes.md. A prune step resolves its scope first: prune.scope.values names, from the input, the owners whose rows may be removed (the buyer accounts a history names). A scope that resolves to nothing (no value, an empty text, an empty list or the id 0) refuses the step before any read. For each scope value the step reads through prune.binding, whose arguments must carry {scope}, and keeps the rows its match selects. Every row must carry prune.scope.member equal to that scope value; one row outside the scope refuses the whole item and nothing is deleted. A row whose prune.keep.field equals one of prune.keep.values (the input's natural keys) is kept; the remainder is the set to remove, named by its identify members. When prune.delivered names earlier steps and one of them reported an item DELIVERED in this run (a layer copy delivered the history under its own keys), only rows whose prune.delivered.own member holds a value (the mark the recipe's own create writes) are removed; every other unnamed row is DELIVERED with a NOTE and never deleted, because it is the copy's or cannot be told from it. More than prune.max rows refuses the item. Without -Apply each row reports WOULD-DELETE and fails with where it is. With -Apply each row is removed through the first eligible delete binding (on recipeDeleteTools), whose arguments read the row as {row.<member>}, and the read-back must no longer return it. A set with nothing to remove is UNCHANGED.
 .EXAMPLE
 . ./Recipe.Prune.ps1
 #>
@@ -14,6 +14,18 @@ function Get-RecipePruneScope {
     $values = @(foreach ($v in @($raw)) { if ($null -ne $v -and -not [string]::IsNullOrWhiteSpace([string]$v) -and [string]$v -ne '0') { $v } })
     if (-not $values.Count) { throw (New-RecipeFault 'refused: the prune scope is empty; a prune removes only rows of the owners the input names') }
     return , $values
+}
+function Get-RecipePruneLayer {
+    # prune.delivered: the first item of a named earlier step that a layer copy delivered in this run, as "orders 'X'",
+    # else $null. When there is one, the copy owns the scope's history and only the recipe's own rows may be removed.
+    param($Prune, $Run)
+    if (-not $Prune.delivered) { return $null }
+    foreach ($stepId in @($Prune.delivered.steps)) {
+        $results = $Run.results[$stepId]
+        if (-not $results) { continue }
+        foreach ($k in @($results.Keys | Sort-Object)) { if ($results[$k].state -eq 'DELIVERED') { return "$stepId '$k'" } }
+    }
+    return $null
 }
 function Invoke-RecipePruneStep {
     param($Step, $Run)
@@ -48,6 +60,20 @@ function Invoke-RecipePruneStep {
                 }
             }
             $Run.results[$Step.id][$key] = @{state = 'UNCHANGED'; values = @{}}
+            # A layer copy delivered this history under its own keys: a row without the recipe's own mark (the member its
+            # create writes on every row) is the copy's, or cannot be told from it, so it is DELIVERED and never deleted.
+            $layer = Get-RecipePruneLayer $prune $Run
+            if ($layer -and $remove.Count) {
+                $ownField = [string]$prune.delivered.own
+                $own = [Collections.Generic.List[object]]::new()
+                foreach ($r in $remove) {
+                    $mark = Get-RecipeValue $r.row $ownField
+                    if ($mark.found -and -not [string]::IsNullOrWhiteSpace([string]$mark.value)) { $own.Add($r); continue }
+                    Add-RecipeStepLine $Run $Step.id 'DELIVERED' "$key@$($r.place)"
+                    $Run.lines.Add("NOTE $($Step.id)/$key@$($r.place): it carries no $ownField, the mark of every row this recipe creates, and a layer delivered this history ($layer), so it is the copy's or cannot be told from it; left alone, never deleted")
+                }
+                $remove = $own
+            }
             if (-not $remove.Count) { Add-RecipeStepLine $Run $Step.id 'UNCHANGED' $key; Add-RecipeCheck $Run "$($Step.id)/$key" 'PASS'; continue }
             if ($remove.Count -gt [int]$prune.max) { throw (New-RecipeFailure "refused: $($remove.Count) row(s) to remove, more than prune.max $($prune.max); nothing is deleted") }
             $write = Select-RecipeWrite $Step.bindings 'delete' $Run.cap $Run.registry

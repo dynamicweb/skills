@@ -1184,6 +1184,41 @@ Describe 'Invoke-DwRecipe on a prune step' {
         Get-Deletes | Should -BeNullOrEmpty
         @($global:RecipeStub.log | Where-Object { $_ -like 'mcp delete_pages *' }) | Should -BeNullOrEmpty
     }
+    It 'never deletes what a layer copy delivered: on a delivered history only the recipe''s own marked rows go, the rest is DELIVERED' {
+        # The orders step finds the seeded order by purchase order number, or the copy's under its own key (reference).
+        $orders = @{id = 'orders'; title = 'Find the orders'; forEach = 'orders[*]'; key = '{item.reference}'; source = 'skills/x.md'; bindings = @()
+            find = @{bindings = @(@{surface = 'mcp'; status = 'implemented'; operation = 'search_orders'; arguments = @{request = @{userId = '{step.buyer[input.buyer.userName].id}'; pageSize = 200}}; rows = 'data'; match = @{purchaseOrderNumber = '{item.reference}'}; produces = @{id = 'id'}; source = 'skills/x.md'})
+                delivered = @(@{surface = 'mcp'; status = 'implemented'; operation = 'search_orders'; arguments = @{request = @{userId = '{step.buyer[input.buyer.userName].id}'; pageSize = 200}}; rows = 'data'; match = @{reference = '{item.reference}'}; produces = @{id = 'id'}; source = 'skills/x.md'})}}
+        $script:Recipe.steps = @($script:Recipe.steps[0], $orders, $script:Recipe.steps[1])
+        $script:Recipe.steps[2].prune.delivered = @{steps = @('orders'); own = 'purchaseOrderNumber'}
+        $file = Save-Recipe
+        # Measured on a first build on a layer-delivered site: the copy stored the input's reference in reference and left
+        # purchaseOrderNumber empty, and its seeded cart has neither; ORDER2 is a row this recipe wrote for a reference
+        # the input no longer names (a stale fixture of its own).
+        New-OrderStub
+        $seeded = @($global:RecipeStub.orders | Where-Object id -eq 'ORDER1')[0]; $seeded.Remove('purchaseOrderNumber'); $seeded.reference = 'PO-1'
+        $v = Invoke-Runner $script:Root @{Recipe = $file; InputPath = $script:InputFile}
+        $v.lines | Should -Contain 'STEP orders DELIVERED PO-1'
+        @($v.lines -match '^STEP reset ') | Should -Be @('STEP reset DELIVERED buyer@example.invalid@ORDER1', 'STEP reset DELIVERED buyer@example.invalid@ORDER3', 'STEP reset DELIVERED buyer@example.invalid@CART1', 'STEP reset WOULD-DELETE buyer@example.invalid@ORDER2')
+        @($v.lines -match "^NOTE reset/buyer@example.invalid@CART1: it carries no purchaseOrderNumber, the mark of every row this recipe creates, and a layer delivered this history \(orders 'PO-1'\), so it is the copy's or cannot be told from it; left alone, never deleted$").Count | Should -Be 1
+        @($v.lines -match '^FAIL reset/').Count | Should -Be 1
+        $a = Invoke-Runner $script:Root @{Recipe = $file; InputPath = $script:InputFile; Apply = $true}
+        $a.lines | Should -Contain 'STEP reset DELETED buyer@example.invalid@ORDER2'
+        (Get-Deletes).Count | Should -Be 1
+        @($global:RecipeStub.orders.id) | Should -Be @('ORDER1', 'ORDER3', 'CART1', 'ORDER9')
+        $a.exit | Should -Be 0
+        $again = Invoke-Runner $script:Root @{Recipe = $file; InputPath = $script:InputFile}
+        $again.lines | Should -Contain 'STEP reset UNCHANGED buyer@example.invalid'
+        $again.lines | Should -Contain 'PASS reset/buyer@example.invalid'
+        @($again.lines -match '^(FAIL|OPEN) ') | Should -BeNullOrEmpty
+        $again.exit | Should -Be 0
+        # Nothing delivered (a from-blank build): the same recipe resets every unnamed row, as before.
+        New-OrderStub
+        $b = Invoke-Runner $script:Root @{Recipe = $file; InputPath = $script:InputFile; Apply = $true}
+        $b.lines | Should -Contain 'STEP orders UNCHANGED PO-1'
+        @($b.lines -match '^STEP reset DELETED ').Count | Should -Be 3
+        @($global:RecipeStub.orders.id) | Should -Be @('ORDER1', 'ORDER9')
+    }
 }
 
 Describe 'ConvertFrom-DwBrandKit' {

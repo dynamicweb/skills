@@ -314,6 +314,9 @@ def validate_recipes(repo: Path) -> list[str]:
                         error(file, f"step {sid} {b.get('id')}: a prune step's implemented binding declares delete only")
                 if "{scope" not in json.dumps((prune.get("binding") or {}).get("arguments") or {}):
                     error(file, f"step {sid}: the prune read must pass {{scope}} in its arguments")
+                for req in (prune.get("delivered") or {}).get("steps") or []:
+                    if req not in earlier:
+                        error(file, f"step {sid}: prune.delivered names {req}, which is not an earlier step")
             retire = step.get("retire")
             if isinstance(retire, dict):
                 if not step.get("bindings"):

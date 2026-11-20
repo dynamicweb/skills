@@ -308,7 +308,17 @@
               }
             },
             "identify": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
-            "max": {"type": "integer", "minimum": 1, "maximum": 1000, "description": "More rows to remove than this refuses the item."}
+            "max": {"type": "integer", "minimum": 1, "maximum": 1000, "description": "More rows to remove than this refuses the item."},
+            "delivered": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["steps", "own"],
+              "description": "A prune never deletes what a layer copy delivered. When one of these earlier steps reported an item DELIVERED in this run (the copy keyed the history its own way), only rows whose own member holds a value are removed: the mark the recipe's create writes on every row it makes. Every other unnamed row is DELIVERED with a NOTE, never deleted.",
+              "properties": {
+                "steps": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}},
+                "own": {"type": "string", "minLength": 1, "description": "The row member the recipe's own create always fills (an order's purchase order number)."}
+              }
+            }
           }
         },
         "retire": {

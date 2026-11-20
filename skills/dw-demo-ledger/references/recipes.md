@@ -184,6 +184,12 @@ the item. Without `-Apply` each row is `STEP reset WOULD-DELETE buyer@example.in
 each is removed through the first eligible binding that declares `delete` (its operation on
 `recipeDeleteTools`, MCP only, its arguments reading the row as `{row.<member>}`) and read back: the
 binding's `readBack` must no longer return the row. Nothing to remove is UNCHANGED.
+A prune never deletes what a layer copy delivered. With `delivered` (`{"steps": ["orders", "quotes"], "own":
+"purchaseOrderNumber"}`), once one of those earlier steps reported an item DELIVERED in the run, only a row
+whose `own` member holds a value is removed: the mark the recipe's own create writes on every row it makes.
+Every other unnamed row is `STEP reset DELIVERED buyer@example.invalid@CART15` with a NOTE, never a check
+and never deleted, because it is the copy's or cannot be told from it (a copy keys its orders on
+`reference` and leaves the purchase order number empty; its seeded cart carries neither).
 A step with a `retire` sets inactive, and never deletes, what the input does not name: the sample
 payment and shipping methods a base delivers beside the brand's own. It runs once per natural key
 (items that share the key are one set, so `forEach: methods[*]` keyed `payment` runs once when the
