@@ -179,6 +179,20 @@ the item. Without `-Apply` each row is `STEP reset WOULD-DELETE buyer@example.in
 each is removed through the first eligible binding that declares `delete` (its operation on
 `recipeDeleteTools`, MCP only, its arguments reading the row as `{row.<member>}`) and read back: the
 binding's `readBack` must no longer return the row. Nothing to remove is UNCHANGED.
+A step with a `retire` sets inactive, and never deletes, what the input does not name: the sample
+payment and shipping methods a base delivers beside the brand's own. It runs once per natural key
+(items that share the key are one set, so `forEach: methods[*]` keyed `payment` runs once when the
+input names at least one payment method). `retire.named` is a token for what the input names in the
+set; nothing named refuses the item, so a retire never empties a set. A step in `requires` that
+blocked an item refuses it too (a named method found twice has no known id). The `binding` reads the
+set; a row whose `active.field` holds `active.value` is active, and an active row is kept when its
+member equals a value of any `keep` rule: the input's names, or `{step.<id>[*].<field>}`, every value
+an earlier step of this run produced under that name. The rest is the set to retire, each named by
+its `identify` members; more than `max` refuses the item. Without `-Apply` each row is
+`STEP retire-payment WOULD-RETIRE payment@PAY2/Standard invoice`; with it each is written through the
+first eligible `update` binding (arguments read the row as `{row.<member>}`), `STEP retire-payment
+RETIRED payment@PAY2/Standard invoice`, and read back: the `readBack` must no longer return the row
+active. A NOTE counts what was retired and kept. Setting the row active again restores it.
 A step with an empty `bindings` list is a lookup: it finds an object another function owns (the
 header page a website selects) and produces values for later steps, and never writes. An absent
 object is WOULD-CREATE in a verify run and BLOCKED with apply, so its dependants stop too.
@@ -364,7 +378,7 @@ pass and every debt was paid. A recipe that needs a recycle on a host the run ca
 ## Output contract
 
 ```text
-STEP <step> <CREATED|UPDATED|DELETED|UNCHANGED|DELIVERED|BLOCKED|WOULD-CREATE|WOULD-UPDATE|WOULD-DELETE> <natural key>
+STEP <step> <CREATED|UPDATED|DELETED|RETIRED|UNCHANGED|DELIVERED|BLOCKED|WOULD-CREATE|WOULD-UPDATE|WOULD-DELETE|WOULD-RETIRE> <natural key>
 PASS <check>
 FAIL <check>: <reason>
 OPEN <check>: <reason>

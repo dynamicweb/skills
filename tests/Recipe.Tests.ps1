@@ -1399,3 +1399,92 @@ Describe 'Invoke-DwRecipe debt modes: deferred, debts only, verification skipped
         $r.exit | Should -Be 1
     }
 }
+
+Describe 'Invoke-DwRecipe on a retire step (orders.payment-methods retire-payment and retire-shipping)' {
+    BeforeEach {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
+        Remove-Item Env:DW_API_TOKEN -ErrorAction SilentlyContinue
+        $script:Root = New-RecipeSandbox
+        # The shipped steps that ensure the named methods and retire the rest, without the Management API scope steps.
+        $shipped = Get-Content -LiteralPath (Join-Path $script:Source 'assets/recipes/orders/orders.payment-methods.json') -Raw | ConvertFrom-Json -AsHashtable
+        $script:Recipe = $shipped
+        $script:Recipe.steps = @($shipped.steps | Where-Object { $_.id -in @('payment-methods', 'shipping-methods', 'retire-payment', 'retire-shipping') })
+        $script:Recipe.dependsOn = @(); $script:Recipe.verify = @{checkIds = @(); probes = @()}
+        $script:Checkout = @{country = 'US'; language = 'ENU'; keepMethods = @('Pickup cash'); methods = @(@{name = 'Card'; kind = 'payment'; active = $true; anonymous = $true})}
+        function Save-Recipe { $path = Join-Path $TestDrive ([guid]::NewGuid().ToString('n') + '.json'); $script:Recipe | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath $path -Encoding utf8; return $path }
+        function New-MethodStub([object[]]$Payments, [object[]]$Shippings) {
+            New-Stub
+            $s = $global:RecipeStub
+            $s.tools.get_payment_methods = Get-Schema @(); $s.tools.save_payment_methods = Get-Schema @('paymentMethods') @('paymentMethods')
+            $s.tools.get_shipping_methods = Get-Schema @(); $s.tools.save_shipping_methods = Get-Schema @('shippingMethods') @('shippingMethods')
+            $s.payments = [Collections.Generic.List[object]]::new(); foreach ($p in $Payments) { $s.payments.Add($p) }
+            $s.shippings = [Collections.Generic.List[object]]::new(); foreach ($p in $Shippings) { $s.shippings.Add($p) }
+            $inner = $s.mcp
+            $s.mcp = {
+                param($Tool, $Arguments)
+                $s = $global:RecipeStub
+                # A save with an id changes only the members it sends, as measured; one without an id creates.
+                $save = {
+                    param($list, $items, $prefix)
+                    foreach ($m in $items) {
+                        if ($m.id) { $row = @($list | Where-Object { $_.id -eq $m.id })[0]; foreach ($k in $m.Keys) { $row[$k] = $m[$k] } }
+                        else { $list.Add(@{id = "$prefix$($list.Count + 1)"; name = $m.name; active = $m.active; allowAnonymousUsers = $m.allowAnonymousUsers}) }
+                    }
+                    @{structuredContent = @{succeeded = @($items).Count; failed = 0}}
+                }
+                switch ($Tool) {
+                    'get_payment_methods' { return @{structuredContent = @{count = $s.payments.Count; data = @($s.payments)}} }
+                    'get_shipping_methods' { return @{structuredContent = @{count = $s.shippings.Count; data = @($s.shippings)}} }
+                    'save_payment_methods' { return (& $save $s.payments $Arguments.paymentMethods 'PAY') }
+                    'save_shipping_methods' { return (& $save $s.shippings $Arguments.shippingMethods 'SHIP') }
+                    default { return (& $inner $Tool $Arguments) }
+                }
+            }.GetNewClosure()
+        }
+        function Get-MethodSaves { @($global:RecipeStub.log | Where-Object { $_ -match '^mcp save_(payment|shipping)_methods ' }) }
+        $script:Payments = { @(@{id = 'PAY1'; name = 'Card'; active = $true; allowAnonymousUsers = $true}, @{id = 'PAY2'; name = 'Sample invoice'; active = $true; allowAnonymousUsers = $false},
+            @{id = 'PAY3'; name = 'Old method'; active = $false; allowAnonymousUsers = $false}, @{id = 'PAY4'; name = 'Pickup cash'; active = $true; allowAnonymousUsers = $false}) }
+        $script:Shippings = { @(@{id = 'SHIP1'; name = 'Sample ground'; active = $true; allowAnonymousUsers = $false}) }
+    }
+    It 'lists the active unnamed method, sets it inactive with a read-back, keeps the named and listed ones and every other kind, then finds nothing' {
+        New-MethodStub (& $script:Payments) (& $script:Shippings)
+        $file = Save-Recipe; $in = Write-Input $script:Checkout 'checkout'
+        $v = Invoke-Runner $script:Root @{Recipe = $file; InputPath = $in}
+        @($v.lines -match '^STEP retire-payment ') | Should -Be @('STEP retire-payment WOULD-RETIRE payment@PAY2/Sample invoice')
+        ($v.lines -match '^FAIL retire-payment/payment@PAY2/Sample invoice: active and the input does not name it; apply would set it inactive').Count | Should -Be 1
+        Get-MethodSaves | Should -BeNullOrEmpty
+        $a = Invoke-Runner $script:Root @{Recipe = $file; InputPath = $in; Apply = $true}
+        $a.lines | Should -Contain 'STEP retire-payment RETIRED payment@PAY2/Sample invoice'
+        $a.lines | Should -Contain 'PASS retire-payment/payment@PAY2/Sample invoice'
+        ($a.lines -match '^NOTE retire-payment/payment: 1 active row\(s\) the input does not name set inactive, none deleted; 2 kept').Count | Should -Be 1
+        # No shipping method is named, so no shipping method is retired.
+        ($a.lines -match '^STEP retire-shipping ').Count | Should -Be 0
+        # One save, of the unnamed method only, and only its active flag (members in any order).
+        $saves = @(Get-MethodSaves); $saves.Count | Should -Be 1
+        ($saves[0] -replace '"id":"PAY2"', '' -replace '"active":false', '' -replace ',', '') | Should -Be 'mcp save_payment_methods {"paymentMethods":[{}]}'
+        @($global:RecipeStub.payments | ForEach-Object { "$($_.id)=$($_.active)" }) | Should -Be @('PAY1=True', 'PAY2=False', 'PAY3=False', 'PAY4=True')
+        $global:RecipeStub.shippings[0].active | Should -BeTrue
+        $a.exit | Should -Be 0
+        $again = Invoke-Runner $script:Root @{Recipe = $file; InputPath = $in; Apply = $true}
+        $again.lines | Should -Contain 'STEP retire-payment UNCHANGED payment'
+        @(Get-MethodSaves).Count | Should -Be 1
+        $again.exit | Should -Be 0
+    }
+    It 'retires nothing when retireUnnamed is false' {
+        New-MethodStub (& $script:Payments) (& $script:Shippings)
+        $script:Checkout.retireUnnamed = $false
+        $a = Invoke-Runner $script:Root @{Recipe = (Save-Recipe); InputPath = (Write-Input $script:Checkout 'checkout'); Apply = $true}
+        ($a.lines -match '^STEP retire-').Count | Should -Be 0
+        Get-MethodSaves | Should -BeNullOrEmpty
+    }
+    It 'refuses when a named method is blocked or when more than max would go, and retires nothing' {
+        New-MethodStub (@(& $script:Payments) + @(@{id = 'PAY9'; name = 'Card'; active = $true; allowAnonymousUsers = $true})) (& $script:Shippings)
+        $a = Invoke-Runner $script:Root @{Recipe = (Save-Recipe); InputPath = (Write-Input $script:Checkout 'checkout'); Apply = $true}
+        ($a.lines -match "^OPEN retire-payment/payment: refused: step 'payment-methods' blocked 1 item\(s\)").Count | Should -Be 1
+        Get-MethodSaves | Should -BeNullOrEmpty
+        New-MethodStub (@(& $script:Payments) + @(1..30 | ForEach-Object { @{id = "PAYX$_"; name = "Sample $_"; active = $true; allowAnonymousUsers = $false} })) (& $script:Shippings)
+        $b = Invoke-Runner $script:Root @{Recipe = (Save-Recipe); InputPath = (Write-Input $script:Checkout 'checkout'); Apply = $true}
+        ($b.lines -match '^FAIL retire-payment/payment: refused: 31 active row\(s\) of .get_payment_methods. the input does not name, more than retire.max 25').Count | Should -Be 1
+        Get-MethodSaves | Should -BeNullOrEmpty
+    }
+}

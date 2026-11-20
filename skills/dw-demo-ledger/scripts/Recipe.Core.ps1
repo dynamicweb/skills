@@ -160,6 +160,11 @@ function Resolve-RecipeToken {
     }
     if ($path -match '^step\.(?<step>[a-z][a-z0-9-]*)(\[(?<key>(?:[^\[\]]|\[(?:\*|\d+)\])+)\])?\.(?<field>.+)$') {
         $field = $Matches['field']; $stepId = $Matches['step']; $key = $Context.key
+        if ($Matches['key'] -eq '*') {
+            # Every value the step produced under that name, over all its keys: what this run found or wrote (a retire keeps them).
+            $all = $Context.results[$stepId]
+            return , @(if ($all) { foreach ($r in @($all.Values)) { if ($r.values) { $v = Get-RecipeValue $r.values $field; if ($v.found -and $null -ne $v.value) { $v.value } } } })
+        }
         if ($Matches['key']) {
             $parts = [Collections.Generic.List[string]]::new()
             foreach ($p in $Matches['key'].Split(',')) {

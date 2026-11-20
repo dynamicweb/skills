@@ -60,6 +60,7 @@ What every branded build writes goes in the data file, so step 1 writes it:
 | Accounts, personas, grants, passwords | `users.accounts` (passwords: `users.frontend-sign-in`) |
 | Prices or add to cart hidden from guests | `checkout.hideForAnonymous` |
 | Guest payment and shipping | `checkout.methods[].anonymous`, `customerGroups` |
+| The base's sample payment and shipping methods off the checkout | `checkout.retireUnnamed` (on by default: every active method of a kind the file names none of is set inactive), `keepMethods` |
 | Catalogue, prices, order history | `catalogue`, `prices`, `history` |
 
 No recipe yet: product relations (accessory, related, spare part) and footer shortcut pages; the

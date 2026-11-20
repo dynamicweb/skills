@@ -988,6 +988,8 @@
       "properties": {
         "country": {"type": "string", "pattern": "^[A-Z]{2}$", "description": "The country the storefront sells to (ISO 3166-1 alpha-2): every method is related to it, because a method without the visitor's country is not offered."},
         "language": {"type": "string", "minLength": 1, "description": "The ecommerce language id the delivery API reads methods in (LanguageId), such as ENU."},
+        "retireUnnamed": {"type": "boolean", "description": "Set every active method the input does not name inactive (never deleted), per kind, once the input names at least one method of that kind: the base's sample methods stop being offered beside the brand's own. Absent means true; false leaves every other method as it is."},
+        "keepMethods": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "description": "Names of methods the input does not ensure that stay as they are (not retired), such as a base's customer pickup kept unchanged."},
         "hideForAnonymous": {"enum": ["", "cart", "cart-price"], "description": "What the Swift storefront hides from a visitor who is not signed in (the website setting Hide for anonymous users): empty shows everything, cart hides add to cart, cart-price hides prices and add to cart. Absent leaves the setting as it is."},
         "buyer": {"type": "object", "additionalProperties": false, "required": ["userName", "passwordRef"], "properties": {"userName": {"type": "string", "minLength": 1}, "passwordRef": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$", "description": "A key of DW_RECIPE_SECRETS, never the password."}}},
         "methods": {

@@ -95,6 +95,7 @@ pwsh -NoProfile -File scripts/Invoke-DwRecipeSet.ps1 -InputPath ./recipe-input.j
 | [Recipe.Steps.ps1](scripts/Recipe.Steps.ps1) | Writes through Recipe.Write.ps1 | Step engine and the STEP and check lines |
 | [Recipe.Scan.ps1](scripts/Recipe.Scan.ps1) | Writes through Recipe.Write.ps1 | Scan steps: every place a text shows, replaced or reported |
 | [Recipe.Prune.ps1](scripts/Recipe.Prune.ps1) | Deletes through Recipe.Write.ps1 | Prune steps: the rows of the owners the input names that the input does not name, removed (a demo reset) |
+| [Recipe.Retire.ps1](scripts/Recipe.Retire.ps1) | Writes through Recipe.Write.ps1 | Retire steps: the active rows of a set the input does not name, set inactive and read back, never deleted (a base's sample payment and shipping methods) |
 | [ConvertFrom-DwBrandKit.ps1](scripts/ConvertFrom-DwBrandKit.ps1) | Writes one local input file | A brand kit's swift2 folder as the input's brand section |
 | [Recipe.Verify.ps1](scripts/Recipe.Verify.ps1) | Reads target when called | Probes and the ledger check bridge |
 | [Recipe.Debts.ps1](scripts/Recipe.Debts.ps1) | Writes when called | Flush, index build, assortment build and recycle through shipped scripts |

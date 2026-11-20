@@ -203,7 +203,7 @@ class RecipeValidationTests(unittest.TestCase):
         scan["scan"]["unwritable"] = "Not measured."
         self.assertEqual("", self.errors())
         self.recipe["steps"][1]["bindings"][0]["create"]["arguments"]["pages"][0]["menuText"] = "{replaced:row.menuText}"
-        self.assertIn("reads row outside a scan or prune step", self.errors())
+        self.assertIn("reads row outside a scan, prune or retire step", self.errors())
 
     def test_prune_step_is_scoped_and_deletes_through_the_delete_allowlist(self):
         read = dict(PAGES_FIND, arguments={"parentId": "{scope}"})
@@ -227,6 +227,28 @@ class RecipeValidationTests(unittest.TestCase):
         del prune["bindings"][0]["create"]
         self.recipe["steps"][0]["find"]["bindings"][0]["arguments"]["areaId"] = "{scope}"
         self.assertIn("reads scope outside a prune step", self.errors())
+
+    def test_retire_step_updates_only_and_keeps_what_earlier_steps_produced(self):
+        read = dict(PAGES_FIND, arguments={"parentId": "{step.pages[item.menuText].id}"})
+        read.pop("match"); read.pop("produces")
+        retire = {"id": "retire", "title": "Set inactive what the input does not name", "forEach": "pages[*]", "key": "{item.menuText}",
+                  "source": "skills/x.md",
+                  "retire": {"named": "{input.pages[*].menuText}", "requires": ["pages"], "binding": read, "active": {"field": "active", "value": True},
+                             "keep": [{"field": "id", "values": "{step.pages[*].id}"}, {"field": "menuText", "values": "{input.pages[*].menuText}"}],
+                             "identify": ["id"], "max": 10},
+                  "bindings": [{"id": "deactivate", "surface": "mcp", "status": "implemented", "source": "skills/x.md",
+                                "update": {"operation": "save_pages", "arguments": {"pages": [{"id": "{row.id}", "active": False}]}},
+                                "readBack": dict(read, match={"id": "{row.id}"})}]}
+        self.recipe["steps"].append(retire)
+        self.assertEqual("", self.errors())
+        retire["retire"]["requires"] = ["later"]
+        self.assertIn("retire.requires names later, which is not an earlier step", self.errors())
+        retire["retire"]["requires"] = ["pages"]
+        retire["bindings"][0]["delete"] = {"operation": "delete_order", "arguments": {"id": "{row.id}"}}
+        self.assertIn("a retire step's implemented binding declares update only", self.errors())
+        del retire["bindings"][0]["delete"]
+        retire["retire"]["keep"][0]["values"] = "{step.nothing[*].id}"
+        self.assertIn("names step nothing", self.errors())
 
     def test_file_tokens_resolve_against_the_input_schema(self):
         create = self.recipe["steps"][0]["bindings"][0]["create"]["arguments"]

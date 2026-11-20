@@ -43,6 +43,7 @@ and what each leaves undone is [recipe-index.md](recipe-index.md).
 | `deliveredWith` | The object this item belongs to. When that one is DELIVERED and this item would be created or changed, report it DELIVERED too and write nothing |
 | `matchSuffix` | Keep only the rows whose member ends with this text, ignoring case (a file the copy stored under its own folder) |
 | `ignoreCase` | Compare these `match` members ignoring letter case, and use the row's own spelling afterwards |
+| `retire` | Once per key: read `retire.binding`, keep the rows whose `active.field` is `active.value`, drop those a `keep` rule names (the input's names; `{step.x[*].id}` is every id step x found or wrote). Set each remaining row inactive with the `update` binding (`{row.<member>}` is that row) and read back. Never delete; when `named` resolves to nothing, a `requires` step blocked, or more than `max` would go, stop and report it |
 | `trap` | A platform fact that bites this step; read it before the call |
 
 Tokens: `{input.x}` is the recipe's input section, `{item.x}` and `{parent.x}` the forEach element,

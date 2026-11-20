@@ -193,6 +193,9 @@ def step_usable(step, surfaces, write_surfaces, version=None):
     if step.get("prune"):
         # A prune reads its set through its own binding and removes through a delete binding.
         find = {"bindings": [step["prune"].get("binding") or {}]}
+    if step.get("retire"):
+        # A retire reads its set through its own binding and sets rows inactive through an update binding.
+        find = {"bindings": [step["retire"].get("binding") or {}]}
     if find and not any(readable(b, surfaces, version) for b in find.get("bindings", [])):
         return False
     if not step.get("bindings"):
@@ -300,7 +303,7 @@ def validate_recipes(repo: Path) -> list[str]:
             item, parent = scopes(section, step.get("forEach"))
             if step.get("forEach") and item is None:
                 error(file, f"step {sid}: forEach {step.get('forEach')} is not in section {section_name}")
-            if not step.get("bindings") and not step.get("find") and not step.get("scan") and not step.get("prune"):
+            if not step.get("bindings") and not step.get("find") and not step.get("scan") and not step.get("prune") and not step.get("retire"):
                 error(file, f"step {sid}: a step without write bindings is a lookup and needs a find")
             prune = step.get("prune")
             if isinstance(prune, dict):
@@ -311,6 +314,16 @@ def validate_recipes(repo: Path) -> list[str]:
                         error(file, f"step {sid} {b.get('id')}: a prune step's implemented binding declares delete only")
                 if "{scope" not in json.dumps((prune.get("binding") or {}).get("arguments") or {}):
                     error(file, f"step {sid}: the prune read must pass {{scope}} in its arguments")
+            retire = step.get("retire")
+            if isinstance(retire, dict):
+                if not step.get("bindings"):
+                    error(file, f"step {sid}: a retire step needs an update binding (planned with its reason when none exists)")
+                for b in step.get("bindings", []):
+                    if b.get("status") == "implemented" and ("create" in b or "delete" in b or "update" not in b):
+                        error(file, f"step {sid} {b.get('id')}: a retire step's implemented binding declares update only")
+                for req in retire.get("requires") or []:
+                    if req not in earlier:
+                        error(file, f"step {sid}: retire.requires names {req}, which is not an earlier step")
             for b in step.get("bindings", []):
                 if "delete" in b and not isinstance(prune, dict):
                     error(file, f"step {sid} {b.get('id')}: only a prune step deletes")
@@ -348,7 +361,7 @@ def validate_recipes(repo: Path) -> list[str]:
                         return f"names step {target}, which is not this or an earlier step"
                     if field not in step_ids[target]:
                         return f"names {field}, which step {target} does not produce"
-                    for kp in (key or "").split(","):
+                    for kp in ("" if key == "*" else key or "").split(","):
                         if kp and root_fault(kp.strip()):
                             return root_fault(kp.strip())
                     return None
@@ -359,7 +372,7 @@ def validate_recipes(repo: Path) -> list[str]:
                 if head == "found":
                     return None if allow_found else "reads found outside an update"
                 if head == "row":
-                    return None if step.get("scan") or step.get("prune") else "reads row outside a scan or prune step"
+                    return None if step.get("scan") or step.get("prune") or step.get("retire") else "reads row outside a scan, prune or retire step"
                 if head == "scope":
                     return None if step.get("prune") else "reads scope outside a prune step"
                 if head == "build":
@@ -387,6 +400,10 @@ def validate_recipes(repo: Path) -> list[str]:
                 check_binding(prune.get("binding") or {}, "read", f"step {sid} prune", file, error, registry, tools, sql_jobs)
                 check_tokens({"arguments": (prune.get("binding") or {}).get("arguments"), "match": (prune.get("binding") or {}).get("match"),
                               "scope": (prune.get("scope") or {}).get("values"), "keep": (prune.get("keep") or {}).get("values")}, "prune")
+            if isinstance(retire, dict):
+                check_binding(retire.get("binding") or {}, "read", f"step {sid} retire", file, error, registry, tools, sql_jobs)
+                check_tokens({"arguments": (retire.get("binding") or {}).get("arguments"), "match": (retire.get("binding") or {}).get("match"),
+                              "named": retire.get("named"), "keep": [k.get("values") for k in retire.get("keep") or []]}, "retire")
             for b in (step.get("find") or {}).get("bindings", []) + (step.get("find") or {}).get("delivered", []):
                 check_binding(b, "read", f"step {sid} find", file, error, registry, tools, sql_jobs)
                 # A sign-in find reads with the password the input names by reference; any other find never sees a secret.
@@ -487,7 +504,7 @@ def all_bindings(doc):
             yield b
             if b.get("readBack"):
                 yield b["readBack"]
-        for part in ("scan", "prune"):
+        for part in ("scan", "prune", "retire"):
             if isinstance(step.get(part), dict) and step[part].get("binding"):
                 yield step[part]["binding"]
     for probe in (doc.get("verify") or {}).get("probes", []):

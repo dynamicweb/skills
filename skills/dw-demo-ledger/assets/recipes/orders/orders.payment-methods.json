@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "orders.payment-methods",
-  "name": "Checkout setup: the payment and shipping methods a storefront offers, who may use each, and their fees",
+  "name": "Checkout setup: the payment and shipping methods a storefront offers, who may use each, their fees, and the unnamed ones retired",
   "functions": ["orders.payment-methods", "orders.shipping-methods", "swift.cart-checkout"],
   "skill": "dw-commerce-orders",
   "inputs": {"section": "checkout", "required": ["country", "language", "methods"]},
@@ -119,6 +119,52 @@
       "source": "skills/dw-data-access/references/recipes-commerce.md"
     },
     {
+      "id": "retire-payment",
+      "title": "Set every active payment method the input does not name inactive, never deleted: a base's sample methods stop being offered",
+      "forEach": "methods[*]",
+      "key": "payment",
+      "skipWhen": [{"path": "item.kind", "notEquals": "payment"}, {"path": "input.retireUnnamed", "equals": false}],
+      "retire": {
+        "named": "{input.methods[*].name}",
+        "requires": ["payment-methods"],
+        "binding": {"id": "mcp-payments", "surface": "mcp", "status": "implemented", "operation": "get_payment_methods", "arguments": {}, "rows": "data", "source": "skills/dw-commerce-orders/references/checkout-configuration.md"},
+        "active": {"field": "active", "value": true},
+        "keep": [{"field": "name", "values": "{input.methods[*].name}"}, {"field": "name", "values": "{input.keepMethods|[]}"}, {"field": "id", "values": "{step.payment-methods[*].id}"}],
+        "identify": ["id", "name"],
+        "max": 25
+      },
+      "bindings": [
+        {"id": "mcp-retire", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/checkout-configuration.md",
+          "update": {"operation": "save_payment_methods", "arguments": {"paymentMethods": [{"id": "{row.id}", "active": false}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_payment_methods", "arguments": {}, "rows": "data", "match": {"id": "{row.id}"}, "expect": {"active": false}, "source": "skills/dw-commerce-orders/references/checkout-configuration.md"}}
+      ],
+      "trap": "Runs once, and only when the input names at least one payment method (the items of that kind share the key); retireUnnamed false turns it off. A method is kept when the input names it (methods or keepMethods) or the payment-methods step found or wrote it this run, so a method the input names is never retired; a step item of payment-methods that BLOCKED refuses the retire, because the method's id is then not known. A layer-delivered method the input does not name is retired: that is the base's sample method this step exists for. Retired means inactive with every other setting kept, so setting it active again restores it; nothing is deleted. More than 25 to retire refuses the step.",
+      "source": "skills/dw-commerce-orders/references/checkout-configuration.md"
+    },
+    {
+      "id": "retire-shipping",
+      "title": "Set every active shipping method the input does not name inactive, never deleted: a base's sample methods stop being offered",
+      "forEach": "methods[*]",
+      "key": "shipping",
+      "skipWhen": [{"path": "item.kind", "notEquals": "shipping"}, {"path": "input.retireUnnamed", "equals": false}],
+      "retire": {
+        "named": "{input.methods[*].name}",
+        "requires": ["shipping-methods"],
+        "binding": {"id": "mcp-shippings", "surface": "mcp", "status": "implemented", "operation": "get_shipping_methods", "arguments": {}, "rows": "data", "source": "skills/dw-commerce-orders/references/checkout-configuration.md"},
+        "active": {"field": "active", "value": true},
+        "keep": [{"field": "name", "values": "{input.methods[*].name}"}, {"field": "name", "values": "{input.keepMethods|[]}"}, {"field": "id", "values": "{step.shipping-methods[*].id}"}],
+        "identify": ["id", "name"],
+        "max": 25
+      },
+      "bindings": [
+        {"id": "mcp-retire", "surface": "mcp", "status": "implemented", "source": "skills/dw-commerce-orders/references/checkout-configuration.md",
+          "update": {"operation": "save_shipping_methods", "arguments": {"shippingMethods": [{"id": "{row.id}", "active": false}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_shipping_methods", "arguments": {}, "rows": "data", "match": {"id": "{row.id}"}, "expect": {"active": false}, "source": "skills/dw-commerce-orders/references/checkout-configuration.md"}}
+      ],
+      "trap": "Runs once, and only when the input names at least one shipping method (the items of that kind share the key); retireUnnamed false turns it off. A method is kept when the input names it (methods or keepMethods) or the shipping-methods step found or wrote it this run, so a method the input names is never retired; a step item of shipping-methods that BLOCKED refuses the retire, because the method's id is then not known. A layer-delivered method the input does not name is retired: that is the base's sample method this step exists for. Retired means inactive with every other setting kept, so setting it active again restores it; nothing is deleted. More than 25 to retire refuses the step.",
+      "source": "skills/dw-commerce-orders/references/checkout-configuration.md"
+    },
+    {
       "id": "website",
       "title": "Find the website's settings item",
       "key": "{build.areaId}",
@@ -215,7 +261,8 @@
   "provenOn": [
     {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "c1-verify: two payment and two shipping methods WOULD-CREATE, their scope and fee steps dependent on them (3 of 16). c2-apply created the four methods and the card fee rule; c2b-apply, after the nullable model members took a null default, related them to the country and scoped the two account methods to the customer group (16 of 16). c3-verify, a run with no SQL as on a hosted install, and c4-apply-again: 16 of 16, nothing written, no debt. c5-mcponly is 6 of 16: the scope steps need the Management API and the probes the delivery API. The probes saw the anonymous visitor offered the card and ground methods and not the two account methods, and the signed-in buyer offered all four. The buyer then completed two delivery API checkouts: the account methods (order total 7.00, no fees) and the card and ground methods (7.00 + 2.50 payment fee + 9.50 shipping fee = 19.00), each order carrying the chosen method ids."},
     {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe ran after users.accounts (its new dependsOn), 16 of 16 in every verify; MCP-only 6 of 16, the scope steps need PaymentSave. A separate 0.6.3 set run from empty (accounts, data models, checkout) passed 16 of 16 with apply-again writing nothing."},
-    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the new website and anonymous-visitors steps on the proof site: a1-verify AnonymousUsers WOULD-UPDATE (17 of 18), a2-apply UPDATED and read back (18 of 18), a3-verify and a4-apply-again UNCHANGED with nothing written (18 of 18), a5 restored the earlier value. The stored setting is proven; that Swift hides add to cart from an anonymous visitor is Swift template behaviour, not observed by this recipe."}
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the new website and anonymous-visitors steps on the proof site: a1-verify AnonymousUsers WOULD-UPDATE (17 of 18), a2-apply UPDATED and read back (18 of 18), a3-verify and a4-apply-again UNCHANGED with nothing written (18 of 18), a5 restored the earlier value. The stored setting is proven; that Swift hides add to cart from an anonymous visitor is Swift template behaviour, not observed by this recipe."},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-20", "evidence": "the retire-payment and retire-shipping steps on the proof site, beside methods another run was changing: r0 created two named and two stand-in sample methods; r1-verify-whole-site listed every active unnamed method of the site (13 payment, 15 shipping, the base's Standard ground, Express, Freight / LTL and Customer pickup among them) WOULD-RETIRE and wrote nothing; the limited input then kept every other method by keepMethods: r1-verify WOULD-RETIRE the two stand-ins, r2-apply RETIRED both and read them back inactive (8 of 8), their country relation kept, and the delivery API stopped offering the retired payment method; r3-verify and r4-apply-again UNCHANGED with nothing written (8 of 8). Setting them active again restored them."}
   ],
   "traps": [
     "No debt: the delivery API offered a new or rescoped method on the next request, with no flush or recycle.",
