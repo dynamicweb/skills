@@ -38,6 +38,19 @@ Describe 'New-DwBuildBrief' {
         $r.text | Should -Match 'hand-in names the orchestrator \(`model-mid`\), the recipe set''s model \(`model-small`; its summary prints `run by: model-small`\)'
         $r.lines.Count | Should -BeLessOrEqual 25
     }
+    It 'prints the paragraph orchestrator.md documents and the build command carries, word for word apart from the model id' {
+        function Get-SplitBlock([string]$Path) {
+            # The quoted paragraph that opens with "You are the orchestrator.", joined into one line.
+            $doc = @(Get-Content -LiteralPath (Join-Path (Get-RepoRoot) $Path) | ForEach-Object { $_.TrimStart() })
+            $start = [array]::IndexOf($doc, @($doc | Where-Object { $_ -like '> You are the orchestrator.*' })[0])
+            $start | Should -BeGreaterOrEqual 0 -Because "$Path quotes the split paragraph"
+            $block = @(); for ($i = $start; $i -lt $doc.Count -and $doc[$i] -like '> *'; $i++) { $block += $doc[$i].Substring(2) }
+            return ($block -join ' ')
+        }
+        $documented = Get-SplitBlock 'skills/dw-demo-base/references/orchestrator.md'
+        ($documented -replace 'sub-agent on the smallest', 'sub-agent on `model-small`, the smallest') | Should -BeExactly $script:Split
+        Get-SplitBlock 'skills/dw-demo-base/assets/commands/demo/build.md' | Should -BeExactly $documented
+    }
     It 'allows handing pieces up only when a top model different from the orchestrator is given' {
         (Invoke-Brief @('-OrchestratorModel', 'model-mid', '-SmallModel', 'model-small')).text | Should -Not -Match 'went up'
         (Invoke-Brief @('-OrchestratorModel', 'model-top', '-SmallModel', 'model-small', '-TopModel', 'model-top')).text | Should -Not -Match 'went up'

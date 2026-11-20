@@ -406,7 +406,18 @@ site invalidate the set's read-backs.
 delegate: on two providers, sessions that had read it kept the set run on their own model, twice.
 The same sessions, given the paragraph below in the brief that started them, each started a
 sub-agent on their provider's small model for the set run [dw 10.30 · swift 2.5]. Whoever starts a
-build session (a launcher, a dispatcher, a person) therefore puts the split in the brief:
+build session (a launcher, a dispatcher, a person) therefore starts it with the brief
+[`scripts/New-DwBuildBrief.ps1`](../scripts/New-DwBuildBrief.ps1) prints, with the model ids
+resolved as "Model tier" says:
+
+```powershell
+pwsh -NoProfile -File <skills>/dw-demo-base/scripts/New-DwBuildBrief.ps1 -OrchestratorModel <mid> -SmallModel <small> [-TopModel <top> -EscalateFor <pieces>] [-DataFile <file> -SkillsPath <skills> -LogFolder <folder>] [-OutFile <brief.md>]
+```
+
+It opens with this paragraph, the small model's id named before "the smallest, fastest model your
+agent offers", and adds the delegate's run order, the no-write rule and the hand-in below.
+`-TopModel` lets the hardest custom pieces go up and has the hand-in name them; `-Phase plan`
+prints a read-only planning brief.
 
 > You are the orchestrator. Keep the brief and the custom work yourself. Hand the recipe set run
 > (verify, apply once, pay debts, final verify) to a sub-agent on the smallest, fastest model your
@@ -415,7 +426,9 @@ build session (a launcher, a dispatcher, a person) therefore puts the split in t
 > recipe set and which model built the rest.
 
 **Say who ran it.** The hand-in names the model that ran the set and the model that built the
-rest, so the next build can check the split was real.
+rest, so the next build can check the split was real. The delegate passes `-RunBy <its model>` (or
+sets `DW_RECIPE_RUN_BY`) to every set run, and the summary prints `run by: <model>`, or
+`run by: not stated` when it was left out.
 
 **Give the delegate** (a sub-session or subagent on the small tier):
 
@@ -425,7 +438,8 @@ rest, so the next build can check the split was real.
   `DW_MCP_TOKEN` or `DW_API_TOKEN`, `DW_RECIPE_SECRETS`, `DW_PERSONA_CREDENTIALS`; plus
   `-SolutionPath <solution>` for a loopback host it may recycle and `-AllowSelfSignedCertificate`
   for a local self-signed one;
-- the run order, each run's output saved to a log and `-ReportPath <folder>/<run>.json`:
+- the run order, each run's output saved to a log, with `-ReportPath <folder>/<run>.json` and
+  `-RunBy <its model>`:
   1. **verify**: `Invoke-DwRecipeSet.ps1 -InputPath <file>`;
   2. **apply once**: the same with `-Apply`;
   3. **pay debts**: for each `DEBT OPEN` or `DEBT FAIL` line, `-Only <owner> -PayDebts -Apply`

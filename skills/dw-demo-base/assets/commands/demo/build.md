@@ -20,9 +20,20 @@ From the signed-off analysis, build the demo moments using the right skills:
   catalogue, prices, order history, brand styles and the de-brand in one run
   (`dw-demo-base/references/orchestrator.md` "Build from the library"). Only what no recipe covers
   (`Find-DwRecipe.ps1 -Function <id>`) is built by hand below; its summary table is part of the
-  validation pass. Delegate the set run to a sub-session or subagent, naming the small tier's
-  model in the call that starts it (a call without a model inherits yours), and keep building
-  the rest yourself (`orchestrator.md` "Delegating the recipe set").
+  validation pass. Resolve the tiers from your agent's model list (`orchestrator.md` "Model
+  tier"), then follow this split:
+
+  > You are the orchestrator. Keep the brief and the custom work yourself. Hand the recipe set run
+  > (verify, apply once, pay debts, final verify) to a sub-agent on the smallest, fastest model your
+  > agent offers, and name that model in the call that starts the sub-agent: a call without a model
+  > inherits yours. Do the same for other mechanical work. In your result, say which model ran the
+  > recipe set and which model built the rest.
+
+  The delegate passes `-RunBy <its model>` to every set run; make no site write until its apply
+  has ended (`orchestrator.md` "Delegating the recipe set"). **Starting a sub-session or
+  dispatching a build instead?** Start it with the brief `dw-demo-base`
+  `scripts/New-DwBuildBrief.ps1 -OrchestratorModel <mid> -SmallModel <small> [-TopModel <top>]`
+  prints: the split in the brief that starts a session is what makes it delegate.
 - **Brand work: choose the path first** → `dw-demo-base/references/branded-demo-paths.md`. Default
   is path A (author a demo-local brand layer in YAML over the edition's demo content and
   deserialize it); path B (deserialize as shipped, then rebrand through the tools) is selected
