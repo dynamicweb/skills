@@ -251,7 +251,7 @@
         "skipWhen": {"path": "item.specs", "exists": false},
         "minimumSubjects": 1,
         "bindings": [
-          {"surface": "mcp", "status": "implemented", "operation": "get_completeness_status", "arguments": {"productId": "{step.products[item.number].id}", "shopId": "{build.pimShop|input.shop}", "groupIds": ["{step.models[item.group].id}"]}, "rows": "$", "match": {"value": -1}, "assert": {"kind": "count", "op": "eq", "value": 0}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+          {"surface": "mcp", "status": "implemented", "operation": "get_completeness_status", "arguments": {"productId": "{step.products[item.number].id}", "shopId": "{input.shop}", "groupIds": ["{step.models[item.group].id}"]}, "rows": "$", "match": {"value": -1}, "assert": {"kind": "count", "op": "eq", "value": 0}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
         ]
       },
       {
@@ -278,6 +278,6 @@
     "Documents are not in this recipe: no MCP tool or simple Management API command creates the asset category they belong in.",
     "The storefront group page lists a product only when it is in an assortment the visitor may see and, measured, once it has a price: with the product indexed in its group and in the public assortment but without a price the page answered No products found while every product it listed had one. The prices recipe sets the price; the listed-in-group probe reads the index query the page uses.",
     "Spec values written by patch_products_safe reach the index only after the product and category-field value caches are flushed, so the flush debts run before the index builds.",
-    "The completeness probe: get_completeness_status needs a shop that exists, and with groupIds it answers by the groups passed: the same figure for the PIM shop and the storefront shop, -1 for a group without a rule (measured on 10.30.6). So the probe asks in build.pimShop when the build names it, otherwise in the catalogue's own shop."
+    "The completeness probe: get_completeness_status needs a shop that exists, and with groupIds it answers by the groups passed: the same figure for the PIM shop and the storefront shop, -1 for a group without a rule (measured on 10.30.6). So the probe asks in the catalogue's own shop (input.shop), which the groups step proves exists, never in build.pimShop: a layer copy keys the PIM shop its own way (a build whose input named PIM met a site whose PIM shop was stored under another id), and a shop that does not exist answers an error result, not a figure (measured on 10.30.8, where the catalogue's shop and the copy's PIM shop both gave 100 for the same product and model)."
   ]
 }

@@ -1308,15 +1308,43 @@ Describe 'Shipped recipes against the platform shapes a whole-build set met' {
                 lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); steps = [Collections.Generic.List[object]]::new()}
         }
     }
-    It 'asks completeness in the catalogue''s own shop when the build names no PIM shop' {
+    It 'asks completeness in the catalogue''s own shop, also when the build names a PIM shop a layer copy keyed its own way' {
         $probe = @((Get-ShippedRecipe 'pim' 'pim.identifiers').verify.probes | Where-Object id -eq 'completeness')[0]
         $ctx = @{input = @{shop = 'SHOP1'}; item = @{number = 'P-1'; group = 'tools'}; build = @{areaId = 1}; secrets = @{}
             results = @{products = @{'P-1' = @{state = 'UNCHANGED'; values = @{id = 'PROD1'}}}; models = @{tools = @{state = 'UNCHANGED'; values = @{id = 'MODEL1'}}}}}
         $arguments = Expand-RecipeValue $probe.bindings[0].arguments $ctx
         $arguments.shopId | Should -Be 'SHOP1'
         $arguments.groupIds | Should -Be @('MODEL1')
-        $ctx.build.pimShop = 'PIMSHOP1'
-        (Expand-RecipeValue $probe.bindings[0].arguments $ctx).shopId | Should -Be 'PIMSHOP1'
+        $ctx.build.pimShop = 'PIM'
+        (Expand-RecipeValue $probe.bindings[0].arguments $ctx).shopId | Should -Be 'SHOP1'
+    }
+    It 'passes completeness a rule reaches through the model, fails a product no rule reaches, and says a NOTE when no product asks for it' {
+        . (Join-Path $script:Source 'scripts/Recipe.Verify.ps1')
+        $probe = @((Get-ShippedRecipe 'pim' 'pim.identifiers').verify.probes | Where-Object id -eq 'completeness')[0]
+        # The tool as measured on 10.30.8: a shop that does not exist is an error result; with groupIds the figure is the
+        # model's rule (100), or -1 where no rule is assigned.
+        $global:CompletenessScores = @{PROD1 = 100; PROD2 = 100}
+        function Invoke-DwMcp { param($Tool, $Arguments, [switch]$Raw, $TimeoutSec)
+            if ($Arguments.shopId -ne 'SHOP1') { return @{isError = $true; content = @(@{type = 'text'; text = "An error occurred invoking 'get_completeness_status': Shop '$($Arguments.shopId)' not found."})} }
+            @{structuredContent = @{productId = $Arguments.productId; shopId = $Arguments.shopId; value = $global:CompletenessScores[$Arguments.productId]}}
+        }
+        $cap = @{surfaces = @('mcp'); mcp = $true; tools = @{get_completeness_status = @{type = 'object'; properties = @{productId = @{}; shopId = @{}; groupIds = @{}; languageId = @{}}}}}
+        $results = @{products = @{'P-1' = @{state = 'UNCHANGED'; values = @{id = 'PROD1'}}; 'P-2' = @{state = 'DELIVERED'; values = @{id = 'PROD2'}}}; models = @{tools = @{state = 'UNCHANGED'; values = @{id = 'MODEL1'}}}}
+        $section = @{shop = 'SHOP1'; products = @(@{number = 'P-1'; group = 'tools'; specs = @{size = 'M'}}, @{number = 'P-2'; group = 'tools'; specs = @{size = 'L'}})}
+        $newRun = { $r = New-StepRun $section $results $cap; $r.build = @{areaId = 1; pimShop = 'PIM'}; $r.planned = [Collections.Generic.List[string]]::new(); $r.pollIntervalMs = 1; $r }
+        $run = & $newRun
+        Invoke-RecipeProbe $probe $run
+        $run.lines | Should -Contain 'PASS probe/completeness'
+        $global:CompletenessScores.PROD2 = -1
+        $run = & $newRun
+        Invoke-RecipeProbe $probe $run
+        @($run.lines -match '^FAIL probe/completeness: 1 failing: subject 2: 1 matching row\(s\), expected eq 0').Count | Should -Be 1
+        $section.products = @(@{number = 'P-1'; group = 'tools'})
+        $run = & $newRun
+        Invoke-RecipeProbe $probe $run
+        $run.lines | Should -Be @('NOTE probe/completeness: no input item asks for it (products[*])')
+        $run.checks.Count | Should -Be 0
+        Remove-Variable -Name CompletenessScores -Scope Global
     }
     It 'compares a state''s next states in any order, as get_workflow_states lists them sorted by id, and still sees a missing one' {
         $step = @((Get-ShippedRecipe 'pim' 'pim.workflow').steps | Where-Object id -eq 'transitions')[0]
