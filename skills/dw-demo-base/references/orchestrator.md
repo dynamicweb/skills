@@ -402,6 +402,18 @@ the wait for what needs no write: read the brief's custom work, the owning skill
 templates. Make no write to the site until the delegate's apply has ended; two writers on one
 site invalidate the set's read-backs.
 
+**A dispatched build gets the split from its brief.** This section alone does not make a session
+delegate: on two providers, sessions that had read it kept the set run on their own model, twice.
+The same sessions, given the paragraph below in the brief that started them, each started a
+sub-agent on their provider's small model for the set run [dw 10.30 · swift 2.5]. Whoever starts a
+build session (a launcher, a dispatcher, a person) therefore puts the split in the brief:
+
+> You are the orchestrator. Keep the brief and the custom work yourself. Hand the recipe set run
+> (verify, apply once, pay debts, final verify) to a sub-agent on the smallest, fastest model your
+> agent offers, and name that model in the call that starts the sub-agent: a call without a model
+> inherits yours. Do the same for other mechanical work. In your result, say which model ran the
+> recipe set and which model built the rest.
+
 **Say who ran it.** The hand-in names the model that ran the set and the model that built the
 rest, so the next build can check the split was real.
 
